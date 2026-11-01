@@ -6,6 +6,7 @@
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
 const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
+if (FR_LIVE) NEWS.unshift(NEWS_V219); // the v2.19 news entry (49c_news.js) appears with the release, never before
 function frOn() {
   if (typeof clArtifact === 'function' && clArtifact()) return false;
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
@@ -283,7 +284,7 @@ async function frInbox() {
     const i = ev.data && ev.data.i;
     if (!Number.isInteger(i) || i < 0 || i >= FR_NOTES.length) return;
     const name = frPairName(ev.from && ev.from.name) || tt('fr.a_friend', 'A friend');
-    if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tt('fr.note_' + i, FR_NOTES[i]), frPaw: true });
+    if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tdata('fr_notes.' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
   const gave = frGiftLetters(r.data.events, claim) + frWalkLetters(r.data.events, claim);
@@ -822,7 +823,7 @@ async function frPet() {
 /* ---------- the paw-print note: one of FR_NOTES, once per friend per day ---------- */
 function frNoteSheet() {
   const name = frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
-  const list = FR_NOTES.map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tt('fr.note_' + i, en))}</button>`).join('');
+  const list = FR_NOTES.map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tdata('fr_notes.' + i, en))}</button>`).join('');
   const p = openModal(esc(tt('fr.paw_leave', 'Leave a paw print')), `<div class="fr-notes"><p>${esc(tt('fr.note_lead', 'Pick a note for {name}.', { name }))}</p><div class="fr-notelist">${list}</div></div>`, { cls: 'frsheet fr-notesheet' });
   p.querySelectorAll('[data-frnote]').forEach((b) => { b.onclick = () => { SFX.click(); frNote(+b.dataset.frnote, p); }; });
   return p;
@@ -1138,7 +1139,7 @@ function enterFrYard() {
 function frExpose() {
   if (!window.__paw || window.__paw.fr) return;
   window.__paw.fr = {
-    on: () => frOn(), live: () => FR_LIVE, open: () => frOpen(),
+    on: () => frOn(), live: () => FR_LIVE, news: () => NEWS_V219, open: () => frOpen(),
     lists: () => ({ notes: FR_NOTES.slice(), gifts: FR_GIFTS.slice(), decor: FR_DECOR.slice(), houses: FR_HOUSES.slice() }),
     orderOk: () => {
       const food = FOOD.filter((f) => f.n !== 'Fresh Water').map((f) => f.n);

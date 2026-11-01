@@ -125,6 +125,8 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 
 - **v2.14 "Hello in Every Language"** (current): the game and doodledoggo.app in 11 languages with a language picker and handwritten fonts for Japanese, Chinese, Korean and Thai, a fit pass so every language fits every screen at every size, a faster first load (only your own language downloads), and site v3 with the game on its home page.
 
+- **v2.19 "Friends first"**: friends by code or invite link (a two-word friend name, no typing), visits to a friend's yard with pets and paw-print notes, one gift a day, and a friend's dog on your walk.
+
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
 ## Made with Claude

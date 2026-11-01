@@ -170,3 +170,4 @@ BADGE@walkrun 1
 TOYS_LINES@toys *
 AG_LINES *   # v2.15 Training Ground arrival lines (data.ag_lines.<breed>)
 PL_LINES *   # v2.15 Splash Pool arrival lines (data.pl_lines.<breed>)
+FR_NOTES *   # v2.19 Friends paw-print notes (data.fr_notes.<i>; the Worker stores only the index)
