@@ -1,13 +1,16 @@
-# Game Manager handoff (1 Nov 2026, 17:05 UTC)
+# Game Manager handoff (1 Nov 2026, 19:45 UTC)
 
-Previous Game Manager: session_01D6KLY2drW9wj7ssCq6Zesi (handed over at ~300k context; archive it once you are running). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (tag team:marketing). Brief it on every release; for v2.19 only once the owner has set the date.
+Previous Game Manager: session_01D6KLY3EuQ2ya1GqT7VBhht (handed over at ~160k context under the 150k rule; archiving it was blocked by the permission classifier, so leave it if that happens again). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (tag team:marketing): brief it on v2.19 only once the owner has set the date.
 
-**v2.19 now (Cursor codes, Claude reviews; the progress table is in `docs/briefs/V219_CURSOR_PROMPTS.md`):**
-- Merged into main: part 1 Worker (#10), part 2 Friends sheet (#12, `FR_LIVE = false`), part 6 invite page and privacy (#11).
-- **Part 3 (#6, visits):** started 1 Nov 17:00 UTC by my `@cursor` comment on #6. Cursor will open `cursor/v219-visits`. Subscribe to it, review it and run its suites.
-- Next: part 4 (#7) after #6's PR is merged, then part 5 (#8) after #7's. Then part 7 (mine): translations, NEWS, three reviews, `FR_LIVE = true`, deploy the Worker, then the site and game, then release on the owner's date.
-- New Game Manager: session_01D6KLY3EuQ2ya1GqT7VBhht (started 1 Nov 17:00). Its 3-hourly check prompt is in its first message; the old task trig_015HgYaCKCK77kFPVbC11evy is deleted.
+**v2.19 now: parts 1-6 are ALL merged into main** (#10, #12, #14 visits, #15 gifts, #16 walk together, #11 invite page). The owner moved coding back to Claude on 1 Nov (parts 3-5 were Claude subagents; Cursor's PR #13 was closed unmerged). The owner also said the Game Manager merges approved PRs itself. The 3-hourly check (trig_01HLcVE97q5Tc9cTEsk8vLyv) is disabled; the owner has been told parts 1-6 are done.
 
+**Next: part 7 (Claude), nothing deploys yet:**
+1. Translations, one batch: every `fr.*` key from parts 2-5 (and the site strings of part 6) into `game/i18n/en.json` and the 10 other languages. The `i18n` suite fails on main until this is done.
+2. The NEWS entry in `game/src/49c_news.js`, the CHANGELOG row, the version bump to v2.19, README/CLAUDE.md lines.
+3. The three reviews (code, phone, art) on the top model, at most 2 subagents at once, then one fix batch.
+4. Then STOP and ask the owner for the go-ahead and launch date (special-update rule, no 5-minute default). Only then: `FR_LIVE = true` in `game/src/50_friends.js`, deploy the Worker (`bash tools/cf_api_deploy.sh`) before the site and game, then the release recipe below, then brief Marketing.
+
+Known small notes from the reviews of parts 3-5: on 360 px phones the visiting dogs can still overlap a little (drawn at 0.84x on phones); a guest puppy's ribbon is about 10 px at 390; the route picker's friend row scrolls sideways with "Just us" at its left end.
 
 1. Live: v2.18.4 "Winter Market" on main (site, itch #2256996, GitHub). The owner's official launch was 1 Nov 00:00 JST, and Marketing has the go-ahead. The Winter Market opens in game 1-26 Dec. Its design and the decisions are in docs/design/winter-market.md.
 2. **New owner rule (31 Oct, in CLAUDE.md):** special and festival updates never go live without the owner's explicit go-ahead and launch date, and the 5-minute rule does not apply to them. I released v2.18.4 early without asking, and the owner was unhappy about it. Ask first.
