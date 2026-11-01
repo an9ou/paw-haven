@@ -219,7 +219,7 @@ export default {
     if (p.endsWith('.html') && FILES[p]) return Response.redirect('https://' + url.host + (p.endsWith('/index.html') ? p.slice(0, -10) : p.slice(0, -5)) + url.search, 301);
     const inv = inviteHit(p); // v2.19: /f/<code> and /<lang>/f/<code>, drawn from the language shells (no API)
     if (inv && INVITE[inv.lpre]) {
-      const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': CSP, 'content-type': 'text/html; charset=utf-8', 'content-language': LANG_OF[inv.lpre] || 'en', 'cache-control': 'public, max-age=300' };
+      const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': CSP, 'content-type': 'text/html; charset=utf-8', 'content-language': LANG_OF[inv.lpre] || 'en', 'cache-control': 'public, max-age=300', 'x-robots-tag': 'noindex' };
       return new Response(req.method === 'HEAD' ? null : renderInvite(INVITE[inv.lpre], inv.code), { headers });
     }
     const hit = FILES[PRETTY[p] || p];

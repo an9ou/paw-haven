@@ -355,6 +355,7 @@ function inviteShells(o) {
 <html lang="${L.code}"${htmlattrs}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FFF8EC"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/icon-180.png"><link rel="stylesheet" href="/style.css">${fontcss}
 <title>${t('invite.title')}</title>
 <meta name="description" content="${a('invite.description')}">
+<meta name="robots" content="noindex">
 <link rel="canonical" href="${canon}">${alternates}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Doodle Doggo"><meta property="og:url" content="${canon}">${oglocale}
 <meta property="og:title" content="${a('invite.title')}"><meta property="og:description" content="${a('invite.description')}">
