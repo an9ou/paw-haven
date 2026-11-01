@@ -154,3 +154,4 @@ create table if not exists friend_events (
 create unique index if not exists friend_events_pair on friend_events (from_id, to_id, kind, day) where kind != 'gift';
 create unique index if not exists friend_events_gift on friend_events (from_id, kind, day) where kind = 'gift';
 create index if not exists friend_events_inbox on friend_events (to_id, claimed_at);
+create index if not exists friend_events_age on friend_events (created_at); -- inbox read: delete older than 30 days

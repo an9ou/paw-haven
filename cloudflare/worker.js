@@ -191,15 +191,13 @@ async function sendMail(env, to, m) {
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
 const DC_LIM = { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits
-// v2.19 Friends. The game's lists are append-only. Part 2 (game/src/50_friends.js) must keep FR_LIM in step with
-// FR_NOTES / FR_GIFTS / FR_DECOR / FR_HOUSES, and its test checks the lengths. Counted from the game on 1 Nov 2026:
+// v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
-//   gifts 46: all 34 FOOD rows (snacks, meals and festive treats; Fresh Water is a FOOD row, so it is counted) + 6 seed
-//             packets + 6 harvested crops in mods/garden.js CROPS. There is no flower table. The 3 treasure foods in
-//             TFOOD are not included; part 2 raises gifts if a walk treasure has to be a gift index.
-//   decor 31: HM_DECOR entries whose room is the yard (a missing room counts as yard). House decor and furniture are not.
-//   houses 14: every HOUSES row, the festival kennels and the Rocket Ship included
-const FR_LIM = { notes: 12, gifts: 46, decor: 31, houses: 14 };
+//   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
+//             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
+//   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
+//   houses 14: every HOUSES row
+const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 };
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -426,6 +424,20 @@ async function frUnlink(env, a, b) {
     env.DB.prepare('delete from friends where (user_id = ?1 and friend_id = ?2) or (user_id = ?2 and friend_id = ?1)').bind(a, b),
     env.DB.prepare('delete from friend_events where claimed_at is null and ((from_id = ?1 and to_id = ?2) or (from_id = ?2 and to_id = ?1))').bind(a, b)
   ]);
+}
+// Like dcTidy: drop friend rows whose user id is gone. About 1 in 50 friend requests; every time under env.TIDY (tests).
+async function frTidy(env) {
+  await env.DB.batch([
+    env.DB.prepare('delete from friend_ids where user_id not in (select id from users)'),
+    env.DB.prepare('delete from friends where user_id not in (select id from users) or friend_id not in (select id from users)'),
+    env.DB.prepare('delete from friend_blocks where user_id not in (select id from users) or blocked_id not in (select id from users)'),
+    env.DB.prepare('delete from yards where user_id not in (select id from users)'),
+    env.DB.prepare('delete from friend_events where from_id not in (select id from users) or to_id not in (select id from users)')
+  ]);
+}
+function frTidySoon(env, ctx) {
+  if (env.TIDY) return frTidy(env);
+  if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(frTidy(env).catch(() => {}));
 }
 
 /* ---------------- routes ---------------- */
@@ -668,12 +680,14 @@ const ROUTES = {
   } },
 
   /* ---------- Friends (v2.19) ---------- */
-  'GET /friends': { auth: true, async fn({ env, me }) {
+  'GET /friends': { auth: true, async fn({ env, ctx, me }) {
+    await frTidySoon(env, ctx);
     if (await limited(env, frKey.list(me.id), 120, 3600)) return fail('rate_limited', 429);
     return json(await frList(env, me.id));
   } },
 
-  'POST /friends/me': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/me': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['name'])) return fail('bad', 400);
     const name = frName(body.name);
     if (!name) return fail('bad', 400);
@@ -688,7 +702,8 @@ const ROUTES = {
     return json(frPub(row));
   } },
 
-  'POST /friends/code/new': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/code/new': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, [])) return fail('bad', 400);
     if (!(await frMine(env, me.id))) return fail('bad', 400);
     const day = dcDay(Date.now());
@@ -698,7 +713,8 @@ const ROUTES = {
     return json(frPub(row));
   } },
 
-  'POST /friends/add': { auth: true, async fn({ env, ip, body, me }) {
+  'POST /friends/add': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['code'])) return fail('bad', 400);
     // Every attempt counts, including a miss, so guessing codes costs the same as a hit.
     const overUser = await limited(env, frKey.add(me.id), 10, 3600);
@@ -727,7 +743,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'POST /friends/remove': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/remove': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['fid']) || !frFidOk(body.fid)) return fail('bad', 400);
     if (await limited(env, frKey.rm(me.id), 30, 3600)) return fail('rate_limited', 429);
     const them = await frByFid(env, body.fid);
@@ -737,7 +754,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'POST /friends/block': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/block': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['fid']) || !frFidOk(body.fid)) return fail('bad', 400);
     if (await limited(env, frKey.block(me.id), 30, 3600)) return fail('rate_limited', 429);
     const them = await frByFid(env, body.fid);
@@ -748,7 +766,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'PUT /friends/yard': { auth: true, async fn({ env, body, me }) {
+  'PUT /friends/yard': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['yard'])) return fail('bad', 400);
     const yard = frYard(body.yard);
     if (!yard) return fail('bad', 400);
@@ -763,7 +782,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'GET /friends/yard': { auth: true, async fn({ env, url, me }) {
+  'GET /friends/yard': { auth: true, async fn({ env, ctx, url, me }) {
+    await frTidySoon(env, ctx);
     if (await limited(env, frKey.yardGet(me.id), 120, 3600)) return fail('rate_limited', 429);
     const fid = url.searchParams.get('fid');
     if (!frFidOk(fid)) return fail('not_found', 404);
@@ -775,7 +795,8 @@ const ROUTES = {
     return json({ yard });
   } },
 
-  'POST /friends/send': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/send': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['fid', 'kind'], ['data']) || !frFidOk(body.fid) || typeof body.kind !== 'string' || !FR_KINDS.includes(body.kind)) return fail('bad', 400);
     const them = await frByFid(env, body.fid);
     if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
@@ -799,7 +820,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'GET /friends/inbox': { auth: true, async fn({ env, me }) {
+  'GET /friends/inbox': { auth: true, async fn({ env, ctx, me }) {
+    await frTidySoon(env, ctx);
     if (await limited(env, frKey.inbox(me.id), 120, 3600)) return fail('rate_limited', 429);
     const now = Date.now();
     // Any inbox read drops events older than 30 days, for every player. The read itself counts as being seen today.
@@ -816,7 +838,8 @@ const ROUTES = {
     return json({ events });
   } },
 
-  'POST /friends/inbox/claim': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/inbox/claim': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, ['ids']) || !Array.isArray(body.ids) || body.ids.length > FR_INBOX) return fail('bad', 400);
     if (body.ids.some((id) => !dcInt(id, 1, 1e15))) return fail('bad', 400);
     if (await limited(env, frKey.claim(me.id), 120, 3600)) return fail('rate_limited', 429);
@@ -826,7 +849,8 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'POST /friends/leave': { auth: true, async fn({ env, body, me }) {
+  'POST /friends/leave': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
     if (!frOnly(body, [])) return fail('bad', 400);
     if (await limited(env, frKey.leave(me.id), 30, 3600)) return fail('rate_limited', 429);
     // Blocks other players made stay, so a new code still cannot get past them. Claimed and unclaimed events both go.

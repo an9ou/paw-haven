@@ -306,7 +306,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 46, decor: 31, houses: 14 }'), 'FR_LIM is notes 12, gifts 46, decor 31, houses 14, next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 }'), 'FR_LIM is notes 12, gifts 47, decor 31, houses 14, next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);
@@ -314,7 +314,7 @@ async function checks(label, call, sql, mail) {
     ok(/create unique index if not exists friend_events_pair/i.test(schemaTxt) && /where kind != 'gift'/i.test(schemaTxt), 'pet, note and walk are unique per from, to, kind and day');
     ok(/create unique index if not exists friend_events_gift/i.test(schemaTxt) && /where kind = 'gift'/i.test(schemaTxt), 'a gift is unique per sender per day');
     ok(/create index if not exists friend_events_inbox[\s\S]*\(to_id, claimed_at\)/i.test(schemaTxt), 'the inbox index is (to_id, claimed_at)');
-    for (const name of ['friend_events_pair', 'friend_events_gift', 'friend_events_inbox']) {
+    for (const name of ['friend_events_pair', 'friend_events_gift', 'friend_events_inbox', 'friend_events_age']) {
       ok(!!(await sql("select name from sqlite_master where type = 'index' and name = ?", name)), name + ' is in the database');
     }
     const insEv = (from, to, kind, day, at) => sql(
@@ -502,12 +502,12 @@ async function checks(label, call, sql, mail) {
     // sends: per Japan day, friends only
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'note', data: { i: 12 } }, yA.token)).json.error === 'bad', 'a note past the 12 lines is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'note', data: { i: 0, text: 'hi' } }, yA.token)).json.error === 'bad', 'a note cannot carry typed text');
-    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 46, n: 1 } }, yA.token)).json.error === 'bad', 'a gift past the list is bad');
+    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 47, n: 1 } }, yA.token)).json.error === 'bad', 'a gift past the list is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 0, n: 2 } }, yA.token)).json.error === 'bad', 'a gift sends exactly one');
     ok((await frCall('POST', '/friends/send', { fid: pyA.fid, kind: 'pet' }, yS.token)).json.error === 'not_found', 'only a friend can send');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'wave' }, yA.token)).json.error === 'bad', 'kind has to be pet, note, gift or walk');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 5, mine: dog() } }, yA.token)).json.error === 'bad', 'a walk dog index is 0 to 4');
-    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog(), t: 46 } }, yA.token)).json.error === 'bad', 'a walk treasure past the gift list is bad');
+    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog(), t: 47 } }, yA.token)).json.error === 'bad', 'a walk treasure past the gift list is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog({ c: { M: ['M', 'M'] } }) } }, yA.token)).json.error === 'bad', 'the walking leader is checked like a Dog Card dog');
     res = await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'pet' }, yA.token);
     ok(res.status === 200 && res.json.ok === true, 'the first pet today is kept');
@@ -617,13 +617,19 @@ async function checks(label, call, sql, mail) {
     const pCapB = await profile(capB, [1, 3]);
     await profile(capA, [1, 4]); await profile(capC, [1, 5]);
     const pCapD = await profile(capD, [1, 6]);
-    for (let i = 0; i < 49; i++) await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', capB.user.id, 'filler-b-' + i, 1, true);
+    for (let i = 0; i < 49; i++) {
+      await sql('insert into users (id, email, created_at, guest) values (?, null, ?, 1)', 'filler-b-' + i, Date.now(), true);
+      await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', capB.user.id, 'filler-b-' + i, 1, true);
+    }
     res = await frCall('POST', '/friends/add', { code: pCapB.code }, capA.token, { 'CF-Connecting-IP': '10.19.27.5' });
     ok(res.status === 200 && res.json.ok === true, 'the 50th friend is allowed');
     res = await frCall('POST', '/friends/add', { code: pCapB.code }, capC.token, { 'CF-Connecting-IP': '10.19.27.6' });
     ok(res.status === 400 && res.json.error === 'full', 'the friend who already has 50 answers full');
     ok((await nOf('select count(*) as n from friends where user_id = ? and friend_id = ?', capC.user.id, capB.user.id)) === 0, 'full does not write a row');
-    for (let i = 0; i < 49; i++) await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', capA.user.id, 'filler-a-' + i, 1, true);
+    for (let i = 0; i < 49; i++) {
+      await sql('insert into users (id, email, created_at, guest) values (?, null, ?, 1)', 'filler-a-' + i, Date.now(), true);
+      await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', capA.user.id, 'filler-a-' + i, 1, true);
+    }
     res = await frCall('POST', '/friends/add', { code: pCapD.code }, capA.token, { 'CF-Connecting-IP': '10.19.27.7' });
     ok(res.status === 400 && res.json.error === 'full', 'I answer full once I have 50, whoever the other side is');
 
@@ -712,6 +718,22 @@ async function checks(label, call, sql, mail) {
     const alphabet = [];
     for (let i = 0; i < 12; i++) alphabet.push((await profile(await user('10.19.50.' + i), [i % 40, (i * 3) % 40])).code);
     ok(alphabet.every((c) => CODE.test(c)) && new Set(alphabet).size === alphabet.length, 'codes are DOG- plus 5 characters, with none of 0, O, 1, I or L');
+
+    // frTidy: friend rows of deleted accounts (like dcTidy for cards)
+    const gone = await user('10.19.60.1');
+    const goneProf = await profile(gone, [2, 3]);
+    await frCall('PUT', '/friends/yard', { yard: yard() }, gone.token);
+    await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', gone.user.id, 'orphan-user-id', Date.now(), true);
+    await sql('insert into friend_blocks (user_id, blocked_id) values (?, ?)', gone.user.id, 'blocked-user-id', true);
+    await sql('insert into friend_events (to_id, from_id, kind, data, day, created_at) values (?, ?, ?, ?, ?, ?)', gone.user.id, 'sender-id', 'pet', '{}', '2026-11-01', Date.now(), true);
+    await sql('delete from users where id = ?', gone.user.id, true);
+    const keeper = await user('10.19.60.2');
+    await profile(keeper, [4, 4]);
+    await frCall('GET', '/friends', null, keeper.token);
+    ok(!(await sql('select * from friend_ids where user_id = ?', gone.user.id)) && !(await sql('select * from yards where user_id = ?', gone.user.id)), 'frTidy drops friend_ids and yards for deleted accounts');
+    ok((await nOf('select count(*) as n from friends where user_id = ? or friend_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friends rows');
+    ok((await nOf('select count(*) as n from friend_blocks where user_id = ? or blocked_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_blocks rows');
+    ok((await nOf('select count(*) as n from friend_events where from_id = ? or to_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_events rows');
   }
 }
 
