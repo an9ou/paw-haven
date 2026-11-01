@@ -14,11 +14,11 @@ Send the PR number to the Game Manager. The Game Manager reviews it, and the own
 | 0 Art `PA.FRIENDS.*` | — | — | Claude | done, on `main` |
 | Design contract `V219.md`, `AGENTS.md`, issues | #3 | — | Claude | done |
 | 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10 merged 1 Nov |
-| 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | started 1 Nov (@cursor on #5) |
+| 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | PR #12: reviewed 1 Nov, 6 fixes asked (incl. FR_LIVE launch switch) |
 | 3 Yard visits, pets and notes | #6 | `cursor/v219-visits` | Cursor | waits for #5 |
 | 4 Gifts | #7 | `cursor/v219-gifts` | Cursor | waits for #6 |
 | 5 Walk together | #8 | `cursor/v219-walk` | Cursor | waits for #7 |
-| 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | started 1 Nov (@cursor on #9) |
+| 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | PR #11: reviewed 1 Nov, 1 fix asked (noindex) |
 | 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | after all are merged, on the owner's date |
 
 ## Shared header (the same for every prompt)
