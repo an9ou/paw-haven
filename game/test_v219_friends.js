@@ -112,7 +112,7 @@ async function start(t, o) {
   if (o.vw) await t.p.setViewportSize({ width: o.vw, height: o.vh });
   if (o.host) await t.ctx.addInitScript((h) => { window.__pawCloudHost = h; }, o.host);
   if (o.mock !== false) await t.ctx.addInitScript(mockInit);
-  await t.p.goto(URL + (o.query || ''));
+  await t.p.goto((o.url || URL) + (o.query || ''));
   await t.p.waitForSelector('#tNew, #tContinue, #tGuest'); // cloud on: Play as guest comes first
   if (o.fresh === false) return;
   if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
@@ -148,8 +148,53 @@ async function layout(t) {
   });
 }
 
+// FR_ONLY=poster: the poster PNGs (en, ja, th) and the sheet at 360 and 393 px into FR_SHOTS, with a code full of look-alikes (S 5 Z 2 B, and 8 B 5 S Z
+// typed in the boxes). FR_URL: an http:// copy of game/test_merged.html, so the ja and th faces load (file:// pages cannot fetch fonts)
+async function posterPart(t) {
+  const { ok, ev } = t;
+  const url = process.env.FR_URL || URL;
+  const pick = async () => {
+    await t.until(() => !!(window.__paw && window.__paw.fr), null, 8000);
+    await ev(() => window.__paw.fr.open());
+    await t.until(() => !!document.getElementById('frOk') || !!document.getElementById('frPoster'), null, 6000);
+    if (await t.p.locator('#frOk').count()) await t.p.click('#frOk');
+    await t.until(() => !!document.getElementById('frPoster'), null, 6000);
+    await ev(() => { window.__paw.S.fr.code = 'DOG-S5Z2B'; window.__frSrv.me.code = 'DOG-S5Z2B'; window.__paw.S.fr.name = [4, 9]; });
+    await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fr.open()); await t.until(() => !!document.getElementById('frPoster'), null, 6000);
+    await ev(() => { '8B5SZ'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  };
+  for (const lang of ['en', 'ja', 'th']) {
+    await start(t, { url, mk: { lang }, prefs: { i18nFonts: true } });
+    await pick();
+    await t.p.waitForTimeout(1500); // the language face arrives
+    fs.mkdirSync(SHOTS, { recursive: true }); fs.writeFileSync(path.join(SHOTS, 'poster_' + lang + '.svg'), await ev(() => window.__paw.fr.posterSVG()));
+    const b64 = await ev(async () => { const b = await window.__paw.fr.poster(); if (!b) return ''; const r = new FileReader(); return new Promise((res) => { r.onload = () => res(String(r.result).split(',')[1]); r.readAsDataURL(b); }); });
+    fs.mkdirSync(SHOTS, { recursive: true }); fs.writeFileSync(path.join(SHOTS, 'poster_' + lang + '.png'), Buffer.from(b64, 'base64'));
+    ok(b64 && b64.length > 60000, 'poster ' + lang + ' saved ' + (await ev(() => window.__paw.fr.posterErr())));
+    if (lang === 'en') await shot(t, 'sheet_1280');
+    await t.ctx.close();
+  }
+  // FR_FIT_LANGS (default en): the sheet's button row in those languages at 360 and 393 px: text inside its box, no two buttons overlapping
+  for (const lang of (process.env.FR_FIT_LANGS || 'en').split(',')) for (const [w, h, dev] of [[360, 740, null], [393, 852, 'iPhone 15']]) {
+    await start(t, dev ? { url, mk: { device: dev, lang }, prefs: { i18nFonts: true } } : { url, vw: w, vh: h, mk: { lang }, prefs: { i18nFonts: true } });
+    await pick(); await t.p.waitForTimeout(1200);
+    const lay = await layout(t);
+    ok(!lay.side && !lay.bad.length, lang + ' ' + w + ' px: no sideways scroll, every tap 44 px and clear of the bar: ' + JSON.stringify(lay.bad));
+    const row = await ev(() => { const bs = [...document.querySelectorAll('.fr-acts .btn')], r = bs.map((b) => b.getBoundingClientRect()), bad = [];
+      bs.forEach((b, i) => { if (b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1) bad.push('spill ' + b.id); r.forEach((q, j) => { if (j > i && Math.min(r[i].right, q.right) - Math.max(r[i].left, q.left) > 1 && Math.min(r[i].bottom, q.bottom) - Math.max(r[i].top, q.top) > 1) bad.push('overlap ' + b.id + '/' + bs[j].id); }); });
+      return { bad, txt: bs.map((b) => b.textContent) }; });
+    ok(!row.bad.length, lang + ' ' + w + ' px: Share invite, Share poster, Copy code fit: ' + JSON.stringify(row));
+    if (lang !== 'en') { await t.ctx.close(); continue; }
+    await shot(t, 'sheet_' + w);
+    await ev(() => { const c = document.getElementById('frCard'); if (c) c.scrollIntoView({ block: 'start' }); });
+    await t.p.screenshot({ path: path.join(SHOTS, 'sheet_' + w + '_card.png'), clip: await ev(() => { const r = document.querySelector('.fr-sheet').getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top), width: window.innerWidth, height: Math.min(window.innerHeight - Math.max(0, r.top), 560) }; }) });
+    await t.ctx.close();
+  }
+}
+
 run('v219_friends', async (t) => {
   const { ok, sec, ev } = t;
+  if (process.env.FR_ONLY === 'poster') { await posterPart(t); return; }
   if (process.env.FR_ONLY === 'walk') { await walkPart(t); return; } // FR_ONLY=walk: part 5 alone (a quicker loop while working on it)
   if (process.env.FR_ONLY === 'greet') { await greetPart(t); return; } // FR_ONLY=greet: part 3b alone
   const workerLim = limM ? limM[1].replace(/\s/g, '') : '';
@@ -163,6 +208,23 @@ run('v219_friends', async (t) => {
   ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 14, 'lengths are notes 12, gifts 47, decor 31, houses 14');
   ok(workerLim === 'notes:12,gifts:47,decor:31,houses:14' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 14, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
+
+  // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)
+  {
+    const cp = require('child_process'), os = require('os'), root = path.join(__dirname, '..');
+    const outA = fs.mkdtempSync(path.join(os.tmpdir(), 'ddpages-')), outB = fs.mkdtempSync(path.join(os.tmpdir(), 'dditch-'));
+    let a = '', b = '';
+    try {
+      cp.execFileSync('node', [path.join(root, 'tools', 'pages.js'), '--single', '--no-minify', '--out', outA], { stdio: 'ignore' }); a = fs.readFileSync(path.join(outA, 'index.html'), 'utf8');
+      cp.execFileSync('node', [path.join(root, 'tools', 'pages.js'), '--single', '--no-minify', '--itch', '--out', outB], { stdio: 'ignore' }); b = fs.readFileSync(path.join(outB, 'index.html'), 'utf8');
+    } catch (e) { /* the asserts say it */ }
+    const flag = '<script>window.__ddFrTest=1</script>', at = a.indexOf(flag), game = a.indexOf('<script', at + flag.length);
+    ok(at > 0 && game > at && a.indexOf('<body>') < at, 'the Pages copy sets window.__ddFrTest before the game scripts');
+    ok(b.length > 100000 && !b.includes('__ddFrTest') && !b.includes('dd_gate_v1'), 'the itch.io / play copy (pages.js --itch) has neither the Friends flag nor the password screen');
+    ok(/'pages\.js'\), '--itch'\]/.test(fs.readFileSync(path.join(root, 'tools', 'itch.js'), 'utf8')), 'tools/itch.js builds with --itch');
+    fs.rmSync(outA, { recursive: true, force: true }); fs.rmSync(outB, { recursive: true, force: true });
+  }
+  { const f = await ev(() => window.__paw.fr.pagesFlag()); ok(f && f.off === false && f.on === true, 'window.__ddFrTest alone turns Friends on (FR_LIVE stays false): ' + JSON.stringify(f)); }
 
   sec('2. name pick, Dog Card default, Random, then my card');
   ok(await t.until(() => { const b = document.getElementById('frBtn'); return !!b && !b.hidden && b.getBoundingClientRect().width >= 44; }, null, 5000), 'desktop: Friends sits in the top bar, 44 px');
@@ -217,7 +279,7 @@ run('v219_friends', async (t) => {
   await t.p.click('#frBtn');
   await t.until(() => !!document.getElementById('frCh0'), null, 5000);
 
-  sec('3. add, the four toasts, remove, block, new code, share');
+  sec('3. add, the four toasts, remove, block, no new code, the poster, share');
   await ev(() => { document.getElementById('frCh0').value = '0'; document.getElementById('frCh0').dispatchEvent(new Event('input', { bubbles: true })); });
   ok(await ev(() => document.getElementById('frCh0').value === ''), '0 is refused');
   for (const ch of ['O', '1', 'I', 'L']) {
@@ -269,10 +331,24 @@ run('v219_friends', async (t) => {
   await t.p.click('.confirm .yes');
   ok(await t.until(() => !document.querySelector('.fr-row'), null, 4000), 'Block, after its confirm, takes the friend off the list');
 
-  const oldCode = await ev(() => window.__paw.S.fr.code);
-  await t.p.click('#frNew');
-  await t.p.click('.confirm .yes');
-  ok(await t.until((old) => window.__paw.S.fr.code && window.__paw.S.fr.code !== old, oldCode, 4000), 'New code replaces the old one (' + oldCode + ')');
+  // owner, 2 Nov 2026: no New code (the code stays the same forever); Share poster makes a 1080x1920 story PNG
+  ok(await ev(() => !document.getElementById('frNew') && !/New code/.test(document.querySelector('.fr-sheet').textContent)), 'no New code button on the sheet');
+  ok(await ev(() => { const b = [...document.querySelectorAll('.fr-acts .btn')].map((x) => x.id); return b.join(',') === 'frShare,frPoster,frCopy'; }), 'the button row: Share invite, Share poster, Copy code');
+  const pst = await ev(async () => {
+    const F = window.__paw.fr, svg = F.posterSVG(), code = window.__paw.S.fr.code, blob = await F.poster();
+    if (!blob) return { err: 'no blob: ' + F.posterErr() };
+    const url = URL.createObjectURL(blob), im = new Image(); await new Promise((r) => { im.onload = r; im.onerror = r; im.src = url; });
+    return { type: blob.type, w: im.naturalWidth, h: im.naturalHeight, size: blob.size, code: svg.includes('>' + code + '<'), scan: svg.includes('Scan or add '), link: svg.includes('doodledoggo.app/f/'), head: svg.includes('Be my dog&#39;s friend') || svg.includes("Be my dog's friend"), dog: /class="pa-dog/.test(svg), qr: (svg.match(/<rect /g) || []).length > 200, font: svg.includes("font-family:'DD Code'") };
+  });
+  ok(pst && pst.type === 'image/png' && pst.w === 1080 && pst.h === 1920 && pst.size > 50000, 'Share poster makes a 1080x1920 PNG: ' + JSON.stringify(pst));
+  ok(pst && pst.code && pst.scan && pst.link && pst.head && pst.dog && pst.qr && pst.font, 'the poster has the code (in DD Code), Scan or add, the link, the headline, the leader dog and the QR');
+  await ev(() => { window.__toasts.length = 0; window.__dl = ''; window.__paw.fr.posterForce('none'); const ac = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function () { if (this.download) { window.__dl = this.download; return; } return ac.call(this); }; });
+  await t.p.click('#frPoster');
+  ok(await t.waitToast(/Poster saved\. Look in your downloads\./, 6000) && await ev(() => /^doodle-doggo-friend-DOG-[A-Z2-9]{5}\.png$/.test(window.__dl) && window.__paw.fr.posterHow() === 'download'), 'no share sheet: the poster downloads, with a toast');
+  await ev(() => { window.__paw.fr.posterForce(''); window.__shared = null; navigator.canShare = (d) => !!(d && d.files && d.files.length); navigator.share = async (d) => { window.__shared = { files: d.files.map((f) => f.name + ':' + f.type), text: d.text, url: d.url }; }; });
+  await t.p.click('#frPoster');
+  ok(await t.until(() => !!window.__shared, null, 6000) && await ev(() => window.__shared.files.length === 1 && /image\/png$/.test(window.__shared.files[0]) && window.__shared.url === 'https://doodledoggo.app/f/' + window.__paw.S.fr.code && window.__paw.fr.posterHow() === 'share'), 'Web Share gets the PNG file, the text and the invite link');
+  await ev(() => { window.__paw.fr.posterForce(''); delete navigator.canShare; });
 
   await ev(() => {
     window.__copied = '';

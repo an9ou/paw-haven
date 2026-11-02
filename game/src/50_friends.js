@@ -9,6 +9,7 @@ const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
 if (FR_LIVE) NEWS.unshift(NEWS_V219); // the v2.19 news entry (49c_news.js) appears with the release, never before
 function frOn() {
   if (typeof clArtifact === 'function' && clArtifact()) return false;
+  if (typeof window !== 'undefined' && window.__ddFrTest) return true; // the GitHub Pages test copy (owner, 2 Nov 2026): tools/pages.js sets it, never itch.io or /play/
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
@@ -179,16 +180,23 @@ function frQRSVG(text, box) {
 function frCardSVG(code, parts) {
   const P = typeof parts === 'string' ? { name: parts, l1: '', l2: '' } : parts, name = P ? P.name : '';
   let svg = '';
-  try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.card === 'function') svg = P.FRIENDS.card(code || ''); } catch (e) { svg = ''; }
+  try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.card === 'function') svg = P.FRIENDS.card(''); } catch (e) { svg = ''; } // the code is written below in DD Code
   const box = (window.PawArt && PawArt.FRIENDS && PawArt.FRIENDS.cardQR) || { x: 34, y: 42, w: 116, h: 116 };
   const qr = code ? frQRSVG(frLinkOf(code), box) : '';
   const size = !name ? 22 : name.length > 16 ? 15 : name.length > 12 ? 18 : 22;
   const two = P && P.l1 && P.l2 ? ` data-l1="${esc(P.l1)}" data-l2="${esc(P.l2)}"` : '';
   const nm = name ? `<text class="fr-fit" data-max="108" data-fs="${size}"${two} x="222" y="104" text-anchor="middle" font-family="${FR_FONT}" style="font-family:${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}">${esc(name)}</text>` : '';
   if (!svg) return `<div class="fr-codebig">${esc(code || '')}${qr ? `<svg viewBox="0 0 300 200">${qr}</svg>` : ''}</div>`; // TODO art
-  return svg.replace(/<\/svg>\s*$/, qr + nm + '</svg>');
+  const L = (window.PawArt && PawArt.FRIENDS && PawArt.FRIENDS.cardLine) || { x1: 166, x2: 278, y: 136, cx: 222 };
+  const cd = code ? `<text class="fr-code fr-fit" data-max="${L.x2 - L.x1 - 4}" data-fs="19" x="${L.cx}" y="${L.y - 5}" text-anchor="middle" font-family="${FR_CODE_FONT.replace(/"/g, '')}" style="font-family:${FR_CODE_FONT}" font-weight="700" font-size="19" letter-spacing=".4" fill="${INKG}">${esc(String(code).slice(0, 12))}</text>` : '';
+  return svg.replace(/<\/svg>\s*$/, qr + nm + cd + '</svg>');
 }
-const FR_FONT = "'Caveat','DD Local Title','DD Local',cursive"; // the hand face, then the language's local faces (as world_b's FONT_L), never a system gothic.
+const FR_FONT = "'Caveat','DD Local Title','DD Local',cursive";
+// v2.19 (owner, 2 Nov 2026: "I am not sure if it is S or 5"): every friend code (DOG-XXXXX) is set in DD Code, a 2.6 kB subset of Atkinson Hyperlegible
+// Bold (OFL; game/fonts/code/README.txt), so S/5, Z/2 and B/8 never look alike: the card, the Add boxes and the poster. Inline, so it also works offline
+const FR_CODE_FONT = "'DD Code','Verdana','DejaVu Sans',sans-serif";
+const FR_CODE_FONT_CSS = "@font-face{font-family:'DD Code';font-weight:400 800;src:url(data:font/woff2;base64,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) format('woff2')}";
+if (typeof document !== 'undefined' && !document.getElementById('frCodeFont')) { const st = document.createElement('style'); st.id = 'frCodeFont'; st.textContent = FR_CODE_FONT_CSS; document.head.appendChild(st); } // the hand face, then the language's local faces (as world_b's FONT_L), never a system gothic.
 // The <text>s carry it as an inline style too: world_b's `.pa-wb text` rule would beat the attribute (fit audit 1)
 // a word wider than its room (data-max, in SVG units) steps its font size down, to 70% at most, and only then is squeezed. Short words keep their own width.
 // A card name with two lines (data-l1, data-l2) that does not fit on one line at 18 units goes on two lines instead, one word each (fit audit 7)
@@ -447,7 +455,7 @@ function frSheetHTML() {
   const friends = frSorted((S.fr.cache && S.fr.cache.friends) || []);
   const off = FR.offline ? `<p class="fr-off" id="frOff">${esc(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'))}</p>` : '';
   const list = friends.length ? friends.map(frRowHTML).join('') : `<p class="small">${esc(tt('fr.none', 'No friends yet. Share your code, or add one below.'))}</p>`;
-  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div><div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button><button class="btn" type="button" id="frNew">${esc(tt('fr.new_code', 'New code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
+  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div><div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
 }
 function frCodeChars() { return [0, 1, 2, 3, 4].map((i) => { const el = document.getElementById('frCh' + i); return el ? el.value.toUpperCase() : ''; }).join(''); }
 function frFillCode(code) {
@@ -498,6 +506,111 @@ async function frShare() {
   } catch (e) { if (e && e.name === 'AbortError') return; }
   frCopyText(link, tt('fr.link_copied', 'Invite link copied'));
 }
+/* ---------- v2.19 (owner, 2 Nov 2026): Share poster, a 1080x1920 story picture of the invite ----------
+   The backdrop is PawArt.FRIENDS.poster() (world_b), the leader dog is its own crayon drawing (coat, outfit), the QR is the card's, and the words are
+   written here: the logo, a headline, the friend name (two picked words), the code in DD Code, "Scan or add DOG-XXXXX" and the link. No typed text.
+   Every key line sits in Instagram's story safe zone (posterBox.safe). Drawn like the photo postcard (35_photo.js): an SVG with the fonts inline,
+   on a canvas, to a PNG. The PNG is made when the sheet opens, so a tap can hand it to the share sheet at once (iOS wants the share inside the tap). */
+const FR_POSTER = { w: 1080, h: 1920 };
+const FR_PB_FB = { safe: [104, 658], logo: { cx: 225, y: 142 }, head: { cx: 225, y: 180, max: 400 }, dog: { x: 107, y: 183, w: 236, h: 197 }, name: { cx: 225, y: 417, max: 300 },
+  qr: { x: 52, y: 448, w: 142, h: 142 }, code: { cx: 305, y: 490, max: 170 }, scan: { cx: 225, y: 630, max: 396 }, link: { cx: 225, y: 651, max: 396 } };
+const frPB = () => (window.PawArt && PawArt.FRIENDS && PawArt.FRIENDS.posterBox) || FR_PB_FB;
+let frMeasureCtx = null;
+function frTextW(t, size, family, weight) {
+  try {
+    if (!frMeasureCtx) frMeasureCtx = document.createElement('canvas').getContext('2d');
+    frMeasureCtx.font = `${weight || 700} ${size}px ${family}`;
+    return frMeasureCtx.measureText(String(t)).width;
+  } catch (e) { return String(t).length * size * 0.5; }
+}
+// one line of text: parts [[text, family]], centred at cx, shrunk to fit max (to 62% at most, then squeezed)
+function frPosterLine(parts, cx, y, size, max, o) {
+  o = o || {};
+  const k = (f) => (f === FR_CODE_FONT && parts.length > 1 ? 0.8 : 1); // DD Code is taller than the hand faces: a code inside a sentence is set at 80%
+  const w = (fs) => parts.reduce((n, [t, f]) => n + frTextW(t, fs * k(f), f, f === FR_CODE_FONT ? 700 : o.weight), 0);
+  let fs = size, ww = w(fs);
+  if (ww > max) { fs = Math.max(size * 0.62, size * max / ww); ww = w(fs); }
+  const fit = ww > max ? ` textLength="${max}" lengthAdjust="spacingAndGlyphs"` : '';
+  const sp = parts.map(([t, f]) => `<tspan style="font-family:${f}"${k(f) !== 1 ? ` font-size="${(fs * k(f)).toFixed(1)}" font-weight="700"` : ''}>${esc(t)}</tspan>`).join('');
+  return `<text xml:space="preserve" x="${cx}" y="${y}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="${o.weight || 700}" fill="${o.col || INKG}"${o.rot ? ` transform="rotate(${o.rot} ${cx} ${y})"` : ''}${o.ls ? ` letter-spacing="${o.ls}"` : ''}${fit}>${sp}</text>`;
+}
+// a line with {code} in it: the code part in DD Code, the rest in the hand face
+function frPosterCodeLine(line, code, hand) {
+  const i = line.indexOf('');
+  if (i < 0) return [[line, hand]];
+  return [[line.slice(0, i), hand], [code, FR_CODE_FONT], [line.slice(i + 1), hand]].filter(([t]) => t);
+}
+function frPosterKey() {
+  const d = S && S.dog;
+  return [S && S.fr && S.fr.code, S && S.fr && JSON.stringify(S.fr.name), I18N.lang, tfontCSS().length, d && d.key, d && JSON.stringify(dogOpts(d, { outfit: outfitOf(d) }))].join('|');
+}
+function frPosterSVG() {
+  if (!S || !S.fr || !S.fr.code) return '';
+  const B = frPB(), code = S.fr.code, hand = FR_FONT, read = "'Patrick Hand','DD Local',cursive";
+  let back = '';
+  try { back = window.PawArt && PawArt.FRIENDS && typeof PawArt.FRIENDS.poster === 'function' ? PawArt.FRIENDS.poster() : ''; } catch (e) { back = ''; }
+  back = back ? back.replace(/^<svg\b([^>]*)>/, (m, a) => `<svg${a.replace(/\s(?:width|height|x|y)="[^"]*"/g, '')} x="0" y="0" width="450" height="800">`) : `<rect width="450" height="800" fill="#FFFBF3"/>`; // TODO art
+  let dog = '';
+  try { const d = S.dog; if (d) dog = place(dogSVG(d, { pose: 'happy', outfit: outfitOf(d), facing: 'right', anim: false }), B.dog.x, B.dog.y, B.dog.w, B.dog.h); } catch (e) { dog = ''; }
+  const qr = frQRSVG(frLinkOf(code), B.qr);
+  const name = frPairName(S.fr.name) || '';
+  const scan = tt('fr.poster_scan', 'Scan or add {code}', { code: '' });
+  const link = frLinkOf(code).replace(/^https?:\/\//, '');
+  const txt = [
+    `<text x="${B.logo.cx - 58}" y="${B.logo.y}" text-anchor="middle" font-size="44" font-weight="700" fill="${INKG}" style="font-family:'Caveat',cursive" transform="rotate(-3 ${B.logo.cx - 58} ${B.logo.y})">Doodle</text>`,
+    `<text x="${B.logo.cx + 62}" y="${B.logo.y + 3}" text-anchor="middle" font-size="44" font-weight="700" fill="${INKG}" style="font-family:'Caveat',cursive" transform="rotate(2 ${B.logo.cx + 62} ${B.logo.y})">Doggo</text>`,
+    frPosterLine([[tt('fr.poster_head', "Be my dog's friend in Doodle Doggo!"), hand]], B.head.cx, B.head.y, 27, B.head.max),
+    name ? frPosterLine([[name, hand]], B.name.cx, B.name.y, 31, B.name.max) : '',
+    frPosterLine([[code, FR_CODE_FONT]], B.code.cx, B.code.y, 30, B.code.max, { ls: 0.6 }),
+    frPosterLine(frPosterCodeLine(scan, code, hand), B.scan.cx, B.scan.y, /[\u0E00-\u0E7F]/.test(scan) ? 20 : 24, B.scan.max),
+    frPosterLine(frPosterCodeLine(link.replace(code, ''), code, read), B.link.cx, B.link.y, 15, B.link.max, { weight: 400, col: '#7A6358' })
+  ].join('');
+  const style = `<style>${typeof PH_FONT_CSS === 'string' ? PH_FONT_CSS : ''}${tfontCSS()}${FR_CODE_FONT_CSS}.pa-d-f1,.pa-d-f2{opacity:0}*{animation:none!important;transition:none!important}</style>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 800" width="${FR_POSTER.w}" height="${FR_POSTER.h}">${style}${back}${dog}${qr}${txt}</svg>`;
+}
+async function frPosterDraw() {
+  const fw = typeof phFonts === 'function' ? phFonts() : null; if (fw) await fw; // split builds: the postcard fonts come with the first photo or poster
+  try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(['700 30px Caveat', "700 30px 'DD Code'", '400 15px "Patrick Hand"'].map((f) => document.fonts.load(f))), new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* measure with what is there */ }
+  const svg = frPosterSVG(); if (!svg) return null;
+  const im = await phLoad(phDataURL(svg));
+  const cv = document.createElement('canvas'); cv.width = FR_POSTER.w; cv.height = FR_POSTER.h;
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#FFFBF3'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.drawImage(im, 0, 0, cv.width, cv.height);
+  return new Promise((res) => { try { cv.toBlob((b) => res(b), 'image/png'); } catch (e) { res(null); } });
+}
+// the poster for the current code, name, language and dog: made once, then kept until one of them changes
+function frPosterMake() {
+  const key = frPosterKey();
+  if (FR.poster && FR.poster.key === key) return FR.poster.p;
+  const rec = { key, blob: null, p: null };
+  rec.p = frPosterDraw().then((b) => { rec.blob = b; if (!b && FR.poster === rec) FR.poster = null; return b; }).catch((e) => { FR.posterErr = String((e && e.message) || e); if (FR.poster === rec) FR.poster = null; return null; });
+  FR.poster = rec; return rec.p;
+}
+function frPosterWarm() { clearTimeout(FR.posterT); FR.posterT = setTimeout(() => { if (S && S.fr && S.fr.code && document.getElementById('frPoster')) frPosterMake(); }, 700); }
+async function frPosterDeliver(blob) {
+  const code = S.fr.code, file = new File([blob], `doodle-doggo-friend-${code}.png`, { type: 'image/png' });
+  if (FR.posterForce !== 'none' && navigator.share && navigator.canShare) {
+    const full = { files: [file], text: tt('fr.share_text', 'Come and play Doodle Doggo with me.'), url: frLinkOf(code) };
+    let data = null; try { data = navigator.canShare(full) ? full : navigator.canShare({ files: [file] }) ? { files: [file] } : null; } catch (e) { data = null; }
+    if (data) {
+      try { await navigator.share(data); return 'share'; } catch (e) { if (e && e.name === 'AbortError') return null; } // closed the share sheet: nothing to say. Any other error: the download
+    }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = file.name; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+  return 'download';
+}
+async function frPosterShare(btn) {
+  if (FR.posterBusy || !S || !S.fr || !S.fr.code) return;
+  FR.posterBusy = true; const row = btn && btn.closest('.fr-acts'); if (row) row.classList.add('fr-busy');
+  try {
+    const key = frPosterKey(); let blob = FR.poster && FR.poster.key === key ? FR.poster.blob : null;
+    if (!blob) blob = await frPosterMake();
+    if (!blob) { toast(tt('fr.poster_fail', 'The poster got stuck. Try again.'), 'bad'); return; }
+    const how = await frPosterDeliver(blob); FR.posterHow = how;
+    if (how === 'download') toast(tt('fr.poster_saved', 'Poster saved. Look in your downloads.'), 'good');
+    else if (how === 'share') SFX.boop(760);
+  } finally { FR.posterBusy = false; if (row) row.classList.remove('fr-busy'); }
+}
 function frHearts() {
   try {
     if (cur.mode !== 'yard' || typeof dogHeadWorld !== 'function' || typeof fxText !== 'function') return;
@@ -525,15 +638,7 @@ async function frAdd() {
   toast(tt('fr.added', '{name} is your friend now!', { name: (added && frPairName(added.name)) || tt('fr.a_friend', 'A friend') }), 'good');
   frHearts(); frSheet();
 }
-async function frNewCode(p) {
-  const ok = await confirmIn(p, esc(tt('fr.new_ask', 'Your old code will stop working. Friends you already have stay.')), esc(tt('fr.new_yes', 'New code')), esc(tt('fr.keep_code', 'Keep this code')));
-  if (!ok) return;
-  let r = null;
-  try { r = await frApi('POST', '/friends/code/new', {}); } catch (e) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return; }
-  if (!r || !r.ok || !r.data || !r.data.code) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return; }
-  frApplyMe(r.data); try { saveNow(); } catch (e) { /* storage */ }
-  toast(tt('fr.new_done', 'New code ready.'), 'good'); frSheet();
-}
+// v2.19 (owner, 2 Nov 2026): no New code button: a player's code stays the same forever (the Worker route /friends/code/new is kept, unused)
 // Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way
 const FR_UNDO_MS = TOAST_MS + 300; // the Undo stays tappable while its toast shows
 const frSheetIfOpen = () => { if (!modal.hidden && modal.querySelector('.fr-sheet')) frSheet(); };
@@ -606,7 +711,8 @@ function frGuestNudge() {
 function frSheetBind(p) {
   const share = $('#frShare', p); if (share) share.onclick = () => { SFX.click(); frShare(); };
   const copy = $('#frCopy', p); if (copy) copy.onclick = () => { SFX.click(); frCopyText(S.fr.code || '', tt('fr.code_copied', 'Code copied')); };
-  const neu = $('#frNew', p); if (neu) neu.onclick = () => { SFX.click(); frNewCode(p); };
+  const pos = $('#frPoster', p); if (pos) pos.onclick = () => { SFX.click(); frPosterShare(pos); };
+  frPosterWarm();
   const add = $('#frAdd', p); if (add) add.onclick = () => { SFX.click(); frAdd(); };
   frBindBoxes(p);
   frRowsBind(p);
@@ -1485,7 +1591,9 @@ function enterFrYard() {
 function frExpose() {
   if (!window.__paw || window.__paw.fr) return;
   window.__paw.fr = {
-    on: () => frOn(), live: () => FR_LIVE, news: () => NEWS_V219, open: () => frOpen(),
+    on: () => frOn(), live: () => FR_LIVE,
+    pagesFlag: () => { const m = window.__pawCloudMock, p = prefs.frTest; let off, on; try { window.__pawCloudMock = undefined; prefs.frTest = false; off = frOn(); window.__ddFrTest = 1; on = frOn(); } finally { delete window.__ddFrTest; window.__pawCloudMock = m; prefs.frTest = p; } return { off, on }; }, // the Pages test copy's flag alone turns Friends on
+    news: () => NEWS_V219, open: () => frOpen(),
     lists: () => ({ notes: FR_NOTES.slice(), gifts: FR_GIFTS.slice(), decor: FR_DECOR.slice(), houses: FR_HOUSES.slice() }),
     orderOk: () => {
       const food = FOOD.filter((f) => f.n !== 'Fresh Water').map((f) => f.n);
@@ -1505,6 +1613,7 @@ function frExpose() {
     walkDogs: () => frWalkDogs().map((o) => ({ fid: o.fid, dog: o.dog, name: o.d.name, key: o.d.key })), guest: () => (S && S.fr ? S.fr.guest : null), walkGuest: () => (FRW.g ? { fid: FRW.g.fid, dog: FRW.g.dog } : null),
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
     cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home }), fit: (root) => frFit(root),
+    posterSVG: () => frPosterSVG(), poster: () => frPosterMake(), posterKey: () => frPosterKey(), posterHow: () => FR.posterHow || '', posterErr: () => FR.posterErr || '', posterForce: (f) => { FR.posterForce = f || ''; },
     greet: () => frGreet(), greeting: () => (FRV.gr ? { step: FRV.gr.i, pose: [FRV.gr.a.pose, FRV.gr.b.pose] } : null), // the greeting again on this visit (Marketing films it); where it is
     crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)) },
     scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), face: v.face, x: Math.round(v.x), y: Math.round(v.y), k: +v.k.toFixed(3), play: v.play, walking: !!v.tw })) })

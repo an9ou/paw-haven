@@ -7103,9 +7103,65 @@ function frWheel(){const b=mk('prop','fr:wheel');
   b.sh([[1,101],[11,104],[15,110],[11,116],[1,119],[2,110]],FR_PINK,{k:.35,hatch:0,hl:0,lw:.85,top:1});
   b.sh([[159,101],[149,104],[145,110],[149,116],[159,119],[158,110]],FR_PINK,{k:.35,hatch:0,hl:0,lw:.85,top:1});
   return b.svg('0 0 160 220','','Name wheel')}
+/* v2.19 (owner, 2 Nov 2026: "a poster to share via social media ... like posting to a story on Instagram"):
+   poster()      prop 450x800 the invite poster backdrop, drawn at 1080x1920 (9:16, s = 2.4 like the photo postcard): a dotted sketchbook page with a
+                              spiral binding and washi tape, a crayon grass patch for the dog, a pink name ribbon, a taped code card with the clear QR tile
+                              and a yellow crayon code box, a paw-print trail and flowers along the foot. No words: the game writes them in PA.FRIENDS.posterBox.
+                              Instagram's story safe zone (about 250 px top, 340 px bottom at 1080x1920: y 104 and 658 here) keeps only doodles. */
+const FR_PB={safe:[104,658],logo:{cx:225,y:142},head:{cx:225,y:180,max:400},dog:{x:107,y:183,w:236,h:197},name:{cx:225,y:417,max:300},
+  qr:{x:52,y:448,w:142,h:142},code:{cx:305,y:490,max:170},scan:{cx:225,y:630,max:396},link:{cx:225,y:651,max:396}};
+function frPoster(){const b=mk('prop','fr:poster'),r=b.r;
+  // the page: paper, the sketchbook dot grid (one path of round dots), a soft shadow line under the spiral
+  b.raw(`<rect x="0" y="0" width="450" height="800" fill="${PAPER}"/>`,'under');
+  let dd='';for(let y=58;y<800;y+=16)for(let x=9;x<450;x+=16)dd+=`M${x} ${y}h0`;
+  b.raw(`<path d="${dd}" stroke="${DOTC}" stroke-width="1.5" stroke-linecap="round" fill="none"/>`,'under');
+  b.raw(`<rect x="0" y="0" width="450" height="40" fill="#F3EADC" opacity=".8"/>`,'under');
+  b.ln([[0,40],[150,40.8],[300,39.6],[450,40.4]],{w:1.1,col:GRAPH,under:1});
+  // the spiral: a punched hole and a wire loop over the top edge for each ring
+  for(let x=24;x<450;x+=29){b.sh(E(x,30,4.2,4.6,10),'#8A6A5C',{k:0,hatch:0,hl:0,lw:.5,base:'#B8A595',dr:0});
+    b.raw(b.st(`M${x-1.5} 30C${x-9} 18 ${x-7} 4 ${x+1} -2`,'#7D7A80',3.4)+b.st(`M${x-1.5} 30C${x-9} 18 ${x-7} 4 ${x+1} -2`,'#C9C6CF',1.2),'top')}
+  // tape and doodles in the top margin (outside the safe zone: nothing to read there)
+  tapeB(b,62,70,74,-24,'#F7B9C6');tapeB(b,392,72,66,20,FR_MINT);
+  b.ex('spark',150,72,6,'#FFE59A');b.ex('heart',300,66,5,'#F7B2C4');b.ex('dots',222,62,6);b.ex('spark',254,88,3.6,'#FFE59A');
+  // the logo's crayon swash (the game writes "Doodle Doggo" over it), as two broad pink crayon passes
+  const sw=`M118 148C170 154 270 146 333 138`;b.raw(b.st(sw,'#F28FA5',13,.32)+b.st(`M124 152C180 156 262 150 326 143`,'#F28FA5',6,.3),'under');
+  // the dog's grass patch and shadow (the dog is drawn over it, feet near y 384)
+  b.sh(cloudP(225,377,128,15,9,.2,72),'#A9D98C',{k:.15,hl:0,lw:.8,sh:'#6FAE52',base:'#D6EEC4',marks:[{pts:E(190,373,40,5,12),fill:'#C3E6AC',op:.9}]});
+  b.raw(`<ellipse cx="225" cy="375" rx="92" ry="7" fill="${SHADOW}" opacity=".9"/>`);
+  [[110,368],[128,364],[322,365],[340,369],[176,384],[280,385]].forEach(([x,y],i)=>b.ln([[x,y+5],[x+(i%2?2:-2),y-4]],{w:1.1,col:'#5E9E3A'}));
+  b.sh(flowerP(102,360,7,5,.3),'#FFE08A',{k:.2,hatch:0,hl:0,lw:.6,marks:[{pts:E(102,360,2.4,2.4,8),fill:'#F29150'}]});
+  b.sh(flowerP(350,362,6.5,5,.1),'#F7B2C4',{k:.2,hatch:0,hl:0,lw:.6,marks:[{pts:E(350,362,2.2,2.2,8),fill:'#FFE08A'}]});
+  b.ex('heart',92,250,7,'#F7B2C4');b.ex('heart',362,222,5.4,'#F9B2C2');b.ex('spark',372,300,6,'#FFE59A');b.ex('spark',80,318,4.4,'#FFE59A');b.ex('dots',350,262,6);
+  // the name ribbon: a pink band with notched tails behind it
+  b.sh([[52,394],[84,392],[78,410],[86,428],[50,430],[60,412]],'#F28FA5',{k:.05,hatch:0,hl:0,lw:.75,base:'#F7B9C6'});
+  b.sh([[398,394],[366,392],[372,410],[364,428],[400,430],[390,412]],'#F28FA5',{k:.05,hatch:0,hl:0,lw:.75,base:'#F7B9C6'});
+  b.sh([[72,389],[225,385],[378,389],[376,433],[225,429],[74,433]],'#F9D0D9',{k:.05,hl:0,lw:.85,sh:'#E58FA5',base:'#FCE6EB'});
+  // the code card: paper, a doodled border, the QR tile, the code box and a stamp
+  b.raw(`<path d="M30 442L428 437L429 610L27 614Z" fill="${SHADOW}" opacity=".85"/>`,'under');
+  b.sh([[24,438],[424,433],[426,604],[22,608]],'#FFF2DA',{k:0,hatch:0,hl:0,lw:.9,base:'#FFFBF3',dr:.4});
+  const W=[],wv=(x0,y0,x1,y1,n)=>{for(let i=0;i<n;i++){const t=i/n,nx=-(y1-y0),ny=x1-x0,l=Math.hypot(nx,ny),s=(i%2?1:-1)*1.4;W.push([x0+(x1-x0)*t+nx/l*s,y0+(y1-y0)*t+ny/l*s])}};
+  wv(34,447,414,443,48);wv(414,443,416,595,20);wv(416,595,32,599,48);wv(32,599,34,447,20);b.loop(W,{w:1.2,col:FR_PINK,op:.8,k:.2});
+  b.sh(RR(48,444,150,150,4),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.6,base:'#FFFFFF',dr:0,ink:'#8A6A5C'});
+  b.raw(`<rect data-qr="1" x="${FR_PB.qr.x}" y="${FR_PB.qr.y}" width="${FR_PB.qr.w}" height="${FR_PB.qr.h}" fill="none" stroke="none"/>`,'top');
+  b.sh([[216,465],[392,462],[394,509],[214,512]],'#FFE08A',{k:.04,hatch:0,hl:0,lw:.95,base:'#FFF3C8',dr:.2});
+  let d='M282 526';const px=(x0,y0,x1,y1)=>{const n=Math.round(Math.hypot(x1-x0,y1-y0)/6);for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,xm=x0+(x1-x0)*(t0+t1)/2,ym=y0+(y1-y0)*(t0+t1)/2,nx=-(y1-y0),ny=(x1-x0),l=Math.hypot(nx,ny);d+=`L${R1(x0+(x1-x0)*t0)} ${R1(y0+(y1-y0)*t0)}Q${R1(xm+nx/l*2.2)} ${R1(ym+ny/l*2.2)} ${R1(x0+(x1-x0)*t1)} ${R1(y0+(y1-y0)*t1)}`}};
+  px(282,526,330,526);px(330,526,330,578);px(330,578,282,578);px(282,578,282,526);
+  b.raw(`<g transform="rotate(-5 306 552)"><path d="${d}Z" fill="#CDEBD9" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/></g>`);
+  b.sh(rot(RR(287,531,38,42,2),-.087,306,552),'#FFF2DA',{k:0,hatch:0,hl:0,lw:.7,base:'#FFF9EC'});
+  paw(b,306,555,6,FR_PINK,{lw:.55,a:-.09});b.ex('heart',240,548,5,'#F7B2C4');b.ex('spark',370,546,5,'#FFE59A');b.ex('dots',354,574,5);
+  tapeB(b,60,438,62,-28,'#F7B9C6');tapeB(b,392,432,56,24,FR_MINT);
+  // the foot (outside the safe zone): grass, a paw-print trail, flowers, tape
+  const g=[];for(let x=-6;x<=456;x+=12)g.push([x,744+Math.sin(x/23)*3+(r()-.5)*2]);g.push([456,806],[-6,806]);
+  b.sh(g,'#A9D98C',{k:.1,hl:0,lw:.8,sh:'#6FAE52',base:'#D6EEC4'});
+  for(let x=10;x<450;x+=17)b.ln([[x,750+Math.sin(x/23)*3],[x+(r()-.5)*5,738+Math.sin(x/23)*3]],{w:1,col:'#5E9E3A'});
+  [[70,712,-.5],[108,700,-.6],[150,710,-.4],[190,698,-.5],[232,706,-.3]].forEach(([x,y,a])=>paw(b,x,y,3.4,'#E3D2BA',{lw:.5,a}));
+  [[300,742,'#F7B2C4'],[338,736,'#FFE08A'],[384,744,'#BFE6FA'],[40,740,'#D3C6F1']].forEach(([x,y,c])=>{b.ln([[x,y+18],[x+1,y+4]],{w:1.1,col:'#5E9E3A'});
+    b.sh(flowerP(x,y,8,5,.2),c,{k:.2,hatch:0,hl:0,lw:.6,marks:[{pts:E(x,y,2.6,2.6,8),fill:'#F29150'}]})});
+  b.ex('heart',410,700,6,'#F7B2C4');b.ex('spark',268,690,5,'#FFE59A');b.ex('dots',30,690,6);
+  return b.svg('0 0 450 800',' width="1080" height="1920"','Friend poster')}
 PA.FRIENDS={badge:()=>serve('fr:badge',frBadge),card:code=>serve('fr:card:'+(code==null?'':String(code)),()=>frCard(code)),wrap:n=>serve('fr:wrap:'+(((n|0)%3+3)%3),()=>frWrap(n)),
   paw:()=>serve('fr:paw',frPaw),ribbon:()=>serve('fr:ribbon',frRibbon),wheel:()=>serve('fr:wheel',frWheel),
-  cardQR:Object.assign({},FR_QR),cardLine:Object.assign({},FR_LINE),wheelText:{x1:24,x2:136,y1:30,y2:190,cy:110,band:[92,128]}};
+  poster:()=>serve('fr:poster',frPoster),posterBox:JSON.parse(JSON.stringify(FR_PB)),cardQR:Object.assign({},FR_QR),cardLine:Object.assign({},FR_LINE),wheelText:{x1:24,x2:136,y1:30,y2:190,cy:110,band:[92,128]}};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
