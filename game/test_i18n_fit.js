@@ -443,6 +443,7 @@ async function worker(job) {
       await t.until(() => window.__paw.mode === 'walk' && !!(document.querySelector('.pw-ov [data-go]') || document.querySelector('.pw-cd')), null, 15000);
       if (await has('.pw-ov [data-go]')) { await measure('walk: how-to card (first walk tutorial)'); await jsClick('.pw-ov [data-go]'); }
       await t.until(() => { const o = document.querySelector('.pw-ov'); return window.__paw.mode === 'walk' && !!o && o.hidden; }, null, 12000); await sleep(1500);
+      await ev(() => { const c = document.querySelector('.pw-pchip'); if (c) { c.hidden = false; c.parentNode.classList.add('pw-haspw'); } }); // v2.19.1: the HUD as it is with a power-up (the first walk has none)
       await measure('walk: running (HUD)');
       await t.p.keyboard.press('Escape'); await t.until(() => !!document.querySelector('[data-home]') || !!document.getElementById('resOk'), null, 8000); await measure('walk: paused');
       if (await has('[data-home]')) await jsClick('[data-home]');

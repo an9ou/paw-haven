@@ -26,7 +26,7 @@ function startWalk() {
   const o = {
     area: Q.get('area') || 'park', time: Q.get('time') || 'day', weather: Q.get('weather') || 'sunny',
     dog: { key: Q.get('dog') || 'shiba', name: 'Mochi', outfit: { head: null, eyes: abil.goggles ? 'Explorer Goggles' : null, neck: null, body: abil.poncho ? 'Mossy Poncho' : null } },
-    abilities: abil, skipTutorial: Q.get('tut') !== '1', setSkipTutorial: (b) => { window.__skip = b; log('setSkipTutorial', b); }, durationSec: +(Q.get('dur') || 75), firstWalk: Q.get('first') === '1', _forceBonus: Q.get('bonus') === '1',
+    abilities: abil, skipTutorial: Q.get('tut') !== '1', setSkipTutorial: (b) => { window.__skip = b; log('setSkipTutorial', b); }, durationSec: +(Q.get('dur') || 75), firstWalk: Q.get('first') === '1', _forceBonus: Q.get('bonus') === '1', _forcePower: Q.get('power') ? Q.get('power').split(',') : undefined,
     rollTreasure: (area) => { const r = Math.random() < 0.85 ? { name: 'Acorn Cap', rarity: 'Uncommon', kind: 'wearable', desc: 'Squirrel Diplomacy: +1 dig per walk while worn.' } : { coins: 40, text: 'A pouch of 40 coins.' }; log('rollTreasure', area, JSON.stringify(r)); return r; },
     junk: () => ({ text: 'An old sock. Pepper is very proud.', coins: 7 }),
     bag, useBagItem: (n) => { const b = bag.find((x) => x.name === n); if (!b || b.count <= 0) return false; b.count--; log('useBagItem', n); return true; },

@@ -15,9 +15,10 @@ function enterRoutes(startKey) {
       <p class="small">${esc(tt('route.hidden_line', '{hidden, plural, =0 {Every treasure here found!} one {# treasure still hidden here} other {# treasures still hidden here}} · {map, select, yes {Map piece found} other {A map piece is buried here}}', { hidden, map: S.mapPieces.includes(k) ? 'yes' : 'no' }))}</p>
       <p class="rt-env"><span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(tt('route.runs_in', 'Runs in: {env}', { env: envTxt }))}</p></div>`;
   };
-  view.innerHTML = `<div class="routes"><h2 class="rt-title">${esc(tt('route.pick', 'Pick a walk'))}</h2><div class="rt-viewport" id="rtView"><div class="rt-track" id="rtTrack">${ROUTE_KEYS.map(card).join('')}</div></div>
+  const pkRow = pkRoutesHTML(), frRow = typeof frWalkRowHTML === 'function' ? frWalkRowHTML() : ''; // v2.19.1: classes instead of :has() (a :has(...) > * rule restyled the whole stage on every text change)
+  view.innerHTML = `<div class="routes${pkRow ? ' rt-pk' : ''}${frRow ? ' rt-fr' : ''}"><h2 class="rt-title">${esc(tt('route.pick', 'Pick a walk'))}</h2><div class="rt-viewport" id="rtView"><div class="rt-track" id="rtTrack">${ROUTE_KEYS.map(card).join('')}</div></div>
     <div class="rt-nav"><button class="arrow" id="rtPrev" aria-label="${esc(tt('route.prev', 'Previous route'))}">&lt;</button><span class="small" id="rtCount"></span><button class="arrow" id="rtNext" aria-label="${esc(tt('route.next', 'Next route'))}">&gt;</button></div>
-    ${pkRoutesHTML()}${typeof frWalkRowHTML === 'function' ? frWalkRowHTML() : ''}<div class="rt-foot"><button class="btn" id="rtBack">${esc(tt('route.back_to', 'Back to {place}', { place: townPlaceName(PLACES[S.place] ? S.place : 'yard') }))}</button><button class="btn big yes" id="rtStart">${esc(tt('route.start', 'Start walk'))}</button></div></div>`;
+    ${pkRow}${frRow}<div class="rt-foot"><button class="btn" id="rtBack">${esc(tt('route.back_to', 'Back to {place}', { place: townPlaceName(PLACES[S.place] ? S.place : 'yard') }))}</button><button class="btn big yes" id="rtStart">${esc(tt('route.start', 'Start walk'))}</button></div></div>`;
   const shift = (d) => { routeIdx = clamp(routeIdx + d, 0, ROUTE_KEYS.length - 1); layoutRoutes(); SFX.click(); };
   $('#rtPrev').onclick = () => shift(-1); $('#rtNext').onclick = () => shift(1);
   $('#rtBack').onclick = () => go('yard'); $('#rtStart').onclick = () => startRoute(ROUTE_KEYS[routeIdx]);

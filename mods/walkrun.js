@@ -174,6 +174,19 @@ const COL_FB = {
   'sparkle-spot': () => svgWrap([60, 60], '<path d="M30 6q3 21 24 24q-21 3 -24 24q-3 -21 -24 -24q21 -3 24 -24z" fill="#FFE3A1"/>'),
   chest: () => svgWrap([60, 60], '<rect x="10" y="26" width="40" height="26" rx="3" fill="#D9A877"/><path d="M10 26q20 -22 40 0z" fill="#E7B987"/><rect x="26" y="30" width="8" height="10" fill="#F7D46B"/>')
 };
+// v2.19.1 power-ups: crude crayon stand-ins until PawArt.collectible draws them (60 x 60, every fill inside its line). fx_* are the overlays on each dog
+Object.assign(COL_FB, {
+  magnet: () => svgWrap([60, 60], '<path d="M14 14v16a16 16 0 0 0 32 0v-16h-9v16a7 7 0 0 1 -14 0v-16z" fill="#E86A5C"/><path d="M14 14h9v7h-9zM37 14h9v7h-9z" fill="#C9CED6"/>'),
+  zoom: () => svgWrap([60, 60], '<path d="M8 36q-6 -2 -2 -6q8 2 14 0l24 -6q4 -8 10 -4q-2 6 2 8q4 4 -2 8q-6 -4 -10 2l-24 6q-8 -4 -12 -8z" fill="#F7EEDC"/><path d="M6 40q-6 4 -4 10q6 -6 10 -4q-4 -4 -6 -6z" fill="#F4A262"/>'),
+  bubble: () => svgWrap([60, 60], '<circle cx="30" cy="31" r="21" fill="#DCEFFC"/><path d="M19 24q4 -8 12 -9" stroke="#FFFFFF" stroke-width="4"/>'),
+  spring: () => svgWrap([60, 60], '<path d="M16 50h28M18 42q12 6 24 0q-12 -6 -24 -8q12 -6 24 -8q-12 -6 -24 -8q12 -6 24 -8" stroke-width="3.4"/><path d="M14 12h32" stroke="#4F9A5C" stroke-width="5"/>'),
+  fx_bubble: () => svgWrap([60, 60], '<circle cx="30" cy="30" r="27.5" fill="#CFE8FA" fill-opacity=".22" stroke="#6FA0DA" stroke-width="1.2"/><path d="M12 22q5 -10 15 -12" stroke="#FFFFFF" stroke-width="3"/>'),
+  fx_trail: () => svgWrap([60, 60], '<path d="M8 22q16 -2 34 0M2 32q20 -2 46 0M10 42q14 -2 30 0" stroke="#F4A262" stroke-width="3.2"/>'),
+  fx_spring: () => svgWrap([60, 60], '<path d="M14 40l2 -6l2 6l-2 6zM44 36l2 -6l2 6l-2 6zM29 48l2 -5l2 5l-2 5z" fill="#FFE3A1" stroke-width="1.4"/>'),
+  fx_pop: () => svgWrap([60, 60], '<path d="M30 6v10M30 44v10M6 30h10M44 30h10M13 13l7 7M40 40l7 7M47 13l-7 7M20 40l-7 7" stroke="#6FA0DA" stroke-width="3"/>')
+});
+const POWERS = { magnet: 8, zoom: 5, bubble: 0, spring: 8 }; // seconds (the bubble lasts until the next bump)
+const PW_KINDS = Object.keys(POWERS);
 function colSvg(name) { let s = call('collectible', name); if (isFallback(s)) s = (COL_FB[name] || COL_FB.coin)(); return s; }
 function colUri(name) { const k = 'c:' + name; return URI[k] || (URI[k] = toUri(colSvg(name))); }
 function lampUri() {
@@ -264,6 +277,7 @@ const CSS = `
 .pw-pt .pw-hud{flex-wrap:wrap}
 .pw-pt .pw-hud .pw-sep,.pw-cp .pw-hud .pw-sep,.pw-touchui .pw-hud .pw-k,.pw-pt .pw-bt,.pw-pt .pw-nose .pw-wl{display:none}
 .pw-pt .pw-time{flex:1 1 100%;min-width:0}
+.pw-pt .pw-hud>*{order:2}.pw-pt .pw-hud>.pw-time{order:0}.pw-pt .pw-hud>.pw-pchip{order:1}.pw-pt .pw-hud.pw-haspw>.pw-time{flex-basis:calc(100% - 40px)} /* v2.19.1: on portrait phones the power chip sits at the end of the time row (the time bar gives it room), so the HUD never wraps to a third row */
 .pw-cp .pw-time{min-width:110px}
 .pw-pt .pw-hud b,.pw-cp .pw-hud b{font-size:22px}
 .pw-pt .pw-ic,.pw-cp .pw-ic{width:24px;height:24px}
@@ -273,7 +287,7 @@ const CSS = `
 .pw-pt .pw-xm,.pw-cp .pw-xm{font-size:22px}
 .pw-touchui .pw-hud .pw-btn{min-height:44px;min-width:44px;padding:2px 8px;justify-content:center}
 .pw-pt .pw-coins{margin-right:auto}
-@media (max-width:400px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
+@media (max-width:440px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
 .pw-pt .pw-legend{font-size:15px;padding:2px 10px;white-space:normal;text-align:center;width:max-content;max-width:94%}
 .pw-cp .pw-legend,.pw-coarse:not(.pw-pt) .pw-legend{display:none}
 .pw-coarse .pw-lg-desk{display:none}.pw-coarse .pw-lg-touch{display:inline}
@@ -344,8 +358,8 @@ const CSS = `
 .pw-touchui .pw-skip input{width:22px;height:22px}
 @keyframes pw-glow{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.1)}}
 .pw-dog{position:absolute;will-change:transform;pointer-events:none}
-.pw-pose{position:absolute;inset:0;visibility:hidden}
-.pw-pose.on{visibility:visible}
+.pw-pose{position:absolute;inset:0;display:none}
+.pw-pose.on{display:block}
 .pw-pose>svg{display:block;width:100%;height:100%;overflow:visible}
 .pw-dog.pw-blink{animation:pw-blink .18s steps(1,end) infinite}
 .pw-rib{position:absolute;width:clamp(10px,17%,24px);aspect-ratio:1;transform:translate(-50%,-50%) rotate(-8deg);pointer-events:none}
@@ -372,6 +386,29 @@ const CSS = `
 .pw-bar>i{position:absolute;inset:0;transform-origin:0 50%;background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#C8E9CF}
 .pw-time.pw-low .pw-bar>i{background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#F9B8A8}
 .pw-coins,.pw-digs{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pw-pchip{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.pw-pchip[hidden]{display:none}
+.pw-pchip .pw-ic{width:30px;height:30px;position:relative}
+.pw-pt .pw-pchip .pw-bar,.pw-cp .pw-pchip .pw-bar{display:none}
+.pw-cp .pw-pchip .pw-ic{width:26px;height:26px}.pw-pt .pw-pchip .pw-ic{width:24px;height:24px}
+.pw-pt .pw-pchip:not(.pw-nobar) .pw-ic::before,.pw-cp .pw-pchip:not(.pw-nobar) .pw-ic::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(#E0A030 calc(var(--pw-pl,1) * 360deg),rgba(91,61,50,.15) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px))}
+.pw-pchip .pw-ic img{width:100%;height:100%;display:block}
+.pw-pchip .pw-bar{width:44px;flex:none}
+.pw-pchip.pw-nobar .pw-bar{display:none}
+.pw-pchip .pw-bar>i{background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#FFD37A}
+.pw-power>img{animation:pw-cbob .9s ease-in-out infinite alternate}
+.pw-power::before{content:'';position:absolute;left:-18%;top:-18%;width:136%;height:136%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,232,150,.9),rgba(255,214,120,.6) 62%,rgba(240,170,80,.32) 80%,rgba(240,170,80,0))}
+.pw-obj.pw-magc>img{animation:none}
+.pw-pfx{position:absolute;display:none;pointer-events:none;-webkit-user-drag:none}
+.pw-dog[data-pw=bubble] .pw-pfx-bubble{display:block;left:10%;top:10%;width:80%;height:96%;animation:pw-bwob 1.2s ease-in-out infinite alternate}
+@keyframes pw-bwob{from{transform:scale(.97,1.02)}to{transform:scale(1.03,.97)}}
+.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:var(--pw-tl,0);top:8%;width:22%;height:22%;opacity:.85}
+.pw-dog.pw-rear[data-pw=zoom] .pw-pfx-trail{left:-20%;top:40%;width:32%;height:44%;animation:pw-trl .18s steps(2,end) infinite}
+@keyframes pw-trl{to{transform:translateX(-6%)}}
+.pw-dog[data-pw=spring] .pw-pfx-spring{display:block;left:22%;top:66%;width:56%;height:40%;animation:pw-glow .4s ease-in-out infinite alternate}
+.pw-dog[data-pw=magnet]::after{content:'';position:absolute;left:30%;top:16%;width:40%;height:62%;border-radius:50%;border:3px dashed rgba(210,72,59,.55);animation:pw-ring 1s ease-in-out infinite}
+.pw-fol .pw-pfx,.pw-fol[data-pw=magnet]::after{animation:none}
+.pw-pfx-pop{display:block;left:6%;top:4%;width:88%;height:100%;animation:pw-got .45s ease-out forwards}
 .pw-nose{display:flex;align-items:center;gap:8px;min-width:230px}
 .pw-nose .pw-bar{width:110px;flex:none}
 .pw-nose .pw-bar>i{background:#86B3EA;transition:transform .15s}
@@ -411,6 +448,7 @@ const CSS = `
 .pw-legend{position:absolute;bottom:12px;left:50%;transform:translateX(-50%) rotate(-.6deg);font-size:18px;white-space:nowrap;z-index:4;background:${PAPER};border:2px solid ${INK};padding:3px 14px;border-radius:12px 16px 10px 14px/14px 10px 16px 12px;box-shadow:2px 3px 0 rgba(91,61,50,.18)}
 .pw-legend b{font-weight:400;color:#d2483b}
 .pw-say{position:absolute;max-width:280px;padding:7px 12px;font-size:18px;line-height:1.2;z-index:4;transform:translate(-10%,-100%);pointer-events:none;transition:opacity .2s}
+.pw-say.pw-dim{opacity:.35}
 .pw-say::after{content:'';position:absolute;left:22px;bottom:-12px;width:16px;height:14px;background:${PAPER};border-right:2.5px solid ${INK};border-bottom:2.5px solid ${INK};transform:skewX(-30deg) rotate(20deg)}
 .pw-say[hidden]{display:none}
 .pw-nw{white-space:nowrap}
@@ -490,7 +528,8 @@ function start(el, o) {
     hapPen: 0, digsUsed: 0, digsMax: 2 + (ab.extraDig ? 1 : 0), treasure: null, bonus: null, junk: [], found: false,
     hazards: 0, touched: 0, prompt: null, promptT: 0, sniffT: 0, digT: 0, digObj: null, revealT: 0,
     endT: 0, ended: false, stopped: false, nudge: 0, hints: { low: 0, high: 0, wide: 0 }, seenTypes: {}, hitLog: [], arcShown: false, ts: 1, slowmoT: 0, played: 0, timeLost: 0,
-    shiverNext: 10, lastSec: -1, outOfDigsSaid: false, coinTimes: []
+    shiverNext: 10, lastSec: -1, outOfDigsSaid: false, coinTimes: [],
+    zoomK: 1, pwr: null, pwrGot: [], pwrPops: 0, pwrZoomed: 0, magCoins: 0 // v2.19.1 power-ups: the active one { kind, t, T }, the ones picked up, bubble pops, things zoomed through
   };
 
   /* ---------- DOM ---------- */
@@ -507,6 +546,7 @@ function start(el, o) {
       <div class="pw-time"><span class="pw-ic pw-clock"></span><div class="pw-bar"><i></i></div><b class="pw-secs">75</b></div>
       <span class="pw-sep"></span>
       <div class="pw-coins"><span class="pw-ic"><img alt="" src="${colUri('coin')}"></span><b class="pw-cn">0</b></div>
+      <div class="pw-pchip" hidden role="img"><span class="pw-ic"><img alt="" src=""></span><div class="pw-bar"><i></i></div></div>
       <span class="pw-sep"></span>
       <div class="pw-nose cold" title="${LE('mod.walk.nose_o_meter', 'Nose-o-meter')}"><span class="pw-ic pw-noseic"></span><span class="pw-nl">${LE('mod.walk.nose_cold', 'Cold')}</span><div class="pw-bar"><i></i></div><span class="pw-wl">~~</span></div>
       <span class="pw-sep"></span>
@@ -528,6 +568,7 @@ function start(el, o) {
     tint: $('.pw-tint'), veil: $('.pw-veil'), lights: $('.pw-lights'), ffs: $('.pw-ffs'), wx: $('.pw-wx'), fx: $('.pw-fx'),
     time: $('.pw-time'), timeBar: $('.pw-time .pw-bar>i'), secs: $('.pw-secs'), cn: $('.pw-cn'), nose: $('.pw-nose'), noseBar: $('.pw-nose .pw-bar>i'), nl: $('.pw-nl'),
     xs: $('.pw-xs'), say: $('.pw-say'), prompt: $('.pw-prompt'), ov: $('.pw-ov'),
+    pchip: $('.pw-pchip'), pimg: $('.pw-pchip img'), pbar: $('.pw-pchip .pw-bar>i'),
     hud: $('.pw-hud'), ctrls: $('.pw-ctrls'), legend: $('.pw-legend'), jumpB: $('.pw-jump'), duckB: $('.pw-duck'), digB: $('.pw-dig'), ring: $('.pw-dig .pw-ring'), bagB: $('.pw-bagb'), pauseB: $('.pw-pauseb')
   };
   // HUD icons (G-style art, with fallbacks)
@@ -626,24 +667,30 @@ function start(el, o) {
     }
     return svgWrap([240, 200], '<ellipse cx="120" cy="140" rx="60" ry="30" fill="#F4A262"/><circle cx="175" cy="110" r="26" fill="#F4A262"/><path d="M80 170v16M100 170v16M140 170v16M160 170v16"/>');
   }
-  const poseStr = {};
-  POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose'; d.innerHTML = poseStr[p] = dogSvg(p); E.dog.appendChild(d); poseEls[p] = d; });
+  // v2.19.1: the rare poses (dig, sad, shake, eat, cold) are drawn after the start, one per idle moment, or on first use (a smaller start hitch). Their boxes stay in order
+  const poseStr = {}, LAZY_POSES = ['dig', 'sad', 'shake', 'eat', 'cold'];
+  function fillPose(p) { const d = poseEls[p]; if (d._drawn) return; d._drawn = true; d.innerHTML = poseStr[p] = dogSvg(p); }
+  POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose'; E.dog.appendChild(d); poseEls[p] = d; if (!LAZY_POSES.includes(p)) fillPose(p); });
+  { const idle = (f) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 120));
+    const next = () => { if (S.stopped) return; const p = LAZY_POSES.find((q) => !poseEls[q]._drawn); if (!p) return; fillPose(p); idle(next); };
+    setTimeout(() => idle(next), 400); }
   let curPose = null;
-  function setPose(p) { if (p === curPose) return; if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
+  function setPose(p) { if (p === curPose) return; fillPose(p); if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p;
+    if (p === 'jump' && jumpArtY === null) { jumpArtY = dogArtY - 40; try { const g = poseEls.jump.querySelector('svg>g') || poseEls.jump.querySelector('svg'), b = g.getBBox(); if (b && b.height > 20) jumpArtY = b.y; } catch (e) { /* keep the guess */ } calcCeil(); } } // once per walk: the jump drawing's top sets the jump ceiling
   setPose('idle');
   /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ----------
      v2.19: a look with friend: true is a friend's dog on a walk together (cosmetic, like every follower). It wears the friend ribbon: look.ribbon (an SVG string
      the game passes), else PawArt.FRIENDS.ribbon(), else a small crayon heart. It sits on the dog's shoulders in every pose. */
   // FOL_GAP: world units between the leader's tail and the first nose. FOL_OV: how much of a follower's length tucks behind the dog in front (a natural line).
   // FOL_AHEAD: the leader keeps at least this much path in view ahead of it (1.8 s at the top speed, as the portrait strip promises)
-  const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
+  const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'crouch', 'happy', 'idle'], FOL_FB = { crouch: ['sit', 'idle'] };
   let folMoveT = 0, folCam = -1;
   // v2.11.1 sizes: o.dog.size and each o.pack[i].size are the dogs' size factors (the game passes them; this module never reads breed tables).
   // A follower is drawn at its size relative to the leader's (the leader keeps its own drawing and hitbox). No size given = the leader's size (as v2.9)
   const folLead = (o.dog && +o.dog.size > 0) ? +o.dog.size : 1;
   const folRel = (fd) => clamp((+fd.size > 0 ? +fd.size : folLead) / folLead, 0.6, 1.4);
   function folSvg(fd, p) {
-    for (const q of p === 'idle' ? ['idle'] : [p, 'idle']) {
+    for (const q of p === 'idle' ? ['idle'] : [p].concat(FOL_FB[p] || ['idle'])) {
       const sv = call('dog', fd.key, { pose: q, outfit: fd.outfit || {}, facing: 'right', coat: fd.coat, seed: fd.seed });
       if (sv && (sv.indexOf('pa-pose-' + q) >= 0 || q === 'idle' || sv.indexOf('pa-pose-') < 0)) return sv;
     }
@@ -665,12 +712,14 @@ function start(el, o) {
     });
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
-  let dogSc = 0.68, dogArt = [36, 204];
+  // v2.19.1: every start-up measurement runs in ONE layout pass: show the measured poses, read everything, then put them back (it was one forced layout per pose)
+  let dogSc = 0.68, dogArt = [36, 204], dogArtY = 54, jumpArtY = null, hCeil = 1e9; // dogArtY: the top of the leader's walk drawing in its 240 x 200 box; hCeil: the highest a jump may go (layout)
+  const ribs = [], mPoses = [...new Set([poseEls.walk].concat(...fol.map((f) => [f.poses.walk, f.poses.crouch].concat(f.friend ? FOL_POSES.map((p) => f.poses[p]) : []))))];
+  mPoses.forEach((pe) => { pe.style.cssText = 'display:block;width:240px;height:200px;position:absolute'; });
   try {
     const g = poseEls.walk.querySelector('svg>g') || poseEls.walk.querySelector('svg');
-    poseEls.walk.style.width = '240px'; poseEls.walk.style.height = '200px'; poseEls.walk.style.position = 'absolute';
-    const b = g.getBBox(); poseEls.walk.style.cssText = '';
-    if (b && b.height > 20) dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8);
+    const b = g.getBBox();
+    if (b && b.height > 20) { dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8); dogArtY = b.y; }
     if (fol.length && b && b.width > 20) dogArt = [b.x, b.x + b.width];
   } catch (e) { /* keep default */ }
   // v2.9 PACK: where each follower's drawing sits in its 240-wide box (the walk pose), so the line is spaced by the dogs, not by their boxes
@@ -678,16 +727,16 @@ function start(el, o) {
     f.art = [30, 210];
     try {
       const pe = f.poses.walk, g = pe.querySelector('svg>g') || pe.querySelector('svg');
-      pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
-      const b = g.getBBox(); pe.style.cssText = '';
+      const b = g.getBBox();
       if (b && b.width > 20) f.art = [b.x, b.x + b.width];
     } catch (e) { /* keep default */ }
+    f.crouchY = 100; // v2.19.1: the top of the crouch drawing in its 240 x 200 box (the ground is at 186); folPlace keeps it under the high things
+    try { const pe = f.poses.crouch, g = pe.querySelector('svg>g') || pe.querySelector('svg'), b = g.getBBox(); if (b && b.height > 10) f.crouchY = b.y; } catch (e) { /* keep default */ }
     if (f.friend) FOL_POSES.forEach((p) => { // v2.19: the ribbon on the dog's back, just behind the neck (the dog faces right). The body is the biggest shape
       const pe = f.poses[p], r = pe.querySelector('.pw-rib'); if (!r) return;
       let x = 50, y = 50; // percent of the 240 x 200 box
       try {
         const sv = pe.querySelector('svg');
-        pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
         const B = sv.getBoundingClientRect(), U = [1e9, 1e9, -1e9, -1e9]; let best = null, ba = 0;
         const shapes = B.width > 0 ? [...sv.querySelectorAll('path,ellipse,circle,polygon,rect')].map((q) => q.getBoundingClientRect())
           .filter((c) => c.width > 0 && c.height >= B.height * 0.08 && c.bottom <= B.top + B.height * 0.97) : []; // no flat shapes, no shadow on the ground
@@ -697,12 +746,13 @@ function start(el, o) {
           if (cx > U[0] + (U[2] - U[0]) * 0.6 || cy < U[1] + (U[3] - U[1]) * 0.4 || c.width < c.height * 0.9) return;
           if (a > ba) { ba = a; best = c; }
         });
-        pe.style.cssText = '';
         if (best) { x = (best.left - B.left + best.width * 0.7) / B.width * 100; y = (best.top - B.top + best.height * 0.18) / B.height * 100; }
-      } catch (e) { pe.style.cssText = ''; /* keep default */ }
-      r.style.left = x.toFixed(2) + '%'; r.style.top = y.toFixed(2) + '%';
+      } catch (e) { /* keep default */ }
+      ribs.push([r, x, y]);
     });
   });
+  mPoses.forEach((pe) => { pe.style.cssText = ''; });
+  ribs.forEach(([r, x, y]) => { r.style.left = x.toFixed(2) + '%'; r.style.top = y.toFixed(2) + '%'; });
   // the room the line needs: from the stage's left edge to the leader's centre (world units)
   function folNeed() {
     const K = (f) => dogSc * FOL_K * f.rel; let need = (120 - dogArt[0]) * dogSc + FOL_GAP;
@@ -719,9 +769,15 @@ function start(el, o) {
     let nose = back - gap;
     fol.forEach((f, i) => {
       if (i) nose += ws[i] * ov; const k = K(f);
-      const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); nose = x + f.art[0] * k;
+      const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); f.bx = x; f.bw = 240 * k; f.noseX = x + f.art[1] * k; nose = x + f.art[0] * k;
       Object.assign(f.el.style, { left: px(x), top: px(G - 186 * k), width: px(240 * k), height: px(200 * k) }); // a little smaller, feet on the same ground line
+      // v2.19.1: a ducking follower's drawing stays 6 units under the bottom of a high thing (a big dog's crouch is squashed a little, from the feet)
+      const ch = (186 - f.crouchY) * k, sq = ch > HIGH_BOTTOM - 6 ? (HIGH_BOTTOM - 6) / ch : 1;
+      f.poses.crouch.style.transform = sq < 1 ? `scaleY(${sq.toFixed(3)})` : ''; f.poses.crouch.style.transformOrigin = '50% 93%';
+      f.span = [(f.art[0] - 120) * k - 12, (f.art[1] - 120) * k + 12]; // its drawing around its centre, plus a margin (world units)
     });
+    // the short Zoomies streaks on each dog start just in front of the nose of the dog behind it, so they never sit on its head (the rear dog has the long trail)
+    [{ el: E.dog, bx: DOG.x - 120 * dogSc, bw: 240 * dogSc }].concat(fol).forEach((d, i) => { const nx = fol[i]; if (nx) d.el.style.setProperty('--pw-tl', clamp((nx.noseX - d.bx) / d.bw * 100 + 3, 0, 55).toFixed(1) + '%'); });
   }
 
   /* ---------- layout (px per world unit) ---------- */
@@ -782,6 +838,14 @@ function start(el, o) {
     live.forEach(placeEl); lamps.forEach((l) => { l.k = -99; });
     E.say.style.left = px(DOG.x + 10); sayY = (G - 186 * dogSc) * s - 16; E.say.style.top = sayY.toFixed(1) + "px";
     E.prompt.style.left = px(DOG.x + 10);
+    // v2.19.1: a ceiling for jumps, so the leader's drawing stays inside the stage and under the HUD (Super jump went past it). Ordinary long jumps (about 160) stay under it
+    calcCeil();
+  }
+  // the top of the jump drawing (measured on its first use, else a guess above the walk pose) plus room for the tilt; never under 165, so an ordinary long jump is never cut short
+  function calcCeil() {
+    const sr = E.stage.getBoundingClientRect(), hr = E.hud.getBoundingClientRect(), hudIn = sr.height ? Math.max(0, hr.bottom - sr.top) : 0;
+    const top0 = (G - 186 * dogSc + ((jumpArtY !== null ? jumpArtY : dogArtY - 40) - 12) * dogSc) * s;
+    hCeil = sr.height ? Math.max(165, (top0 - hudIn - 8) / s) : 1e9;
   }
 
   /* ---------- level plan ---------- */
@@ -805,6 +869,20 @@ function start(el, o) {
     let x = START_X + PLAN * rand(0.3, 0.7);
     for (let k = 0; k < 6; k++) { const near = specials.some((q) => Math.abs(q.x - x) < 650); if (!near) break; x += 700; }
     specials.push({ t: 'bonus', x });
+  }
+  // v2.19.1 power-ups: 2 on a walk of 60 s or more, 1 on a shorter one, none on the first walk. Never two of a kind; Zoomies never in the last 10 s or just before an X
+  // o._forcePower (a kind or a list of kinds, test hook): those, early on the route
+  const pwForce = o._forcePower ? [].concat(o._forcePower).filter((k) => k in POWERS) : null;
+  const pwBag = pwForce || PW_KINDS.slice().sort(() => Math.random() - 0.5);
+  const nPow = pwForce ? pwForce.length : o.firstWalk ? 0 : D >= 60 ? 2 : 1, zoomEnd = expectedDist(Math.max(0, D - 10)) * 0.88;
+  for (let i = 0; i < nPow; i++) {
+    let x = pwForce ? START_X + 1500 + i * 1700 : START_X + PLAN * ([0.3, 0.62][i] + rand(-0.05, 0.05));
+    if (pwForce) { for (let k = 0; k < 80 && specials.some((q) => Math.abs(q.x - x) < 380); k++) x += 100; } // the first free spot (a test wants it soon)
+    else for (let k = 0; k < 6; k++) { const near = specials.some((q) => Math.abs(q.x - x) < 650); if (!near) break; x += 700; }
+    let kind = pwBag[i];
+    const badZoom = (z) => z > zoomEnd || digs.some((d) => d.x > z && d.x - z < speedAtX(z) * 7);
+    if (!pwForce && kind === 'zoom' && badZoom(x)) { const alt = pwBag.slice(nPow).find((q) => q !== 'zoom'); if (alt) kind = alt; }
+    specials.push({ t: 'power', kind, x });
   }
   specials.sort((a, b) => a.x - b.x);
 
@@ -874,7 +952,7 @@ function start(el, o) {
     while (gen.x < limit && guard++ < 50) {
       const p = clamp(gen.x / PLAN, 0, 1), v = speedAtX(gen.x);
       const sp = specials[gen.si];
-      const big = sp && sp.t === 'dig', clearBefore = v * (big ? 1.2 : 0.5), clearAfter = v * (big ? 1.3 : 0.45);
+      const big = sp && sp.t === 'dig', pw = sp && sp.t === 'power', clearBefore = v * (big ? 1.2 : pw ? 0.6 : 0.5), clearAfter = v * (big ? 1.3 : pw ? 0.9 : 0.45); // a power-up: room to take it on the ground
       if (sp && sp.x - gen.x < clearBefore) {
         // special zone: nothing dangerous around it
         if (sp.t === 'dig') items.push({ id: ++uid, kind: 'dig', x0: sp.x - 34, w: 68, h: 68, top: G - 46, cx: sp.x, treasure: !!sp.treasure, sp });
@@ -883,6 +961,7 @@ function start(el, o) {
           items.push({ id: ++uid, kind: 'bonus', x0: sp.x - 34, w: 68, h: 68, top: G - 118 - 34, cx: sp.x, ch: 118 });
           if (coinBudget(3)) [-120, -80, -40].forEach((dx, i) => addCoin(sp.x + dx, 60 + i * 22));
         }
+        else if (sp.t === 'power') items.push({ id: ++uid, kind: 'power', pk: sp.kind, x0: sp.x - 30, w: 60, h: 60, top: G - COIN_H.mid - 30, cx: sp.x, ch: COIN_H.mid });
         gen.x = Math.max(gen.x, sp.x + clearAfter); gen.si++; continue;
       }
       const g = A.gap, gap = rand(lerp(g[0], g[2], p), lerp(g[1], g[3], p));
@@ -925,6 +1004,7 @@ function start(el, o) {
     else if (ob.kind === 'sniff') src = colUri('sniff');
     else if (ob.kind === 'dig') { src = colUri('dig'); d.classList.add('pw-x'); d.addEventListener('pointerdown', (e) => { e.stopPropagation(); if (S.prompt === ob) doDig(); }); }
     else if (ob.kind === 'bonus') { src = colUri('sparkle-spot'); d.classList.add('pw-glow'); }
+    else if (ob.kind === 'power') { src = colUri(ob.pk); d.classList.add('pw-power', 'pw-pw-' + ob.pk); }
     let html = '';
     if (ob.kind === 'obs') {
       const gy = G - ob.top; // ground line inside the element (units)
@@ -976,7 +1056,7 @@ function start(el, o) {
 
   /* ---------- feedback helpers ---------- */
   let sayTimer = 0;
-  function say(t, ms) { E.say.textContent = t; E.say.hidden = false; clearTimeout(sayTimer); sayTimer = setTimeout(() => { E.say.hidden = true; }, ms || 1800); }
+  function say(t, ms) { E.say.textContent = t; E.say.hidden = false; hintChkT = 0; clearTimeout(sayTimer); sayTimer = setTimeout(() => { E.say.hidden = true; }, ms || 1800); }
   function pop(text, uX, uY, color) {
     const p = document.createElement('div'); p.className = 'pw-pop'; p.textContent = text; p.style.left = px(uX); p.style.top = px(uY); if (color) p.style.color = color;
     E.fx.appendChild(p); setTimeout(() => p.remove(), 1050);
@@ -1003,14 +1083,16 @@ function start(el, o) {
     if (S.found || treasureDig.done) return null;
     const dx = S.camX + DOG.x; return clamp(1 - Math.abs(treasureDig.x - dx) / noseRange + S.nudge, 0, 1);
   }
-  let noseT = 0, noseK = '';
+  let noseT = 0, noseK = '', noseTxt = null, noseTf = '';
   function updateNose() {
     const h = heat();
     let k, w;
-    if (h === null) { k = 'warm'; w = 1; E.nl.textContent = S.found ? L('mod.walk.nose_found', 'Found!') : L('mod.walk.nose_dug', 'Dug'); }
-    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; E.nl.textContent = k === 'hot' ? L('mod.walk.nose_hot', 'HOT') : k === 'warm' ? L('mod.walk.nose_warm', 'Warm') : L('mod.walk.nose_cold', 'Cold'); }
+    let t; // v2.19.1: write only on change (a text write restyles the page; it ran every 100 ms)
+    if (h === null) { k = 'warm'; w = 1; t = S.found ? L('mod.walk.nose_found', 'Found!') : L('mod.walk.nose_dug', 'Dug'); }
+    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; t = k === 'hot' ? L('mod.walk.nose_hot', 'HOT') : k === 'warm' ? L('mod.walk.nose_warm', 'Warm') : L('mod.walk.nose_cold', 'Cold'); }
+    if (t !== noseTxt) { noseTxt = t; E.nl.textContent = t; }
     if (k !== noseK) { E.nose.className = 'pw-nose ' + k; noseK = k; }
-    E.noseBar.style.transform = `scaleX(${w.toFixed(3)})`;
+    const tf = `scaleX(${w.toFixed(2)})`; if (tf !== noseTf) { noseTf = tf; E.noseBar.style.transform = tf; }
   }
   function sniffClue() {
     if (S.found || treasureDig.done) return pickLine('walk_lines.done', WALK_LINES.done);
@@ -1031,7 +1113,7 @@ function start(el, o) {
   function crouchPress() { if (S.crouchHeld) return; S.crouchHeld = true; E.duckB.classList.add('down'); if (S.mode === 'run' && S.grounded) sfx('crouch'); }
   function crouchRelease() { S.crouchHeld = false; E.duckB.classList.remove('down'); }
   function doJump() {
-    S.grounded = false; S.vh = PH.V0; S.airT = 0; S.bufT = 0; S.coyT = 0; S.longOK = true; S.isLong = false; sfx('jump');
+    S.grounded = false; S.vh = PH.V0 * (S.pwr && S.pwr.kind === 'spring' ? 1.2 : 1); S.airT = 0; S.bufT = 0; S.coyT = 0; S.longOK = true; S.isLong = false; sfx('jump');
   }
   function land() {
     S.grounded = true; S.vh = 0; S.h = 0; S.isLong = false;
@@ -1039,6 +1121,11 @@ function start(el, o) {
     if (snow) S.slideX = 10; // tiny cosmetic skid on snow
   }
   function stumble(ob) {
+    if (S.pwr && S.pwr.kind === 'bubble') { // Bubble shield: it pops instead, no lost time, no sad pose
+      S.pwrPops++; S.invT = 0.9; endPower(); sfx('pop'); pfxPop();
+      pop(L('mod.walk.pw_pop', 'Pop!'), DOG.x - 40, G - 150, '#4D7FC0'); say(L('mod.walk.pw_saved', 'Saved by the bubble.'), 1500);
+      return;
+    }
     S.hitLog.push([ob.name, Math.round(S.played * 10) / 10, Math.round(S.h), S.crouchHeld ? 1 : 0, Math.round(S.v)]);
     S.hits++; S.invT = 1.3; S.stumbleT = 0.4; poseFor('sad', 0.45); sfx('bonk');
     const lost = Math.min(3, Math.max(0, D - S.t)); S.t += lost; S.timeLost += lost;
@@ -1060,8 +1147,9 @@ function start(el, o) {
     ob.got = true; S.coins++; updateCoinsHud(); sfx('coin'); if (ob.el) ob.el.classList.add('pw-got');
   }
   function startSniff(ob) {
-    ob.done = true; S.sniffs++; S.sniffT = 0.6; sfx('sniff'); poseFor('eat', 0.55);
+    ob.done = true; S.sniffs++; sfx('sniff'); // v2.19.1: no pause, no head-down pose: the dog sniffs on the run (the clue, the sound and the Nose-o-meter stay)
     if (ob.el) ob.el.classList.add('pw-got');
+    pop(L('mod.walk.pop_sniff', 'sniff!'), DOG.x, G - 150, '#8A6CC0');
     const clue = sniffClue(); say(clue, 2400); sayExt(clue, 2400);
   }
   function startPrompt(ob) {
@@ -1109,6 +1197,46 @@ function start(el, o) {
       showCard(`<h2>${LE('mod.walk.no_treasure', 'No treasure here...')}</h2><p>${esc(j.text)}</p><h3>${LE('mod.walk.plus_coins', '{n, plural, one {+# coin} other {+# coins}}', { n: +j.coins || 0 })}</h3><p style="font-size:16px;opacity:.8">${S.digsUsed >= S.digsMax ? LE('mod.walk.last_dig', 'That was the last dig.') : LE('mod.walk.digs_left_watch', 'Digs left: {n}. Watch the Nose-o-meter.', { n: S.digsMax - S.digsUsed })}</p><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">${LE('mod.walk.onwards', 'Onwards')} <span class="pw-k">Space</span></button></div>`, 2.2);
     }
   }
+  /* ---------- v2.19.1 power-ups: Magnet, Zoomies, Bubble shield, Super jump. One at a time (a new one replaces the old); every dog in the pack shows it ---------- */
+  const PW_NAME = { magnet: () => L('mod.walk.pw_magnet', 'Magnet'), zoom: () => L('mod.walk.pw_zoom', 'Zoomies'), bubble: () => L('mod.walk.pw_bubble', 'Bubble shield'), spring: () => L('mod.walk.pw_spring', 'Super jump') };
+  const PW_SAY = { magnet: () => L('mod.walk.pw_magnet_say', 'Magnet paws! Coins come to us.'), zoom: () => L('mod.walk.pw_zoom_say', 'ZOOMIES! Nothing can stop us.'), bubble: () => L('mod.walk.pw_bubble_say', 'Bubble on! The next bump just pops it.'), spring: () => L('mod.walk.pw_spring_say', 'Boing boing! Extra high hops.') };
+  const PW_COL = { magnet: '#d2483b', zoom: '#d27a35', bubble: '#4D7FC0', spring: '#4F9A5C' };
+  function grabPower(ob) {
+    ob.done = true; if (ob.el) ob.el.classList.add('pw-got');
+    const kind = ob.pk, T = POWERS[kind]; S.pwr = { kind, t: T, T }; S.pwrGot.push(kind);
+    sfx('kaching'); pop(PW_NAME[kind](), DOG.x, G - 160, PW_COL[kind]); say(PW_SAY[kind](), 1900);
+    pfxSet(kind);
+    E.pimg.src = colUri(kind); E.pchip.setAttribute('aria-label', L('mod.walk.pw_chip', 'Power-up: {name}', { name: PW_NAME[kind]() }));
+    E.pchip.classList.toggle('pw-nobar', !T); E.pchip.hidden = false; E.hud.classList.add('pw-haspw'); S.pbf = '';
+  }
+  function endPower() { S.pwr = null; pfxSet(''); E.pchip.hidden = true; E.hud.classList.remove('pw-haspw'); }
+  // the overlays on every dog (the leader and each follower): made on first use, shown by the dog's data-pw
+  function pfxDogs() { return [E.dog].concat(fol.map((f) => f.el)); }
+  function pfxSet(kind) {
+    pfxDogs().forEach((d) => {
+      if (kind && !d._pfx) { d._pfx = true; ['trail', 'bubble', 'spring'].forEach((n) => { const i = document.createElement('img'); i.alt = ''; i.draggable = false; i.className = 'pw-pfx pw-pfx-' + n; i.src = colUri('fx_' + n); d.appendChild(i); }); } // after the poses (tests read a pose by its place); the trail sits behind the dog by z-index
+      if (kind) d.setAttribute('data-pw', kind); else d.removeAttribute('data-pw');
+    });
+    const ds = pfxDogs(), rear = fol.length ? fol.reduce((a, f) => ((f.dist || 0) > (a.dist || 0) ? f : a), fol[0]).el : E.dog; // the long Zoomies trail only behind the last dog: the others get short streaks over their own backs
+    ds.forEach((d) => d.classList.toggle('pw-rear', d === rear));
+  }
+  function pfxPop() {
+    pfxDogs().forEach((d) => { const i = document.createElement('img'); i.alt = ''; i.className = 'pw-pfx pw-pfx-pop'; i.src = colUri('fx_pop'); d.appendChild(i); setTimeout(() => i.remove(), 450); });
+  }
+  // Magnet: the nearest dog (by where it is on the path) pulls the coin in; it is taken when it arrives (one coin is one coin: nothing new is made)
+  function magnetize(ob, dxw) {
+    let best = -1, bd = Math.abs(ob.cx - dxw);
+    fol.forEach((f, i) => { const d = Math.abs(ob.cx - (dxw - (f.dist || 0))); if (d < bd) { bd = d; best = i; } });
+    ob.mag = { to: best, rx: 0, rh: 0 }; const tg = magTarget(ob, dxw); ob.mag.rx = ob.cx - tg[0]; ob.mag.rh = ob.ch - tg[1];
+    if (ob.el) ob.el.classList.add('pw-magc');
+  }
+  function magTarget(ob, dxw) { return ob.mag.to < 0 ? [dxw + DOG.off, S.h + 36] : [dxw - (fol[ob.mag.to].dist || 0), 30]; }
+  function magStep(ob, dt, dxw) {
+    const tg = magTarget(ob, dxw), f = Math.exp(-dt * 7), m = ob.mag, r = Math.hypot(m.rx, m.rh), cut = r > 0 ? Math.max(0, r - dt * 160) / r : 0;
+    m.rx *= f * cut; m.rh *= f * cut; ob.cx = tg[0] + m.rx; ob.ch = tg[1] + m.rh;
+    if (Math.hypot(m.rx, m.rh) < 14) { S.magCoins++; collectCoin(ob); return; }
+    ob.x0 = ob.cx - 17; ob.top = G - ob.ch - 17; ob.mmv = true;
+  }
   function collectBonus(ob) {
     ob.done = true; if (ob.el) ob.el.classList.add('pw-got');
     let r = null; try { r = (o.rollTreasure || noop)(area); } catch (e) { r = null; }
@@ -1136,7 +1264,8 @@ function start(el, o) {
       <li>${L('mod.walk.pause_d_jump_html', '<b>Space / &uarr; / Jump</b>: tap to hop, <b>hold</b> for a long jump (clears puddles).')}</li>
       <li>${L('mod.walk.pause_d_duck_html', '<b>&darr; / S / Duck</b>: hold to crouch under {highs}.', { highs })}</li>
       <li>${L('mod.walk.pause_d_dig_html', '<b>D</b>: dig when the dog stands on an X. The Nose-o-meter says HOT near the treasure.')}</li>
-      <li>${L('mod.walk.pause_d_bag_html', '<b>B</b>: bag. <b>Esc</b>: pause.')}</li>`}</ul>
+      <li>${L('mod.walk.pause_d_bag_html', '<b>B</b>: bag. <b>Esc</b>: pause.')}</li>`}${nPow ? `
+      <li>${L('mod.walk.pause_power_html', '<b>Power-ups</b>: Magnet pulls coins in, Zoomies run through anything, a Bubble takes the next bump, Super jump hops higher.')}</li>` : ''}</ul>
       <div class="pw-row"><button class="pw-btn yes" data-res tabindex="-1">${LE('mod.walk.keep_walking', 'Keep walking')}</button><button class="pw-btn" data-home tabindex="-1">${LE('mod.walk.head_home_early', 'Head home early')}</button></div></div>`;
     E.ov.querySelector('[data-res]').addEventListener('click', resume);
     E.ov.querySelector('[data-home]').addEventListener('click', () => { resume(); finish(true); });
@@ -1224,7 +1353,8 @@ function start(el, o) {
       <div class="pw-trow"><span class="pw-tic pw-neg" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">${LE('mod.walk.minus_3s_big', '\u22123s')}</span><div>${L('mod.walk.tut_bump_html', '<b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.')}</div></div>
       <div class="pw-trow"><div class="pw-mini" style="width:150px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:14px;bottom:8px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:62px;bottom:34px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:110px;bottom:62px;width:26px"></div>
         <div>${L('mod.walk.tut_coins_html', '<b>Coins sit at 3 heights</b><br>low: just walk &middot; middle: walk or hop &middot; high: jump.')}</div></div>
-      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${L('mod.walk.tut_bagkeys_html', '{touch, select, yes {The <b>bag</b> button opens the bag (Wild Berries add 15 s). The <b>II</b> button pauses.} other {<b>B</b> opens the bag (Wild Berries add 15 s). <b>Esc</b> pauses.}}', { touch: T ? 'yes' : 'no' })}</div></div>`;
+      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${L('mod.walk.tut_bagkeys_html', '{touch, select, yes {The <b>bag</b> button opens the bag (Wild Berries add 15 s). The <b>II</b> button pauses.} other {<b>B</b> opens the bag (Wild Berries add 15 s). <b>Esc</b> pauses.}}', { touch: T ? 'yes' : 'no' })}</div></div>${nPow ? `
+      <div class="pw-trow"><span class="pw-tic" style="position:relative"><img alt="" src="${colUri('magnet')}" style="position:absolute;left:0;top:0;width:60%"><img alt="" src="${colUri('bubble')}" style="position:absolute;right:0;bottom:0;width:60%"></span><div>${L('mod.walk.tut_power_html', '<b>Power-ups</b> &mdash; touch one: <b>Magnet</b> pulls coins in, <b>Zoomies</b> run through anything, a <b>Bubble</b> takes the next bump, <b>Super jump</b> hops higher. The whole pack gets it.')}</div></div>` : ''}`;
   }
   function showTutorial() {
     S.mode = 'tutorial'; E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
@@ -1263,16 +1393,18 @@ function start(el, o) {
     if (S.invT > 0) S.invT -= dt;
     if (S.stumbleT > 0) S.stumbleT -= dt;
     if (S.poseT > 0) { S.poseT -= dt; if (S.poseT <= 0) S.poseO = null; }
-    if (S.sniffT > 0) S.sniffT -= dt;
+
     if (S.slideX > 0) S.slideX = Math.max(0, S.slideX - dt * 40);
     S.nudge *= Math.pow(0.4, dt);
     if (S.prompt) { S.promptT -= dt; if (S.promptT <= 0) skipPrompt(); }
+    if (S.pwr && S.pwr.T > 0 && !S.endT) { S.pwr.t -= dt; if (S.pwr.t <= 0) endPower(); } // frozen in pause, the bag, a dig and a card (step does not run there)
 
     // speed
     let target = 1;
-    if (S.endT) target = 0; else if (S.prompt) target = 0.2; else if (S.sniffT > 0) target = 0.35; else if (S.stumbleT > 0) target = 0.65;
+    if (S.endT) target = 0; else if (S.prompt) target = 0.2; else if (S.stumbleT > 0) target = 0.65;
     S.slow += (target - S.slow) * Math.min(1, dt * (target < S.slow ? 14 : 5));
-    const v = vAt(S.played) * S.slow;
+    S.zoomK += ((S.pwr && S.pwr.kind === 'zoom' && !S.prompt && !S.endT ? 1.3 : 1) - S.zoomK) * Math.min(1, dt * 6); // Zoomies: x1.3 (a dig prompt's slow-down wins)
+    const v = vAt(S.played) * S.slow * S.zoomK;
     S.v = v; S.camX += v * dt;
 
     // jump physics
@@ -1284,8 +1416,9 @@ function start(el, o) {
       if (!S.jumpHeld) S.longOK = false;
       let g = PH.GRAV;
       if (S.crouchHeld) g = PH.GRAV * PH.FAST;
-      else if (S.jumpHeld && S.longOK && S.airT > PH.LONG_T) { g = PH.GLONG; if (!S.isLong) { S.isLong = true; sfx('longjump'); } }
+      else if (S.jumpHeld && S.longOK && S.airT > PH.LONG_T) { g = PH.GLONG * (S.pwr && S.pwr.kind === 'spring' ? 0.8 : 1); if (!S.isLong) { S.isLong = true; sfx('longjump'); } }
       S.vh -= g * dt; S.h += S.vh * dt;
+      if (S.h > hCeil) { S.h = hCeil; S.vh = Math.min(S.vh, 0); } // the ceiling (layout): followers replay folHist, so it holds for them too
       if (S.h <= 0) land();
     }
 
@@ -1298,10 +1431,13 @@ function start(el, o) {
     const crouch = S.crouchHeld && S.grounded;
     const top = S.h + (crouch ? DOG.hCrouch : DOG.hStand), bot = S.h;
     const fx0 = dxw - DOG.feet, fx1 = dxw + DOG.feet;
+    const mag = !!S.pwr && S.pwr.kind === 'magnet', zoom = !!S.pwr && S.pwr.kind === 'zoom';
     for (let i = 0; i < live.length; i++) {
       const ob = live[i]; if (ob.done) continue;
       if (ob.kind === 'coin') {
         if (ob.got) continue;
+        if (mag && !ob.mag && Math.abs(ob.cx - dxw) < 260) magnetize(ob, dxw); // Magnet: a coin that is already out there glides to the nearest dog
+        if (ob.mag) { magStep(ob, dt, dxw); continue; }
         const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
         if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < (COIN_R + 4) ** 2) collectCoin(ob);
         else if (ob.cx < bx0 - 40) ob.done = true;
@@ -1313,15 +1449,22 @@ function start(el, o) {
           if (ob.cat === 'wide' && !ob.solid && !ob.touched && !S.endT) { S.puddlesCleared++; S.squeaky++; pop(pickLine('walk_lines.squeaky', WALK_LINES.squeaky), DOG.x, G - 150, '#4D7FC0'); sfx('kaching'); }
           continue;
         }
-        if (ob.touched) continue;
-        if (ob.cat === 'wide' && !ob.solid) { if (S.grounded && fx1 > ob.ex0 && fx0 < ob.ex1) { ob.touched = true; splash(ob); } continue; }
+        if (ob.touched || ob.zoomed) continue;
+        if (ob.cat === 'wide' && !ob.solid) { if (S.grounded && fx1 > ob.ex0 && fx0 < ob.ex1) { if (zoom) { ob.zoomed = true; S.pwrZoomed++; continue; } ob.touched = true; splash(ob); } continue; } // Zoomies skim a puddle: it counts as cleared
         if (bx1 < ob.ex0 || bx0 > ob.ex1) continue;
         const hit = ob.cat === 'high' ? top > ob.ebot : bot < ob.etop;
+        if (hit && zoom) { ob.zoomed = true; S.pwrZoomed++; continue; } // Zoomies: straight through, no bump, no lost time (and it is not a touch)
         if (hit) { ob.touched = true; if (S.invT <= 0 && !S.endT) stumble(ob); }
         continue;
       }
       if (ob.kind === 'sniff') { if (dxw >= ob.cx - 10 && !S.endT) startSniff(ob); continue; }
       if (ob.kind === 'dig') { if (!ob.prompted && dxw >= ob.cx - 50 && !S.endT) startPrompt(ob); if (ob.cx < dxw - 120) ob.done = true; continue; }
+      if (ob.kind === 'power') {
+        const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
+        if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < 36 * 36 && !S.endT) grabPower(ob);
+        else if (ob.cx < bx0 - 40) ob.done = true;
+        continue;
+      }
       if (ob.kind === 'bonus') {
         const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
         if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < 36 * 36 && !S.endT) collectBonus(ob);
@@ -1337,7 +1480,7 @@ function start(el, o) {
   }
 
   /* ---------- render ---------- */
-  let wxY = 0;
+  let wxY = 0, hintChkT = 0;
   function render(now) {
     const cx = S.camX;
     E.strip.style.transform = `translate3d(${(-(cx % TW) * s).toFixed(1)}px,0,0)`;
@@ -1361,32 +1504,41 @@ function start(el, o) {
     const tilt = S.stumbleT > 0 ? Math.sin(S.stumbleT * 40) * 4 : !S.grounded ? clamp(-S.vh / 90, -8, 6) : 0;
     E.dog.style.transform = `translate3d(${(S.slideX * s).toFixed(1)}px,${((-S.h + bob) * s).toFixed(1)}px,0) rotate(${tilt.toFixed(1)}deg)`;
     if (fol.length) { // v2.9: each follower repeats what the leader did at the spot it has now reached (so it hops the same logs), with smaller hops
-      const hp = p === 'jump' || p === 'happy' || p === 'walk' ? p : 'idle', hy = (-S.h + bob * 0.5) * s, top = folHist[folHist.length - 1];
+      // v2.19.1: the leader's duck is not replayed (that ducked under empty sky): each follower ducks by itself while a high thing is over it (below)
+      const hp = p === 'jump' || p === 'happy' || p === 'walk' ? p : p === 'crouch' ? 'walk' : 'idle', hy = (-S.h + bob * 0.5) * s, top = folHist[folHist.length - 1];
       if (top && top.x >= cx - 0.01) { top.y = hy; top.p = hp; } else folHist.push({ x: cx, y: hy, p: hp });
       if (cx !== folCam) { folCam = cx; folMoveT = now; }
       while (folHist.length > 2 && folHist[1].x < cx - DOG.x - 40) folHist.shift();
       const still = now - folMoveT > 160; // the leader stopped (sniffing, digging, the countdown): the line waits too
       fol.forEach((f) => {
         const at = cx - (f.dist || 0); let h = folHist[0]; for (let k = folHist.length - 1; k >= 0; k--) if (folHist[k].x <= at) { h = folHist[k]; break; }
-        const fp = still ? (p === 'happy' ? 'happy' : 'idle') : h.p, fy = still ? 0 : h.y;
+        let fp = still ? (p === 'happy' ? 'happy' : 'idle') : h.p, fy = still ? 0 : h.y;
+        f.duck = false;
+        if (f.span && S.mode !== 'countdown') { const c = cx + DOG.x - (f.dist || 0), a = c + f.span[0], b = c + f.span[1];
+          for (let i = 0; i < live.length; i++) { const ob = live[i]; if (ob.kind === 'obs' && ob.cat === 'high' && ob.ex1 > a && ob.ex0 < b) { f.duck = true; break; } } }
+        if (f.duck) { fp = 'crouch'; fy = 0; } // a hop replayed under it is cancelled: the line goes under, never into it
         if (fp !== f.cur) { f.poses[f.cur].classList.remove('on'); f.poses[fp].classList.add('on'); f.cur = fp; }
         f.el.style.transform = `translate3d(0,${(fy * 0.8).toFixed(1)}px,0)`;
       });
       // what the leader has left behind stays on the ground under the line: its hint and badge go, a missed coin fades
-      for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
+      for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.mag || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
     }
+    const hiUp = S.h > 60; if (hiUp !== E.say._hi) { E.say._hi = hiUp; E.say.classList.toggle('pw-dim', hiUp); } // a high jump: the speech bubble fades so the dog shows through
     const blink = S.invT > 0 && S.mode === 'run';
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
     // HUD
     const rem = Math.max(0, D - S.t);
-    E.timeBar.style.transform = `scaleX(${(rem / D).toFixed(4)})`;
+    const tbf = `scaleX(${(rem / D).toFixed(3)})`; if (tbf !== S.tbf) { S.tbf = tbf; E.timeBar.style.transform = tbf; }
     const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = L('mod.walk.secs', '{n}s', { n: sec }); E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
+    if (S.pwr && S.pwr.T > 0) { const pf = `scaleX(${clamp(S.pwr.t / S.pwr.T, 0, 1).toFixed(2)})`; if (pf !== S.pbf) { S.pbf = pf; E.pbar.style.transform = pf; E.pchip.style.setProperty('--pw-pl', pf.slice(7, -1)); } } // the power chip's shrinking bar (desktop) or ring on its icon (phones)
+    for (let i = 0; i < live.length; i++) { const ob = live[i]; if (ob.mmv && !ob.got) { ob.mmv = false; placeEl(ob); } } // magnet coins on their way to a dog
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
       if (ob.hintEl) { const op = ob.past ? 0 : clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
     // an obstacle hint steps aside (hides) while the dog's speech bubble would sit on it: the bubble carries the lesson ("Tap Dig!"), the hint is only a nudge
-    { const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
+    // v2.19.1: measured at most every 150 ms (and right after say()): two layout reads in every frame forced a layout every frame
+    if (now - hintChkT > 150) { hintChkT = now; const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
       for (let i = 0; i < live.length; i++) { const he = live[i].hintEl; if (!he) continue; let hide = false;
         if (sayUp && +he.style.opacity >= 0.05) { const hr = he.getBoundingClientRect(); hide = hr.width > 0 && hr.left < sr.right && hr.right > sr.left && hr.top < sr.bottom && hr.bottom > sr.top; }
         if (live[i].hintHide !== hide) { live[i].hintHide = hide; he.style.visibility = hide ? 'hidden' : ''; } } }
@@ -1508,12 +1660,17 @@ function start(el, o) {
     // test/debug hook (not part of the contract; read-only snapshot)
     _peek() {
       return {
-        mode: S.mode, t: S.t, D, ts: S.ts, timeLost: S.timeLost, hitLog: S.hitLog, v: S.v || 0, camX: S.camX, dogX: S.camX + DOG.x, h: S.h, grounded: S.grounded, crouch: S.crouchHeld,
-        hazards: S.hazards, touched: S.touched, hits: S.hits, splashes: S.splashes, coins: S.coins, prompt: !!S.prompt, found: S.found,
+        mode: S.mode, t: S.t, D, ts: S.ts, timeLost: S.timeLost, hitLog: S.hitLog, v: S.v || 0, camX: S.camX, dogX: S.camX + DOG.x, h: S.h, hCeil, grounded: S.grounded, crouch: S.crouchHeld,
+        sniffs: S.sniffs, hazards: S.hazards, touched: S.touched, hits: S.hits, splashes: S.splashes, coins: S.coins, prompt: !!S.prompt, found: S.found,
         heat: heat(), digsUsed: S.digsUsed, coinsSpawned: gen.coins, coinTarget,
         bonus: live.filter((q) => q.kind === 'bonus' && !q.done).map((q) => ({ x: q.cx, h: q.ch })),
         obs: live.filter((q) => q.kind === 'obs' && !q.done).map((q) => ({ id: q.id, cat: q.cat, name: q.name, ex0: q.ex0, ex1: q.ex1 })),
-        box: { off: DOG.off, hw: DOG.hw, feet: DOG.feet }
+        highs: live.filter((q) => q.kind === 'obs' && q.cat === 'high').map((q) => ({ id: q.id, ex0: q.ex0, ex1: q.ex1 })),
+        box: { off: DOG.off, hw: DOG.hw, feet: DOG.feet },
+        powers: specials.filter((q) => q.t === 'power').map((q) => ({ kind: q.kind, x: q.x })), power: S.pwr ? Object.assign({}, S.pwr) : null, pwrGot: S.pwrGot.slice(), pwrPops: S.pwrPops, pwrZoomed: S.pwrZoomed, magCoins: S.magCoins,
+        powerLive: live.filter((q) => q.kind === 'power' && !q.done).map((q) => ({ kind: q.pk, x: q.cx, h: q.ch })), zoomK: S.zoomK, vh: S.vh,
+        pfx: pfxDogs().map((d) => d.getAttribute('data-pw') || ''), chip: !E.pchip.hidden, chipBar: E.pchip.hidden ? null : E.pbar.style.transform,
+        fol: fol.map((f) => ({ x: S.camX + DOG.x - (f.dist || 0), span: f.span ? f.span.slice() : null, pose: f.cur, duck: !!f.duck, friend: f.friend }))
       };
     }
   };

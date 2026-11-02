@@ -1380,6 +1380,7 @@ function frWalkBind() {
 function frWalkSync() {
   if (cur.mode !== 'routes') return;
   const row = $('#frWalkRow', view), html = frWalkRowHTML();
+  const rts = $('.routes', view); if (rts) rts.classList.toggle('rt-fr', !!html);
   if (!html) { if (row) row.remove(); return; }
   if (!row) { const foot = $('.rt-foot', view); if (!foot) return; foot.insertAdjacentHTML('beforebegin', html); frWalkBind(); return; }
   const sc = $('.fr-wchips', row), x = sc ? sc.scrollLeft : 0;

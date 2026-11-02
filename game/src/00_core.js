@@ -1396,17 +1396,20 @@ function updateHUD() {
   if (!S) return;
   for (const [k] of METERS) {
     const m = $(`.meter[data-k="${k}"]`); if (!m) continue; const v = Math.round(S.stats[k]);
+    if (m.dataset.v === String(v)) continue; m.dataset.v = v; // v2.19.1: write only on change (each write restyled the stage)
     m.querySelector('.fill').style.width = v + '%'; m.style.setProperty('--v', v); m.querySelector('.num').textContent = v; m.querySelector('.track').setAttribute('aria-valuenow', v);
     m.classList.toggle('low', v < 25);
   }
   const L = S.bond.level, a = BOND_TH[L - 1], b = BOND_TH[L] || BOND_TH[9];
   const pr = L >= 10 ? 100 : clamp((S.bond.pts - a) / (b - a) * 100, 0, 100);
-  $('#bondLvl').textContent = L; $('#bondFill').style.width = pr + '%'; $('#bondTrack').setAttribute('aria-valuenow', Math.round(pr));
-  $('#bondTrack').title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) });
-  $('#coinNum').textContent = tnum(S.coins);
+  const hudTxt = (el, v) => { if (el && el.textContent !== String(v)) el.textContent = v; };
+  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + S.bond.pts;
+  if (bt && bt.dataset.k !== bk) { bt.dataset.k = bk; hudTxt($('#bondLvl'), L); $('#bondFill').style.width = pr + '%'; bt.setAttribute('aria-valuenow', Math.round(pr));
+    bt.title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) }); }
+  hudTxt($('#coinNum'), tnum(S.coins));
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
-  const hc = $('#hudClock'); if (hc) hc.textContent = `${clockText()} · ${wxLabel()}`;
+  hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
   const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
