@@ -71,6 +71,25 @@ say('safe'); seg(len('safe'), 'visit', 3.8, { z0: 1.1, z1: 1.16, fx: 0.48, fy0: 
 const END = at; say('end', 0.25); seg(VOD.end + 0.8, 'end', 0, null, { end: true });
 const T = at, N = Math.round(T * FPS);
 
+// ---- subtitles (owner, 2 Nov 2026: "add the subtitles"): Noodle's words in short chunks, each timed by its share of the line (letters, plus a breath
+// at each full stop: Kokoro gives no word times). Where they sit: under the feature label on the game scenes (sky and fence, clear of the dogs at the
+// bottom), under the sticker on the hook, under the card on the code page, at the foot of the end page. All inside SAFE like every other box.
+const SUBS_TX = RN ? null : {
+  hook: ['Big news!', 'Our dogs can make friends now!'],
+  code: ['Pick a friend name,', 'share your code,', 'and your dog can visit theirs!'],
+  visit: ['Visit their yard!', 'Pet their dogs!', 'This is Waffles.', 'Waffles likes me.'],
+  note: ['Leave a paw-print note!', 'Mine says:', '"Your dog is so fluffy!"'],
+  gift: ['Send a gift, once a day!', 'I sent a biscuit.', 'I did not eat it first.'],
+  walk: ['And take their dog on your walk!', 'Waffles is faster than me.'], walkb: ['I let her win.'],
+  safe: ['No chat. No messages.', 'Just dogs, being friends!'],
+  end: ['Friends arrives on November 7th!', 'Drop your friend code below!'],
+};
+const SUBS = [];
+VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) throw new Error('no subtitles for ' + v.k);
+  const wt = parts.map((x) => x.length + (/[.!?:"]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x }); t0 += d; }); });
+SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.35) : Math.min(T, u.b + 0.6); });
+
 // ---- footage: each clip's frames with their game times; a still is one frame ----
 const CLIPS = {};
 for (const s of SEG) { if (s.src === 'end' || s.src === 'code' || CLIPS[s.src]) continue;
@@ -82,11 +101,11 @@ const frameAt = (s, t) => { const c = CLIPS[s.src], g = s.from + (t - s.a); let 
 const PEN = '#5B3D32', GREEN = '#4E9A54', PINK = '#F28FA5', PAPER = '#FFF8EC';
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}#scr{position:absolute;left:0;top:0;transform-origin:0 0}#ov{position:absolute;left:0;top:0}</style>
-<div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g></svg></div>
+<div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g><g id="sub"></g></svg></div>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)};
+const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)}, SUBS=${JSON.stringify(SUBS)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM);
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
@@ -130,13 +149,18 @@ window.frame=async function(t, S, src){
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
       +'<g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:120}],CX,380).svg+'</g><path d="M'+(CX-190)+' 450 Q'+CX+' 432 '+(CX+190)+' 450" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
-      +'<g data-safe transform="translate('+CX+' 740) scale('+(cs*2.4)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
-      +(PH?'<g transform="rotate(-6 '+CX+' 745)">'+pill(TX.ph,CX,745,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
-      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1060).svg
-      +'<path d="M'+CX+' 1100 q-10 38 0 70 M'+(CX-22)+' 1148 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
-      +'<g transform="rotate(-3 '+(CX-110)+' 1290)">'+C([{s:'Doodle',size:88}],CX-110,1290).svg+'</g><g transform="rotate(2 '+(CX+122)+' 1294)">'+C([{s:'Doggo',size:88}],CX+122,1294).svg+'</g>'
-      +'<g transform="rotate(-2 '+CX+' 1390)">'+pill(TX.update,CX,1390,46,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
-  $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end;
+      +'<g data-safe transform="translate('+CX+' 720) scale('+(cs*2.1)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
+      +(PH?'<g transform="rotate(-6 '+CX+' 725)">'+pill(TX.ph,CX,725,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
+      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1000).svg
+      +'<path d="M'+CX+' 1040 q-10 38 0 70 M'+(CX-22)+' 1088 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
+      +'<g transform="rotate(-3 '+(CX-110)+' 1200)">'+C([{s:'Doodle',size:88}],CX-110,1200).svg+'</g><g transform="rotate(2 '+(CX+122)+' 1204)">'+C([{s:'Doggo',size:88}],CX+122,1204).svg+'</g>'
+      +'<g transform="rotate(-2 '+CX+' 1296)">'+pill(TX.update,CX,1296,46,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
+  // the subtitle: ink pill, cream words, one line; a quick fade, no bounce
+  let sub=''; const u=SUBS.find((x)=>t>=x.a&&t<x.b);
+  if(u){ const y=cp.end?1395:cp.hook?800:cp.card?1200:480, o=Math.min(ease((t-u.a)/0.08),ease((u.b-t)/0.08));
+    let size=58; const k=inkOf(u.s,size,FAM); if(k.L+k.R>740) size=Math.floor(size*740/(k.L+k.R));
+    sub=pill(u.s,CX,y,size,FAM,{fill:'${PEN}',stroke:'${PEN}',color:'#FFF8EC',padX:30,op:(0.94*o).toFixed(3)}); }
+  $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end; $('sub').innerHTML=sub;
 };
 </script>`;
 
