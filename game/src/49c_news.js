@@ -39,7 +39,7 @@ const NEWS = [
 /* v2.19 "Friends first": 50_friends.js puts this entry first only when FR_LIVE is on, so the news never shows Friends before the release */
 const nwFrArt = (k) => nwSafe(() => { const P = window.PawArt; return P && P.FRIENDS && typeof P.FRIENDS[k] === 'function' ? P.FRIENDS[k]() : ''; });
 const NEWS_V219 = {
-  id: '2.19', date: '2026-11-01', c: '#FFE3EC', d: 'paw', pic: 'dog',
+  id: '2.19', date: '2026-11-07', c: '#FFE3EC', d: 'paw', pic: 'dog',
   title: () => tt('nw.v219.title', 'Friends are here!'),
   items: [
     { ic: () => nwFrArt('badge'), tx: () => tt('nw.v219.friends', 'Pick a friend name, then share your code or an invite link. Up to 50 friends') },
