@@ -1,6 +1,6 @@
 # Doodle Doggo privacy policy
 
-Last updated: 1 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
+Last updated: 7 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
 
 **In short:** Doodle Doggo has no ads and no tracking. If you make an account, we keep your email, a scrambled version of your password and your game save. If you use Friends, we keep the list in that section. Nothing else.
 
