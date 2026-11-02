@@ -6,7 +6,7 @@
    PawArt.obstacle(name)    runner obstacles, fixed viewBoxes per V12.md (bottom = ground; high ones: lowest point at the bottom)
    PawArt.bed(name)         viewBox 0 0 260 160, floor y=152, sleep area ~(130,95); front lip in <g class="pa-bed-front">
    PawArt.house(name)       viewBox 0 0 240 200 (ground y=190, door opening centred near x=120)
-   PawArt.collectible(name) viewBox 0 0 60 60
+   PawArt.collectible(name) viewBox 0 0 60 60 (runner power-ups: magnet, zoom, bubble, spring; overlays fx_bubble, fx_trail, fx_spring, fx_pop)
    PawArt.prop(name, o)     viewBox 0 0 120 120; crop {crop,stage,dry} + plot {water} 0 0 160 120 (cached per option set); torn-map 0 0 240 160 with o.pieces (cached per combination); speech 0 0 200 120, panel 0 0 300 200 (both preserveAspectRatio="none"), tape 0 0 120 30;
                             v2: nursery 320x170, mailbox {flag,count} 120x160, postcard 300x200, playboard 300x220, familytree 600x380, coatframe {found} 120x140, ultrasound 240x160 (overlay hooks documented at each prop)
                             v2.1: sparklejar {fill 0-24} 120x160, crayonbox 200x160, photoframe 160x140, doggyramp 200x120, rockingchair 160x160, album {found[12]} 600x380, easel 160x200, sniffer 200x140; new items Rainbow Collar, Gene Sniffer, Giant Crayon Box, Family Photo Frame, Doggy Ramp, Rocking Chair; icons title, album, decor, sniff, meter
@@ -1112,6 +1112,76 @@ Object.assign(COLS,{
    marks:[{pts:cloudP(22,24,6,3.4,5,.3,20),fill:'#A9CF8A'}],det:[[[34,24],[31,32],[35,38]]],dw:.8,
    inner:[[18,36],[40,34],[28,42],[44,28]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1" fill="${INK}" opacity=".35"/>`).join('')});
   b.sh(E(53,48,3.4,2.6,10),'#C9C3BC',{hatch:0,hl:0,lw:.6});
+ }
+});
+/* ---------- runner power-ups (Nov 2026): four pickups that read at ~36 px on the walk strips, and four effect overlays the runner puts on each dog:
+   fx_bubble (a see-through ring scaled around the dog), fx_trail (speed streaks on the left, behind a dog facing right),
+   fx_spring (sparkles under the paws) and fx_pop (the bubble popping). Every wash is a b.sh fill inside its own pencil line. ---------- */
+const arcP=(cx,cy,rx,ry,a0,a1,n)=>{const p=[];for(let i=0;i<=n;i++){const a=(a0+(a1-a0)*i/n)*Math.PI/180;p.push([cx+Math.cos(a)*rx,cy+Math.sin(a)*ry])}return p};
+const arcD=(cx,cy,rr,a0,a1,n=10)=>'M'+arcP(cx,cy,rr,rr,a0,a1,n).map(q=>R1(q[0])+' '+R1(q[1])).join('L');
+// the faint rainbow just inside a bubble's edge, and its white shine (both clipped to the bubble by b.sh)
+const bubbleIn=(b,cx,cy,rr,o={})=>b.st(arcD(cx,cy,rr*.84,-15,110),'#F7A1B5',rr*.09,o.op||.55)+b.st(arcD(cx,cy,rr*.75,-5,100),'#FFE08A',rr*.08,o.op||.55)+b.st(arcD(cx,cy,rr*.67,5,92),'#9ED8B8',rr*.07,o.op||.5)
+  +b.st(arcD(cx,cy,rr*.72,200,248,6),'#fff',rr*.13,.95)+`<circle cx="${R1(cx+Math.cos(4.5)*rr*.72)}" cy="${R1(cy+Math.sin(4.5)*rr*.72)}" r="${R1(rr*.07)}" fill="#fff"/>`;
+Object.assign(COLS,{
+ magnet(b){
+  const T=pts=>rot(pts,-.26,30,34),cy=33,top=20;
+  const U=[[12,top],...arcP(30,cy,18,18,180,0,13),[48,top],[38.5,top],...arcP(30,cy,8.5,8.5,0,180,8),[21.5,top]];
+  b.sh(T(U),'#EE6F6A',{k:.06,sh:'#A84440',det:[T([[16,23],[15.6,33],[18.5,41],[24,46]])],dw:1.5,dcol:'#FFD1CC'});
+  b.sh(T(RR(11.5,10,10.5,11.5,1.6,1)),'#CFC8C1',{k:.05,hl:0,lw:.9});b.sh(T(RR(38,10,10.5,11.5,1.6,1)),'#CFC8C1',{k:.05,hl:0,lw:.9});
+  b.ln(T([[11,6.5],[16.5,4],[22,6]]),{w:1.5});b.ln(T([[38,6],[43.5,4],[49,6.5]]),{w:1.5});
+  b.ex('spark',53,44,4.2);b.ex('glint',14.5,22,4);
+ },
+ zoom(b){
+  const a=-.62,cx=39,cy=22,len=32,ux=Math.cos(a),uy=Math.sin(a),ex=cx-ux*(len/2+4),ey=cy-uy*(len/2+4);
+  const F=pts=>pts.map(([x,y])=>[ex+x*ux-y*uy,ey+x*uy+y*ux]); // along the bone: +x forward, the flame trails to -x
+  b.sh(F([[9,-7.5],[-4,-9.5],[-8.5,-6],[-16,-9.5],[-14,-3.2],[-25,0],[-14,3.2],[-16,9.5],[-8.5,6],[-4,9.5],[9,7.5]]),'#F79A5E',{k:.12,hatch:0,lw:.9});
+  b.sh(F([[6,-4.5],[-5,-5.4],[-9.5,-2.4],[-16,0],[-9.5,2.4],[-5,5.4],[6,4.5]]),'#FFE07A',{k:.15,hatch:0,hl:0,lw:.6});
+  b.sh(boneP(cx,cy,len,15,a),C.cream,{});
+  b.ln(F([[-8,-13.5],[-17,-14.5]]),{w:1.4});b.ln(F([[-9,14],[-16,15]]),{w:1.4});
+  b.ex('spark',53,45,4);b.ex('spark',9,13,3);
+ },
+ bubble(b){
+  b.sh(E(30,31,21,21,26),'#DCEFFC',{hatch:0,hl:0,base:'#F4FAFE',lw:.9,marks:[{pts:E(36,38,15,10,16,-.6),fill:'#EBDDF7',op:.55}],inner:bubbleIn(b,30,31,21)});
+  b.ex('glint',17,24,4.5);b.ex('spark',52,10,4.5);b.ex('dots',6,50,4);
+ },
+ spring(b){
+  const cx=30,rx=12,ry=5.6,turns=3,y0=47,dy=8.6,coil='#B49BE6',yc=t=>y0-dy*t/(Math.PI*2);
+  b.sh(E(cx,y0+6.5,14.5,4.6,16),'#CFC8C1',{hatch:0,hl:0,lw:.9});
+  for(let i=0;i<turns;i++){const t0=i*Math.PI*2,bk=[],fr=[];
+   for(let j=0;j<=8;j++){const t=t0+Math.PI+j/8*Math.PI;bk.push([cx+Math.cos(t)*rx,yc(t)+Math.sin(t)*ry])}
+   for(let j=0;j<=8;j++){const t=t0+j/8*Math.PI;fr.push([cx+Math.cos(t)*rx,yc(t)+Math.sin(t)*ry])}
+   b.ln(bk,{w:2.2,col:mix(coil,INK,.3)});
+   b.sh(ribbon(fr,fr.map(()=>3.6)),coil,{k:1/6,hatch:0,hl:0,lw:.7});
+  }
+  b.sh([[13.5,17],[13.5,22],[18,25.5],[30,27.2],[42,25.5],[46.5,22],[46.5,17]],C.goldD,{k:.2,hatch:0,hl:0,lw:.9});
+  b.sh(E(cx,16.5,16.5,7.4,22),C.gold,{hatch:0,hl:0,lw:.9});
+  paw(b,cx,18,2.9,'#F28FA5',{noline:1});
+  b.ln([[7,12],[4,6]],{w:1.4});b.ln([[53,12],[56,6]],{w:1.4});
+  b.ex('spark',53,36,4);
+ },
+ fx_bubble(b){
+  b.sh(E(30,30,27.5,27.5,36),'#CFE8FA',{hatch:0,hl:0,op:.2,lw:.55,lo:.85,inner:bubbleIn(b,30,30,27.5,{op:.45})});
+  b.ex('glint',45,47,3.5);
+ },
+ fx_trail(b){
+  [[18,44,10,'#FFE07A',.5],[30,48,3,'#F9B97A',-.4],[42,43,13,'#FFE07A',.3]].forEach(([y,x1,x0,fill,ph],i)=>{
+   const n=6,c=[],w=[];for(let j=0;j<=n;j++){const t=j/n;c.push([x0+(x1-x0)*t,y+Math.sin(t*5.2+ph*4)*1.3]);w.push(2+t*4)}
+   b.sh(ribbon(c,w),fill,{k:1/6,hatch:0,hl:0,lw:.75});
+   b.ln([[x0-7+i,y+1],[x0-2.5+i,y+.6]],{w:1.2});
+  });
+ },
+ fx_spring(b){
+  b.sh(starP(13,44,6.8,3),'#FFE07A',{hatch:0,hl:0,lw:.75});b.sh(starP(47,42,6,2.7,5,-1.3),'#FFE07A',{hatch:0,hl:0,lw:.75});
+  b.sh(starP(30,51,4.6,2.1,5,-1.75),'#FFD0A8',{hatch:0,hl:0,lw:.7});
+  b.ln([[7,33],[4.5,27]],{w:1.3});b.ln([[53,31],[55.5,25]],{w:1.3});b.ln([[30,40],[30,34]],{w:1.3});
+  b.ex('spark',21,33,3.4);b.ex('spark',40,30,2.8);
+ },
+ fx_pop(b){
+  for(let i=0;i<8;i++){const a=(i*45+12)*Math.PI/180,r0=i%2?8.5:7,r1=i%2?13.5:16;b.ln([[30+Math.cos(a)*r0,30+Math.sin(a)*r0],[30+Math.cos(a)*r1,30+Math.sin(a)*r1]],{w:1.5})}
+  [[-60,22],[0,23],[60,21.5],[120,23],[180,22],[240,23.5]].forEach(([d,rr])=>{const a=(d+34)*Math.PI/180,x=30+Math.cos(a)*rr,y=30+Math.sin(a)*rr;
+   b.sh(rot([[x,y-4],[x+2.6,y+.2],[x+2.2,y+2.6],[x,y+3.4],[x-2.2,y+2.6],[x-2.6,y+.2]],a-Math.PI/2,x,y),'#BFE6FA',{k:.2,hatch:0,hl:0,lw:.55})});
+  [[-20,20],[100,145],[205,235]].forEach(([a0,a1])=>b.ln(arcP(30,30,27,27,a0,a1,5),{w:1.1,op:.75}));
+  b.ex('spark',52,8,3.4);b.ex('spark',7,52,2.8);
  }
 });
 PROPS['torn-map']=function(b,o){
