@@ -151,6 +151,7 @@ async function layout(t) {
 run('v219_friends', async (t) => {
   const { ok, sec, ev } = t;
   if (process.env.FR_ONLY === 'walk') { await walkPart(t); return; } // FR_ONLY=walk: part 5 alone (a quicker loop while working on it)
+  if (process.env.FR_ONLY === 'greet') { await greetPart(t); return; } // FR_ONLY=greet: part 3b alone
   const workerLim = limM ? limM[1].replace(/\s/g, '') : '';
 
   sec('1. lists match the Worker, and the gift order is the contract');
@@ -605,6 +606,8 @@ run('v219_friends', async (t) => {
     await t.ctx.close();
   }
 
+  await greetPart(t); // part 3b: the greeting on a visit (owner, 2 Nov 2026)
+
   /* ---------------- part 4: gifts (V219.md section 5) ---------------- */
   sec('18. FR_GIFTS is dog-safe by the game\'s own tables; the sheet lists only what is in the bag');
   await start(t);
@@ -1026,4 +1029,118 @@ async function sceneLayout(t) {
     hits.forEach((r, i) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (br && y > br.top) bad.push('dog under the bar ' + i); const top = document.elementFromPoint(x, y); if (!top || !top.closest('.frdog')) bad.push('dog covered ' + i); });
     return { side: sw > iw + 1, bad, bar: br ? [...bar.querySelectorAll(':scope > .act')].map((b) => b.dataset.act) : [] };
   });
+}
+
+/* ---------------- part 3b: the greeting on a visit (owner, 2 Nov 2026, as in the launch Reel) ----------------
+   My leader walks in to their leader, the two sniff nose to nose with hearts, then play bow and jump back and forth, then the visit goes on. No dog is
+   drawn over another at any moment: two drawn boxes (.fr-art) may meet only when one dog stands at least 40 behind and the one in front covers no more
+   than the bottom 30% of it (its legs). window.__paw.fr.greet() starts it again (Marketing films it) */
+async function greetPart(t) {
+  const { ok, sec, ev } = t, SUNNY = 'sunnybiscuitxxxxxxxxxx';
+  // a visit to Sunny Biscuit with these dogs (breed keys, '.pup' for a puppy) and my leader drawn as `mine`
+  const visit = async (o) => {
+    await start(t, { vw: o.w, vh: o.h, prefs: o.prefs, patch: o.mine ? { dog: { key: o.mine } } : null });
+    if (o.w < 600) await t.until(() => document.documentElement.dataset.layout === 'phone', null, 4000);
+    await befriend(t, ['DOG-4K7PM']);
+    await ev(([fid, list]) => { const B = window.PawGenes.BREEDS; window.__frSrv.yardOf[fid].dogs = list.map((s, i) => { const [k, a] = s.split('.'); return { b: B.indexOf(k), c: null, o: -1, a: a === 'pup' ? 'pup' : 'adult', s: i % 2 ? 'm' : 'f', sp: 0, n: i }; }); }, [SUNNY, o.theirs]);
+    await ev(() => { window.__toasts.length = 0; });
+    await watch(t); // armed before the visit: the walk in starts 0.6 s after the yard is drawn
+    await ev((fid) => window.__paw.fr.visit(fid), SUNNY);
+    return t.until(() => window.__paw.mode === 'fryard' && !!window.__paw.fr.greeting(), null, 6000);
+  };
+  const all = async (tag, o, shots) => {
+    ok(await visit(o), tag + ': the visit opens and the greeting starts');
+    if (shots) {
+      if (await t.until(() => { const g = window.__paw.fr.greeting(); return !!g && g.step === 0; }, null, 8000)) await shot(t, 'greet_sniff_' + shots);
+      if (await t.until(() => { const g = window.__paw.fr.greeting(); return !!g && g.step >= 2; }, null, 8000)) await shot(t, 'greet_play_' + shots);
+    }
+    const R = await watched(t);
+    const L = greetLook(R, o.theirs.length + 1);
+    ok(L.drawn, tag + ': all ' + (o.theirs.length + 1) + ' dogs drawn: ' + L.n);
+    ok(L.sniff, tag + ': my leader and theirs sniff nose to nose, facing each other (mine on the left facing right, theirs facing left): ' + JSON.stringify(L.sniffAt));
+    ok(L.hearts, tag + ': hearts between them while they sniff');
+    if (o.calm) ok(!L.walked && !L.jumped && L.bows, tag + ': no walk in and no jumps; they sniff, then play bow: ' + JSON.stringify(L.steps));
+    else ok(L.walked && L.play && L.after, tag + ': my leader walks in first, then play bow and jump back and forth after the sniff: ' + JSON.stringify(L.steps));
+    ok(L.settled, tag + ': then the visit goes on: both rest (idle, sit or happy), the greeting is over: ' + JSON.stringify(L.last));
+    ok(!R.bad.length, tag + ': no dog drawn over another in ' + R.n + ' samples (' + R.legs + ' with only legs behind a dog in front): ' + JSON.stringify(R.bad.slice(0, 3)));
+    if (shots) await shot(t, 'greet_settled_' + shots);
+    return R;
+  };
+
+  sec('17b. the greeting: walk in, sniff nose to nose with hearts, play bow and jump, then the visit; no dog over another');
+  const R1 = await all('393 Sunny (a shiba and a corgi puppy)', { w: 393, h: 852, theirs: ['shiba', 'corgi.pup'] }, '393');
+  const third = R1.final.find((d) => !d.mine && !d.lead), pair = R1.final.filter((d) => d.mine || d.lead);
+  ok(third && third.on && pair.every((d) => d.on && d.y - third.y >= 40), '393: my leader and theirs in front, the third dog behind them, all three on screen: ' + JSON.stringify(R1.final));
+  // greet(): again, on this visit; a pet in the middle of it still works and the greeting still finishes
+  ok(await ev(() => window.__paw.fr.greet() === true), 'window.__paw.fr.greet() starts it again');
+  await watch(t);
+  ok(await t.until(() => { const g = window.__paw.fr.greeting(); return !!g && g.step === 0; }, null, 8000), 'greet(): they sniff again');
+  const b0 = await ev(() => window.__paw.S.bond.pts);
+  const hit = await ev(() => { const d = window.__paw.fr.scene().dogs, i = d.findIndex((x) => !x.mine), r = document.querySelector(`#frDogs [data-frd="${i}"] .fr-hit`).getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height * 0.6 }; });
+  await t.p.mouse.click(hit.x, hit.y);
+  ok(await t.until((i) => window.__paw.fr.scene().dogs[i].pose === 'happy' && document.querySelectorAll('#fx .heartfx').length > 0, hit.i, 2000), 'a tap on their leader during the greeting: hearts and its happy pose');
+  ok(await t.until((fid) => window.__frSrv.sent.some((s) => s.kind === 'pet' && s.fid === fid), SUNNY, 4000) && (await t.until((b) => window.__paw.S.bond.pts === b + 1, b0, 3000)), 'the pet goes out and gives +1 Bond, as any pet');
+  const R2 = await watched(t), L2 = greetLook(R2, 3);
+  ok(L2.play && L2.settled && !R2.bad.length, 'greet(): the greeting goes on after the pet (play bow and jump), then the visit; no dog over another: ' + JSON.stringify({ steps: L2.steps, bad: R2.bad.slice(0, 2) }));
+  ok(await ev(() => { window.__paw.fr.home(); return window.__paw.fr.greet() === false; }), 'greet() outside a visit: false, nothing happens');
+  await t.ctx.close();
+
+  await all('360x640 big breeds (a Great Dane meets a Great Dane and a dachshund)', { w: 360, h: 640, mine: 'dane', theirs: ['dane', 'dachs'] }, '360');
+  await t.ctx.close();
+  await all('393 one friend dog (a Pomeranian meets a dachshund)', { w: 393, h: 852, mine: 'pom', theirs: ['dachs'] });
+  await t.ctx.close();
+  await all('360x640 three friend dogs', { w: 360, h: 640, theirs: ['shiba', 'corgi.pup', 'pom'] });
+  await t.ctx.close();
+  const R5 = await all('1280x800 three friend dogs, big and small (a dachshund meets a Great Dane, a Pomeranian and a corgi)', { w: 1280, h: 800, mine: 'dachs', theirs: ['dane', 'pom', 'corgi'] }, '1280');
+  ok(R5.final.every((d) => d.on), '1280: every dog on screen: ' + JSON.stringify(R5.final));
+  await t.ctx.close();
+  await all('1280x800 one friend dog (a Chihuahua meets a Great Dane)', { w: 1280, h: 800, mine: 'chihuahua', theirs: ['dane'] });
+  await t.ctx.close();
+  await all('393 reduced motion', { w: 393, h: 852, prefs: { motion: 'off' }, theirs: ['shiba', 'corgi.pup'], calm: true });
+  await t.ctx.close();
+}
+// in the page: every 50 ms, the greeting's step, each dog's pose, face, feet and drawn box, and any two drawn boxes that meet, until 0.8 s after it ends
+function watch(t) {
+  return t.ev(() => {
+    const P = window.__paw.fr, out = { s: [], bad: [], legs: 0, n: 0, done: false }, t0 = performance.now(); let was = false, end = 0;
+    window.__grOut = out; clearInterval(window.__grId);
+    const tick = () => {
+      if (window.__paw.mode !== 'fryard') return;
+      const g = P.greeting(), sc = P.scene(), vw = innerWidth, vh = innerHeight;
+      const els = [...document.querySelectorAll('#frDogs .frdog')].filter((e) => e.style.display !== 'none');
+      const B = els.map((e) => { const r = e.querySelector('.fr-art').getBoundingClientRect(), d = sc.dogs[+e.dataset.frd]; return { i: +e.dataset.frd, r: [r.left, r.top, r.right, r.bottom], d }; });
+      for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) {
+        const a = B[i], b = B[j], ix = Math.min(a.r[2], b.r[2]) - Math.max(a.r[0], b.r[0]), iy0 = Math.max(a.r[1], b.r[1]), iy1 = Math.min(a.r[3], b.r[3]);
+        if (ix <= 2 || iy1 - iy0 <= 2) continue;
+        const back = a.d.y < b.d.y ? a : b, legs = Math.abs(a.d.y - b.d.y) >= 40 && iy0 >= back.r[1] + 0.7 * (back.r[3] - back.r[1]) - 3;
+        if (legs) out.legs++; else out.bad.push({ g: g && g.step, a: [a.d.key, a.d.pose, a.d.x, a.d.y], b: [b.d.key, b.d.pose, b.d.x, b.d.y], ix: Math.round(ix), iy: Math.round(iy1 - iy0) });
+      }
+      out.n++;
+      out.s.push({ g: g ? { step: g.step, pose: g.pose.slice() } : null, h: document.querySelectorAll('#fx .heartfx').length, d: sc.dogs.map((d) => ({ mine: d.mine, pose: d.pose, face: d.face, x: d.x, y: d.y, w: d.walking })) });
+      const lead = sc.dogs.findIndex((d) => !d.mine);
+      out.final = B.map((b) => ({ key: b.d.key, mine: b.d.mine, lead: b.i === lead, pose: b.d.pose, y: b.d.y, on: b.r[0] >= -1 && b.r[2] <= vw + 1 && b.r[1] >= 0 && b.r[3] <= vh }));
+      if (g) { was = true; end = 0; } else if (was && !end) end = performance.now();
+      if ((end && performance.now() - end > 800) || performance.now() - t0 > 20000) { clearInterval(window.__grId); out.done = true; }
+    };
+    window.__grId = setInterval(tick, 50);
+  });
+}
+async function watched(t) { await t.until(() => !!window.__grOut && window.__grOut.done, null, 22000); return t.ev(() => window.__grOut); }
+// what the samples show: the sniff (facing each other, mine on the left), hearts, the walk in, the play after the sniff, the rest at the end
+function greetLook(R, want) {
+  const S = R.s.filter((x) => x.d.length), first = (f) => S.findIndex(f);
+  const mi = S.length ? S[0].d.findIndex((d) => d.mine) : -1, li = S.length ? S[0].d.findIndex((d) => !d.mine) : -1;
+  const sniffAt = first((x) => x.g && x.d[mi].pose === 'sniff' && x.d[li].pose === 'sniff' && x.d[mi].face === 'right' && x.d[li].face === 'left' && x.d[mi].x < x.d[li].x);
+  const playAt = first((x) => x.g && x.g.step >= 2 && ((x.d[mi].pose === 'bow' && x.d[li].pose === 'jump') || (x.d[mi].pose === 'jump' && x.d[li].pose === 'bow')));
+  const swapAt = playAt < 0 ? -1 : S.findIndex((x, i) => i > playAt && x.g && x.d[mi].pose !== S[playAt].d[mi].pose && ['bow', 'jump'].includes(x.d[mi].pose) && ['bow', 'jump'].includes(x.d[li].pose));
+  const walkAt = first((x) => x.d[mi].w), last = S[S.length - 1];
+  const rest = (p) => ['idle', 'sit', 'happy'].includes(p);
+  return {
+    n: last ? last.d.length : 0, drawn: !!last && last.d.length === want, sniff: sniffAt >= 0, sniffAt: sniffAt >= 0 ? S[sniffAt].d.filter((d, i) => i === mi || i === li) : null,
+    hearts: S.some((x, i) => i >= sniffAt && sniffAt >= 0 && x.g && x.g.step === 0 && x.h > 0),
+    walked: walkAt >= 0 && walkAt < sniffAt, play: playAt > sniffAt && sniffAt >= 0 && swapAt > playAt, after: playAt > sniffAt,
+    jumped: S.some((x) => x.d[mi].pose === 'jump' || x.d[li].pose === 'jump'), bows: S.some((x, i) => i > sniffAt && x.d[mi].pose === 'bow' && x.d[li].pose === 'bow'),
+    settled: !!last && !last.g && rest(last.d[mi].pose) && rest(last.d[li].pose),
+    steps: [...new Set(S.filter((x) => x.g).map((x) => x.g.step + ':' + x.g.pose.join('/')))], last: last && { g: last.g, mine: last.d[mi], lead: last.d[li] }
+  };
 }

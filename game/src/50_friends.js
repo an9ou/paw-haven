@@ -673,7 +673,7 @@ function frInviteTry() {
 /* ---------- part 3: a friend's yard (V219.md section 4). Read-only: it draws their snapshot and changes nothing in this save but Bond and S.fr ----------
    cur.mode 'fryard' (go() in 00_core.js). The scene is its own: their house, their decor at their spots and their season, their dogs roaming as Dog Card
    visitors do (dcDog, the same art and scale) and my leader along. No garden, mailbox, missions, shop doors, decorating or care: the bar's Map goes home. */
-const FRV = { fid: '', pair: null, yard: null, card: null, dogs: [], raf: 0, last: 0, chk: 0, crop: null, busy: '' };
+const FRV = { fid: '', pair: null, yard: null, card: null, dogs: [], raf: 0, last: 0, chk: 0, crop: null, busy: '', fit: 1, gr: null };
 const FR_VISIT_FROM = ['yard', 'fryard', 'map', 'market', 'shelter', 'japan']; // a walk, a game or the garden finishes first
 const FR_STAMP = [452, 540, 60, 60]; // the paw stamp on the yard path (x, y, w, h)
 const FR_HOUSE_AT = [620, 330, 240, 200]; // where the yard draws the house (03_yard.js)
@@ -823,10 +823,16 @@ function frPan(svg) {
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   sync(); onCleanup(() => cancelAnimationFrame(FRC.raf));
 }
-/* the dogs: the friend's (up to 5, Dog Card visitors' art and scale) and my leader. Under the harness they stand still unless prefs.rmTest (rmWander) */
-const frK = (v, y) => RM_BASE * clamp(1 + (y - 500) * RM_DEPTH, 0.86, 1.12) * sizeK(v.dog) * (isPhone() ? 0.84 : 1); // a phone shows ~360 world units beside the house: a little smaller there, so a full pack fits without piling up
+/* the dogs: the friend's (up to 5, Dog Card visitors' art and scale) and my leader. Under the harness they stand still unless prefs.rmTest (rmWander).
+   Owner's rule (2 Nov 2026): no dog is drawn over another. Each dog's drawn box is measured once per visit, per pose (frMeasure), and every spot keeps
+   that box clear of the others' (frClash). Two rows may stack only when the dog behind is covered at its legs at most (FR_LEGS). A phone that cannot
+   fit them all keeps the rest of the pack off to the side of its crop, where the look-around button shows them (frDrawDogs) */
+const frK = (v, y) => RM_BASE * clamp(1 + (y - 500) * RM_DEPTH, 0.86, 1.12) * sizeK(v.dog) * (isPhone() ? 0.84 : 1) * (FRV.fit || 1); // a phone shows ~360 world units beside the house: a little smaller there (and FRV.fit, when even that is too big for the greeting pair)
 const frTap = (x, y, k) => [x - 88 * k, y - 170 * k, 176 * k, 180 * k]; // the dog's tap rect (dc-hit) at feet x, y
 const frOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+const FR_REST = ['idle', 'sit', 'happy', 'walk'], FR_PLAY = ['sniff', 'bow', 'jump']; // the poses a visit draws; the greeting pair also plays
+const FR_LEGS = 0.3, FR_ROW = 40; // a dog at least FR_ROW behind another may hide the bottom FR_LEGS of its drawn box (its legs and feet) behind it, no more
+const frU = (a, b) => (a ? [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])] : b.slice());
 // what a dog must keep clear of, in world units: the chip, the buttons, the bar (phones) and the edges of what the camera shows
 function frScan() {
   const svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(); if (!M) { FRV.crop = { x0: 60, x1: 940, y1: 590, boxes: [], feet: [] }; return; }
@@ -841,29 +847,99 @@ function frScan() {
   svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
   FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet };
 }
-// share: how much of its tap rect another dog may cover (a quarter; a crowded phone crop lets them stand closer, as the pack does at home)
-function frSpotOk(v, x, y, share) {
+// each dog's drawn box per pose and way it faces, in its own units around the feet (430, 500): drawn hidden all at once, then measured. Facing
+// left is the mirror image unless the pose has words (the sniff: words are not mirrored), then it is measured too. Kept for later visits (FR_EXT_MEMO)
+const FR_EXT_MEMO = new Map(), FR_WORDS = 10;
+const frFontsIn = () => { try { return !document.fonts || document.fonts.status === 'loaded'; } catch (e) { return true; } };
+const frMirror = (e) => [-e[2], e[1], -e[0], e[3]];
+function frMeasure(list, play) {
+  const g = $('#frDogs'); if (!g) return;
+  const jobs = [], opt = (v, p, f) => ({ pose: p, outfit: frOutfit(v), facing: f });
+  const keyOf = (v, o) => { try { return v.dog.key + '|' + JSON.stringify(dogOpts(v.dog, o)); } catch (e) { return null; } };
+  list.forEach((v) => {
+    v.ext = {}; v.envc = {};
+    (play.includes(v) ? FR_REST.concat(FR_PLAY) : FR_REST).forEach((p) => {
+      const oR = opt(v, p, 'right'), oL = opt(v, p, 'left'), kR = keyOf(v, oR), kL = keyOf(v, oL);
+      if (kR && kL && FR_EXT_MEMO.has(kR) && FR_EXT_MEMO.has(kL)) { v.ext[p] = FR_EXT_MEMO.get(kR); v.ext[p + '/l'] = FR_EXT_MEMO.get(kL); return; }
+      const sR = dogSVG(v.dog, oR), words = /<text\b/.test(sR); jobs.push({ v, n: p, s: sR, k: kR, words, f: 'right' });
+      jobs.push(words ? { v, n: p + '/l', s: dogSVG(v.dog, oL), k: kL, words, f: 'left' } : { v, n: p + '/l', mirror: p, k: kL });
+    });
+  });
+  const draw = jobs.filter((j) => j.s);
+  if (draw.length) {
+    g.innerHTML = '<g visibility="hidden" aria-hidden="true">' + draw.map((j) => `<g>${place(j.s, DX, DY, DW, DH)}</g>`).join('') + '</g>';
+    const kids = g.firstElementChild.children;
+    draw.forEach((j, i) => {
+      let b = null; try { b = kids[i].getBBox(); } catch (e) { b = null; }
+      j.e = b && b.width > 1 ? [b.x - 430, b.y - 500, b.x + b.width - 430, b.y + b.height - 500] : null;
+      if (j.e && j.words) { if (j.f === 'left') j.e[0] -= FR_WORDS; else j.e[2] += FR_WORDS; } // the words in front of the nose: room for a font still loading
+    });
+    g.innerHTML = '';
+  }
+  jobs.forEach((j) => {
+    const e = j.mirror ? j.v.ext[j.mirror] && frMirror(j.v.ext[j.mirror]) : j.e; if (!e) return; // not measured (no layout yet): frExt's stand-in box
+    j.v.ext[j.n] = e;
+    if (j.k && (!j.words || frFontsIn())) { FR_EXT_MEMO.set(j.k, e); if (FR_EXT_MEMO.size > 400) FR_EXT_MEMO.delete(FR_EXT_MEMO.keys().next().value); }
+  });
+}
+const frOutfit = (v) => (v.mine ? outfitOf(v.dog) : v.dog.outfit);
+// the box every pose the dog may take there covers (its own units), facing one way or (face null) either way
+function frEnvL(v, face) {
+  const key = face || 'both'; if (v.envc && v.envc[key]) return v.envc[key];
+  let r = null; (v.play ? FR_REST.concat(FR_PLAY) : FR_REST).forEach((p) => (face ? [face] : ['left', 'right']).forEach((f) => { r = frU(r, frExt(v, p, f)); }));
+  if (v.envc) v.envc[key] = r; return r;
+}
+const frExt = (v, p, f) => (v.ext && v.ext[p + (f === 'left' ? '/l' : '')]) || [-110, -175, 110, 10];
+const frEnv = (v, x, y, k, face) => { const e = frEnvL(v, face); return [x + k * e[0], y + k * e[1], x + k * e[2], y + k * e[3]]; };
+// the shortest the dog is drawn in any of those poses (its own units): the part of it that counts as legs is measured on that
+function frMinH(v) {
+  if (v.envc && v.envc.h) return v.envc.h;
+  const h = Math.min(...(v.play ? FR_REST.concat(FR_PLAY) : FR_REST).flatMap((p) => ['right', 'left'].map((f) => { const e = frExt(v, p, f); return e[3] - e[1]; })));
+  if (v.envc) v.envc.h = h; return h;
+}
+// what a dog holds: its drawn box r, its feet y (null: a walk between rows) and its shortest drawn height h, in world units
+const frRes = (v, r, y, k) => ({ r, y, h: frMinH(v) * k });
+// two holds: 0 apart, 1 the dog behind shows all but its legs (the bottom FR_LEGS of its shortest pose), 2 one drawn over the other
+function frClash(A, B) {
+  const a = A.r, b = B.r, iy0 = Math.max(a[1], b[1]), iy1 = Math.min(a[3], b[3]);
+  if (Math.min(a[2], b[2]) - Math.max(a[0], b[0]) <= 1 || iy1 - iy0 <= 1) return 0;
+  if (A.y == null || B.y == null || Math.abs(A.y - B.y) < FR_ROW) return 2;
+  const back = A.y < B.y ? A : B;
+  return iy0 >= back.r[3] - FR_LEGS * back.h ? 1 : 2;
+}
+// the box the dog holds now, where it stands
+function frHold(v) { v.res = frRes(v, frEnv(v, v.x, v.y, v.k, v.face), v.y, v.k); }
+// o: { legs: allow the row stacking, wide: anywhere in the yard (a phone's crop is full), face: the way it will face (default its own; null either), any: other dogs aside }
+function frSpotOk(v, x, y, o) {
+  o = o || {};
   const c = FRV.crop || { x0: 60, x1: 940, y1: 590, boxes: [], feet: [] }, z = isPhone() ? RM_ZONES_PH.yard || RM_ZONES.yard : RM_ZONES.yard;
   if (x < 60 || x > 940 || y < z[0] || y > Math.min(z[1], c.y1)) return false;
-  if (x > 590 && x < 890 && y < 536) return false; // behind the house
+  if (x > 625 && x < 870 && y < 536) return false; // behind the house (its walls are at x 637 to 844, its front at y 530)
   if ((c.feet || []).some((b) => x > b[0] && x < b[0] + b[2] && y > b[1] && y < b[1] + b[3])) return false;
-  const k = frK(v, y), T = frTap(x, y, k);
-  if (T[0] < c.x0 + 4 || T[0] + T[2] > c.x1 - 4) return false; // the whole dog on screen
-  if (c.boxes.some((b) => frOver(T, b) > 0)) return false;
-  const most = T[2] * T[3] * (share == null ? 0.25 : share);
-  return !FRV.dogs.some((o) => o !== v && (frOver(T, frTap(o.x, o.y, o.k)) > most || (o.tw && frOver(T, frTap(o.tw.x1, o.tw.y1, frK(o, o.tw.y1))) > most)));
+  const k = frK(v, y), T = frTap(x, y, k), R = frEnv(v, x, y, k, 'face' in o ? o.face : v.face);
+  if (y < 500 && R[2] > 640 && R[0] < 860) return false; // well behind the house's front: never drawn over the house
+  if (o.wide) {
+    if (R[0] < 4 || R[2] > 996) return false;
+    if (c.boxes.some((b) => b[1] > 300 && T[1] + T[3] > b[1])) return false; // clear of the buttons and the bar wherever the camera pans
+  } else {
+    if (Math.min(T[0], R[0]) < c.x0 + 4 || Math.max(T[0] + T[2], R[2]) > c.x1 - 4) return false; // the whole dog on screen
+    if (c.boxes.some((b) => frOver(T, b) > 0)) return false;
+  }
+  const most = o.legs ? 1 : 0;
+  const me = frRes(v, R, y, k);
+  return !!o.any || !FRV.dogs.some((d) => d !== v && d.res && frClash(me, d.res) > most);
 }
-function frSpots(v, near, share) {
+function frSpots(v, near, o) {
   const z = RM_ZONES.yard, out = [];
-  for (let y = z[0]; y <= 594; y += 14) for (let x = 60; x <= 940; x += 20) if ((!near || (Math.abs(x - near[0]) < 160 && Math.abs(y - near[1]) < 70)) && frSpotOk(v, x, y, share)) out.push([x, y]);
+  for (let y = z[0]; y <= 594; y += 14) for (let x = 60; x <= 940; x += 20) if ((!near || (Math.abs(x - near[0]) < 160 && Math.abs(y - near[1]) < 70)) && frSpotOk(v, x, y, o)) out.push([x, y]);
   return out;
 }
 const frXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
 function frPose(v) { return v.tw ? 'walk' : performance.now() < v.happy ? 'happy' : v.pose; }
 function frDogArt(v) {
-  const pose = frPose(v), o = { pose, outfit: v.mine ? outfitOf(v.dog) : v.dog.outfit, facing: v.face };
+  const pose = frPose(v), o = { pose, outfit: frOutfit(v), facing: v.face };
   v.drawn = pose + '|' + v.face;
-  return place(dogSVG(v.dog, exOpt(v.dog, pose, o)), DX, DY, DW, DH);
+  return place(dogSVG(v.dog, o), DX, DY, DW, DH); // no passing faces (41_expressions.js) on a visit: the drawn box stays the one measured
 }
 function frDogSVG(v, i) {
   const lbl = v.mine ? v.dog.name : tt('fr.dog_aria', '{dog}, {name}\'s dog. Tap to pet.', { dog: v.dog.name, name: frPairName(FRV.pair) || tt('fr.a_friend', 'A friend') });
@@ -882,60 +958,188 @@ function frOrder() {
   const els = [...g.children], want = els.slice().sort((a, b) => FRV.dogs[+a.dataset.frd].y - FRV.dogs[+b.dataset.frd].y);
   if (want.some((e, i) => els[i] !== e)) want.forEach((e) => g.appendChild(e));
 }
+/* the greeting (owner, 2 Nov 2026, as in the launch Reel): my leader walks in to their leader, the two sniff nose to nose with a heart or two, then play
+   (a play bow, a jump, back and forth, hearts), then the visit goes on as before. Real timers (the harness too); reduced motion: no walk in, no jumps */
+const FR_GREET = [{ a: 'sniff', b: 'sniff', ms: 1900, fx: [250, 1000], s: 'sniff' }, { a: 'happy', b: 'happy', ms: 700 },
+  { a: 'bow', b: 'jump', ms: 650, fx: [80], s: 'boop' }, { a: 'jump', b: 'bow', ms: 650, fx: [80] }, { a: 'bow', b: 'jump', ms: 650, fx: [80] }, { a: 'jump', b: 'bow', ms: 650, fx: [80] }];
+const FR_GREET_CALM = [{ a: 'sniff', b: 'sniff', ms: 2000, fx: [300], s: 'sniff' }, { a: 'bow', b: 'bow', ms: 1600, fx: [200], s: 'boop' }];
+const FR_WALK_IN = [200, 140, 80]; // how far my leader walks in from, if the way is clear
+// the pair's spots: the two facing each other at one depth, their boxes as close as the poses allow, as far forward as fits, near the middle of the view
+function frPairAt(a, b) {
+  const c = FRV.crop || { x0: 60, x1: 940 }, pref = FRC.w < 1000 ? (c.x0 + c.x1) / 2 : 430, z = isPhone() ? RM_ZONES_PH.yard || RM_ZONES.yard : RM_ZONES.yard;
+  const fa = frEnvL(a, 'right'), fb = frEnvL(b, 'left'), yp = FRC.w < 1000 ? 594 : 552;
+  let best = null;
+  for (let y = 594; y >= z[0]; y -= 2) {
+    const ka = frK(a, y), kb = frK(b, y), d = ka * fa[2] - kb * fb[0] + 4; // the feet apart so that the two boxes just do not meet
+    for (let cx = 60; cx <= 940; cx += 4) {
+      const s = -Math.abs(y - yp) - Math.abs(cx - pref) * 0.5; if (best && s <= best.s) continue;
+      if (frSpotOk(a, cx - d / 2, y, { face: 'right' }) && frSpotOk(b, cx + d / 2, y, { face: 'left' })) best = { s, a: [cx - d / 2, y], b: [cx + d / 2, y] };
+    }
+  }
+  return best;
+}
+const frAt = (v, p) => { v.x = p[0]; v.y = p[1]; v.home = p.slice(); v.k = frK(v, v.y); frHold(v); };
+// where my leader starts its walk in (left of its spot, the way clear of the others), or its spot itself
+function frWalkFrom(a) {
+  if (motionOff()) return null;
+  const at = frEnv(a, a.x, a.y, a.k, 'right'), wk = (x) => { const e = frExt(a, 'walk', 'right'); return [x + a.k * e[0], a.y + a.k * e[1], x + a.k * e[2], a.y + a.k * e[3]]; };
+  for (const dx of FR_WALK_IN) {
+    const x = a.x - dx; if (x < 40) continue;
+    const me = frRes(a, frU(at, wk(x)), a.y, a.k); // it walks in its walk pose along one depth: a dog behind may show all but its legs, as beside a dog standing there
+    if (!FRV.dogs.some((d) => d !== a && d.res && frClash(me, d.res) > 1)) return { x, res: me };
+  }
+  return null;
+}
+function frGreetStart(delay) {
+  const a = FRV.dogs.find((v) => v.mine && v.play), b = FRV.dogs.find((v) => !v.mine && v.play); if (!a || !b) return false;
+  const calm = motionOff(), now = performance.now();
+  a.tw = b.tw = null; a.happy = b.happy = 0; a.gr = b.gr = true; a.face = 'right'; b.face = 'left'; a.pose = b.pose = 'idle';
+  const w = frWalkFrom(a);
+  if (w) { a.from = w.x; a.x = w.x; a.res = w.res; } else a.from = null;
+  FRV.gr = { a, b, i: -1, at: now + (delay || 0), steps: calm ? FR_GREET_CALM : FR_GREET, fx: [] };
+  frPaint(a); frPaint(b); frOrder(); return true;
+}
+function frGreetHeart(G, n) {
+  const { a, b } = G, ea = frExt(a, 'sniff', 'right'), eb = frExt(b, 'sniff', 'left'), play = G.i > 0;
+  const nx = (a.x + a.k * ea[2] + b.x + b.k * eb[0]) / 2, top = Math.min(a.y + a.k * frExt(a, 'jump', 'right')[1], b.y + b.k * frExt(b, 'jump', 'left')[1]);
+  const y = play ? top + 10 : (a.y + a.k * ea[1] * 0.45 + b.y + b.k * eb[1] * 0.45) / 2;
+  fxText('♥', nx + (n % 2 ? 14 : -6), y - (n % 2 ? 26 : 0), '#F28FA5', play ? 32 : 36);
+}
+function frGreetTick(t) {
+  const G = FRV.gr; if (!G) return;
+  G.fx = G.fx.filter((h) => { if (t < h) return true; frGreetHeart(G, G.n = (G.n || 0) + 1); return false; });
+  if (t < G.at) return;
+  const { a, b } = G;
+  if (G.i === -1) { // the walk in
+    G.i = -0.5;
+    if (a.from != null && Math.abs(a.home[0] - a.x) > 1) { a.tw = { x0: a.x, y0: a.y, x1: a.home[0], y1: a.home[1], k0: a.k, t0: t, dur: (Math.abs(a.home[0] - a.x) / RM_WALK) * 1000 }; frPaint(a); }
+    return;
+  }
+  if (G.i === -0.5 && a.tw) return; // still walking in
+  G.i = G.i < 0 ? 0 : G.i + 1;
+  const st = G.steps[G.i];
+  if (!st) { // the visit goes on
+    a.gr = b.gr = false; FRV.gr = null;
+    a.pose = PICK(['idle', 'sit', 'happy']); b.pose = PICK(['sit', 'happy', 'idle']); a.wait = t + RINT(2500, 6500); b.wait = t + RINT(2500, 6500);
+    frHold(a); frHold(b); frPaint(a); frPaint(b); return;
+  }
+  a.pose = st.a; b.pose = st.b; G.at = t + st.ms; (st.fx || []).forEach((ms) => G.fx.push(t + ms));
+  if (st.s === 'sniff') sfx('sniff'); else if (st.s === 'boop') SFX.boop(760);
+  frPaint(a); frPaint(b);
+}
+// the test hook greet(): the greeting again on this visit (Marketing films it), the pair back at its spots first
+function frGreet() {
+  if (cur.mode !== 'fryard') return false;
+  const a = FRV.dogs.find((v) => v.mine && v.play), b = FRV.dogs.find((v) => !v.mine && v.play); if (!a || !b) return false;
+  a.tw = b.tw = null; a.face = 'right'; b.face = 'left'; frScan();
+  const keep = [a.res, b.res]; a.res = b.res = null;
+  const p = frPairAt(a, b);
+  if (p) { frAt(a, p.a); frAt(b, p.b); } else { a.res = keep[0]; b.res = keep[1]; frAt(a, a.home); frAt(b, b.home); }
+  return frGreetStart(250);
+}
+// one try at one scale: the pair first, then the others where the camera shows them (all clear, else only their legs behind a dog in front).
+// final: the ones that do not fit go off to the side of a phone's crop (the look-around button shows them), else where the others cover them least
+function frLayout(list, fit, final) {
+  FRV.fit = fit; FRV.dogs = [];
+  const ph = FRC.w < 1000, a = list.find((v) => v.mine), b = list.find((v) => !v.mine), now = performance.now(), put = (v, p) => { frAt(v, p); v.wait = now + RINT(1500, 5000); FRV.dogs.push(v); };
+  list.forEach((v) => { v.res = null; v.play = false; v.envc = {}; });
+  let pair = null, n = 0, path = null;
+  if (a && b) {
+    a.play = b.play = true; a.face = 'right'; b.face = 'left'; b.pose = 'idle';
+    pair = frPairAt(a, b);
+    if (pair) { frAt(a, pair.a); frAt(b, pair.b); FRV.dogs.push(a, b); n = 2; const w = frWalkFrom(a); path = w && w.res; }
+    else { a.play = b.play = false; a.envc = {}; b.envc = {}; }
+  }
+  const rest = [];
+  list.filter((v) => !FRV.dogs.includes(v)).forEach((v) => { // where the camera shows them: all clear, else only the legs behind a dog in front; off my leader's walk in when there is room
+    let sp = frSpots(v); if (!sp.length) sp = frSpots(v, null, { legs: true });
+    if (!sp.length) { rest.push(v); return; }
+    const off = path ? sp.filter((p) => frClash(frRes(v, frEnv(v, p[0], p[1], frK(v, p[1]), v.face), p[1], frK(v, p[1])), path) <= 1) : sp;
+    put(v, PICK(off.length ? off : sp)); n++;
+  });
+  if (pair) { const w = frWalkFrom(a); if (w) a.res = w.res; } // the rest keep clear of the walk in too
+  if (!final) return { pair, n };
+  rest.forEach((v) => {
+    let sp = [];
+    if (ph) { // off to the side of the crop, as near as there is room
+      sp = frSpots(v, null, { wide: true }); if (!sp.length) sp = frSpots(v, null, { wide: true, legs: true });
+      const c = FRV.crop, gap = (p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= c.x0 ? c.x0 - R[2] : R[0] >= c.x1 ? R[0] - c.x1 : 1e4 - Math.abs(p[0] - (c.x0 + c.x1) / 2); };
+      sp.sort((p, q) => gap(p) - gap(q)); sp = sp.slice(0, 3);
+    }
+    if (!sp.length) { // nowhere clear at all: the spot the others cover least
+      const all = frSpots(v, null, { wide: ph, any: true }), box = (r) => [r[0], r[1], r[2] - r[0], r[3] - r[1]];
+      const cover = (p) => { const R = box(frEnv(v, p[0], p[1], frK(v, p[1]), v.face)); return FRV.dogs.reduce((m, o) => m + (o.res ? frOver(R, box(o.res.r)) : 0), 0); };
+      if (all.length) { all.sort((p, q) => cover(p) - cover(q)); sp = [all[0]]; }
+    }
+    if (sp.length) put(v, PICK(sp));
+  });
+  return { pair, n };
+}
 function frDrawDogs() {
   const g = $('#frDogs'); if (!g) return;
-  frScan(); FRV.dogs = [];
+  frScan(); FRV.dogs = []; FRV.gr = null; FRV.fit = 1;
   const list = [];
   FRV.card.dogs.forEach((x, i) => { const dog = dcDog(FRV.card, i); if (dog) list.push({ dog, mine: false, i }); });
   if (S.dog) list.splice(Math.min(1, list.length), 0, { dog: S.dog, mine: true, i: -1 }); // my leader walks in beside their leader
   list.forEach((o) => {
-    const v = Object.assign(o, { x: 0, y: 0, k: 1, face: Math.random() < 0.5 ? 'left' : 'right', pose: PICK(['idle', 'sit', 'happy']), tw: null, wait: 0, home: null, hidden: false, happy: 0, drawn: '' });
-    if (v.mine) { v.pose = 'idle'; v.face = 'right'; }
-    let sp = frSpots(v);
-    if (!sp.length) { // a crowded phone crop: the spot the others cover least
-      const all = frSpots(v, null, 1), cover = (p) => { const T = frTap(p[0], p[1], frK(v, p[1])); return FRV.dogs.reduce((s, o) => s + frOver(T, frTap(o.x, o.y, o.k)), 0); };
-      if (all.length) { all.sort((a, b) => cover(a) - cover(b)); sp = [all[0]]; }
-    }
-    if (!sp.length) return;
-    const at = PICK(sp); v.x = at[0]; v.y = at[1]; v.home = at.slice(); v.k = frK(v, v.y); v.wait = performance.now() + RINT(1500, 5000);
-    FRV.dogs.push(v);
+    Object.assign(o, { x: 0, y: 0, k: 1, face: Math.random() < 0.5 ? 'left' : 'right', pose: PICK(['idle', 'sit', 'happy']), tw: null, wait: 0, home: null, hidden: false, happy: 0, drawn: '', res: null, play: false, gr: false, from: null });
+    if (o.mine) { o.pose = 'idle'; o.face = 'right'; }
   });
+  frMeasure(list, [list.find((v) => v.mine), list.find((v) => !v.mine)].filter(Boolean)); // the two who greet also play: their play poses are measured too
+  // the whole pack a little smaller when that lets the greeting pair and (a phone) a third dog or (a desktop) all of them fit the view clear of each other (owner, 2 Nov 2026)
+  const ph = FRC.w < 1000, both = list.some((v) => v.mine) && list.some((v) => !v.mine), want = ph ? Math.min(list.length, 3) : list.length;
+  let best = null;
+  for (const f of [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7]) {
+    const r = frLayout(list, f, false), s = (r.pair || !both ? 100 : 0) + Math.min(r.n, want);
+    if (!best || s > best.s) best = { s, f };
+    if (s >= 100 + want) break;
+  }
+  const L = frLayout(list, best ? best.f : 1, true);
+  FRV.dogs = list.filter((v) => FRV.dogs.includes(v)); // the list's order: their leader, mine, then theirs
   g.innerHTML = FRV.dogs.map((v, i) => frDogSVG(v, i)).join('');
   g.querySelectorAll('.frdog:not(.fr-mine)').forEach((el) => {
     const go = (e) => { if (e) e.stopPropagation(); const v = FRV.dogs[+el.dataset.frd]; if (v) frPetDog(v); };
     el.addEventListener('click', go); el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } });
   });
+  if (L.pair) frGreetStart(600);
   frOrder(); FRV.last = 0; if (!FRV.raf) FRV.raf = requestAnimationFrame(frFrame);
 }
+// a wander: a clear spot near home, and the whole way there clear of the others too
 function frNext(v, now) {
-  const sp = frSpots(v, v.home).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50);
+  const from = frEnv(v, v.x, v.y, v.k, null);
+  const sp = frSpots(v, v.home, { face: null }).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50).filter((p) => {
+    const me = frRes(v, frU(from, frEnv(v, p[0], p[1], frK(v, p[1]), null)), null, v.k); return !FRV.dogs.some((d) => d !== v && d.res && frClash(me, d.res) > 0);
+  });
   if (!sp.length) { v.wait = now + RINT(2000, 4000); return; }
   const p = PICK(sp), dist = Math.hypot(p[0] - v.x, p[1] - v.y);
-  v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: (dist / RM_WALK) * 1000 }; v.face = p[0] < v.x ? 'left' : 'right'; frPaint(v);
+  v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: (dist / RM_WALK) * 1000 }; v.face = p[0] < v.x ? 'left' : 'right';
+  v.res = frRes(v, frU(from, frEnv(v, p[0], p[1], frK(v, p[1]), null)), null, v.k); frPaint(v);
 }
 function frFrame(t) {
   FRV.raf = 0; if (cur.mode !== 'fryard' || !$('#frDogs')) return;
   const dt = FRV.last ? Math.min(100, t - FRV.last) : 0; FRV.last = t;
   const held = !modal.hidden || document.visibilityState === 'hidden';
   if (t > FRV.chk && !held) { FRV.chk = t + 1000; frScan(); }
+  if (held && FRV.gr) { FRV.gr.at += dt; FRV.gr.fx = FRV.gr.fx.map((h) => h + dt); }
   FRV.dogs.forEach((v) => {
     if (held) { if (v.tw) v.tw.t0 += dt; v.wait += dt; return; }
     if (v.tw) {
-      const w = v.tw, k = w.dur > 0 ? Math.min(1, (t - w.t0) / w.dur) : 1;
+      const w = v.tw, k = w.dur > 0 ? clamp((t - w.t0) / w.dur, 0, 1) : 1;
       v.x = w.x0 + (w.x1 - w.x0) * k; v.y = w.y0 + (w.y1 - w.y0) * k; v.k = w.k0 + (frK(v, w.y1) - w.k0) * k;
-      if (k >= 1) { v.tw = null; v.pose = PICK(['idle', 'idle', 'sit', 'happy']); v.wait = t + RINT(2500, 6500); }
+      if (k >= 1) { v.tw = null; frHold(v); if (!v.gr) { v.pose = PICK(['idle', 'idle', 'sit', 'happy']); v.wait = t + RINT(2500, 6500); } }
       frPaint(v);
     } else {
       if (v.drawn && frPose(v) + '|' + v.face !== v.drawn) frPaint(v); // the happy pose ends
-      if (t > v.wait && rmWander()) frNext(v, t);
+      if (t > v.wait && rmWander() && !v.gr) frNext(v, t);
     }
   });
+  if (!held) frGreetTick(t);
   frOrder(); FRV.raf = requestAnimationFrame(frFrame);
 }
 /* ---------- pet: hearts, a happy pose and a line from the dog's personality. The first pet per friend per day sends `pet` ---------- */
 function frPetDog(v) {
   if (!v || v.mine || cur.mode !== 'fryard') return;
-  if (v.tw) { v.x = v.tw.x1; v.y = v.tw.y1; v.k = frK(v, v.y); v.tw = null; }
+  if (v.tw) { v.x = v.tw.x1; v.y = v.tw.y1; v.k = frK(v, v.y); v.tw = null; frHold(v); }
   v.happy = performance.now() + 2200; v.wait = v.happy + RINT(1500, 3000); frPaint(v);
   const lf = v.face === 'left', hx = v.x + (lf ? -43 : 43) * v.k, hy = v.y - 175 * v.k;
   SFX.boop(760); fxText('♥', hx, hy - 20); setTimeout(() => fxText('♥', hx + 18, hy - 50), 180);
@@ -1273,7 +1477,7 @@ function enterFrYard() {
   document.addEventListener('visibilitychange', onHide);
   const onSize = () => { const pk = $('#phPeek'); frCam(); frScan(); if (pk) pk.classList.remove('back'); };
   window.addEventListener('resize', onSize);
-  onCleanup(() => { cur.key = null; cancelAnimationFrame(FRV.raf); FRV.raf = 0; FRV.dogs = []; document.removeEventListener('visibilitychange', onHide); window.removeEventListener('resize', onSize); });
+  onCleanup(() => { cur.key = null; cancelAnimationFrame(FRV.raf); FRV.raf = 0; FRV.dogs = []; FRV.gr = null; document.removeEventListener('visibilitychange', onHide); window.removeEventListener('resize', onSize); });
 }
 
 /* ---------- boot ---------- */
@@ -1300,7 +1504,9 @@ function frExpose() {
     walkDogs: () => frWalkDogs().map((o) => ({ fid: o.fid, dog: o.dog, name: o.d.name, key: o.d.key })), guest: () => (S && S.fr ? S.fr.guest : null), walkGuest: () => (FRW.g ? { fid: FRW.g.fid, dog: FRW.g.dog } : null),
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
     cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home }), fit: (root) => frFit(root),
-    scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), x: Math.round(v.x), y: Math.round(v.y) })) })
+    greet: () => frGreet(), greeting: () => (FRV.gr ? { step: FRV.gr.i, pose: [FRV.gr.a.pose, FRV.gr.b.pose] } : null), // the greeting again on this visit (Marketing films it); where it is
+    crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)) },
+    scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), face: v.face, x: Math.round(v.x), y: Math.round(v.y), k: +v.k.toFixed(3), play: v.play, walking: !!v.tw })) })
   };
 }
 frReadInvite();
