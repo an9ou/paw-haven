@@ -6,7 +6,7 @@
 //   walk   the run with Waffles beside Mochi (the runner's own buttons, timer and hints hidden)
 // The sheets for the note and the gift are used with the sheet hidden (their buttons are clicked from script).
 //
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_clean.js <game checkout> <outdir>
+//   [PAW_LANG=zh-Hans] NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_clean.js <game checkout> <outdir>
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.');
 const OUT = path.resolve(process.argv[3] || 'friends_clean'); fs.mkdirSync(OUT, { recursive: true });
@@ -76,6 +76,13 @@ run('friends_clean', async (t) => {
   await t.adopt({ head: '~Dachshund', sex: 'boy' }); // Noodle, our narrator (as in the 45 s promo and the profile picture)
   await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 85, happy: 85, energy: 90, clean: 90 }, dog: { name: 'Noodle' } });
   await ev(() => { window.__paw.S.coolUntil = 1e12; }); // not "too hot" on a sunny midday
+  // PAW_LANG=zh-Hans: the RedNote cut's footage. The dog is adopted in English (the harness picks breeds by their English names), then the game is
+  // switched to the language and reloaded with the save, so the yard's signs and every word the game draws are in that language
+  if (process.env.PAW_LANG) {
+    await ev((l) => { window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, process.env.PAW_LANG);
+    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard');
+    console.log('language', await ev(() => document.documentElement.lang));
+  }
   await t.calm();
   const SUNNY = 'sunnybiscuitxxxxxxxxxx';
   const clean = await p().addStyleTag({ content: CLEAN_CSS });

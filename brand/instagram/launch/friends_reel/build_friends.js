@@ -31,22 +31,34 @@ vm.runInContext(fs.readFileSync(path.join(DEV, 'mods', 'qr.js'), 'utf8'), ctx);
 const PA = win.PawArt; if (!PA.FRIENDS || !PA.FRIENDS.card) throw new Error('no PawArt.FRIENDS in ' + DEV + ': use the v2.19 build');
 const dcSrc = fs.readFileSync(path.join(DEV, 'game', 'src', '40_dogcards.js'), 'utf8');
 const words = (k) => JSON.parse(dcSrc.match(new RegExp('const ' + k + ' = (\\[[\\s\\S]*?\\]);'))[1].replace(/'/g, '"'));
-const OUR_NAME = words('DC_WORDS_A')[LAY.name[0]] + ' ' + words('DC_WORDS_B')[LAY.name[1]];
+// RedNote: the name as the zh-Hans game shows it (its Dog Card words, fr.name "{a}{b}" with no space)
+const ZH = RN ? JSON.parse(fs.readFileSync(path.join(DEV, 'game', 'i18n', 'zh-Hans.json'), 'utf8')) : null; // flat keys: data.dc_words_a.<i>
+const OUR_NAME = RN ? ZH['data.dc_words_a.' + LAY.name[0]] + ZH['data.dc_words_b.' + LAY.name[1]] : words('DC_WORDS_A')[LAY.name[0]] + ' ' + words('DC_WORDS_B')[LAY.name[1]];
 const FR_LINK = (fs.readFileSync(path.join(DEV, 'game', 'src', '50_friends.js'), 'utf8').match(/const FR_LINK = '([^']+)'/) || [])[1];
 if (!FR_LINK) throw new Error('FR_LINK changed');
 function cardSVG() { // as the game's frCardSVG: the card art, the QR of the invite link in its white tile, the friend name above the code line
   const code = PLACEHOLDER ? '' : LAY.code, box = PA.FRIENDS.cardQR;
   let svg = PA.FRIENDS.card(code), qr = '';
-  if (code) { const M = win.PawQR.matrix(FR_LINK + code), n = M.length, s = box.w / (n + 4);
+  // RedNote never shows a link, and a QR is one: a pink paw sits in the QR tile instead
+  if (code && RN) { const cx = box.x + box.w / 2, cy = box.y + box.w / 2, u = box.w / 10;
+    qr = [[0, 1.2, 2.2], [-2.2, -1.2, 1.1], [-0.8, -2.6, 1.1], [0.8, -2.6, 1.1], [2.2, -1.2, 1.1]].map(([x, y, r]) => `<circle cx="${(cx + x * u).toFixed(2)}" cy="${(cy + y * u).toFixed(2)}" r="${(r * u).toFixed(2)}" fill="#F28FA5"/>`).join(''); }
+  else if (code) { const M = win.PawQR.matrix(FR_LINK + code), n = M.length, s = box.w / (n + 4);
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (M[r][c]) qr += `<rect x="${(box.x + (c + 2) * s).toFixed(2)}" y="${(box.y + (r + 2) * s).toFixed(2)}" width="${(s + 0.15).toFixed(2)}" height="${(s + 0.15).toFixed(2)}" fill="#5B3D32"/>`; }
   const size = OUR_NAME.length > 16 ? 15 : OUR_NAME.length > 12 ? 18 : 22;
-  const nm = `<text x="222" y="104" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="${size}" fill="#5B3D32">${OUR_NAME}</text>`;
+  const nm = `<text x="222" y="104" text-anchor="middle" font-family="${RN ? "LXGW WenKai" : "Caveat"}" font-weight="700" font-size="${size}" fill="#5B3D32">${OUR_NAME}</text>`;
   return svg.replace(/<\/svg>\s*$/, qr + nm + '</svg>');
 }
 const CARD = cardSVG().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 // ---- the words ----
-const TX = RN ? null : {
+const TX = RN ? {
+  // RedNote (owner, 2 Nov 2026): the game's zh-Hans Friends words (fr.*, nw.v219.*), no link anywhere; "no chat, no messages", never "no typing"
+  hook: [{ s: '狗狗交朋友的', size: 84, pitch: 100 }, { s: '4种方式', size: 84, pitch: 92 }, { s: '（不用聊天）', size: 56, fill: '#8A7468' }],
+  update: '新版本 · 11月7日',
+  ways: ['去院子做客', '留个爪印', '送一份礼物', '一起散步'], code: '分享你的好友码', safe: '没有聊天，没有私信。',
+  endAsk: '加我们好友！', endSub: '在评论区留下你的好友码',
+  ph: '占位：11月7日换成真的好友码',
+} : {
   // owner, 2 Nov 2026: clean, short labels that name each feature, as our earlier Reels did; not sentences
   hook: [{ s: '4 ways your dog', size: 84, pitch: 98 }, { s: 'can make friends', size: 84, pitch: 92 }, { s: '(no chat)', size: 60, fill: '#8A7468' }],
   update: 'new update · 7 Nov',
@@ -54,7 +66,6 @@ const TX = RN ? null : {
   endAsk: 'add us!', endSub: 'drop your code below',
   ph: 'placeholder: our real code on 7 Nov',
 };
-if (!TX) throw new Error('RedNote words come after the owner approves the English cut');
 
 // ---- the timeline: [start, end, source, from (clip seconds), view { z0, z1, fx, fy0, fy1 }, caption] ----
 const SEG = []; let at = 0;
@@ -74,7 +85,16 @@ const T = at, N = Math.round(T * FPS);
 // ---- subtitles (owner, 2 Nov 2026: "add the subtitles"): Noodle's words in short chunks, each timed by its share of the line (letters, plus a breath
 // at each full stop: Kokoro gives no word times). Where they sit: under the feature label on the game scenes (sky and fence, clear of the dogs at the
 // bottom), under the sticker on the hook, under the card on the code page, at the foot of the end page. All inside SAFE like every other box.
-const SUBS_TX = RN ? null : {
+const SUBS_TX = RN ? { // vo_friends_zh.py, line by line (华夫 = Waffles, as Noodle says it)
+  hook: ['好消息！', '我们的狗狗可以交朋友啦！'],
+  code: ['选一个好友名，', '分享你的好友码，', '你的狗狗就能去好友家做客啦！'],
+  visit: ['去好友的院子做客！', '摸摸好友的狗狗！', '这是华夫。', '华夫喜欢我。'],
+  note: ['留个爪印！', '我写的是：', '“你的狗狗毛茸茸的！”'],
+  gift: ['每天可以送一份礼物！', '我送了一块饼干。', '我没有先偷吃。'],
+  walk: ['还可以带好友的狗狗一起散步！', '华夫跑得比我快。'], walkb: ['是我让着她。'],
+  safe: ['没有聊天，没有私信。', '只有狗狗，一起做朋友！'],
+  end: ['好友功能11月7日上线！', '在评论区留下你的好友码吧！'],
+} : {
   hook: ['Big news!', 'Our dogs can make friends now!'],
   code: ['Pick a friend name,', 'share your code,', 'and your dog can visit theirs!'],
   visit: ['Visit their yard!', 'Pet their dogs!', 'This is Waffles.', 'Waffles likes me.'],
@@ -86,7 +106,7 @@ const SUBS_TX = RN ? null : {
 };
 const SUBS = [];
 VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) throw new Error('no subtitles for ' + v.k);
-  const wt = parts.map((x) => x.length + (/[.!?:"]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
+  const wt = parts.map((x) => (RN ? x.replace(/[，。！：“”、]/g, '').length * 2 : x.length) + (/[.!?:"。！：”]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x }); t0 += d; }); });
 SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.35) : Math.min(T, u.b + 0.6); });
 
@@ -99,7 +119,7 @@ for (const s of SEG) { if (s.src === 'end' || s.src === 'code' || CLIPS[s.src]) 
 const frameAt = (s, t) => { const c = CLIPS[s.src], g = s.from + (t - s.a); let i = 0; while (i + 1 < c.ts.length && c.ts[i + 1] <= g) i++; return 'file://' + c.files[i]; };
 
 const PEN = '#5B3D32', GREEN = '#4E9A54', PINK = '#F28FA5', PAPER = '#FFF8EC';
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? '<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css" rel="stylesheet">' : ''}
 <style>html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}#scr{position:absolute;left:0;top:0;transform-origin:0 0}#ov{position:absolute;left:0;top:0}</style>
 <div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g><g id="sub"></g></svg></div>
 <script>
@@ -153,7 +173,7 @@ window.frame=async function(t, S, src){
       +(PH?'<g transform="rotate(-6 '+CX+' 725)">'+pill(TX.ph,CX,725,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
       +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1000).svg
       +'<path d="M'+CX+' 1040 q-10 38 0 70 M'+(CX-22)+' 1088 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
-      +'<g transform="rotate(-3 '+(CX-110)+' 1200)">'+C([{s:'Doodle',size:88}],CX-110,1200).svg+'</g><g transform="rotate(2 '+(CX+122)+' 1204)">'+C([{s:'Doggo',size:88}],CX+122,1204).svg+'</g>'
+      +'<g transform="rotate(-3 '+(CX-110)+' 1200)">'+centred([{s:'Doodle',size:88}],CX-110,1200,'Caveat').svg+'</g><g transform="rotate(2 '+(CX+122)+' 1204)">'+centred([{s:'Doggo',size:88}],CX+122,1204,'Caveat').svg+'</g>'
       +'<g transform="rotate(-2 '+CX+' 1296)">'+pill(TX.update,CX,1296,46,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
   // the subtitle: ink pill, cream words, one line; a quick fade, no bounce
   let sub=''; const u=SUBS.find((x)=>t>=x.a&&t<x.b);
@@ -167,7 +187,7 @@ window.frame=async function(t, S, src){
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f)))); await p.evaluate(() => document.fonts.ready);
+  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate((rn) => Promise.all(['600 40px Caveat', '700 40px Caveat'].concat(rn ? ['700 40px "LXGW WenKai"'] : []).map((f) => document.fonts.load(f, rn || 'a'))), RN ? JSON.stringify([TX, SUBS_TX, OUR_NAME]) : ''); await p.evaluate(() => document.fonts.ready);
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
   const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' || s.src === 'code' ? null : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);

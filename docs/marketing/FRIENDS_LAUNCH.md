@@ -130,9 +130,49 @@ Job B (the caption carries the steps) · one ask: comment (your friend code) · 
 
 **Alt text (cover):** `A sketchbook page titled "add a friend in 3 steps" over a game screen of a friend's autumn yard, where a crayon Shiba, a Corgi and a Golden puppy in a party hat stand together, and the line "your dog visits theirs. no chat, no messages."`
 
-## RedNote / 小红书
+## RedNote / 小红书 (Simplified Chinese, no link)
 
-After the owner approves the English cut: the same Reel in Simplified Chinese (the game's zh-Hans Friends words), no link ("搜索 Doodle Doggo"), ask "评论区交换好友码", and a 3:4 cover; the carousel as a 3:4 图文 "3步加好友".
+Owner asked for it (2 Nov 2026, "make the rednote version") and chose a Mandarin voice (choice window: "Chinese voice (Kokoro)"). Post `brand/instagram/launch/friends_reel/preview/doodle-doggo-friends-rednote-PREVIEW.mp4`'s final cut (made on 7 Nov with our real code, like the English one) with the 3:4 cover `brand/rednote/rednote-06-friends.jpg` as the video's custom cover. **Never post the PREVIEW**: placeholder name and code with a red 占位 patch.
+
+- **Voice:** Noodle in Mandarin, Kokoro v1.1-zh (`zf_001`, 1.1x) with misaki's Chinese G2P, `vo_friends_zh.py` (setup at the top of the file; jieba may need its sdist on PYTHONPATH). Checked by speech-to-text (faster-whisper small): every line reads back as written (摸摸 came back as the homophone 默默, 爪印 as 找印). Waffles is said and written 华夫. 38.6 s.
+- **Footage:** the same clean scenes shot in the zh-Hans game (`PAW_LANG=zh-Hans capture_clean.js`); the yard's "veggies!" and "garden" signs are English in the Chinese game too (scene art).
+- **Words:** the game's zh-Hans Friends words (fr.*, nw.v219.*): hook "狗狗交朋友的 / 4种方式 / （不用聊天）", sticker "新版本 · 11月7日", "分享你的好友码", "1. 去院子做客", "2. 留个爪印", "3. 送一份礼物", "4. 一起散步", "没有聊天，没有私信。", end page "加我们好友！", our card with its Chinese friend name (the game's zh Dog Card words), "在评论区留下你的好友码", the logo. Subtitles of every line. Owner's rule: 没有聊天，没有私信, never 不用打字. **No QR on RedNote** (a QR is a link): a pink paw sits in the card's QR tile on the 7 Nov cut.
+- **Cover:** `make_friends_cover.js` with `REDNOTE=1`: the English cover's design in Chinese, cut to 1080 x 1440: "狗狗交朋友的 / 4种方式", "（不用聊天）", "Doodle Doggo 好友功能来啦！".
+- **7 Nov:** `PAW_LANG=zh-Hans capture_clean.js`, then `REDNOTE=1 OUR_CODE=… OUR_NAME=… build_friends.js <dev> <clean_zh> <work> <vo_zh>`.
+
+标题 (title, 15 characters with the emoji; 20 max):
+```
+狗狗交朋友的4种方式🐶不用聊天
+```
+
+> 4 ways your dog can make friends, no chat needed.
+
+正文 (text):
+```
+Doodle Doggo 好友功能来啦！🎉 11月7日上线
+
+选一个好友名（两个词，和狗狗卡片用的一样），分享你的好友码🎴 然后你的狗狗就能：
+🏡 去好友的院子做客，摸摸好友的狗狗，双方+1亲密度
+🐾 留个爪印：从12张小纸条里选一张
+🎁 每天送一份礼物：零食、种子或菜园里的东西
+🦮 带好友的狗狗一起散步，好友还会收到一封信
+
+没有聊天，没有私信🤐 小纸条都是选好的，只有用好友码或邀请链接才能加好友，随时可以删除或屏蔽🔒 小朋友玩也放心💛
+
+我们的好友码在视频最后👀 评论区交换好友码吧～👇
+
+免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+
+#DoodleDoggo #交换好友码 #治愈系游戏 #独立游戏 #我在小红书做游戏 #狗狗 #萌宠 #柯基 #腊肠犬 #蜡笔画
+```
+
+> Doodle Doggo's Friends is here! Out on 7 Nov.
+> Pick a friend name (two words, the same as on Dog Cards), share your friend code, and then your dog can: visit a friend's yard and pet their dogs (+1 Bond for both); leave a paw print, one of 12 notes; send a gift once a day (a snack, seeds or something from the garden); take a friend's dog on your walk, and they get a letter.
+> No chat, no messages. The notes are ready-made, you can only add a friend by friend code or invite link, and you can remove or block any time. Safe for kids too.
+> Our friend code is at the end of the video. Swap friend codes in the comments!
+> Free, no ads, plays in your browser; search Doodle Doggo to find it.
+
+Checked by hand (RedNote rules): no link, no QR, title 15 characters with the emoji (20 max), the game's own zh-Hans words (好友名, 好友码, 做客, 摸摸, 亲密度, 留个爪印, 小纸条, 送一份礼物, 一起散步, 删除, 屏蔽), one ask (评论区交换好友码). On 7 Nov the post goes up after 00:00 JST, when Friends is live. The "carousel" as a RedNote 图文 ("3步加好友") comes next.
 
 ## Fixes after the owner's first look (2 Nov 2026)
 
