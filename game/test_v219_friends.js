@@ -955,7 +955,7 @@ async function walkPart(t) {
   await routes('sunflower');
   ok(await ev(() => /Sunflower/.test(document.querySelector('.rt-card.cur h3').textContent)), 'the Sunflower Lanes card');
   await pick(SUNNY + ':0'); await go();
-  ok(await ev(() => window.__opts.area === 'sunflower' && window.__opts.pack.length === 1 && window.__opts.pack[0].friend === true && document.querySelectorAll('.pw-fol.pw-friend .pw-rib').length === 4), 'a run track: the guest follows with its ribbon');
+  ok(await ev(() => window.__opts.area === 'sunflower' && window.__opts.pack.length === 1 && window.__opts.pack[0].friend === true && document.querySelectorAll('.pw-fol.pw-friend .pw-rib').length === 5), 'a run track: the guest follows with its ribbon');
   const i0 = await snap(); await end(R()); const i1 = await snap();
   ok(i1.coins - i0.coins === 220 && /Walked with Sunny Biscuit's [^:]+: \+20/.test(await modalText()) && await ev(() => window.__paw.S.fr.guest === null), 'the run track pays the friend walk and clears the pick');
   await home();
