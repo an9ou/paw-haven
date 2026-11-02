@@ -124,7 +124,8 @@ run('friends_clean', async (t) => {
   await p().waitForTimeout(400);
   console.log('visit layout', JSON.stringify(await ev(() => window.__paw.fr.scene().dogs)));
   await still('visit');
-  await clip('visit', 7.6, async () => { await ev(() => window.__paw.fr.greet()); await wait(1500); await ev(() => window.__stg.pet('Honey')); await wait(1900); await ev(() => window.__stg.pet('Honey')); }, 0.17);
+  await ev(() => window.__paw.fr.greet()); // restarted just before the clip: the pair is placed at once, so the first frame already has Noodle off to the left, about to walk in
+  await clip('visit', 7.6, async () => { await wait(1400); await ev(() => window.__stg.pet('Honey')); await wait(1900); await ev(() => window.__stg.pet('Honey')); }, 0.17);
   console.log('greeting after the clip', JSON.stringify(await ev(() => window.__paw.fr.greeting())));
   // the note and the gift: their dogs where the game put them (clear of the paw stamp's spot, x 452..512 on the path); Noodle sits these out (his body covers that spot)
 
