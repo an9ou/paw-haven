@@ -10,10 +10,15 @@
 //   pill(s, cx, cy, size, fam, { fill, stroke, padX, op })  a rounded pill sized to the text, text centred in it.
 //   Put each box in <g data-box> with its <rect> or <circle> and its centred() texts as direct children.
 //   centreCheck(svgRoot)  returns the boxes whose text is more than 1.5 px off centre; the build script throws if any are.
+// Load the faces before the first measure (await document.fonts.load('700 40px Caveat')): a page with no text yet loads no web font, and
+// fonts.ready resolves at once. inkOf throws if the face is not loaded (2 Nov 2026: a fallback face shifted every box ~50 px and the check, using
+// the same measure, could not see it).
 const CENTRE_JS = `
 const INK_={};
 function inkOf(s,size,fam){ const k=s+'|'+size+'|'+fam; if(INK_[k]) return INK_[k]; const c=(inkOf.c||(inkOf.c=document.createElement('canvas').getContext('2d')));
-  c.font='700 '+size+'px '+fam; const m=c.measureText(s);
+  c.font='700 '+size+'px '+fam;
+  if(document.fonts&&!document.fonts.check(c.font,s)) throw new Error('font not loaded yet, the ink would be measured in a fallback face: '+c.font+' (await document.fonts.load first)');
+  const m=c.measureText(s);
   return INK_[k]={L:m.actualBoundingBoxLeft,R:m.actualBoundingBoxRight,A:m.actualBoundingBoxAscent,D:m.actualBoundingBoxDescent}; }
 function centred(lines,cx,cy,fam){ let b=0; const bs=lines.map((l,i)=>{ const y=b; b+=l.pitch||l.size*1.2; return y; });
   let top=1e9, bot=-1e9; lines.forEach((l,i)=>{ const k=inkOf(l.s,l.size,fam); top=Math.min(top,bs[i]-k.A); bot=Math.max(bot,bs[i]+k.D); });

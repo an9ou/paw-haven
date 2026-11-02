@@ -60,7 +60,7 @@ const PHPATCH = (X, Y, k, c) => { // the placeholder patch over the QR and the c
     + `\${'<g transform="rotate(-6 ${(px(28) + px(284)) / 2} ${py(100)})">'+pill('placeholder: our real code on 7 Nov',${(px(28) + px(284)) / 2},${py(100)},34,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:18})+'</g>'}`; };
 
 // the slides: each a JS template string evaluated in the page (so it can call box(), C(), pill() with the page's ink measures)
-const head = (n, title, sub, y) => `\${bub(150,${y + 75},64,'${n}',96)+box(230,${y},760,150,[{s:${JSON.stringify(title)},size:84}],{sw:7})}`
+const head = (n, title, sub, y) => `\${bub(150,${y + 75},64,'${n}.',90)+box(230,${y},760,150,[{s:${JSON.stringify(title)},size:84}],{sw:7})}`
   + (sub ? `\${C(${JSON.stringify(sub.map((s) => ({ s, size: 50, fill: SOFT, pitch: 60 })))},540,${y + 250}).svg}` : '');
 const S = [];
 // 1 cover
@@ -91,7 +91,7 @@ ${tile('t1', 'visit', 290, 470, 'pet their dogs', { x: 40, y: 230, w: 300, h: 28
 ${tile('t3', 'gift_letter', 290, 975, 'send a gift', { x: 0, y: 0, w: 393, h: 373 })}${tile('t4', 'walk', 790, 975, 'walk their dog', { x: 0, y: 215, w: 230, h: 219 })}`);
 // 7 recap
 S.push(`\${page(6)}\${box(90,70,900,150,[{s:'3 steps, 1 minute',size:84}],{sw:7})}
-\${box(110,290,860,800,[{s:'1  More, then Friends: pick a name',size:54,pitch:96},{s:'2  share your code or QR',size:54,pitch:96},{s:'3  add theirs: code or link',size:54,pitch:120},
+\${box(110,290,860,800,[{s:'1. More, then Friends: pick a name',size:54,pitch:96},{s:'2. share your code or QR',size:54,pitch:96},{s:'3. add theirs: code or link',size:54,pitch:120},
   {s:'then visit, pet, leave a paw print,',size:50,fill:'${SOFT}',pitch:66},{s:'send a gift, walk their dog',size:50,fill:'${SOFT}',pitch:110},{s:'no chat. no messages. remove or block any time.',size:44,fill:'${GREEN}'}],{fill:'#FFFDF7',sw:6})}`);
 // 8 CTA: our card
 S.push(`\${page(7)}\${'<g transform="rotate(-2 540 170)">'+C([{s:'add us!',size:150}],540,170).svg+'</g>'}<path d="M330 250 Q540 230 750 250" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>
@@ -102,7 +102,7 @@ ${PH ? `\${'<g transform="rotate(-6 540 660)">'+pill('placeholder: our real code
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  fs.writeFileSync(path.join(OUT, 'page.html'), html); await p.goto('file://' + path.join(OUT, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
+  fs.writeFileSync(path.join(OUT, 'page.html'), html); await p.goto('file://' + path.join(OUT, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f)))); await p.evaluate(() => document.fonts.ready);
   for (let i = 0; i < S.length; i++) {
     const off = await p.evaluate((src) => window.slide(eval('`' + src + '`')), S[i]);
     if (off.length) throw new Error('slide ' + (i + 1) + ': text not centred: ' + off.join('; '));

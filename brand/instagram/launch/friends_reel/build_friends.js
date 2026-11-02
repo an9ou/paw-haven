@@ -4,7 +4,7 @@
 // 1080 x 1920, 30 fps, the game's own cozy music (the yard by day), a tick on each numbered way and the "discover" sting on the end page.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <game checkout> <footage dir> <workdir>
-//   ONLY=stills renders key frames and the cover only. REDNOTE=1: every word in Simplified Chinese, no game link anywhere (after the owner approves).
+//   ONLY=stills renders key frames only. The cover: make_friends_cover.js. REDNOTE=1: every word in Simplified Chinese, no game link anywhere (after the owner approves).
 // The footage's layout.json says whether the code is the real one (OUR_CODE at capture time). Without it every frame that shows our card carries
 // a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
@@ -109,7 +109,7 @@ window.frame=async function(t, S, src){
   else if(cp.s){ const kept=cp.keep, s=kept?1:back(lt/0.3), o=kept?1:ease(lt/0.15);
     const k=inkOf(cp.s,66,FAM), w=Math.min(1000,k.L+k.R+120), x=540-w/2+(cp.n?34:0);
     cap='<g opacity="'+o+'" transform="translate(540 190) scale('+s+') rotate(-1.5) translate(-540 -190)">'+card(x,120,w,140,'${PEN}',6,[{s:cp.s,size:66}])
-      +(cp.n?'<g transform="translate('+(x-6)+' 132) rotate(-8)">'+bubble(62,'#FFE3A1',String(cp.n),88)+'</g>':'')+'</g>'; }
+      +(cp.n?'<g transform="translate('+(x-6)+' 132) rotate(-8)">'+bubble(62,'#FFE3A1',cp.n+'.',84)+'</g>':'')+'</g>'; }
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
       +'<g transform="rotate(-2 540 250)">'+C([{s:TX.endAsk,size:150}],540,250).svg+'</g><path d="M300 330 Q540 308 780 330" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
@@ -127,7 +127,7 @@ window.frame=async function(t, S, src){
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
+  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f)))); await p.evaluate(() => document.fonts.ready);
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
   const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? (CLIPS.walk ? frameAt(SEG[SEG.length - 2], SEG[SEG.length - 2].b - 0.01) : null) : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
@@ -137,9 +137,7 @@ window.frame=async function(t, S, src){
   const list = still ? SEG.map((s) => Math.round(((s.a + s.b) / 2) * FPS)).concat([Math.round((END + 2.5) * FPS)]) : [...Array(N).keys()];
   for (const f of list) await render(f / FPS, path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`));
   console.log(list.length, 'frames, T =', T.toFixed(2));
-  // the cover: the hook over Mochi at home
-  await render(1.3, path.join(WORK, `friends-cover${SUF}.png`)); await b.close();
-  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `friends-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `friends-cover${SUF}.jpg`)]);
+  await b.close(); // the cover is its own design: make_friends_cover.js
   if (still) return;
 
   // sound: the game's own music (the yard by day), a soft tick as each numbered way pops in, "discover" on the end page
