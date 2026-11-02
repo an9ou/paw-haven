@@ -118,25 +118,15 @@ run('friends_clean', async (t) => {
   await press(`.fr-row[data-fid="${SUNNY}"] [data-fr="visit"]`);
   await t.until(() => window.__paw.mode === 'fryard' && document.getElementById('modal').hidden, null, 6000);
   await relayout();
-  // owner, 2 Nov 2026: "more interaction", "the dogs were overlapping". A phone shows ~358 of the yard's 1000 units and the three dogs are ~390 wide,
-  // so they stand in two rows: Noodle and Waffles nose to nose in front, Honey the puppy behind them, every drawn dog clear of the others.
-  // Then a greeting with the game's own poses: Noodle trots in, they sniff noses, pets and hearts, play bows and bouncing (the "safe" shot is from 3.8 s)
-  const FRONT = 568, BACK = 450;
-  await ev(([F, B]) => { const W = window.__stg; W.put('Honey', 495, B, 'right', 'sit'); W.put('Waffles', 692, F, 'left', 'idle'); W.put('me', 330, F, 'right', 'idle'); }, [FRONT, BACK]);
+  // owner, 2 Nov 2026: "more interaction", "the dogs were overlapping". The game itself now greets (v2.19, b2ceb6e): our leader walks in to their leader,
+  // the two sniff nose to nose with hearts, then play bows and jumps, and no dog is drawn over another. fr.greet() starts it again for the camera;
+  // the third dog (Honey) is petted while the two say hello
   await p().waitForTimeout(400);
+  console.log('visit layout', JSON.stringify(await ev(() => window.__paw.fr.scene().dogs)));
   await still('visit');
-  await clip('visit', 7.6, () => ev(([F]) => window.__stg.play([
-    [0, 'walk', 'me', 520, F, 900, 'sniff', 'right'],
-    [950, 'pose', 'Waffles', 'sniff', 'left'], [1150, 'heart', 610, F - 70], [1350, 'heart', 624, F - 100],
-    [1800, 'pet', 'Waffles'], [2100, 'pose', 'me', 'happy', 'right'], [2300, 'pose', 'Honey', 'happy', 'right'],
-    [2800, 'pet', 'Honey'], [3300, 'pose', 'Waffles', 'jump', 'left'], [3350, 'heart', 610, F - 90],
-    [3900, 'pose', 'me', 'bow', 'right'], [4100, 'pose', 'Waffles', 'bow', 'left'], [4300, 'pose', 'Honey', 'jump', 'right'],
-    [4800, 'pose', 'me', 'jump', 'right'], [5150, 'pose', 'Waffles', 'jump', 'left'], [5300, 'pose', 'Honey', 'happy', 'right'],
-    [5500, 'pose', 'me', 'bow', 'right'], [5850, 'pose', 'Waffles', 'bow', 'left'], [6200, 'pose', 'me', 'happy', 'right'], [6300, 'pose', 'Waffles', 'happy', 'left'],
-    [6250, 'heart', 606, F - 80], [6450, 'heart', 626, F - 110], [6650, 'pose', 'Honey', 'jump', 'right'],
-  ]), [FRONT]), 0.17);
-  // the note and the gift: the same two rows; Noodle sits these out (his body covers the paw stamp's spot on the path, x 452..512)
-  await ev(([F, B]) => { const W = window.__stg; W.put('Honey', 495, B, 'right', 'sit'); W.put('Waffles', 660, F, 'left', 'sit'); }, [FRONT, BACK]);
+  await clip('visit', 7.6, async () => { await ev(() => window.__paw.fr.greet()); await wait(1500); await ev(() => window.__stg.pet('Honey')); await wait(1900); await ev(() => window.__stg.pet('Honey')); }, 0.17);
+  console.log('greeting after the clip', JSON.stringify(await ev(() => window.__paw.fr.greeting())));
+  // the note and the gift: their dogs where the game put them (clear of the paw stamp's spot, x 452..512 on the path); Noodle sits these out (his body covers that spot)
 
   // 2. the paw print: the note picked with the sheet hidden; the stamp lands on their path
   // the stamp sits at the left edge of the phone's view of their yard, where our own dog's tail covers it: our dog sits this one shot out
