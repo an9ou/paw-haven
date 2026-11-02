@@ -92,7 +92,7 @@ const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
 const card=(x,y,w,h,stroke,sw,lines,fill)=>'<g data-box><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="36" fill="'+(fill||'#FFFDF7')+'" stroke="'+stroke+'" stroke-width="'+sw+'"/>'+C(lines,x+w/2,y+h/2).svg+'</g>';
 const bubble=(r,fill,s,size)=>'<g data-box><circle r="'+r+'" fill="'+fill+'" stroke="${PEN}" stroke-width="6"/>'+C([{s,size}],0,0).svg+'</g>';
 // ONE cut for every platform (owner, 2 Nov 2026): YouTube Shorts, Instagram Reels and TikTok lay their buttons over the right side and their
-// titles, names and captions over the top and the bottom. All our words stay inside SAFE (x 60..890, y 250..1440 of 1080 x 1920), centred on
+// titles, names and captions over the top and the bottom. All our words and boxes stay inside SAFE (x 60..890, y 270..1440 of 1080 x 1920), centred on
 // x 475; safeCheck() stops the build if any text leaves it. The game screen behind still fills the frame.
 const CX=SAFE_CX;
 // a list of lines sized down (all together) until the widest ink fits maxW
@@ -114,17 +114,17 @@ window.frame=async function(t, S, src){
     ph='<rect x="'+px(28)+'" y="'+py(36)+'" width="'+(px(156)-px(28))+'" height="'+(py(162)-py(36))+'" fill="#FFFDF7"/><rect x="'+px(160)+'" y="'+py(112)+'" width="'+(px(284)-px(160))+'" height="'+(py(146)-py(112))+'" fill="#FFFDF7"/>'
       +'<g transform="rotate(-6 '+CX+' '+py(100)+')">'+pill(TX.ph,CX,Math.max(py(100),SAFE.y0+40),44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>'; }
   if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3);
-    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-340,300,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'; }
+    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-340,320,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'; }
   else if(cp.safe){ dim+='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+(0.82*ease(lt/0.25))+'"/>';
-    const s=back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-330,790,660,140,'${GREEN}',6,fit(TX.safe,580))+'</g>'; }
-  else if(cp.s){ const kept=cp.keep, s=kept?1:back(lt/0.3), o=kept?1:ease(lt/0.15);
+    const s=0.86+0.14*back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-330,790,660,140,'${GREEN}',6,fit(TX.safe,580))+'</g>'; }
+  else if(cp.s){ const kept=cp.keep, s=kept?1:0.86+0.14*back(lt/0.3), o=kept?1:ease(lt/0.15); // a small pop, so nothing bounces out of SAFE
     const L=fit([{s:cp.s,size:56}],cp.n?560:680), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+80, x0=cp.n?SAFE.x0+100:CX-w/2, x=Math.min(x0,SAFE.x1-w);
-    cap='<g opacity="'+o+'" transform="translate('+CX+' 330) scale('+s+') rotate(-1.5) translate('+(-CX)+' -330)">'+card(x,280,w,104,'${PEN}',5,L)
-      +(cp.n?'<g transform="translate('+(x-40)+' 332) rotate(-8)">'+bubble(48,'#FFE3A1',cp.n+'.',64)+'</g>':'')+'</g>'; }
+    cap='<g opacity="'+o+'" transform="translate('+CX+' 352) scale('+s+') rotate(-1.5) translate('+(-CX)+' -352)">'+card(x,300,w,104,'${PEN}',5,L)
+      +(cp.n?'<g transform="translate('+(x-40)+' 352) rotate(-8)">'+bubble(48,'#FFE3A1',cp.n+'.',64)+'</g>':'')+'</g>'; }
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
       +'<g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:120}],CX,380).svg+'</g><path d="M'+(CX-190)+' 450 Q'+CX+' 432 '+(CX+190)+' 450" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
-      +'<g transform="translate('+CX+' 740) scale('+(cs*2.4)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
+      +'<g data-safe transform="translate('+CX+' 740) scale('+(cs*2.4)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
       +(PH?'<g transform="rotate(-6 '+CX+' 745)">'+pill(TX.ph,CX,745,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
       +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1060).svg
       +'<path d="M'+CX+' 1100 q-10 38 0 70 M'+(CX-22)+' 1148 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
