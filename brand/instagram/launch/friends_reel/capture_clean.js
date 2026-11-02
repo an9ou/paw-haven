@@ -56,7 +56,9 @@ run('friends_clean', async (t) => {
 
   // 0. home
   await still('yard');
-  await clip('yard', 3.4, null, 0.17);
+  // owner, 2 Nov 2026: Noodle drinks from the water bowl in the opening shot (eat pose fixed in d488723: head straight down to the bowl, in profile)
+  await ev(() => { window.__paw.S.waterAt = -1e9; });
+  await clip('yard', 3.4, () => ev(() => window.__paw.feed('Fresh Water')), 0.17);
 
   // set up Friends off camera: the name, then Sunny Biscuit by code (the sheet itself is never filmed)
   await ev((nm) => { window.__paw.S.dc.name = nm; }, OUR_NAME);

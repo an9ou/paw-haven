@@ -41,7 +41,7 @@ Hook (`ig-reel` hookscore 80.1 STRONG, the best of 18): **"4 ways your dog can m
 
 | Shot | Noodle says | On screen |
 |---|---|---|
-| Noodle at home in the autumn yard | "Big news! Our dogs can make friends now!" | "4 ways your dog can make friends (no chat)", sticker "new update · 7 Nov" |
+| Noodle at home in the autumn yard, drinking from his water bowl (head straight down to the bowl, side-on: the eat/drink fix d488723) | "Big news! Our dogs can make friends now!" | "4 ways your dog can make friends (no chat)", sticker "new update · 7 Nov" |
 | Our friend card on the paper (the game's card art) | "Pick a friend name, share your code, and your dog can visit theirs!" | "share your code" |
 | Sunny Biscuit's yard: Waffles and Honey get petted, hearts | "Visit their yard! Pet their dogs! This is Waffles. Waffles likes me." | "1. visit & pet" |
 | The pink paw stamp lands on their path (Noodle sits this shot out: his tail covers the stamp's spot on a phone) | "Leave a paw-print note! Mine says: your dog is so fluffy!" | "2. paw-print note" |
@@ -144,3 +144,4 @@ After the owner approves the English cut: the same Reel in Simplified Chinese (t
 - **Safe zone for boxes too** (owner, 2 Nov 2026, with screenshots of the posted puppy-colour Reel): the check now covers every card, bubble, pill and window, not only the words, with Instagram's measured zones; the caption cards moved down a little and their pop-in bounce is smaller. `preview/instagram-zones-check.png` shows frames with Instagram's zones in red.
 - **Clean Reel, introducing the update** (owner, 2 Nov 2026): no game interface on screen at all, only the scenes; the name-wheel, code, mailbox and safety shots are gone; a "new update · 7 Nov" sticker on the hook and the end page. 16.4 s (was 25.1 s).
 - **Narrated by Noodle** (owner, 2 Nov 2026): told like our first video (the 45 s promo), in the same voice, with Noodle as our dog in the footage; 32 s.
+- **Opening shot re-shot with the eat/drink fix** (owner's bug report, 2 Nov 2026; Game Manager fix d488723 on the v2.19 dev branch): `capture_clean.js` now has Noodle drink from the water bowl on purpose in the yard shot, so the fixed pose (head lowered straight to the bowl, in profile) is on screen; the whole clean footage was re-captured from that build and the Reel rebuilt (32 s, centre and safe-zone checks pass).
