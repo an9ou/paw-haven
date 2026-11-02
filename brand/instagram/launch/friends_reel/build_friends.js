@@ -66,7 +66,7 @@ say('code'); seg(len('code'), 'code', 0, null, { s: TX.code, card: true });
 say('visit'); seg(len('visit'), 'visit', 0.2, { z0: 1.02, z1: 1.1, fx: 0.5, fy0: 0.66, fy1: 0.66 }, { n: 1, s: TX.ways[0] });
 say('note'); seg(len('note'), 'note', 0.2, { z0: 1.12, z1: 1.4, fx: 0.22, fy0: 0.74, fy1: 0.8 }, { n: 2, s: TX.ways[1] });
 say('gift'); seg(len('gift'), 'gift', 0.15, { z0: 1.08, z1: 1.14, fx: 0.5, fy0: 0.5, fy1: 0.46 }, { n: 3, s: TX.ways[2] });
-say('walk'); say('walkb', 0.15 + VOD.walk + 0.25); seg(VOD.walk + 0.25 + VOD.walkb + 0.5, 'walk', 1.8, null, { n: 4, s: TX.ways[3], band: { x0: 0, y0: 700, w: 480, h: 596 } }); // the run is a wide strip: a window on the paper (from 1.8 s: after the log "Bonk!")
+say('walk'); say('walkb', 0.15 + VOD.walk + 0.25); seg(VOD.walk + 0.25 + VOD.walkb + 0.5, 'walk', 1.8, null, { n: 4, s: TX.ways[3], band: { x0: 0, y0: 663, w: 540, h: 670 } }); // the run is a wide strip: a window on the paper (540 wide: Noodle's nose and Waffles, a little further back, both inside) (from 1.8 s: after the log "Bonk!")
 say('safe'); seg(len('safe'), 'visit', 3.8, { z0: 1.1, z1: 1.16, fx: 0.48, fy0: 0.68, fy1: 0.68 }, { s: TX.safe, green: true });
 const END = at; say('end', 0.25); seg(VOD.end + 0.8, 'end', 0, null, { end: true });
 const T = at, N = Math.round(T * FPS);
