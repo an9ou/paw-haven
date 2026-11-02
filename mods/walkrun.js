@@ -641,14 +641,14 @@ function start(el, o) {
      the game passes), else PawArt.FRIENDS.ribbon(), else a small crayon heart. It sits on the dog's shoulders in every pose. */
   // FOL_GAP: world units between the leader's tail and the first nose. FOL_OV: how much of a follower's length tucks behind the dog in front (a natural line).
   // FOL_AHEAD: the leader keeps at least this much path in view ahead of it (1.8 s at the top speed, as the portrait strip promises)
-  const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
+  const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'crouch', 'happy', 'idle'], FOL_FB = { crouch: ['sit', 'idle'] };
   let folMoveT = 0, folCam = -1;
   // v2.11.1 sizes: o.dog.size and each o.pack[i].size are the dogs' size factors (the game passes them; this module never reads breed tables).
   // A follower is drawn at its size relative to the leader's (the leader keeps its own drawing and hitbox). No size given = the leader's size (as v2.9)
   const folLead = (o.dog && +o.dog.size > 0) ? +o.dog.size : 1;
   const folRel = (fd) => clamp((+fd.size > 0 ? +fd.size : folLead) / folLead, 0.6, 1.4);
   function folSvg(fd, p) {
-    for (const q of p === 'idle' ? ['idle'] : [p, 'idle']) {
+    for (const q of p === 'idle' ? ['idle'] : [p].concat(FOL_FB[p] || ['idle'])) {
       const sv = call('dog', fd.key, { pose: q, outfit: fd.outfit || {}, facing: 'right', coat: fd.coat, seed: fd.seed });
       if (sv && (sv.indexOf('pa-pose-' + q) >= 0 || q === 'idle' || sv.indexOf('pa-pose-') < 0)) return sv;
     }
@@ -672,7 +672,7 @@ function start(el, o) {
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
   // v2.19.1: every start-up measurement runs in ONE layout pass: show the measured poses, read everything, then put them back (it was one forced layout per pose)
   let dogSc = 0.68, dogArt = [36, 204];
-  const ribs = [], mPoses = [...new Set([poseEls.walk].concat(...fol.map((f) => [f.poses.walk].concat(f.friend ? FOL_POSES.map((p) => f.poses[p]) : []))))];
+  const ribs = [], mPoses = [...new Set([poseEls.walk].concat(...fol.map((f) => [f.poses.walk, f.poses.crouch].concat(f.friend ? FOL_POSES.map((p) => f.poses[p]) : []))))];
   mPoses.forEach((pe) => { pe.style.cssText = 'display:block;width:240px;height:200px;position:absolute'; });
   try {
     const g = poseEls.walk.querySelector('svg>g') || poseEls.walk.querySelector('svg');
@@ -688,6 +688,8 @@ function start(el, o) {
       const b = g.getBBox();
       if (b && b.width > 20) f.art = [b.x, b.x + b.width];
     } catch (e) { /* keep default */ }
+    f.crouchY = 100; // v2.19.1: the top of the crouch drawing in its 240 x 200 box (the ground is at 186); folPlace keeps it under the high things
+    try { const pe = f.poses.crouch, g = pe.querySelector('svg>g') || pe.querySelector('svg'), b = g.getBBox(); if (b && b.height > 10) f.crouchY = b.y; } catch (e) { /* keep default */ }
     if (f.friend) FOL_POSES.forEach((p) => { // v2.19: the ribbon on the dog's back, just behind the neck (the dog faces right). The body is the biggest shape
       const pe = f.poses[p], r = pe.querySelector('.pw-rib'); if (!r) return;
       let x = 50, y = 50; // percent of the 240 x 200 box
@@ -727,6 +729,10 @@ function start(el, o) {
       if (i) nose += ws[i] * ov; const k = K(f);
       const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); nose = x + f.art[0] * k;
       Object.assign(f.el.style, { left: px(x), top: px(G - 186 * k), width: px(240 * k), height: px(200 * k) }); // a little smaller, feet on the same ground line
+      // v2.19.1: a ducking follower's drawing stays 6 units under the bottom of a high thing (a big dog's crouch is squashed a little, from the feet)
+      const ch = (186 - f.crouchY) * k, sq = ch > HIGH_BOTTOM - 6 ? (HIGH_BOTTOM - 6) / ch : 1;
+      f.poses.crouch.style.transform = sq < 1 ? `scaleY(${sq.toFixed(3)})` : ''; f.poses.crouch.style.transformOrigin = '50% 93%';
+      f.span = [(f.art[0] - 120) * k - 12, (f.art[1] - 120) * k + 12]; // its drawing around its centre, plus a margin (world units)
     });
   }
 
@@ -1369,14 +1375,19 @@ function start(el, o) {
     const tilt = S.stumbleT > 0 ? Math.sin(S.stumbleT * 40) * 4 : !S.grounded ? clamp(-S.vh / 90, -8, 6) : 0;
     E.dog.style.transform = `translate3d(${(S.slideX * s).toFixed(1)}px,${((-S.h + bob) * s).toFixed(1)}px,0) rotate(${tilt.toFixed(1)}deg)`;
     if (fol.length) { // v2.9: each follower repeats what the leader did at the spot it has now reached (so it hops the same logs), with smaller hops
-      const hp = p === 'jump' || p === 'happy' || p === 'walk' ? p : 'idle', hy = (-S.h + bob * 0.5) * s, top = folHist[folHist.length - 1];
+      // v2.19.1: the leader's duck is not replayed (that ducked under empty sky): each follower ducks by itself while a high thing is over it (below)
+      const hp = p === 'jump' || p === 'happy' || p === 'walk' ? p : p === 'crouch' ? 'walk' : 'idle', hy = (-S.h + bob * 0.5) * s, top = folHist[folHist.length - 1];
       if (top && top.x >= cx - 0.01) { top.y = hy; top.p = hp; } else folHist.push({ x: cx, y: hy, p: hp });
       if (cx !== folCam) { folCam = cx; folMoveT = now; }
       while (folHist.length > 2 && folHist[1].x < cx - DOG.x - 40) folHist.shift();
       const still = now - folMoveT > 160; // the leader stopped (sniffing, digging, the countdown): the line waits too
       fol.forEach((f) => {
         const at = cx - (f.dist || 0); let h = folHist[0]; for (let k = folHist.length - 1; k >= 0; k--) if (folHist[k].x <= at) { h = folHist[k]; break; }
-        const fp = still ? (p === 'happy' ? 'happy' : 'idle') : h.p, fy = still ? 0 : h.y;
+        let fp = still ? (p === 'happy' ? 'happy' : 'idle') : h.p, fy = still ? 0 : h.y;
+        f.duck = false;
+        if (f.span && S.mode !== 'countdown') { const c = cx + DOG.x - (f.dist || 0), a = c + f.span[0], b = c + f.span[1];
+          for (let i = 0; i < live.length; i++) { const ob = live[i]; if (ob.kind === 'obs' && ob.cat === 'high' && ob.ex1 > a && ob.ex0 < b) { f.duck = true; break; } } }
+        if (f.duck) { fp = 'crouch'; fy = 0; } // a hop replayed under it is cancelled: the line goes under, never into it
         if (fp !== f.cur) { f.poses[f.cur].classList.remove('on'); f.poses[fp].classList.add('on'); f.cur = fp; }
         f.el.style.transform = `translate3d(0,${(fy * 0.8).toFixed(1)}px,0)`;
       });
@@ -1522,7 +1533,9 @@ function start(el, o) {
         heat: heat(), digsUsed: S.digsUsed, coinsSpawned: gen.coins, coinTarget,
         bonus: live.filter((q) => q.kind === 'bonus' && !q.done).map((q) => ({ x: q.cx, h: q.ch })),
         obs: live.filter((q) => q.kind === 'obs' && !q.done).map((q) => ({ id: q.id, cat: q.cat, name: q.name, ex0: q.ex0, ex1: q.ex1 })),
-        box: { off: DOG.off, hw: DOG.hw, feet: DOG.feet }
+        highs: live.filter((q) => q.kind === 'obs' && q.cat === 'high').map((q) => ({ id: q.id, ex0: q.ex0, ex1: q.ex1 })),
+        box: { off: DOG.off, hw: DOG.hw, feet: DOG.feet },
+        fol: fol.map((f) => ({ x: S.camX + DOG.x - (f.dist || 0), span: f.span ? f.span.slice() : null, pose: f.cur, duck: !!f.duck, friend: f.friend }))
       };
     }
   };
