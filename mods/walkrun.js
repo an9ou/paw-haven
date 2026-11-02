@@ -1074,8 +1074,9 @@ function start(el, o) {
     ob.got = true; S.coins++; updateCoinsHud(); sfx('coin'); if (ob.el) ob.el.classList.add('pw-got');
   }
   function startSniff(ob) {
-    ob.done = true; S.sniffs++; S.sniffT = 0.6; sfx('sniff'); poseFor('eat', 0.55);
+    ob.done = true; S.sniffs++; sfx('sniff'); // v2.19.1: no pause, no head-down pose: the dog sniffs on the run (the clue, the sound and the Nose-o-meter stay)
     if (ob.el) ob.el.classList.add('pw-got');
+    pop(L('mod.walk.pop_sniff', 'sniff!'), DOG.x, G - 150, '#8A6CC0');
     const clue = sniffClue(); say(clue, 2400); sayExt(clue, 2400);
   }
   function startPrompt(ob) {
@@ -1277,14 +1278,14 @@ function start(el, o) {
     if (S.invT > 0) S.invT -= dt;
     if (S.stumbleT > 0) S.stumbleT -= dt;
     if (S.poseT > 0) { S.poseT -= dt; if (S.poseT <= 0) S.poseO = null; }
-    if (S.sniffT > 0) S.sniffT -= dt;
+
     if (S.slideX > 0) S.slideX = Math.max(0, S.slideX - dt * 40);
     S.nudge *= Math.pow(0.4, dt);
     if (S.prompt) { S.promptT -= dt; if (S.promptT <= 0) skipPrompt(); }
 
     // speed
     let target = 1;
-    if (S.endT) target = 0; else if (S.prompt) target = 0.2; else if (S.sniffT > 0) target = 0.35; else if (S.stumbleT > 0) target = 0.65;
+    if (S.endT) target = 0; else if (S.prompt) target = 0.2; else if (S.stumbleT > 0) target = 0.65;
     S.slow += (target - S.slow) * Math.min(1, dt * (target < S.slow ? 14 : 5));
     const v = vAt(S.played) * S.slow;
     S.v = v; S.camX += v * dt;
