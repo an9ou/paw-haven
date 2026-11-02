@@ -60,8 +60,8 @@ seg(1.7, 'name', 1.1, { z0: 1.12, z1: 1.18, fx: 0.5, fy0: 0.42, fy1: 0.42 }, { s
 seg(1.7, 'card', 0.2, { z0: 1.0, z1: 1.05, fx: 0.5, fy0: 0.3, fy1: 0.28 }, { s: TX.code, card: true });
 seg(3.1, 'visit', 0.45, { z0: 1.3, z1: 1.38, fx: 0.42, fy0: 0.6, fy1: 0.6 }, { n: 1, s: TX.ways[0] });
 seg(2.3, 'note', 0.25, { z0: 1.05, z1: 1.12, fx: 0.5, fy0: 0.55, fy1: 0.6 }, { n: 2, s: TX.ways[1] });
-seg(2.6, 'gift', 0.45, { z0: 1.08, z1: 1.12, fx: 0.5, fy0: 0.68, fy1: 0.6 }, { n: 3, s: TX.ways[2] });
-seg(1.3, 'gift_letter', 0, { z0: 1.06, z1: 1.12, fx: 0.5, fy0: 0.36, fy1: 0.36 }, { n: 3, s: TX.letter, keep: true });
+seg(2.6, 'gift', 0.45, { z0: 1.08, z1: 1.12, fx: 0.5, fy0: 0.68, fy1: 0.6, lift: 380, liftIn: true }, { n: 3, s: TX.ways[2] });
+seg(1.3, 'gift_letter', 0, { z0: 1.06, z1: 1.12, fx: 0.5, fy0: 0.36, fy1: 0.36, lift: -330 }, { n: 3, s: TX.letter, keep: true });
 seg(0.8, 'walk_pick', 0, { z0: 1.7, z1: 1.8, fx: 0.4, fy0: 0.83, fy1: 0.83 }, { n: 4, s: TX.ways[3] });
 seg(3.0, 'walk', 0.6, { z0: 1.5, z1: 1.5, fx: 0.3, fy0: 0.57, fy1: 0.57 }, { n: 4, s: TX.ways[3], keep: true });
 seg(2.2, 'friends_list', 0, { z0: 1.0, z1: 1.04, fx: 0.5, fy0: 0.5, fy1: 0.5 }, { safe: true });
@@ -90,36 +90,49 @@ const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
 const card=(x,y,w,h,stroke,sw,lines,fill)=>'<g data-box><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="36" fill="'+(fill||'#FFFDF7')+'" stroke="'+stroke+'" stroke-width="'+sw+'"/>'+C(lines,x+w/2,y+h/2).svg+'</g>';
 const bubble=(r,fill,s,size)=>'<g data-box><circle r="'+r+'" fill="'+fill+'" stroke="${PEN}" stroke-width="6"/>'+C([{s,size}],0,0).svg+'</g>';
-// the screen: the 1179 x 1977 shot, scaled to the frame's height (z 1) or zoomed in on (fx, fy), never past its edges
-function view(src, z, fx, fy){ const img=$('scr'), k=${H}/1977*z, w=1179*k, h=1977*k;
-  const l=Math.min(0,Math.max(${W}-w, ${W}/2-fx*w)), t=Math.min(0,Math.max(${H}-h, ${H}/2-fy*h));
-  img.style.transform='translate('+l+'px,'+t+'px) scale('+k+')'; return {l,t,k}; }
+// ONE cut for every platform (owner, 2 Nov 2026): YouTube Shorts, Instagram Reels and TikTok lay their buttons over the right side and their
+// titles, names and captions over the top and the bottom. All our words stay inside SAFE (x 60..890, y 250..1440 of 1080 x 1920), centred on
+// x 475; safeCheck() stops the build if any text leaves it. The game screen behind still fills the frame.
+const SAFE={x0:60,x1:890,y0:250,y1:1440}, CX=475;
+// a list of lines sized down (all together) until the widest ink fits maxW
+function fit(lines,maxW){ const wd=Math.max(...lines.map((l)=>{ const k=inkOf(l.s,l.size,FAM); return k.L+k.R; })), f=Math.min(1,maxW/wd);
+  return f>=1?lines:lines.map((l)=>Object.assign({},l,{size:Math.floor(l.size*f),pitch:l.pitch?Math.floor(l.pitch*f):undefined})); }
+function safeCheck(){ const bad=[]; document.querySelectorAll('#ov text').forEach((e)=>{ let o=1; for(let p=e;p&&p.id!=='ov';p=p.parentNode) if(p.getAttribute&&p.getAttribute('opacity')!=null) o*=parseFloat(p.getAttribute('opacity'));
+    if(o<0.05) return; const r=e.getBoundingClientRect(), m=22; // font box, a little taller than the ink
+    if(r.left<SAFE.x0-m||r.right>SAFE.x1+m||r.top<SAFE.y0-m||r.bottom>SAFE.y1+m) bad.push(e.textContent+' at '+[r.left,r.top,r.right,r.bottom].map(Math.round)); }); return bad; }
+// the screen: the 1179 x 1977 shot, scaled to the frame's height (z 1) or zoomed in on (fx, fy), never past its edges; lift slides it up (or down)
+// over the paper (so a sheet at the bottom of the phone comes clear of the platforms' bottom captions), with a pencil edge and a shadow
+function view(src, z, fx, fy, lift){ const img=$('scr'), k=${H}/1977*z, w=1179*k, h=1977*k;
+  const l=Math.min(0,Math.max(${W}-w, ${W}/2-fx*w)), t=Math.min(0,Math.max(${H}-h, ${H}/2-fy*h))-(lift||0);
+  img.style.transform='translate('+l+'px,'+t+'px) scale('+k+')'; return {l,t,k,bot:t+h}; }
 window.frame=async function(t, S, src){
   const img=$('scr'); if(src){ if(img.getAttribute('src')!==src){ img.src=src; await img.decode(); } img.style.display=''; } else img.style.display='none';
-  let v=null; if(S.view){ const u=ease((t-S.a)/(S.b-S.a)); v=view(src, S.view.z0+(S.view.z1-S.view.z0)*u, S.view.fx, S.view.fy0+(S.view.fy1-S.view.fy0)*u); }
+  let v=null; if(S.view){ const u=ease((t-S.a)/(S.b-S.a)); v=view(src, S.view.z0+(S.view.z1-S.view.z0)*u, S.view.fx, S.view.fy0+(S.view.fy1-S.view.fy0)*u, (S.view.lift||0)*(S.view.liftIn?ease((t-S.a)/0.35):1)); }
   const lt=t-S.a, cp=S.cap||{}; let cap='', dim='', ph='', end='';
+  if(v && v.t>1) dim+='<path d="M-10 '+v.t+' Q270 '+(v.t-5)+' 540 '+v.t+' T1090 '+v.t+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
+  if(v && v.bot<${H}-1) dim+='<rect x="-10" y="'+(v.bot+6)+'" width="1100" height="18" fill="${PEN}" opacity=".12"/><path d="M-10 '+v.bot+' Q270 '+(v.bot+5)+' 540 '+v.bot+' T1090 '+v.bot+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
   // the placeholder patch over our card's QR and code line (a preview only: the real code comes from the live game on 7 Nov)
   if(PH && v && (S.src==='card')){ const px=(x)=>v.l+(CR.x+x/300*CR.w)*3*v.k, py=(y)=>v.t+(CR.y+y/200*CR.h)*3*v.k;
     ph='<rect x="'+px(28)+'" y="'+py(36)+'" width="'+(px(156)-px(28))+'" height="'+(py(162)-py(36))+'" fill="#FFFDF7"/><rect x="'+px(160)+'" y="'+py(112)+'" width="'+(px(284)-px(160))+'" height="'+(py(146)-py(112))+'" fill="#FFFDF7"/>'
-      +'<g transform="rotate(-6 '+((px(28)+px(284))/2)+' '+py(100)+')">'+pill(TX.ph,(px(28)+px(284))/2,py(100),46,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>'; }
-  if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3), s=1; // on screen from the first frame (the Reel's first look)
-    cap='<g opacity="'+o+'" transform="translate(540 330) scale('+s+') rotate(-2) translate(-540 -330)">'+card(70,140,940,380,'${PEN}',7,TX.hook)+'</g>'; }
-  else if(cp.safe){ dim='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+(0.82*ease(lt/0.25))+'"/>';
-    const s=back(lt/0.35); cap='<g transform="translate(540 900) scale('+s+') rotate(-1.5) translate(-540 -900)">'+card(90,690,900,420,'${GREEN}',8,TX.safe)+'</g>'; }
+      +'<g transform="rotate(-6 '+CX+' '+py(100)+')">'+pill(TX.ph,CX,Math.max(py(100),SAFE.y0+40),44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>'; }
+  if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3);
+    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-410,280,820,380,'${PEN}',7,fit(TX.hook,730))+'</g>'; }
+  else if(cp.safe){ dim+='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+(0.82*ease(lt/0.25))+'"/>';
+    const s=back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-400,650,800,420,'${GREEN}',8,fit(TX.safe,700))+'</g>'; }
   else if(cp.s){ const kept=cp.keep, s=kept?1:back(lt/0.3), o=kept?1:ease(lt/0.15);
-    const k=inkOf(cp.s,66,FAM), w=Math.min(1000,k.L+k.R+120), x=540-w/2+(cp.n?34:0);
-    cap='<g opacity="'+o+'" transform="translate(540 190) scale('+s+') rotate(-1.5) translate(-540 -190)">'+card(x,120,w,140,'${PEN}',6,[{s:cp.s,size:66}])
-      +(cp.n?'<g transform="translate('+(x-6)+' 132) rotate(-8)">'+bubble(62,'#FFE3A1',cp.n+'.',84)+'</g>':'')+'</g>'; }
+    const L=fit([{s:cp.s,size:64}],cp.n?600:720), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+90, x0=cp.n?SAFE.x0+120:CX-w/2, x=Math.min(x0,SAFE.x1-w);
+    cap='<g opacity="'+o+'" transform="translate('+CX+' 330) scale('+s+') rotate(-1.5) translate('+(-CX)+' -330)">'+card(x,265,w,130,'${PEN}',6,L)
+      +(cp.n?'<g transform="translate('+(x-50)+' 330) rotate(-8)">'+bubble(58,'#FFE3A1',cp.n+'.',78)+'</g>':'')+'</g>'; }
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
-      +'<g transform="rotate(-2 540 250)">'+C([{s:TX.endAsk,size:150}],540,250).svg+'</g><path d="M300 330 Q540 308 780 330" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
-      +'<g transform="translate(540 780) scale('+(cs*2.9)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
-      +(PH?'<g transform="rotate(-6 540 800)">'+pill(TX.ph,540,800,48,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:24})+'</g>':'')
-      +'<g opacity="'+a+'">'+C([{s:TX.endSub,size:70}],540,1200).svg
-      +'<path d="M540 1262 q-14 60 0 110 M512 1340 l28 36 l28 -36" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
-      +'<text x="400" y="1560" font-family="Caveat" font-weight="700" font-size="120" fill="${PEN}" text-anchor="middle" transform="rotate(-3 400 1560)">Doodle</text><text x="690" y="1566" font-family="Caveat" font-weight="700" font-size="120" fill="${PEN}" text-anchor="middle" transform="rotate(2 690 1566)">Doggo</text>'
-      +C([{s:TX.endFree,size:52,fill:'#8A7468'}],540,1640).svg
-      +'<g data-box><rect x="200" y="1700" width="680" height="88" rx="44" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C([{s:TX.pill,size:58}],540,1744).svg+'</g></g>'; }
+      +'<g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:140}],CX,360).svg+'</g><path d="M'+(CX-220)+' 440 Q'+CX+' 420 '+(CX+220)+' 440" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
+      +'<g transform="translate('+CX+' 725) scale('+(cs*2.55)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
+      +(PH?'<g transform="rotate(-6 '+CX+' 745)">'+pill(TX.ph,CX,745,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
+      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:68}],800),CX,1050).svg
+      +'<path d="M'+CX+' 1095 q-12 45 0 82 M'+(CX-24)+' 1150 l24 30 l24 -30" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
+      +'<g transform="rotate(-3 '+(CX-125)+' 1268)">'+C([{s:'Doodle',size:100}],CX-125,1268).svg+'</g><g transform="rotate(2 '+(CX+140)+' 1272)">'+C([{s:'Doggo',size:100}],CX+140,1272).svg+'</g>'
+      +C([{s:TX.endFree,size:44,fill:'#8A7468'}],CX,1335).svg
+      +(()=>{ const L=fit([{s:TX.pill,size:52}],700), k=inkOf(TX.pill,L[0].size,FAM), w=k.L+k.R+70; return '<g data-box><rect x="'+(CX-w/2)+'" y="1362" width="'+w+'" height="72" rx="36" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C(L,CX,1398).svg+'</g>'; })()+'</g>'; }
   $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end;
 };
 </script>`;
@@ -132,6 +145,7 @@ window.frame=async function(t, S, src){
   const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? (CLIPS.walk ? frameAt(SEG[SEG.length - 2], SEG[SEG.length - 2].b - 0.01) : null) : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
     const off = await p.evaluate(() => centreCheck(document.querySelector('#ov'))); if (off.length) throw new Error('text not centred at ' + t.toFixed(2) + ': ' + off.join('; '));
+    const out = await p.evaluate(() => safeCheck()); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
     await p.screenshot({ path: file, type: file.endsWith('.jpg') ? 'jpeg' : 'png', quality: file.endsWith('.jpg') ? 95 : undefined }); };
   const still = process.env.ONLY === 'stills';
   const list = still ? SEG.map((s) => Math.round(((s.a + s.b) / 2) * FPS)).concat([Math.round((END + 2.5) * FPS)]) : [...Array(N).keys()];
