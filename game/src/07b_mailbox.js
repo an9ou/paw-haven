@@ -79,6 +79,13 @@ function claimGift(m) { return m ? mbCollect([m.id]) : ''; } // older callers: o
 const mailUnread = () => (S && Array.isArray(S.mail) ? S.mail.filter((m) => !m.read).length : 0);
 const mailIcon = () => iconOr('mail', '<rect x="-14" y="-10" width="28" height="20" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-13 -8 L0 3 L13 -8" fill="none" stroke="#5B3D32" stroke-width="2.2" stroke-linejoin="round"/><path d="M6 -16 l2 3 3 1 -3 1 -2 3 -1 -3 -3 -1 3 -1z" fill="#F28FA5"/>');
 function mailSfx() { try { const a = PAU(); if (a && typeof a.sfx === 'function') { a.sfx('mail'); return; } } catch (e) { /* no audio module */ } try { SFX.ding(); setTimeout(() => SFX.boop(990), 140); } catch (e) { /* audio off */ } }
+/* v2.19 fit: a friend's letter (id fr_...) keeps the friend name (its sender) in one piece in the title and sender line: ja/zh break between
+   any two characters, so the name gets word-break: keep-all (.mb-nm). It may still break between its two words (frPairParts' zero-width space)
+   and, overflow-wrap: anywhere, inside a word only when the word alone is wider than the line. Escaped HTML. */
+function mbNm(str, m) {
+  const s = String(str == null ? '' : str), n = m && typeof m.id === 'string' && m.id.startsWith('fr_') && typeof m.from === 'string' ? m.from : '', i = n ? s.indexOf(n) : -1;
+  return i < 0 ? esc(s) : esc(s.slice(0, i)) + `<span class="mb-nm">${esc(n)}</span>` + esc(s.slice(i + n.length));
+}
 /* Add a message. msg: { kind: 'postcard'|'gift'|'litter'|'news', from, title, text, dog?, gift?, ... } */
 function mailPush(msg) {
   if (!S) return null; mailFields();
@@ -291,7 +298,7 @@ function letterBody(m) {
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
   const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   const paw = typeof frLetterArt === 'function' ? frLetterArt(m) : ''; // v2.19: a paw-print note or a friend's wrapped gift (50_friends.js)
-  return `<article class="letter k-${esc(m.kind)}"><header><b>${esc(m.title)}</b><span class="small">${esc(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }))}</span></header>${card}${paw}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
+  return `<article class="letter k-${esc(m.kind)}"><header><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }), m)}</span></header>${card}${paw}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {
   if (!S) return; mailFields(); audioPlace('journal'); jrFields();
@@ -302,7 +309,7 @@ function openMailbox(selId, tab) {
   const sel = S.mail.find((m) => m.id === mailSel) || null;
   if (!album && sel && !sel.read) { sel.read = true; markDirty(); trackAct('mail', { id: sel.id, kind: sel.kind }); }
   const kindIc = { postcard: mailIcon(), gift: mailIcon(), litter: mailIcon(), news: mailIcon() }; // v2.3: the envelope drawing, not a letter monogram
-  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${mbOwed(m) ? `<span class="small mb-chip">${tt('mail.gift_chip', 'Gift')}</span>` : ''}${m.read ? '' : `<i class="mb-dot" aria-label="${tt('mail.unread_dot', 'unread')}"></i>`}</button>`).join('') : `<p class="small">${tt('mail.list_empty', 'Empty. Just one very determined spider.')}</p>`;
+  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(m.from, m)}</span></span>${mbOwed(m) ? `<span class="small mb-chip">${tt('mail.gift_chip', 'Gift')}</span>` : ''}${m.read ? '' : `<i class="mb-dot" aria-label="${tt('mail.unread_dot', 'unread')}"></i>`}</button>`).join('') : `<p class="small">${tt('mail.list_empty', 'Empty. Just one very determined spider.')}</p>`;
   const n = mailUnread(), owed = S.mail.filter(mbOwed);
   const allBar = owed.length >= 2 ? `<div class="mb-allbar"><span>${tt('mail.owed', '{n, plural, one {# letter carries a gift.} other {# letters carry a gift.}}', { n: owed.length })}</span><button class="btn yes mb-all" data-mball="1">${tt('mail.collect_all', 'Collect all')}</button></div>` : '';
   const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>${tt('mail.title', 'Mailbox')}`, `${jrMailTabs(album)}${album ? jrAlbum() : `${allBar}<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${tt('mail.foot', '{n, plural, =0 {All caught up.} other {# unread.}} A neighbour drops something off every day.', { n })}</p>`}`, { cls: 'mailbox' });

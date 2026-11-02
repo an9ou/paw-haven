@@ -72,6 +72,8 @@ const LANGS = {
   id: { body: 'PatrickHand', title: 'Caveat', latin: true },
 };
 const TITLE_KEYS = /(^|[._-])(title|heading|h[1-3]|tag|name|logo|cta|btn|button)([._-]|$)/i;
+// always in the title face too (beside --title-keys): the Dog Card words make the friend name shown in the title face (v2.19; ko 킷)
+const TITLE_ALWAYS = /(^|\.)dc_words(_[ab])?\./;
 const LATIN_LETTER = /[A-Za-zÀ-ɏḀ-ỿ]/;
 const SHIPPED = { body: 'site/fonts/patrick-hand.woff2', title: 'site/fonts/caveat.woff2' }; // the latin subsets every page already has
 const MACRON = 'ŌōŪū̄'; // tools/fonts/*macron* (photo postcard) already covers these
@@ -185,7 +187,7 @@ function corpus(lang) {
   }
   for (const f of files.filter((x) => !x.endsWith(' (breeds, terms)') && !x.endsWith(' pages)'))) {
     const p = path.resolve(root, f), raw = fs.readFileSync(p, 'utf8');
-    if (/\.json$/i.test(f)) for (const [k, s] of strings(JSON.parse(raw), '', [])) { text += s; if (opt.titleKeys.test(k)) title += s; }
+    if (/\.json$/i.test(f)) for (const [k, s] of strings(JSON.parse(raw), '', [])) { text += s; if (opt.titleKeys.test(k) || TITLE_ALWAYS.test(k)) title += s; }
     else text += raw;
   }
   return { files, text, title };
