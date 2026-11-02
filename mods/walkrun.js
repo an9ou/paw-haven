@@ -398,7 +398,7 @@ const CSS = `
 .pw-pfx{position:absolute;display:none;pointer-events:none;-webkit-user-drag:none}
 .pw-dog[data-pw=bubble] .pw-pfx-bubble{display:block;left:10%;top:10%;width:80%;height:96%;animation:pw-bwob 1.2s ease-in-out infinite alternate}
 @keyframes pw-bwob{from{transform:scale(.97,1.02)}to{transform:scale(1.03,.97)}}
-.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:-28%;top:34%;width:46%;height:56%;animation:pw-trl .18s steps(2,end) infinite}
+.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:-20%;top:40%;width:32%;height:44%;opacity:.85;animation:pw-trl .18s steps(2,end) infinite}
 @keyframes pw-trl{to{transform:translateX(-6%)}}
 .pw-dog[data-pw=spring] .pw-pfx-spring{display:block;left:22%;top:66%;width:56%;height:40%;animation:pw-glow .4s ease-in-out infinite alternate}
 .pw-dog[data-pw=magnet]::after{content:'';position:absolute;left:30%;top:16%;width:40%;height:62%;border-radius:50%;border:3px dashed rgba(210,72,59,.55);animation:pw-ring 1s ease-in-out infinite}
