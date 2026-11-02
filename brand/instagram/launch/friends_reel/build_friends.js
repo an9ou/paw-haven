@@ -42,12 +42,12 @@ const CARD = cardSVG().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 // ---- the words ----
 const TX = RN ? null : {
-  hook: [{ s: '4 ways your dog', size: 96, pitch: 112 }, { s: 'can make friends', size: 96, pitch: 118 }, { s: '(no chat)', size: 76 }],
-  name: 'pick a friend name', code: 'get 1 friend code',
-  ways: ['visit their yard, pet their dogs', 'leave a paw-print note', 'send a gift, once a day', 'take their dog on your walk'],
-  letter: 'gifts land in the mailbox',
-  safe: [{ s: 'no chat. no messages.', size: 88, pitch: 112 }, { s: 'friends add you', size: 66, pitch: 76 }, { s: 'with your code', size: 66 }],
-  endAsk: 'add us!', endSub: 'then drop your friend code below', endFree: 'a free cozy dog game', pill: 'play free at doodledoggo.app',
+  // owner, 2 Nov 2026: clean, short labels that name each feature, as our earlier Reels did; not sentences
+  hook: [{ s: '4 ways your dog', size: 84, pitch: 98 }, { s: 'can make friends', size: 84, pitch: 92 }, { s: '(no chat)', size: 60, fill: '#8A7468' }],
+  name: 'pick a name', code: 'share your code',
+  ways: ['visit & pet', 'paw-print note', 'send a gift', 'walk together'],
+  safe: [{ s: 'no chat. no messages.', size: 72 }],
+  endAsk: 'add us!', endSub: 'drop your code below', pill: 'doodledoggo.app',
   ph: 'placeholder: our real code on 7 Nov',
 };
 if (!TX) throw new Error('RedNote words come after the owner approves the English cut');
@@ -61,7 +61,7 @@ seg(1.7, 'card', 0.2, { z0: 1.0, z1: 1.05, fx: 0.5, fy0: 0.3, fy1: 0.28 }, { s: 
 seg(3.1, 'visit', 0.45, { z0: 1.3, z1: 1.38, fx: 0.42, fy0: 0.6, fy1: 0.6 }, { n: 1, s: TX.ways[0] });
 seg(2.3, 'note', 0.25, { z0: 1.05, z1: 1.12, fx: 0.5, fy0: 0.55, fy1: 0.6 }, { n: 2, s: TX.ways[1] });
 seg(2.6, 'gift', 0.45, { z0: 1.08, z1: 1.12, fx: 0.5, fy0: 0.68, fy1: 0.6, lift: 380, liftIn: true }, { n: 3, s: TX.ways[2] });
-seg(1.3, 'gift_letter', 0, { z0: 1.06, z1: 1.12, fx: 0.5, fy0: 0.36, fy1: 0.36, lift: -330 }, { n: 3, s: TX.letter, keep: true });
+seg(1.3, 'gift_letter', 0, { z0: 1.06, z1: 1.12, fx: 0.5, fy0: 0.36, fy1: 0.36, lift: -300 }, { n: 3, s: TX.ways[2], keep: true });
 seg(0.8, 'walk_pick', 0, { z0: 1.7, z1: 1.8, fx: 0.4, fy0: 0.83, fy1: 0.83 }, { n: 4, s: TX.ways[3] });
 seg(3.0, 'walk', 0.6, { z0: 1.5, z1: 1.5, fx: 0.3, fy0: 0.57, fy1: 0.57 }, { n: 4, s: TX.ways[3], keep: true });
 seg(2.2, 'friends_list', 0, { z0: 1.0, z1: 1.04, fx: 0.5, fy0: 0.5, fy1: 0.5 }, { safe: true });
@@ -114,23 +114,22 @@ window.frame=async function(t, S, src){
     ph='<rect x="'+px(28)+'" y="'+py(36)+'" width="'+(px(156)-px(28))+'" height="'+(py(162)-py(36))+'" fill="#FFFDF7"/><rect x="'+px(160)+'" y="'+py(112)+'" width="'+(px(284)-px(160))+'" height="'+(py(146)-py(112))+'" fill="#FFFDF7"/>'
       +'<g transform="rotate(-6 '+CX+' '+py(100)+')">'+pill(TX.ph,CX,Math.max(py(100),SAFE.y0+40),44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>'; }
   if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3);
-    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-410,280,820,380,'${PEN}',7,fit(TX.hook,730))+'</g>'; }
+    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-340,300,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'; }
   else if(cp.safe){ dim+='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+(0.82*ease(lt/0.25))+'"/>';
-    const s=back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-400,650,800,420,'${GREEN}',8,fit(TX.safe,700))+'</g>'; }
+    const s=back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-330,790,660,140,'${GREEN}',6,fit(TX.safe,580))+'</g>'; }
   else if(cp.s){ const kept=cp.keep, s=kept?1:back(lt/0.3), o=kept?1:ease(lt/0.15);
-    const L=fit([{s:cp.s,size:64}],cp.n?600:720), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+90, x0=cp.n?SAFE.x0+120:CX-w/2, x=Math.min(x0,SAFE.x1-w);
-    cap='<g opacity="'+o+'" transform="translate('+CX+' 330) scale('+s+') rotate(-1.5) translate('+(-CX)+' -330)">'+card(x,265,w,130,'${PEN}',6,L)
-      +(cp.n?'<g transform="translate('+(x-50)+' 330) rotate(-8)">'+bubble(58,'#FFE3A1',cp.n+'.',78)+'</g>':'')+'</g>'; }
+    const L=fit([{s:cp.s,size:56}],cp.n?560:680), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+80, x0=cp.n?SAFE.x0+100:CX-w/2, x=Math.min(x0,SAFE.x1-w);
+    cap='<g opacity="'+o+'" transform="translate('+CX+' 330) scale('+s+') rotate(-1.5) translate('+(-CX)+' -330)">'+card(x,280,w,104,'${PEN}',5,L)
+      +(cp.n?'<g transform="translate('+(x-40)+' 332) rotate(-8)">'+bubble(48,'#FFE3A1',cp.n+'.',64)+'</g>':'')+'</g>'; }
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
-      +'<g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:140}],CX,360).svg+'</g><path d="M'+(CX-220)+' 440 Q'+CX+' 420 '+(CX+220)+' 440" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
-      +'<g transform="translate('+CX+' 725) scale('+(cs*2.55)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
+      +'<g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:120}],CX,380).svg+'</g><path d="M'+(CX-190)+' 450 Q'+CX+' 432 '+(CX+190)+' 450" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
+      +'<g transform="translate('+CX+' 740) scale('+(cs*2.4)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
       +(PH?'<g transform="rotate(-6 '+CX+' 745)">'+pill(TX.ph,CX,745,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':'')
-      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:68}],800),CX,1050).svg
-      +'<path d="M'+CX+' 1095 q-12 45 0 82 M'+(CX-24)+' 1150 l24 30 l24 -30" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
-      +'<g transform="rotate(-3 '+(CX-125)+' 1268)">'+C([{s:'Doodle',size:100}],CX-125,1268).svg+'</g><g transform="rotate(2 '+(CX+140)+' 1272)">'+C([{s:'Doggo',size:100}],CX+140,1272).svg+'</g>'
-      +C([{s:TX.endFree,size:44,fill:'#8A7468'}],CX,1335).svg
-      +(()=>{ const L=fit([{s:TX.pill,size:52}],700), k=inkOf(TX.pill,L[0].size,FAM), w=k.L+k.R+70; return '<g data-box><rect x="'+(CX-w/2)+'" y="1362" width="'+w+'" height="72" rx="36" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C(L,CX,1398).svg+'</g>'; })()+'</g>'; }
+      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1060).svg
+      +'<path d="M'+CX+' 1100 q-10 38 0 70 M'+(CX-22)+' 1148 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
+      +'<g transform="rotate(-3 '+(CX-110)+' 1290)">'+C([{s:'Doodle',size:88}],CX-110,1290).svg+'</g><g transform="rotate(2 '+(CX+122)+' 1294)">'+C([{s:'Doggo',size:88}],CX+122,1294).svg+'</g>'
+      +(()=>{ const L=fit([{s:TX.pill,size:48}],600), k=inkOf(TX.pill,L[0].size,FAM), w=k.L+k.R+64; return '<g data-box><rect x="'+(CX-w/2)+'" y="1362" width="'+w+'" height="68" rx="36" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C(L,CX,1396).svg+'</g>'; })()+'</g>'; }
   $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end;
 };
 </script>`;
