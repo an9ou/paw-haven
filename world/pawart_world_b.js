@@ -7043,7 +7043,7 @@ PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOO
 
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-css')){
   const st=document.createElement('style');st.id='pawart-world-b-css';
-  st.textContent='.pa-wb{display:block;overflow:visible}.pa-wb text{font-family:'+FONT+';user-select:none}';
+  st.textContent='.pa-wb{display:block;overflow:visible}.pa-wb text{font-family:'+FONT+';user-select:none}.pa-wb text[font-family*="DD Local"]{font-family:'+FONT_L+'}';
   document.head.appendChild(st);
 }
 })();

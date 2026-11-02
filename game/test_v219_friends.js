@@ -178,13 +178,13 @@ run('v219_friends', async (t) => {
   if (!spun) { await t.p.click('#frRand'); spun = await t.until((b) => (document.getElementById('frPrev') || {}).textContent !== b, before, 1500); }
   ok(spun, 'Random picks another pair');
   const fit = await ev(() => {
-    const els = [...document.querySelectorAll('.fr-wheels text')], lens = els.map((el) => ({ w: el.textContent, len: el.getComputedTextLength(), tl: el.getAttribute('textLength'), font: el.getAttribute('font-family') }));
+    const els = [...document.querySelectorAll('.fr-wheels text')], lens = els.map((el) => ({ w: el.textContent, len: el.getComputedTextLength(), tl: el.getAttribute('textLength'), font: el.getAttribute('font-family'), css: getComputedStyle(el).fontFamily }));
     const big = els[1]; big.textContent = 'Supercalifragilisticexpialidocious'; window.__paw.fr.fit(document.querySelector('.fr-wheels'));
     return { lens, long: big.getComputedTextLength(), longTl: big.getAttribute('textLength') };
   });
-  ok(fit.lens.length === 6 && fit.lens.every((x) => /DD Local Title/.test(x.font) && /Caveat/.test(x.font)), 'the wheel words use the hand face, then the local faces (art review 1): ' + JSON.stringify(fit.lens.map((x) => x.font)));
-  ok(fit.lens.every((x) => x.len <= 100.5 && (x.len < 99 ? !x.tl : true)), 'no word is stretched to 100 wide; each fits its room (phone review 2): ' + JSON.stringify(fit.lens));
-  ok(fit.long <= 100.5 && fit.long > 60, 'a word wider than the wheel steps down and squeezes to 100: ' + JSON.stringify({ long: fit.long, tl: fit.longTl }));
+  ok(fit.lens.length === 6 && fit.lens.every((x) => /DD Local Title/.test(x.font) && /Caveat/.test(x.font) && /DD Local Title/.test(x.css) && /Caveat/.test(x.css)), 'the wheel words use the hand face, then the local faces, in the computed style too (art review 1, fit audit 1): ' + JSON.stringify(fit.lens.map((x) => x.css)));
+  ok(fit.lens.every((x) => x.len <= 106.5 && (x.len < 105 ? !x.tl : true)), 'no word is stretched to 106 wide; each fits its room (phone review 2): ' + JSON.stringify(fit.lens));
+  ok(fit.long <= 106.5 && fit.long > 60, 'a word wider than the wheel steps down and squeezes to 106 (fit audit: the 112-unit text area less 3 a side): ' + JSON.stringify({ long: fit.long, tl: fit.longTl }));
   await t.p.click('#frRand');
   await t.p.click('#frOk');
   ok(await t.until(() => !!document.getElementById('frCard') && /DOG-23456/.test(document.getElementById('frCard').textContent || ''), null, 8000), 'the card shows the code DOG-23456');
@@ -198,8 +198,14 @@ run('v219_friends', async (t) => {
   ok(giftMail.length === 1 && giftMail[0].kind === 'gift' && giftMail[0].title === 'A gift from Sunny Biscuit!' && JSON.stringify(giftMail[0].gift) === JSON.stringify({ item: 'Basic Kibble', cat: 'food', id: 'Basic Kibble', n: 1 }) && (await ev(() => window.__paw.S.fr.gotGifts)) === 1, 'the gift became a mailbox gift letter "A gift from Sunny Biscuit!" with { cat, id, n: 1 }: ' + JSON.stringify(giftMail));
   const petMail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && /^fr_pet_/.test(m.id)).map((m) => ({ id: m.id, from: m.from, title: m.title, text: m.text })));
   ok(petMail.length === 1 && petMail[0].id === 'fr_pet_2026-11-01' && petMail[0].text === 'Sunny Biscuit visited and petted ' + (await ev(() => window.__paw.S.dog.name)) + '. +1 Bond' && (await ev(() => window.__paw.S.fr.gotPets)) === 1, 'the pet became a letter: "Sunny Biscuit visited and petted <dog>. +1 Bond": ' + JSON.stringify(petMail));
-  ok(await ev(() => { const el = document.querySelector('#frCard text.fr-fit'); return !!el && /DD Local/.test(el.getAttribute('font-family')) && el.getComputedTextLength() <= 108.5 && +el.getAttribute('y') === 104; }), 'the card name: local faces, fits 108, sits clear of the code (art review 1, 2)');
+  ok(await ev(() => { const el = document.querySelector('#frCard text.fr-fit'); return !!el && /DD Local/.test(el.getAttribute('font-family')) && /DD Local Title/.test(getComputedStyle(el).fontFamily) && el.getComputedTextLength() <= 108.5 && +el.getAttribute('y') === 104; }), 'the card name: local faces, fits 108, sits clear of the code (art review 1, 2)');
   await shot(t, 'my_card_1280');
+  ok(await ev(() => { // fit audit 7: a name too long for one line at 18 goes on two lines, one word each, inside the name room and clear of the code
+    const el = document.querySelector('#frCard text.fr-fit'), keep = el.cloneNode(true);
+    el.dataset.l1 = 'Wohlfühl-'; el.dataset.l2 = 'Papageitaucher'; delete el.dataset.nm; el.textContent = 'Wohlfühl-Papageitaucher'; window.__paw.fr.fit(el.parentNode);
+    const ts = [...el.querySelectorAll('tspan')], r = ts.length === 2 && ts.every((x) => x.getComputedTextLength() <= 108.5 && +x.getAttribute('y') <= 104) && +el.getAttribute('font-size') >= 11.2;
+    el.replaceWith(keep); return r;
+  }), 'a long card name: two lines of one word, each fits 108 (fit audit 7)');
   // phone review 5: note, pet and walk letters show a picture in the postcard, never an empty frame
   for (const id of ['fr_note_1', 'fr_pet_2026-11-01', 'fr_walk_4']) {
     await ev((id) => window.__paw.openMailbox(id), id);

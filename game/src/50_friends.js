@@ -60,10 +60,17 @@ function frPawHTML() {
   return `<span class="fr-letterpaw" aria-hidden="true">${svg}</span>`;
 }
 const frBadgeN = () => FR.pending | 0;
-function frPairName(pair) {
-  if (!pair || DC_WORDS_A[pair[0]] == null || DC_WORDS_B[pair[1]] == null) return '';
-  return tt('fr.name', '{a} {b}', { a: dcWordA(pair[0]), b: dcWordB(pair[1]) });
+// the friend name in the language's order, and its two lines for the card: the joiner ("-" in de) stays at the end of the first line. A language that
+// writes the two words with nothing between them (ja, zh, th) gets a zero-width space there, so a line may break between the words, never inside one (fit audit 3)
+function frPairParts(pair) {
+  if (!pair || DC_WORDS_A[pair[0]] == null || DC_WORDS_B[pair[1]] == null) return null;
+  const a = dcWordA(pair[0]), b = dcWordB(pair[1]), m = tt('fr.name', '{a} {b}', { a: '\uE000', b: '\uE001' });
+  const i = m.indexOf('\uE000'), j = m.indexOf('\uE001');
+  if (i < 0 || j < 0) { const n = tt('fr.name', '{a} {b}', { a, b }); return { name: n, l1: n, l2: '' }; }
+  const lo = Math.min(i, j), hi = Math.max(i, j), pre = m.slice(0, lo) + (i < j ? a : b), post = (i < j ? b : a) + m.slice(hi + 1), mid = m.slice(lo + 1, hi);
+  return mid.trim() ? { name: pre + mid + post, l1: pre + mid.trim(), l2: post } : { name: pre + (mid || '\u200B') + post, l1: pre, l2: post };
 }
+function frPairName(pair) { const p = frPairParts(pair); return p ? p.name : ''; }
 function frNormCode(s) {
   if (typeof s !== 'string' || s.length > 40) return null;
   let t = s.replace(/\s+/g, '').toUpperCase();
@@ -168,24 +175,41 @@ function frQRSVG(text, box) {
   }
   return out;
 }
-function frCardSVG(code, name) {
+// name: frPairParts() (or a plain string). The name is one line when it fits at 18 units, else its two words on two lines (fit audit 7, frFit)
+function frCardSVG(code, parts) {
+  const P = typeof parts === 'string' ? { name: parts, l1: '', l2: '' } : parts, name = P ? P.name : '';
   let svg = '';
   try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.card === 'function') svg = P.FRIENDS.card(code || ''); } catch (e) { svg = ''; }
   const box = (window.PawArt && PawArt.FRIENDS && PawArt.FRIENDS.cardQR) || { x: 34, y: 42, w: 116, h: 116 };
   const qr = code ? frQRSVG(frLinkOf(code), box) : '';
   const size = !name ? 22 : name.length > 16 ? 15 : name.length > 12 ? 18 : 22;
-  const nm = name ? `<text class="fr-fit" data-max="108" data-fs="${size}" x="222" y="104" text-anchor="middle" font-family="${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}">${esc(name)}</text>` : '';
+  const two = P && P.l1 && P.l2 ? ` data-l1="${esc(P.l1)}" data-l2="${esc(P.l2)}"` : '';
+  const nm = name ? `<text class="fr-fit" data-max="108" data-fs="${size}"${two} x="222" y="104" text-anchor="middle" font-family="${FR_FONT}" style="font-family:${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}">${esc(name)}</text>` : '';
   if (!svg) return `<div class="fr-codebig">${esc(code || '')}${qr ? `<svg viewBox="0 0 300 200">${qr}</svg>` : ''}</div>`; // TODO art
   return svg.replace(/<\/svg>\s*$/, qr + nm + '</svg>');
 }
-const FR_FONT = "'Caveat','DD Local Title','DD Local',cursive"; // the hand face, then the language's local faces (as world_b's FONT_L), never a system gothic
-// a word wider than its room (data-max, in SVG units) steps its font size down, to 70% at most, and only then is squeezed. Short words keep their own width
+const FR_FONT = "'Caveat','DD Local Title','DD Local',cursive"; // the hand face, then the language's local faces (as world_b's FONT_L), never a system gothic.
+// The <text>s carry it as an inline style too: world_b's `.pa-wb text` rule would beat the attribute (fit audit 1)
+// a word wider than its room (data-max, in SVG units) steps its font size down, to 70% at most, and only then is squeezed. Short words keep their own width.
+// A card name with two lines (data-l1, data-l2) that does not fit on one line at 18 units goes on two lines instead, one word each (fit audit 7)
+const FR_TWO = { fs: 18, two: 15, y: [87, 103] }; // one line when it fits at 18; two lines at 15 sit in x 166..278, y 74..109 (Thai marks too), clear of the code on its line at y 136
+const frLen = (el) => { try { return el.getComputedTextLength(); } catch (e) { return 0; } };
+function frFitTwo(el, max) {
+  const x = el.getAttribute('x'), fs = Math.min(+el.dataset.fs, FR_TWO.two);
+  el.textContent = ''; el.setAttribute('font-size', fs);
+  const ts = [el.dataset.l1, el.dataset.l2].map((s, k) => { const t = document.createElementNS('http://www.w3.org/2000/svg', 'tspan'); t.setAttribute('x', x); t.setAttribute('y', FR_TWO.y[k]); t.textContent = s; el.appendChild(t); return t; });
+  const w = Math.max(...ts.map(frLen)); if (!(w > max)) return;
+  el.setAttribute('font-size', (fs * Math.max(0.7, max / w)).toFixed(1));
+  ts.forEach((t) => { if (frLen(t) > max) { t.setAttribute('textLength', max); t.setAttribute('lengthAdjust', 'spacingAndGlyphs'); } });
+}
 function frFit(root) {
   (root || document).querySelectorAll('text.fr-fit').forEach((el) => {
     const max = +el.dataset.max, fs = +el.dataset.fs; if (!max || !fs || typeof el.getComputedTextLength !== 'function') return;
+    if (el.dataset.l2) { if (el.dataset.nm == null) el.dataset.nm = el.textContent; el.textContent = el.dataset.nm; }
     el.removeAttribute('textLength'); el.removeAttribute('lengthAdjust'); el.setAttribute('font-size', fs);
-    let w = 0; try { w = el.getComputedTextLength(); } catch (e) { w = 0; }
+    let w = frLen(el);
     if (!(w > max)) return;
+    if (el.dataset.l2 && w * Math.min(1, FR_TWO.fs / fs) > max) { frFitTwo(el, max); return; }
     const k = Math.max(0.7, max / w); el.setAttribute('font-size', (fs * k).toFixed(1));
     try { w = el.getComputedTextLength(); } catch (e) { w = 0; }
     if (w > max) { el.setAttribute('textLength', max); el.setAttribute('lengthAdjust', 'spacingAndGlyphs'); }
@@ -197,7 +221,7 @@ function frWheelSVG(which, idx) {
   const at = (k) => show((idx + k + words.length) % words.length);
   let frame = '';
   try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.wheel === 'function') frame = P.FRIENDS.wheel(); } catch (e) { frame = ''; }
-  const tx = (id, y, word, size, op) => `<text id="${id}" class="fr-fit" data-max="100" data-fs="${size}" x="80" y="${y}" text-anchor="middle" font-family="${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}" opacity="${op}">${esc(word)}</text>`;
+  const tx = (id, y, word, size, op) => `<text id="${id}" class="fr-fit" data-max="106" data-fs="${size}" x="80" y="${y}" text-anchor="middle" font-family="${FR_FONT}" style="font-family:${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}" opacity="${op}">${esc(word)}</text>`;
   const texts = tx('frW-' + which + '-p', 68, at(-1), 16, '.45') + tx('frW-' + which, 116, at(0), 22, '1') + tx('frW-' + which + '-n', 164, at(1), 16, '.45');
   if (!frame) return `<b id="frW-${which}">${esc(at(0))}</b>`; // TODO art
   return frame.replace(/<\/svg>\s*$/, texts + '</svg>');
@@ -419,11 +443,11 @@ function frRowHTML(f) {
 }
 function frSheetHTML() {
   v219Fields(S);
-  const name = frPairName(S.fr.name), code = S.fr.code || '';
+  const parts = frPairParts(S.fr.name), code = S.fr.code || '';
   const friends = frSorted((S.fr.cache && S.fr.cache.friends) || []);
   const off = FR.offline ? `<p class="fr-off" id="frOff">${esc(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'))}</p>` : '';
   const list = friends.length ? friends.map(frRowHTML).join('') : `<p class="small">${esc(tt('fr.none', 'No friends yet. Share your code, or add one below.'))}</p>`;
-  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, name)}</div><div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button><button class="btn" type="button" id="frNew">${esc(tt('fr.new_code', 'New code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
+  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div><div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button><button class="btn" type="button" id="frNew">${esc(tt('fr.new_code', 'New code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
 }
 function frCodeChars() { return [0, 1, 2, 3, 4].map((i) => { const el = document.getElementById('frCh' + i); return el ? el.value.toUpperCase() : ''; }).join(''); }
 function frFillCode(code) {
@@ -513,6 +537,17 @@ async function frNewCode(p) {
 // Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way
 const FR_UNDO_MS = TOAST_MS + 300; // the Undo stays tappable while its toast shows
 const frSheetIfOpen = () => { if (!modal.hidden && modal.querySelector('.fr-sheet')) frSheet(); };
+// while a sheet is open the Undo toast sits under the sheet (or over it) on a wide screen when there is room, else (and on phones, where the bar and
+// the place buttons sit around the sheet) at the sheet's foot, so the title and the top row's
+// Visit and Gift stay clear (fit audit 4).
+// Layout boxes (offsetTop), as toastSheetTop, so the sheet's slide-in transform and the desktop stage scale don't move it
+function frUndoPlace() {
+  const pn = modal.hidden ? null : modal.querySelector('.panel'); if (!pn) return;
+  let top = 0; for (let e = pn; e && e !== stage; e = e.offsetParent) top += e.offsetTop;
+  const h = toasts.offsetHeight, H = stage.clientHeight, end = top + pn.offsetHeight;
+  const wide = !isPhone(), y = Math.max(6, Math.round(wide && end + 8 + h <= H - 6 ? end + 8 : wide && top - 8 - h >= 6 ? top - 8 - h : Math.min(end, H) - h - 14));
+  toasts.style.top = y + 'px'; toasts.style.bottom = 'auto'; toasts.style.flexDirection = ''; toasts.style.setProperty('--toastTop', y + 'px');
+}
 function frRemove(fid) {
   const list = (S.fr.cache && S.fr.cache.friends) || [], f = list.find((x) => x && x.fid === fid); if (!f) return;
   const at = list.indexOf(f), name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
@@ -521,6 +556,7 @@ function frRemove(fid) {
   const t = toast(tt('fr.removed', '{name} is off your list.', { name }), 'good');
   if (t) {
     t.classList.add('fr-undo'); t.insertAdjacentHTML('beforeend', ` <button class="btn" type="button">${esc(tt('fr.undo', 'Undo'))}</button>`);
+    frUndoPlace();
     const b = t.querySelector('button'); b.onclick = (e) => {
       e.stopPropagation(); SFX.click(); undone = true; t.remove();
       const now = (S.fr.cache && S.fr.cache.friends) || [];

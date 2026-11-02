@@ -395,6 +395,19 @@ html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
 .sitetop{flex:1 1 100%;margin-bottom:6px}
 .brandbig{display:block;border-radius:12px}
 @media (max-width:860px){ .sheet>.sitehead{display:flex;flex-direction:column;align-items:stretch} .sheet>.sitehead .sitenav{display:grid} .sheet>.sitehead .langs{align-self:center} }
+/* v2.19 fit audit: a prose sheet (the invite page /f/<code>, /privacy) is only 716 px wide, so its header (not the stuck bar) takes the phone layout
+   at every width: logo, the five tabs as five equal tiles (doodle over the label, as up to 860 px), then the language menu */
+@media (min-width:861px){
+  .sheet.prose>.sitehead:not(.stuck){display:flex;flex-direction:column;align-items:stretch;padding:0 0 10px;margin:-2px 0 14px}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav a{min-width:0;flex-direction:column;gap:2px;padding:5px 2px 6px;font-size:21px;line-height:1.05;overflow-wrap:break-word}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav a span{text-wrap:balance}
+  html.s-cjk .sheet.prose>.sitehead:not(.stuck) .sitenav a{line-height:1.2}
+  html.s-th .sheet.prose>.sitehead:not(.stuck) .sitenav a{line-height:1.35}
+  .sheet.prose>.sitehead:not(.stuck) .langs{align-self:center}
+}
+/* Korean tab labels wrap between words only (강아지들 stays whole) where a word fits its tab (360 px and up; at 320 px it must still wrap to fit) */
+@media (min-width:350px){ html[lang="ko"] .sitenav a{word-break:keep-all} }
 /* owner: the Dogs page is a grid of 3 dog cards; a tap opens the dog's profile in a pop-up (the profiles list stays only without JavaScript) */
 .dognav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
 .dognav a{font-family:var(--hand);font-size:26px;padding:8px 6px 10px}

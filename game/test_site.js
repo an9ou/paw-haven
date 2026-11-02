@@ -234,7 +234,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const itchPriv = fs.readFileSync(path.join(ROOT, 'docs', 'itch', 'PRIVACY.md'), 'utf8');
       const priv = await (await get(SITE + '/privacy')).text();
       const six = (t) => /two words from a list/.test(t) && /preset kind lines/.test(t) && /only by a code or an invite link/.test(t) && /30 days/.test(t) && /quiet/.test(t) && /Leave Friends/.test(t);
-      ok(/<h2>Friends<\/h2>/.test(priv) && /1 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the new date');
+      ok(/<h2>Friends<\/h2>/.test(priv) && /7 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the launch date (7 Nov, b5f5767)');
       ok(/## Friends/.test(itchPriv) && /1 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
     }
     r = await get(SITE + '/reset'); ok(r.headers.get('referrer-policy') === 'no-referrer', '/reset sends no referrer'); await r.text();
