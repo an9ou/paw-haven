@@ -21,7 +21,7 @@ const out = path.join(root, '_site');
 fs.mkdirSync(out, { recursive: true }); // a fresh checkout has no _site/ yet
 fs.rmSync(path.join(out, 'lang'), { recursive: true, force: true });
 fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(photo_fonts|world_[a-z])\.\w+\.js$/.test(e.name)).forEach((e) => fs.rmSync(path.join(out, e.name))); // v2.15: and the old lazy art chunks
-let html = head + rest + '</body></html>';
+let html = head + require('./pages_gate.js').gate() + rest + '</body></html>'; // the password screen (Pages test copy only; tools/pages_gate.js)
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
