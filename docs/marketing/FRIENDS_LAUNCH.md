@@ -11,8 +11,9 @@ On 7 Nov, with the code, re-shoot and rebuild (about 15 minutes; also picks up a
 ```
 git fetch origin <main or the v2.19 dev branch>; git worktree add <dir> FETCH_HEAD     # the v2.19 build (art, Friends screens)
 cd <dir> && node game/build.js && node game/harness.js merged && cd -
-OUR_CODE=DOG-XXXXX OUR_NAME=<word A index>,<word B index> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_friends.js <dir> <footage>
-NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <dir> <footage> <work>    # the Reel
+OUR_NAME=<word A index>,<word B index> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean>        # Reel footage (clean)
+OUR_CODE=DOG-XXXXX OUR_NAME=<a>,<b> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_friends.js <dir> <footage>   # carousel screens
+OUR_CODE=DOG-XXXXX OUR_NAME=<a>,<b> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <dir> <clean> <work>   # the Reel
 NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/make_friends_cover.js <dir> <out>         # its cover
 NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_carousel.js <dir> <footage> <out>  # 8 slides
 ```
@@ -22,10 +23,11 @@ NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_carousel
 
 | File | What |
 |---|---|
-| `preview/doodle-doggo-friends-PREVIEW.mp4` | The Reel: **one cut for every platform** (Instagram Reels, YouTube Shorts, TikTok, X). 1080 x 1920, 30 fps, 25.1 s, the game's own cozy music (the yard by day), a soft tick as each numbered way pops in and the "discover" sting on the end page. |
+| `preview/doodle-doggo-friends-PREVIEW.mp4` | The Reel: **one cut for every platform** (Instagram Reels, YouTube Shorts, TikTok, X). 1080 x 1920, 30 fps, 16.4 s, the game's own cozy music (the yard by day), a soft tick as each numbered way pops in and the "discover" sting on the end page. |
 | `preview/friends-cover-PREVIEW.jpg` | The cover, its own design (owner, 2 Nov 2026: not a frame of the Reel): the autumn yard, Mochi the Shiba and Waffles the Corgi nose to nose under a pink heart, Honey the Golden puppy in her party hat, the hook card "4 ways your dog can make friends", a "(no chat)" sticker and "new: Friends in Doodle Doggo". All of it inside the grid's 3:4 crop. `make_friends_cover.js` (no code on it, so nothing to redo on 7 Nov). |
 | `preview/friends-carousel-PREVIEW-1.jpg` … `-8.jpg` | The carousel, 1080 x 1350. |
-| `capture_friends.js` | Records the real v2.19 Friends screens (iPhone 15 profile, DPR 3) with Friends turned on and the Worker mocked as `game/test_v219_friends.js` does. The clips are shot at full resolution with the page clock slowed (each frame stamped with its game time), so the motion plays at 30 fps. |
+| `capture_clean.js` | The Reel's footage: the same build and mock with every game bar, button, sheet, toast and speech bubble hidden, so only the scenes are filmed. |
+| `capture_friends.js` | The carousel's screens: records the real v2.19 Friends screens (iPhone 15 profile, DPR 3) with Friends turned on and the Worker mocked as `game/test_v219_friends.js` does. The clips are shot at full resolution with the page clock slowed (each frame stamped with its game time), so the motion plays at 30 fps. |
 | `build_friends.js`, `build_carousel.js`, `make_friends_cover.js` | The Reel and the carousel. Every text in a box is ink-centred with `centre_text.js` and checked by `centreCheck()` on every frame and slide (the build stops if anything is more than 1.5 px off). Our card on the last frame / slide is drawn from the game's own card art and QR module (`PawArt.FRIENDS.card`, `mods/qr.js`). |
 
 **The footage:** our dog is Mochi the Shiba (orange). The friend is a made-up player, "Sunny Biscuit" (two Dog Card words), with Waffles the Corgi and Honey the Golden puppy in a party hat, in an autumn yard. No black or white dog is the subject. The friend's code is never shown: it is typed off camera.
@@ -34,7 +36,7 @@ NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_carousel
 
 Hook (`ig-reel` hookscore 80.1 STRONG, the best of 18): **"4 ways your dog can make friends (no chat)"**.
 
-On screen (owner, 2 Nov 2026: clean, short labels that name each feature, not sentences): the hook "4 ways your dog can make friends (no chat)" over Mochi in the yard; "pick a name" (the wheels turning); "share your code" (our card); then the four ways, numbered "1." to "4.": 1. "visit & pet" (Waffles and Honey get petted, hearts and a line from each), 2. "paw-print note" (the list of 12, then the stamp on their path), 3. "send a gift" (the bag, Send, the gift flies off, then the gift letter in the mailbox), 4. "walk together" (Waffles picked on the route screen, then running beside Mochi with her friend ribbon). Then "no chat. no messages.", and the end page: "add us!", our card, "drop your code below", the logo and "doodledoggo.app".
+On screen (owner, 2 Nov 2026: "without the game buttons, make it clean, introduce the upcoming update"): **clean game scenes, no game interface at all** (no top bar, bottom bar, buttons, sheets, toasts or speech bubbles; `capture_clean.js` hides them and the yard fills the whole phone screen). 16.4 s: the hook "4 ways your dog can make friends (no chat)" with a yellow sticker "new update · 7 Nov" over Mochi at home; 1. "visit & pet" (Sunny Biscuit's yard, Waffles and Honey get petted, hearts); 2. "paw-print note" (the pink paw stamp lands on their path; our dog sits this one shot out because its tail covers the stamp's spot on a phone); 3. "send a gift" (the wrapped gift flies off); 4. "walk together" (the run with Waffles beside Mochi, as a window on the paper because the run is a wide strip; the first 2.4 s, before Mochi bumps a log); end page: "add us!", our card, "drop your code below", the logo and "new update · 7 Nov".
 
 Facts checked against `V219.md` and the game: the name is two Dog Card words on two wheels; one code, shared by invite link, Copy code or the QR; visits are read-only; pets give +1 Bond on both sides; notes are 12 preset lines (no typed text leaves the device); one gift a day, arriving as a mailbox letter; a friend's dog can join your walk and they get a walk letter; no chat, no search, no directory; remove or block any time; 11 languages.
 
@@ -81,7 +83,7 @@ Title off the hook (80.1 STRONG). Human score 78.3 PASS on the text (the link li
 ```
 273 of 280 (the link counts as 23) · human score 77.2 PASS.
 
-**Alt text:** `A crayon Shiba named Mochi stands in a sketchbook yard under the words "4 ways your dog can make friends (no chat)". Then real game screens: two wheels pick the friend name, a friend card with a QR code, a visit to a friend's autumn yard where a Corgi and a Golden puppy get petted, a list of preset paw-print notes, a gift box flying off, a gift letter in the mailbox, and the Corgi running beside Mochi on a walk. It ends on "no chat. no messages." and our friend card with "add us! then drop your friend code below".`
+**Alt text:** `A crayon Shiba named Mochi sits in a sketchbook autumn yard under the words "4 ways your dog can make friends (no chat)" and a sticker "new update, 7 Nov". Then four numbered scenes from the game: Mochi visits a friend's yard where a Corgi and a Golden puppy in a party hat get petted, a pink paw print stamps onto their path, a wrapped gift flies off, and the Corgi runs beside Mochi on a walk. It ends on "add us!", our friend card and "drop your code below".`
 
 ## The carousel ("add a friend in 3 steps", 8 slides)
 
@@ -126,3 +128,4 @@ After the owner approves the English cut: the same Reel in Simplified Chinese (t
 - **One cut for every platform** (owner, 2 Nov 2026: on Shorts some words were hidden): Shorts, Reels and TikTok cover the right side (buttons) and the top and bottom (titles, names, captions). Every word of ours now sits inside x 60..890, y 250..1440 of the 1080 x 1920 frame, centred on x 475, and the build stops if any text leaves that area (`safeCheck()` in `build_friends.js`). The game screen still fills the frame behind. Where the game's own sheet sits at the bottom of the phone, the screen slides up over the paper (the gift bag), or down below the caption (the mailbox), so the thing being shown stays in the clear area.
 - **Fewer words on screen** (owner, 2 Nov 2026): short labels that name each feature instead of sentences, smaller caption cards, the safety card down to one line, and the end page down to the ask, our card, the logo and the link.
 - **Safe zone for boxes too** (owner, 2 Nov 2026, with screenshots of the posted puppy-colour Reel): the check now covers every card, bubble, pill and window, not only the words, with Instagram's measured zones; the caption cards moved down a little and their pop-in bounce is smaller. `preview/instagram-zones-check.png` shows frames with Instagram's zones in red.
+- **Clean Reel, introducing the update** (owner, 2 Nov 2026): no game interface on screen at all, only the scenes; the name-wheel, code, mailbox and safety shots are gone; a "new update · 7 Nov" sticker on the hook and the end page. 16.4 s (was 25.1 s).

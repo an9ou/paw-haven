@@ -1,12 +1,13 @@
 // v2.19 "Friends first" launch Reel: "4 ways your dog can make friends (no chat)" (owner's go-ahead 2 Nov 2026; plan docs/marketing/V219_FRIENDS_FIRST.md).
-// Real game footage of the v2.19 Friends screens (capture_friends.js), full frame, with caption cards on top, then the safety line and an end page
-// with OUR friend card drawn from the game's own card art and QR (PawArt.FRIENDS.card + mods/qr.js), asking for friend codes in the comments.
+// CLEAN version (owner, 2 Nov 2026: "without the game buttons, make it clean, introduce the upcoming update"): real v2.19 scenes with every game bar,
+// button, sheet and speech bubble hidden (capture_clean.js), one short label per feature, a "new update · 7 Nov" sticker, and an end page with OUR
+// friend card drawn from the game's own card art and QR (PawArt.FRIENDS.card + mods/qr.js), asking for friend codes in the comments.
 // 1080 x 1920, 30 fps, the game's own cozy music (the yard by day), a tick on each numbered way and the "discover" sting on the end page.
 //
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <game checkout> <footage dir> <workdir>
+//   [OUR_CODE=DOG-XXXXX OUR_NAME=a,b] NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <game checkout> <clean footage dir> <workdir>
 //   ONLY=stills renders key frames only. The cover: make_friends_cover.js. REDNOTE=1: every word in Simplified Chinese, no game link anywhere (after the owner approves).
-// The footage's layout.json says whether the code is the real one (OUR_CODE at capture time). Without it every frame that shows our card carries
-// a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
+// OUR_CODE / OUR_NAME (Dog Card word indices) are the Doodle Doggo account's real friend code and name from the live game on 7 Nov. Without OUR_CODE
+// the end page's card carries a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre
@@ -16,8 +17,8 @@ const WORK = path.resolve(process.argv[4] || 'friends_work'); fs.mkdirSync(path.
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const fam = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
 const FPS = 30, W = 1080, H = 1920;
-const LAY = JSON.parse(fs.readFileSync(path.join(FOOT, 'layout.json'), 'utf8'));
-const PLACEHOLDER = LAY.placeholder;
+const LAY = { code: process.env.OUR_CODE || '', name: (process.env.OUR_NAME || '25,6').split(',').map(Number) };
+const PLACEHOLDER = !LAY.code;
 
 // ---- our card, from the game's own art (the v2.19 build's world art and QR module) ----
 const win = {}, ctx = { window: win, console, Intl }; vm.createContext(ctx);
@@ -44,10 +45,9 @@ const CARD = cardSVG().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 const TX = RN ? null : {
   // owner, 2 Nov 2026: clean, short labels that name each feature, as our earlier Reels did; not sentences
   hook: [{ s: '4 ways your dog', size: 84, pitch: 98 }, { s: 'can make friends', size: 84, pitch: 92 }, { s: '(no chat)', size: 60, fill: '#8A7468' }],
-  name: 'pick a name', code: 'share your code',
+  update: 'new update · 7 Nov',
   ways: ['visit & pet', 'paw-print note', 'send a gift', 'walk together'],
-  safe: [{ s: 'no chat. no messages.', size: 72 }],
-  endAsk: 'add us!', endSub: 'drop your code below', pill: 'doodledoggo.app',
+  endAsk: 'add us!', endSub: 'drop your code below',
   ph: 'placeholder: our real code on 7 Nov',
 };
 if (!TX) throw new Error('RedNote words come after the owner approves the English cut');
@@ -55,17 +55,12 @@ if (!TX) throw new Error('RedNote words come after the owner approves the Englis
 // ---- the timeline: [start, end, source, from (clip seconds), view { z0, z1, fx, fy0, fy1 }, caption] ----
 const SEG = []; let at = 0;
 const seg = (len, src, from, view, cap) => { SEG.push({ a: at, b: at + len, src, from, view, cap }); at += len; };
-seg(2.8, 'yard', 0.1, { z0: 1.0, z1: 1.08, fx: 0.5, fy0: 0.6, fy1: 0.62 }, { hook: true });
-seg(1.7, 'name', 1.1, { z0: 1.12, z1: 1.18, fx: 0.5, fy0: 0.42, fy1: 0.42 }, { s: TX.name });
-seg(1.7, 'card', 0.2, { z0: 1.0, z1: 1.05, fx: 0.5, fy0: 0.3, fy1: 0.28 }, { s: TX.code, card: true });
-seg(3.1, 'visit', 0.45, { z0: 1.3, z1: 1.38, fx: 0.42, fy0: 0.6, fy1: 0.6 }, { n: 1, s: TX.ways[0] });
-seg(2.3, 'note', 0.25, { z0: 1.05, z1: 1.12, fx: 0.5, fy0: 0.55, fy1: 0.6 }, { n: 2, s: TX.ways[1] });
-seg(2.6, 'gift', 0.45, { z0: 1.08, z1: 1.12, fx: 0.5, fy0: 0.68, fy1: 0.6, lift: 380, liftIn: true }, { n: 3, s: TX.ways[2] });
-seg(1.3, 'gift_letter', 0, { z0: 1.06, z1: 1.12, fx: 0.5, fy0: 0.36, fy1: 0.36, lift: -300 }, { n: 3, s: TX.ways[2], keep: true });
-seg(0.8, 'walk_pick', 0, { z0: 1.7, z1: 1.8, fx: 0.4, fy0: 0.83, fy1: 0.83 }, { n: 4, s: TX.ways[3] });
-seg(3.0, 'walk', 0.6, { z0: 1.5, z1: 1.5, fx: 0.3, fy0: 0.57, fy1: 0.57 }, { n: 4, s: TX.ways[3], keep: true });
-seg(2.2, 'friends_list', 0, { z0: 1.0, z1: 1.04, fx: 0.5, fy0: 0.5, fy1: 0.5 }, { safe: true });
-const END = at; seg(3.6, 'end', 0, null, { end: true });
+seg(2.8, 'yard', 0.2, { z0: 1.0, z1: 1.06, fx: 0.5, fy0: 0.6, fy1: 0.62 }, { hook: true });
+seg(3.2, 'visit', 0.3, { z0: 1.02, z1: 1.1, fx: 0.56, fy0: 0.66, fy1: 0.66 }, { n: 1, s: TX.ways[0] });
+seg(2.2, 'note', 0.2, { z0: 1.12, z1: 1.4, fx: 0.22, fy0: 0.74, fy1: 0.8 }, { n: 2, s: TX.ways[1] });
+seg(2.4, 'gift', 0.25, { z0: 1.08, z1: 1.14, fx: 0.5, fy0: 0.5, fy1: 0.46 }, { n: 3, s: TX.ways[2] });
+seg(2.4, 'walk', 0.0, null, { n: 4, s: TX.ways[3], band: { x0: 0, y0: 700, w: 480, h: 596 } }); // the run is a wide strip: shown as a window on the paper
+const END = at; seg(3.4, 'end', 0, null, { end: true });
 const T = at, N = Math.round(T * FPS);
 
 // ---- footage: each clip's frames with their game times; a still is one frame ----
@@ -75,8 +70,6 @@ for (const s of SEG) { if (s.src === 'end' || CLIPS[s.src]) continue;
   if (fs.existsSync(path.join(dir, 'ts.json'))) { const ts = JSON.parse(fs.readFileSync(path.join(dir, 'ts.json'), 'utf8')); CLIPS[s.src] = { ts, files: ts.map((_, i) => path.join(dir, String(i).padStart(5, '0') + '.jpg')) }; }
   else CLIPS[s.src] = { ts: [0], files: [path.join(FOOT, s.src + '.png')] }; }
 const frameAt = (s, t) => { const c = CLIPS[s.src], g = s.from + (t - s.a); let i = 0; while (i + 1 < c.ts.length && c.ts[i + 1] <= g) i++; return 'file://' + c.files[i]; };
-// the card's place on screen (CSS px of the 393 x 659 phone), for the placeholder patch over the code line and the QR
-const CR = LAY.card, VW = CR.vw, VH = CR.vh;
 
 const PEN = '#5B3D32', GREEN = '#4E9A54', PINK = '#F28FA5', PAPER = '#FFF8EC';
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
@@ -85,7 +78,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)}, CR=${JSON.stringify(CR)};
+const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM);
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
@@ -105,18 +98,20 @@ function view(src, z, fx, fy, lift){ const img=$('scr'), k=${H}/1977*z, w=1179*k
   img.style.transform='translate('+l+'px,'+t+'px) scale('+k+')'; return {l,t,k,bot:t+h}; }
 window.frame=async function(t, S, src){
   const img=$('scr'); if(src){ if(img.getAttribute('src')!==src){ img.src=src; await img.decode(); } img.style.display=''; } else img.style.display='none';
+  img.style.clipPath=''; let band='';
+  const B=S.cap&&S.cap.band; if(B&&src){ // a window on the paper: the strip's source rect (x0, y0, w, h of the 1179 x 1977 shot) shown at x 60..890, centred on y 860
+    const k=(SAFE.x1-SAFE.x0)/B.w, dh=B.h*k, dy=860-dh/2;
+    img.style.transform='translate('+(SAFE.x0-B.x0*k)+'px,'+(dy-B.y0*k)+'px) scale('+k+')';
+    img.style.clipPath='inset('+B.y0+'px '+(1179-B.x0-B.w)+'px '+(1977-B.y0-B.h)+'px '+B.x0+'px round '+(34/k)+'px)';
+    band='<rect x="'+(SAFE.x0+10)+'" y="'+(dy+14)+'" width="'+(SAFE.x1-SAFE.x0)+'" height="'+dh+'" rx="34" fill="${PEN}" opacity=".12"/><rect data-safe x="'+SAFE.x0+'" y="'+dy+'" width="'+(SAFE.x1-SAFE.x0)+'" height="'+dh+'" rx="34" fill="none" stroke="${PEN}" stroke-width="6"/>'; }
   let v=null; if(S.view){ const u=ease((t-S.a)/(S.b-S.a)); v=view(src, S.view.z0+(S.view.z1-S.view.z0)*u, S.view.fx, S.view.fy0+(S.view.fy1-S.view.fy0)*u, (S.view.lift||0)*(S.view.liftIn?ease((t-S.a)/0.35):1)); }
   const lt=t-S.a, cp=S.cap||{}; let cap='', dim='', ph='', end='';
+  if(band) ph=band;
   if(v && v.t>1) dim+='<path d="M-10 '+v.t+' Q270 '+(v.t-5)+' 540 '+v.t+' T1090 '+v.t+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
   if(v && v.bot<${H}-1) dim+='<rect x="-10" y="'+(v.bot+6)+'" width="1100" height="18" fill="${PEN}" opacity=".12"/><path d="M-10 '+v.bot+' Q270 '+(v.bot+5)+' 540 '+v.bot+' T1090 '+v.bot+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
-  // the placeholder patch over our card's QR and code line (a preview only: the real code comes from the live game on 7 Nov)
-  if(PH && v && (S.src==='card')){ const px=(x)=>v.l+(CR.x+x/300*CR.w)*3*v.k, py=(y)=>v.t+(CR.y+y/200*CR.h)*3*v.k;
-    ph='<rect x="'+px(28)+'" y="'+py(36)+'" width="'+(px(156)-px(28))+'" height="'+(py(162)-py(36))+'" fill="#FFFDF7"/><rect x="'+px(160)+'" y="'+py(112)+'" width="'+(px(284)-px(160))+'" height="'+(py(146)-py(112))+'" fill="#FFFDF7"/>'
-      +'<g transform="rotate(-6 '+CX+' '+py(100)+')">'+pill(TX.ph,CX,Math.max(py(100),SAFE.y0+40),44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>'; }
   if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3);
-    cap='<g opacity="'+o+'" transform="rotate(-2 '+CX+' 470)">'+card(CX-340,320,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'; }
-  else if(cp.safe){ dim+='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+(0.82*ease(lt/0.25))+'"/>';
-    const s=0.86+0.14*back(lt/0.35); cap='<g transform="translate('+CX+' 860) scale('+s+') rotate(-1.5) translate('+(-CX)+' -860)">'+card(CX-330,790,660,140,'${GREEN}',6,fit(TX.safe,580))+'</g>'; }
+    cap='<g opacity="'+o+'"><g transform="rotate(-2 '+CX+' 470)">'+card(CX-340,320,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'
+      +'<g transform="rotate(5 '+(CX+150)+' 680)">'+pill(TX.update,CX+150,680,50,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
   else if(cp.s){ const kept=cp.keep, s=kept?1:0.86+0.14*back(lt/0.3), o=kept?1:ease(lt/0.15); // a small pop, so nothing bounces out of SAFE
     const L=fit([{s:cp.s,size:56}],cp.n?560:680), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+80, x0=cp.n?SAFE.x0+100:CX-w/2, x=Math.min(x0,SAFE.x1-w);
     cap='<g opacity="'+o+'" transform="translate('+CX+' 352) scale('+s+') rotate(-1.5) translate('+(-CX)+' -352)">'+card(x,300,w,104,'${PEN}',5,L)
@@ -129,7 +124,7 @@ window.frame=async function(t, S, src){
       +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],760),CX,1060).svg
       +'<path d="M'+CX+' 1100 q-10 38 0 70 M'+(CX-22)+' 1148 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>'
       +'<g transform="rotate(-3 '+(CX-110)+' 1290)">'+C([{s:'Doodle',size:88}],CX-110,1290).svg+'</g><g transform="rotate(2 '+(CX+122)+' 1294)">'+C([{s:'Doggo',size:88}],CX+122,1294).svg+'</g>'
-      +(()=>{ const L=fit([{s:TX.pill,size:48}],600), k=inkOf(TX.pill,L[0].size,FAM), w=k.L+k.R+64; return '<g data-box><rect x="'+(CX-w/2)+'" y="1362" width="'+w+'" height="68" rx="36" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C(L,CX,1396).svg+'</g>'; })()+'</g>'; }
+      +'<g transform="rotate(-2 '+CX+' 1390)">'+pill(TX.update,CX,1390,46,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
   $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end;
 };
 </script>`;
@@ -139,7 +134,7 @@ window.frame=async function(t, S, src){
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f)))); await p.evaluate(() => document.fonts.ready);
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
-  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? (CLIPS.walk ? frameAt(SEG[SEG.length - 2], SEG[SEG.length - 2].b - 0.01) : null) : frameAt(s, t);
+  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? null : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
     const off = await p.evaluate(() => centreCheck(document.querySelector('#ov'))); if (off.length) throw new Error('text not centred at ' + t.toFixed(2) + ': ' + off.join('; '));
     const out = await p.evaluate(() => safeCheck(document.querySelector('#ov'))); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
@@ -159,7 +154,7 @@ window.frame=async function(t, S, src){
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64'));
   await ab.close();
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', "aevalsrc='0.45*sin(2*PI*880*t)*exp(-t*30)':s=44100:d=0.25", path.join(WORK, 'tick.wav')]);
-  const EV = SEG.filter((s, i) => s.cap && (s.cap.s || s.cap.safe) && !s.cap.keep).map((s) => s.a + 0.02);
+  const EV = SEG.filter((s) => s.cap && s.cap.s && !s.cap.keep).map((s) => s.a + 0.02);
   const inputs = [], chains = [];
   EV.forEach((a, i) => { inputs.push('-i', path.join(WORK, 'tick.wav')); const d = Math.round(a * 1000); chains.push(`[${i + 2}:a]adelay=${d}|${d}[k${i}]`); });
   const mix = `[1:a]atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${EV.map((_, i) => `[k${i}]`).join('')}amix=inputs=${EV.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;

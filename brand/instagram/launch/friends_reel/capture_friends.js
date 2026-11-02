@@ -10,9 +10,10 @@
 // The friend in the footage, "Sunny Biscuit", is a made-up player (two Dog Card words). Their code is never shown on screen.
 // Their dogs: Waffles the Corgi and Honey the Golden puppy. Ours: Mochi the Shiba. No black or white dog is the subject (owner, 1 Nov 2026).
 const path = require('path'), fs = require('fs');
+const MAIN = require.main === module; // capture_clean.js borrows the mock and the slow clock from this file
 const DEV = path.resolve(process.argv[2] || '.');
-const OUT = path.resolve(process.argv[3] || 'friends_footage'); fs.mkdirSync(OUT, { recursive: true });
-const { run, URL } = require(path.join(DEV, 'game', 'test_lib'));
+const OUT = path.resolve(process.argv[3] || 'friends_footage'); if (MAIN) fs.mkdirSync(OUT, { recursive: true });
+const { run, URL } = MAIN ? require(path.join(DEV, 'game', 'test_lib')) : {};
 const OUR_CODE = process.env.OUR_CODE || 'DOG-XXXXX';
 const OUR_NAME = (process.env.OUR_NAME || '25,6').split(',').map(Number); // placeholder: Waggy Clover
 
@@ -75,7 +76,8 @@ function slowInit() {
 const GAP = +(process.env.GAP || 110); // the visit: the smallest gap between two dogs, in yard units (the phone shows about 400 of the 1000)
 const RATE = 0.2; // a clip over a sheet (backdrop blur) shoots slower, so it passes its own lower rate
 
-run('friends_footage', async (t) => {
+module.exports = { mockInit, slowInit };
+if (MAIN) run('friends_footage', async (t) => {
   const { ev } = t, p = () => t.p;
   const day = new Date(t.pageNow()).toISOString().slice(0, 10);
   await t.mk({ device: 'iPhone 15', prefs: { frTest: true } });
