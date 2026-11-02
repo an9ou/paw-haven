@@ -1,4 +1,4 @@
-# Marketing handoff (updated 2 Nov 2026)
+# Marketing handoff (updated 2 Nov 2026, evening)
 
 Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagram skills: check which help with Reels and captions.
 1. **Posted by the owner (31 Oct 2026): Trick-or-treat and food-safety Reels.** Done 30 Oct 2026: the owner approved both English Reels (new hooks, faster first doors on Trick, longer lessons on Safe), and the RedNote cuts are rendered:
@@ -33,3 +33,4 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
    - Our own friend code: use a placeholder slot and fill it from the live game on 7 Nov (ask the owner or the Game Manager); never show a made-up code as real.
    - Every box text centred with `centre_text.js` + `centreCheck()` on every frame; no black or white dog as the subject; captions like `PUPS_REEL.md` (one ask, 5 hashtags, ~2.5 emoji per 100 chars inline, ig-caption READY, ig-human PASS); RedNote cut and 3:4 cover (`make.js shots <name>` style, like `pups_reel/make_pups_poster.js`) only after the owner approves the English.
    - Report to the owner only when the English Reel and carousel are ready for approval.
+14. **v2.19 launch Reel + carousel: English PREVIEWS made (2 Nov 2026), waiting for the owner's approval and for our real friend name and code** (the Game Manager sends them after the 7 Nov release). Everything is in `docs/marketing/FRIENDS_LAUNCH.md`: the files (`brand/instagram/launch/friends_reel/preview/`, never post them: placeholder name and code with a red patch), the 7 Nov re-shoot commands (`capture_friends.js` with `OUR_CODE` / `OUR_NAME` on the v2.19 build, then `build_friends.js` and `build_carousel.js`), and the IG / Shorts / X captions with receipts. Hook "4 ways your dog can make friends (no chat)" (80.1). Wording rule from this job: say "no chat, no messages", never "no typing" (players type a friend code). RedNote cut, 3:4 cover and 图文 after approval. Post nothing before 7 Nov 00:00 JST.
