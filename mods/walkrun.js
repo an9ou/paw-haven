@@ -174,6 +174,19 @@ const COL_FB = {
   'sparkle-spot': () => svgWrap([60, 60], '<path d="M30 6q3 21 24 24q-21 3 -24 24q-3 -21 -24 -24q21 -3 24 -24z" fill="#FFE3A1"/>'),
   chest: () => svgWrap([60, 60], '<rect x="10" y="26" width="40" height="26" rx="3" fill="#D9A877"/><path d="M10 26q20 -22 40 0z" fill="#E7B987"/><rect x="26" y="30" width="8" height="10" fill="#F7D46B"/>')
 };
+// v2.19.1 power-ups: crude crayon stand-ins until PawArt.collectible draws them (60 x 60, every fill inside its line). fx_* are the overlays on each dog
+Object.assign(COL_FB, {
+  magnet: () => svgWrap([60, 60], '<path d="M14 14v16a16 16 0 0 0 32 0v-16h-9v16a7 7 0 0 1 -14 0v-16z" fill="#E86A5C"/><path d="M14 14h9v7h-9zM37 14h9v7h-9z" fill="#C9CED6"/>'),
+  zoom: () => svgWrap([60, 60], '<path d="M8 36q-6 -2 -2 -6q8 2 14 0l24 -6q4 -8 10 -4q-2 6 2 8q4 4 -2 8q-6 -4 -10 2l-24 6q-8 -4 -12 -8z" fill="#F7EEDC"/><path d="M6 40q-6 4 -4 10q6 -6 10 -4q-4 -4 -6 -6z" fill="#F4A262"/>'),
+  bubble: () => svgWrap([60, 60], '<circle cx="30" cy="31" r="21" fill="#DCEFFC"/><path d="M19 24q4 -8 12 -9" stroke="#FFFFFF" stroke-width="4"/>'),
+  spring: () => svgWrap([60, 60], '<path d="M16 50h28M18 42q12 6 24 0q-12 -6 -24 -8q12 -6 24 -8q-12 -6 -24 -8q12 -6 24 -8" stroke-width="3.4"/><path d="M14 12h32" stroke="#4F9A5C" stroke-width="5"/>'),
+  fx_bubble: () => svgWrap([60, 60], '<circle cx="30" cy="30" r="27.5" fill="#CFE8FA" fill-opacity=".22" stroke="#6FA0DA" stroke-width="1.2"/><path d="M12 22q5 -10 15 -12" stroke="#FFFFFF" stroke-width="3"/>'),
+  fx_trail: () => svgWrap([60, 60], '<path d="M8 22q16 -2 34 0M2 32q20 -2 46 0M10 42q14 -2 30 0" stroke="#F4A262" stroke-width="3.2"/>'),
+  fx_spring: () => svgWrap([60, 60], '<path d="M14 40l2 -6l2 6l-2 6zM44 36l2 -6l2 6l-2 6zM29 48l2 -5l2 5l-2 5z" fill="#FFE3A1" stroke-width="1.4"/>'),
+  fx_pop: () => svgWrap([60, 60], '<path d="M30 6v10M30 44v10M6 30h10M44 30h10M13 13l7 7M40 40l7 7M47 13l-7 7M20 40l-7 7" stroke="#6FA0DA" stroke-width="3"/>')
+});
+const POWERS = { magnet: 8, zoom: 5, bubble: 0, spring: 8 }; // seconds (the bubble lasts until the next bump)
+const PW_KINDS = Object.keys(POWERS);
 function colSvg(name) { let s = call('collectible', name); if (isFallback(s)) s = (COL_FB[name] || COL_FB.coin)(); return s; }
 function colUri(name) { const k = 'c:' + name; return URI[k] || (URI[k] = toUri(colSvg(name))); }
 function lampUri() {
@@ -372,6 +385,24 @@ const CSS = `
 .pw-bar>i{position:absolute;inset:0;transform-origin:0 50%;background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#C8E9CF}
 .pw-time.pw-low .pw-bar>i{background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#F9B8A8}
 .pw-coins,.pw-digs{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pw-pchip{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.pw-pchip[hidden]{display:none}
+.pw-pchip .pw-ic{width:30px;height:30px;animation:pw-glow .5s ease-in-out infinite alternate}
+.pw-pchip .pw-ic img{width:100%;height:100%;display:block}
+.pw-pchip .pw-bar{width:44px;flex:none}
+.pw-pchip.pw-nobar .pw-bar{display:none}
+.pw-pchip .pw-bar>i{background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#FFD37A}
+.pw-power>img{animation:pw-cbob .9s ease-in-out infinite alternate}
+.pw-power::before{content:'';position:absolute;left:-18%;top:-18%;width:136%;height:136%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,240,170,.85),rgba(255,240,170,0))}
+.pw-obj.pw-magc>img{animation:none}
+.pw-pfx{position:absolute;display:none;pointer-events:none;-webkit-user-drag:none}
+.pw-dog[data-pw=bubble] .pw-pfx-bubble{display:block;left:10%;top:10%;width:80%;height:96%;animation:pw-bwob 1.2s ease-in-out infinite alternate}
+@keyframes pw-bwob{from{transform:scale(.97,1.02)}to{transform:scale(1.03,.97)}}
+.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:-28%;top:34%;width:46%;height:56%;animation:pw-trl .18s steps(2,end) infinite}
+@keyframes pw-trl{to{transform:translateX(-6%)}}
+.pw-dog[data-pw=spring] .pw-pfx-spring{display:block;left:22%;top:66%;width:56%;height:40%;animation:pw-glow .4s ease-in-out infinite alternate}
+.pw-dog[data-pw=magnet]::after{content:'';position:absolute;left:30%;top:16%;width:40%;height:62%;border-radius:50%;border:3px dashed rgba(210,72,59,.55);animation:pw-ring 1s ease-in-out infinite}
+.pw-pfx-pop{display:block;left:6%;top:4%;width:88%;height:100%;animation:pw-got .45s ease-out forwards}
 .pw-nose{display:flex;align-items:center;gap:8px;min-width:230px}
 .pw-nose .pw-bar{width:110px;flex:none}
 .pw-nose .pw-bar>i{background:#86B3EA;transition:transform .15s}
@@ -490,7 +521,8 @@ function start(el, o) {
     hapPen: 0, digsUsed: 0, digsMax: 2 + (ab.extraDig ? 1 : 0), treasure: null, bonus: null, junk: [], found: false,
     hazards: 0, touched: 0, prompt: null, promptT: 0, sniffT: 0, digT: 0, digObj: null, revealT: 0,
     endT: 0, ended: false, stopped: false, nudge: 0, hints: { low: 0, high: 0, wide: 0 }, seenTypes: {}, hitLog: [], arcShown: false, ts: 1, slowmoT: 0, played: 0, timeLost: 0,
-    shiverNext: 10, lastSec: -1, outOfDigsSaid: false, coinTimes: []
+    shiverNext: 10, lastSec: -1, outOfDigsSaid: false, coinTimes: [],
+    zoomK: 1, pwr: null, pwrGot: [], pwrPops: 0, pwrZoomed: 0, magCoins: 0 // v2.19.1 power-ups: the active one { kind, t, T }, the ones picked up, bubble pops, things zoomed through
   };
 
   /* ---------- DOM ---------- */
@@ -507,6 +539,7 @@ function start(el, o) {
       <div class="pw-time"><span class="pw-ic pw-clock"></span><div class="pw-bar"><i></i></div><b class="pw-secs">75</b></div>
       <span class="pw-sep"></span>
       <div class="pw-coins"><span class="pw-ic"><img alt="" src="${colUri('coin')}"></span><b class="pw-cn">0</b></div>
+      <div class="pw-pchip" hidden role="img"><span class="pw-ic"><img alt="" src=""></span><div class="pw-bar"><i></i></div></div>
       <span class="pw-sep"></span>
       <div class="pw-nose cold" title="${LE('mod.walk.nose_o_meter', 'Nose-o-meter')}"><span class="pw-ic pw-noseic"></span><span class="pw-nl">${LE('mod.walk.nose_cold', 'Cold')}</span><div class="pw-bar"><i></i></div><span class="pw-wl">~~</span></div>
       <span class="pw-sep"></span>
@@ -528,6 +561,7 @@ function start(el, o) {
     tint: $('.pw-tint'), veil: $('.pw-veil'), lights: $('.pw-lights'), ffs: $('.pw-ffs'), wx: $('.pw-wx'), fx: $('.pw-fx'),
     time: $('.pw-time'), timeBar: $('.pw-time .pw-bar>i'), secs: $('.pw-secs'), cn: $('.pw-cn'), nose: $('.pw-nose'), noseBar: $('.pw-nose .pw-bar>i'), nl: $('.pw-nl'),
     xs: $('.pw-xs'), say: $('.pw-say'), prompt: $('.pw-prompt'), ov: $('.pw-ov'),
+    pchip: $('.pw-pchip'), pimg: $('.pw-pchip img'), pbar: $('.pw-pchip .pw-bar>i'),
     hud: $('.pw-hud'), ctrls: $('.pw-ctrls'), legend: $('.pw-legend'), jumpB: $('.pw-jump'), duckB: $('.pw-duck'), digB: $('.pw-dig'), ring: $('.pw-dig .pw-ring'), bagB: $('.pw-bagb'), pauseB: $('.pw-pauseb')
   };
   // HUD icons (G-style art, with fallbacks)
@@ -818,6 +852,20 @@ function start(el, o) {
     for (let k = 0; k < 6; k++) { const near = specials.some((q) => Math.abs(q.x - x) < 650); if (!near) break; x += 700; }
     specials.push({ t: 'bonus', x });
   }
+  // v2.19.1 power-ups: 2 on a walk of 60 s or more, 1 on a shorter one, none on the first walk. Never two of a kind; Zoomies never in the last 10 s or just before an X
+  // o._forcePower (a kind or a list of kinds, test hook): those, early on the route
+  const pwForce = o._forcePower ? [].concat(o._forcePower).filter((k) => k in POWERS) : null;
+  const pwBag = pwForce || PW_KINDS.slice().sort(() => Math.random() - 0.5);
+  const nPow = pwForce ? pwForce.length : o.firstWalk ? 0 : D >= 60 ? 2 : 1, zoomEnd = expectedDist(Math.max(0, D - 10)) * 0.88;
+  for (let i = 0; i < nPow; i++) {
+    let x = pwForce ? START_X + 1500 + i * 1700 : START_X + PLAN * ([0.3, 0.62][i] + rand(-0.05, 0.05));
+    if (pwForce) { for (let k = 0; k < 80 && specials.some((q) => Math.abs(q.x - x) < 380); k++) x += 100; } // the first free spot (a test wants it soon)
+    else for (let k = 0; k < 6; k++) { const near = specials.some((q) => Math.abs(q.x - x) < 650); if (!near) break; x += 700; }
+    let kind = pwBag[i];
+    const badZoom = (z) => z > zoomEnd || digs.some((d) => d.x > z && d.x - z < speedAtX(z) * 7);
+    if (!pwForce && kind === 'zoom' && badZoom(x)) { const alt = pwBag.slice(nPow).find((q) => q !== 'zoom'); if (alt) kind = alt; }
+    specials.push({ t: 'power', kind, x });
+  }
   specials.sort((a, b) => a.x - b.x);
 
   /* ---------- generator (lazy, by distance) ---------- */
@@ -886,7 +934,7 @@ function start(el, o) {
     while (gen.x < limit && guard++ < 50) {
       const p = clamp(gen.x / PLAN, 0, 1), v = speedAtX(gen.x);
       const sp = specials[gen.si];
-      const big = sp && sp.t === 'dig', clearBefore = v * (big ? 1.2 : 0.5), clearAfter = v * (big ? 1.3 : 0.45);
+      const big = sp && sp.t === 'dig', pw = sp && sp.t === 'power', clearBefore = v * (big ? 1.2 : pw ? 0.6 : 0.5), clearAfter = v * (big ? 1.3 : pw ? 0.9 : 0.45); // a power-up: room to take it on the ground
       if (sp && sp.x - gen.x < clearBefore) {
         // special zone: nothing dangerous around it
         if (sp.t === 'dig') items.push({ id: ++uid, kind: 'dig', x0: sp.x - 34, w: 68, h: 68, top: G - 46, cx: sp.x, treasure: !!sp.treasure, sp });
@@ -895,6 +943,7 @@ function start(el, o) {
           items.push({ id: ++uid, kind: 'bonus', x0: sp.x - 34, w: 68, h: 68, top: G - 118 - 34, cx: sp.x, ch: 118 });
           if (coinBudget(3)) [-120, -80, -40].forEach((dx, i) => addCoin(sp.x + dx, 60 + i * 22));
         }
+        else if (sp.t === 'power') items.push({ id: ++uid, kind: 'power', pk: sp.kind, x0: sp.x - 30, w: 60, h: 60, top: G - COIN_H.mid - 30, cx: sp.x, ch: COIN_H.mid });
         gen.x = Math.max(gen.x, sp.x + clearAfter); gen.si++; continue;
       }
       const g = A.gap, gap = rand(lerp(g[0], g[2], p), lerp(g[1], g[3], p));
@@ -937,6 +986,7 @@ function start(el, o) {
     else if (ob.kind === 'sniff') src = colUri('sniff');
     else if (ob.kind === 'dig') { src = colUri('dig'); d.classList.add('pw-x'); d.addEventListener('pointerdown', (e) => { e.stopPropagation(); if (S.prompt === ob) doDig(); }); }
     else if (ob.kind === 'bonus') { src = colUri('sparkle-spot'); d.classList.add('pw-glow'); }
+    else if (ob.kind === 'power') { src = colUri(ob.pk); d.classList.add('pw-power', 'pw-pw-' + ob.pk); }
     let html = '';
     if (ob.kind === 'obs') {
       const gy = G - ob.top; // ground line inside the element (units)
@@ -1045,7 +1095,7 @@ function start(el, o) {
   function crouchPress() { if (S.crouchHeld) return; S.crouchHeld = true; E.duckB.classList.add('down'); if (S.mode === 'run' && S.grounded) sfx('crouch'); }
   function crouchRelease() { S.crouchHeld = false; E.duckB.classList.remove('down'); }
   function doJump() {
-    S.grounded = false; S.vh = PH.V0; S.airT = 0; S.bufT = 0; S.coyT = 0; S.longOK = true; S.isLong = false; sfx('jump');
+    S.grounded = false; S.vh = PH.V0 * (S.pwr && S.pwr.kind === 'spring' ? 1.2 : 1); S.airT = 0; S.bufT = 0; S.coyT = 0; S.longOK = true; S.isLong = false; sfx('jump');
   }
   function land() {
     S.grounded = true; S.vh = 0; S.h = 0; S.isLong = false;
@@ -1053,6 +1103,11 @@ function start(el, o) {
     if (snow) S.slideX = 10; // tiny cosmetic skid on snow
   }
   function stumble(ob) {
+    if (S.pwr && S.pwr.kind === 'bubble') { // Bubble shield: it pops instead, no lost time, no sad pose
+      S.pwrPops++; S.invT = 0.9; endPower(); sfx('pop'); pfxPop();
+      pop(L('mod.walk.pw_pop', 'Pop!'), DOG.x - 40, G - 150, '#4D7FC0'); say(L('mod.walk.pw_saved', 'Saved by the bubble.'), 1500);
+      return;
+    }
     S.hitLog.push([ob.name, Math.round(S.played * 10) / 10, Math.round(S.h), S.crouchHeld ? 1 : 0, Math.round(S.v)]);
     S.hits++; S.invT = 1.3; S.stumbleT = 0.4; poseFor('sad', 0.45); sfx('bonk');
     const lost = Math.min(3, Math.max(0, D - S.t)); S.t += lost; S.timeLost += lost;
@@ -1124,6 +1179,44 @@ function start(el, o) {
       showCard(`<h2>${LE('mod.walk.no_treasure', 'No treasure here...')}</h2><p>${esc(j.text)}</p><h3>${LE('mod.walk.plus_coins', '{n, plural, one {+# coin} other {+# coins}}', { n: +j.coins || 0 })}</h3><p style="font-size:16px;opacity:.8">${S.digsUsed >= S.digsMax ? LE('mod.walk.last_dig', 'That was the last dig.') : LE('mod.walk.digs_left_watch', 'Digs left: {n}. Watch the Nose-o-meter.', { n: S.digsMax - S.digsUsed })}</p><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">${LE('mod.walk.onwards', 'Onwards')} <span class="pw-k">Space</span></button></div>`, 2.2);
     }
   }
+  /* ---------- v2.19.1 power-ups: Magnet, Zoomies, Bubble shield, Super jump. One at a time (a new one replaces the old); every dog in the pack shows it ---------- */
+  const PW_NAME = { magnet: () => L('mod.walk.pw_magnet', 'Magnet'), zoom: () => L('mod.walk.pw_zoom', 'Zoomies'), bubble: () => L('mod.walk.pw_bubble', 'Bubble shield'), spring: () => L('mod.walk.pw_spring', 'Super jump') };
+  const PW_SAY = { magnet: () => L('mod.walk.pw_magnet_say', 'Magnet paws! Coins come to us.'), zoom: () => L('mod.walk.pw_zoom_say', 'ZOOMIES! Nothing can stop us.'), bubble: () => L('mod.walk.pw_bubble_say', 'Bubble on! The next bump just pops it.'), spring: () => L('mod.walk.pw_spring_say', 'Boing boing! Extra high hops.') };
+  const PW_COL = { magnet: '#d2483b', zoom: '#d27a35', bubble: '#4D7FC0', spring: '#4F9A5C' };
+  function grabPower(ob) {
+    ob.done = true; if (ob.el) ob.el.classList.add('pw-got');
+    const kind = ob.pk, T = POWERS[kind]; S.pwr = { kind, t: T, T }; S.pwrGot.push(kind);
+    sfx('kaching'); pop(PW_NAME[kind](), DOG.x, G - 160, PW_COL[kind]); say(PW_SAY[kind](), 1900);
+    pfxSet(kind);
+    E.pimg.src = colUri(kind); E.pchip.setAttribute('aria-label', L('mod.walk.pw_chip', 'Power-up: {name}', { name: PW_NAME[kind]() }));
+    E.pchip.classList.toggle('pw-nobar', !T); E.pchip.hidden = false; S.pbf = '';
+  }
+  function endPower() { S.pwr = null; pfxSet(''); E.pchip.hidden = true; }
+  // the overlays on every dog (the leader and each follower): made on first use, shown by the dog's data-pw
+  function pfxDogs() { return [E.dog].concat(fol.map((f) => f.el)); }
+  function pfxSet(kind) {
+    pfxDogs().forEach((d) => {
+      if (kind && !d._pfx) { d._pfx = true; ['trail', 'bubble', 'spring'].forEach((n) => { const i = document.createElement('img'); i.alt = ''; i.draggable = false; i.className = 'pw-pfx pw-pfx-' + n; i.src = colUri('fx_' + n); d.appendChild(i); }); } // after the poses (tests read a pose by its place); the trail sits behind the dog by z-index
+      if (kind) d.setAttribute('data-pw', kind); else d.removeAttribute('data-pw');
+    });
+  }
+  function pfxPop() {
+    pfxDogs().forEach((d) => { const i = document.createElement('img'); i.alt = ''; i.className = 'pw-pfx pw-pfx-pop'; i.src = colUri('fx_pop'); d.appendChild(i); setTimeout(() => i.remove(), 450); });
+  }
+  // Magnet: the nearest dog (by where it is on the path) pulls the coin in; it is taken when it arrives (one coin is one coin: nothing new is made)
+  function magnetize(ob, dxw) {
+    let best = -1, bd = Math.abs(ob.cx - dxw);
+    fol.forEach((f, i) => { const d = Math.abs(ob.cx - (dxw - (f.dist || 0))); if (d < bd) { bd = d; best = i; } });
+    ob.mag = { to: best, rx: 0, rh: 0 }; const tg = magTarget(ob, dxw); ob.mag.rx = ob.cx - tg[0]; ob.mag.rh = ob.ch - tg[1];
+    if (ob.el) ob.el.classList.add('pw-magc');
+  }
+  function magTarget(ob, dxw) { return ob.mag.to < 0 ? [dxw + DOG.off, S.h + 36] : [dxw - (fol[ob.mag.to].dist || 0), 30]; }
+  function magStep(ob, dt, dxw) {
+    const tg = magTarget(ob, dxw), f = Math.exp(-dt * 7), m = ob.mag, r = Math.hypot(m.rx, m.rh), cut = r > 0 ? Math.max(0, r - dt * 160) / r : 0;
+    m.rx *= f * cut; m.rh *= f * cut; ob.cx = tg[0] + m.rx; ob.ch = tg[1] + m.rh;
+    if (Math.hypot(m.rx, m.rh) < 14) { S.magCoins++; collectCoin(ob); return; }
+    ob.x0 = ob.cx - 17; ob.top = G - ob.ch - 17; ob.mmv = true;
+  }
   function collectBonus(ob) {
     ob.done = true; if (ob.el) ob.el.classList.add('pw-got');
     let r = null; try { r = (o.rollTreasure || noop)(area); } catch (e) { r = null; }
@@ -1151,7 +1244,8 @@ function start(el, o) {
       <li>${L('mod.walk.pause_d_jump_html', '<b>Space / &uarr; / Jump</b>: tap to hop, <b>hold</b> for a long jump (clears puddles).')}</li>
       <li>${L('mod.walk.pause_d_duck_html', '<b>&darr; / S / Duck</b>: hold to crouch under {highs}.', { highs })}</li>
       <li>${L('mod.walk.pause_d_dig_html', '<b>D</b>: dig when the dog stands on an X. The Nose-o-meter says HOT near the treasure.')}</li>
-      <li>${L('mod.walk.pause_d_bag_html', '<b>B</b>: bag. <b>Esc</b>: pause.')}</li>`}</ul>
+      <li>${L('mod.walk.pause_d_bag_html', '<b>B</b>: bag. <b>Esc</b>: pause.')}</li>`}${nPow ? `
+      <li>${L('mod.walk.pause_power_html', '<b>Power-ups</b>: Magnet pulls coins in, Zoomies run through anything, a Bubble takes the next bump, Super jump hops higher.')}</li>` : ''}</ul>
       <div class="pw-row"><button class="pw-btn yes" data-res tabindex="-1">${LE('mod.walk.keep_walking', 'Keep walking')}</button><button class="pw-btn" data-home tabindex="-1">${LE('mod.walk.head_home_early', 'Head home early')}</button></div></div>`;
     E.ov.querySelector('[data-res]').addEventListener('click', resume);
     E.ov.querySelector('[data-home]').addEventListener('click', () => { resume(); finish(true); });
@@ -1239,7 +1333,8 @@ function start(el, o) {
       <div class="pw-trow"><span class="pw-tic pw-neg" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">${LE('mod.walk.minus_3s_big', '\u22123s')}</span><div>${L('mod.walk.tut_bump_html', '<b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.')}</div></div>
       <div class="pw-trow"><div class="pw-mini" style="width:150px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:14px;bottom:8px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:62px;bottom:34px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:110px;bottom:62px;width:26px"></div>
         <div>${L('mod.walk.tut_coins_html', '<b>Coins sit at 3 heights</b><br>low: just walk &middot; middle: walk or hop &middot; high: jump.')}</div></div>
-      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${L('mod.walk.tut_bagkeys_html', '{touch, select, yes {The <b>bag</b> button opens the bag (Wild Berries add 15 s). The <b>II</b> button pauses.} other {<b>B</b> opens the bag (Wild Berries add 15 s). <b>Esc</b> pauses.}}', { touch: T ? 'yes' : 'no' })}</div></div>`;
+      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${L('mod.walk.tut_bagkeys_html', '{touch, select, yes {The <b>bag</b> button opens the bag (Wild Berries add 15 s). The <b>II</b> button pauses.} other {<b>B</b> opens the bag (Wild Berries add 15 s). <b>Esc</b> pauses.}}', { touch: T ? 'yes' : 'no' })}</div></div>${nPow ? `
+      <div class="pw-trow"><span class="pw-tic" style="position:relative"><img alt="" src="${colUri('magnet')}" style="position:absolute;left:0;top:0;width:60%"><img alt="" src="${colUri('bubble')}" style="position:absolute;right:0;bottom:0;width:60%"></span><div>${L('mod.walk.tut_power_html', '<b>Power-ups</b> &mdash; touch one: <b>Magnet</b> pulls coins in, <b>Zoomies</b> run through anything, a <b>Bubble</b> takes the next bump, <b>Super jump</b> hops higher. The whole pack gets it.')}</div></div>` : ''}`;
   }
   function showTutorial() {
     S.mode = 'tutorial'; E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
@@ -1282,12 +1377,14 @@ function start(el, o) {
     if (S.slideX > 0) S.slideX = Math.max(0, S.slideX - dt * 40);
     S.nudge *= Math.pow(0.4, dt);
     if (S.prompt) { S.promptT -= dt; if (S.promptT <= 0) skipPrompt(); }
+    if (S.pwr && S.pwr.T > 0 && !S.endT) { S.pwr.t -= dt; if (S.pwr.t <= 0) endPower(); } // frozen in pause, the bag, a dig and a card (step does not run there)
 
     // speed
     let target = 1;
     if (S.endT) target = 0; else if (S.prompt) target = 0.2; else if (S.stumbleT > 0) target = 0.65;
     S.slow += (target - S.slow) * Math.min(1, dt * (target < S.slow ? 14 : 5));
-    const v = vAt(S.played) * S.slow;
+    S.zoomK += ((S.pwr && S.pwr.kind === 'zoom' && !S.prompt && !S.endT ? 1.3 : 1) - S.zoomK) * Math.min(1, dt * 6); // Zoomies: x1.3 (a dig prompt's slow-down wins)
+    const v = vAt(S.played) * S.slow * S.zoomK;
     S.v = v; S.camX += v * dt;
 
     // jump physics
@@ -1299,7 +1396,7 @@ function start(el, o) {
       if (!S.jumpHeld) S.longOK = false;
       let g = PH.GRAV;
       if (S.crouchHeld) g = PH.GRAV * PH.FAST;
-      else if (S.jumpHeld && S.longOK && S.airT > PH.LONG_T) { g = PH.GLONG; if (!S.isLong) { S.isLong = true; sfx('longjump'); } }
+      else if (S.jumpHeld && S.longOK && S.airT > PH.LONG_T) { g = PH.GLONG * (S.pwr && S.pwr.kind === 'spring' ? 0.8 : 1); if (!S.isLong) { S.isLong = true; sfx('longjump'); } }
       S.vh -= g * dt; S.h += S.vh * dt;
       if (S.h <= 0) land();
     }
@@ -1313,10 +1410,13 @@ function start(el, o) {
     const crouch = S.crouchHeld && S.grounded;
     const top = S.h + (crouch ? DOG.hCrouch : DOG.hStand), bot = S.h;
     const fx0 = dxw - DOG.feet, fx1 = dxw + DOG.feet;
+    const mag = !!S.pwr && S.pwr.kind === 'magnet', zoom = !!S.pwr && S.pwr.kind === 'zoom';
     for (let i = 0; i < live.length; i++) {
       const ob = live[i]; if (ob.done) continue;
       if (ob.kind === 'coin') {
         if (ob.got) continue;
+        if (mag && !ob.mag && Math.abs(ob.cx - dxw) < 260) magnetize(ob, dxw); // Magnet: a coin that is already out there glides to the nearest dog
+        if (ob.mag) { magStep(ob, dt, dxw); continue; }
         const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
         if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < (COIN_R + 4) ** 2) collectCoin(ob);
         else if (ob.cx < bx0 - 40) ob.done = true;
@@ -1328,15 +1428,22 @@ function start(el, o) {
           if (ob.cat === 'wide' && !ob.solid && !ob.touched && !S.endT) { S.puddlesCleared++; S.squeaky++; pop(pickLine('walk_lines.squeaky', WALK_LINES.squeaky), DOG.x, G - 150, '#4D7FC0'); sfx('kaching'); }
           continue;
         }
-        if (ob.touched) continue;
-        if (ob.cat === 'wide' && !ob.solid) { if (S.grounded && fx1 > ob.ex0 && fx0 < ob.ex1) { ob.touched = true; splash(ob); } continue; }
+        if (ob.touched || ob.zoomed) continue;
+        if (ob.cat === 'wide' && !ob.solid) { if (S.grounded && fx1 > ob.ex0 && fx0 < ob.ex1) { if (zoom) { ob.zoomed = true; S.pwrZoomed++; continue; } ob.touched = true; splash(ob); } continue; } // Zoomies skim a puddle: it counts as cleared
         if (bx1 < ob.ex0 || bx0 > ob.ex1) continue;
         const hit = ob.cat === 'high' ? top > ob.ebot : bot < ob.etop;
+        if (hit && zoom) { ob.zoomed = true; S.pwrZoomed++; continue; } // Zoomies: straight through, no bump, no lost time (and it is not a touch)
         if (hit) { ob.touched = true; if (S.invT <= 0 && !S.endT) stumble(ob); }
         continue;
       }
       if (ob.kind === 'sniff') { if (dxw >= ob.cx - 10 && !S.endT) startSniff(ob); continue; }
       if (ob.kind === 'dig') { if (!ob.prompted && dxw >= ob.cx - 50 && !S.endT) startPrompt(ob); if (ob.cx < dxw - 120) ob.done = true; continue; }
+      if (ob.kind === 'power') {
+        const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
+        if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < 36 * 36 && !S.endT) grabPower(ob);
+        else if (ob.cx < bx0 - 40) ob.done = true;
+        continue;
+      }
       if (ob.kind === 'bonus') {
         const cxp = clamp(ob.cx, bx0, bx1), cyp = clamp(ob.ch, bot, top);
         if ((ob.cx - cxp) ** 2 + (ob.ch - cyp) ** 2 < 36 * 36 && !S.endT) collectBonus(ob);
@@ -1393,7 +1500,7 @@ function start(el, o) {
         f.el.style.transform = `translate3d(0,${(fy * 0.8).toFixed(1)}px,0)`;
       });
       // what the leader has left behind stays on the ground under the line: its hint and badge go, a missed coin fades
-      for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
+      for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.mag || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
     }
     const blink = S.invT > 0 && S.mode === 'run';
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
@@ -1402,6 +1509,8 @@ function start(el, o) {
     const tbf = `scaleX(${(rem / D).toFixed(3)})`; if (tbf !== S.tbf) { S.tbf = tbf; E.timeBar.style.transform = tbf; }
     const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = L('mod.walk.secs', '{n}s', { n: sec }); E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
+    if (S.pwr && S.pwr.T > 0) { const pf = `scaleX(${clamp(S.pwr.t / S.pwr.T, 0, 1).toFixed(2)})`; if (pf !== S.pbf) { S.pbf = pf; E.pbar.style.transform = pf; } } // the power chip's shrinking bar
+    for (let i = 0; i < live.length; i++) { const ob = live[i]; if (ob.mmv && !ob.got) { ob.mmv = false; placeEl(ob); } } // magnet coins on their way to a dog
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
       if (ob.hintEl) { const op = ob.past ? 0 : clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
@@ -1530,12 +1639,15 @@ function start(el, o) {
     _peek() {
       return {
         mode: S.mode, t: S.t, D, ts: S.ts, timeLost: S.timeLost, hitLog: S.hitLog, v: S.v || 0, camX: S.camX, dogX: S.camX + DOG.x, h: S.h, grounded: S.grounded, crouch: S.crouchHeld,
-        hazards: S.hazards, touched: S.touched, hits: S.hits, splashes: S.splashes, coins: S.coins, prompt: !!S.prompt, found: S.found,
+        sniffs: S.sniffs, hazards: S.hazards, touched: S.touched, hits: S.hits, splashes: S.splashes, coins: S.coins, prompt: !!S.prompt, found: S.found,
         heat: heat(), digsUsed: S.digsUsed, coinsSpawned: gen.coins, coinTarget,
         bonus: live.filter((q) => q.kind === 'bonus' && !q.done).map((q) => ({ x: q.cx, h: q.ch })),
         obs: live.filter((q) => q.kind === 'obs' && !q.done).map((q) => ({ id: q.id, cat: q.cat, name: q.name, ex0: q.ex0, ex1: q.ex1 })),
         highs: live.filter((q) => q.kind === 'obs' && q.cat === 'high').map((q) => ({ id: q.id, ex0: q.ex0, ex1: q.ex1 })),
         box: { off: DOG.off, hw: DOG.hw, feet: DOG.feet },
+        powers: specials.filter((q) => q.t === 'power').map((q) => ({ kind: q.kind, x: q.x })), power: S.pwr ? Object.assign({}, S.pwr) : null, pwrGot: S.pwrGot.slice(), pwrPops: S.pwrPops, pwrZoomed: S.pwrZoomed, magCoins: S.magCoins,
+        powerLive: live.filter((q) => q.kind === 'power' && !q.done).map((q) => ({ kind: q.pk, x: q.cx, h: q.ch })), zoomK: S.zoomK, vh: S.vh,
+        pfx: pfxDogs().map((d) => d.getAttribute('data-pw') || ''), chip: !E.pchip.hidden, chipBar: E.pchip.hidden ? null : E.pbar.style.transform,
         fol: fol.map((f) => ({ x: S.camX + DOG.x - (f.dist || 0), span: f.span ? f.span.slice() : null, pose: f.cur, duck: !!f.duck, friend: f.friend }))
       };
     }
