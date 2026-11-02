@@ -122,8 +122,10 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(await ev(() => [...document.querySelectorAll('#pkFol svg.pa-dog')].every((s) => /pa-pose-walk\b/.test(s.getAttribute('class') || ''))), 'in the existing walk pose');
   const x1 = await ev(() => [...document.querySelectorAll('#pkFol .pk-fl')].map((g) => g.style.transform));
   ok(x1.every((x, i) => x !== x0[i]), 'they move toward the ball');
-  await p().waitForTimeout(600); fg = await fetchGeo(); ok(fetchOk(fg, true), 'mid-run they stay in view, drawn over the leader, never hidden behind it: ' + JSON.stringify(fg));
-  await p().waitForTimeout(1400); fg = await fetchGeo(); ok(fetchOk(fg) && fg.F.every((f) => f[2] <= fg.L[0] - 4 || f[1] > fg.L[3] - 60), 'at rest they wait in a line behind the leader with a gap: ' + JSON.stringify(fg));
+  { const t0 = Date.now(); let run = true; do { fg = await fetchGeo(); run = await ev(() => document.querySelectorAll('#pkFol .pk-run').length === 2); } while (run && !fetchOk(fg, true) && Date.now() - t0 < 1000); // wait for the condition (the cover falls below 0.5 at about 520 ms), not a fixed sleep
+    ok(run && fetchOk(fg, true), 'mid-run (within 1 s of the throw, still running) they stay in view, drawn over the leader, never hidden behind it: ' + JSON.stringify(fg));
+    await p().waitForTimeout(Math.max(0, 2100 - (Date.now() - t0))); } // at rest: about 2 s after the throw, as before
+  fg = await fetchGeo(); ok(fetchOk(fg) && fg.F.every((f) => f[2] <= fg.L[0] - 4 || f[1] > fg.L[3] - 60), 'at rest they wait in a line behind the leader with a gap: ' + JSON.stringify(fg));
   ok(await ev(() => { const l = document.querySelector('#dogPos').style.transform; return !!l; }), 'the leader runs too');
   await ev(() => { const F = window.__paw.F; F.score = 4; F.great = 1; F.throws = 5; F.coins = 6; });
   await t.toasts(); await p().click('#fQuit'); await t.until(() => !!document.getElementById('fOk'), null, 5000);

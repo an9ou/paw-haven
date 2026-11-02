@@ -277,6 +277,7 @@ const CSS = `
 .pw-pt .pw-hud{flex-wrap:wrap}
 .pw-pt .pw-hud .pw-sep,.pw-cp .pw-hud .pw-sep,.pw-touchui .pw-hud .pw-k,.pw-pt .pw-bt,.pw-pt .pw-nose .pw-wl{display:none}
 .pw-pt .pw-time{flex:1 1 100%;min-width:0}
+.pw-pt .pw-hud>*{order:2}.pw-pt .pw-hud>.pw-time{order:0}.pw-pt .pw-hud>.pw-pchip{order:1}.pw-pt .pw-hud.pw-haspw>.pw-time{flex-basis:calc(100% - 40px)} /* v2.19.1: on portrait phones the power chip sits at the end of the time row (the time bar gives it room), so the HUD never wraps to a third row */
 .pw-cp .pw-time{min-width:110px}
 .pw-pt .pw-hud b,.pw-cp .pw-hud b{font-size:22px}
 .pw-pt .pw-ic,.pw-cp .pw-ic{width:24px;height:24px}
@@ -286,7 +287,7 @@ const CSS = `
 .pw-pt .pw-xm,.pw-cp .pw-xm{font-size:22px}
 .pw-touchui .pw-hud .pw-btn{min-height:44px;min-width:44px;padding:2px 8px;justify-content:center}
 .pw-pt .pw-coins{margin-right:auto}
-@media (max-width:400px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
+@media (max-width:440px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
 .pw-pt .pw-legend{font-size:15px;padding:2px 10px;white-space:normal;text-align:center;width:max-content;max-width:94%}
 .pw-cp .pw-legend,.pw-coarse:not(.pw-pt) .pw-legend{display:none}
 .pw-coarse .pw-lg-desk{display:none}.pw-coarse .pw-lg-touch{display:inline}
@@ -387,21 +388,26 @@ const CSS = `
 .pw-coins,.pw-digs{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .pw-pchip{display:flex;align-items:center;gap:4px;white-space:nowrap}
 .pw-pchip[hidden]{display:none}
-.pw-pchip .pw-ic{width:30px;height:30px;animation:pw-glow .5s ease-in-out infinite alternate}
+.pw-pchip .pw-ic{width:30px;height:30px;position:relative}
+.pw-pt .pw-pchip .pw-bar,.pw-cp .pw-pchip .pw-bar{display:none}
+.pw-cp .pw-pchip .pw-ic{width:26px;height:26px}.pw-pt .pw-pchip .pw-ic{width:24px;height:24px}
+.pw-pt .pw-pchip:not(.pw-nobar) .pw-ic::before,.pw-cp .pw-pchip:not(.pw-nobar) .pw-ic::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(#E0A030 calc(var(--pw-pl,1) * 360deg),rgba(91,61,50,.15) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px))}
 .pw-pchip .pw-ic img{width:100%;height:100%;display:block}
 .pw-pchip .pw-bar{width:44px;flex:none}
 .pw-pchip.pw-nobar .pw-bar{display:none}
 .pw-pchip .pw-bar>i{background:repeating-linear-gradient(-58deg,rgba(255,255,255,.4) 0 2px,transparent 2px 6px),#FFD37A}
 .pw-power>img{animation:pw-cbob .9s ease-in-out infinite alternate}
-.pw-power::before{content:'';position:absolute;left:-18%;top:-18%;width:136%;height:136%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,240,170,.85),rgba(255,240,170,0))}
+.pw-power::before{content:'';position:absolute;left:-18%;top:-18%;width:136%;height:136%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,232,150,.9),rgba(255,214,120,.6) 62%,rgba(240,170,80,.32) 80%,rgba(240,170,80,0))}
 .pw-obj.pw-magc>img{animation:none}
 .pw-pfx{position:absolute;display:none;pointer-events:none;-webkit-user-drag:none}
 .pw-dog[data-pw=bubble] .pw-pfx-bubble{display:block;left:10%;top:10%;width:80%;height:96%;animation:pw-bwob 1.2s ease-in-out infinite alternate}
 @keyframes pw-bwob{from{transform:scale(.97,1.02)}to{transform:scale(1.03,.97)}}
-.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:-20%;top:40%;width:32%;height:44%;opacity:.85;animation:pw-trl .18s steps(2,end) infinite}
+.pw-dog[data-pw=zoom] .pw-pfx-trail{display:block;z-index:-1;left:var(--pw-tl,0);top:8%;width:22%;height:22%;opacity:.85}
+.pw-dog.pw-rear[data-pw=zoom] .pw-pfx-trail{left:-20%;top:40%;width:32%;height:44%;animation:pw-trl .18s steps(2,end) infinite}
 @keyframes pw-trl{to{transform:translateX(-6%)}}
 .pw-dog[data-pw=spring] .pw-pfx-spring{display:block;left:22%;top:66%;width:56%;height:40%;animation:pw-glow .4s ease-in-out infinite alternate}
 .pw-dog[data-pw=magnet]::after{content:'';position:absolute;left:30%;top:16%;width:40%;height:62%;border-radius:50%;border:3px dashed rgba(210,72,59,.55);animation:pw-ring 1s ease-in-out infinite}
+.pw-fol .pw-pfx,.pw-fol[data-pw=magnet]::after{animation:none}
 .pw-pfx-pop{display:block;left:6%;top:4%;width:88%;height:100%;animation:pw-got .45s ease-out forwards}
 .pw-nose{display:flex;align-items:center;gap:8px;min-width:230px}
 .pw-nose .pw-bar{width:110px;flex:none}
@@ -442,6 +448,7 @@ const CSS = `
 .pw-legend{position:absolute;bottom:12px;left:50%;transform:translateX(-50%) rotate(-.6deg);font-size:18px;white-space:nowrap;z-index:4;background:${PAPER};border:2px solid ${INK};padding:3px 14px;border-radius:12px 16px 10px 14px/14px 10px 16px 12px;box-shadow:2px 3px 0 rgba(91,61,50,.18)}
 .pw-legend b{font-weight:400;color:#d2483b}
 .pw-say{position:absolute;max-width:280px;padding:7px 12px;font-size:18px;line-height:1.2;z-index:4;transform:translate(-10%,-100%);pointer-events:none;transition:opacity .2s}
+.pw-say.pw-dim{opacity:.35}
 .pw-say::after{content:'';position:absolute;left:22px;bottom:-12px;width:16px;height:14px;background:${PAPER};border-right:2.5px solid ${INK};border-bottom:2.5px solid ${INK};transform:skewX(-30deg) rotate(20deg)}
 .pw-say[hidden]{display:none}
 .pw-nw{white-space:nowrap}
@@ -668,7 +675,8 @@ function start(el, o) {
     const next = () => { if (S.stopped) return; const p = LAZY_POSES.find((q) => !poseEls[q]._drawn); if (!p) return; fillPose(p); idle(next); };
     setTimeout(() => idle(next), 400); }
   let curPose = null;
-  function setPose(p) { if (p === curPose) return; fillPose(p); if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
+  function setPose(p) { if (p === curPose) return; fillPose(p); if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p;
+    if (p === 'jump' && jumpArtY === null) { jumpArtY = dogArtY - 40; try { const g = poseEls.jump.querySelector('svg>g') || poseEls.jump.querySelector('svg'), b = g.getBBox(); if (b && b.height > 20) jumpArtY = b.y; } catch (e) { /* keep the guess */ } calcCeil(); } } // once per walk: the jump drawing's top sets the jump ceiling
   setPose('idle');
   /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ----------
      v2.19: a look with friend: true is a friend's dog on a walk together (cosmetic, like every follower). It wears the friend ribbon: look.ribbon (an SVG string
@@ -705,13 +713,13 @@ function start(el, o) {
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
   // v2.19.1: every start-up measurement runs in ONE layout pass: show the measured poses, read everything, then put them back (it was one forced layout per pose)
-  let dogSc = 0.68, dogArt = [36, 204];
+  let dogSc = 0.68, dogArt = [36, 204], dogArtY = 54, jumpArtY = null, hCeil = 1e9; // dogArtY: the top of the leader's walk drawing in its 240 x 200 box; hCeil: the highest a jump may go (layout)
   const ribs = [], mPoses = [...new Set([poseEls.walk].concat(...fol.map((f) => [f.poses.walk, f.poses.crouch].concat(f.friend ? FOL_POSES.map((p) => f.poses[p]) : []))))];
   mPoses.forEach((pe) => { pe.style.cssText = 'display:block;width:240px;height:200px;position:absolute'; });
   try {
     const g = poseEls.walk.querySelector('svg>g') || poseEls.walk.querySelector('svg');
     const b = g.getBBox();
-    if (b && b.height > 20) dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8);
+    if (b && b.height > 20) { dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8); dogArtY = b.y; }
     if (fol.length && b && b.width > 20) dogArt = [b.x, b.x + b.width];
   } catch (e) { /* keep default */ }
   // v2.9 PACK: where each follower's drawing sits in its 240-wide box (the walk pose), so the line is spaced by the dogs, not by their boxes
@@ -761,13 +769,15 @@ function start(el, o) {
     let nose = back - gap;
     fol.forEach((f, i) => {
       if (i) nose += ws[i] * ov; const k = K(f);
-      const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); nose = x + f.art[0] * k;
+      const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); f.bx = x; f.bw = 240 * k; f.noseX = x + f.art[1] * k; nose = x + f.art[0] * k;
       Object.assign(f.el.style, { left: px(x), top: px(G - 186 * k), width: px(240 * k), height: px(200 * k) }); // a little smaller, feet on the same ground line
       // v2.19.1: a ducking follower's drawing stays 6 units under the bottom of a high thing (a big dog's crouch is squashed a little, from the feet)
       const ch = (186 - f.crouchY) * k, sq = ch > HIGH_BOTTOM - 6 ? (HIGH_BOTTOM - 6) / ch : 1;
       f.poses.crouch.style.transform = sq < 1 ? `scaleY(${sq.toFixed(3)})` : ''; f.poses.crouch.style.transformOrigin = '50% 93%';
       f.span = [(f.art[0] - 120) * k - 12, (f.art[1] - 120) * k + 12]; // its drawing around its centre, plus a margin (world units)
     });
+    // the short Zoomies streaks on each dog start just in front of the nose of the dog behind it, so they never sit on its head (the rear dog has the long trail)
+    [{ el: E.dog, bx: DOG.x - 120 * dogSc, bw: 240 * dogSc }].concat(fol).forEach((d, i) => { const nx = fol[i]; if (nx) d.el.style.setProperty('--pw-tl', clamp((nx.noseX - d.bx) / d.bw * 100 + 3, 0, 55).toFixed(1) + '%'); });
   }
 
   /* ---------- layout (px per world unit) ---------- */
@@ -828,6 +838,14 @@ function start(el, o) {
     live.forEach(placeEl); lamps.forEach((l) => { l.k = -99; });
     E.say.style.left = px(DOG.x + 10); sayY = (G - 186 * dogSc) * s - 16; E.say.style.top = sayY.toFixed(1) + "px";
     E.prompt.style.left = px(DOG.x + 10);
+    // v2.19.1: a ceiling for jumps, so the leader's drawing stays inside the stage and under the HUD (Super jump went past it). Ordinary long jumps (about 160) stay under it
+    calcCeil();
+  }
+  // the top of the jump drawing (measured on its first use, else a guess above the walk pose) plus room for the tilt; never under 165, so an ordinary long jump is never cut short
+  function calcCeil() {
+    const sr = E.stage.getBoundingClientRect(), hr = E.hud.getBoundingClientRect(), hudIn = sr.height ? Math.max(0, hr.bottom - sr.top) : 0;
+    const top0 = (G - 186 * dogSc + ((jumpArtY !== null ? jumpArtY : dogArtY - 40) - 12) * dogSc) * s;
+    hCeil = sr.height ? Math.max(165, (top0 - hudIn - 8) / s) : 1e9;
   }
 
   /* ---------- level plan ---------- */
@@ -1189,9 +1207,9 @@ function start(el, o) {
     sfx('kaching'); pop(PW_NAME[kind](), DOG.x, G - 160, PW_COL[kind]); say(PW_SAY[kind](), 1900);
     pfxSet(kind);
     E.pimg.src = colUri(kind); E.pchip.setAttribute('aria-label', L('mod.walk.pw_chip', 'Power-up: {name}', { name: PW_NAME[kind]() }));
-    E.pchip.classList.toggle('pw-nobar', !T); E.pchip.hidden = false; S.pbf = '';
+    E.pchip.classList.toggle('pw-nobar', !T); E.pchip.hidden = false; E.hud.classList.add('pw-haspw'); S.pbf = '';
   }
-  function endPower() { S.pwr = null; pfxSet(''); E.pchip.hidden = true; }
+  function endPower() { S.pwr = null; pfxSet(''); E.pchip.hidden = true; E.hud.classList.remove('pw-haspw'); }
   // the overlays on every dog (the leader and each follower): made on first use, shown by the dog's data-pw
   function pfxDogs() { return [E.dog].concat(fol.map((f) => f.el)); }
   function pfxSet(kind) {
@@ -1199,6 +1217,8 @@ function start(el, o) {
       if (kind && !d._pfx) { d._pfx = true; ['trail', 'bubble', 'spring'].forEach((n) => { const i = document.createElement('img'); i.alt = ''; i.draggable = false; i.className = 'pw-pfx pw-pfx-' + n; i.src = colUri('fx_' + n); d.appendChild(i); }); } // after the poses (tests read a pose by its place); the trail sits behind the dog by z-index
       if (kind) d.setAttribute('data-pw', kind); else d.removeAttribute('data-pw');
     });
+    const ds = pfxDogs(), rear = fol.length ? fol.reduce((a, f) => ((f.dist || 0) > (a.dist || 0) ? f : a), fol[0]).el : E.dog; // the long Zoomies trail only behind the last dog: the others get short streaks over their own backs
+    ds.forEach((d) => d.classList.toggle('pw-rear', d === rear));
   }
   function pfxPop() {
     pfxDogs().forEach((d) => { const i = document.createElement('img'); i.alt = ''; i.className = 'pw-pfx pw-pfx-pop'; i.src = colUri('fx_pop'); d.appendChild(i); setTimeout(() => i.remove(), 450); });
@@ -1398,6 +1418,7 @@ function start(el, o) {
       if (S.crouchHeld) g = PH.GRAV * PH.FAST;
       else if (S.jumpHeld && S.longOK && S.airT > PH.LONG_T) { g = PH.GLONG * (S.pwr && S.pwr.kind === 'spring' ? 0.8 : 1); if (!S.isLong) { S.isLong = true; sfx('longjump'); } }
       S.vh -= g * dt; S.h += S.vh * dt;
+      if (S.h > hCeil) { S.h = hCeil; S.vh = Math.min(S.vh, 0); } // the ceiling (layout): followers replay folHist, so it holds for them too
       if (S.h <= 0) land();
     }
 
@@ -1502,6 +1523,7 @@ function start(el, o) {
       // what the leader has left behind stays on the ground under the line: its hint and badge go, a missed coin fades
       for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.mag || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
     }
+    const hiUp = S.h > 60; if (hiUp !== E.say._hi) { E.say._hi = hiUp; E.say.classList.toggle('pw-dim', hiUp); } // a high jump: the speech bubble fades so the dog shows through
     const blink = S.invT > 0 && S.mode === 'run';
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
     // HUD
@@ -1509,7 +1531,7 @@ function start(el, o) {
     const tbf = `scaleX(${(rem / D).toFixed(3)})`; if (tbf !== S.tbf) { S.tbf = tbf; E.timeBar.style.transform = tbf; }
     const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = L('mod.walk.secs', '{n}s', { n: sec }); E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
-    if (S.pwr && S.pwr.T > 0) { const pf = `scaleX(${clamp(S.pwr.t / S.pwr.T, 0, 1).toFixed(2)})`; if (pf !== S.pbf) { S.pbf = pf; E.pbar.style.transform = pf; } } // the power chip's shrinking bar
+    if (S.pwr && S.pwr.T > 0) { const pf = `scaleX(${clamp(S.pwr.t / S.pwr.T, 0, 1).toFixed(2)})`; if (pf !== S.pbf) { S.pbf = pf; E.pbar.style.transform = pf; E.pchip.style.setProperty('--pw-pl', pf.slice(7, -1)); } } // the power chip's shrinking bar (desktop) or ring on its icon (phones)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (ob.mmv && !ob.got) { ob.mmv = false; placeEl(ob); } } // magnet coins on their way to a dog
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
@@ -1638,7 +1660,7 @@ function start(el, o) {
     // test/debug hook (not part of the contract; read-only snapshot)
     _peek() {
       return {
-        mode: S.mode, t: S.t, D, ts: S.ts, timeLost: S.timeLost, hitLog: S.hitLog, v: S.v || 0, camX: S.camX, dogX: S.camX + DOG.x, h: S.h, grounded: S.grounded, crouch: S.crouchHeld,
+        mode: S.mode, t: S.t, D, ts: S.ts, timeLost: S.timeLost, hitLog: S.hitLog, v: S.v || 0, camX: S.camX, dogX: S.camX + DOG.x, h: S.h, hCeil, grounded: S.grounded, crouch: S.crouchHeld,
         sniffs: S.sniffs, hazards: S.hazards, touched: S.touched, hits: S.hits, splashes: S.splashes, coins: S.coins, prompt: !!S.prompt, found: S.found,
         heat: heat(), digsUsed: S.digsUsed, coinsSpawned: gen.coins, coinTarget,
         bonus: live.filter((q) => q.kind === 'bonus' && !q.done).map((q) => ({ x: q.cx, h: q.ch })),
