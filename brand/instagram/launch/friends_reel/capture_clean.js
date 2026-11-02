@@ -1,7 +1,7 @@
 // v2.19 "Friends first": CLEAN footage for the launch Reel (owner, 2 Nov 2026: "without the game buttons, make it clean, introduce the upcoming update").
 // The same v2.19 build, Worker mock and slow clock as capture_friends.js, but every game bar, button, menu, sheet, toast and speech bubble is hidden,
 // so the yard fills the whole phone screen (the game lays the view out full height once the top bar and the bottom bar are gone). Only the scenes:
-//   yard   Mochi at home                     visit  Sunny Biscuit's yard, Waffles and Honey get petted (hearts, happy poses)
+//   yard   Noodle at home                     visit  Sunny Biscuit's yard, Waffles and Honey get petted (hearts, happy poses)
 //   note   the paw-print stamp lands on their path       gift   the wrapped gift flies off from their yard
 //   walk   the run with Waffles beside Mochi (the runner's own buttons, timer and hints hidden)
 // The sheets for the note and the gift are used with the sheet hidden (their buttons are clicked from script).
@@ -28,8 +28,8 @@ run('friends_clean', async (t) => {
   await p().goto(URL);
   await p().waitForSelector('#tNew, #tContinue, #tGuest');
   if (await p().locator('#tGuest').count()) { await p().click('#tGuest'); await p().waitForSelector('#tNew'); }
-  await t.adopt({});
-  await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 85, happy: 85, energy: 90, clean: 90 } });
+  await t.adopt({ head: '~Dachshund', sex: 'boy' }); // Noodle, our narrator (as in the 45 s promo and the profile picture)
+  await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 85, happy: 85, energy: 90, clean: 90 }, dog: { name: 'Noodle' } });
   await ev(() => { window.__paw.S.coolUntil = 1e12; }); // not "too hot" on a sunny midday
   await t.calm();
   const SUNNY = 'sunnybiscuitxxxxxxxxxx';
@@ -56,7 +56,7 @@ run('friends_clean', async (t) => {
 
   // 0. home
   await still('yard');
-  await clip('yard', 3.2, null, 0.17);
+  await clip('yard', 3.4, null, 0.17);
 
   // set up Friends off camera: the name, then Sunny Biscuit by code (the sheet itself is never filmed)
   await ev((nm) => { window.__paw.S.dc.name = nm; }, OUR_NAME);
@@ -83,14 +83,14 @@ run('friends_clean', async (t) => {
   }
   await still('visit');
   const petDog = (i) => ev((i) => { const el = document.querySelectorAll('#frDogs .frdog:not(.fr-mine)')[i]; if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }, i);
-  await clip('visit', 4.4, async () => { await wait(500); await petDog(0); await wait(1600); await petDog(1); }, 0.17);
+  await clip('visit', 7.6, async () => { await wait(500); await petDog(0); await wait(1900); await petDog(1); await wait(2600); await petDog(0); }, 0.17);
 
   // 2. the paw print: the note picked with the sheet hidden; the stamp lands on their path
   // the stamp sits at the left edge of the phone's view of their yard, where our own dog's tail covers it: our dog sits this one shot out
   modalHid = await p().addStyleTag({ content: HIDE_MODAL + '#frDogs .fr-mine{display:none!important}' });
   await press('#frNoteBtn');
   await t.until(() => document.querySelectorAll('#modal [data-frnote]').length === 12, null, 4000);
-  await clip('note', 2.6, async () => { await wait(400); await press('#modal [data-frnote="0"]'); }, 0.15);
+  await clip('note', 4.2, async () => { await wait(400); await press('#modal [data-frnote="0"]'); }, 0.15);
   await still('note_left');
 
   // 3. the gift: the Bone-shaped Biscuit sent with the sheet hidden; the wrapped gift flies off
@@ -99,7 +99,7 @@ run('friends_clean', async (t) => {
   const bone = await ev(() => { const b = [...document.querySelectorAll('#modal [data-frgift]')].find((e) => /Bone-shaped/.test(e.textContent)); return b ? b.getAttribute('data-frgift') : '0'; });
   await press(`#modal [data-frgift="${bone}"]`);
   await t.until(() => !!document.querySelector('#modal .confirm .yes'), null, 4000);
-  await clip('gift', 2.8, async () => { await wait(300); await press('#modal .confirm .yes'); }, 0.15);
+  await clip('gift', 4.4, async () => { await wait(300); await press('#modal .confirm .yes'); }, 0.15);
   await ev((el) => el.remove(), modalHid);
 
   // 4. the walk with Waffles: picked on the route screen (not filmed), then the run, clean
@@ -112,6 +112,6 @@ run('friends_clean', async (t) => {
   await t.until(() => !!document.querySelector('.pw-fol.pw-friend'), null, 10000);
   await p().addStyleTag({ content: CLEAN_CSS }); await relayout(); await p().waitForTimeout(600);
   await still('walk');
-  await clip('walk', 5.0, null, 0.17);
+  await clip('walk', 6.2, null, 0.17);
   console.log('done', OUT);
 }, { time: 'day', weather: 'sunny', season: 'autumn', timeout: 900000 });

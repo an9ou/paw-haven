@@ -2,9 +2,11 @@
 // CLEAN version (owner, 2 Nov 2026: "without the game buttons, make it clean, introduce the upcoming update"): real v2.19 scenes with every game bar,
 // button, sheet and speech bubble hidden (capture_clean.js), one short label per feature, a "new update · 7 Nov" sticker, and an end page with OUR
 // friend card drawn from the game's own card art and QR (PawArt.FRIENDS.card + mods/qr.js), asking for friend codes in the comments.
-// 1080 x 1920, 30 fps, the game's own cozy music (the yard by day), a tick on each numbered way and the "discover" sting on the end page.
+// Told by Noodle the dachshund like our first video, the 45 s promo (owner, 2 Nov 2026): vo_friends.py makes the voice (Kokoro af_bella 1.1x) and
+// each shot lasts its line; the game's music sits at 30% under the voice.
+// 1080 x 1920, 30 fps, Noodle's voice over the game's own cozy music (the yard by day) and the "discover" sting on the end page.
 //
-//   [OUR_CODE=DOG-XXXXX OUR_NAME=a,b] NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <game checkout> <clean footage dir> <workdir>
+//   [OUR_CODE=DOG-XXXXX OUR_NAME=a,b] NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <game checkout> <clean footage dir> <workdir> <vo dir>
 //   ONLY=stills renders key frames only. The cover: make_friends_cover.js. REDNOTE=1: every word in Simplified Chinese, no game link anywhere (after the owner approves).
 // OUR_CODE / OUR_NAME (Dog Card word indices) are the Doodle Doggo account's real friend code and name from the live game on 7 Nov. Without OUR_CODE
 // the end page's card carries a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
@@ -14,6 +16,8 @@ const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // owner's rule: te
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const DEV = path.resolve(process.argv[2] || '.'), FOOT = path.resolve(process.argv[3] || 'friends_footage');
 const WORK = path.resolve(process.argv[4] || 'friends_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
+const VO = path.resolve(process.argv[5] || 'vo'); // Noodle's voice-over (vo_friends.py): <line>.wav and vo.json with each line's length
+const VOD = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')).dur;
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const fam = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
 const FPS = 30, W = 1080, H = 1920;
@@ -46,7 +50,7 @@ const TX = RN ? null : {
   // owner, 2 Nov 2026: clean, short labels that name each feature, as our earlier Reels did; not sentences
   hook: [{ s: '4 ways your dog', size: 84, pitch: 98 }, { s: 'can make friends', size: 84, pitch: 92 }, { s: '(no chat)', size: 60, fill: '#8A7468' }],
   update: 'new update · 7 Nov',
-  ways: ['visit & pet', 'paw-print note', 'send a gift', 'walk together'],
+  ways: ['visit & pet', 'paw-print note', 'send a gift', 'walk together'], code: 'share your code', safe: 'no chat. no messages.',
   endAsk: 'add us!', endSub: 'drop your code below',
   ph: 'placeholder: our real code on 7 Nov',
 };
@@ -55,17 +59,21 @@ if (!TX) throw new Error('RedNote words come after the owner approves the Englis
 // ---- the timeline: [start, end, source, from (clip seconds), view { z0, z1, fx, fy0, fy1 }, caption] ----
 const SEG = []; let at = 0;
 const seg = (len, src, from, view, cap) => { SEG.push({ a: at, b: at + len, src, from, view, cap }); at += len; };
-seg(2.8, 'yard', 0.2, { z0: 1.0, z1: 1.06, fx: 0.5, fy0: 0.6, fy1: 0.62 }, { hook: true });
-seg(3.2, 'visit', 0.3, { z0: 1.02, z1: 1.1, fx: 0.56, fy0: 0.66, fy1: 0.66 }, { n: 1, s: TX.ways[0] });
-seg(2.2, 'note', 0.2, { z0: 1.12, z1: 1.4, fx: 0.22, fy0: 0.74, fy1: 0.8 }, { n: 2, s: TX.ways[1] });
-seg(2.4, 'gift', 0.25, { z0: 1.08, z1: 1.14, fx: 0.5, fy0: 0.5, fy1: 0.46 }, { n: 3, s: TX.ways[2] });
-seg(2.4, 'walk', 0.0, null, { n: 4, s: TX.ways[3], band: { x0: 0, y0: 700, w: 480, h: 596 } }); // the run is a wide strip: shown as a window on the paper
-const END = at; seg(3.4, 'end', 0, null, { end: true });
+// owner, 2 Nov 2026: told by Noodle like our first video (the 45 s promo). Each shot lasts its voice line plus a short breath; the line starts 0.15 s in
+const VOAT = []; const say = (k, d) => VOAT.push({ k, at: at + (d == null ? 0.15 : d) }), len = (k, pad) => VOD[k] + (pad == null ? 0.4 : pad);
+say('hook'); seg(len('hook', 0.5), 'yard', 0.1, { z0: 1.05, z1: 1.12, fx: 0.5, fy0: 0.7, fy1: 0.71 }, { hook: true });
+say('code'); seg(len('code'), 'code', 0, null, { s: TX.code, card: true });
+say('visit'); seg(len('visit'), 'visit', 0.2, { z0: 1.02, z1: 1.1, fx: 0.5, fy0: 0.66, fy1: 0.66 }, { n: 1, s: TX.ways[0] });
+say('note'); seg(len('note'), 'note', 0.2, { z0: 1.12, z1: 1.4, fx: 0.22, fy0: 0.74, fy1: 0.8 }, { n: 2, s: TX.ways[1] });
+say('gift'); seg(len('gift'), 'gift', 0.15, { z0: 1.08, z1: 1.14, fx: 0.5, fy0: 0.5, fy1: 0.46 }, { n: 3, s: TX.ways[2] });
+say('walk'); say('walkb', 0.15 + VOD.walk + 0.25); seg(VOD.walk + 0.25 + VOD.walkb + 0.5, 'walk', 1.8, null, { n: 4, s: TX.ways[3], band: { x0: 0, y0: 700, w: 480, h: 596 } }); // the run is a wide strip: a window on the paper (from 1.8 s: after the log "Bonk!")
+say('safe'); seg(len('safe'), 'visit', 3.8, { z0: 1.1, z1: 1.16, fx: 0.48, fy0: 0.68, fy1: 0.68 }, { s: TX.safe, green: true });
+const END = at; say('end', 0.25); seg(VOD.end + 0.8, 'end', 0, null, { end: true });
 const T = at, N = Math.round(T * FPS);
 
 // ---- footage: each clip's frames with their game times; a still is one frame ----
 const CLIPS = {};
-for (const s of SEG) { if (s.src === 'end' || CLIPS[s.src]) continue;
+for (const s of SEG) { if (s.src === 'end' || s.src === 'code' || CLIPS[s.src]) continue;
   const dir = path.join(FOOT, s.src);
   if (fs.existsSync(path.join(dir, 'ts.json'))) { const ts = JSON.parse(fs.readFileSync(path.join(dir, 'ts.json'), 'utf8')); CLIPS[s.src] = { ts, files: ts.map((_, i) => path.join(dir, String(i).padStart(5, '0') + '.jpg')) }; }
   else CLIPS[s.src] = { ts: [0], files: [path.join(FOOT, s.src + '.png')] }; }
@@ -109,12 +117,15 @@ window.frame=async function(t, S, src){
   if(band) ph=band;
   if(v && v.t>1) dim+='<path d="M-10 '+v.t+' Q270 '+(v.t-5)+' 540 '+v.t+' T1090 '+v.t+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
   if(v && v.bot<${H}-1) dim+='<rect x="-10" y="'+(v.bot+6)+'" width="1100" height="18" fill="${PEN}" opacity=".12"/><path d="M-10 '+v.bot+' Q270 '+(v.bot+5)+' 540 '+v.bot+' T1090 '+v.bot+'" fill="none" stroke="${PEN}" stroke-width="6" stroke-linecap="round"/>';
-  if(cp.hook){ const o=lt<2.5?1:Math.max(0,1-(lt-2.5)/0.3);
+  if(cp.card){ const cs=0.86+0.14*back(lt/0.4); dim+='<rect width="${W}" height="${H}" fill="${PAPER}"/>';
+    ph+='<g data-safe transform="translate('+CX+' 830) scale('+(cs*2.5)+') rotate(-2) translate(-150 -100)">${CARD.replace(/'/g, "\\'").replace(/\n/g, ' ')}</g>'
+      +(PH?'<g transform="rotate(-6 '+CX+' 835)">'+pill(TX.ph,CX,835,44,FAM,{fill:'#FFE0E0',stroke:'#C0392B',color:'#C0392B',padX:22})+'</g>':''); }
+  if(cp.hook){ const dur=S.b-S.a, o=lt<dur-0.3?1:Math.max(0,1-(lt-dur+0.3)/0.3);
     cap='<g opacity="'+o+'"><g transform="rotate(-2 '+CX+' 470)">'+card(CX-340,320,680,320,'${PEN}',6,fit(TX.hook,600))+'</g>'
       +'<g transform="rotate(5 '+(CX+150)+' 680)">'+pill(TX.update,CX+150,680,50,FAM,{fill:'#FFE3A1',padX:26})+'</g></g>'; }
   else if(cp.s){ const kept=cp.keep, s=kept?1:0.86+0.14*back(lt/0.3), o=kept?1:ease(lt/0.15); // a small pop, so nothing bounces out of SAFE
     const L=fit([{s:cp.s,size:56}],cp.n?560:680), k=inkOf(cp.s,L[0].size,FAM), w=k.L+k.R+80, x0=cp.n?SAFE.x0+100:CX-w/2, x=Math.min(x0,SAFE.x1-w);
-    cap='<g opacity="'+o+'" transform="translate('+CX+' 352) scale('+s+') rotate(-1.5) translate('+(-CX)+' -352)">'+card(x,300,w,104,'${PEN}',5,L)
+    cap='<g opacity="'+o+'" transform="translate('+CX+' 352) scale('+s+') rotate(-1.5) translate('+(-CX)+' -352)">'+card(x,300,w,104,cp.green?'${GREEN}':'${PEN}',cp.green?6:5,L)
       +(cp.n?'<g transform="translate('+(x-40)+' 352) rotate(-8)">'+bubble(48,'#FFE3A1',cp.n+'.',64)+'</g>':'')+'</g>'; }
   if(cp.end){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
     end='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/><g opacity="'+o+'">'
@@ -134,7 +145,7 @@ window.frame=async function(t, S, src){
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f)))); await p.evaluate(() => document.fonts.ready);
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
-  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? null : frameAt(s, t);
+  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' || s.src === 'code' ? null : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
     const off = await p.evaluate(() => centreCheck(document.querySelector('#ov'))); if (off.length) throw new Error('text not centred at ' + t.toFixed(2) + ': ' + off.join('; '));
     const out = await p.evaluate(() => safeCheck(document.querySelector('#ov'))); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
@@ -153,11 +164,10 @@ window.frame=async function(t, S, src){
     segments: [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, [{ at: END + 0.1, name: 'discover' }]]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64'));
   await ab.close();
-  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', "aevalsrc='0.45*sin(2*PI*880*t)*exp(-t*30)':s=44100:d=0.25", path.join(WORK, 'tick.wav')]);
-  const EV = SEG.filter((s) => s.cap && s.cap.s && !s.cap.keep).map((s) => s.a + 0.02);
+  // Noodle's voice over the game's music: the music sits at 30% under the voice, as in the 45 s promo
   const inputs = [], chains = [];
-  EV.forEach((a, i) => { inputs.push('-i', path.join(WORK, 'tick.wav')); const d = Math.round(a * 1000); chains.push(`[${i + 2}:a]adelay=${d}|${d}[k${i}]`); });
-  const mix = `[1:a]atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${EV.map((_, i) => `[k${i}]`).join('')}amix=inputs=${EV.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
+  VOAT.forEach((v, i) => { inputs.push('-i', path.join(VO, v.k + '.wav')); const d = Math.round(v.at * 1000); chains.push(`[${i + 2}:a]aresample=44100,volume=1.5,adelay=${d}|${d}[v${i}]`); });
+  const mix = `[1:a]atrim=0:${T},volume=0.3,afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${VOAT.map((_, i) => `[v${i}]`).join('')}amix=inputs=${VOAT.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
   const out = path.join(WORK, `doodle-doggo-friends${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',

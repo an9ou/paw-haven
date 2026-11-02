@@ -1,5 +1,5 @@
 // v2.19 Friends launch Reel: its own cover (owner, 2 Nov 2026: "designed in an attractive way, not the first second of the Reel").
-// The game's own art: the autumn yard, Mochi the Shiba and Waffles the Corgi nose to nose under a pink heart, Honey the Golden puppy in her party hat,
+// The game's own art: the autumn yard, Noodle the dachshund and Waffles the Corgi nose to nose under a pink heart, Honey the Golden puppy in her party hat,
 // the hook card "4 ways your dog can make friends", a "(no chat)" sticker and a "new: Friends in Doodle Doggo" pill. Everything that matters sits in the
 // middle 1080 x 1440, so the profile grid's 3:4 crop keeps it. No black or white dog (owner, 1 Nov 2026). Every box text ink-centred and checked.
 //
@@ -15,7 +15,7 @@ for (const f of fs.readdirSync(path.join(DEV, 'world')).filter((f) => /^pawart_w
 vm.runInContext(fs.readFileSync(path.join(DEV, 'dogs', 'pawart_dogs.js'), 'utf8'), ctx);
 const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 const DOGS = {
-  mochi: inner(PA.dog('shiba', { anim: false, pose: 'happy', facing: 'right' })),
+  noodle: inner(PA.dog('dachs', { anim: false, pose: 'happy', facing: 'right' })), // Noodle, the Reel's narrator
   waffles: inner(PA.dog('corgi', { anim: false, pose: 'happy', facing: 'left' })),
   honey: inner(PA.dog('golden', { anim: false, pose: 'sit', facing: 'left', age: 'puppy', outfit: { head: 'Party Hat' } })),
 };
@@ -36,8 +36,8 @@ function box(id){ const u=document.createElementNS(NS,'use'); u.setAttribute('hr
 function dog(id,cx,feet,hh){ const b=box(id), s=hh/b.height, w=b.width*s;
   return '<ellipse cx="'+cx+'" cy="'+(feet-4)+'" rx="'+(w*0.36)+'" ry="18" fill="${PEN}" opacity=".16"/><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b.x)+' '+(-b.y)+')"><use href="#'+id+'"/></g>'; }
 window.draw=function(){
-  document.getElementById('dogs').innerHTML = dog('mochi',345,1450,430) + dog('waffles',740,1450,370) + dog('honey',975,1600,225)
-    + '${heart(548, 1000, 2.6, -4)}${heart(420, 905, 1.1, -18, 0.85)}${heart(655, 900, 0.9, 16, 0.85)}${heart(160, 1060, 0.8, -10, 0.7)}${heart(950, 1210, 0.8, 12, 0.7)}';
+  document.getElementById('dogs').innerHTML = dog('noodle',330,1450,250) + dog('waffles',740,1450,370) + dog('honey',975,1600,225)
+    + '${heart(545, 1150, 2.2, -4)}${heart(440, 1065, 1.0, -18, 0.85)}${heart(650, 1060, 0.85, 16, 0.85)}${heart(160, 1060, 0.8, -10, 0.7)}${heart(950, 1210, 0.8, 12, 0.7)}';
   document.getElementById('top').innerHTML =
     '<g transform="rotate(-2 540 470)"><rect x="66" y="278" width="948" height="384" rx="40" fill="${PEN}" opacity=".14" transform="translate(10 14)"/>'
     + '<g data-box><rect x="66" y="278" width="948" height="384" rx="40" fill="#FFFDF7" stroke="${PEN}" stroke-width="8"/>'+C([{s:'4 ways your dog',size:112,pitch:132},{s:'can make friends',size:112}],540,470).svg+'</g>'
