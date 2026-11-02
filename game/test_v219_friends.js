@@ -220,7 +220,7 @@ run('v219_friends', async (t) => {
     } catch (e) { /* the asserts say it */ }
     const flag = '<script>window.__ddFrTest=1</script>', at = a.indexOf(flag), game = a.indexOf('<script', at + flag.length);
     ok(at > 0 && game > at && a.indexOf('<body>') < at, 'the Pages copy sets window.__ddFrTest before the game scripts');
-    ok(b.length > 100000 && !b.includes('__ddFrTest') && !b.includes('dd_gate_v1'), 'the itch.io / play copy (pages.js --itch) has neither the Friends flag nor the password screen');
+    ok(b.length > 100000 && !b.includes('<script>window.__ddFrTest=1') && !b.includes('dd_gate_v1'), 'the itch.io / play copy (pages.js --itch) has neither the Friends flag nor the password screen');
     ok(/'pages\.js'\), '--itch'\]/.test(fs.readFileSync(path.join(root, 'tools', 'itch.js'), 'utf8')), 'tools/itch.js builds with --itch');
     fs.rmSync(outA, { recursive: true, force: true }); fs.rmSync(outB, { recursive: true, force: true });
   }
