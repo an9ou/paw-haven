@@ -19,6 +19,21 @@ Method: `scratchpad/prof_walk.js <phone|desk> <solo|pack> <cpu throttle> <secs> 
 | desk 3 followers, now / fixed | 6.0 / 37.4 | 150 / 16.7 | 333 / 50 | | 433 / 117 | 115 / 127 | 126 / 32 |
 | no throttle, now: phone pack / desk pack | 49 / 39 | 16.7 | 33 / 50 | | 200 / 167 | 33 / 70 | 11 / 32 |
 
+**v2.19.1, measured after the fixes** (worktree `runner`, same profiler, phone 393x852 @3x, 4x throttle, 20 s, park; pack = corgi + samoyed + a friend's beagle, 3 followers). Fixes 1 (the `:has(...) > *` rules became classes `.rt-pk` / `.rt-fr` set where the rows are rendered), 2 (`updateHUD` and `updateNose` write only on change), 5 (`display:none` for hidden poses; the start-up measuring shows them in one batched layout pass), 6 (the hint/bubble overlap read at most every 150 ms and after `say()`), 7 (the rare leader poses dig, sad, shake, eat, cold drawn in idle time or on first use; one layout pass for every start measurement) and 8 (the time bar written only when its 3-decimal value changes):
+
+| case | fps | p50 ms | p95 ms | p99 | max | frames >33 ms | long tasks (total ms) | go / start ms |
+|---|---|---|---|---|---|---|---|---|
+| phone solo, before (throttle after the start) | 16.7 | 50 | 133 | 217 | 233 | 215 | 205 (17.6 s) | |
+| phone solo, after | 57.9 | 16.7 | 16.8 | 33.4 | 83 | 11 | 2 (0.13 s) | |
+| phone 3 followers, before | 6.8 | 133 | 300 | 333 | 367 | 132 | 133 (20.5 s) | |
+| phone 3 followers, after | 55.9 | 16.7 | 33.3 | 50 | 83 | 29 | 4 (0.27 s) | |
+| phone solo, before (throttled from the start, `PRE=1`) | 16.8 | 50 | 167 | 183 | 233 | 198 | 186 (16.7 s) | 615 / 585 |
+| phone solo, after (`PRE=1`) | 56.1 | 16.7 | 16.8 | 33.4 | 133 | 20 | 3 (0.25 s) | 394 / 370 |
+| phone 3 followers, before (`PRE=1`) | 4.7 | 183 | 350 | 517 | 517 | 97 | 100 (21.0 s) | 897 / 863 |
+| phone 3 followers, after (`PRE=1`) | 52.9 | 16.7 | 33.3 | 50 | 117 | 32 | 11 (0.79 s) | 932 / 893 |
+
+The start hitch with a pack did not shrink (the followers' poses are still drawn up front: they are only 4 or 5 each); solo it went from 615 to 394 ms. Raw: `scratchpad/runner/out_*.txt`, profiler `scratchpad/prof_walk_wt.js`.
+
 Where the time goes (trace, phone solo, 4x, 15 s): `UpdateLayoutTree` (style recalc) takes 10.4 s of the main thread. It runs 344 times, each over about 2,710 elements (the whole `#stage`: runner plus HUD). Paint takes 0.9 s, Layerize 0.8 s, JS (FunctionCall) only 2.1 s. JS profile (self time): `getBoundingClientRect` 1.28 s (forced layout), walkrun `render` 0.14 s, game `toastPlace` 0.09 s, pawaudio scheduler about 0.15 s. GC is about 35 ms: per-frame allocation is not a problem. DOM size: 2,623 nodes in the runner solo and 4,669 with 3 followers. The leader's 10 pre-drawn poses are 1,623 nodes, each follower about 650. 54 CSS animations run, 45 of them on hidden poses.
 
 Causes, by impact:

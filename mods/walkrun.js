@@ -344,8 +344,8 @@ const CSS = `
 .pw-touchui .pw-skip input{width:22px;height:22px}
 @keyframes pw-glow{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.1)}}
 .pw-dog{position:absolute;will-change:transform;pointer-events:none}
-.pw-pose{position:absolute;inset:0;visibility:hidden}
-.pw-pose.on{visibility:visible}
+.pw-pose{position:absolute;inset:0;display:none}
+.pw-pose.on{display:block}
 .pw-pose>svg{display:block;width:100%;height:100%;overflow:visible}
 .pw-dog.pw-blink{animation:pw-blink .18s steps(1,end) infinite}
 .pw-rib{position:absolute;width:clamp(10px,17%,24px);aspect-ratio:1;transform:translate(-50%,-50%) rotate(-8deg);pointer-events:none}
@@ -626,10 +626,15 @@ function start(el, o) {
     }
     return svgWrap([240, 200], '<ellipse cx="120" cy="140" rx="60" ry="30" fill="#F4A262"/><circle cx="175" cy="110" r="26" fill="#F4A262"/><path d="M80 170v16M100 170v16M140 170v16M160 170v16"/>');
   }
-  const poseStr = {};
-  POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose'; d.innerHTML = poseStr[p] = dogSvg(p); E.dog.appendChild(d); poseEls[p] = d; });
+  // v2.19.1: the rare poses (dig, sad, shake, eat, cold) are drawn after the start, one per idle moment, or on first use (a smaller start hitch). Their boxes stay in order
+  const poseStr = {}, LAZY_POSES = ['dig', 'sad', 'shake', 'eat', 'cold'];
+  function fillPose(p) { const d = poseEls[p]; if (d._drawn) return; d._drawn = true; d.innerHTML = poseStr[p] = dogSvg(p); }
+  POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose'; E.dog.appendChild(d); poseEls[p] = d; if (!LAZY_POSES.includes(p)) fillPose(p); });
+  { const idle = (f) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 120));
+    const next = () => { if (S.stopped) return; const p = LAZY_POSES.find((q) => !poseEls[q]._drawn); if (!p) return; fillPose(p); idle(next); };
+    setTimeout(() => idle(next), 400); }
   let curPose = null;
-  function setPose(p) { if (p === curPose) return; if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
+  function setPose(p) { if (p === curPose) return; fillPose(p); if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
   setPose('idle');
   /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ----------
      v2.19: a look with friend: true is a friend's dog on a walk together (cosmetic, like every follower). It wears the friend ribbon: look.ribbon (an SVG string
@@ -665,11 +670,13 @@ function start(el, o) {
     });
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
+  // v2.19.1: every start-up measurement runs in ONE layout pass: show the measured poses, read everything, then put them back (it was one forced layout per pose)
   let dogSc = 0.68, dogArt = [36, 204];
+  const ribs = [], mPoses = [...new Set([poseEls.walk].concat(...fol.map((f) => [f.poses.walk].concat(f.friend ? FOL_POSES.map((p) => f.poses[p]) : []))))];
+  mPoses.forEach((pe) => { pe.style.cssText = 'display:block;width:240px;height:200px;position:absolute'; });
   try {
     const g = poseEls.walk.querySelector('svg>g') || poseEls.walk.querySelector('svg');
-    poseEls.walk.style.width = '240px'; poseEls.walk.style.height = '200px'; poseEls.walk.style.position = 'absolute';
-    const b = g.getBBox(); poseEls.walk.style.cssText = '';
+    const b = g.getBBox();
     if (b && b.height > 20) dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8);
     if (fol.length && b && b.width > 20) dogArt = [b.x, b.x + b.width];
   } catch (e) { /* keep default */ }
@@ -678,8 +685,7 @@ function start(el, o) {
     f.art = [30, 210];
     try {
       const pe = f.poses.walk, g = pe.querySelector('svg>g') || pe.querySelector('svg');
-      pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
-      const b = g.getBBox(); pe.style.cssText = '';
+      const b = g.getBBox();
       if (b && b.width > 20) f.art = [b.x, b.x + b.width];
     } catch (e) { /* keep default */ }
     if (f.friend) FOL_POSES.forEach((p) => { // v2.19: the ribbon on the dog's back, just behind the neck (the dog faces right). The body is the biggest shape
@@ -687,7 +693,6 @@ function start(el, o) {
       let x = 50, y = 50; // percent of the 240 x 200 box
       try {
         const sv = pe.querySelector('svg');
-        pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
         const B = sv.getBoundingClientRect(), U = [1e9, 1e9, -1e9, -1e9]; let best = null, ba = 0;
         const shapes = B.width > 0 ? [...sv.querySelectorAll('path,ellipse,circle,polygon,rect')].map((q) => q.getBoundingClientRect())
           .filter((c) => c.width > 0 && c.height >= B.height * 0.08 && c.bottom <= B.top + B.height * 0.97) : []; // no flat shapes, no shadow on the ground
@@ -697,12 +702,13 @@ function start(el, o) {
           if (cx > U[0] + (U[2] - U[0]) * 0.6 || cy < U[1] + (U[3] - U[1]) * 0.4 || c.width < c.height * 0.9) return;
           if (a > ba) { ba = a; best = c; }
         });
-        pe.style.cssText = '';
         if (best) { x = (best.left - B.left + best.width * 0.7) / B.width * 100; y = (best.top - B.top + best.height * 0.18) / B.height * 100; }
-      } catch (e) { pe.style.cssText = ''; /* keep default */ }
-      r.style.left = x.toFixed(2) + '%'; r.style.top = y.toFixed(2) + '%';
+      } catch (e) { /* keep default */ }
+      ribs.push([r, x, y]);
     });
   });
+  mPoses.forEach((pe) => { pe.style.cssText = ''; });
+  ribs.forEach(([r, x, y]) => { r.style.left = x.toFixed(2) + '%'; r.style.top = y.toFixed(2) + '%'; });
   // the room the line needs: from the stage's left edge to the leader's centre (world units)
   function folNeed() {
     const K = (f) => dogSc * FOL_K * f.rel; let need = (120 - dogArt[0]) * dogSc + FOL_GAP;
@@ -976,7 +982,7 @@ function start(el, o) {
 
   /* ---------- feedback helpers ---------- */
   let sayTimer = 0;
-  function say(t, ms) { E.say.textContent = t; E.say.hidden = false; clearTimeout(sayTimer); sayTimer = setTimeout(() => { E.say.hidden = true; }, ms || 1800); }
+  function say(t, ms) { E.say.textContent = t; E.say.hidden = false; hintChkT = 0; clearTimeout(sayTimer); sayTimer = setTimeout(() => { E.say.hidden = true; }, ms || 1800); }
   function pop(text, uX, uY, color) {
     const p = document.createElement('div'); p.className = 'pw-pop'; p.textContent = text; p.style.left = px(uX); p.style.top = px(uY); if (color) p.style.color = color;
     E.fx.appendChild(p); setTimeout(() => p.remove(), 1050);
@@ -1003,14 +1009,16 @@ function start(el, o) {
     if (S.found || treasureDig.done) return null;
     const dx = S.camX + DOG.x; return clamp(1 - Math.abs(treasureDig.x - dx) / noseRange + S.nudge, 0, 1);
   }
-  let noseT = 0, noseK = '';
+  let noseT = 0, noseK = '', noseTxt = null, noseTf = '';
   function updateNose() {
     const h = heat();
     let k, w;
-    if (h === null) { k = 'warm'; w = 1; E.nl.textContent = S.found ? L('mod.walk.nose_found', 'Found!') : L('mod.walk.nose_dug', 'Dug'); }
-    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; E.nl.textContent = k === 'hot' ? L('mod.walk.nose_hot', 'HOT') : k === 'warm' ? L('mod.walk.nose_warm', 'Warm') : L('mod.walk.nose_cold', 'Cold'); }
+    let t; // v2.19.1: write only on change (a text write restyles the page; it ran every 100 ms)
+    if (h === null) { k = 'warm'; w = 1; t = S.found ? L('mod.walk.nose_found', 'Found!') : L('mod.walk.nose_dug', 'Dug'); }
+    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; t = k === 'hot' ? L('mod.walk.nose_hot', 'HOT') : k === 'warm' ? L('mod.walk.nose_warm', 'Warm') : L('mod.walk.nose_cold', 'Cold'); }
+    if (t !== noseTxt) { noseTxt = t; E.nl.textContent = t; }
     if (k !== noseK) { E.nose.className = 'pw-nose ' + k; noseK = k; }
-    E.noseBar.style.transform = `scaleX(${w.toFixed(3)})`;
+    const tf = `scaleX(${w.toFixed(2)})`; if (tf !== noseTf) { noseTf = tf; E.noseBar.style.transform = tf; }
   }
   function sniffClue() {
     if (S.found || treasureDig.done) return pickLine('walk_lines.done', WALK_LINES.done);
@@ -1337,7 +1345,7 @@ function start(el, o) {
   }
 
   /* ---------- render ---------- */
-  let wxY = 0;
+  let wxY = 0, hintChkT = 0;
   function render(now) {
     const cx = S.camX;
     E.strip.style.transform = `translate3d(${(-(cx % TW) * s).toFixed(1)}px,0,0)`;
@@ -1379,14 +1387,15 @@ function start(el, o) {
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
     // HUD
     const rem = Math.max(0, D - S.t);
-    E.timeBar.style.transform = `scaleX(${(rem / D).toFixed(4)})`;
+    const tbf = `scaleX(${(rem / D).toFixed(3)})`; if (tbf !== S.tbf) { S.tbf = tbf; E.timeBar.style.transform = tbf; }
     const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = L('mod.walk.secs', '{n}s', { n: sec }); E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
       if (ob.hintEl) { const op = ob.past ? 0 : clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
     // an obstacle hint steps aside (hides) while the dog's speech bubble would sit on it: the bubble carries the lesson ("Tap Dig!"), the hint is only a nudge
-    { const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
+    // v2.19.1: measured at most every 150 ms (and right after say()): two layout reads in every frame forced a layout every frame
+    if (now - hintChkT > 150) { hintChkT = now; const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
       for (let i = 0; i < live.length; i++) { const he = live[i].hintEl; if (!he) continue; let hide = false;
         if (sayUp && +he.style.opacity >= 0.05) { const hr = he.getBoundingClientRect(); hide = hr.width > 0 && hr.left < sr.right && hr.right > sr.left && hr.top < sr.bottom && hr.bottom > sr.top; }
         if (live[i].hintHide !== hide) { live[i].hintHide = hide; he.style.visibility = hide ? 'hidden' : ''; } } }

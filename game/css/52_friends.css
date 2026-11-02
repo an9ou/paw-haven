@@ -93,9 +93,9 @@ html[data-layout="phone"] .fr-giftgrid{grid-template-columns:repeat(3,minmax(0,1
 .fr-wnm small{font-family:var(--font-read);font-size:13px;line-height:1.1;color:var(--muted);white-space:nowrap}
 .fr-walked{margin:6px 0 0}
 .fr-letterdog .fr-head{width:64px;height:64px}
-.routes:has(.fr-walkrow){overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
-.routes:has(.fr-walkrow) > *{flex-shrink:0}
-.routes:has(.fr-walkrow) .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,272px)}
+.routes.rt-fr{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+.routes.rt-fr > *{flex-shrink:0}
+.routes.rt-fr .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,272px)}
 html[data-layout="phone"] .fr-walkrow{flex-direction:column;gap:0;padding:0 8px;margin:0 0 2px}
 html[data-layout="phone"] .fr-walkcap{max-width:none;text-align:center}
 html[data-layout="phone"] .fr-walkrow .cr-chips{gap:6px;padding:3px 2px 4px;max-width:100%}
