@@ -17,3 +17,14 @@ fit_lib MEASURE (clip, escape, overlap, hscroll, tap, font, crowd) found 0 Frien
 - On the More tray the "9+" badge sits on the tile corner like the "new!" ribbons, and in the "..." menu it is an inline pill like missions "0/3". Both are by design. The desktop #frBtn badge covers the icon's heart, which is fine.
 - The th route card crowd (`p.rt-env`) is in the route card, which existed before this release. Dogs piling up at 360 was accepted before. The cat decor under the desktop place buttons comes from my test snapshot (x 860), and the same spot is used at home.
 - Two console 404s per session come from the scratch static server. On th 1280 the Undo toast had expired before the click (timing); a re-run passes.
+
+## Fixed in 48bcf76 (2 Nov 2026)
+1. Fixed in 48bcf76: the wheel `<text>`s and the card name carry `style="font-family:FR_FONT"`; world_b adds `.pa-wb text[font-family*="DD Local"]{font-family:FONT_L}`, so cardF text (missions and stamp card titles and rows) draws in the local faces too. CDP: ja Klee One, th Mali, ko Jua/Poor Story, zh LXGW. English cards pixel-identical (max diff 16/255 anti-aliasing). The test reads getComputedStyle. Wheel room 100 -> 106 units (text area 24..136); the longest ja words still squeeze (ゆきのけっしょう 15.4/22 px), accepted.
+2. Fixed in 48bcf76: `.sheet.prose>.sitehead:not(.stuck)` takes the five-tile phone layout at 861 px and up; navcheck: one line per tab at 1024/1280 in all 11 languages.
+3. Fixed in 48bcf76: frPairParts puts U+200B between the words when fr.name has nothing between them (ja, zh, th); ja/zh `.fr-nm`/`.fr-prev` keep-all + `overflow-wrap:break-word;line-break:strict`; `.mb-t b` break-word + strict (no keep-all: other mail titles keep normal CJK wrapping); `.fr-gnm` strict, ja `word-break:auto-phrase`, two gift columns on ja/zh phones up to 430 px, CJK list names 20 px on phones. Left: mailbox titles can still break inside a friend's word (normal CJK wrapping).
+4. Fixed in 48bcf76: the Undo button is `flex:none;white-space:nowrap`; frUndoPlace puts the toast under the sheet on desktop (over the dimmed bar) or above it, else (phones) at the sheet's foot over the last row; the title and the top row stay clear.
+5. Fixed in 48bcf76: `.fr-gn` top 7 / right 11, cell padding 14 8 8.
+6. Fixed in 48bcf76: `:lang(th) .fr-wbtn` line-height 1.5, min-height 52, padding 13/7.
+7. Fixed in 48bcf76: a name that doesn't fit at 18 units goes on two tspans (one word each, the de hyphen stays on line 1) at 15 units, y 87/103, clear of the code (fit check 0 overlaps).
+8. Fixed in 48bcf76: `html[lang="ko"] .sitenav a{word-break:keep-all}` from 350 px (at 320 px 강아지들 is wider than its tab, so it still wraps there).
+Also: game/test_site.js expected the old privacy date (1 Nov); the site says 7 Nov since b5f5767 (docs/itch/PRIVACY.md still says 1 Nov). Seen, not in scope: the ko list name mixes Jua and Poor Story (킷 not in the Jua subset).
