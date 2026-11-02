@@ -9,7 +9,7 @@
 // a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
-const { CENTRE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre
+const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const DEV = path.resolve(process.argv[2] || '.'), FOOT = path.resolve(process.argv[3] || 'friends_footage');
 const WORK = path.resolve(process.argv[4] || 'friends_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
@@ -84,6 +84,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g></svg></div>
 <script>
 ${CENTRE_JS}
+${SAFE_JS}
 const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)}, CR=${JSON.stringify(CR)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM);
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -93,13 +94,10 @@ const bubble=(r,fill,s,size)=>'<g data-box><circle r="'+r+'" fill="'+fill+'" str
 // ONE cut for every platform (owner, 2 Nov 2026): YouTube Shorts, Instagram Reels and TikTok lay their buttons over the right side and their
 // titles, names and captions over the top and the bottom. All our words stay inside SAFE (x 60..890, y 250..1440 of 1080 x 1920), centred on
 // x 475; safeCheck() stops the build if any text leaves it. The game screen behind still fills the frame.
-const SAFE={x0:60,x1:890,y0:250,y1:1440}, CX=475;
+const CX=SAFE_CX;
 // a list of lines sized down (all together) until the widest ink fits maxW
 function fit(lines,maxW){ const wd=Math.max(...lines.map((l)=>{ const k=inkOf(l.s,l.size,FAM); return k.L+k.R; })), f=Math.min(1,maxW/wd);
   return f>=1?lines:lines.map((l)=>Object.assign({},l,{size:Math.floor(l.size*f),pitch:l.pitch?Math.floor(l.pitch*f):undefined})); }
-function safeCheck(){ const bad=[]; document.querySelectorAll('#ov text').forEach((e)=>{ let o=1; for(let p=e;p&&p.id!=='ov';p=p.parentNode) if(p.getAttribute&&p.getAttribute('opacity')!=null) o*=parseFloat(p.getAttribute('opacity'));
-    if(o<0.05) return; const r=e.getBoundingClientRect(), m=22; // font box, a little taller than the ink
-    if(r.left<SAFE.x0-m||r.right>SAFE.x1+m||r.top<SAFE.y0-m||r.bottom>SAFE.y1+m) bad.push(e.textContent+' at '+[r.left,r.top,r.right,r.bottom].map(Math.round)); }); return bad; }
 // the screen: the 1179 x 1977 shot, scaled to the frame's height (z 1) or zoomed in on (fx, fy), never past its edges; lift slides it up (or down)
 // over the paper (so a sheet at the bottom of the phone comes clear of the platforms' bottom captions), with a pencil edge and a shadow
 function view(src, z, fx, fy, lift){ const img=$('scr'), k=${H}/1977*z, w=1179*k, h=1977*k;
@@ -145,7 +143,7 @@ window.frame=async function(t, S, src){
   const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' ? (CLIPS.walk ? frameAt(SEG[SEG.length - 2], SEG[SEG.length - 2].b - 0.01) : null) : frameAt(s, t);
     await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
     const off = await p.evaluate(() => centreCheck(document.querySelector('#ov'))); if (off.length) throw new Error('text not centred at ' + t.toFixed(2) + ': ' + off.join('; '));
-    const out = await p.evaluate(() => safeCheck()); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
+    const out = await p.evaluate(() => safeCheck(document.querySelector('#ov'))); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
     await p.screenshot({ path: file, type: file.endsWith('.jpg') ? 'jpeg' : 'png', quality: file.endsWith('.jpg') ? 95 : undefined }); };
   const still = process.env.ONLY === 'stills';
   const list = still ? SEG.map((s) => Math.round(((s.a + s.b) / 2) * FPS)).concat([Math.round((END + 2.5) * FPS)]) : [...Array(N).keys()];

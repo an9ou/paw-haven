@@ -37,4 +37,14 @@ function centreCheck(root){ const bad=[];
     const dx=(l+r)/2-bx, dy=(t+b)/2-by; if(Math.abs(dx)>1.5||Math.abs(dy)>1.5) bad.push(ts.map((e)=>e.textContent).join(' / ')+' off by '+dx.toFixed(1)+', '+dy.toFixed(1)); });
   return bad; }
 `;
-module.exports = { CENTRE_JS };
+// Owner's rule (2 Nov 2026): ONE Reel for every platform. YouTube Shorts, Instagram Reels and TikTok lay their buttons over the right side and their
+// titles, names and captions over the top and the bottom, so every word we put on screen stays inside SAFE (x 60..890, y 250..1440 of 1080 x 1920;
+// centre a line on x 475). Game footage may fill the frame behind it. In the page: safeCheck(root) returns every visible <text> outside SAFE
+// (font box, 22 px slack); the build script throws if any are, on every frame, next to centreCheck(). First used by friends_reel/build_friends.js.
+const SAFE_JS = `
+const SAFE={x0:60,x1:890,y0:250,y1:1440}, SAFE_CX=475;
+function safeCheck(root){ const bad=[]; (root||document).querySelectorAll('text').forEach((e)=>{ let o=1; for(let p=e;p&&p!==root;p=p.parentNode) if(p.getAttribute&&p.getAttribute('opacity')!=null) o*=parseFloat(p.getAttribute('opacity'));
+  if(o<0.05) return; const r=e.getBoundingClientRect(), m=22;
+  if(r.left<SAFE.x0-m||r.right>SAFE.x1+m||r.top<SAFE.y0-m||r.bottom>SAFE.y1+m) bad.push(e.textContent+' at '+[r.left,r.top,r.right,r.bottom].map(Math.round)); }); return bad; }
+`;
+module.exports = { CENTRE_JS, SAFE_JS };
