@@ -1,17 +1,19 @@
 # Mandarin voice-over for the RedNote cut of the v2.19 Friends launch Reel (owner, 2 Nov 2026: "Chinese voice (Kokoro)"), told by Noodle like the English one.
-# Kokoro v1.1-zh (the Mandarin model) with misaki's Chinese G2P, a female voice like the English af_bella. The words follow vo_friends.py line by line
+# Kokoro v1.1-zh (the Mandarin model) with misaki's Chinese G2P, a soft female voice (zf_073, the owner's pick). The words follow vo_friends.py line by line
 # (same keys, so build_friends.js times the shots the same way), in the game's own zh-Hans words: 好友名, 好友码, 做客, 摸摸, 留个爪印, 送一份礼物,
 # 和好友的狗狗一起散步; note 0 is "你的狗狗毛茸茸的！". Owner's rule: "no chat, no messages", never "no typing" (没有聊天，没有私信).
 # Waffles is said 华夫 (spoken Latin names come out badly in the Mandarin model); the subtitles say 华夫 too.
 #   pip install kokoro-onnx soundfile misaki pypinyin cn2an proces addict pypinyin_dict ; jieba 0.42.1 from its sdist (PYTHONPATH) if it will not build
 #   model files: github.com/thewh1teagle/kokoro-onnx/releases (model-files-v1.1: kokoro-v1.1-zh.onnx, voices-v1.1-zh.bin)
-#   python3 vo_friends_zh.py <modelDir> <outDir> [voice zf_001] [speed 1.1]
+#   python3 vo_friends_zh.py <modelDir> <outDir> [voice zf_073] [speed 1.0]
 import soundfile as sf, numpy as np, json, sys
 from kokoro_onnx import Kokoro
 from misaki import zh
 k = Kokoro(sys.argv[1] + "/kokoro-v1.1-zh.onnx", sys.argv[1] + "/voices-v1.1-zh.bin")
 g2p = zh.ZHG2P(version="1.1")
-OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "zf_001"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.1
+# owner, 2 Nov 2026: zf_001 at 1.1x sounded robotic (its pitch is one of the flattest of the 55 female voices); the owner picked zf_073 at 1.0x from
+# five softer samples (preview/voices/voices-A-to-E.mp4, voice D)
+OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "zf_073"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
 L = {
  "hook":  "好消息！我们的狗狗可以交朋友啦！",
  "code":  "选一个好友名，分享你的好友码，你的狗狗就能去好友家做客啦！",
