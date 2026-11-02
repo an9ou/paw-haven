@@ -71,9 +71,9 @@ function fbNapFit(pose) {
 // bed's lip (.ho-bedfront) shows while its own pack dog naps, and the dog is centred and fitted on that bed (28_home.js hoPackSpot puts it there)
 function fbPackNapFit() {
   const svg = $('svg.world', view); if (!svg || !S) return; const house = S.place === 'house';
-  svg.querySelectorAll('.ho-bedfront[data-bed]').forEach((f) => { const b = f.dataset.bed; f.style.display = house && S.dogs.some((d) => d.id !== S.activeId && d.sleeping && svg.querySelector(`#pack [data-dog="${d.id}"]`) && hoBedFor(d) === b) ? '' : 'none'; });
+  svg.querySelectorAll('.ho-bedfront[data-bed]').forEach((f) => { const b = f.dataset.bed; f.style.display = house && S.dogs.some((d) => d.id !== S.activeId && hoNapping(d) && !rmSt(d).tw && svg.querySelector(`#pack [data-dog="${d.id}"]`) && hoBedFor(d) === b) ? '' : 'none'; });
   svg.querySelectorAll('#pack .packdog').forEach((g) => {
-    g.removeAttribute('transform'); const d = dogById(g.dataset.dog); if (!house || !d || !d.sleeping) return; const b = hoBedFor(d); if (!b) return;
+    g.removeAttribute('transform'); const d = dogById(g.dataset.dog); if (!house || !d || !hoNapping(d) || rmSt(d).tw) return; const b = hoBedFor(d); if (!b) return; // v2.19: the night's sleep or a nap in its own bed (28_home.js hoPackNap), once it lies there
     const lipEl = b === S.bed ? $('#bedFront .pa-bed-front') : svg.querySelector(`.ho-bedfront[data-bed="${CSS.escape(b)}"] .pa-bed-front`), lipR = lipEl && lipEl.getBoundingClientRect();
     if (!lipR || !lipR.width || !g.getScreenCTM()) return;
     const r = g.getBoundingClientRect(), inv = g.getScreenCTM().inverse(), w = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(inv); }; if (!r.height) return;

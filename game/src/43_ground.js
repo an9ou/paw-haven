@@ -72,6 +72,28 @@ function grNo(place) {
   const b = grBowlAt(place === undefined ? S && S.place : place); if (b) out.push([b[0] - 38, b[1] - 14, 76, 16, 'floor', 'gamebowl']); // the food bowl's feet box (GR_BOWL)
   return out;
 }
+// v2.19 fix (owner, 2 Nov 2026: a dog stood behind the Cozy House sofa, half hidden, and napped by it). Indoors no dog stands behind or inside a piece of
+// furniture. The scene's own pieces (the FLOOR props: the sofa, the lamp, the plant) stand against the wall on thin feet boxes, so the strip between them
+// and the wall was floor (the sofa's arm is drawn 50 units past its feet box too); the placed beds, furniture and floor decorations are drawn under the
+// pack, so a dog beside one with its feet behind its base was drawn over it. Indoors each piece gets a hard box over the floor behind it, from its drawn
+// top (at most the back line) down to its base, GR_BACK wider than its drawing on each side (about half a big dog's body): a tall FLOOR prop as drawn in
+// #pack (GR_TALL: not the bowls, the toys basket or a dog bed a dog may stand on), a placed piece as drawn in the room. The feet keep out (rmHard, the
+// paths, grSnap): a dog stands in front of a piece, clear of its sides, or (in the middle of a big room) far enough behind that it shows above it
+const GR_BACK = 50, GR_TALL = 60;
+function grIndoor(place) { const k = place === undefined ? S && S.place : place; return !!(k && PLACES[k] && PLACES[k].out === false); }
+const GR_BACK_SEL = '#hoRoomG > #bedG, #hoRoomG > [data-bed], #hoRoomG > [data-furn], #hoRoomG > [data-decor]';
+function grBackNo(svg, M, out) {
+  if (!grOn() || !grIndoor()) return; const f = grFloor(), y0 = f.back - 12;
+  const put = (b, base, id) => { const top = Math.max(y0, b[1]); if (base > top) out.push([b[0] - GR_BACK, top, b[2] + 2 * GR_BACK, base - top, 'floor', 'back:' + id]); };
+  svg.querySelectorAll('#pack .gr-prop[data-prop]:not(.gr-game)').forEach((el) => {
+    const p = f.props.find((q) => String(q.id) === el.dataset.prop); if (!p || !Array.isArray(p.box)) return; // box null: a dog may stand on it (the vet's scale)
+    const b = rmWorldBox(svg, M, el); if (b && b[3] >= GR_TALL) put(b, p.box[1] + p.box[3], p.id);
+  });
+  svg.querySelectorAll(GR_BACK_SEL).forEach((el) => {
+    const n = el.dataset.decor; if (n && (hoZoneOf(n) !== 'floor' || hoLayer(n) !== 2)) return; // a wall picture or a flat rug: a dog may stand in front of it or on it
+    const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4) put(b, b[1] + b[3], el.dataset.bed || el.dataset.furn || n || el.id);
+  });
+}
 // a hard box for the feet (rmHard's rule: 8 units round it), the boxes whose prop id is in al excepted (a spot act through its own obstacle)
 function grHard(x, y, al) { return rmBoxes().some((b) => b[4] !== 'dctag' && !(al && b[5] != null && al.includes(b[5])) && x > b[0] - GR_FOOT && x < b[0] + b[2] + GR_FOOT && y > b[1] - GR_FOOT && y < b[1] + b[3] + GR_FOOT); }
 function grFree(x, y, al) { const f = grFloor(); return !!f && grIn(f.poly, x, y) && !grHard(x, y, al); }
@@ -230,6 +252,7 @@ function grSpotW(d, s, p) {
   if (tags.includes('water') || ['paddle', 'swim', 'ramp'].includes(act)) return 0; // the pool belongs to ACTIVITIES (paddling once a day, the life vest)
   if (pup && GR_JOINTS.includes(act)) return 0;
   if (grBusySpot(d, s)) return 0;
+  if (act === 'rest' && S.place === 'house') return 0; // v2.19 fix: a nap in the house is in a bed or on the open rug (grAct rest), not at the v2.9 bed spot, by the sofa or snapped behind a bed
   let v = 0.5; (p.spots || []).forEach((k) => { if (tags.includes(k)) v *= 2.5; });
   const tr = p.trait;
   if (act === 'jump' || act === 'tyre') v *= (tr === 'ball' || tr === 'burst' || p.ball > 1.05 ? 3 : 1) * (0.4 + p.energy);
@@ -315,8 +338,10 @@ function grAct(d) {
       steps = []; zz.forEach((q) => steps.push({ to: q }, { pose: 'sniff', fb: 'eat', ms: 1100 })); steps.push({ to }, { pose: kind === 'dig' ? 'dig' : 'sniff', fb: 'eat', ms: 1600 }, { pose: 'idle', ms: kind === 'dig' && exOn() ? 1800 : 600, fn: kind === 'dig' ? () => exTrig(d, 'dig', { pose: 'idle', draw: false }) : null }, { pose: 'idle', ms: sec(1500, 3000) });
     }
   } else if (kind === 'rest') { // shade, sun or a bed spot: down, then a nap
-    const rs = f.spots.filter((s) => (s.tags || []).some((g) => g === 'rest' || g === 'shade' || g === 'bed') && !grBusySpot(d, s)); let s = rs.length ? PICK(rs) : null;
-    to = s ? (grFree(s.x, s.y) ? [s.x, s.y] : grSnap(s.x, s.y)) : null; if (!to || grCrowd(d, to)) { s = null; to = go({ like: ['shade', 'edge'] }); }
+    const inH = S.place === 'house'; // v2.19 fix: in the house a pack dog naps in its own bed (28_home.js hoPackNap), else on the rug, never by the sofa
+    if (inH && !lead && hoPackNap(d)) { r.grKind = 'bed'; return true; }
+    const rs = inH ? [] : f.spots.filter((s) => (s.tags || []).some((g) => g === 'rest' || g === 'shade' || g === 'bed') && !grBusySpot(d, s)); let s = rs.length ? PICK(rs) : null;
+    to = s ? (grFree(s.x, s.y) ? [s.x, s.y] : grSnap(s.x, s.y)) : null; if (!to || grCrowd(d, to)) { s = null; to = inH ? hoRugRest(d) : go({ like: ['shade', 'edge'] }); }
     if (to) steps = [{ fn: () => { r.grSpot = s ? s.id : null; }, ms: 0 }, { to }, { pose: 'down', fb: 'sit', ms: 1500 }, { pose: p.energy < 0.6 ? 'sleep' : 'down', ms: sec(10000, 24000) }, { pose: 'idle', ms: 1000, fn: () => { r.grSpot = null; } }];
   } else if (kind === 'front') {
     to = rmFrontSpot(d); if (to) steps = p.trait === 'show' ? [{ to }, { pose: 'happy', ms: 1600 }, { pose: 'sit', ms: sec(3000, 6000) }] : [{ to }, { pose: 'sit', ms: sec(4000, 9000) }];
@@ -517,7 +542,7 @@ function grSim(place, secs, o) {
       ds.forEach((d) => {
         const r = rmSt(d); if (r.grSpot) out.acts[r.grSpot] = (out.acts[r.grSpot] || 0) + (i % 30 === 0 ? 1 : 0);
         if (!grIn(f.poly, r.x, r.y) && !grIn(f.poly, r.x + 1, r.y) && !grIn(f.poly, r.x - 1, r.y) && !grIn(f.poly, r.x, r.y - 1) && out.outside.length < 20) out.outside.push([d.id, f1(r.x), f1(r.y), i]);
-        const hb = boxes.find((b) => !(r.grIn != null && String(b[5]) === String(r.grIn)) && r.x > b[0] + 0.5 && r.x < b[0] + b[2] - 0.5 && r.y > b[1] + 0.5 && r.y < b[1] + b[3] - 0.5);
+        const hb = !r.fix && boxes.find((b) => !(r.grIn != null && String(b[5]) === String(r.grIn)) && r.x > b[0] + 0.5 && r.x < b[0] + b[2] - 0.5 && r.y > b[1] + 0.5 && r.y < b[1] + b[3] - 0.5); // v2.19: a dog on its fixed spot (its bed, a piece of furniture) lies inside that piece by design
         if (hb && out.inBox.length < 20) out.inBox.push([d.id, f1(r.x), f1(r.y), hb.slice(0, 4).map(Math.round), hb[5] || hb[4], r.grIn || null, i, r.grKind, r.tw ? { gr: !!r.tw.gr, leg: !!(r.tw.o && r.tw.o.legacy), P: r.tw.P ? r.tw.P.filter((q, j) => j % 4 === 0).map((q) => q.map(Math.round)) : null, x0: Math.round(r.tw.x0), y0: Math.round(r.tw.y0), x1: Math.round(r.tw.x1), y1: Math.round(r.tw.y1) } : null]);
         const want = RM_BASE * grScale(place, r.y) * rmSz(r); if (r.k == null && !r.fix && Math.abs(rmK(r) - want) > 1e-6 && out.scaleBad.length < 10) out.scaleBad.push([d.id, rmK(r), want]);
       });
