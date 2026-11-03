@@ -47,6 +47,9 @@ if (fs.existsSync(FONTS)) for (const lang of M.CODES.filter((c) => c !== 'en')) 
     if (!fam || !src) continue;
     const u = src[1].replace(/^["']|["']$/g, '').split('/').pop(), file = u.split('?')[0];
     if (!fs.existsSync(path.join(FONTS, file))) die(`game/fonts/i18n/${lang}.css names ${file}, which is missing`);
+    // v2.20: a face shared with another language (yue lists zh-Hant.woff2) must be the file as it is now: its ?v= is the file's hash
+    const v = /\?v=([0-9a-f]{8})/.exec(u), now = require('crypto').createHash('sha256').update(fs.readFileSync(path.join(FONTS, file))).digest('hex').slice(0, 8);
+    if (v && v[1] !== now) die(`game/fonts/i18n/${lang}.css names ${file}?v=${v[1]}, but that file is now ${now}: run node tools/i18n_fonts.js ${lang} --for game (after the language it shares)`);
     list.push({ f: fam[1], u, r: rng ? rng[1].trim() : '' });
   }
   if (list.length) fonts[lang] = list;
