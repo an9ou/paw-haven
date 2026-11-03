@@ -9,7 +9,7 @@
 //   * the Settings switches: Labels on the map, the shop window on arrival
 //   * captions fit in every language: each caption is narrower than its building's art plus 40 (the packed language tables)
 const { run } = require('./test_lib');
-const LANGS = ['en', 'ja', 'zh-Hans', 'zh-Hant', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
+const LANGS = ['en', 'ja', 'zh-Hans', 'zh-Hant', 'yue', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
 const PREFS = { tkTest: true, jpTest: true }; // the Station and the Mt. Fuji Lookout are on the map too (25 buildings)
 
 run('v215_map', async (t) => {

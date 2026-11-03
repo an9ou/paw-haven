@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the doodledoggo.app introduction site (site/, v2.8.2) and deploys it (and www, which redirects to it) to Cloudflare.
-# The game itself is played on itch.io; the site has the home page, /dogs, /map, /about, /privacy and /reset, since v2.14 in 11 languages (/ja/, /zh-hans/ ...).
+# The game itself is played on itch.io; the site has the home page, /dogs, /map, /about, /privacy and /reset, since v2.14 in 12 languages (/ja/, /zh-hans/, /yue/ ...).
 # Size (v2.14, Game Manager): the account's Worker limit is the paid 10 MB, and the Cloudflare token cannot create Worker routes, so the side Workers
 # (doodle-doggo-fonts on doodledoggo.app/fonts/i18n/*, doodle-doggo-img on doodledoggo.app/img/map/*) cannot get their routes. The normal build is
 # therefore INLINE: SITE_FONTS and SITE_IMG default to inline here, tools/cf_site.js puts the per-language fonts and the /map pictures in the main

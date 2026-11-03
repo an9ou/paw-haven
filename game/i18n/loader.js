@@ -41,7 +41,8 @@
     if (sv && sv.v === 1 && (sv.dog || (sv.dogs && sv.dogs.length))) return real(sv.lang) ? sv.lang : dev;
     return real(pr.langPick) ? pr.langPick : dev;
   }
-  var want = guess(), first = P.load(want);
+  // v2.20: live() = yue -> zh-Hant while YUE_LIVE is off (msg.js), as i18nWanted does
+  var want = M.live ? M.live(guess()) : guess(), first = P.load(want);
   first.catch(function () { /* the game starts in English; 00b_i18n.js retries */ });
   // run(fn): the game script. Right away when its language is here (English always is), else once the file came or failed (at most 15 s)
   P.run = function (fn) {

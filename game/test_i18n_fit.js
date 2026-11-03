@@ -1,6 +1,6 @@
 // I18N FIT (v2.14, the owner via the Game Manager: "make sure all languages can fit in all the menus, windows, boxes; all sizes can be adjusted
 // when needed"). The MEASURING TOOL only: it opens every screen of the game in every language at every size and lists text that does not fit.
-//   node game/run_tests.js i18n_fit [--jobs N]          (its own group `fit`: not in `all` or `phone`; about 41 min for 11 languages x 5 sizes with --jobs 3 on 4 cores, about 2 min per session)
+//   node game/run_tests.js i18n_fit [--jobs N]          (its own group `fit`: not in `all` or `phone`; about 45 min for 12 languages x 5 sizes with --jobs 3 on 4 cores, about 2 min per session)
 //   PAW_LANGS=en,th node game/run_tests.js i18n_fit       a few languages              PAW_FIT_SIZES=desktop,iphone15   a few sizes
 //   PAW_FIT_REPORT_ONLY=1                                 report mode: always passes (the report is still written)
 //   PAW_FIT_JOBS=N                                        parallel browsers (default: the runner's --jobs, else CPU cores - 1)

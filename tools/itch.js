@@ -24,7 +24,7 @@ const STRIP_DEV = '<script id="itchNoDevJs">(function(){var Q="#devBtn,#devPanel
 let itchHtml = html.includes('</head>') ? html.replace('</head>', () => HIDE_DEV + '</head>') : HIDE_DEV + html;
 const bodyEnd = itchHtml.lastIndexOf('</body>');
 itchHtml = bodyEnd >= 0 ? itchHtml.slice(0, bodyEnd) + STRIP_DEV + itchHtml.slice(bodyEnd) : itchHtml + STRIP_DEV;
-if (/<script>window\.__ddFrTest=1|id="ddGate"|dd_gate_v1/.test(itchHtml)) { console.error('itch: the Pages-only password screen or Friends test flag leaked into the itch.io copy'); process.exit(1); }
+if (/<script>window\.__ddFrTest=1|<script>window\.__ddYueTest=1|id="ddGate"|dd_gate_v1/.test(itchHtml)) { console.error('itch: the Pages-only password screen or the Friends / Cantonese test flag leaked into the itch.io copy'); process.exit(1); }
 fs.writeFileSync(path.join(out, 'index.html'), itchHtml);
 // the brand files the page links to (relative href/src), plus the icons the web manifest names
 const brand = path.join(root, 'brand'), want = new Set();

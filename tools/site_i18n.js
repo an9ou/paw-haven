@@ -1,6 +1,6 @@
-// doodledoggo.app in 11 languages (v2.14): writes every page of the site from the templates in site/tpl/ and the string tables in site/i18n/.
+// doodledoggo.app in 12 languages (v2.14; yue, Cantonese, v2.20): writes every page of the site from the templates in site/tpl/ and the string tables in site/i18n/.
 //   node tools/site_i18n.js              writes site/index.html, dogs.html, map.html, about.html, privacy.html, reset.html (English, committed) and site/<dir>/... for the
-//                                        other 10 languages (generated, git-ignored; tools/cf_site.js builds them itself), and prints the missing-key report
+//                                        other 11 languages (generated, git-ignored; tools/cf_site.js builds them itself), and prints the missing-key report
 //   node tools/site_i18n.js --report     the full report: every missing, unknown or broken key per language
 //   node tools/site_i18n.js --pseudo     also writes the test-only pseudo-locales site/xx/ (accented, ~40% longer) and site/xx-cjk/ (CJK-like, no spaces)
 //   node tools/site_i18n.js --check      writes nothing; exits 1 when the committed English pages differ from what the templates make
@@ -18,11 +18,15 @@ const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = r
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), I18N = path.join(SITE, 'i18n'), TPL = path.join(SITE, 'tpl');
 const ORIGIN = 'https://doodledoggo.app';
 
-// ---- the languages: BCP 47 code (file names, <html lang>, hreflang), URL folder, native name (the menu), og:locale, script group (typography)
-const LANGS = [
+// ---- the languages: BCP 47 code (file names, <html lang>, hreflang), URL folder, native name (the menu), og:locale, script group (typography).
+// Optional: html (the <html lang> and content-language tag when it is not the code), hreflang (the alternate links' tag when it is not the code),
+// rules (the Intl locale for numbers, dates and plurals). yue (v2.20): <html lang="yue-Hant-HK">, hreflang zh-HK (search engines take ISO 639-1
+// codes, and zh-HK browsers get Cantonese, as in the game's pickLang), Intl zh-HK (Chromium has no yue data).
+const ALL_LANGS = [
   { code: 'ja', dir: 'ja', name: '日本語', og: 'ja_JP', script: 'cjk' },
   { code: 'zh-Hans', dir: 'zh-hans', name: '简体中文', og: 'zh_CN', script: 'cjk' },
   { code: 'zh-Hant', dir: 'zh-hant', name: '繁體中文', og: 'zh_TW', script: 'cjk' },
+  { code: 'yue', dir: 'yue', name: '廣東話', og: 'zh_HK', script: 'cjk', html: 'yue-Hant-HK', hreflang: 'zh-HK', rules: 'zh-HK' },
   { code: 'ko', dir: 'ko', name: '한국어', og: 'ko_KR', script: 'cjk' },
   { code: 'es', dir: 'es', name: 'Español', og: 'es_ES', script: 'latin' },
   { code: 'pt-BR', dir: 'pt-br', name: 'Português (Brasil)', og: 'pt_BR', script: 'latin' },
@@ -32,6 +36,10 @@ const LANGS = [
   { code: 'id', dir: 'id', name: 'Bahasa Indonesia', og: 'id_ID', script: 'latin' },
   { code: 'en', dir: '', name: 'English', og: 'en_US', script: 'latin' }
 ];
+// v2.20 YUE_LIVE (game/i18n/msg.js, owner 3 Nov 2026): while Cantonese waits for the native check, the site has no /yue/ pages, no yue menu link,
+// hreflang or route, and zh-HK visitors go to /zh-hant/ (as before v2.20). DD_YUE_TEST=1 builds it anyway (tools/i18n_fonts.js yue, site_fit).
+const YUE = require('../game/i18n/msg.js').yueOn();
+const LANGS = ALL_LANGS.filter((L) => L.code !== 'yue' || YUE);
 // test-only pseudo-locales: never in the menu, the hreflang set or the deployed Worker (unless cf_site.js is asked for them)
 const PSEUDO = [
   { code: 'en-XA', dir: 'xx', name: '[Ƥšéûđö]', og: 'en_US', script: 'latin', pseudo: 'long', rules: 'en' },
@@ -148,8 +156,8 @@ const WORD_KEYS = ['home.dogs.lead', 'dogs.og_description', 'dogs.lead'];
 const KEEP_WORDS = ['home.tagline'];
 const keepWords = (s, lang) => (/[<&]/.test(s) || typeof Intl.Segmenter !== 'function' ? s
   : [...new Intl.Segmenter(lang, { granularity: 'word' }).segment(s)].reduce((w, x) => {
-    // punctuation and the particles 的 地 得 了 stay with the word before them
-    if (!w.length || (x.isWordLike && !/^[的地得了]$/.test(x.segment))) w.push(x.segment); else w[w.length - 1] += x.segment;
+    // punctuation and the particles 的 地 得 了 (yue: 嘅 咗 啲) stay with the word before them
+    if (!w.length || (x.isWordLike && !/^[的地得了嘅咗啲]$/.test(x.segment))) w.push(x.segment); else w[w.length - 1] += x.segment;
     return w;
   }, []).join('<wbr>'));
 const COUNT_KEYS = ['home.dogs.lead', 'home.dogs.all', 'dogs.description', 'dogs.og_description', 'dogs.lead'];
@@ -178,6 +186,8 @@ function table(L, en) {
 }
 
 // ---- the pages of one language
+const htmlTag = (L) => L.html || L.code; // <html lang>, lang="" on the menu link, content-language
+const hrefTag = (L) => L.hreflang || L.code; // hreflang
 function urlFor(L, p) { // '/', '/dogs', '/dogs#shiba' in language L
   if (!L.dir) return p;
   const [a, h] = p.split('#');
@@ -194,13 +204,16 @@ function langScript(L, page) {
     + `if(/bot|crawl|spider|slurp|preview|lighthouse/i.test(navigator.userAgent))return;try{if(d.referrer&&new URL(d.referrer).host===location.host)return}catch(e){}`
     + `if(v){if(v!=='en'&&L[v]===1)location.replace('/'+v+P+location.hash);return}`
     + `var a=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||''];for(var i=0;i<a.length;i++){var t=String(a[i]).toLowerCase().replace(/_/g,'-'),b=t.split('-')[0];`
-    + `if(b==='en')return;if(b==='zh')b=/^zh-(hant|tw|hk|mo)(-|$)/.test(t)?'zh-hant':'zh-hans';else if(b==='pt')b='pt-br';else if(b==='in')b='id';`
+    + `if(b==='en')return;`
+    + (YUE ? `if(b==='zh')b=/^zh-yue(-|$)|^zh-(hant-)?(hk|mo)(-|$)/.test(t)?'yue':/^zh-(hant|tw)(-|$)/.test(t)?'zh-hant':'zh-hans';`
+      : `if(b==='yue')b='zh-hant';else if(b==='zh')b=/^zh-(yue|hant|tw|hk|mo)(-|$)/.test(t)?'zh-hant':'zh-hans';`) // YUE_LIVE off: Cantonese browsers read 繁體中文
+    + `else if(b==='pt')b='pt-br';else if(b==='in')b='id';`
     + `if(L[b]){location.replace('/'+b+P+location.hash);return}}})();</script>`;
 }
 function langMenu(L, page, label, menu) {
   // owner, 24 Oct 2026: English first in the language menu
-  const items = LANGS.filter((x) => x.code === 'en').concat(LANGS.filter((x) => x.code !== 'en')).map((x) => `<li><a href="${urlFor(x, page.path)}" hreflang="${x.code}" lang="${x.code}" data-lang="${x.dir || 'en'}"${x === L ? ' aria-current="true"' : ''}>${x.name}</a></li>`).join('');
-  return `<details class="langs" id="langs"><summary aria-label="${escAttr(label + ': ' + L.name)}"><span aria-hidden="true">🌐</span> <span lang="${L.code}">${L.name}</span></summary><nav aria-label="${escAttr(menu)}"><ul>${items}</ul></nav></details>`;
+  const items = LANGS.filter((x) => x.code === 'en').concat(LANGS.filter((x) => x.code !== 'en')).map((x) => `<li><a href="${urlFor(x, page.path)}" hreflang="${hrefTag(x)}" lang="${htmlTag(x)}" data-lang="${x.dir || 'en'}"${x === L ? ' aria-current="true"' : ''}>${x.name}</a></li>`).join('');
+  return `<details class="langs" id="langs"><summary aria-label="${escAttr(label + ': ' + L.name)}"><span aria-hidden="true">🌐</span> <span lang="${htmlTag(L)}">${L.name}</span></summary><nav aria-label="${escAttr(menu)}"><ul>${items}</ul></nav></details>`;
 }
 // site v3: the header of every page: the logo (home), the four page links (the current one aria-current), the language menu
 function header(L, page, t, a, menu) {
@@ -292,7 +305,7 @@ ${sec.places.map((id) => `        <article class="place" id="place-${id}"><img s
         htmlattrs: L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`,
         fontcss: L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}?v=${crypto.createHash('sha1').update(fs.readFileSync(fontCss)).digest('hex').slice(0, 8)}">` : '',
         canonical: ORIGIN + urlFor(L, page.path),
-        alternates: o.legacy || L.pseudo || page.id === 'reset' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
+        alternates: o.legacy || L.pseudo || page.id === 'reset' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${hrefTag(x)}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
         oglocale: L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`,
         langscript: o.legacy ? '' : langScript(L, page),
         header: header(L, page, t, a, o.legacy ? '' : langMenu(L, page, render(T['lang.label'], base, rules, false), render(T['lang.menu'], base, rules, true))),
@@ -306,8 +319,8 @@ ${sec.places.map((id) => `        <article class="place" id="place-${id}"><img s
         i18njson: page.id === 'index' && Object.keys(play).length ? `\n<script type="application/json" id="dd-i18n">${JSON.stringify(play).replace(/</g, '\\u003c')}</script>` : ''
       };
       const html = tpls[page.id].replace(/\{\{(?:(t|a|u|raw) ([^}\s]+)|(lang))\}\}/g, (m, kind, arg, lang) => {
-        if (lang) return L.code;
-        if (kind === 't' && KEEP_WORDS.includes(arg) && /^zh/.test(L.code)) return keepWords(t(arg), L.code);
+        if (lang) return htmlTag(L);
+        if (kind === 't' && KEEP_WORDS.includes(arg) && /^(zh|yue)/.test(L.code)) return keepWords(t(arg), L.rules || L.code);
         if (kind === 't') return t(arg);
         if (kind === 'a') return a(arg);
         if (kind === 'u') return u(arg);
@@ -346,13 +359,13 @@ function inviteShells(o) {
     const fontCss = path.join(SITE, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css');
     const fontcss = L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}?v=${crypto.createHash('sha1').update(fs.readFileSync(fontCss)).digest('hex').slice(0, 8)}">` : '';
     const htmlattrs = L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`;
-    const alternates = o.legacy || L.pseudo ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`;
+    const alternates = o.legacy || L.pseudo ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${hrefTag(x)}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`;
     const oglocale = L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`;
     const menu = o.legacy ? '' : langMenu(L, page, t('lang.label'), a('lang.menu'));
     const canon = ORIGIN + urlFor(L, page.path);
     const foot = `<footer class="foot"><a href="${urlFor(L, '/')}">${t('footer.home')}</a> · <a href="${urlFor(L, '/map')}">${t('footer.map')}</a> · <a href="${urlFor(L, '/about')}">${t('footer.about')}</a> · <a href="https://www.instagram.com/doodledoggo.app/" rel="noopener">${t('footer.instagram')}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">${t('footer.contact')}</a> · <a href="https://an9ou.itch.io/doodle-doggo">${t('footer.play_itch')}</a></footer>`;
     out[L.dir ? '/' + L.dir : ''] = `<!doctype html>
-<html lang="${L.code}"${htmlattrs}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FFF8EC"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/icon-180.png"><link rel="stylesheet" href="/style.css">${fontcss}
+<html lang="${htmlTag(L)}"${htmlattrs}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FFF8EC"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/icon-180.png"><link rel="stylesheet" href="/style.css">${fontcss}
 <title>${t('invite.title')}</title>
 <meta name="description" content="${a('invite.description')}">
 <meta name="robots" content="noindex">
@@ -401,7 +414,7 @@ function write(pages, root) {
   root = root || SITE;
   for (const [rel, html] of Object.entries(pages)) { const p = path.join(root, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, html); }
 }
-module.exports = { LANGS, PSEUDO, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table, inviteShells };
+module.exports = { LANGS, ALL_LANGS, YUE, PSEUDO, htmlTag, hrefTag, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table, inviteShells };
 
 if (require.main === module) {
   const argv = process.argv.slice(2), has = (f) => argv.includes(f);

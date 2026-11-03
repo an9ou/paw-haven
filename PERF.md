@@ -40,7 +40,7 @@ Notes:
 
 - `node game/build.js publish` still writes the one self-contained `paw_haven_prototype.html` (every language inline, byte-identical to `perl tools/build.pl`) and now also the **split build** in `_split/`:
   - `index.html`: the `pawi18n` slot holds only `game/i18n/msg.js`, a small `PAW_I18N` (the font list and the file names, no texts) and `game/i18n/loader.js`;
-  - `lang/<code>.<hash>.js` for each of the 10 other languages (that language's array from `game/i18n/packed.js`) and one shared `lang/keys.<hash>.js` (the sorted keys, about 36 KB gzipped);
+  - `lang/<code>.<hash>.js` for each of the other languages (11 since yue, v2.20) (that language's array from `game/i18n/packed.js`) and one shared `lang/keys.<hash>.js` (the sorted keys, about 36 KB gzipped);
   - `photo_fonts.<hash>.js` (step 5).
 - `loader.js` runs before the art and the game: it works out the language the game will pick (the same rules as `i18nWanted`: the `prefs.lang` pin, the save's `S.lang`, the title pick, the browser) and starts loading that language's file and the keys with `<script>` tags (works on `file://`, in the itch.io zip, in the artifact and on any host). The game script is wrapped in `PAW_I18N.run(...)`, so it runs at once for English and, for another language, once its file came (or failed, or after 15 s). The loading paw (step 3) shows meanwhile. The first screen is already in the right language; nothing renders twice.
 - `00b_i18n.js`: `i18nHave(code)` / `i18nTarget()`. A language whose file failed plays in English; `i18nLater` tries again (3 s, then 15, 30, ... s, six tries): on the title screen the language switches live as soon as the file comes; in the game it is there on the next load (no surprise reload mid-play). `tsetLang` (Settings and the title chip) loads the file first, then switches as before (title: live re-render; game: save and reload, the file is in the browser cache by then). On a failed load nothing changes and the toast "That didn't work. Try again in a moment." shows (the existing `cloud.err_generic` text, so no new key to translate). `tlangCheck` (a cloud save bringing another language) loads the file first too.
@@ -58,7 +58,7 @@ Notes:
 ### Step 3: the loading paw (`game/shell.html`, `23_boot.js`)
 
 - Before the game's CSS and scripts: a paper page (the game's `#FFF8EC` with faint ruled lines), a wobbly crayon paw in inline SVG (a turbulence filter gives the crayon edge), "Loading…" and three paw prints that light up in turn. About 3 KB.
-- The text follows `navigator.language` for en, ja, zh-Hans, zh-Hant (zh-TW, zh-HK, zh-Hant), ko, es, pt, fr, de, th and id, else English. It is `role="status"`.
+- The text follows `navigator.language` for en, ja, zh-Hans, zh-Hant (zh-TW, zh-HK, zh-Hant), yue (v2.20, the same 載入中…), ko, es, pt, fr, de, th and id, else English. It is `role="status"`.
 - `prefers-reduced-motion`: no wobble, the prints stay still.
 - `start()` in `23_boot.js` removes it first thing, before the title is drawn, so no suite ever sees it (the harness boots synchronously).
 - `tools/pages.js` now cuts the head at the first `<style` (the loading paw's), so the title and meta tags still go into `<head>`.

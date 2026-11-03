@@ -1,6 +1,6 @@
 // SITE (v2.8.2, v2 redesign 17 Oct 2026, v3 pages 19 Oct 2026): the doodledoggo.app introduction site (site/, served by the Worker tools/cf_site.js builds), in Miniflare.
 //   NODE_PATH=$(npm root -g) node game/test_site.js      (or: node game/run_tests.js site)
-// Site v3.2 (+ v2.14): seven pages (/, /dogs, /map, /guide, /about, /privacy, /reset) in 11 languages, each with the same header (header#sitehead: the big
+// Site v3.2 (+ v2.14): seven pages (/, /dogs, /map, /guide, /about, /privacy, /reset) in 12 languages, each with the same header (header#sitehead: the big
 // logo and slogan, the stuck bar with nav#sitenav: Home / Dogs / Map / Guide / About Us, the language menu). Desktop 1280x800 and iPhone 15: the home page
 // (the game itself, an iframe of /play/ served by this Worker under its own GAME_CSP, started by itself, with the full-screen button and the ✕ in its own
 // 52 px bar; the About Us teaser), /dogs (every dog's profile, opened in a pop-up), /map (25 places with pictures), /guide, /about, /privacy, /reset (v2.9.2:
@@ -8,7 +8,7 @@
 // load nothing from outside; the only outside requests are the game's own Google Fonts (GAME_CSP), and nothing from itch.io (links only). The test
 // runs against SITE_GAME (the itch build of main: dist/itch, never built from a branch). The crayon decorations stay off the text, phone minimums (44 px
 // taps, 15 px text, no sideways scroll, 320 px phones).
-// v2.14: the same pages in 10 more languages (tools/site_i18n.js) and the test-only pseudo-locales /xx/ (en-XA) and /xx-cjk/ (ja-XA): html lang, hreflang,
+// v2.14: the same pages in 11 more languages (tools/site_i18n.js; yue, Cantonese, since v2.20) and the test-only pseudo-locales /xx/ (en-XA) and /xx-cjk/ (ja-XA): html lang, hreflang,
 // the language menu (also without JavaScript), the first-visit language from navigator.languages, the dog count rule, the size budget, iPhone 15 and Pixel 7.
 // Size: the deploy builds INLINE (SITE_IMG=SITE_FONTS=inline: the fonts and the map pictures are served by the main Worker at /fonts/i18n/* and /img/map/*;
 // the account's Worker limit is the paid 10 MB and the token cannot create Worker routes for side Workers). The suite builds the same way; the split
@@ -131,7 +131,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     const gz = parts.filter(([f]) => !/^xx(-cjk)?__/.test(f)).reduce((n, [f]) => n + zlib.gzipSync(fs.readFileSync(path.join(dir, f))).length, zlib.gzipSync(fs.readFileSync(path.join(dir, 'worker.js'))).length);
     // v2.14 (Game Manager): the account's Worker limit is the paid 10 MB; the deploy builds INLINE (fonts and map pictures in the main Worker: the token cannot
     // create the routes side Workers need), with the game (/play/) in it. The budget is 9 MB gzipped (v2.14 PERF: the game's font subsets at /play/fonts/i18n/), the limit 10 MB.
-    ok(gz < 9e6 && SIZES.main < 9e6 && Math.abs(gz - SIZES.main) < 20e3, `the whole site, 11 languages, with the game, fits the paid-plan Worker (${(gz / 1e6).toFixed(2)} MB gzipped without the test-only pseudo-locales, budget 9 MB, limit 10 MB; fonts ${SIZES.fontMode}, map pictures ${SIZES.imgMode})`);
+    ok(gz < 9e6 && SIZES.main < 9e6 && Math.abs(gz - SIZES.main) < 20e3, `the whole site, ${I18N.LANGS.length} languages, with the game, fits the paid-plan Worker (${(gz / 1e6).toFixed(2)} MB gzipped without the test-only pseudo-locales, budget 9 MB, limit 10 MB; fonts ${SIZES.fontMode}, map pictures ${SIZES.imgMode})`);
     ok(SIZES.fontMode !== 'split' || SIZES.fonts < 9e6, `the per-language fonts (${SIZES.fontMode}${SIZES.fontMode === 'split' ? ', Worker doodle-doggo-fonts ' + (SIZES.fonts / 1e6).toFixed(2) + ' MB gzipped' : ', served by the main Worker'}) fit their Worker`);
     ok(['split', 'inline', 'none'].includes(SIZES.imgMode) && (SIZES.imgMode !== 'split' || (imf && SIZES.img < 9e6)), `the map pictures (imgMode ${SIZES.imgMode}${SIZES.imgMode === 'split' ? ', Worker _cfsite_img ' + ((SIZES.img || 0) / 1e6).toFixed(2) + ' MB gzipped' : ', served by the main Worker'}) fit their Worker`);
     if (SIZES.perLang) console.log('  .. per language, gzipped pages: ' + Object.entries(SIZES.perLang).map(([l, n]) => `${l} ${(n / 1e3).toFixed(1)} kB`).join(', '));
@@ -495,7 +495,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       ok(!errs.length, 'no errors ' + errs.join(' | '));
       await ctx.close();
     }
-    // ===== v2.14: the site in 11 languages (tools/site_i18n.js), the language menu, the first-visit language, the pseudo-locales
+    // ===== v2.14: the site in 12 languages (tools/site_i18n.js), the language menu, the first-visit language, the pseudo-locales
     sec('languages: the strings and the generator');
     {
       const out = cp.spawnSync('node', [path.join(ROOT, 'tools', 'site_i18n.js'), '--check']); ok(out.status === 0, 'the committed English pages are what site/tpl + site/i18n/en.json make ' + String(out.stdout).trim());
@@ -529,15 +529,15 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       for (const pg of PG) {
         const u = pageUrl(L, pg.path); r = await get(SITE + u); const h = await r.text();
         const alt = [...h.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => [m[1], m[2]]);
-        const want = L.pseudo || pg.id === 'reset' ? [] : I18N.LANGS.map((x) => [x.code, SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
+        const want = L.pseudo || pg.id === 'reset' ? [] : I18N.LANGS.map((x) => [I18N.hrefTag(x), SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
         const langsBlock = (h.match(/<details\b[^>]*\bid="langs"[^>]*>[\s\S]*?<\/details>/) || [''])[0];
         const menu = [...langsBlock.matchAll(/<a\b([^>]*)>/g)].map((m) => attrs(m[1])).filter((a) => 'data-lang' in a).map((a) => a.href);
         const hp = headerProblems(headerFromHtml(h), L, pg);
         const vis = words(h.replace(/<noscript[\s\S]*?<\/noscript>/g, ''));
         const checks = {
-          status: r.status === 200, lang: h.includes(`<html lang="${L.code}"`), clang: r.headers.get('content-language') === L.code,
+          status: r.status === 200, lang: h.includes(`<html lang="${I18N.htmlTag(L)}"`), clang: r.headers.get('content-language') === I18N.htmlTag(L),
           hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
-          menu: menu.length === 11 && I18N.LANGS.filter((x) => x.code === 'en').concat(I18N.LANGS.filter((x) => x.code !== 'en')).every((x, i) => menu[i] === pageUrl(x, pg.path)), // English first (owner, 24 Oct 2026)
+          menu: menu.length === I18N.LANGS.length && I18N.LANGS.filter((x) => x.code === 'en').concat(I18N.LANGS.filter((x) => x.code !== 'en')).every((x, i) => menu[i] === pageUrl(x, pg.path)), // English first (owner, 24 Oct 2026)
           script: /localStorage/.test(h) && h.includes(`H='${L.dir || 'en'}'`),
           font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && (() => { const f = path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'); return fs.existsSync(f) && /@font-face/.test(fs.readFileSync(f, 'utf8')); })()),
           links: L.code === 'en' || !/href="\/(dogs|privacy|map|guide|about|reset)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>/g, '').replace(langsBlock, '')),
@@ -546,7 +546,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         Object.entries(checks).forEach(([k, v]) => { if (!v) { fine = false; why.push(pg.id + ':' + k + (k === 'header' ? ' (' + hp.join(', ') + ')' : k === 'placeholders' ? ' (' + (vis.match(/.{0,20}[{}].{0,20}/) || [''])[0] + ')' : '')); } });
         if (!L.pseudo && (pg.id === 'map' || pg.id === 'about') && (MADE_JP.test(vis) || MADE_JP_L10N.test(vis))) { fine = false; why.push(pg.id + ':made-in-japan (' + (vis.match(MADE_JP) || vis.match(MADE_JP_L10N))[0] + ')'); }
       }
-      ok(fine, `${L.code}: the seven pages answer 200 with <html lang="${L.code}">, content-language, ${L.pseudo ? 'no hreflang (test-only)' : 'all 11 hreflang + x-default'}, canonical, the header (brand, 5 nav links in the language, aria-current), the menu (11 languages, same page), links that stay in the language, no {placeholder} left${L.pseudo ? '' : ', never "made in Japan" on /map and /about'} ${why.slice(0, 6).join(' ')}`);
+      ok(fine, `${L.code}: the seven pages answer 200 with <html lang="${I18N.htmlTag(L)}">, content-language, ${L.pseudo ? 'no hreflang (test-only)' : `all ${I18N.LANGS.length} hreflang + x-default`}, canonical, the header (brand, 5 nav links in the language, aria-current), the menu (${I18N.LANGS.length} languages, same page), links that stay in the language, no {placeholder} left${L.pseudo ? '' : ', never "made in Japan" on /map and /about'} ${why.slice(0, 6).join(' ')}`);
     }
     { // the per-language fonts: inline (the default), the main Worker serves /fonts/i18n/*; in split mode the second Worker does and the main one leaves them to it
       const fdir = fmf ? path.join(ROOT, '_cfsite_fonts') : dir, names = readParts(fdir).map((l) => l[0]).filter((n) => n.startsWith('fonts__i18n__')).map((n) => n.replace(/^fonts__i18n__/, '')); let good = names.length > 0;
@@ -558,6 +558,20 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     r = await get(SITE + '/zh-hant/dogs.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/zh-hant/dogs', '/zh-hant/dogs.html redirects to /zh-hant/dogs');
     r = await get(SITE + '/de/index.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/de/', '/de/index.html redirects to /de/');
     r = await get(SITE + '/ko/nope'); ok(r.status === 404 && /<html lang="ko"/.test(await r.text()) && r.headers.get('content-language') === 'ko', 'a 404 under /ko/ is in Korean (lang ko)');
+    if (!I18N.YUE) { // v2.20 YUE_LIVE off (game/i18n/msg.js; DD_YUE_TEST=1 builds the site with Cantonese): no /yue/ page, link, hreflang or font
+      const bad = [];
+      for (const u of ['/yue/', '/yue/dogs', '/yue/map', '/yue/privacy']) { const x = await get(SITE + u); const h = await x.text(); if (x.status !== 404 || /lang="yue/.test(h)) bad.push(u + ' ' + x.status); }
+      for (const u of ['/', '/dogs', '/zh-hant/', '/ja/map']) { const h = await (await get(SITE + u)).text(); if (/href="\/yue\/|hreflang="zh-HK"|廣東話|lang="yue/.test(h)) bad.push(u + ' links yue'); }
+      { const x = await get(SITE + '/fonts/i18n/yue.css'); await x.arrayBuffer(); if (x.status !== 404) bad.push('/fonts/i18n/yue.css ' + x.status); }
+      ok(!bad.length && !I18N.LANGS.some((x) => x.code === 'yue'), `v2.20: Cantonese is hidden while YUE_LIVE is off: no /yue/ pages, no 廣東話 menu link or zh-HK hreflang, no yue font${bad.length ? ' (' + bad.join(', ') + ')' : ''}`);
+    } else {
+    r = await get(SITE + '/yue/nope'); ok(r.status === 404 && /<html lang="yue-Hant-HK"/.test(await r.text()) && r.headers.get('content-language') === 'yue-Hant-HK', 'v2.20: a 404 under /yue/ is in Cantonese (lang yue-Hant-HK)');
+    r = await get(SITE + '/yue'); ok(r.status === 301 && r.headers.get('location') === SITE + '/yue/', '/yue redirects to /yue/');
+    { const ctx = await newCtx({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }); const page = await ctx.newPage();
+      await page.goto(base + '/yue/', { waitUntil: 'load' }); await page.waitForSelector('#gameframe iframe', { timeout: 5000 }).catch(() => {});
+      const src = await page.evaluate(() => { const f = document.querySelector('#gameframe iframe'); return f && f.getAttribute('src'); });
+      ok(/^\/play\/\?lang=yue$/.test(src || ''), `v2.20: the /yue/ home page starts the game in Cantonese (/play/?lang=yue, the game's code, not the tag yue-Hant-HK) (${src})`); await ctx.close(); }
+    }
     r = await get(SITE + '/tpl/index.tpl'); ok(r.status === 404, 'the templates and string tables are not served'); await r.text();
     r = await get(SITE + '/img/art/dogs/akita-walk.svg'); ok(r.status === 404, 'scene poses of dogs no page draws in a scene pose stay out of the Worker (budget)'); await r.text();
 
@@ -575,7 +589,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
           if (a.scroll > 0) bad.push(`${pg.id} scrolls sideways ${a.scroll}px`);
           if (a.small.length) bad.push(`${pg.id} small taps ${a.small.slice(0, 2).join(', ')}`);
           if (a.tiny.length) bad.push(`${pg.id} tiny text ${a.tiny.slice(0, 2).join(', ')}`);
-          if (lang !== L.code) bad.push(`${pg.id} lang ${lang}`);
+          if (lang !== I18N.htmlTag(L)) bad.push(`${pg.id} lang ${lang}`);
           const hp = headerProblems(await headerFromDom(page), L, pg); if (hp.length) bad.push(`${pg.id} header ${hp.slice(0, 2).join(', ')}`);
           if (pg.id === 'index') { const gb = await page.evaluate(() => { const r = document.getElementById('gameframe').getBoundingClientRect(); return [r.left, r.right, innerWidth, document.querySelectorAll('#gameframe iframe').length]; }); if (!(gb[0] >= 0 && gb[1] <= gb[2] + 0.5 && gb[3] === 1)) bad.push(`index game box ${Math.round(gb[0])}..${Math.round(gb[1])} of ${gb[2]}, ${gb[3]} iframes`); }
           await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' })); await openNav(page);
@@ -607,7 +621,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await page.click('#langs summary', { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(150);
       const m = await page.evaluate(() => [...document.querySelectorAll('#langs a[data-lang]')].map((a) => { const b = a.getBoundingClientRect(); return [a.textContent, Math.round(b.height), Math.round(b.left), Math.round(b.right), parseFloat(getComputedStyle(a).fontSize)]; }));
       const sb = await page.locator('#langs summary').boundingBox();
-      ok(m.length === 11 && m.every((x) => x[1] >= 44 && x[2] >= 0 && x[3] <= (dev.viewport.width) && x[4] >= 15) && sb && sb.height >= 44 && (await audit(page)).scroll <= 0, `${label}: the open language menu: 11 native names, 44 px rows, 15 px+ text, on screen (${m.map((x) => x[0]).join(', ')})`);
+      ok(m.length === I18N.LANGS.length && m.every((x) => x[1] >= 44 && x[2] >= 0 && x[3] <= (dev.viewport.width) && x[4] >= 15) && sb && sb.height >= 44 && (await audit(page)).scroll <= 0, `${label}: the open language menu: ${I18N.LANGS.length} native names, 44 px rows, 15 px+ text, on screen (${m.map((x) => x[0]).join(', ')})`);
       await ctx.close();
     }
 
@@ -656,7 +670,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const res = { path: new URL(page.url()).pathname + new URL(page.url()).hash, navs, langs: await page.evaluate(() => navigator.languages.join()) };
       await ctx.close(); return res;
     };
-    for (const [loc, url, want] of [['zh-TW', '/', '/zh-hant/'], ['zh-HK', '/dogs#shiba', '/zh-hant/dogs#shiba'], ['zh-CN', '/', '/zh-hans/'], ['pt-PT', '/', '/pt-br/'], ['es-MX', '/privacy', '/es/privacy'], ['ja-JP', '/', '/ja/'], ['ko-KR', '/reset', '/ko/reset'], ['th-TH', '/', '/th/'], ['id-ID', '/', '/id/'], ['de-AT', '/', '/de/'], ['fr-CA', '/', '/fr/'], ['en-GB', '/', '/'], ['it-IT', '/', '/'],
+    for (const [loc, url, want] of [['zh-TW', '/', '/zh-hant/'], ...(I18N.YUE ? [['zh-HK', '/dogs#shiba', '/yue/dogs#shiba'], ['zh-Hant-HK', '/', '/yue/'], ['yue-HK', '/map', '/yue/map']] // YUE_LIVE off: Hong Kong and Cantonese browsers read 繁體中文
+      : [['zh-HK', '/dogs#shiba', '/zh-hant/dogs#shiba'], ['zh-Hant-HK', '/', '/zh-hant/'], ['yue-HK', '/map', '/zh-hant/map'], ['zh-Hans-HK', '/', '/zh-hans/']]), ['zh-Hant', '/', '/zh-hant/'], ['zh-CN', '/', '/zh-hans/'], ['pt-PT', '/', '/pt-br/'], ['es-MX', '/privacy', '/es/privacy'], ['ja-JP', '/', '/ja/'], ['ko-KR', '/reset', '/ko/reset'], ['th-TH', '/', '/th/'], ['id-ID', '/', '/id/'], ['de-AT', '/', '/de/'], ['fr-CA', '/', '/fr/'], ['en-GB', '/', '/'], ['it-IT', '/', '/'],
       ['ja-JP', '/map', '/ja/map'], ['fr-FR', '/about', '/fr/about'], ['th-TH', '/map#place-shibuya', '/th/map#place-shibuya']]) {
       const d = await detect(loc, url);
       ok(d.path === want && d.navs <= 2, `first visit with ${loc} (${d.langs}): ${url} -> ${d.path} (${d.navs} navigations)`);

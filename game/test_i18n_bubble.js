@@ -3,7 +3,7 @@
 // and it stays inside the stage. Scenes: the Shelter adopt screen (the meet dog, a tall greyhound and a small dog), the home yard,
 // the house, the park and Shibuya (Tokyo) at 390 px; the yard and Shibuya at the other sizes.
 //   node game/run_tests.js i18n_bubble          PAW_LANGS=ja,th ...: other languages; PAW_BUBBLE_SIZES=390,1280: other sizes
-const LANGS = process.env.PAW_LANGS ? process.env.PAW_LANGS.split(',').map((s) => s.trim()).filter(Boolean) : ['en', 'ja', 'zh-Hans', 'zh-Hant', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
+const LANGS = process.env.PAW_LANGS ? process.env.PAW_LANGS.split(',').map((s) => s.trim()).filter(Boolean) : ['en', 'ja', 'zh-Hans', 'zh-Hant', 'yue', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
 const SIZES = { 390: [390, 630], 684: [684, 860], 1280: [1280, 720] };
 const PICK = process.env.PAW_BUBBLE_SIZES ? process.env.PAW_BUBBLE_SIZES.split(',').map((s) => s.trim()) : null;
 const { URL } = require('./test_lib');

@@ -29,7 +29,7 @@
   function listOf(arr, type) {
     if (arr.length <= 1) return arr.join('');
     if (!isEn()) {
-      try { return new root.Intl.ListFormat(lang(), { style: 'long', type: type || 'conjunction' }).format(arr); } catch (e) { /* fall back to English */ }
+      try { const M = root.PawI18nMsg; return new root.Intl.ListFormat(M && M.intlOf ? M.intlOf(lang()) : lang(), { style: 'long', type: type || 'conjunction' }).format(arr); } catch (e) { /* fall back to English */ }
     }
     return arr.slice(0, -1).join(', ') + (type === 'disjunction' ? ' or ' : ' and ') + arr[arr.length - 1];
   }
@@ -1027,7 +1027,7 @@
   /** The breed name in the current language (data.breed_names.<key>). BREED_NAMES itself stays the English data. */
   function bn(k) { return D('breed_names.' + k, BREED_NAMES[k] || String(k)); }
   let mixRows = null, breedByName = null;
-  const PUN_PATTERN_LANG = /^(ja|zh|ko|th)/; // V214.md 4.3: these five build "A x B" for a pun that has no translated entry
+  const PUN_PATTERN_LANG = /^(ja|zh|yue|ko|th)/; // V214.md 4.3: these six build "A x B" for a pun that has no translated entry (yue: v2.20)
   /** mixName(mix) -> the display name of a stored mix { a, b, name } as a string (V214.md 4.3). The table name comes from mix.name, else from the
       pair a / b; the result goes through mixLabel(). Always a string ('' without a mix). */
   function mixName(mix) {
@@ -1039,7 +1039,7 @@
   }
   /** mixLabel(name) -> a mix name in the current language. name is the English text kept on the dog (mix.name): a table mix ("Horgi"),
       "Mutt mix", a grandMix name (the recipes, "The Everything Dog", "<Breed> family mix") or a breed name. The table entry
-      (data.mix_list.<a>_<b>.2) wins; without one, ja / zh / ko / th use the pattern mod.genes.mix_pattern and the other languages keep the pun. */
+      (data.mix_list.<a>_<b>.2) wins; without one, ja / zh / yue / ko / th use the pattern mod.genes.mix_pattern and the other languages keep the pun. */
   function mixLabel(name) {
     name = String(name == null ? '' : name);
     if (!name || isEn()) return name;

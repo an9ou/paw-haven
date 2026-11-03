@@ -219,6 +219,7 @@ html.i18n{--loc:sans-serif;--hand:'DD Local Title','DD Local','Caveat','Patrick 
 html[lang="ja"],html.s-cjk.pseudo{--loc:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif}
 html[lang="zh-Hans"]{--loc:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
 html[lang="zh-Hant"]{--loc:'PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
+html[lang|="yue"]{--loc:'PingFang HK','PingFang TC','Microsoft JhengHei','Noto Sans HK','Noto Sans CJK HK','Noto Sans TC','Noto Sans CJK TC',sans-serif} /* yue-Hant-HK (v2.20) */
 html[lang="ko"]{--loc:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif}
 html[lang="th"]{--loc:'Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif}
 html.i18n body{overflow-wrap:anywhere}
@@ -239,7 +240,7 @@ html.s-cjk .dognav a{line-break:strict;word-break:keep-all}
 /* Thai: room for the marks above and below the line (dog-card names under the picture, the bold trait titles) */
 html.s-th .dimg{margin-bottom:4px}
 html.s-th .traits li{padding-top:11px}
-html[lang^="zh"] .tag{word-break:keep-all;overflow-wrap:normal}
+html:is([lang^="zh"],[lang|="yue"]) .tag{word-break:keep-all;overflow-wrap:normal}
 .nw{white-space:nowrap}
 html.s-th .dognav a{line-height:1.35}
 /* home dog cards: the same fit for a long name (--n from tools/site_i18n.js; Caveat is about 0.85x as wide as the Patrick Hand estimate) */
@@ -577,7 +578,7 @@ html.gamefs,html.gamefs body{overflow:hidden}
 /* the dog pop-up's close button: a 44 px tap target */
 dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size:20px}
 /* Chinese tagline: no break-less run on a narrow phone (keep-all let the 17 characters before the comma run out of the box) */
-@media (max-width:700px){ html[lang^="zh"] .tag{word-break:normal;overflow-wrap:anywhere;line-break:strict;text-wrap:balance} }
+@media (max-width:700px){ html:is([lang^="zh"],[lang|="yue"]) .tag{word-break:normal;overflow-wrap:anywhere;line-break:strict;text-wrap:balance} }
 /* the stuck bar between 861 and 1100 px (a tablet, a small laptop): the dog icon for the logo, tabs a little tighter and only the globe for the language
    button (its name is in the menu), so the bar never scrolls the page sideways in any language */
 @media (min-width:861px) and (max-width:1100px){

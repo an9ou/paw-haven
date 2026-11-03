@@ -163,7 +163,7 @@ async function posterPart(t) {
     await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fr.open()); await t.until(() => !!document.getElementById('frPoster'), null, 6000);
     await ev(() => { '8B5SZ'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
   };
-  for (const lang of ['en', 'ja', 'th']) {
+  for (const lang of (process.env.FR_POSTER_LANGS || 'en,ja,th').split(',')) { // FR_POSTER_LANGS: the poster languages (default en, ja, th)
     await start(t, { url, mk: { lang }, prefs: { i18nFonts: true } });
     await pick();
     await t.p.waitForTimeout(1500); // the language face arrives
@@ -184,10 +184,10 @@ async function posterPart(t) {
       bs.forEach((b, i) => { if (b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1) bad.push('spill ' + b.id); r.forEach((q, j) => { if (j > i && Math.min(r[i].right, q.right) - Math.max(r[i].left, q.left) > 1 && Math.min(r[i].bottom, q.bottom) - Math.max(r[i].top, q.top) > 1) bad.push('overlap ' + b.id + '/' + bs[j].id); }); });
       return { bad, txt: bs.map((b) => b.textContent) }; });
     ok(!row.bad.length, lang + ' ' + w + ' px: Share invite, Share poster, Copy code fit: ' + JSON.stringify(row));
-    if (lang !== 'en') { await t.ctx.close(); continue; }
-    await shot(t, 'sheet_' + w);
+    if (lang !== 'en' && !process.env.FR_FIT_SHOTS) { await t.ctx.close(); continue; } // FR_FIT_SHOTS=1: the sheet screenshots in every FR_FIT_LANGS language too
+    await shot(t, 'sheet_' + w + (lang === 'en' ? '' : '_' + lang));
     await ev(() => { const c = document.getElementById('frCard'); if (c) c.scrollIntoView({ block: 'start' }); });
-    await t.p.screenshot({ path: path.join(SHOTS, 'sheet_' + w + '_card.png'), clip: await ev(() => { const r = document.querySelector('.fr-sheet').getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top), width: window.innerWidth, height: Math.min(window.innerHeight - Math.max(0, r.top), 560) }; }) });
+    await t.p.screenshot({ path: path.join(SHOTS, 'sheet_' + w + (lang === 'en' ? '' : '_' + lang) + '_card.png'), clip: await ev(() => { const r = document.querySelector('.fr-sheet').getBoundingClientRect(); return { x: 0, y: Math.max(0, r.top), width: window.innerWidth, height: Math.min(window.innerHeight - Math.max(0, r.top), 560) }; }) });
     await t.ctx.close();
   }
 }
@@ -221,6 +221,9 @@ run('v219_friends', async (t) => {
     const flag = '<script>window.__ddFrTest=1</script>', at = a.indexOf(flag), game = a.indexOf('<script', at + flag.length);
     ok(at > 0 && game > at && a.indexOf('<body>') < at, 'the Pages copy sets window.__ddFrTest before the game scripts');
     ok(b.length > 100000 && !b.includes('<script>window.__ddFrTest=1') && !b.includes('dd_gate_v1'), 'the itch.io / play copy (pages.js --itch) has neither the Friends flag nor the password screen');
+    { const yf = '<script>window.__ddYueTest=1</script>', ya = a.indexOf(yf); // v2.20 (owner, 3 Nov 2026): Cantonese shown on the Pages test copy only (YUE_LIVE, game/i18n/msg.js)
+      ok(ya > 0 && a.indexOf('<script', ya + yf.length) > ya && a.indexOf('<body>') < ya, 'v2.20: the Pages copy sets window.__ddYueTest before the game scripts');
+      ok(b.length > 100000 && !b.includes(yf), 'v2.20: the itch.io / play copy has no Cantonese test flag'); }
     ok(/'pages\.js'\), '--itch'\]/.test(fs.readFileSync(path.join(root, 'tools', 'itch.js'), 'utf8')), 'tools/itch.js builds with --itch');
     fs.rmSync(outA, { recursive: true, force: true }); fs.rmSync(outB, { recursive: true, force: true });
   }

@@ -173,8 +173,9 @@
   }
   function load() {
     f = document.createElement('iframe');
-    // v2.14.2: the game follows the site's language (/play/?lang=<the page's lang>)
-    f.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'lang=' + encodeURIComponent(root.getAttribute('lang') || 'en'); f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
+    // v2.14.2: the game follows the site's language (/play/?lang=<the page's lang>); v2.20: <html lang="yue-Hant-HK"> is the game's code yue
+    var gl = root.getAttribute('lang') || 'en'; if (/^yue(-|$)/i.test(gl)) gl = 'yue';
+    f.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'lang=' + encodeURIComponent(gl); f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
     box.insertBefore(f, box.firstChild);
     fit();
   }
