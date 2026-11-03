@@ -102,6 +102,9 @@ sec('missions card content');
   ok(svg.includes('>1/3</text>') && /stroke="#7FB86A" stroke-width="4.4"/.test(svg), 'a done mission gets a crayon tick');
   const all = PA.prop('missioncard', { items: MC.items.map((i) => Object.assign({}, i, { done: true })), stamps: 3, day: 'x' });
   ok(all.includes('>3/3<') && (all.match(/stroke="#7FB86A" stroke-width="4.4"/g) || []).length === 3, 'all three done: three ticks and 3/3');
+  // Daily rhythm: the one-mission card (o.one): one row, a 0/1 or 1/1 badge, no dashed empty rows
+  const one0 = PA.prop('missioncard', { items: [{ text: 'Walk at Sunny Park', done: false, p: 0, n: 1 }], stamps: 2, day: 'x', one: true }), one1 = PA.prop('missioncard', { items: [{ text: 'Walk at Sunny Park', done: true, p: 1, n: 1 }], stamps: 3, day: 'x', one: true });
+  ok(one0.includes('>0/1<') && one1.includes('>1/1<') && (one1.match(/stroke="#7FB86A" stroke-width="4.4"/g) || []).length === 1 && !one0.includes('stroke-dasharray="4 4"'), 'one mission: one row, badge 0/1 then 1/1 with a tick, no empty rows');
   const esc = PA.prop('missioncard', { items: [{ text: 'Tom &amp; Jerry', done: false, p: 0, n: 1 }], day: '<b>' });
   ok(esc.includes('Tom &amp; Jerry') && !esc.includes('<b>'), 'item text is used as given (escaped by the caller), the day is escaped');
   // long texts wrap inside the paper: every row line starts at x 60 and stays left of the p/n column (about 5.7 units a character at 16 px)

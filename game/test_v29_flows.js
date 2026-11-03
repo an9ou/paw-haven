@@ -19,8 +19,8 @@ require('./test_lib').run('v29_flows', async (t) => {
   ok(await ev(() => !!window.__paw.ms && window.__gd.active()), 'missions and the walkthrough are both on');
   ok(await atStep(0), 'Gerald says hello (step 0)');
   let s = await S();
-  ok(s.missions.list.length === 3 && s.dogs.length === 1 && s.guide.step === 0, 'three missions rolled, one dog, guide at step 0');
-  ok(await t.until(() => { const b = document.querySelector('#msBtn'); return !!b && !b.hidden && b.dataset.done === '0'; }, null, 3000), 'the top-bar clipboard shows 0/3');
+  ok(s.missions.list.length === 1 && s.dogs.length === 1 && s.guide.step === 0, 'one mission rolled (Daily rhythm), one dog, guide at step 0');
+  ok(await t.until(() => { const b = document.querySelector('#msBtn'); return !!b && !b.hidden && b.dataset.done === '0'; }, null, 3000), 'the top-bar clipboard shows 0/1');
   await ev(() => window.__paw.ms.force(['feed2', 'pet', 'walk']));
   ok(await mis() === 'feed2:0:2:false pet:0:1:false walk:0:1:false', 'missions set for the pass: ' + await mis());
 
@@ -79,9 +79,9 @@ require('./test_lib').run('v29_flows', async (t) => {
   for (const i of [6, 7, 8]) { ok(await atStep(i), 'step ' + i); await next(); }
   ok(await atStep(9), 'step 9 (done)'); await next();
   ok(await cardGone() && !!(await S()).guide.done, 'Gerald says goodbye and the walkthrough is done');
-  ok(await t.waitToast(/Mission done: Feed twice\. \+15 coins\./, 12000), 'the held mission toast shows once Gerald is gone');
-  await ev(() => window.__paw.ms.force(['feed2', 'pet', 'bath'])); await ev(() => { window.__paw.ms.act('feed', {}); window.__paw.ms.act('feed', {}); window.__paw.ms.act('pet', {}); window.__paw.ms.act('bath', {}); });
-  ok(await t.until(() => window.__paw.S.missions.stamps === 1, null, 4000), 'all three done: a stamp');
+  ok(await t.waitToast(/Mission done: Feed twice\. \+40 coins and a crayon stamp\./, 12000), 'the held mission toast shows once Gerald is gone');
+  await ev(() => { window.__paw.S.missions.stamps = 0; window.__paw.ms.force(['bath']); }); await ev(() => { window.__paw.ms.act('bath', {}); });
+  ok(await t.until(() => window.__paw.S.missions.stamps === 1, null, 4000), 'a finished mission: a stamp (Daily rhythm)');
   s = await S();
   ok(s.missions.list.every((m) => m.done) && s.dogs.length === 1, 'every mission ticked, still one dog');
   await p.click('#msBtn');
