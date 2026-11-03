@@ -32,12 +32,12 @@ function openSettings() {
   };
 }
 /* ---- v2.14 the language picker (V214.md 5): a "Language" row with the current language's own name; it opens the list of the 12 native
-   names (each with its English name in small text) and "Use device language". The names never translate. Shared with the title chip (01_title.js). ---- */
+   names (11 while YUE_LIVE in game/i18n/msg.js is off: PawI18nMsg.shown()) (each with its English name in small text) and "Use device language". The names never translate. Shared with the title chip (01_title.js). ---- */
 function langName(c) { return (PIM && PIM.LANGS[c]) || c; }
 function langListHTML() {
-  const pick = S ? S.lang : (i18nReal(prefs.langPick) ? prefs.langPick : null), dev = i18nDevice(), en = (c) => (PIM && PIM.LANG_EN[c]) || c;
+  const pick = i18nLive(S ? S.lang : (i18nReal(prefs.langPick) ? prefs.langPick : null)), dev = i18nDevice(), en = (c) => (PIM && PIM.LANG_EN[c]) || c;
   const row = (code, main, sub, on) => `<button class="btn langopt${on ? ' on yes' : ''}" data-lang="${code}" aria-pressed="${on}"${code !== '' ? ` lang="${PIM ? PIM.htmlLang(code) : code}"` : ''}><span class="lang-n">${esc(main)}</span>${sub ? `<span class="lang-e" lang="en">${esc(sub)}</span>` : ''}</button>`;
-  return `<div class="langlist" role="group" aria-label="${esc(tt('settings.language', 'Language'))}">${I18N_CODES.map((c) => row(c, langName(c), en(c) !== langName(c) ? en(c) : '', pick === c)).join('')}`
+  return `<div class="langlist" role="group" aria-label="${esc(tt('settings.language', 'Language'))}">${(PIM ? PIM.shown() : I18N_CODES).map((c) => row(c, langName(c), en(c) !== langName(c) ? en(c) : '', pick === c)).join('')}`
     + `${row('', tt('settings.lang_device', 'Use device language'), langName(dev), pick == null)}</div>`;
 }
 function langRowHTML() {

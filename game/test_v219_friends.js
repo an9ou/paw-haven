@@ -221,6 +221,9 @@ run('v219_friends', async (t) => {
     const flag = '<script>window.__ddFrTest=1</script>', at = a.indexOf(flag), game = a.indexOf('<script', at + flag.length);
     ok(at > 0 && game > at && a.indexOf('<body>') < at, 'the Pages copy sets window.__ddFrTest before the game scripts');
     ok(b.length > 100000 && !b.includes('<script>window.__ddFrTest=1') && !b.includes('dd_gate_v1'), 'the itch.io / play copy (pages.js --itch) has neither the Friends flag nor the password screen');
+    { const yf = '<script>window.__ddYueTest=1</script>', ya = a.indexOf(yf); // v2.20 (owner, 3 Nov 2026): Cantonese shown on the Pages test copy only (YUE_LIVE, game/i18n/msg.js)
+      ok(ya > 0 && a.indexOf('<script', ya + yf.length) > ya && a.indexOf('<body>') < ya, 'v2.20: the Pages copy sets window.__ddYueTest before the game scripts');
+      ok(b.length > 100000 && !b.includes(yf), 'v2.20: the itch.io / play copy has no Cantonese test flag'); }
     ok(/'pages\.js'\), '--itch'\]/.test(fs.readFileSync(path.join(root, 'tools', 'itch.js'), 'utf8')), 'tools/itch.js builds with --itch');
     fs.rmSync(outA, { recursive: true, force: true }); fs.rmSync(outB, { recursive: true, force: true });
   }

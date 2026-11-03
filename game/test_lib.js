@@ -42,7 +42,10 @@ class T {
     // browser's languages: pass o.locale, e.g. 'zh-TW'). The pseudo-locales 'xx' and 'xx-cjk' work here too.
     const ctx = await this.b.newContext(Object.assign(o.device ? Object.assign({}, devices[o.device], { defaultBrowserType: undefined }) : { viewport: { width: 1280, height: 720 } }, o.locale ? { locale: o.locale } : {})); this.ctx = ctx;
     ctx.setDefaultTimeout(20000);
+    // v2.20: o.yue (default true) sets window.__ddYueTest, so Cantonese is in the picker and pickLang for every suite while YUE_LIVE
+    // (game/i18n/msg.js) is off; yue: false tests the hidden state (test_i18n_smoke.js)
     await ctx.addInitScript((cfg) => {
+      if (cfg.yue) window.__ddYueTest = 1;
       try {
         // 1) page clock: fixed offset from the real clock so the hour/date never changes under a running test
         if (cfg.clock) {
@@ -68,7 +71,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, map215: !!o.map215, ground: !!o.ground });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, map215: !!o.map215, ground: !!o.ground, yue: o.yue !== false });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;

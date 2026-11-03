@@ -30,6 +30,7 @@ const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt', 'js']);
 const PSEUDO = process.argv.includes('--pseudo') || !!process.env.SITE_PSEUDO;
 // SITE_EN_ONLY=1: English only (no language menu, hreflang or other-language pages), e.g. to put the site live before the translations are final
 const EN_ONLY = !!process.env.SITE_EN_ONLY;
+// v2.20 YUE_LIVE (game/i18n/msg.js): while it is off, I18N.LANGS has no yue, so no /yue/ pages or routes, and the yue font supplement stays out too
 const LIVE_LANGS = EN_ONLY ? I18N.LANGS.filter((l) => l.code === 'en') : I18N.LANGS;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
 // owner (site v3.2): the game plays on the home page, in an iframe of /play/. It is the itch.io build (node tools/itch.js: the dev button and
@@ -52,7 +53,7 @@ const HASHED = /^\/play\/(lang\/[\w-]+|photo_fonts|world_[a-z])\.[0-9a-f]{8}\.js
 // against the main Worker. mode: 'none' (no files: no Worker), 'split' (this script's own default; the deploy script sets inline) or 'inline' (env[name] === 'inline': served by the main Worker)
 const SIDE = [
   { key: 'fonts', mode: 'fontMode', env: 'SITE_FONTS', url: '/fonts/i18n/', dir: path.join(site, 'fonts', 'i18n'), out: path.join(root, '_cfsite_fonts'), script: 'doodle-doggo-fonts',
-    keep: (f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f), real: (f) => f.endsWith('.woff2'), cors: true,
+    keep: (f) => (/\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f)) && (I18N.YUE || !/^yue\./.test(f)), real: (f) => f.endsWith('.woff2'), cors: true,
     what: 'The per-language fonts: the Worker doodle-doggo-fonts on the routes doodledoggo.app/fonts/i18n/* and doodledoggo.app/play/fonts/i18n/* (the game copy).', more: GAME_FONTS },
   { key: 'img', mode: 'imgMode', env: 'SITE_IMG', url: '/img/map/', dir: path.join(site, 'img', 'map'), out: path.join(root, '_cfsite_img'), script: 'doodle-doggo-img',
     keep: (f) => /\.(webp|png|jpg|svg)$/.test(f), real: () => true, cors: false,

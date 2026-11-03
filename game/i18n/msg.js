@@ -17,7 +17,8 @@
 
    API: format(msg, vars, lang) -> string (never throws: a broken message comes back as written)
         parse(msg) -> AST (throws on bad syntax; tests use it), args(msg) -> { name: 'arg'|'plural'|'select'|'josa' }
-        pickLang(list) -> one of CODES, LANGS { code: native name }, LANG_EN { code: English name }, CODES
+        pickLang(list) -> one of shown(), LANGS { code: native name }, LANG_EN { code: English name }, CODES (all 12)
+        YUE_LIVE, yueOn(), live(code) (yue -> zh-Hant while Cantonese is hidden), shown() (the codes players can pick, in picker order)
         htmlLang(code) -> the <html lang> tag (yue -> 'yue-Hant-HK'), intlOf(code) -> the locale Intl gets (yue -> 'zh-HK')
         num(n, lang, opts), date(d, lang, opts), list(arr, lang): cached Intl formatters (lang goes through intlOf)
         lookup(table, en, key, vars, lang): the per-key fallback (`en` is a table or the English string itself)
@@ -37,7 +38,23 @@
     en: 'English', ja: 'Japanese', 'zh-Hans': 'Chinese (Simplified)', 'zh-Hant': 'Chinese (Traditional)', yue: 'Cantonese', ko: 'Korean', es: 'Spanish',
     'pt-BR': 'Portuguese (Brazil)', fr: 'French', de: 'German', th: 'Thai', id: 'Indonesian'
   };
-  const CODES = Object.keys(LANGS);
+  const CODES = Object.keys(LANGS); // all 12: the tables, the packs, the tests. What players can pick: shown()
+
+  /* ---- v2.20 YUE_LIVE: Cantonese rides on main but stays hidden until the owner says go (owner, 3 Nov 2026: a native speaker checks it first).
+     Off: shown() leaves yue out (the game's picker, the site's pages, links, hreflang and Worker routes), pickLang never returns yue
+     (zh-HK, zh-MO, yue, zh-yue -> zh-Hant, as before v2.20) and live('yue') is 'zh-Hant' (a saved S.lang 'yue', a ?lang=yue link).
+     On for a test copy only: window.__ddYueTest (tools/pages.js sets it on the GitHub Pages test copy; the test harness game/test_lib.js
+     sets it unless a suite passes yue: false) or, in node (the site tools and tests), DD_YUE_TEST=1. The release: set YUE_LIVE = true here,
+     rebuild (game/build.js publish, tools/itch.js, tools/site_i18n.js), deploy (docs/i18n/coord/yue_plan.md, "Release"). ---- */
+  const YUE_LIVE = false;
+  function yueOn() {
+    if (YUE_LIVE) return true;
+    try { if (typeof globalThis !== 'undefined' && globalThis.__ddYueTest) return true; } catch (e) { /* no global */ }
+    try { if (typeof process !== 'undefined' && process.env && process.env.DD_YUE_TEST === '1') return true; } catch (e) { /* no env */ }
+    return false;
+  }
+  const live = (code) => (code === 'yue' && !yueOn() ? 'zh-Hant' : code);
+  const shown = () => CODES.filter((c) => c !== 'yue' || yueOn());
   // a code whose <html lang> tag is not the code itself: yue gets its script and region, so CJK glyph shapes and :lang(yue) both work
   const HTML_LANG = { yue: 'yue-Hant-HK' };
   const htmlLang = (code) => HTML_LANG[code] || code;
@@ -206,8 +223,10 @@
      The first entry that maps to one of the 12 wins; nothing matches -> 'en'.
        zh-HK, zh-MO, zh-Hant-HK, zh-Hant-MO, yue(-*), zh-yue(-*) -> yue (owner's choice, v2.20: Hong Kong and Macau get Cantonese)
        zh-TW, zh-Hant, zh-Hant-TW (and any other zh-Hant-*) -> zh-Hant      zh, zh-CN, zh-SG, zh-MY, zh-Hans(-*) -> zh-Hans (zh-Hans-HK too)
-       pt(-*) -> pt-BR      es(-*) -> es      in (old Java code) -> id      any other: the base subtag (ja-JP -> ja) */
-  function pickLang(list) {
+       pt(-*) -> pt-BR      es(-*) -> es      in (old Java code) -> id      any other: the base subtag (ja-JP -> ja)
+     While YUE_LIVE is off (and no test flag), every yue result is zh-Hant (live()). */
+  function pickLang(list) { return live(pickAny(list)); } // YUE_LIVE off: yue -> zh-Hant
+  function pickAny(list) {
     const arr = Array.isArray(list) ? list : list == null ? [] : [list];
     for (const raw of arr) {
       if (typeof raw !== 'string' || !raw.trim()) continue;
@@ -244,5 +263,5 @@
     return String(s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || '_';
   }
 
-  return { LANGS, LANG_EN, CODES, htmlLang, intlOf, parse, format, args, pickLang, pluralCat, num, date, list, lookup, id, josa, JOSA };
+  return { LANGS, LANG_EN, CODES, YUE_LIVE, yueOn, live, shown, htmlLang, intlOf, parse, format, args, pickLang, pluralCat, num, date, list, lookup, id, josa, JOSA };
 });

@@ -132,8 +132,25 @@ const PICK = [
   [['en-GB'], 'en'], [['EN-us'], 'en'], [['nl-NL', 'de-DE'], 'de'], [['nl', 'sv'], 'en'], [[], 'en'], [null, 'en'], [undefined, 'en'], ['fr-FR', 'fr'],
   [['', '  ', 42, 'ko'], 'ko'], [['ar-EG', 'zh-HK', 'ja'], 'yue'], [['ar-EG', 'zh-TW', 'ja'], 'zh-Hant'], [['it-IT', 'pt-BR', 'es-ES'], 'pt-BR'], [['zh-hant'], 'zh-Hant'], [['pt-br'], 'pt-BR']
 ];
+// v2.20 YUE_LIVE (msg.js): with the switch off and no flag, Cantonese is hidden (yue -> zh-Hant, as before v2.20); the test flag shows it
+const yueEnv = process.env.DD_YUE_TEST, yueGlobal = globalThis.__ddYueTest;
+delete process.env.DD_YUE_TEST; delete globalThis.__ddYueTest;
+eq(typeof M.YUE_LIVE, 'boolean', 'msg.js exports YUE_LIVE');
+if (!M.YUE_LIVE) {
+  eq(M.yueOn(), false, 'YUE_LIVE off, no flag: yueOn() is false');
+  eq(JSON.stringify(M.shown()), JSON.stringify(CODES.filter((c) => c !== 'yue')), 'YUE_LIVE off: shown() is the 11 without yue');
+  for (const [inp, want] of PICK) eq(M.pickLang(inp), want === 'yue' ? 'zh-Hant' : want, 'YUE_LIVE off: pickLang ' + JSON.stringify(inp));
+  eq(M.live('yue'), 'zh-Hant', 'YUE_LIVE off: live(yue) is zh-Hant'); eq(M.live('ja'), 'ja', 'live keeps the other codes'); eq(M.live('xx'), 'xx', 'live keeps the pseudo-locales');
+}
+globalThis.__ddYueTest = 1; // the GitHub Pages copy's flag (tools/pages.js), as the browser sets it on window
+eq(M.yueOn(), true, 'window.__ddYueTest turns Cantonese on'); eq(M.pickLang(['zh-HK']), 'yue', 'with the flag: pickLang zh-HK is yue');
+delete globalThis.__ddYueTest; process.env.DD_YUE_TEST = '1'; // the node tools' switch (site build, site tests)
+eq(M.yueOn(), true, 'DD_YUE_TEST=1 turns Cantonese on in node');
+eq(JSON.stringify(M.shown()), JSON.stringify(CODES), 'on: shown() is all 12, in picker order');
 for (const [inp, want] of PICK) eq(M.pickLang(inp), want, 'pickLang ' + JSON.stringify(inp));
 CODES.forEach((c) => eq(M.pickLang([c]), c, 'pickLang round trip ' + c));
+if (yueEnv === undefined) delete process.env.DD_YUE_TEST; else process.env.DD_YUE_TEST = yueEnv;
+if (yueGlobal !== undefined) globalThis.__ddYueTest = yueGlobal;
 
 /* ---- 2. glossaries ---- */
 const G = require(path.join(ROOT, 'mods/genes.js'));

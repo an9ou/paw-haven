@@ -24,7 +24,11 @@ function i18nFromSite() {
   if (S) { S.lang = c; markDirty(); } else if (!i18nSaved()) { prefs.langPick = c; savePrefs(); } else return c; // the save loads later: keep it until then
   lsSet(I18N_SITE_KEY, c); i18nUrl = null; return c;
 }
-function i18nWanted() {
+// v2.20: PawI18nMsg.live() turns yue into zh-Hant while YUE_LIVE (game/i18n/msg.js) is off and no test flag is set: a saved S.lang 'yue', a
+// ?lang=yue link or a pin all play in zh-Hant. S.lang itself is kept, so the save is Cantonese again the day the switch is on.
+const i18nLive = (c) => (PIM && c ? PIM.live(c) : c);
+function i18nWanted() { return i18nLive(i18nWanted0()); }
+function i18nWanted0() {
   const pin = i18nPin(); if (pin) return pin;
   const site = i18nFromSite(); if (site) return site;
   const sv = S ? { lang: i18nReal(S.lang) ? S.lang : null } : i18nSaved();

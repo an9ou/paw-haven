@@ -75,3 +75,21 @@ The exact areas per chunk, as in `CHUNKS` in `tools/yue_chunks.js` (the source o
 ## Ship gate: the owner's friend checks first (owner, 3 Nov 2026)
 
 Cantonese does not ship (no main, site or itch) until the owner's friend, a native speaker, has checked it and the owner says go. The 5-minute rule does not apply to this gate. After all chunks are merged and green: the GitHub Pages test copy in 廣東話 (the owner shares its password), plus a review page with the most-seen lines where the friend can type a better wording per line; the Game Manager applies the fixes, re-runs the checks, then asks the owner. If the check isn't done by the 6 Nov Friends release, Friends ships without Cantonese and Cantonese follows as its own small update.
+
+## The switch: YUE_LIVE (3 Nov 2026)
+
+Cantonese rides on `main` (so the Pages test copy has it) but stays invisible on itch.io, doodledoggo.app and /play/ until the owner says go.
+
+- **One constant:** `const YUE_LIVE = false;` in `game/i18n/msg.js` (the formatter both the game and the site tools load). `yueOn()` is true when YUE_LIVE is on, or `globalThis.__ddYueTest` is set (browser), or `DD_YUE_TEST=1` (node).
+- **Off (now):** the game's picker (`PawI18nMsg.shown()`, used by `langListHTML` in `game/src/20_settings_dev.js`) lists 11 languages; `pickLang` never returns yue (zh-HK, zh-MO, yue, zh-yue -> zh-Hant); `live()` turns a saved `S.lang` 'yue', a pin or a `?lang=yue` link into zh-Hant (`i18nWanted` in `game/src/00b_i18n.js`, `guess()` in `game/i18n/loader.js`); the save keeps 'yue'. The site (`tools/site_i18n.js` `LANGS`, so also `tools/cf_site.js`) has no /yue/ pages, menu link, hreflang, invite shell, Worker route or yue font, and its first-visit script sends zh-HK to /zh-hant/.
+- **The Pages test copy:** `tools/pages.js` adds `<script>window.__ddYueTest=1</script>` next to `__ddFrTest`, before the game scripts. `tools/itch.js` (`--itch`: itch.io and /play/) never gets it and fails the build if it leaks.
+- **Tests:** the harness (`game/test_lib.js`) sets `window.__ddYueTest` for every suite, so the yue tests keep testing yue; `t.mk({ yue: false })` tests the hidden state (`i18n_smoke`, "YUE_LIVE off"). Node: `game/test_i18n_node.js` checks both states. The site suite tests the hidden state by default; `DD_YUE_TEST=1 PAW_LANGS=yue node game/run_tests.js site_fit` (and `DD_YUE_TEST=1 node tools/site_i18n.js` before `tools/i18n_fonts.js yue`) builds the site with Cantonese.
+
+## Release (after the native check and the owner's go)
+
+1. Apply the friend's fixes, re-run the checks of "Done when".
+2. `game/i18n/msg.js`: `const YUE_LIVE = true;`.
+3. `node tools/site_i18n.js` (the committed English pages now carry the 廣東話 menu link and hreflang zh-HK), `node tools/i18n_fonts.js yue && node tools/i18n_fonts.js yue --for game && node tools/i18n_pack.js` if any text changed.
+4. A `NEWS` entry if wanted (`game/src/49c_news.js`: entries are for every language, so its keys need all 12 translations).
+5. Tests: `i18n`, `i18n_smoke`, `smoke`, then `node game/build.js publish && node tools/itch.js` and `SITE_GAME=$PWD/dist/itch node game/run_tests.js site` (the site suite then runs its yue checks: /yue/ pages, zh-HK -> /yue/).
+6. Merge to `main`, deploy the site (`bash tools/cf_pages_deploy.sh`) and push itch.io (`node tools/itch.js && bash tools/itch_push.sh <version>`); tell Marketing.

@@ -22,7 +22,7 @@ const ORIGIN = 'https://doodledoggo.app';
 // Optional: html (the <html lang> and content-language tag when it is not the code), hreflang (the alternate links' tag when it is not the code),
 // rules (the Intl locale for numbers, dates and plurals). yue (v2.20): <html lang="yue-Hant-HK">, hreflang zh-HK (search engines take ISO 639-1
 // codes, and zh-HK browsers get Cantonese, as in the game's pickLang), Intl zh-HK (Chromium has no yue data).
-const LANGS = [
+const ALL_LANGS = [
   { code: 'ja', dir: 'ja', name: '日本語', og: 'ja_JP', script: 'cjk' },
   { code: 'zh-Hans', dir: 'zh-hans', name: '简体中文', og: 'zh_CN', script: 'cjk' },
   { code: 'zh-Hant', dir: 'zh-hant', name: '繁體中文', og: 'zh_TW', script: 'cjk' },
@@ -36,6 +36,10 @@ const LANGS = [
   { code: 'id', dir: 'id', name: 'Bahasa Indonesia', og: 'id_ID', script: 'latin' },
   { code: 'en', dir: '', name: 'English', og: 'en_US', script: 'latin' }
 ];
+// v2.20 YUE_LIVE (game/i18n/msg.js, owner 3 Nov 2026): while Cantonese waits for the native check, the site has no /yue/ pages, no yue menu link,
+// hreflang or route, and zh-HK visitors go to /zh-hant/ (as before v2.20). DD_YUE_TEST=1 builds it anyway (tools/i18n_fonts.js yue, site_fit).
+const YUE = require('../game/i18n/msg.js').yueOn();
+const LANGS = ALL_LANGS.filter((L) => L.code !== 'yue' || YUE);
 // test-only pseudo-locales: never in the menu, the hreflang set or the deployed Worker (unless cf_site.js is asked for them)
 const PSEUDO = [
   { code: 'en-XA', dir: 'xx', name: '[Ƥšéûđö]', og: 'en_US', script: 'latin', pseudo: 'long', rules: 'en' },
@@ -200,7 +204,10 @@ function langScript(L, page) {
     + `if(/bot|crawl|spider|slurp|preview|lighthouse/i.test(navigator.userAgent))return;try{if(d.referrer&&new URL(d.referrer).host===location.host)return}catch(e){}`
     + `if(v){if(v!=='en'&&L[v]===1)location.replace('/'+v+P+location.hash);return}`
     + `var a=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||''];for(var i=0;i<a.length;i++){var t=String(a[i]).toLowerCase().replace(/_/g,'-'),b=t.split('-')[0];`
-    + `if(b==='en')return;if(b==='zh')b=/^zh-yue(-|$)|^zh-(hant-)?(hk|mo)(-|$)/.test(t)?'yue':/^zh-(hant|tw)(-|$)/.test(t)?'zh-hant':'zh-hans';else if(b==='pt')b='pt-br';else if(b==='in')b='id';`
+    + `if(b==='en')return;`
+    + (YUE ? `if(b==='zh')b=/^zh-yue(-|$)|^zh-(hant-)?(hk|mo)(-|$)/.test(t)?'yue':/^zh-(hant|tw)(-|$)/.test(t)?'zh-hant':'zh-hans';`
+      : `if(b==='yue')b='zh-hant';else if(b==='zh')b=/^zh-(yue|hant|tw|hk|mo)(-|$)/.test(t)?'zh-hant':'zh-hans';`) // YUE_LIVE off: Cantonese browsers read 繁體中文
+    + `else if(b==='pt')b='pt-br';else if(b==='in')b='id';`
     + `if(L[b]){location.replace('/'+b+P+location.hash);return}}})();</script>`;
 }
 function langMenu(L, page, label, menu) {
@@ -407,7 +414,7 @@ function write(pages, root) {
   root = root || SITE;
   for (const [rel, html] of Object.entries(pages)) { const p = path.join(root, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, html); }
 }
-module.exports = { LANGS, PSEUDO, htmlTag, hrefTag, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table, inviteShells };
+module.exports = { LANGS, ALL_LANGS, YUE, PSEUDO, htmlTag, hrefTag, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table, inviteShells };
 
 if (require.main === module) {
   const argv = process.argv.slice(2), has = (f) => argv.includes(f);

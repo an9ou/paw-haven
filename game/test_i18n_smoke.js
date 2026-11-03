@@ -6,7 +6,8 @@
 // __paw.i18n. Misses (keys with no text in that language) and unknown keys (not in en.json) are printed. A language whose table
 // (game/i18n/<lang>.json) exists must have no misses unless PAW_I18N_PARTIAL is set.
 // Then: auto-detect (no pin, browser locale zh-TW -> zh-Hant, zh-HK -> yue), a pick on the title screen goes into the new save, a pick in Settings
-// reloads into the language, and the picker waits during a walk.
+// reloads into the language, and the picker waits during a walk. v2.20: with YUE_LIVE off and no __ddYueTest flag (t.mk({ yue: false })) yue is hidden
+// (picker, zh-HK -> zh-Hant, a saved 'yue' -> zh-Hant); every other part runs with the harness's flag on.
 const fs = require('fs'), path = require('path');
 const M = require('./i18n/msg.js');
 const ALL = M.CODES.concat(['xx', 'xx-cjk']);
@@ -72,6 +73,29 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   ok(await ev(() => /廣東話/.test(document.getElementById('tLang').textContent)), 'the title chip says 廣東話');
   ok(await ev(() => window.PawI18n.tlist(['A', 'B', 'C']) === new Intl.ListFormat('zh-HK', { type: 'conjunction' }).format(['A', 'B', 'C'])), 'yue lists use the zh-HK rules in Chromium (no English "and")');
   await t.ctx.close();
+
+  sec('v2.20 YUE_LIVE off (game/i18n/msg.js) and no test flag: Cantonese is hidden');
+  if (M.YUE_LIVE) console.log('  note YUE_LIVE is on: Cantonese is live, nothing hidden to check');
+  else {
+    await t.boot({ lang: null, locale: 'zh-HK', yue: false }); const p = t.p;
+    ok(await ev(() => window.PawI18nMsg.YUE_LIVE === false && !window.__ddYueTest && !window.PawI18nMsg.yueOn()), 'the build has YUE_LIVE = false and no __ddYueTest flag');
+    ok(await ev(() => window.PawI18n.tlang() === 'zh-Hant' && document.documentElement.lang === 'zh-Hant'), 'a zh-HK browser gets zh-Hant (as before v2.20), not yue');
+    ok(await ev(() => window.PawI18nMsg.pickLang(['zh-MO']) === 'zh-Hant' && window.PawI18nMsg.pickLang(['yue-HK']) === 'zh-Hant' && window.PawI18nMsg.shown().length === 11), 'pickLang never returns yue; shown() has 11 codes');
+    await p.click('#tLang'); ok(await t.until(() => document.querySelectorAll('.langsheet [data-lang], #modal [data-lang]').length === 12), 'the title language list shows 11 languages + "Use device language"');
+    ok(await ev(() => !document.querySelector('[data-lang="yue"]') && !/廣東話/.test(document.getElementById('modal').textContent)), 'the list has no 廣東話');
+    await t.closeX(); await t.modalGone();
+    await t.adopt({ sex: 'girl' }); await ev(() => { window.__paw.S.lang = 'yue'; window.__paw.saveNow(); });
+    await t.reloadKeepingSave(); await p.waitForSelector('#tNew, #tContinue');
+    ok(await ev(() => window.PawI18n.tlang() === 'zh-Hant' && JSON.parse(localStorage.getItem('pawhaven_proto_v1')).lang === 'yue'), 'a saved S.lang "yue" plays in zh-Hant (the save keeps "yue" for the day it goes live)');
+    await ev(() => document.getElementById('tContinue').click()); await t.untilMode('yard');
+    await ev(() => document.getElementById('gearBtn').click()); await t.until(() => !!document.getElementById('setLang'));
+    await p.click('#setLang'); ok(await t.until(() => document.querySelectorAll('#setLangBox [data-lang]').length === 12 && !document.querySelector('#setLangBox [data-lang="yue"]')), 'Settings lists 11 languages, no 廣東話');
+    ok(await ev(() => document.querySelector('#setLangBox [data-lang="zh-Hant"]').classList.contains('on')), 'Settings marks 繁體中文 as the language in use');
+    await t.ctx.close();
+    await t.boot({ lang: null, locale: 'zh-HK', yue: true });
+    ok(await ev(() => window.PawI18n.tlang() === 'yue' && window.PawI18nMsg.shown().includes('yue')), 'with window.__ddYueTest (the Pages test copy\'s flag) zh-HK gets yue and the picker lists it');
+    await t.ctx.close();
+  }
 
   sec('v2.15 (owner): S.langShown records the language on screen');
   { await t.boot({ lang: 'th' }); await t.adopt({ sex: 'girl' });

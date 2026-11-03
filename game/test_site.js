@@ -558,12 +558,20 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     r = await get(SITE + '/zh-hant/dogs.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/zh-hant/dogs', '/zh-hant/dogs.html redirects to /zh-hant/dogs');
     r = await get(SITE + '/de/index.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/de/', '/de/index.html redirects to /de/');
     r = await get(SITE + '/ko/nope'); ok(r.status === 404 && /<html lang="ko"/.test(await r.text()) && r.headers.get('content-language') === 'ko', 'a 404 under /ko/ is in Korean (lang ko)');
+    if (!I18N.YUE) { // v2.20 YUE_LIVE off (game/i18n/msg.js; DD_YUE_TEST=1 builds the site with Cantonese): no /yue/ page, link, hreflang or font
+      const bad = [];
+      for (const u of ['/yue/', '/yue/dogs', '/yue/map', '/yue/privacy']) { const x = await get(SITE + u); const h = await x.text(); if (x.status !== 404 || /lang="yue/.test(h)) bad.push(u + ' ' + x.status); }
+      for (const u of ['/', '/dogs', '/zh-hant/', '/ja/map']) { const h = await (await get(SITE + u)).text(); if (/href="\/yue\/|hreflang="zh-HK"|廣東話|lang="yue/.test(h)) bad.push(u + ' links yue'); }
+      { const x = await get(SITE + '/fonts/i18n/yue.css'); await x.arrayBuffer(); if (x.status !== 404) bad.push('/fonts/i18n/yue.css ' + x.status); }
+      ok(!bad.length && !I18N.LANGS.some((x) => x.code === 'yue'), `v2.20: Cantonese is hidden while YUE_LIVE is off: no /yue/ pages, no 廣東話 menu link or zh-HK hreflang, no yue font${bad.length ? ' (' + bad.join(', ') + ')' : ''}`);
+    } else {
     r = await get(SITE + '/yue/nope'); ok(r.status === 404 && /<html lang="yue-Hant-HK"/.test(await r.text()) && r.headers.get('content-language') === 'yue-Hant-HK', 'v2.20: a 404 under /yue/ is in Cantonese (lang yue-Hant-HK)');
     r = await get(SITE + '/yue'); ok(r.status === 301 && r.headers.get('location') === SITE + '/yue/', '/yue redirects to /yue/');
     { const ctx = await newCtx({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }); const page = await ctx.newPage();
       await page.goto(base + '/yue/', { waitUntil: 'load' }); await page.waitForSelector('#gameframe iframe', { timeout: 5000 }).catch(() => {});
       const src = await page.evaluate(() => { const f = document.querySelector('#gameframe iframe'); return f && f.getAttribute('src'); });
       ok(/^\/play\/\?lang=yue$/.test(src || ''), `v2.20: the /yue/ home page starts the game in Cantonese (/play/?lang=yue, the game's code, not the tag yue-Hant-HK) (${src})`); await ctx.close(); }
+    }
     r = await get(SITE + '/tpl/index.tpl'); ok(r.status === 404, 'the templates and string tables are not served'); await r.text();
     r = await get(SITE + '/img/art/dogs/akita-walk.svg'); ok(r.status === 404, 'scene poses of dogs no page draws in a scene pose stay out of the Worker (budget)'); await r.text();
 
@@ -662,7 +670,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const res = { path: new URL(page.url()).pathname + new URL(page.url()).hash, navs, langs: await page.evaluate(() => navigator.languages.join()) };
       await ctx.close(); return res;
     };
-    for (const [loc, url, want] of [['zh-TW', '/', '/zh-hant/'], ['zh-HK', '/dogs#shiba', '/yue/dogs#shiba'], ['zh-Hant-HK', '/', '/yue/'], ['yue-HK', '/map', '/yue/map'], ['zh-Hant', '/', '/zh-hant/'], ['zh-CN', '/', '/zh-hans/'], ['pt-PT', '/', '/pt-br/'], ['es-MX', '/privacy', '/es/privacy'], ['ja-JP', '/', '/ja/'], ['ko-KR', '/reset', '/ko/reset'], ['th-TH', '/', '/th/'], ['id-ID', '/', '/id/'], ['de-AT', '/', '/de/'], ['fr-CA', '/', '/fr/'], ['en-GB', '/', '/'], ['it-IT', '/', '/'],
+    for (const [loc, url, want] of [['zh-TW', '/', '/zh-hant/'], ...(I18N.YUE ? [['zh-HK', '/dogs#shiba', '/yue/dogs#shiba'], ['zh-Hant-HK', '/', '/yue/'], ['yue-HK', '/map', '/yue/map']] // YUE_LIVE off: Hong Kong and Cantonese browsers read 繁體中文
+      : [['zh-HK', '/dogs#shiba', '/zh-hant/dogs#shiba'], ['zh-Hant-HK', '/', '/zh-hant/'], ['yue-HK', '/map', '/zh-hant/map'], ['zh-Hans-HK', '/', '/zh-hans/']]), ['zh-Hant', '/', '/zh-hant/'], ['zh-CN', '/', '/zh-hans/'], ['pt-PT', '/', '/pt-br/'], ['es-MX', '/privacy', '/es/privacy'], ['ja-JP', '/', '/ja/'], ['ko-KR', '/reset', '/ko/reset'], ['th-TH', '/', '/th/'], ['id-ID', '/', '/id/'], ['de-AT', '/', '/de/'], ['fr-CA', '/', '/fr/'], ['en-GB', '/', '/'], ['it-IT', '/', '/'],
       ['ja-JP', '/map', '/ja/map'], ['fr-FR', '/about', '/fr/about'], ['th-TH', '/map#place-shibuya', '/th/map#place-shibuya']]) {
       const d = await detect(loc, url);
       ok(d.path === want && d.navs <= 2, `first visit with ${loc} (${d.langs}): ${url} -> ${d.path} (${d.navs} navigations)`);
