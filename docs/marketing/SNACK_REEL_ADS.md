@@ -155,3 +155,4 @@ One ask (save) · 4 hashtags · search: "cozy dog game", "chow chow", "relaxing 
 
 **Alt text:** `A fluffy crayon Chow Chow sits on a wooden pier at sunset, with Mt. Fuji behind him. A hand strokes his head; his eyes go dreamy, then turn into hearts as pink hearts float up, and he hops up happily.`
 
+**RedNote cut and all captions (3 Nov 2026):** `doodle-doggo-cuddle-reel-chow-pier-rednote.mp4` (only the end card changes: Chinese words, no link; re-rendered over the English frames with `REDNOTE=1 RN_COVER=rednote-07-cuddle.jpg … FRAMES=228-330`), 3:4 cover `brand/rednote/rednote-07-cuddle.jpg`; captions for Instagram, YouTube Shorts, X and RedNote in `docs/marketing/CUDDLE_REEL_CAPTIONS.md`.

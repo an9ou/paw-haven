@@ -41,6 +41,11 @@ const TAG = KEY + (SCENE === 'yard' ? '' : '-' + SCENE);
 // ACT=cuddle (owner, 3 Nov 2026: "or we cuddle Bao instead"): no throw; the player's flat hand (the game's "down" trick-signal hand, its arrow
 // and motion ticks taken off) comes in and strokes the dog's head four times, then a quick scritch; curious, dreamy, then heart eyes with hearts
 // floating up, a wink and the same happy hop. Files: doodle-doggo-cuddle-reel-<dog>[-<scene>].mp4 and cuddle-cover-<dog>[-<scene>].jpg.
+// REDNOTE=1: the RedNote cut. The clip has no words until the end card, so only the end card changes: "免费的治愈系狗狗游戏" and "搜索 Doodle Doggo 就能玩"
+// in LXGW WenKai (no link anywhere, RedNote rule), ink-centred and checked with centre_text.js; files get -rednote, and a 3:4 cover with a Chinese
+// title is written to brand/rednote/ (RN_COVER=<name>.jpg, RN_TITLE=<words>). Re-render only the end card over a copy of the English workdir:
+// FRAMES=228-330 (marketing rule: never re-render a whole video for a change to one part).
+const RN = !!process.env.REDNOTE, ZHF = "'LXGW WenKai', Caveat";
 const ACT = process.env.ACT || 'snack', CUDDLE = ACT === 'cuddle'; if (!['snack', 'cuddle'].includes(ACT)) throw new Error('ACT is snack or cuddle');
 const env = { time: LOOK.time, weather: 'sunny', season: 'autumn', halloween: false, jp: true };
 const GY = 188, FEET = 1470;                            // the art's ground line on its 240 x 200 canvas, and where it sits on screen
@@ -76,6 +81,17 @@ const depthFx = (t, d) => { let g = '';
   const FONTS = `<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet"><style>html,body{margin:0;background:#fff}svg{display:block}.hide{display:none}</style>`;
   await p.setContent(`<!doctype html><meta charset="utf-8">${FONTS}<div id="s"></div><span style="font-family:Caveat">a</span>`);
   await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
+  let RNEND = null; const RN_TITLE = process.env.RN_TITLE || '今天也要摸摸狗狗';
+  if (RN) { // the Chinese end card words, measured and ink-centred in the page (centre_text.js), then reused as fixed SVG
+    await p.addStyleTag({ url: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css' });
+    await p.addScriptTag({ content: require('../centre_text.js').CENTRE_JS });
+    RNEND = await p.evaluate(async ([fam, title]) => { const txt = '免费的治愈系狗狗游戏搜索 Doodle Doggo 就能玩' + title;
+      await Promise.all(['700 40px "LXGW WenKai"', '700 40px Caveat'].map((f) => document.fonts.load(f, txt)));
+      let size = 78; const w = (z) => { const k = inkOf('搜索 Doodle Doggo 就能玩', z, fam); return k.L + k.R; }; while (w(size) > 760) size -= 2;
+      return { sub: centred([{ s: '免费的治愈系狗狗游戏', size: 60, fill: '#8A7468' }], 540, 1045, fam).svg,
+        pill: pill('搜索 Doodle Doggo 就能玩', 540, 1333, size, fam, { fill: '#FFE3A1', padX: 48 }),
+        title: pill(title, 540, 1580, 72, fam, { fill: '#FFFDF7', padX: 46 }) }; }, [ZHF, RN_TITLE]);
+  }
   const page = (g) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
   const shot = async (svg, file, type = 'png') => { await p.evaluate((sv) => { document.getElementById('s').innerHTML = sv; }, svg); await p.evaluate(() => document.fonts.ready);
     await p.screenshot({ path: file, type, ...(type === 'jpeg' ? { quality: 90 } : {}), clip: { x: 0, y: 0, width: W, height: H } }); };
@@ -231,6 +247,7 @@ const depthFx = (t, d) => { let g = '';
   const endCard = (t) => { // over the softened, pale scene
     const lq = eoB(seg(t, LOGO, LOGO + 0.5)), pq = eoB(seg(t, PILL, PILL + 0.45));
     let g = `<g opacity="${r3(eo3(seg(t, LOGO, LOGO + 0.35)))}" transform="translate(540 820) scale(${r3(0.85 + 0.15 * lq)}) translate(-540 -820)"><svg x="40" y="664" width="1000" height="311" viewBox="0 0 900 280">${LOGO_SVG}</svg></g>`;
+    if (RN) return g + `<g opacity="${r3(eo3(seg(t, PILL, PILL + 0.3)))}" transform="translate(540 1330) scale(${r3(0.85 + 0.15 * pq)}) translate(-540 -1330)">${RNEND.sub}${RNEND.pill}</g>`;
     g += `<g opacity="${r3(eo3(seg(t, PILL, PILL + 0.3)))}" transform="translate(540 1330) scale(${r3(0.85 + 0.15 * pq)}) translate(-540 -1330)">`
       + `<text x="540" y="1060" font-family="Caveat" font-weight="700" font-size="64" fill="${MUTED}" text-anchor="middle">a free cozy dog game</text>`
       + `<rect x="130" y="1258" width="820" height="150" rx="75" fill="#FFE3A1"/><rect x="130" y="1258" width="820" height="150" rx="75" fill="none" stroke="${INK}" stroke-width="5"/>`
@@ -244,7 +261,17 @@ const depthFx = (t, d) => { let g = '';
   };
 
   // the cover: the dog mid-chew with the blissful face, the logo above (the profile grid shows the middle 1080 x 1440)
-  await shot(page(scene(CUDDLE ? 3.1 : 3.8) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `${ACT}-cover-${TAG}.jpg`), 'jpeg');
+  const SUF = RN ? '-rednote' : '';
+  if (!RN) await shot(page(scene(CUDDLE ? 3.1 : 3.8) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `${ACT}-cover-${TAG}.jpg`), 'jpeg');
+  else { // RedNote: 3:4 (the middle 1080 x 1440), the logo at the top, the Chinese title at the foot; and the centre check on the cover and an end frame
+    const png = path.join(WORK, 'rn_cover.png');
+    await shot(page(scene(CUDDLE ? 3.1 : 3.8) + `<svg x="140" y="270" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>` + RNEND.title), png);
+    for (const svg of [page(RNEND.title), page(endCard(T - 0.5))]) { await p.evaluate((sv) => { document.getElementById('s').innerHTML = sv; }, svg);
+      const off = await p.evaluate(() => centreCheck(document.getElementById('s'))); if (off.length) throw new Error('not centred: ' + off.join('; ')); }
+    const jpg = path.join(OUT, `${ACT}-cover-${TAG}${SUF}.jpg`);
+    cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, '-vf', 'crop=1080:1440:0:240', '-q:v', '2', jpg]);
+    if (process.env.RN_COVER) fs.copyFileSync(jpg, path.join(root, 'brand', 'rednote', process.env.RN_COVER));
+  }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.3, 0.8, 1.25, 1.5, 1.8, 2.22, 3.8, 5.7, 6.9, 9.5];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
@@ -279,7 +306,7 @@ const depthFx = (t, d) => { let g = '';
   fs.writeFileSync(path.join(WORK, 'fx.wav'), pcm);
   const md = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path.join(WORK, 'music.wav')]).toString();
   if (!(md > T - 0.5)) throw new Error('music too short: ' + md);
-  const mp4 = path.join(OUT, `doodle-doggo-${ACT}-reel-${TAG}.mp4`);
+  const mp4 = path.join(OUT, `doodle-doggo-${ACT}-reel-${TAG}${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), '-i', path.join(WORK, 'fx.wav'),
     '-filter_complex', `[1:a]atrim=0:${T},afade=t=in:d=0.6,afade=t=out:st=${T - 0.8}:d=0.8[m];[m][2:a]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=44100[a]`,
     '-map', '0:v', '-map', '[a]', '-t', String(T), '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', mp4], { stdio: 'inherit' });
