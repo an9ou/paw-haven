@@ -71,3 +71,7 @@ The exact areas per chunk, as in `CHUNKS` in `tools/yue_chunks.js` (the source o
 
 **Chunk 6: Japan trip and Tokyo, festivals and markets, Fun Fair, Friends, news.** Areas: `tokyo` `japan` `data.tk_lines` `data.jp_place_lines` `data.tk_care` `data.tk_fb_hots` `data.tk_hot_label` `data.tk_places` `data.tk_stamp_n` `data.tk_station` `data.tk_ueno` `data.tk_fortunes` `data.jp_first` `data.jp_letter` `data.jp_mochi` `data.jp_place` `data.jp_toasts` `fest` `fm` `ff` `fr` `nw` `hw` `winter` `newyear` `popup` `data.fs_letters` `data.fs_months` `data.fs_season_line` `data.hw_cats` `data.hw_letter` `data.hw_plum` `data.wn_cats` `data.wn_letters` `data.ny_fortunes` `data.ny_zodiac` `data.season_name` `data.fr_notes`
 
+
+## Ship gate: the owner's friend checks first (owner, 3 Nov 2026)
+
+Cantonese does not ship (no main, site or itch) until the owner's friend, a native speaker, has checked it and the owner says go. The 5-minute rule does not apply to this gate. After all chunks are merged and green: the GitHub Pages test copy in 廣東話 (the owner shares its password), plus a review page with the most-seen lines where the friend can type a better wording per line; the Game Manager applies the fixes, re-runs the checks, then asks the owner. If the check isn't done by the 6 Nov Friends release, Friends ships without Cantonese and Cantonese follows as its own small update.
