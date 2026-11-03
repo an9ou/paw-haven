@@ -2,10 +2,12 @@
 'use strict';
 /* =========================================================================
    Doodle Doggo prototype. Numbers come from the game proposal; the prototype
-   speeds the economy up (coins x2, Bond x3, naps x6) and runs 1 game hour
-   per real minute.
+   speeds the economy up (coins x2, Bond x3, naps x15) and runs 1 game hour
+   per 2.5 real minutes (a game day is one real hour; Daily rhythm, owner 3 Nov 2026).
    ========================================================================= */
-const BOOST = { coins: 2, bond: 3, nap: 6 };
+const BOOST = { coins: 2, bond: 3, nap: 15 }; // Daily rhythm (owner, 3 Nov 2026): naps 6 -> 15, so with the slower clock (GAME_SEC) a nap fills Energy as fast as before
+const GAME_SEC = 2.5; // real seconds per game minute (Daily rhythm): a game hour is 2.5 real minutes, a game day one real hour. tick() and applyAway() divide by it
+const WALK_FULL = 5; // Daily rhythm: the first 5 walks of a Japan day pay full coins, later walks half (Bond and treasures stay full). Count: S.daily.walks
 const SAVE_KEY = 'pawhaven_proto_v1', PREF_KEY = 'pawhaven_prefs_v1';
 const SAVE_BACKUP_KEY = 'pawhaven_proto_v1_backup'; // same string as CL_CFG.backupKey (22b_cloud_config.js): the import/restore copy
 const BOND_TH = [0, 60, 180, 450, 700, 1000, 1400, 1900, 2500, 3200]; // v2.16 First Week: Bond 2 at 60 (was 100) and Bond 3 at 180 (was 250); the rest as before. Old saves level up quietly on load (fwBondFix)
@@ -764,7 +766,7 @@ function freshState(key, name, sex) {
     inv: { food: { 'Basic Kibble': 5, 'Bone-shaped Biscuit': 3, 'Pupcake': 1 }, toys: ['Tennis Ball'], clothes: [], houses: ['Cardboard Box'] },
     outfit: { head: null, eyes: null, neck: null, body: null }, house: 'Cardboard Box',
     tricks: {}, gameMin: 8 * 60, lastReal: Date.now(), waterAt: -999, pupUntil: -1,
-    daily: { day: 0, pupcake: false, feed: false, pet: false, play: false, outfit: false },
+    daily: { day: '', pupcake: false, feed: false, pet: false, play: false, outfit: false, walks: 0 },
     sleeping: false, collection: {}, adopted: true,
     found: {}, mapPieces: [], walks: 0, glowUntil: -1, secretDug: false, title: '', place: 'yard'
   };
@@ -855,6 +857,16 @@ function migrate(s) {
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
   v219Fields(s); // v2.19 Friends (V219.md section 8): additive
+  rhythmFields(s); // Daily rhythm (docs/design/daily-rhythm.md): additive
+  return s;
+}
+/* Daily rhythm (owner, 3 Nov 2026; docs/design/daily-rhythm.md). Additive only: S.v stays 1.
+   S.daily.day    is now the Japan date (jstISO) of the daily bonuses; an old save's game-day number simply starts a new day once.
+   S.daily.walks  walks counted today (the first WALK_FULL pay full coins). The missions' own fields are in msFields (24_missions.js). */
+function rhythmFields(s) {
+  if (!s) return s;
+  if (!s.daily || typeof s.daily !== 'object' || Array.isArray(s.daily)) s.daily = { day: '' };
+  if (typeof s.daily.walks !== 'number' || !(s.daily.walks >= 0)) s.daily.walks = 0;
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -963,7 +975,7 @@ function v216Fields(s) {
 /* v2.17 Dog Days (V217.md section 6). Additive only: S.v stays 1, nothing is dropped. Summaries only (the diary text is written at display time).
    S.dd { wish: { day: localISO, w: { dogId: { k: wish kind, a: its place / route / food / toy or null, done: 0|1, fw: 1 when it came from v2.16's "see you tomorrow" } }, coins: wish coins today (cap 20) },
           wn: wishes come true (all time), wk: { kind: count },
-          today: the diary page being written ({ g: game day, d: localISO, id, n: name, k: breed key, w: [routes], p: [places], f: [foods], t: [tricks], x: flag letters, wi: wish kind, fr: [pack names] }) | null,
+          today: the diary page being written ({ g: game day, j: jstISO (the page closes on a new Japan day, Daily rhythm), d: localISO, id, n: name, k: breed key, w: [routes], p: [places], f: [foods], t: [tricks], x: flag letters, wi: wish kind, fr: [pack names] }) | null,
           diary: [the last 60 finished pages, same shape], st: { stickerId: 1 }, pg: { page: gift given }, fr: [frame ids: b3 b5 b7 p0..p11],
           bt: { 3|5|7|10: 1 } the Bond track gifts given, pv: { place or route key: 1 } places visited since v2.17, cnt: { counters for the stickers }, mo: ['YYYY-MM'] months with a paw,
           lt: { day: localISO of the last Dog Days letter, wk: the Monday of Gerald's last weekly news, fam: localISO of the last family letter, gi, fi: template turns } } */
@@ -1377,8 +1389,19 @@ function addBond(base, opts = {}) {
   while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; } // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
+// Daily rhythm: the daily bonuses (care, Square goal, trick coins, beach dig, Pupcake, outfit, breakfast, dawn, first visits, walks) reset once a Japan day (00:00 JST), not every game day
 function dailyCheck() {
-  const d = day(); if (S.daily.day !== d) { S.daily = { day: d, pupcake: false, feed: false, pet: false, play: false, outfit: false }; markDirty(); return true; } return false;
+  const d = jstISO(); if (!S.daily || S.daily.day !== d) { S.daily = { day: d, pupcake: false, feed: false, pet: false, play: false, outfit: false, walks: 0 }; markDirty(); return true; } return false;
+}
+// a finished walk: counts it for today and returns its number and coin share (1 for the first WALK_FULL walks of the Japan day, then 0.5)
+function walkCount() { dailyCheck(); const n = (S.daily.walks || 0) + 1; S.daily.walks = n; markDirty(); return { n, share: n > WALK_FULL ? 0.5 : 1 }; }
+// one walk's coins at that share: the treasure pouch part stays whole, the rest is halved (rounded up) on a tired walk
+const walkShare = (coins, pouch, share) => { const t = Math.max(0, Math.min(coins, pouch || 0)); return share >= 1 ? coins : t + Math.ceil((coins - t) * share); };
+// the short note on the walk summary: walk 5 says later walks pay half, walks 6 and on say this one did. Kind, never a stop
+function walkTiredLine(w) {
+  if (!w || w.n < WALK_FULL) return '';
+  return `<p class="small walk-tired">${esc(w.n === WALK_FULL ? tt('walk.tired_next', '{name} is happily tired: that was walk {n} today. More walks today pay half coins, and treasures and Bond stay the same.', { name: NAME(), n: WALK_FULL })
+    : tt('walk.tired_half', '{name} is happy and a bit sleepy. The first {n} walks of a day pay full coins and later ones pay half. Treasures and Bond stay the same.', { name: NAME(), n: WALK_FULL }))}</p>`;
 }
 function dailyCare(kind) {
   dailyCheck(); if (S.daily[kind]) return; S.daily[kind] = true;

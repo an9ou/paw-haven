@@ -6,7 +6,7 @@
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
 const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
-if (FR_LIVE) NEWS.unshift(NEWS_V219); // the v2.19 news entry (49c_news.js) appears with the release, never before
+if (FR_LIVE) { const i = NEWS.findIndex((e) => e.date < NEWS_V219.date); NEWS.splice(i < 0 ? NEWS.length : i, 0, NEWS_V219); } // Daily rhythm: by date, so a later entry (2.19.2) stays the newest // the v2.19 news entry (49c_news.js) appears with the release, never before
 function frOn() {
   if (typeof clArtifact === 'function' && clArtifact()) return false;
   if (typeof window !== 'undefined' && window.__ddFrTest) return true; // the GitHub Pages test copy (owner, 2 Nov 2026): tools/pages.js sets it, never itch.io or /play/

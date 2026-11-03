@@ -13,7 +13,7 @@ const GD_STEPS = [
   { k: 'walk', pose: 'point', t: 'Walks earn the most coins and hide treasure. Try the Sunny Park.', ring: ['#bar [data-act=walk]'], on: ['walk'] },
   { k: 'shops', pose: 'sit', t: 'Market Street has three shops and Pip\'s Sprout Cart. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture.', tp: 'Kibble Corner: food. Boutique: clothes. Barkitecture: houses.' },
   { k: 'garden', pose: 'sit', t: 'At Bond 2 the veggie patch opens. Grow carrots, feed them to {dog}. Nothing toxic can be planted. Ever.', tp: 'Bond 2 opens the veggie patch. Nothing toxic can grow.' },
-  { k: 'missions', pose: 'point', t: 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.', tp: 'Three missions a day, 15 coins each. Seven stamps: a surprise.', ring: ['#msBtn', '#bar [data-act=journal]'] }, // v2.16.1: the top-bar clipboard (desktop); phones ring the Journal
+  { k: 'missions', pose: 'point', t: 'One little mission a day: 40 coins and a crayon stamp. Seven stamps is a surprise.', tp: 'One mission a day: 40 coins and a stamp. Seven stamps: a surprise.', ring: ['#msBtn', '#bar [data-act=journal]'] }, // v2.16.1: the top-bar clipboard (desktop); phones ring the Journal
   { k: 'done', pose: 'cheer', t: 'That is everything. It is in your Journal under How to play, if you forget. I will be by the river.' }
 ];
 // the Journal page: the 8 lessons (action icon, 2 to 3 sentences)
@@ -25,7 +25,7 @@ const GD_LESSONS = [
   ['walk', 'walk', 'Walks', 'Walks earn the most coins and hide treasure. New routes open as your Bond grows.'],
   ['shops', 'coin', 'Shops', 'Market Street has three shops and Pip\'s Sprout Cart. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture.'],
   ['garden', 'garden', 'Garden', 'At Bond 2 the veggie patch opens. Grow carrots and feed them to your dog. Nothing toxic can be planted. Ever.'],
-  ['missions', 'missions', 'Daily missions', 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.']
+  ['missions', 'missions', 'Daily missions', 'One little mission a day: 40 coins and a crayon stamp. Not keen on it? One free swap a day. Seven stamps is a surprise.'] // Daily rhythm (was three a day at 15)
 ];
 // v2.16 First Week: a save started on v2.16 (S.guide.fw) walks Puppy's first day instead (FW_STEPS in 47_firstweek.js); everything else here is shared
 const gdSteps = () => (S && S.guide && S.guide.fw && typeof FW_STEPS !== 'undefined' ? FW_STEPS : GD_STEPS);

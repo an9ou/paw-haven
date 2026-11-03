@@ -5,7 +5,7 @@
       Yesterday's "see you tomorrow" wish (S.fw.wish, 47_firstweek.js) becomes today's wish for that dog.
    2. The Bond track: Bond 1 to 10 with what each level opens, read from the game's own tables, plus new gifts: photo frames at Bond 3, 5 and 7,
       the Crayon Crown and the Golden Collar at Bond 10. It opens from the HUD Bond meter and its "Next" line.
-   3. The dog diary: a page for every game day with something in it, written at display time from templates in the dog's own voice
+   3. The dog diary: a page for every Japan day with something in it (Daily rhythm; a game day before), written at display time from templates in the dog's own voice
       (S.dd.diary keeps summaries, the last 60 pages). Journal > Diary.
    4. The sticker book: 12 pages of 6 stickers (wishes, places, festivals, the Training Ground, the Splash Pool, the calendars).
       A full page gives a Bond 1-2 outfit or a photo frame. Journal > Stickers, and More on phones.
@@ -214,10 +214,10 @@ function ddMeterSync() { // a see-through button over the Bond meter (at least 4
 const DD_XC = { fetch: 'l', floatfetch: 's', toy: 'y', bath: 'b', nap: 'z', paddle: 's', sprinkle: 's', agility: 'a', photo: 'h', garden: 'g', cook: 'c', paw: 'v', leafpile: 'e', parade: 'e', sweater: 'e', snowdog: 'e', snowdrift: 'e', fortune: 'e', pet: 'p', adopt: 'n', mail: 'm', gaze: 'j', ride: 'r' };
 const DD_XORDER = 'nlasyrjebzpgchvm';
 const DD_XIC = { n: 'family', l: 'ball', a: 't:Agility Tunnel', s: 'water-spray', y: 't:Squeaky Duck', r: 't:Train Ticket', j: 'w-dawn', e: 'leaf', b: 'tub', z: 'zzz', p: 'pet', g: 'garden', c: 'kitchen', h: 'camera', v: 'dogpark', m: 'mail' }; // the diary doodle: the game's own icons
-function ddPageNew() { const d = D(); return { g: day(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
+function ddPageNew() { const d = D(); return { g: day(), j: jstISO(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
 const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi));
 function ddDiaryClose() {
-  const t = S.dd.today; if (!t || t.g === day()) return;
+  const t = S.dd.today; if (!t || (t.j || '') === jstISO()) return; // Daily rhythm: a page a Japan day (was a game day; a page from before has no j and closes once)
   if (ddPageHas(t)) { S.dd.diary.push(t); if (S.dd.diary.length > DD_DIARY_MAX) S.dd.diary.splice(0, S.dd.diary.length - DD_DIARY_MAX); }
   S.dd.today = null; markDirty();
 }

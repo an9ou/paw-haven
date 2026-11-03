@@ -2879,7 +2879,7 @@ PROPS.sniffer=function(b){
 
 /* ===================================== v2.4 "Shop Day" art ===================================== */
 /* 6 houses, 32 items (12 clothes, 6 toys, 8 foods, 6 house cards), props missioncard / stampcard / gerald, icons missions / guide / stamp.
-   missioncard 200x260  o.items [{text (escaped by the caller), done, p, n}] (3 rows), o.stamps 0..7, o.day, v2.14 o.title (the translated heading, escaped here; none = "Missions"). The card is the same drawing for every
+   missioncard 200x260  o.items [{text (escaped by the caller), done, p, n}] (3 rows; Daily rhythm o.one: one row in the middle, badge 0/1), o.stamps 0..7, o.day, v2.14 o.title (the translated heading, escaped here; none = "Missions"). The card is the same drawing for every
                         option set (fixed seed); only the row text, ticks, badge and stamp dots change. Cached per option set.
    stampcard 240x140    o.stamps 0..7 stamped in pink crayon (spot 7 is the surprise), v2.14 o.title (none = "Stamp card"). Cached per value.
    gerald 160x160       o.pose point | wave | sit | cheer. A crayon duck in the dog style (three boiling redraws like the dogs, paused by
@@ -3449,11 +3449,13 @@ PROPS.missioncard=function(b,o){
   b.dot(72,26,1.8,'#8E8780');b.dot(128,26,1.8,'#8E8780');
   tapeB(b,164,48,34,30,'#BDE7D2');
   {const ti=o.title!=null&&o.title!==''?o.title:'Missions';b.tx(100,66,ti,o.title!=null&&o.title!==''?titleFit(ti,27,112):27,{col:'#B8536F',...cardF(ti)})}
-  mcRows.forEach(y=>b.loop(rot(RR(32,y-10,20,20,3),(b.r()-.5)*.12,42,y),{w:2.2}));
+  // Daily rhythm: o.one = the one-mission card (one row in the middle, a 0/1 badge); without it the three rows of v2.4
+  const rows=o.one?[mcRows[1]]:mcRows,tot=rows.length;
+  rows.forEach(y=>b.loop(rot(RR(32,y-10,20,20,3),(b.r()-.5)*.12,42,y),{w:2.2}));
   // dynamic part (text, ticks, badge, stamps), drawn last so the card itself never changes
   const items=o.items||[];let done=0;
   b.tx(100,86,o.day||'',15,{op:.75,...cardF(o.day||'')});
-  mcRows.forEach((y,i)=>{const it=items[i];
+  rows.forEach((y,i)=>{const it=items[i];
     if(!it){b.raw(b.st(`M60 ${y+2}H160`,GRAPH,1.4,.6).replace('stroke-linecap','stroke-dasharray="4 4" stroke-linecap'));return}
     // text stays left of x 146 (the paper ends near 176); p/n sits right-aligned at the row's end, between the rules
     // v2.14 fix: it.fs 13 (the game measured the row at 13 px) keeps the small size even when the row comes out as 2 lines
@@ -3466,9 +3468,9 @@ PROPS.missioncard=function(b,o){
   });
   const st=Math.max(0,Math.min(7,o.stamps|0));
   for(let i=0;i<7;i++){const x=40+i*13,y=234;if(i<st)paw(b,x,y+1,2.6,C.pinkD,{noline:1});else b.raw(`<circle cx="${x}" cy="${y}" r="4.6" fill="none" stroke="${GRAPH}" stroke-width="1" stroke-dasharray="2 2"/>`)}
-  b.sh(E(158,229,17,15,18),done===3?C.green:C.yel,{hatch:0,hl:0,lw:1.1,dr:.3});
-  b.tx(158,236,done+'/3',19,{});
-  if(done===3)b.ex('spark',184,206,5);
+  b.sh(E(158,229,17,15,18),done===tot?C.green:C.yel,{hatch:0,hl:0,lw:1.1,dr:.3});
+  b.tx(158,236,done+'/'+tot,19,{});
+  if(done===tot)b.ex('spark',184,206,5);
 };
 const SC_SPOTS=[[48,66],[96,66],[144,66],[192,66],[72,108],[120,108],[168,108]];
 PROPS.stampcard=function(b,o){
@@ -4021,7 +4023,7 @@ PA.prop=function(name,o){
   let opt,lbl;
   if(name==='missioncard'){
     const it=(o&&Array.isArray(o.items)?o.items:[]).slice(0,3).map(t=>({text:String(t&&t.text!=null?t.text:''),done:!!(t&&t.done),p:Math.max(0,(t&&t.p|0)||0),n:Math.max(0,(t&&t.n|0)||0),...(t&&t.fs===13?{fs:13}:{})}));
-    opt={items:it,stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0)),day:esc(o&&o.day!=null?o.day:'')};lbl='Missions card';if(o&&o.title)opt.title=esc(o.title);
+    opt={items:it,stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0)),day:esc(o&&o.day!=null?o.day:'')};lbl='Missions card';if(o&&o.title)opt.title=esc(o.title);if(o&&o.one){opt.one=1;opt.items=it.slice(0,1)}
   }else if(name==='stampcard'){opt={stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0))};if(o&&o.title)opt.title=esc(o.title);lbl='Stamp card, '+opt.stamps+' of 7'}
   else if(name==='gerald'){opt={pose:o&&GER_POSES.includes(o.pose)?o.pose:'point'};lbl='Gerald the duck'}
   else return _prop24(name,o);

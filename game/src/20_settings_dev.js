@@ -10,7 +10,7 @@ function openSettings() {
     <label class="tog"><input type="checkbox" id="setMotion" ${motionOff ? '' : 'checked'}> ${esc(tt('settings.motion', 'Motion and wobble'))}</label>
     ${mpSettingsHTML()}
     <div class="barkset"><span>${esc(tt('settings.barking', 'Barking:'))}</span>${[['normal', tt('settings.bark_normal', 'Normal')], ['fewer', tt('settings.bark_fewer', 'Fewer')], ['off', tt('settings.bark_off', 'Off')]].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${esc(l)}</button>`).join('')}</div>
-    <p class="small">${esc(tt('settings.economy', 'Time: 1 game hour = 1 real minute. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
+    <p class="small">${esc(tt('settings.economy_clock', 'Time: 1 game hour = {min} real minutes, so a game day is {hrs, plural, one {# real hour} other {# real hours}}. Daily bonuses and the mission start again every day at midnight in Japan. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { min: tnum(GAME_SEC), hrs: GAME_SEC * 24 / 60, coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
     <p class="small">${esc(touchOnly ? tt('settings.clock', 'Clock and weather follow your real local time (3 weather periods a day).') : tt('settings.clock_keys', 'Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'))}</p>
     ${S && typeof nwMenuBtn === 'function' ? `<p class="nw-setrow"><button class="btn" type="button" id="setNews">${esc(tt('nw.menu', "What's new"))}</button></p>` : ''}
     ${typeof frLeaveRow === 'function' ? frLeaveRow() : ''}
@@ -70,7 +70,7 @@ function renderDev() {
   $('#dvBond').onclick = () => { if (S.bond.level >= 10) { toast('Already max Bond.'); return; } addBond(BOND_TH[S.bond.level] - S.bond.pts, { raw: true }); };
   $('#dvFill').onclick = () => { for (const k in S.stats) S.stats[k] = 100; updateHUD(); markDirty(); };
   $('#dvDrain').onclick = () => { for (const k in S.stats) S.stats[k] = 15; updateHUD(); markDirty(); };
-  $('#dvDay').onclick = () => { S.gameMin = (Math.floor(S.gameMin / 1440) + 1) * 1440 + 480; dailyCheck(); updateHUD(); toast('Good morning. Daily bonuses reset.'); };
+  $('#dvDay').onclick = () => { S.gameMin = (Math.floor(S.gameMin / 1440) + 1) * 1440 + 480; S.daily.day = ''; dailyCheck(); updateHUD(); toast('Good morning. Daily bonuses reset.'); }; // Daily rhythm: the bonuses follow the Japan day, so the dev button clears today's
   $('#dvMap').onclick = () => { TREASURES.filter((t) => t.kind === 'quest').forEach((t) => grantTreasure(t, t.piece)); toast('All 4 map pieces granted. Check the yard for an X.', 'gold'); if (cur.mode === 'yard') go('yard'); };
   $('#dvTreasure').onclick = () => { const c = TREASURES.filter((t) => !(isUnique(t) && hasTreasure(t)) && t.kind !== 'quest'); if (!c.length) { toast('You own every treasure. Legend.'); return; } const t = PICK(c); grantTreasure(t, PICK(t.routes)); toast(`Granted: ${t.n} (${RARITY[t.r]}).`, 'gold'); };
   $('#dvTime').onchange = (e) => { ENV.time = e.target.value; prefs.ovrTime = ENV.time === 'auto' ? null : ENV.time; savePrefs(); checkEnv(true); };
