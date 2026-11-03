@@ -43,7 +43,7 @@ const env_env = env;
 const LY = TALL ? {
   G: 1260, K: 3.8, KN: 3.4, BX: 600, NX: 475, subY: 1385, subCX: 475, subSize: 58, subMax: 790,
   label: { x: 250, y: 318, size: 60, big: { x: 475, y: 560, sc: 1.45 } }, nums: [[145, 470], [315, 470], [485, 470]], numR: 76, numSize: 112,
-  child: { x: 300, y: 640, tail: [115, 790], size: 54 }, adult: { x: 330, y: 455, tail: [420, 345], size: 64 }, leadTop: [1000, -80],
+  child: { x: 318, y: 640, tail: [125, 790], size: 54 }, adult: { x: 330, y: 455, tail: [420, 345], size: 64 }, leadTop: [1000, -80],
   title: { x: 475, y: 600 }, cards: { x: 475, y0: 390, dy: 165, w: 720, h: 140, size: 84 }, recapN: { x: 475, g: 1330, k: 2.7 },
   logo: { x: 475, y: 470, w: 520 },
   views: { hello: '120 160 260 462', yard: '470 160 260 462', house: '250 120 300 533' },
