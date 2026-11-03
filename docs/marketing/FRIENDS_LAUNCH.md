@@ -93,11 +93,11 @@ Title off the hook (80.1 STRONG). Human score 78.3 PASS on the text (the link li
 
 ### X (under 280 characters)
 ```
-4 ways your dog can make friends in a cozy game (no chat) 🐾 we added Friends to Doodle Doggo: visit a yard, pet their pup, leave 1 of 12 paw-print notes, send a gift, walk their dog. no messages to type. drop your code below! https://doodledoggo.app #DoodleDoggo #CozyGames
+4 ways your dog can make friends in a cozy game (no chat) 🐾 we added Friends to Doodle Doggo: visit a yard, pet their pup, leave 1 of 12 paw-print notes, send a gift, walk their dog. no messages, just dogs. drop your code below! https://doodledoggo.app #DoodleDoggo #CozyGames
 ```
-273 of 280 (the link counts as 23) · human score 77.2 PASS.
+277 of 280 (the link counts as 23, each emoji as 2) · human score 77.2 PASS. (3 Nov 2026: "no messages to type" became "no messages, just dogs", the owner's no-chat-no-messages rule.)
 
-**Alt text:** `Noodle, a crayon dachshund, tells the story in a sketchbook autumn yard, under the words "4 ways your dog can make friends (no chat)" and a sticker "new update, 7 Nov". His friend card appears, then four numbered scenes from the game: he visits a friend's yard where a Corgi named Waffles and a Golden puppy get petted, a pink paw print stamps onto their path, a wrapped gift flies off, and Waffles runs beside him on a walk. "No chat. No messages." It ends on "add us!", our friend card and "drop your code below".`
+**Alt text:** `Noodle, a crayon dachshund, tells the story in a sketchbook autumn yard, under the words "4 ways your dog can make friends (no chat)" and a sticker "new update, 7 Nov". His friend card appears, then four numbered scenes from the game: he visits a friend's yard, where he and a Corgi named Waffles sniff noses and a Golden puppy gets petted, a pink paw print stamps onto their path, a wrapped gift flies off, and Waffles hops over a sprinkler behind him on a walk. Noodle and Waffles play-bow and jump: "No chat. No messages." Subtitles show every line. It ends on "add us!", our friend card and "drop your code below".`
 
 ## The carousel ("add a friend in 3 steps", 8 slides)
 
@@ -122,11 +122,11 @@ step 3: add theirs. type their DOG- code or open their invite link 🔗 that's i
 
 then, once a day, your dog can visit their yard 🏡 pet their dogs for +1 Bond each 💕 leave a paw-print note 💌 send a gift 🎁 and take one of their dogs along on your walk 🦮
 
-no chat. you never type a message 🤐 and you can remove or block a friend any time 🔒 a cozy dog game to play with friends, free on your phone or computer 📱✏️
+no chat, no messages 🤐 and you can remove or block a friend any time 🔒 a cozy dog game to play with friends, free on your phone or computer 📱✏️
 
 #DoodleDoggo #CozyGames #DogGames #IndieGame #GamesWithFriends
 ```
-Job B (the caption carries the steps) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 19 emoji (2.4 per 100 characters), none as bullets (the steps start with "step 1:") · linter READY · human score 75.4 PASS.
+Job B (the caption carries the steps) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 19 emoji (2.4 per 100 characters), none as bullets (the steps start with "step 1:") · linter READY · human score 73.9 PASS (re-checked 3 Nov 2026 after "you never type a message" became "no chat, no messages").
 
 **Alt text (cover):** `A sketchbook page titled "add a friend in 3 steps" over a game screen of a friend's autumn yard, where a crayon Shiba, a Corgi and a Golden puppy in a party hat stand together, and the line "your dog visits theirs. no chat, no messages."`
 
