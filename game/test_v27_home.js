@@ -1,5 +1,6 @@
 // v2.7 HOME lane test (V27.md section 5): Barkitecture Decor and Furniture tabs, placement mode (drag, click, keyboard, zones, put away),
 // an old v2.6 save, a bed for every dog (three dogs napping on three beds), furniture use (active dog and a pack dog, front layers), the Beds tab.
+// v2.19 fix (sections 8, 9): on the deep floor indoors no dog stands behind or inside the furniture, and the naps in the house are in a bed or on the rug.
 // node game/run_tests.js v27_home
 require('./test_lib').run('v27_home', async (t) => {
   const { ok, sec, ev } = t, URL = require('./test_lib').URL;
@@ -188,4 +189,75 @@ require('./test_lib').run('v27_home', async (t) => {
   await t.until((bf) => window.__paw.S.bedOf[bf.split('|')[0]] === bf.split('|')[1], bf, 4000);
   st = await S(); ok(st.bedOf[bf.split('|')[0]] === bf.split('|')[1] && st.bedOf[st.activeId] !== bf.split('|')[1] && st.bedOf[st.activeId] === st.bed, 'a dog chip gives that bed to that dog, the active dog swaps: ' + bf + ' ' + JSON.stringify([st.bed, st.bedOf]));
   await t.closeX();
+
+  // v2.19 fix (owner, 2 Nov 2026, iPhone): in the Cozy House at night Saffron stood behind the sofa, half hidden, could not get into her Pumpkin Patch
+  // Bed and napped by the sofa. On the deep floor (v2.15, ground: true) no dog's feet stand behind or inside a piece of furniture (the sofa, the lamp,
+  // the plant, a bed, a placed piece) over a long wander, and every nap in the house is in the dog's own bed (inside its outline) or on the open rug.
+  // Desktop and phone (iPhone 15, 393 x 852), the owner's two beds and a placed Tunnel Sofa; then one bed for two dogs; then the cafe, vet and salon.
+  const indoorRun = async (dev, beds, furn) => {
+    await t.ctx.close(); await t.newGame({ packCare: true, ground: true, prefs: { rmTest: true }, time: 'night', weather: 'rain', device: dev || undefined }, { coins: 11746, bond: { level: 3, pts: 200 }, stats: { hunger: 90, happy: 80, energy: 40, clean: 90 } });
+    await ev(([beds, furn]) => { const P = window.__paw, S = P.S; P.addDog({ key: 'schnauzer', sex: 'male', months: 30 }, 'Pepper'); S.dogs[0].name = 'Saffron';
+      Object.keys(beds).forEach((n) => { if (!S.beds.includes(n)) S.beds.push(n); }); S.bedAt = JSON.parse(JSON.stringify(beds)); S.bed = Object.keys(beds)[Object.keys(beds).length - 1];
+      (furn || []).forEach((n) => { S.decor[n] = { got: '2026-11-01', out: true }; }); }, [beds, furn]);
+    await t.home('house'); await t.sleep(300);
+  };
+  // feet points of the awake dogs behind a tall FLOOR prop or beside a placed piece (feet between its drawn top and its base, the dog's half width
+  // over it: the dog would be hidden behind it or drawn over it); the napping dogs (once there): feet inside their own bed's drawn box
+  const indoorSim = (place, n) => ev(([place, n]) => {
+    const P = window.__paw, G = P.gr, Rm = P.rm, S = P.S, f = G.floor(place), svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse();
+    const wb = (el) => { const r = el.getBoundingClientRect(), a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M); return [a.x, a.y, b.x - a.x, b.y - a.y]; };
+    // the tall pieces as drawn (the sofa, the lamp, the plants, the tables, the bench, the dryer): [id, drawn box, base]
+    const props = [...document.querySelectorAll('#pack .gr-prop[data-prop]:not(.gr-game)')].map((el) => [el.dataset.prop, wb(el), f.props.find((q) => String(q.id) === el.dataset.prop)]).filter((q) => q[2] && q[2].box && q[1][3] >= 60).map((q) => [q[0], q[1], q[2].box[1] + q[2].box[3]]);
+    const items = [...document.querySelectorAll('#hoRoomG > #bedG, #hoRoomG > [data-bed], #hoRoomG > [data-furn]')].map((el) => [el.dataset.bed || el.dataset.furn || S.bed, wb(el)]);
+    const out = { behind: [], naps: [], napBad: [], steps: 0, moved: 0, kinds: {} }, start = Rm.dogs().map((id) => Rm.pos(id));
+    for (let i = 0; i < n; i++) {
+      const s = G.sim(place, 2, { seed: 300 + i }); if (s.error) return { error: s.error }; Object.keys(s.kinds).forEach((k) => { out.kinds[k] = (out.kinds[k] || 0) + s.kinds[k]; });
+      Rm.dogs().forEach((id) => {
+        const p = Rm.pos(id), half = 70 * p.sc, nap = P.ho.napping && P.ho.napping(id) && id !== S.activeId; out.steps++;
+        if (!nap && P.ho.uses()[id]) return; // on a piece of furniture (or walking up to it): its own spot
+        if (nap) { if (p.pose === 'walk') return; const b = items.find((x) => x[0] === P.ho.bedFor(id)); out.naps.push(id); if (!b || p.x < b[1][0] || p.x > b[1][0] + b[1][2] || p.y < b[1][1] || p.y > b[1][1] + b[1][3]) out.napBad.push([id.slice(-4), Math.round(p.x), Math.round(p.y), b && b[1].map(Math.round)]); return; }
+        props.forEach(([nm, b, base]) => { if (p.y < base && p.y > b[1] && p.x + half > b[0] && p.x - half < b[0] + b[2] && out.behind.length < 12) out.behind.push([id.slice(-4), nm, Math.round(p.x), Math.round(p.y), p.pose]); });
+        items.forEach(([nm, b]) => { if (p.y > b[1] + 2 && p.y < b[1] + b[3] && p.x + half * 0.6 > b[0] && p.x - half * 0.6 < b[0] + b[2] && out.behind.length < 12) out.behind.push([id.slice(-4), nm, Math.round(p.x), Math.round(p.y), p.pose]); });
+      });
+    }
+    out.moved = Rm.dogs().filter((id, j) => Math.hypot(Rm.pos(id).x - start[j].x, Rm.pos(id).y - start[j].y) > 1).length; out.naps = [...new Set(out.naps)].length; return out;
+  }, [place, n]);
+  const TWO = { 'Old Blanket': [0, 264], 'Pumpkin Patch Bed': [250, 330] };
+  for (const dev of ['', 'iPhone 15']) {
+    const L = dev ? 'phone' : 'desktop';
+    sec(`8. v2.19 fix (${L}): the Cozy House at night, two dogs, two beds and a Tunnel Sofa: nobody behind the furniture, naps in a bed`);
+    await indoorRun(dev, TWO, ['Tunnel Sofa']);
+    const hb = await ev(() => window.__paw.rm.scan().filter((b) => String(b[5] || '').startsWith('back:')).map((b) => b[5]));
+    ok(['back:sofa', 'back:lamp', 'back:plant', 'back:Old Blanket', 'back:Tunnel Sofa'].every((k) => hb.includes(k)) && hb.length >= 6, `${L}: indoors every piece of furniture keeps the feet off the floor behind and beside it (${hb.join(', ')})`);
+    const s = await indoorSim('house', 150);
+    ok(!s.error && s.steps >= 300, `${L}: 2 dogs x 300 simulated s in the Cozy House (${s.error || s.steps + ' checks, kinds ' + JSON.stringify(s.kinds)})`);
+    ok(!s.behind.length, `${L}: no dog's feet behind the sofa, the lamp or the plant, or inside a bed or the Tunnel Sofa ${JSON.stringify(s.behind)}`);
+    ok(!s.napBad.length, `${L}: a pack dog's nap in the house is in its own bed, its feet inside the bed's outline (${s.naps} napping, ${JSON.stringify(s.napBad)})`);
+    const spots = await ev(() => { const P = window.__paw, f = P.gr.floor('house'), st = P.S; return f.spots.filter((q) => q.act === 'rest').map((q) => q.id); });
+    ok(spots.length > 0 && (await ev(() => { const P = window.__paw, S = P.S, d = S.dogs.find((x) => x.id !== S.activeId); P.ho.free(d.id); return P.ho.nap(d.id, 5000) === true && P.ho.napping(d.id); })), `${L}: the old fixed rest spots (${spots.join(', ')}) give way to the dog's own bed (__paw.ho.nap)`);
+    await t.until(() => { const P = window.__paw, S = P.S, d = S.dogs.find((x) => x.id !== S.activeId), g = document.querySelector(`#pack [data-dog="${d.id}"]`); return g && g.getAttribute('transform') && P.rm.pos(d.id).pose === 'sleep'; }, null, 8000);
+    const fit = await ev(() => { const P = window.__paw, S = P.S, d = S.dogs.find((x) => x.id !== S.activeId), svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(), wb = (el) => { const r = el.getBoundingClientRect(), a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M); return [a.x, a.y, b.x, b.y]; }; const art = document.querySelector(`#pack [data-dog="${d.id}"] .rm-art svg`), bed = document.querySelector(`#hoRoomG [data-bed="${CSS.escape(P.ho.bedFor(d.id))}"]`); return { pose: P.rm.pos(d.id).pose, art: art && wb(art).map(Math.round), bed: bed && wb(bed).map(Math.round), lip: !!document.querySelector(`.ho-bedfront[data-bed="${CSS.escape(P.ho.bedFor(d.id))}"]:not([style*="none"])`) }; });
+    const cx = fit.art ? (fit.art[0] + fit.art[2]) / 2 : -1;
+    ok(fit.pose === 'sleep' && fit.bed && cx > fit.bed[0] && cx < fit.bed[2] && fit.art[3] <= fit.bed[3] + 2 && fit.lip, `${L}: the napping dog lies inside its bed's outline, the bed's front lip over it (${fit.pose}, lip ${fit.lip}, dog ${JSON.stringify(fit.art)}, bed ${JSON.stringify(fit.bed)})`);
+    // the night: both asleep, each in its own bed
+    const night = await ev(() => { const P = window.__paw, S = P.S; S.dogs.forEach((d) => { if (d.id !== S.activeId) { P.ho.free(d.id); d.sleeping = true; } }); S.sleeping = true; P.go('yard'); return true; });
+    await t.sleep(1200);
+    const nb = await ev(() => { const P = window.__paw, S = P.S; return S.dogs.map((d) => { const p = P.rm.pos(d.id), b = P.ho.box(P.ho.bedFor(d.id)); return [d.name, Math.round(p.x), Math.round(p.y), b.map(Math.round), p.x > b[0] && p.x < b[0] + b[2] && p.y > b[1] && p.y < b[1] + b[3]]; }); });
+    ok(night && nb.every((r) => r[4]), `${L}: at night each dog sleeps in its own bed, feet inside its box ${JSON.stringify(nb)}`);
+  }
+  sec('9. v2.19 fix: one bed for two dogs, and the other rooms');
+  await indoorRun('', { 'Pumpkin Patch Bed': [330, 420] }, []);
+  const one = await indoorSim('house', 90);
+  ok(!one.error && !one.behind.length && !one.naps, `one bed: the leader keeps it; the other dog rests on the open rug, never behind the sofa or the bed ${JSON.stringify(one.behind)} ${JSON.stringify(one.kinds)}`);
+  const rug = await ev(() => { const P = window.__paw, S = P.S, d = S.dogs.find((x) => x.id !== S.activeId), q = P.ho.rugRest(d.id); return { q, free: !!q && P.gr.free(q[0], q[1]), nap: P.ho.nap(d.id) }; });
+  ok(rug.free && rug.nap === false, `one bed: the second dog's rest spot is free floor (${JSON.stringify(rug.q)}), not a bed it does not own`);
+  const rn = await ev(() => { const P = window.__paw, S = P.S, d = S.dogs.find((x) => x.id !== S.activeId); d.sleeping = true; S.sleeping = true; P.go('yard'); return d.id; });
+  await t.sleep(1000);
+  const rp = await ev((id) => { const P = window.__paw, p = P.rm.pos(id), b = P.ho.box('Pumpkin Patch Bed'); return [Math.round(p.x), Math.round(p.y), p.y > b[1] + b[3] || p.x < b[0] || p.x > b[0] + b[2], P.gr.inside(p.x, p.y)]; }, rn);
+  ok(rp[2] && rp[3], `one bed: at night the second dog sleeps on the rug, clear of the bed and on the floor ${JSON.stringify(rp)}`);
+  for (const pl of ['cafe', 'vet', 'salon']) {
+    await ev((pl) => { const S = window.__paw.S; S.sleeping = false; S.dogs.forEach((d) => { d.sleeping = false; }); }, pl); await t.home(pl); await t.sleep(250);
+    const r = await indoorSim(pl, 45);
+    ok(!r.error && r.moved >= 1 && !r.behind.length, `${pl}: indoors, 90 simulated s: nobody's feet behind a piece of furniture (moved ${r.moved}) ${r.error || JSON.stringify(r.behind)}`);
+  }
 }, { packCare: true });

@@ -325,7 +325,7 @@ function pkWhoFit(p, full, l, stay) {
   for (const t of tries) { p.textContent = t; if (p.scrollWidth <= p.clientWidth + 1) return; }
 }
 function pkRoutesBind() {
-  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, tt('packplay.need_walker', 'Somebody has to come along. Tick another dog first.')); pkRoutesLine(); };
+  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, tt('packplay.need_walker', 'Somebody has to come along. Tick another dog first.')); pkRoutesLine(); if (typeof frWalkSync === 'function') frWalkSync(); };
   const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw, tt('packplay.need_walker', 'Somebody has to come along. Tick another dog first.'));
 }
 

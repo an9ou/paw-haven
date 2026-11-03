@@ -15,7 +15,7 @@ const CL = {
   pending: null, pulling: false, ready: false, offShown: false, regPath: '', ui: '', msg: '', bk: null, code: '',
   started: false, out: false // v2.3 title: the first start finished / logged out on this page
 };
-function clMeta() { let m = null; try { m = JSON.parse(lsGet(CL_CFG.metaKey) || 'null'); } catch (e) { m = null; } return Object.assign({ rev: 0, changedAt: 0, pushedAt: 0, uid: null, dogId: null, nudged: false }, m || {}); }
+function clMeta() { let m = null; try { m = JSON.parse(lsGet(CL_CFG.metaKey) || 'null'); } catch (e) { m = null; } return Object.assign({ rev: 0, changedAt: 0, pushedAt: 0, uid: null, dogId: null, nudged: false, frNudged: false }, m || {}); }
 function clMetaSet(patch) { const m = Object.assign(clMeta(), patch); lsSet(CL_CFG.metaKey, JSON.stringify(m)); return m; }
 function clHost() { return String(window.__pawCloudHost || location.hostname || ''); }
 function clArtifact() {
@@ -227,7 +227,7 @@ async function clPush(force) {
       CL.again = true; CL.againForce = CL.againForce || !!force; return;
     }
     if (!up.ok) throw up.error;
-    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
+    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); if (typeof frAfterPush === 'function') Promise.resolve().then(frAfterPush).catch(() => {}); } // v2.19: the yard snapshot follows a cloud push, and a snapshot error never fails the save (50_friends.js)
   } catch (e) {
     CL.err = 'offline'; clearTimeout(CL.retryT); CL.retryT = setTimeout(() => { CL.retryT = null; CL.err = ''; clPush(); }, 15000);
   } finally {

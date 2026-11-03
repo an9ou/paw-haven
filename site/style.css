@@ -395,6 +395,19 @@ html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
 .sitetop{flex:1 1 100%;margin-bottom:6px}
 .brandbig{display:block;border-radius:12px}
 @media (max-width:860px){ .sheet>.sitehead{display:flex;flex-direction:column;align-items:stretch} .sheet>.sitehead .sitenav{display:grid} .sheet>.sitehead .langs{align-self:center} }
+/* v2.19 fit audit: a prose sheet (the invite page /f/<code>, /privacy) is only 716 px wide, so its header (not the stuck bar) takes the phone layout
+   at every width: logo, the five tabs as five equal tiles (doodle over the label, as up to 860 px), then the language menu */
+@media (min-width:861px){
+  .sheet.prose>.sitehead:not(.stuck){display:flex;flex-direction:column;align-items:stretch;padding:0 0 10px;margin:-2px 0 14px}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav a{min-width:0;flex-direction:column;gap:2px;padding:5px 2px 6px;font-size:21px;line-height:1.05;overflow-wrap:break-word}
+  .sheet.prose>.sitehead:not(.stuck) .sitenav a span{text-wrap:balance}
+  html.s-cjk .sheet.prose>.sitehead:not(.stuck) .sitenav a{line-height:1.2}
+  html.s-th .sheet.prose>.sitehead:not(.stuck) .sitenav a{line-height:1.35}
+  .sheet.prose>.sitehead:not(.stuck) .langs{align-self:center}
+}
+/* Korean tab labels wrap between words only (강아지들 stays whole) where a word fits its tab (360 px and up; at 320 px it must still wrap to fit) */
+@media (min-width:350px){ html[lang="ko"] .sitenav a{word-break:keep-all} }
 /* owner: the Dogs page is a grid of 3 dog cards; a tap opens the dog's profile in a pop-up (the profiles list stays only without JavaScript) */
 .dognav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
 .dognav a{font-family:var(--hand);font-size:26px;padding:8px 6px 10px}
@@ -603,3 +616,17 @@ dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size
 .gameframe:fullscreen::before,.gameframe:-webkit-full-screen::before,.gameframe.fake::before{height:calc(26px + env(safe-area-inset-top,0px));border-bottom-width:1.5px}
 .gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{top:calc(1px + env(safe-area-inset-top,0px));width:24px;height:24px;font-size:13px;border-width:1.5px;border-radius:7px 5px 8px 5px}
 .gameframe:fullscreen .fsx::after,.gameframe:-webkit-full-screen .fsx::after,.gameframe.fake .fsx::after{content:"";position:absolute;inset:-10px}
+
+/* v2.19: the friend invite page (/f/DOG-XXXXX). The code is the big crayon line; the two buttons stack. */
+.invite h1{font-size:46px}
+/* the code in DD Code (owner, 2 Nov 2026: S/5, Z/2 and B/8 must not look alike): a 2.6 kB subset of Atkinson Hyperlegible Bold, OFL
+   (game/fonts/code/README.txt, site/fonts/dd-code.woff2), on a crayon box */
+@font-face{font-family:'DD Code';font-weight:400 800;font-display:swap;src:url(/fonts/dd-code.woff2) format('woff2')}
+.invitecode{display:block;width:max-content;max-width:100%;box-sizing:border-box;font-family:'DD Code','Verdana',sans-serif;font-weight:700;font-size:52px;line-height:1.1;text-align:center;margin:.15em auto .35em;padding:.12em .45em;letter-spacing:.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;background:#fffdf7;border:3px solid var(--ink,#5B3D32);border-radius:16px 10px 18px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.16)}
+.invite .cta{display:flex;flex-direction:column;align-items:center}
+.invite .play{width:min(100%,440px)}
+.invitenote{max-width:34em;margin:.2em auto 0;text-align:center}
+@media (max-width:700px){
+  .invite h1{font-size:34px}
+  .invitecode{font-size:38px}
+}

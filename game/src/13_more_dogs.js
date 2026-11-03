@@ -64,6 +64,14 @@ function dogLook(d) {
 }
 function lookOpts(d, c) { const L = dogLook(d), o = {}; if (c) { o.coat = L ? Object.assign({}, c.coat, { look: L }) : c.coat; o.seed = hashId(d.id); } if (L) { if (L.age) o.age = L.age; if (L.mixHead) o.mix = { head: L.mixHead }; if (L.sparkle) o.sparkle = true; if (L.expecting) o.expecting = true; } return o; }
 function dogOpts(d, o) { return Object.assign({}, o || {}, lookOpts(d, coatInfo(d))); }
+// v2.19 (owner, 2 Nov 2026: no twisted necks eating and drinking): the eating dog's head hangs in front of its chest (dogs/pawart_dogs.js eatHead), so its nose
+// lands at PawArt.eatNose (x in the 240 box facing right), no longer at 170 for every dog. The bowl errand (facing left) stands the leader that much further
+// right (eatBowlDX, scene px) and a pack dog's bowl moves under its nose (fbPackBowls), so the nose meets the bowl as before. The stub and old art: 170, no change.
+function eatNoseX(d, o) { try { const f = PA().eatNose; const n = d && typeof f === 'function' ? f(artKey(d.key), dogOpts(d, Object.assign({ pose: 'eat' }, o))) : null; if (n && isFinite(n[0])) return n[0]; } catch (e) { /* the old spot */ } return 170; }
+function eatBowlDX(d, ty) {
+  if (!d) return 0; const w = wetDog(d), k = typeof rmScene === 'function' && rmScene() && typeof rmKd === 'function' ? rmKd(d, 500 + (ty || 0)) : 1;
+  return Math.round((eatNoseX(d, Object.assign({ outfit: shSleepOutfit(d, 'eat') }, w ? { wet: w } : {})) - 170) * (DW / 240) * (k || 1));
+}
 const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: typeof plWearing === 'function' && plWearing(d) ? PL_VEST : d.outfit.body }); // v2.15: the pool's life vest is draw-only (45_pool.js)
 // Rainy days (wet dogs): a dog drawn in a rainy outdoor scene (where the rain overlay falls, or on a rainy walk) is drawn wet (PawArt.dog wet option,
 // dogs/pawart_dogs.js), unless it wears a raincoat. Only the scene renders take it (the leader, the pack, Dog Card and playdate visitors, the walk);
@@ -191,7 +199,7 @@ function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d)
 function fbPackBowls(dogs, food) {
   const svg = $('svg.world', view), pack = $('#pack'); let g = $('#fbPackBowls'); if (g) g.remove(); if (!svg || !pack || !dogs.length || cur.mode !== 'yard') return;
   g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'fbPackBowls'; g.setAttribute('pointer-events', 'none');
-  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null, [fx, fy, face, sc0] = hs || packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); const cy = isPhone() && S.place === 'yard' ? Math.min(fy + 7 * sc, 598 - s / 2) : fy + 7 * sc; return place(bowlArt(food), cx - s / 2, cy - s / 2, s, s); }).join('');
+  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null, [fx, fy, face, sc0] = hs || packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, dn = (eatNoseX(d, { outfit: outfitOf(d) }) - 170) / 240, cx = fx - w / 2 + w * (face === 'left' ? 0.29 - dn : 0.71 + dn); const cy = isPhone() && S.place === 'yard' ? Math.min(fy + 7 * sc, 598 - s / 2) : fy + 7 * sc; return place(bowlArt(food), cx - s / 2, cy - s / 2, s, s); }).join('');
   pack.parentNode.insertBefore(g, pack);
 }
 function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }

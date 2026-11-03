@@ -9,7 +9,7 @@
 const fs = require('fs'), path = require('path'), cp = require('child_process'), zlib = require('zlib');
 const root = path.join(__dirname, '..');
 cp.execFileSync('node', [path.join(root, 'game', 'build.js'), 'publish'], { stdio: 'inherit' });
-cp.execFileSync('node', [path.join(__dirname, 'pages.js')], { stdio: 'inherit' });
+cp.execFileSync('node', [path.join(__dirname, 'pages.js'), '--itch'], { stdio: 'inherit' }); // --itch: no Pages password screen, no Friends test flag
 const html = fs.readFileSync(path.join(root, '_site', 'index.html'), 'utf8');
 
 const dist = path.join(root, 'dist'), out = path.join(dist, 'itch'), zipPath = path.join(dist, 'doodle-doggo-itch.zip');
@@ -24,6 +24,7 @@ const STRIP_DEV = '<script id="itchNoDevJs">(function(){var Q="#devBtn,#devPanel
 let itchHtml = html.includes('</head>') ? html.replace('</head>', () => HIDE_DEV + '</head>') : HIDE_DEV + html;
 const bodyEnd = itchHtml.lastIndexOf('</body>');
 itchHtml = bodyEnd >= 0 ? itchHtml.slice(0, bodyEnd) + STRIP_DEV + itchHtml.slice(bodyEnd) : itchHtml + STRIP_DEV;
+if (/<script>window\.__ddFrTest=1|id="ddGate"|dd_gate_v1/.test(itchHtml)) { console.error('itch: the Pages-only password screen or Friends test flag leaked into the itch.io copy'); process.exit(1); }
 fs.writeFileSync(path.join(out, 'index.html'), itchHtml);
 // the brand files the page links to (relative href/src), plus the icons the web manifest names
 const brand = path.join(root, 'brand'), want = new Set();

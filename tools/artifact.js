@@ -26,7 +26,7 @@ const FILES = {
   'world_e.js': ['world/pawart_world_e.js'],
   'world_f.js': ['world/pawart_world_f.js'], // v2.15: the v2.15 map (MAP ART), only when the file exists
   'world_g.js': ['world/pawart_world_g.js'], // v2.15: the new places (PLACE ART), only when the file exists
-  'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'],
+  'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js', 'mods/qr.js'],
 };
 const SPLIT = require(path.join(SRC, 'tools', 'split.js')).make(SRC, { lazy: false }); // v2.15: worlds F and G stay inline here (world_f.js, world_g.js), never lazy chunks
 const MIN = !args.includes('--no-minify'), minify = require(path.join(SRC, 'tools', 'minify.js'));

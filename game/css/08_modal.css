@@ -41,6 +41,7 @@ html.pa-panel .panel.celebrate::before{display:none}
 .opt{min-height:46px;padding:4px 12px;font-size:17px;display:inline-flex;align-items:center;gap:5px;margin:0 8px 8px 0;--wash:var(--paper)}
 .opt[aria-pressed="true"]{--wash:var(--w-yellow)}
 .opt .ic{width:28px;height:28px}
+.ward .opt{min-width:44px;justify-content:center}
 .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:10px 0}
 .res{padding:8px 10px 10px;text-align:center;--wash:var(--w-cream)}
 .res:nth-child(1){--wash:var(--w-yellow)} .res:nth-child(2){--wash:var(--w-pink)} .res:nth-child(3){--wash:var(--w-lilac)} .res:nth-child(4){--wash:var(--w-blue)} .res:nth-child(5){--wash:var(--w-mint)}

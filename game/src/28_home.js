@@ -220,7 +220,7 @@ function hoFrontOn(n) { return Object.values(HO.uses).some((u) => u.name === n &
 // a piece's front layer is drawn over everything, so a bed, decoration or piece standing nearer (lower bottom edge) and overlapping it would jump
 // behind it while a dog uses it. Right after each visible front layer those nearer things are drawn again, clipped to the piece's box (art review).
 // A bed with a dog napping on it is left out (the copy would hide the napping dog).
-function hoNapOn(m) { return hoIsBed(m) && ((S.sleeping && m === S.bed) || S.dogs.some((d) => d.id !== S.activeId && d.sleeping && hoBedFor(d) === m)); }
+function hoNapOn(m) { return hoIsBed(m) && ((S.sleeping && m === S.bed) || S.dogs.some((d) => d.id !== S.activeId && hoNapping(d) && hoBedFor(d) === m)); }
 function hoOverSVG(n) {
   const order = hoOrder(hoOutIn('house')), i0 = order.indexOf(n), fb = hoBox(n); if (i0 < 0) return '';
   const one = (m) => { const [x, y] = hoPos(m), [w, h] = hoSize(m), k = hoKind(m), sv = k === 'bed' ? hoBedArt(m) : k === 'furniture' ? hoFurnArt(m) : hmDecorArt(m); return sv ? place(sv, x, y, w, h) : ''; };
@@ -327,12 +327,37 @@ function hoPackUse(d, name, spot, ms) {
 // [feet x, feet y, facing, scale] for a pack dog: napping in the house = its own bed (or the rug), on furniture = the spot; else null (13_more_dogs.js packDogSVG)
 function hoPackSpot(d, i) {
   if (!S || !d || S.place !== 'house') return null;
-  if (d.sleeping) {
-    const b = hoBedFor(d); if (b) { const [x, y] = S.bedAt[b]; return [x + 130, y + 145, 'right', 0.75]; }
-    const rug = S.dogs.filter((o) => o.id !== S.activeId && o.sleeping && !hoBedFor(o)), k = Math.max(0, rug.indexOf(d)), r = HO_RUG_NAPS[(k + 1) % HO_RUG_NAPS.length];
-    hoRugHint(d); return r.slice();
+  const u = HO.uses[d.id];
+  if (d.sleeping || (u && u.bed)) { // v2.19 fix: a daytime nap in its own bed (hoPackNap) lies in the same spot as the night's sleep
+    const b = hoBedFor(d); if (b && (d.sleeping || b === u.name)) { const [x, y] = S.bedAt[b]; return [x + 130, y + 145, 'right', 0.75]; }
+    if (!d.sleeping) return null;
+    // no bed of its own tonight: the rug, a spot no bed, piece of furniture or decoration stands on (the player may have put one there)
+    const rug = S.dogs.filter((o) => o.id !== S.activeId && o.sleeping && !hoBedFor(o)), k = Math.max(0, rug.indexOf(d)), n = HO_RUG_NAPS.length;
+    const ring = HO_RUG_NAPS.map((_, j) => HO_RUG_NAPS[(j + 1) % n]), free = ring.filter((p) => !hoOnItem(p[0], p[1]));
+    hoRugHint(d); return (free.length ? free[k % free.length] : ring[k % n]).slice();
   }
-  const u = HO.uses[d.id], sp = u && hoSpot(u.name, u.spot); return sp ? [sp.fx, sp.fy, sp.face, sp.s] : null;
+  const sp = u && hoSpot(u.name, u.spot); return sp ? [sp.fx, sp.fy, sp.face, sp.s] : null;
+}
+// v2.19 fix (owner, 2 Nov 2026: Saffron napped under the sofa, not in her bed). A pack dog's roaming nap in the house (43_ground.js grAct rest) is in its
+// own bed, lying inside the bed's outline (fitted like the night's sleep, 03_yard.js fbPackNapFit), held like a piece of furniture (HO.uses, bed: true)
+// until it wakes (hoPackIdle). Every dog has its own bed while there are enough (hoSync); a dog without one naps on the open rug (hoRugRest)
+function hoPackNap(d, ms) {
+  if (!S || !d || S.place !== 'house' || cur.mode !== 'yard' || d.id === S.activeId || d.sleeping || HO.pl || HO.noPack || HO.uses[d.id]) return false;
+  const b = hoBedFor(d); if (!b) return false;
+  const u = HO.uses[d.id] = { name: b, spot: 'nap', bed: true, on: true, until: performance.now() + (ms || RINT(14000, 28000) * IDLE.speed) };
+  if (typeof packNext === 'object') packNext[d.id] = u.until;
+  packPose[d.id] = hoPoseFor(d, 'sleep'); redrawPackDog(d); return true;
+}
+const hoNapping = (d) => !!d && (d.sleeping || !!(HO.uses[d.id] && HO.uses[d.id].bed)); // asleep in the house's beds: the night, or a nap in its own bed
+// a point on a bed, a piece of furniture or a floor decoration out in the house (their drawn boxes)
+function hoOnItem(x, y) { return hoOutIn('house').some((m) => { if (hoLayer(m) !== 2) return false; const b = hoFoot(m); return x > b[0] - 6 && x < b[0] + b[2] + 6 && y > b[1] - 6 && y < b[1] + b[3] + 6; }); } // a flat rug or a wall picture does not count
+// where a pack dog without a free bed rests in the house: the open rug (the floor's rug spot, then the rug nap spots), a free point nobody stands on,
+// else an open spot in front. Never a point snapped next to the sofa or behind a bed
+function hoRugRest(d) {
+  const f = typeof grFloor === 'function' ? grFloor() : null, sp = f && f.spots.find((s) => (s.tags || []).includes('rug'));
+  const l = (sp ? [[sp.x, sp.y]] : []).concat(HO_RUG_NAPS.map((r) => [r[0], Math.min(r[1], (f ? f.front : 594) - 8)]));
+  for (const p of l) if ((f ? grFree(p[0], p[1]) : !rmHard(p[0], p[1])) && !(typeof grCrowd === 'function' && grCrowd(d, p))) return p;
+  return rmPick(d, { like: ['open', 'front'] });
 }
 // stop dog d using any furniture at once (PACK CARE calls it before feeding, bathing or tucking a dog in); it goes back to its normal spot
 function hoFree(d, quiet) {
@@ -522,6 +547,7 @@ function hoExpose() {
     sync: () => { hoSync(); return { bed: S.bed, bedAt: S.bedAt, bedOf: S.bedOf }; },
     get placing() { return HO.pl ? { room: HO.pl.room, sel: HO.pl.sel, moved: Object.keys(HO.pl.moved) } : null; },
     move: (n, x, y) => { if (HO.pl) return hoMoveTo(n, x, y); const p = hoClamp(n, x, y); if (hoIsBed(n)) { if (S.bedAt[n]) S.bedAt[n] = p; } else if (S.decor[n]) S.decor[n].at = p; markDirty(); hoRoomRedraw(); return p; },
+    nap: (id, ms) => hoPackNap(dogById(id), ms), napping: (id) => hoNapping(dogById(id)), rugRest: (id) => hoRugRest(dogById(id)), // v2.19 fix: a pack dog's nap in its own bed
     done: () => hoDone(), select: (n) => hoSelect(n), pos: (n) => hoPos(n).slice(), box: (n) => hoBox(n), free: (id) => hoFree(dogById(id) || id),
     use: (id, name, spot) => { const d = dogById(id); if (!d) return false; if (!spot) spot = Object.keys(hoSpots(name))[0]; if (d.id !== S.activeId) return hoPackUse(d, name, spot); if (IDLE.act) { IDLE.steps = []; idleEnd(); } HO.want = { name, spot }; idleStart('furn'); return true; },
     uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), keep: (room, skip) => hoKeepBoxes(room || 'yard', skip).map((b) => b.map(Math.round)), rug: HO_RUG_NAPS

@@ -80,6 +80,7 @@ function rmScan() {
   if (S.place === 'yard' && !grOn() && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
   rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)
+  grBackNo(svg, M, out); // v2.19 fix: indoors, the floor behind and beside the placed beds, furniture and decorations (43_ground.js)
   RM.no = out;
 }
 // the feet (hard: never) and the tap rect (soft) against the no-go boxes. Soft: the tap rect covers no small tappable thing, no more than 40% of a bigger
@@ -224,7 +225,7 @@ function rmApplyFixed(d, i) {
   const walk = rmWander() && rmScene() && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
   if (f) {
     const far = Math.hypot(f[0] - r.x, f[1] - r.y) > 30; if (!r.fix) r.fx0 = [r.x, r.y]; r.q = null; r.fix = true; r.face = f[2];
-    if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: f[0], y1: f[1], k1: rmPropK(f[3] || 0.6), t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id] } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; }
+    if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: f[0], y1: f[1], k1: rmPropK(f[3] || 0.6), t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id], done: () => { if (typeof fbPackNapFit === 'function' && cur.mode === 'yard') fbPackNapFit(); } } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; } // v2.19: a nap in its bed is fitted inside the bed once there
     r.x = f[0]; r.y = f[1]; r.k = rmPropK(f[3] || 0.6); r.tw = null; return;
   }
   if (r.fix) { // back where it was before the nap or the sofa

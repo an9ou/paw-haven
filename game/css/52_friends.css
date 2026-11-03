@@ -1,0 +1,124 @@
+/* v2.19 Friends (50_friends.js): the name wheels, the code card, the list. Phones: 44 px taps, no sideways scroll, the sheet sits over the bar. */
+#frBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:4px;--wash:var(--w-cream);cursor:pointer}
+#frBtn[hidden]{display:none !important}
+#frBtn .fr-ic{width:34px;height:34px;display:block}
+#frBtn .fr-ic svg{width:100%;height:100%;display:block}
+#frBtn .fr-badge{position:absolute;top:-2px;right:-2px;margin:0}
+html[data-layout="phone"] #frBtn,#stage.slimhud #frBtn{display:none !important}
+.fr-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-left:6px;border-radius:11px;background:#F28FA5;color:#fffdf8;font-family:var(--font-read);font-size:14px;font-weight:700;line-height:1}
+.fr-badge[hidden]{display:none !important}
+#bar .act[data-act="friends"]{position:relative}
+#bar .act[data-act="friends"] .fr-badge{position:absolute;top:2px;right:2px;margin:0}
+.fr-sheet{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fr-off{margin:0;padding:8px 10px;background:#FFF3D6;border:1.6px dashed var(--ink);border-radius:10px}
+.fr-card{width:min(420px,100%);margin:0 auto}
+.fr-card svg{width:100%;height:auto;display:block}
+.fr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.fr-acts .btn{flex:1 1 auto} /* Share invite, Share poster, Copy code: one row when it fits, else they wrap and share the row */
+.fr-acts.fr-busy #frPoster{opacity:.6;pointer-events:none}
+.fr-acts .btn,.fr-namepick .btn,.fr-add .btn,.fr-pop .btn,.fr-rowacts .btn,.fr-wbtn{min-height:44px;min-width:44px}
+.fr-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start}
+.fr-pre{font-family:'DD Code','Verdana',sans-serif;font-weight:700;font-size:22px;line-height:1} /* v2.19: friend codes in DD Code (50_friends.js FR_CODE_FONT), S/5, Z/2, B/8 told apart */
+.fr-boxes{display:flex;gap:6px;flex:0 0 auto;min-width:0}
+.fr-ch{box-sizing:border-box;width:44px;min-width:44px;height:44px;padding:0;text-align:center;font-family:'DD Code','Verdana',sans-serif;font-weight:700;font-size:22px;text-transform:uppercase;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;color:var(--ink)}
+.fr-namepick{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fr-wheels{display:flex;gap:10px;justify-content:center;align-items:flex-start;min-width:0}
+.fr-wheel{flex:1 1 0;min-width:0;max-width:180px;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.fr-wframe{width:100%;min-width:0}
+.fr-wframe svg{width:100%;height:auto;display:block}
+.fr-wbtn{width:100%}
+.fr-prev{margin:4px 0;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:32px;line-height:1.1;overflow-wrap:anywhere}
+.fr-namebtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.fr-list{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fr-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(91,61,50,.35);min-width:0}
+.fr-head{width:48px;height:48px;flex:none;display:block}
+.fr-head svg{width:100%;height:100%;display:block}
+.fr-nm{flex:1 1 120px;min-width:0;font-family:var(--font-hand);font-weight:700;font-size:24px;line-height:1.1;overflow-wrap:anywhere}
+.fr-doos{display:flex;gap:4px;flex:none}
+.fr-doo{width:28px;height:28px;display:block;filter:grayscale(1);opacity:.4}
+.fr-doo.on{filter:none;opacity:1}
+.fr-doo svg{width:100%;height:100%;display:block}
+.fr-rowacts{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 180px;min-width:0}
+.fr-pop{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.fr-h{margin:8px 0 0;font-family:var(--font-hand);font-weight:700;font-size:26px}
+.fr-setrow{margin:6px 0 0}
+.fr-setrow .btn{min-height:44px}
+.fr-letterpaw{display:block;width:64px;height:64px;margin:4px 0}
+.fr-letterpaw svg{width:100%;height:100%;display:block}
+html[data-layout="phone"] .fr-pop .panel{max-width:100%}
+html[data-layout="phone"] .panel.fr-pop{width:100%}
+html[data-layout="phone"] .fr-sheet,#modal .fr-sheet{overflow-x:hidden}
+html[data-layout="phone"] .fr-prev{font-size:28px}
+html[data-layout="phone"] .fr-nm{font-size:22px}
+html[data-layout="phone"] #bar .barpop.fr-four{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 12px)}
+html[data-layout="phone"] #bar .barpop.fr-four .act{min-width:0;flex:1 1 calc(50% - 8px);max-width:calc(50% - 8px)}
+/* part 3: a friend's yard (cur.mode 'fryard'). Read-only: the missions, the dog switcher, the photo button and the scene's own hot spots rest; the care buttons look resting */
+#stage.frvisit :is(#msBtn,#hudPack,#mmMs,#mmPhoto,#phBtn){display:none !important}
+#stage.frvisit #view svg.world #sceneG :is([data-hot],[data-shop]){pointer-events:none;cursor:default}
+#stage.frvisit #bar .act:is([data-act="feed"],[data-act="play"],[data-act="care"],[data-act="caremenu"],[data-act="walk"],[data-act="wardrobe"],[data-act="journal"]){opacity:.5}
+#view .frdog:not(.fr-mine){cursor:pointer}
+#view .frdog:focus,#view .frdog:focus-visible{outline:none}
+#view .frdog:focus-visible .fr-hit{stroke:#F28FA5;stroke-width:4;stroke-dasharray:8 6}
+#placeBtns.fr-pbtns .btn{min-height:44px;min-width:44px}
+#placeBtns.fr-pbtns .btn.soon{opacity:1;filter:saturate(.35);cursor:default}
+.fr-notes{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fr-notes p{margin:0}
+.fr-notelist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;min-width:0}
+.fr-notelist .btn.fr-note{min-height:44px;text-align:left;white-space:normal;overflow-wrap:anywhere}
+html[data-layout="phone"] .fr-notelist{grid-template-columns:1fr}
+/* part 4: gifts. The sheet's grid of FR_GIFTS items in the bag (44 px taps), the wrap that pops up on a send, the gift letter's doodle */
+.fr-gifts{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fr-gifts p{margin:0}
+.fr-giftgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;min-width:0}
+.fr-giftgrid .btn.fr-gift{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:44px;min-width:0;padding:14px 8px 8px;white-space:normal;text-align:center}
+.fr-gic{width:52px;height:52px;display:block;flex:none}
+.fr-gic svg{width:100%;height:100%;display:block}
+.fr-gnm{font-size:15px;line-height:1.15;overflow-wrap:anywhere;min-width:0}
+.fr-gn{position:absolute;top:7px;right:11px;font-family:var(--font-hand);font-size:20px;line-height:1}
+.fr-gempty{padding:8px 10px;background:#FFF3D6;border:1.6px dashed var(--ink);border-radius:10px}
+html[data-layout="phone"] .fr-giftgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fr-wrapfx{position:absolute;left:50%;top:42%;z-index:25;width:120px;height:120px;margin:-60px 0 0 -60px;pointer-events:none;animation:frWrap 1.6s ease-out forwards}
+.fr-wrapfx svg{width:100%;height:100%;display:block}
+@keyframes frWrap{0%{transform:scale(.3) rotate(-8deg);opacity:0}18%{transform:scale(1.12) rotate(6deg);opacity:1}32%{transform:scale(1) rotate(-5deg)}46%{transform:scale(1) rotate(3deg)}70%{transform:translateY(-10px) scale(1) rotate(0);opacity:1}100%{transform:translateY(-90px) scale(.7);opacity:0}}
+@media (prefers-reduced-motion:reduce){html:not([data-motion="on"]) .fr-wrapfx{animation:none;opacity:0}}
+/* part 5: the route picker row "Walk with a friend's dog" (the pack chip look, .cr-chip.pk-pickb: the picked one is outlined), the walk letter's dog head.
+   One line on wide screens (the words, then the chips). The route screen scrolls when the card would be cut (as the pack row does on phones) */
+.fr-walkrow{display:flex;align-items:center;justify-content:center;gap:10px;align-self:center;box-sizing:border-box;width:min(100%,760px);min-width:0;margin:2px 0 4px;padding:0 12px}
+.fr-walkrow .cr-chips{flex:0 1 auto;min-width:0;justify-content:safe center}
+.fr-walkcap{flex:0 0 auto;max-width:11em;margin:0;text-align:right;line-height:1.15}
+.fr-walkfull{font-weight:700}
+.fr-wchip{min-height:46px}
+.fr-wchip[disabled]{opacity:.5;cursor:default;animation:none}
+.fr-wjust{padding:3px 12px}
+.fr-wnm{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0}
+.fr-wnm .cr-name{font-size:20px}
+.fr-wnm small{font-family:var(--font-read);font-size:13px;line-height:1.1;color:var(--muted);white-space:nowrap}
+.fr-walked{margin:6px 0 0}
+.fr-letterdog .fr-head{width:64px;height:64px}
+.routes.rt-fr{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+.routes.rt-fr > *{flex-shrink:0}
+.routes.rt-fr .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,272px)}
+html[data-layout="phone"] .fr-walkrow{flex-direction:column;gap:0;padding:0 8px;margin:0 0 2px}
+html[data-layout="phone"] .fr-walkcap{max-width:none;text-align:center}
+html[data-layout="phone"] .fr-walkrow .cr-chips{gap:6px;padding:3px 2px 4px;max-width:100%}
+html[data-layout="phone"] .fr-wnm .cr-name{font-size:19px}
+/* fix batch (1 Nov 2026): the phone visit's look-left button (frPan), the Undo toast after Remove, ja names unbroken, the sheet's foot clear of the bar */
+html[data-layout="phone"] #stage.frvisit #phPeek{right:auto;left:6px;top:40%}
+html[data-layout="phone"] #stage.frvisit #phPeek svg{transform:scaleX(-1)}
+html[data-layout="phone"] #stage.frvisit #phPeek.back svg{transform:none}
+#toasts:has(.fr-undo){z-index:31}
+.toast.fr-undo{pointer-events:auto;display:flex;align-items:center;gap:10px}
+.toast.fr-undo .btn{min-height:44px;min-width:44px;padding:4px 12px}
+.fr-head.fr-nohead{padding:4px;box-sizing:border-box}
+html[data-layout="phone"] #modal .panel.frsheet .panel-body{padding-bottom:14px}
+/* fit audit (2 Nov 2026). 3: names and gift labels break between words, never inside one: the name has a zero-width space between its two words in
+   ja/zh/th (frPairParts), CJK keeps each word whole (keep-all) and only a word wider than its whole line is cut; no line starts with ッ or ー (strict).
+   Gift cells get two columns on CJK phones, and CJK names are 20 px in the phone list. 4: the Undo button stays on one line. 5: the count sits inside the cell's crayon line. 6: Thai marks clear the button's top line */
+:is(.fr-nm,.fr-prev,.mb-t b){overflow-wrap:break-word;line-break:strict}
+.fr-gnm{overflow-wrap:anywhere;line-break:strict}
+:is(:lang(ja),:lang(zh)) :is(.fr-nm,.fr-prev){word-break:keep-all}
+:lang(ja) .fr-gnm{word-break:auto-phrase}
+@media (max-width:430px){ html[data-layout="phone"]:is(:lang(ja),:lang(zh)) .fr-giftgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+html[data-layout="phone"]:is(:lang(ja),:lang(zh)) .fr-nm{font-size:20px}
+.toast.fr-undo .btn{flex:none;white-space:nowrap}
+:lang(th) .fr-wbtn{line-height:1.5;min-height:52px;padding-top:13px;padding-bottom:7px}

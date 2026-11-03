@@ -2,12 +2,14 @@
 //   node game/build.js publish && node tools/pages.js   (or: node tools/pages.js --build)
 //   --single       wrap the one-file paw_haven_prototype.html instead of the split build (all languages inline, nothing minified)
 //   --no-minify    keep the scripts and styles as they are (easier to debug in the browser)
+//   --out <dir>    write there instead of _site/ (game/test_v219_friends.js checks the Pages-only flags with it)
+//   --itch         the itch.io / doodledoggo.app /play/ copy (tools/itch.js): no password screen and no Friends test flag
 // Writes _site/index.html (plus .nojekyll) and copies the brand kit (icons, manifest, share card) from brand/.
 // v2.14 PERF (PERF.md): by default it ships the split build from _split/ (game/build.js publish, tools/split.js): English inline, lang/<code>.<hash>.js
 // per other language and photo_fonts.<hash>.js next to index.html, and minifies index.html with tools/minify.js (esbuild; without it: a warning).
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.join(__dirname, '..');
-const SINGLE = process.argv.includes('--single'), MINIFY = !SINGLE && !process.argv.includes('--no-minify');
+const SINGLE = process.argv.includes('--single'), ITCH = process.argv.includes('--itch'), MINIFY = !SINGLE && !process.argv.includes('--no-minify');
 const SPLIT = path.join(root, '_split');
 const src = SINGLE ? path.join(root, 'paw_haven_prototype.html') : path.join(SPLIT, 'index.html');
 if (process.argv.includes('--build') || !fs.existsSync(src)) {
@@ -17,11 +19,14 @@ const body = fs.readFileSync(src, 'utf8');
 // the shell's leading <title>, <link> and <meta> tags (everything before its first <style>: since v2.14 the loading paw's) belong in <head>, where share crawlers read them
 const cut = body.indexOf('<style'), pre = cut > 0 ? body.slice(0, cut) : '', rest = cut > 0 ? body.slice(cut) : body;
 const head = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' + pre + '</head><body>';
-const out = path.join(root, '_site');
+const oi = process.argv.indexOf('--out'), out = oi > 0 && process.argv[oi + 1] ? path.resolve(process.argv[oi + 1]) : path.join(root, '_site');
 fs.mkdirSync(out, { recursive: true }); // a fresh checkout has no _site/ yet
 fs.rmSync(path.join(out, 'lang'), { recursive: true, force: true });
 fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(photo_fonts|world_[a-z])\.\w+\.js$/.test(e.name)).forEach((e) => fs.rmSync(path.join(out, e.name))); // v2.15: and the old lazy art chunks
-let html = head + rest + '</body></html>';
+// Pages test copy only: the password screen (tools/pages_gate.js) and (owner, 2 Nov 2026) Friends on by default, before the game scripts (frOn in
+// game/src/50_friends.js reads window.__ddFrTest; FR_LIVE and the What's new entry stay off). itch.io, /play/ and the artifact never get either.
+const FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>';
+let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG) + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');

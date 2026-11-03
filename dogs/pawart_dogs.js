@@ -508,8 +508,7 @@ function layout(s,pose,k,aOv){
   switch(pose){
    case 'happy':L.face.eyes='open';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.tailA=25;L.ears='perk';L.hearts=2;L.hT.a=-7;L.hT.y-=3;break;
    case 'pet':L.face.eyes='happy';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.blush=1;L.hearts=2;L.hT.a=-12+[0,5,-4][k];L.bT.a=[-2,2,-1][k];L.tailA=[18,34,8][k];kick=0;L.kick=[[-16,-18],[-6,-6],[-22,-26]][k];L.ears='perk';L.wiggle=1;break;
-   case 'eat':{L.ears='eat';L.face.eyes='down';L.face.mouth='chew';L.tailA=8;L.bT.a=5;L.hT.a=22;
-     const N=noseLocal(s),q=rot(N,22);L.hT.x=170-q[0];L.hT.y=Math.min(176-q[1],GY-3-hd.ry);break}
+   case 'eat':{L.ears='eat';L.face.eyes='down';L.face.mouth='chew';L.tailA=8;L.bT.a=5;eatHead(s,L);break}
    case 'sleep':L.face.eyes='closed';L.face.mouth='sleep';L.ears='sleep';L.tailA=-100;L.zz=1;legMode='lie';
      L.bT.y=GY-b.ry*(s.fluff?1.02:.86);L.tailS=.75;L.bT.x=b.x-(b.long?4:8);L.hT.x=L.bT.x+b.rx*.92+hd.rx*.3;L.hT.y=GY-hd.ry*.8;L.hT.a=6;break;
    case 'walk':swing=[1,0,-1][k];L.lift=k===1;L.bT.y+=[0,-3,0][k];L.hT.y+=[0,-4,1][k];L.tailA=[14,26,-4][k];L.face.eyes=s.face.eyes==='smug'?'smug':'open';L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;break;
@@ -618,6 +617,13 @@ function legFit(s,L){const Q=hull(bodyPts(s).map(T(L.bT)));
 function gfoldHead(s,L,rel,a){// greyhound sit/beg: head carried up on the long neck, above the chest
   const b=s.body,hd=s.head,sh=T(L.bT)([b.rx*.78,-b.ry*.55]);L.hT.x=sh[0]+hd.rx*.55;L.hT.y=sh[1]-hd.ry*1.5;L.hT.a=L.pose==='beg'?-8:-4;L.bT.x-=2}
 function noseLocal(s){const f=s.face,hx=s.head.rx,hy=s.head.ry;return f.nose?[hx*f.nose[0],hy*f.nose[1]]:[hx*.66,hy*.26]}
+// v2.19 (owner, 2 Nov 2026: "the neck looks twisted when a dog eats or drinks"): eating and drinking, the dog lowers its head straight down and forward to the bowl,
+// in profile like its body: the head hangs just in front of the chest, nose down, on the neck tube (no more head pulled back over the chest, the ears flapping up).
+// L.eatNose is where the nose lands (in the 240 box, facing right): the game stands the dog so it meets the bowl (PA.eatNose).
+var EAT_A=34,EAT_X=.35,EAT_E=.7,EAT_P=.3,EAT_N=.95;
+function eatHead(s,L){const b=s.body,hd=s.head,N=noseLocal(s),B=T(L.bT),ch=B([b.rx*.94,b.ry*.05]),nb=B([b.rx*.62,-b.ry*.3]);
+  let q=rot(N,EAT_A),y=Math.min(176-q[1],GY-3-hd.ry);const drop=y-nb[1],A=EAT_A+Math.max(0,Math.min(14,(drop-20)*.3));q=rot(N,A);y=Math.min(176-q[1],GY-3-hd.ry);
+  L.hT.a=A;L.hT.x=Math.max(ch[0]+hd.rx*EAT_X,nb[0]+(y-nb[1])*EAT_N);L.hT.y=y;L.eatNose=[L.hT.x+q[0],L.hT.y+q[1]]}
 
 /* ---------- parts ---------- */
 function earList(s){// the ear shapes in head-local px, before any pose rotation
@@ -661,7 +667,7 @@ function earAngle(s,mode,e){
     return a;
 }
 function earPose(s,L,e){// the ear after its pose rotation; L.earFit (Astronaut Helmet only) shrinks it toward its root to stay inside that radius
-  const a=earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
+  const a=L.ears==='eat'?-L.hT.a*(e.flop?EAT_E:EAT_P):earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
   if(a&&e.flop)p=earOn(s,p,e);
   if(L.earFit){const R=L.earFit,c=e.pivot,at=k=>p.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k]);let k=1;while(k>.3&&!at(k).every(q=>Math.hypot(q[0],q[1])<=R))k-=.05;if(k<1)p=at(k)}
   return p}
@@ -2263,6 +2269,15 @@ html[data-motion="off"] .pa-dog *,.pa-still .pa-dog *{animation-play-state:pause
 [data-motion="off"] .pa-d-tw,.pa-still .pa-d-tw{animation:none!important;opacity:1}
 @media (prefers-reduced-motion: reduce){.pa-d-tw{animation:none!important}}`;
 if(typeof document!=='undefined'&&!document.getElementById('pawart-dogs-css')){const st=document.createElement('style');st.id='pawart-dogs-css';st.textContent=css;document.head.appendChild(st)}
-PA.dog=dog;PA.dogHead=dogHead;PA.EXPR_LIST=EXPR_LIST.slice();PA.exprOk=(n,pose)=>!!exOk(n,pose||'idle',null);
+// v2.19: PA.eatNose(key, o) = [x, y], where the nose lands in PA.dog(key, {...o, pose:'eat'}) facing right, in the 240 x 200 box (facing left: 240 - x).
+// The game stands a dog at its bowl by it (the old eat pose put every nose at 170, 176 before the puppy scale).
+function eatNose(key,o={}){
+  key=SP[key]?key:'shiba';const SF=specFor(key,o),lk=SF.lk,s=o&&o.wet?wetSpec(SF.s):SF.s;if(lk.age==='newborn')return null;
+  const ex=exOk(o.expr,'eat',lk.age),seed=hashS('pa'+key+'eat')*5+3,nF=o.anim!==false?3:1,bb=[1e9,1e9,-1e9,-1e9];let L0=null;
+  for(let k=0;k<nF;k++){const f=frame(key,s,'eat',o.outfit,k,seed,ex),b=f.h.bb;if(!k)L0=f.L;bb[0]=Math.min(bb[0],b[0]);bb[1]=Math.min(bb[1],b[1]);bb[2]=Math.max(bb[2],b[2]);bb[3]=Math.max(bb[3],b[3])}
+  const ps=s.pupScale||1,pdr=ps===1?0:(s.pupDx||0)*ps,bx=ps===1?bb:[120+(bb[0]-120)*ps+pdr,GY+(bb[1]-GY)*ps,120+(bb[2]-120)*ps+pdr,GY+(bb[3]-GY)*ps];
+  const m=3,sc=Math.min(1,(GY-m)/(GY-bx[1]),(120-m)/(120-bx[0]),(240-m-120)/(bx[2]-120),bx[3]>GY?(199.5-GY)/(bx[3]-GY):1),tot=sc*ps,n=L0.eatNose;
+  return tot<.999?[120+pdr*sc+(n[0]-120)*tot,GY+(n[1]-GY)*tot]:[n[0],n[1]]}
+PA.dog=dog;PA.dogHead=dogHead;PA.eatNose=eatNose;PA.EXPR_LIST=EXPR_LIST.slice();PA.exprOk=(n,pose)=>!!exOk(n,pose||'idle',null);
 PA.DOGS=KEYS.map(k=>({key:k,name:SP[k].name,breed:SP[k].breed,personality:SP[k].personality,joke:SP[k].joke}));
 })();

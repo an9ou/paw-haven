@@ -57,5 +57,6 @@
 50_funfair.css
 50_market.css
 50_news.css
+52_friends.css
 50_i18n.css
 51_i18n_room.css

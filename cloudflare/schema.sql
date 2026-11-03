@@ -101,3 +101,57 @@ create table if not exists paws (
 );
 create index if not exists paws_card on paws (card_id);
 create index if not exists paws_day on paws (day); -- tidy() drops paws older than 3 days
+
+
+-- Friends (v2.19, V219.md section 1). No free text: names are word indexes, the code is DOG- plus 5
+-- characters, the yard is validated JSON of 16 KB at most. User ids never leave the Worker.
+-- seen_at is the last yard save or inbox read. Answers say today / week / older, never this time.
+create table if not exists friend_ids (
+  user_id    text primary key,
+  fid        text unique not null,     -- 22 chars, like a Dog Card id. This is the id other players see.
+  code       text unique not null,     -- DOG- plus 5 characters. A new code replaces it.
+  name_a     integer not null,
+  name_b     integer not null,
+  created_at integer not null,         -- ms
+  code_at    integer not null,         -- ms, when the current code was made
+  seen_at    integer not null default 0 -- ms, last yard save or inbox read. 0: they have not done either yet.
+);
+
+-- Two rows per friendship. At most 50 friends each (checked in the Worker).
+create table if not exists friends (
+  user_id    text not null,
+  friend_id  text not null,            -- the other player's user id
+  created_at integer not null,
+  primary key (user_id, friend_id)
+);
+
+create table if not exists friend_blocks (
+  user_id    text not null,
+  blocked_id text not null,
+  primary key (user_id, blocked_id)
+);
+
+create table if not exists yards (
+  user_id    text primary key,
+  data       text not null,            -- JSON snapshot, 16 KB at most
+  updated_at integer not null          -- ms; never returned
+);
+
+-- kind is pet, note, gift or walk. claimed_at is null until the inbox claim.
+-- id is AUTOINCREMENT so a deleted row's id is never given to a later event (claim is by id).
+create table if not exists friend_events (
+  id         integer primary key autoincrement,
+  to_id      text not null,
+  from_id    text not null,
+  kind       text not null check (kind in ('pet', 'note', 'gift', 'walk')),
+  data       text not null,            -- JSON, validated indexes only
+  day        text not null,            -- Japan day, YYYY-MM-DD
+  created_at integer not null,         -- ms. An inbox read deletes rows older than 30 days.
+  claimed_at integer                    -- ms; null until claimed
+);
+
+-- pet, note and walk: once per (from, to, kind, Japan day). gift: once per (from, Japan day), to anyone.
+create unique index if not exists friend_events_pair on friend_events (from_id, to_id, kind, day) where kind != 'gift';
+create unique index if not exists friend_events_gift on friend_events (from_id, kind, day) where kind = 'gift';
+create index if not exists friend_events_inbox on friend_events (to_id, claimed_at);
+create index if not exists friend_events_age on friend_events (created_at); -- inbox read: delete older than 30 days

@@ -788,6 +788,7 @@ function freshState(key, name, sex) {
   v218Fields(st); // v2.18 Fun Fair (V218.md 8): the games' coins today, plays, ribbons, the stall, the photo contest
   v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   v2182Fields(st); st.newsSeen = nwLatest(); // v2.18.2 What's new: a brand-new save skips the news (the first-day guide shows what is there)
+  v219Fields(st); // v2.19 Friends (V219.md 8)
   return linkDogs(st);
 }
 let S = null;
@@ -853,6 +854,7 @@ function migrate(s) {
   wmRenames(s); // Winter Market review: renamed market items
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
+  v219Fields(s); // v2.19 Friends (V219.md section 8): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -1007,6 +1009,38 @@ function v218Fields(s) {
 function v2171Fields(s) {
   if (!s) return s; if (!v28Obj(s.fm)) s.fm = {};
   ['seen', 'letters'].forEach((k) => { if (!v28Obj(s.fm[k])) s.fm[k] = {}; }); if (typeof s.fm.bought !== 'number' || !(s.fm.bought >= 0)) s.fm.bought = 0;
+  return s;
+}
+/* v2.19 Friends (V219.md section 8). Additive only: S.v stays 1, nothing is dropped.
+   S.fr { on, name: [a,b] | null, code, fid, cache: { at, friends }, yards, day: localISO of the counters,
+          pets, gotPets, notes, gift, gotGifts, walkDay, walks, gotWalks, guest }.
+   Daily counters reset on a new localISO() day (the contract's "localISO() Japan day"). None of these fields go into the yard snapshot. */
+function v219Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.fr)) s.fr = {};
+  const f = s.fr, num = (k) => { if (typeof f[k] !== 'number' || !(f[k] >= 0)) f[k] = 0; };
+  if (typeof f.on !== 'boolean') f.on = false;
+  const aN = typeof DC_WORDS_A !== 'undefined' ? DC_WORDS_A.length : 40, bN = typeof DC_WORDS_B !== 'undefined' ? DC_WORDS_B.length : 40;
+  const pair = Array.isArray(f.name) && f.name.length === 2 && Number.isInteger(f.name[0]) && Number.isInteger(f.name[1]) && f.name[0] >= 0 && f.name[1] >= 0 && f.name[0] < aN && f.name[1] < bN;
+  if (!pair) f.name = null;
+  if (typeof f.code !== 'string') f.code = null;
+  if (typeof f.fid !== 'string') f.fid = null;
+  if (!v28Obj(f.cache)) f.cache = { at: 0, friends: [] };
+  if (typeof f.cache.at !== 'number' || !(f.cache.at >= 0)) f.cache.at = 0;
+  if (!Array.isArray(f.cache.friends)) f.cache.friends = [];
+  if (!v28Obj(f.yards)) f.yards = {};
+  if (f.guest !== null && !v28Obj(f.guest)) f.guest = null;
+  if (typeof f.gift !== 'boolean') f.gift = false;
+  ['pets', 'gotPets', 'notes', 'gotGifts', 'walks', 'gotWalks'].forEach(num);
+  if (typeof f.day !== 'string') f.day = '';
+  if (typeof f.walkDay !== 'string') f.walkDay = '';
+  if (!Array.isArray(f.gotIds)) f.gotIds = []; // v2.19 part 4: the last gift event ids turned into letters (at most 60), so a claim that failed never gives twice (part 5: walk letters too)
+  if (!Array.isArray(f.walked)) f.walked = []; // v2.19 part 5: the friends walked with today (a repeat walk pays and sends nothing). Reset with walkDay
+  if (typeof f.cache.day !== 'string') f.cache.day = ''; // v2.19 part 5: the day the friends' list (their snapshot dogs) was last fetched
+  if (!Array.isArray(f.snap)) f.snap = []; // v2.19 fix batch: my dogs' ids in the last yard snapshot sent, in order (a walk letter's dog index points into it)
+  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // Japan days, as the Worker (jstISO is declared later in this file)
+  if (f.day !== today) { f.day = today; f.pets = 0; f.gotPets = 0; f.notes = 0; f.gift = false; f.gotGifts = 0; f.gotWalks = 0; }
+  if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; f.walked = []; }
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
@@ -1362,17 +1396,20 @@ function updateHUD() {
   if (!S) return;
   for (const [k] of METERS) {
     const m = $(`.meter[data-k="${k}"]`); if (!m) continue; const v = Math.round(S.stats[k]);
+    if (m.dataset.v === String(v)) continue; m.dataset.v = v; // v2.19.1: write only on change (each write restyled the stage)
     m.querySelector('.fill').style.width = v + '%'; m.style.setProperty('--v', v); m.querySelector('.num').textContent = v; m.querySelector('.track').setAttribute('aria-valuenow', v);
     m.classList.toggle('low', v < 25);
   }
   const L = S.bond.level, a = BOND_TH[L - 1], b = BOND_TH[L] || BOND_TH[9];
   const pr = L >= 10 ? 100 : clamp((S.bond.pts - a) / (b - a) * 100, 0, 100);
-  $('#bondLvl').textContent = L; $('#bondFill').style.width = pr + '%'; $('#bondTrack').setAttribute('aria-valuenow', Math.round(pr));
-  $('#bondTrack').title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) });
-  $('#coinNum').textContent = tnum(S.coins);
+  const hudTxt = (el, v) => { if (el && el.textContent !== String(v)) el.textContent = v; };
+  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + S.bond.pts;
+  if (bt && bt.dataset.k !== bk) { bt.dataset.k = bk; hudTxt($('#bondLvl'), L); $('#bondFill').style.width = pr + '%'; bt.setAttribute('aria-valuenow', Math.round(pr));
+    bt.title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) }); }
+  hudTxt($('#coinNum'), tnum(S.coins));
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
-  const hc = $('#hudClock'); if (hc) hc.textContent = `${clockText()} · ${wxLabel()}`;
+  hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
   const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
@@ -1389,6 +1426,8 @@ function doAct(a) {
   if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
   if (typeof fwBarPop === 'function') fwBarPop(null);
   if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
+  if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
+  if (cur.mode === 'fryard' && typeof frBarAct === 'function' && frBarAct(a)) return; // v2.19: on a visit Map goes home and the care buttons wait (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
@@ -1478,7 +1517,7 @@ function go(mode, arg) {
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');
   stage.classList.toggle('modhud', mode === 'garden' || mode === 'kitchen');
-  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js)
+  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair, fryard: enterFrYard })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js). v2.19: a friend's yard, read-only (50_friends.js)
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }

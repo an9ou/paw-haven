@@ -36,6 +36,19 @@ const NEWS = [
     ]
   }
 ];
+/* v2.19 "Friends first": 50_friends.js puts this entry first only when FR_LIVE is on, so the news never shows Friends before the release */
+const nwFrArt = (k) => nwSafe(() => { const P = window.PawArt; return P && P.FRIENDS && typeof P.FRIENDS[k] === 'function' ? P.FRIENDS[k]() : ''; });
+const NEWS_V219 = {
+  id: '2.19', date: '2026-11-07', c: '#FFE3EC', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v219.title', 'Friends are here!'),
+  items: [
+    { ic: () => nwFrArt('badge'), tx: () => tt('nw.v219.friends', 'Pick a friend name, then share your code or an invite link. Up to 50 friends') },
+    { ic: () => nwFrArt('paw'), tx: () => tt('nw.v219.visit', "Visit a friend's yard, pet their dogs and leave a paw-print note") },
+    { ic: () => nwFrArt('wrap'), tx: () => tt('nw.v219.gift', 'Send one gift a day: a treat, seeds or something from your garden') },
+    { ic: () => nwFrArt('ribbon'), tx: () => tt('nw.v219.walk', "Take a friend's dog on your walk, and your friend gets a letter about it") },
+    { ic: () => nwSafe(() => ICON('lock')), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
+  ]
+};
 const nwLatest = () => NEWS[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
