@@ -401,11 +401,11 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
   // ---- the covers: the thumbnail (16:9) and the tall cover (9:16, what matters inside the middle 1080 x 1440 and SAFE) ----
   const cover = async () => {
     const t = M.lean + 0.9; const S = frameState(t); S.sub = null; S.layers.forEach((l) => { l.text = {}; });
-    const v = S.layers[S.layers.length - 1]; const ti = TALL ? { x: 475, y: 470, w: 790 } : { x: 540, y: 360, w: 920 };
+    const v = S.layers[S.layers.length - 1]; const ti = TALL ? { x: 475, y: 458, w: 780 } : { x: 530, y: 360, w: 920 };
     // the cover's own framing: Bagel and the hand a little bigger, clear of the title (no camera zoom)
-    const [cx, cy, k] = TALL ? [560, 1290, 1.12] : [1390, 905, 1.3], wrap = (g) => `<g transform="translate(${cx} ${cy}) scale(${k}) translate(${-L.BX} ${-L.G})">${g}</g>`;
+    const [cx, cy, k] = TALL ? [560, 1265, 1.22] : [1480, 905, 1.3], wrap = (g) => `<g transform="translate(${cx} ${cy}) scale(${k}) translate(${-L.BX} ${-L.G})">${g}</g>`;
     S.layers = [v]; v.op = 1; v.z = 1; v.mid = wrap(v.mid); v.front = wrap(v.front);
-    v.front += logoSVG(TALL ? 475 : 300, TALL ? 1375 : 960, TALL ? 330 : 400, 1);
+    v.front += logoSVG(TALL ? 690 : 300, TALL ? 1400 : 960, TALL ? 320 : 400, 1);
     await p.evaluate(async ([S, ti]) => { await window.frame(S); // the title: big and short, readable on a phone
       const lines = TALL ? [{ s: 'Saying hello', size: 124, pitch: 128 }, { s: 'to a dog', size: 124 }] : [{ s: 'Saying hello', size: 150, pitch: 154 }, { s: 'to a dog', size: 150 }];
       document.getElementById('tx').innerHTML = '<g transform="rotate(-2 ' + ti.x + ' ' + ti.y + ')">' + card(ti.x, ti.y, ti.w, TALL ? 340 : 400, lines, CAV, { sw: 7, rx: 46, fill: '#FFFDF7' }) + '</g>';

@@ -218,7 +218,7 @@ function overlay(t, frames) {
   if (fz) { const v = fz.v, hx = (fz.head[0] - v.x) * v.k, hy = (fz.head[1] - v.y) * v.k, u = t - ZZZ.s.a;
     for (let j = 0; j < 4; j++) { const t0 = ZZZ.u0 + j * 1.9, period = 7.6; let q = (u - t0) / 5.2; if (u < t0) continue; q = ((u - t0) % period) / 5.2; if (q > 1) continue;
       const fade = 1 - sm(seg(t, END.dark[0] - 1, END.dark[0] + 3));
-      o.zzz.push({ x: f1(TALL ? hx - 70 - q * 90 + Math.sin(q * 5 + j) * 14 : hx + 20 + q * 120 + Math.sin(q * 5 + j) * 14), y: f1(hy - 70 - q * 200), size: Math.round((TALL ? 80 : 74) * (0.7 + 0.6 * q)), op: r3(Math.min(sm(q * 4), 1 - sm(seg(q, 0.6, 1))) * fade) }); } }
+      o.zzz.push({ x: f1(TALL ? Math.min(800, hx - 70 - q * 90 + Math.sin(q * 5 + j) * 14) : hx + 20 + q * 120 + Math.sin(q * 5 + j) * 14), y: f1(hy - 70 - q * 200), size: Math.round((TALL ? 80 : 74) * (0.7 + 0.6 * q)), op: r3(Math.min(sm(q * 4), 1 - sm(seg(q, 0.6, 1))) * fade) }); } }
   o.dark = r3(sm(seg(t, END.dark[0], END.dark[1])));
   o.logo = r3(sm(seg(t, END.logo[0], END.logo[1])));
   const u = SUBS.find((x) => t >= x.a && t < x.b);
