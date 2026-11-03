@@ -258,7 +258,7 @@ Every term the game uses more than once. The zh-Hant column shows where Taiwan w
 | English | 廣東話 | zh-Hant (Taiwan) | Note |
 |---|---|---|---|
 | Feed | 餵食 | 餵食 |  |
-| Play | 玩耍 | 玩耍 | Bar button. TODO(native): 一齊玩 is warmer but longer. |
+| Play | 玩耍 | 一齊玩 | Bar button and the "Play" verb in UI (owner, 3 Nov: 一齊玩). |
 | Care | 照顧 | 照顧 |  |
 | Walk | 散步 | 散步 |  |
 | More | 更多 | — | Phone bar button. |
@@ -697,7 +697,7 @@ Rewrite, never translate word for word. A good Cantonese joke for kids is short,
 
 ## 14. TODO(native)
 
-- 玩耍 for the Play button (一齊玩 is warmer and more spoken, but longer). Owner to confirm.
+- Owner confirmed (3 Nov): this voice for the whole game; 狗BB, HK breed/food names and HK jokes as in the sample; Play button = 一齊玩; the website privacy page in the same spoken Cantonese (the English version is the one that counts).
 - 狗BB for every "puppy" (UI headings included). The alternative is 小狗 (written) or 狗仔 (also means any dog).
 - 布冧太太 for Mrs. Plum (布冧 is the Cantonese loan word for plum; 梅子太太 is the zh-Hant name).
 - 唐狗 for the Shelter Mutt: warm in HK, but some people hear it as "just a local dog". 混種狗 is the neutral option.
