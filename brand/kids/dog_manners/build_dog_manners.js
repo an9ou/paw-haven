@@ -257,7 +257,7 @@ function vis(id, t) {
     // Bagel turns and trots off happily, back across the grass, and sniffs about over there; the hand stays low and still
     const w0 = M.go0 + 0.4, w1 = w0 + (TALL ? 2.8 : 5.4), q = ss(seg(t, w0, w1));
     const far = TALL ? { x: L.BX + 140, g: L.G - 110, k: L.K * 0.72 } : { x: L.BX + 360, g: L.G - 90, k: L.K * 0.72 };
-    const d = bagelBase({ x: lerp(L.BX - 60, far.x, q), g: lerp(L.G, far.g, q), k: lerp(L.K, far.k, q), facing: t < w0 ? 'left' : 'right', pose: t < w0 ? 'idle' : t < w1 ? 'walk' : 'sniff', sop: 1 - 0.3 * q });
+    const d = bagelBase({ x: lerp(L.BX - 60, far.x, q), g: lerp(L.G, far.g, q), k: lerp(L.K, far.k, q), facing: t < w0 ? 'left' : 'right', pose: t < w0 ? 'idle' : t < w1 ? 'walk' : TALL ? 'idle' : 'sniff', sop: 1 - 0.3 * q });
     if (d.pose === 'walk') { d.bob = Math.abs(Math.sin((t - w0) * Math.PI * 2.6)) * 6; }
     if (d.pose === 'sniff' && t > w1 + 1.4) d.pose = 'idle';
     const h = handMix(HAND_OFF(HAND_LOW), HAND_LOW, eo3(seg(t, b.a - 0.6, b.a + 0.8)));
@@ -442,7 +442,7 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
   console.log('voice', vI.toFixed(1), 'LUFS (speech), music', mI.toFixed(1), 'LUFS: music gain', gain.toFixed(1), 'dB');
   const mp4 = path.join(OUT, TALL ? 'doodle-doggo-kids-dog-manners-tall.mp4' : 'doodle-doggo-kids-dog-manners.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.jpg'), '-i', path.join(WORK, 'music.wav'), '-i', voice,
-    '-filter_complex', `[1:a]atrim=0:${T.toFixed(3)},volume=${gain.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${(T - 3).toFixed(2)}:d=3,aresample=44100[m];[2:a]aresample=44100,pan=stereo|c0=c0|c1=c0[v];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aresample=44100[a]`,
+    '-filter_complex', `[1:a]atrim=0:${T.toFixed(3)},volume=${gain.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${(T - 3).toFixed(2)}:d=3,aresample=44100[m];[2:a]aresample=44100,pan=stereo|c0=c0|c1=c0[v];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aresample=44100,alimiter=limit=0.76:level=false:attack=2:release=60[a]`,
     '-map', '0:v', '-map', '[a]', '-t', T.toFixed(3), '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '22', '-pix_fmt', 'yuv420p', '-r', String(FPS),
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', mp4], { stdio: 'inherit' });
   const dur = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', mp4]).toString(), mb = fs.statSync(mp4).size / 1e6;

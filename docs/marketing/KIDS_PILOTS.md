@@ -19,7 +19,7 @@ How to Say Hello to a Dog 🐶 Dog Manners for Kids with Noodle
 
 **YouTube description**
 
-We made this 2½-minute video for kids aged about 3 to 7 who can't wait to pet every dog they see. Noodle, our crayon dachshund, shows four gentle steps with his friend Bagel the Beagle:
+We made this 2-minute video for kids aged about 3 to 7 who can't wait to pet every dog they see. Noodle, our crayon dachshund, shows four gentle steps with his friend Bagel the Beagle:
 
 1. Ask first. Ask the dog's grown-up: "May I say hello?"
 2. Stand still. Let the dog come to you and sniff.
@@ -54,7 +54,7 @@ We made this slow, quiet walk for the last few minutes before lights out. The su
 
 There's the game's own soft night music, Noodle's gentle voice and big read-along words, 1 short line at a time. We kept out ads, loud sounds and fast cuts. It gets darker and quieter as it goes, and it ends with Noodle fast asleep.
 
-For grown-ups: it's about 3½ minutes long and visits 4 places, the yard, the duck pond, the pier with its lighthouse and the night sky, before Noodle's bed at home. Turn the brightness down and let it play to the end.
+For grown-ups: it's 3 minutes 34 seconds long. Noodle walks through Maple Woods, past the duck pond in Sunny Park, onto the pier as the lighthouse comes on and up Hilltop Meadow to count the stars, then home to his Cloud Bed. Turn the brightness down and let it play to the end.
 
 Noodle comes from Doodle Doggo, the free cozy dog game I draw like a pencil sketchbook (it's for grown-ups and older kids): https://doodledoggo.app
 
@@ -74,7 +74,7 @@ Save this for the next time your 4-year-old runs up to a dog at the park 🐶�
 
 We made Noodle's 4 calm steps for saying hello to a dog: ask the dog's grown-up first 🙋, stand still and let the dog come to sniff, pet softly on the shoulder (3 strokes, then stop 🤚), and let it go if the dog walks away 👋 We checked every step against kids' dog-safety advice from the AVMA, Dogs Trust and the Royal Kennel Club 📚 It doesn't replace you, so stay close whenever your child meets a dog 💛
 
-The full 2½-minute video for kids is on our YouTube 📺 Noodle lives in Doodle Doggo, the free cozy dog game I draw 🐾
+The full 2-minute video for kids is on our YouTube 📺 Noodle lives in Doodle Doggo, the free cozy dog game I draw 🐾
 
 #dogsafety #dogsandkids #kidsactivities #toddlermom #doodledoggo
 
@@ -90,4 +90,16 @@ Noodle lives in Doodle Doggo, the free cozy dog game I draw 🐾
 
 ## Checks
 
-Receipts are written under this line once the checks run.
+Checked 3 Nov 2026 with `.claude/skills/ig-human/detect.py` and `.claude/skills/ig-caption/caption.py`:
+- Dog manners YouTube description: ig-human PASS (84). IG/TikTok caption: ig-caption READY (5 hashtags, one ask "save this"), ig-human PASS (88).
+- Bedtime Walk YouTube description: ig-human PASS (85). IG/TikTok caption: ig-caption READY, ig-human PASS (77).
+- No em dashes, no "ugly", no selling words; the link only in the YouTube descriptions, for parents; no Ko-fi link on kids' videos.
+
+## Files (English, waiting for the owner's approval)
+
+| Episode | 16:9 (YouTube) | 9:16 (Shorts, IG, TikTok) | Thumbnail / cover |
+|---|---|---|---|
+| Dog manners 1: How to say hello to a dog | `brand/kids/dog_manners/doodle-doggo-kids-dog-manners.mp4` (2:15) | `-tall.mp4` (60 s) | `dog-manners-thumb.jpg`, `dog-manners-cover-tall.jpg` |
+| Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (3:34) | `-tall.mp4` (55 s) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
+
+Remake or fix: `NODE_PATH=$(npm root -g) node brand/kids/<episode>/build_<name>.js <workdir> <vo dir>` with `FORMAT=tall`, `ONLY=stills`, `FRAMES=a-b` (see `KIDS_SERIES.md`, Build kit). Voices: `python3 brand/kids/<episode>/vo_<name>.py <kokoro model dir> <vo dir>`.
