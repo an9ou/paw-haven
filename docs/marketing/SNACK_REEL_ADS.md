@@ -13,7 +13,7 @@ English only. Files are in `brand/instagram/launch/munch_reel/`.
 | `snack-cover-chihuahua.jpg` | Its cover: Peanut mid-chew with the blissful face, the Doodle Doggo logo above, in the grid's 3:4 crop. |
 | `build_munch.js` | Makes one for any of the 35 dogs (`POSE=sit` and `END_POSE=beg` by default): `DOG=<key> NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/munch_reel/build_munch.js <workdir>` (no `DOG`: a random dog other than Noodle; about 5 minutes; `ONLY=stills` renders key frames and the cover only). It measures each dog (its size and where its muzzle is), so the biscuit lands in the mouth and the dog fills the frame, small or big. For a fix to one part, copy the last render's workdir and run with `FRAMES=a-b` (frame numbers at 30 fps, b excluded), so only those frames are rendered again. |
 
-Dog keys: `shiba corgi golden dachs husky mutt chihuahua pug greyhound beagle poodle collie samoyed frenchie akita spitz pom afghan dane mastiff gsd dobie corso pitbull minpin lab malamute chow stdpoodle schnauzer westie yorkie bichon maltese shihtzu`. Made so far: `chihuahua`. Next time, pick a different one.
+Dog keys: `shiba corgi golden dachs husky mutt chihuahua pug greyhound beagle poodle collie samoyed frenchie akita spitz pom afghan dane mastiff gsd dobie corso pitbull minpin lab malamute chow stdpoodle schnauzer westie yorkie bichon maltese shihtzu`. Made so far: `chihuahua` (yard), `chow` (pier at dusk). Next time, pick a different dog and place.
 
 ## What is in it
 
@@ -64,3 +64,49 @@ Doodle Doggo is a free cozy dog game you play right in your browser, on your pho
 #doodledoggo #cozygames #cozygaming #doglovers #chihuahua #indiegame #relaxinggames
 ```
 **Alt text:** `A crayon Chihuahua sits, catches a biscuit thrown by a hand and happily munches it in an autumn yard.` (100 characters)
+
+---
+
+# Ad 2: Bao the Chow Chow on the pier at dusk (3 Nov 2026)
+
+Owner, 3 Nov 2026: "create an immersive reel like the chihuahua reel, choose another dog and background". Same story and length as Ad 1 (11 s: sit, the hand throws a biscuit, three crunches, a wink, a hop up to beg with heart eyes, then the end card), in a new place.
+
+| File | What |
+|---|---|
+| `doodle-doggo-snack-reel-chow-pier.mp4` | **Ad 2: Bao the Chow Chow.** 1080 x 1920, 30 fps, 11 s, with the pier's own music and sea ambience from the game, the throw, plop and crunch sounds. |
+| `snack-cover-chow-pier.jpg` | Its cover: Bao mid-chew with the blissful face at sunset, the Doodle Doggo logo above, in the grid's 3:4 crop. |
+
+Remake: `DOG=chow SCENE=pier TIP=186,104 NODE_PATH=$(npm root -g) node brand/instagram/launch/munch_reel/build_munch.js <workdir>`.
+- **The place:** `SCENE=pier` is the game's pier at dusk (`PawArt.scene('pier', { time: 'dusk' })`): a pink and peach sky, the sun going down behind Mt. Fuji over the sea, the sailboat, the railing and the boards, softened behind Bao, with a warm sunset light (peach light rays and haze, warm light motes, a slightly deeper vignette). `SCENE=yard` (the default) is Ad 1 unchanged. Other places can be added to `LOOKS` in the script (the scene, its time, the slice behind the dog and the light's colours).
+- **The dog:** Bao the Chow Chow (cinnamon, very fluffy): not used in any recent post, not black or white. His ruff sticks out further than his nose, so the muzzle is set by hand (`TIP=186,104`); without it the biscuit lands under his chin.
+
+## Running it as an ad
+
+Same set-up as Ad 1 (Traffic, https://doodledoggo.app, "Play game", Reels and Stories). Add it to the same ad set as a fresh creative.
+
+**Primary text, option A (the sunset one)**
+```
+Toss a crayon dog a treat on a pier at sunset and let the day melt away 🌅 No timers, no pressure. Free in your browser, no download.
+```
+**Primary text, option B (the collection one, as Ad 1)**
+```
+35 crayon dogs to adopt, dress up and spoil 🐶 Walk the town, grow a garden, take naps. A free cozy dog game, no download.
+```
+**Headline** (pick one): `Free cozy dog game, no download` · `Sunset snack time 🌅` · `Adopt a crayon dog 🐶`
+**Description:** `Play free in your browser.`
+
+## If it is also posted on the profile (Instagram)
+
+```
+save this for the end of a long day 🌅 it's snack time by the sea with Bao 🐶
+
+we sat Bao the Chow Chow on the pier just as the sun slipped down behind Mt. Fuji and the whole sky went pink 🗻🩷 you toss the biscuit 🦴 he catches it. three slow crunches 😌 then a happy little hop 💕 no timer. nothing to win. just a fluffy crayon dog and the waves 🌊
+
+if you want a relaxing game for tonight 🌙 Doodle Doggo is our free cozy dog game 🎮 it plays in your browser on your phone or computer, and you can adopt one of 35 crayon dogs 🐾 then watch the sunset from this same pier 💛⛵
+
+#DoodleDoggo #CozyGames #ChowChow #RelaxingGames
+```
+One ask (save) · 4 hashtags · search: "cozy dog game", "chow chow", "relaxing game" · no link · 13 emoji (2.1 per 100 characters), none as bullets · linter READY · human score 78.5 PASS.
+
+**Alt text:** `A fluffy crayon Chow Chow sits on a wooden pier at sunset, with Mt. Fuji and a sailboat behind him. A hand tosses him a biscuit; he catches it, munches it happily and hops up with heart eyes.`
+

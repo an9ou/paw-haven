@@ -8,9 +8,11 @@
 // of field, a soft round contact shadow, light rays, floating light motes and falling leaves at three depths, a slow camera move.
 // Real art only (PawArt.dog with v2.13 faces, PawArt.scene, PawArt.item), no game UI, no Japanese.
 //   DOG=chihuahua NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/munch_reel/build_munch.js <workdir>
+//   SCENE=pier (owner, 3 Nov 2026: "another dog and background"): the pier at dusk, the sun going down behind Mt. Fuji over the sea, with a warm
+//   sunset light, the pier's own music and sea ambience. SCENE=yard (default) is the first ad, unchanged. Output names get -<scene> after the dog.
 //   (no DOG: a random dog other than Noodle, printed.) ONLY=stills: key frames only (STRIP=t1,t2,.. picks them). FRAMES=a-b: re-render
 //   only those frames over a workdir copied from an earlier full render (marketing rule: never re-render a whole video for a fix to one part).
-// Output next to this file: doodle-doggo-snack-reel-<dog>.mp4, snack-cover-<dog>.jpg.
+// Output next to this file: doodle-doggo-snack-reel-<dog>[-<scene>].mp4, snack-cover-<dog>[-<scene>].jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const root = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname, WORK = path.resolve(process.argv[2] || '/tmp/munch_reel');
@@ -29,7 +31,14 @@ const f1 = (n) => Math.round(n * 10) / 10, r3 = (n) => Math.round(n * 1000) / 10
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), seg = (t, a, b) => clamp((t - a) / (b - a));
 const eo3 = (x) => 1 - Math.pow(1 - clamp(x), 3), eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 const eoB = (x) => { x = clamp(x); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
-const env = { time: 'day', weather: 'sunny', season: 'autumn', halloween: false, jp: true };
+// each place: the game scene and its time, the part of it behind the dog (a tall slice of its 1000 x 600 view), the light's colours
+const LOOKS = {
+  yard: { place: 'yard', time: 'day', view: '300 40 340 560', sun: '#FFF1BC', sunOp: 0.6, ray: '#FFF4C8', haze: '#FFF8EC', mote: '#FFF6D8', vig: 0.26 },
+  pier: { place: 'pier', time: 'dusk', view: '360 40 340 560', sun: '#FFC6A0', sunOp: 0.55, ray: '#FFD8B0', haze: '#FFE9DA', mote: '#FFE2C8', vig: 0.32 },
+};
+const SCENE = process.env.SCENE || 'yard', LOOK = LOOKS[SCENE]; if (!LOOK) throw new Error('unknown SCENE ' + SCENE + '; one of: ' + Object.keys(LOOKS).join(' '));
+const TAG = KEY + (SCENE === 'yard' ? '' : '-' + SCENE);
+const env = { time: LOOK.time, weather: 'sunny', season: 'autumn', halloween: false, jp: true };
 const GY = 188, FEET = 1470;                            // the art's ground line on its 240 x 200 canvas, and where it sits on screen
 const squash = (t, ts) => { const dt = t - ts; if (dt < -0.07) return 0; if (dt < 0) return (dt + 0.07) / 0.07; return Math.exp(-7 * dt) * Math.cos(16 * dt); };
 const BONE = inner(PA.item('Bone-shaped Biscuit'));
@@ -50,7 +59,7 @@ const LEAVES = [{ d: 0, x: 260, t0: -2, dur: 9, s: 0.9, c: '#F2B33D' }, { d: 2, 
 const leaf = (x, y, s, rot, c) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(rot)}) scale(${r3(s)})"><path d="M0 -22C13 -12 14 10 0 22C-14 10 -13 -12 0 -22Z" fill="${c}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/><path d="M0 -16L0 26" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/></g>`;
 const depthFx = (t, d) => { let g = '';
   for (const m of MOTES) if (m.d === d) { const y = ((m.y - m.sp * t) % (H + 100) + H + 100) % (H + 100) - 50, x = m.x + Math.sin(t * 0.5 + m.ph) * 30;
-    g += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(m.r)}" fill="#FFF6D8" opacity="${r3(m.op * (0.75 + 0.25 * Math.sin(t * 1.3 + m.ph)))}"/>`; }
+    g += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(m.r)}" fill="${LOOK.mote}" opacity="${r3(m.op * (0.75 + 0.25 * Math.sin(t * 1.3 + m.ph)))}"/>`; }
   for (const l of LEAVES) if (l.d === d) { const q = (t - l.t0) / l.dur; if (q < 0 || q > 1) continue;
     g += leaf(l.x + Math.sin(q * 9) * (l.d === 2 ? 50 : 70 * l.s),  // the near ones keep to the sides, off the face
        -120 + q * (H + 240), l.s, Math.sin(q * 7) * 50 + q * 160, l.c); }
@@ -88,6 +97,8 @@ const depthFx = (t, d) => { let g = '';
     for (let y = 12; y < ymax - 12; y++) if (S[y] >= maxR - 160 && S[y] >= S[y - 12] && S[y] >= S[y + 12] && S[y] > S[y + 1] - 0.01 && y > ty) ty = y;
     return { box: [r.x, r.y, r.width, r.height], tip: [S[ty] / 4, ty / 4] };
   }, plain);
+  // TIP=x,y (240 x 200 canvas): the muzzle by hand, for a dog whose ruff sticks out further than its nose (the Chow Chow: TIP=186,104)
+  if (process.env.TIP) M.tip = process.env.TIP.split(',').map(Number);
   const [bx, by, bw] = M.box, top = by, hgt = GY - top;
   const K = Math.min(680 / hgt, 1350 / bw);               // fills the frame like a close-up, whatever the size of the dog
   const HEADX = M.tip[0] - 28;
@@ -132,13 +143,13 @@ const depthFx = (t, d) => { let g = '';
   // ---- the layers, rendered once: the yard far behind (soft), light rays, two biscuits in the front grass (very soft) ----
   const bgFile = path.join(WORK, 'bg.png'), raysFile = path.join(WORK, 'rays.png'), fgFile = path.join(WORK, 'fg.png');
   await shot(page(`<defs><filter id="soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="8"/></filter>`
-    + `<radialGradient id="sun" cx="0.75" cy="0.08" r="0.85"><stop offset="0" stop-color="#FFF1BC" stop-opacity=".6"/><stop offset="1" stop-color="#FFF1BC" stop-opacity="0"/></radialGradient>`
-    + `<linearGradient id="haze" x1="0" y1="0" x2="0" y2="1"><stop offset=".35" stop-color="#FFF8EC" stop-opacity=".28"/><stop offset=".7" stop-color="#FFF8EC" stop-opacity="0"/></linearGradient>`
-    + `<radialGradient id="vig" cx="0.5" cy="0.55" r="0.75"><stop offset=".6" stop-color="#3A2A22" stop-opacity="0"/><stop offset="1" stop-color="#3A2A22" stop-opacity=".26"/></radialGradient></defs>`
-    + `<g filter="url(#soft)"><svg x="-60" y="-60" width="${W + 120}" height="${H + 120}" viewBox="300 40 340 560" preserveAspectRatio="xMidYMid slice">${inner(PA.scene('yard', env))}</svg></g>`
+    + `<radialGradient id="sun" cx="0.75" cy="0.08" r="0.85"><stop offset="0" stop-color="${LOOK.sun}" stop-opacity="${LOOK.sunOp}"/><stop offset="1" stop-color="${LOOK.sun}" stop-opacity="0"/></radialGradient>`
+    + `<linearGradient id="haze" x1="0" y1="0" x2="0" y2="1"><stop offset=".35" stop-color="${LOOK.haze}" stop-opacity=".28"/><stop offset=".7" stop-color="${LOOK.haze}" stop-opacity="0"/></linearGradient>`
+    + `<radialGradient id="vig" cx="0.5" cy="0.55" r="0.75"><stop offset=".6" stop-color="#3A2A22" stop-opacity="0"/><stop offset="1" stop-color="#3A2A22" stop-opacity="${LOOK.vig}"/></radialGradient></defs>`
+    + `<g filter="url(#soft)"><svg x="-60" y="-60" width="${W + 120}" height="${H + 120}" viewBox="${LOOK.view}" preserveAspectRatio="xMidYMid slice">${inner(PA.scene(LOOK.place, env))}</svg></g>`
     + `<rect width="${W}" height="${H}" fill="url(#haze)"/><rect width="${W}" height="${H}" fill="url(#sun)"/><rect width="${W}" height="${H}" fill="url(#vig)"/>`), bgFile);
   await shotClear(page(`<defs><filter id="rb" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="26"/></filter>`
-    + `<linearGradient id="ray" x1="1" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#FFF4C8" stop-opacity=".75"/><stop offset="1" stop-color="#FFF4C8" stop-opacity="0"/></linearGradient></defs>`
+    + `<linearGradient id="ray" x1="1" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="${LOOK.ray}" stop-opacity=".75"/><stop offset="1" stop-color="${LOOK.ray}" stop-opacity="0"/></linearGradient></defs>`
     + `<g filter="url(#rb)" fill="url(#ray)">${[[1180, -80, 140, 0], [1240, 60, 90, 120], [1120, -120, 70, -160]].map(([x, y, w, o]) => `<polygon points="${x},${y} ${x + w},${y + 40} ${x - 760 + o},${y + 1500} ${x - 760 - w * 1.6 + o},${y + 1460}"/>`).join('')}</g>`), raysFile);
   await shotClear(page(`<defs><filter id="fb" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="11"/></filter></defs>`
     + `<g filter="url(#fb)" opacity=".95">${bone(130, 1800, 320, -24)}${bone(980, 1850, 280, 28)}</g>`), fgFile);
@@ -196,7 +207,7 @@ const depthFx = (t, d) => { let g = '';
   };
 
   // the cover: the dog mid-chew with the blissful face, the logo above (the profile grid shows the middle 1080 x 1440)
-  await shot(page(scene(3.8) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `snack-cover-${KEY}.jpg`), 'jpeg');
+  await shot(page(scene(3.8) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `snack-cover-${TAG}.jpg`), 'jpeg');
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.3, 0.8, 1.25, 1.5, 1.8, 2.22, 3.8, 5.7, 6.9, 9.5];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
@@ -208,8 +219,8 @@ const depthFx = (t, d) => { let g = '';
 
   // sound: the game's own yard music, quiet; a soft plop at the catch, a crunch at each bite, little chew clicks between, a sparkle at the logo
   await p.goto('about:blank'); await p.addScriptTag({ path: path.join(root, 'mods', 'pawaudio.js') });
-  const r = await p.evaluate(async ([T, LOGO]) => { const res = await window.PawAudio._render({ seconds: T + 0.3, wav: true, vols: { master: 0.85, music: 0.6, ambience: 0.12 },
-    segments: [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }], stingers: [{ at: LOGO, name: 'sparkle' }] }); return { wav: res.wav }; }, [T, LOGO]);
+  const r = await p.evaluate(async ([T, LOGO, LK]) => { const res = await window.PawAudio._render({ seconds: T + 0.3, wav: true, vols: { master: 0.85, music: 0.6, ambience: 0.12 },
+    segments: [{ at: 0, ctx: { place: LK.place, time: LK.time, weather: 'sunny' } }], stingers: [{ at: LOGO, name: 'sparkle' }] }); return { wav: res.wav }; }, [T, LOGO, LOOK]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(r.wav, 'base64'));
   await b.close();
   const SR = 44100, n = Math.ceil(T * SR), fx = new Float32Array(n);
@@ -225,7 +236,7 @@ const depthFx = (t, d) => { let g = '';
   fs.writeFileSync(path.join(WORK, 'fx.wav'), pcm);
   const md = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path.join(WORK, 'music.wav')]).toString();
   if (!(md > T - 0.5)) throw new Error('music too short: ' + md);
-  const mp4 = path.join(OUT, `doodle-doggo-snack-reel-${KEY}.mp4`);
+  const mp4 = path.join(OUT, `doodle-doggo-snack-reel-${TAG}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), '-i', path.join(WORK, 'fx.wav'),
     '-filter_complex', `[1:a]atrim=0:${T},afade=t=in:d=0.6,afade=t=out:st=${T - 0.8}:d=0.8[m];[m][2:a]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=44100[a]`,
     '-map', '0:v', '-map', '[a]', '-t', String(T), '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', mp4], { stdio: 'inherit' });
