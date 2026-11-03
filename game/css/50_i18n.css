@@ -10,20 +10,23 @@ html:lang(zh-Hans){--font-hand:'Caveat','Patrick Hand','DD Local Title','DD Loca
   --font-read:'Patrick Hand','DD Local','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
 html:lang(zh-Hant){--font-hand:'Caveat','Patrick Hand','DD Local Title','DD Local','PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif;
   --font-read:'Patrick Hand','DD Local','PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
+/* yue (Cantonese, v2.20): the zh-Hant stack with the Hong Kong cuts first (lang yue-Hant-HK; 'DD Local' is its own Iansui subset) */
+html:lang(yue){--font-hand:'Caveat','Patrick Hand','DD Local Title','DD Local','PingFang HK','PingFang TC','Microsoft JhengHei','Noto Sans HK','Noto Sans CJK HK','Noto Sans TC','Noto Sans CJK TC',sans-serif;
+  --font-read:'Patrick Hand','DD Local','PingFang HK','PingFang TC','Microsoft JhengHei','Noto Sans HK','Noto Sans CJK HK','Noto Sans TC','Noto Sans CJK TC',sans-serif}
 html:lang(ko){--font-hand:'Caveat','Patrick Hand','DD Local Title','DD Local','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif;
   --font-read:'Patrick Hand','DD Local','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif}
 html:lang(th){--font-hand:'Caveat','Patrick Hand','DD Local Title','DD Local','Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif;
   --font-read:'Patrick Hand','DD Local','Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif}
 
 /* ---- line breaking per script (section 7) ---- */
-html:lang(ja),html:lang(zh){line-break:strict;word-break:normal;overflow-wrap:anywhere}
-html:is(:lang(ja),:lang(zh),:lang(th)) body :where(*){letter-spacing:normal!important} /* no letter-spacing on CJK or Thai */
+html:lang(ja),html:lang(zh),html:lang(yue){line-break:strict;word-break:normal;overflow-wrap:anywhere}
+html:is(:lang(ja),:lang(zh),:lang(yue),:lang(th)) body :where(*){letter-spacing:normal!important} /* no letter-spacing on CJK or Thai */
 html:lang(ko){word-break:keep-all;overflow-wrap:anywhere}
 html:lang(th){word-break:normal;line-break:auto}
 /* Thai marks stack above and below the line: at least 1.5 wherever Thai text sits (chips, HUD, toasts and bubbles too) */
 html:lang(th) body :where(*){line-height:1.6!important}
-html:is(:lang(ja),:lang(zh)) :where(p,li,.small,.toast,#bubble,.panel-body){line-height:1.6}
-html:is(:lang(ja),:lang(zh),:lang(ko)) :where(h1,h2,h3,h4){line-height:1.25}
+html:is(:lang(ja),:lang(zh),:lang(yue)) :where(p,li,.small,.toast,#bubble,.panel-body){line-height:1.6}
+html:is(:lang(ja),:lang(zh),:lang(yue),:lang(ko)) :where(h1,h2,h3,h4){line-height:1.25}
 /* v2.14 fit: Japanese headings break between phrases (BudouX in Chrome), not inside a word: "ボール遊び：/テニスボール", not "テ/ニスボール" */
 html:lang(ja) :where(h1,h2,h3,h4,.card > b,.trchip b,article.letter header > b){word-break:auto-phrase} /* v2.14 review: trick chips ("おすわり", not "おすわ/り") and letter headings too */
 /* long languages (de, fr, es, pt-BR, id and the long pseudo-locale): narrow labels wrap, and hyphenate where the browser knows the language */
@@ -51,6 +54,6 @@ html[data-layout="phone"] .tlang{font-size:16px}
 
 /* v2.14 review: a long speech line on phones. The bubble art (--speech, stretched to the box) keeps its tail in the bottom part of the box,
    so a tall CJK / Thai bubble (line-height 1.6) ran its last line onto the tail and the dog's head: wider bubbles (fewer lines), more room under the text */
-html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{max-width:min(340px,calc(100vw - 32px))}
-html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{padding-bottom:40px}
-html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble.below{padding-top:40px;padding-bottom:12px} /* v2.14.1: under the dog the tail is on top */
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(yue),:lang(ko),:lang(th)) #bubble{max-width:min(340px,calc(100vw - 32px))}
+html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(yue),:lang(ko),:lang(th)) #bubble{padding-bottom:40px}
+html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(yue),:lang(ko),:lang(th)) #bubble.below{padding-top:40px;padding-bottom:12px} /* v2.14.1: under the dog the tail is on top */

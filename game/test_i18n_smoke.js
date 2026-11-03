@@ -1,11 +1,11 @@
 // I18N SMOKE (v2.14, V214.md 13): the game boots and plays in every language, the pseudo-locales included.
-//   node game/run_tests.js i18n_smoke                (all 11 languages + xx + xx-cjk; not in `all`)
+//   node game/run_tests.js i18n_smoke                (all 12 languages + xx + xx-cjk; not in `all`)
 //   PAW_LANGS=ja,de,xx node game/run_tests.js i18n_smoke   (a few)      PAW_I18N_PARTIAL=1: misses are listed, never a failure
 // Per language: title (the first-run chip), adopt, every action-bar popup, Settings (the Language row), the map, a shop and its purchase
 // window, a walk and "Head home early", ball play. Checks: no {var} braces left on screen, no console errors, html[lang], the language in
 // __paw.i18n. Misses (keys with no text in that language) and unknown keys (not in en.json) are printed. A language whose table
 // (game/i18n/<lang>.json) exists must have no misses unless PAW_I18N_PARTIAL is set.
-// Then: auto-detect (no pin, browser locale zh-TW -> zh-Hant), a pick on the title screen goes into the new save, a pick in Settings
+// Then: auto-detect (no pin, browser locale zh-TW -> zh-Hant, zh-HK -> yue), a pick on the title screen goes into the new save, a pick in Settings
 // reloads into the language, and the picker waits during a walk.
 const fs = require('fs'), path = require('path');
 const M = require('./i18n/msg.js');
@@ -13,7 +13,7 @@ const ALL = M.CODES.concat(['xx', 'xx-cjk']);
 const LANGS = process.env.PAW_LANGS ? process.env.PAW_LANGS.split(',').map((s) => s.trim()).filter(Boolean) : ALL;
 const PARTIAL = !!process.env.PAW_I18N_PARTIAL;
 const hasTable = (l) => fs.existsSync(path.join(__dirname, 'i18n', l + '.json'));
-const HTML_LANG = { xx: 'en-XA', 'xx-cjk': 'ja-XA' };
+const HTML_LANG = { xx: 'en-XA', 'xx-cjk': 'ja-XA', yue: 'yue-Hant-HK' };
 
 require('./test_lib').run('i18n_smoke', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -43,7 +43,7 @@ require('./test_lib').run('i18n_smoke', async (t) => {
     await p.click('[data-act=journal]'); ok(await p.waitForSelector('.panel.journal').then(() => true, () => false), `${lang}: journal opens`); await checkBraces(lang + ' journal'); await t.closeX(); await t.modalGone();
     await ev(() => document.getElementById('gearBtn').click());
     ok(await t.until(() => !!document.getElementById('setLang')), `${lang}: Settings has the Language row`);
-    await p.click('#setLang'); ok(await t.until(() => document.querySelectorAll('#setLangBox [data-lang]').length === 12), `${lang}: the list shows 11 languages + "Use device language"`);
+    await p.click('#setLang'); ok(await t.until(() => document.querySelectorAll('#setLangBox [data-lang]').length === M.CODES.length + 1), `${lang}: the list shows ${M.CODES.length} languages + "Use device language"`);
     await checkBraces(lang + ' settings'); await t.closeX(); await t.modalGone();
     await p.click('[data-act=map]'); await p.waitForSelector('[data-area=park]'); await checkBraces(lang + ' map'); await p.keyboard.press('Escape'); await t.untilMode('yard');
 
@@ -65,6 +65,12 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   sec('auto-detect: no pin, a zh-TW browser');
   await t.mk({ lang: null, locale: 'zh-TW' }); await t.p.goto(require('./test_lib').URL); await t.p.waitForSelector('#tNew');
   ok(await ev(() => window.PawI18n.tlang() === 'zh-Hant' && document.documentElement.lang === 'zh-Hant'), 'zh-TW picks zh-Hant (pickLang)');
+  await t.ctx.close();
+  sec('v2.20 auto-detect: a zh-HK browser gets Cantonese');
+  await t.mk({ lang: null, locale: 'zh-HK' }); await t.p.goto(require('./test_lib').URL); await t.p.waitForSelector('#tNew');
+  ok(await ev(() => window.PawI18n.tlang() === 'yue' && document.documentElement.lang === 'yue-Hant-HK'), 'zh-HK picks yue (pickLang), html lang yue-Hant-HK');
+  ok(await ev(() => /廣東話/.test(document.getElementById('tLang').textContent)), 'the title chip says 廣東話');
+  ok(await ev(() => window.PawI18n.tlist(['A', 'B', 'C']) === new Intl.ListFormat('zh-HK', { type: 'conjunction' }).format(['A', 'B', 'C'])), 'yue lists use the zh-HK rules in Chromium (no English "and")');
   await t.ctx.close();
 
   sec('v2.15 (owner): S.langShown records the language on screen');

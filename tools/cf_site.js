@@ -3,7 +3,7 @@
 //   node tools/cf_site.js --pseudo   also serves the test-only pseudo-locales /xx/ and /xx-cjk/ (game/test_site.js; never deployed)
 //   bash tools/cf_pages_deploy.sh    builds this and deploys it to doodledoggo.app (needs the owner's go-ahead)
 // Pages: / (index.html: the live playroom, the itch.io widget, eight dog cards, Dogs in Japan), /dogs (the profiles), /map (every place, site v3),
-// /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), /f/<code> (v2.19: a friend invite, one shell per language), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
+// /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), /f/<code> (v2.19: a friend invite, one shell per language), and since v2.14 the same pages in 11 more languages at /<lang>/ (ja, zh-hans, zh-hant, yue (v2.20, Cantonese), ko, es, pt-br, fr, de, th, id). Every page is made here by
 // tools/site_i18n.js from site/tpl/ and site/i18n/ (English is also committed as site/*.html; a warning shows when that copy is out of date).
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
 // Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane) and the place pictures of /map (site/img/map/, the SHOTS lane).
@@ -149,7 +149,7 @@ function renderInvite(shell, code) {
 const PRETTY = {}, LANG_OF = { '': 'en' };
 for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   const pre = L.dir ? '/' + L.dir : '';
-  LANG_OF[pre] = L.code;
+  LANG_OF[pre] = I18N.htmlTag(L); // content-language (yue: yue-Hant-HK); the keys are the URL folders
   I18N.PAGES.forEach((pg) => { PRETTY[pg.path === '/' ? pre || '/' : pre + pg.path] = pre + '/' + pg.id + '.html'; });
 }
 // the game copy (/play/): its own Worker unless SITE_PLAY=inline (SIDE above)
@@ -160,7 +160,7 @@ for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   // the language's font subset too (same ?v= cache key as the pages), and a <title>
   const fcss = path.join(site, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'), fbody = L.code !== 'en' && fs.existsSync(fcss) ? fs.readFileSync(fcss) : null;
   const flink = fbody && /@font-face/.test(fbody) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fcss)}?v=${crypto.createHash('sha1').update(fbody).digest('hex').slice(0, 8)}">` : '';
-  NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${L.code}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${I18N.fmt(L.code, 'notfound.title').replace(/<[^>]*>/g, '')} · Doodle Doggo</title><link rel="stylesheet" href="/style.css">${flink}<main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
+  NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${I18N.htmlTag(L)}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${I18N.fmt(L.code, 'notfound.title').replace(/<[^>]*>/g, '')} · Doodle Doggo</title><link rel="stylesheet" href="/style.css">${flink}<main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
 }
 // the side Workers' files, when they stay in the main Worker
 SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.list.forEach(([u, f]) => { files[u] = f; }));

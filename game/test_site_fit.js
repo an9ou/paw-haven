@@ -1,6 +1,6 @@
 // SITE FIT (v2.14, the owner via the Game Manager: every language fits every menu and box). The measuring tool for doodledoggo.app: every page in
 // every site language at five widths, with the same checks as the game (game/fit_lib.js: clip, escape, overlap, hscroll, and on phones tap / font).
-//   node game/run_tests.js site_fit [--jobs N]        (its own group `fit`: not in `all` or `phone`; about 14 min for 11 languages x 5 widths with --jobs 3)
+//   node game/run_tests.js site_fit [--jobs N]        (its own group `fit`: not in `all` or `phone`; about 15 min for 12 languages x 5 widths with --jobs 3)
 //   PAW_LANGS=en,de ...   PAW_FIT_SIZES=1440,390 ...   PAW_FIT_REPORT_ONLY=1 (always passes)   PAW_FIT_JOBS=N (parallel pages)
 // Output: game/test_logs/site_fit.json, game/test_logs/site_fit.md, game/test_logs/fit_shots_site/ (the 30 worst, framed in red).
 // The site is served the way game/test_site.js serves it (tools/cf_site.js, the Worker in Miniflare, the fonts and map pictures Workers relayed),

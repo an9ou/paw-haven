@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // v2.14 FONTS lane: per-language font subsets for the site (and, in phase 2, the game). Contract and numbers: docs/i18n/FONTS.md.
 //
-//   node tools/i18n_fonts.js <lang> [corpus files...]   one language (ja, zh-Hans, zh-Hant, ko, th, es, pt-BR, fr, de, id)
+//   node tools/i18n_fonts.js <lang> [corpus files...]   one language (ja, zh-Hans, zh-Hant, yue, ko, th, es, pt-BR, fr, de, id)
 //   node tools/i18n_fonts.js --all                       every language; corpus defaults to site/i18n/<lang>.json
 //   options:
 //     --for site|game     default corpus: site/i18n/<lang>.json (site) or game/i18n/<lang>.json (game). --target is the same option.
@@ -59,12 +59,17 @@ const SRC = {
 const KANA = rng(0x3041, 0x3096) + rng(0x30A1, 0x30FA) + 'ー・';
 const CJKP = '、。〃「」『』【】〈〉《》〜！？：；（），．…￥％＆＊＋＝';
 const ASCII = rng(0x21, 0x7E).replace(/[A-Za-z]/g, '');
+// yue (Cantonese, v2.20): the characters of written Cantonese that zh-Hant text rarely has, always in the subset, so a translator's new line
+// never falls back to a system face for its particles (嘅 咗 啲 唔 冇 ...) before the subset is rebuilt
+// (Iansui has no 嗮: write 晒, which it has)
+const YUE = '嘅咗啲唔冇嚟咁喺哋嘢嗰噉乜嘞囉喎啱冚攰瞓餸嚿嘥揸攞諗靚嘈咩吖㗎嘛啦喇嚕呢咪睇俾畀佢係噃咋啩㖭嚡晒曬佬仔乸埋揾搵';
 // CJK and Korean: horizontal features only (the default list also keeps the vertical forms: vert, vrt2, vkna..., about 15% more glyphs)
 const HFEAT = ['ccmp', 'locl', 'kern', 'liga', 'calt', 'rlig', 'mark', 'mkmk'];
 const LANGS = {
   ja: { body: 'KleeOne', base: KANA + CJKP, feat: HFEAT },
   'zh-Hans': { body: 'LXGWWenKai', base: CJKP + '“”‘’—·', feat: HFEAT },
   'zh-Hant': { body: 'Iansui', base: CJKP + '「」『』—·', feat: HFEAT },
+  yue: { body: 'Iansui', base: CJKP + '「」『』—·' + YUE, feat: HFEAT },
   ko: { body: 'PoorStory', title: 'Jua', base: '', feat: HFEAT },
   th: { body: 'Mali', title: 'MaliBold', titleAll: true, base: rng(0x0E01, 0x0E3A) + rng(0x0E3F, 0x0E5B), feat: ['*'] },
   es: { body: 'PatrickHand', title: 'Caveat', latin: true }, 'pt-BR': { body: 'PatrickHand', title: 'Caveat', latin: true },
@@ -280,6 +285,7 @@ function measure(lang) {
     ja: `[bytes([r,c]).decode('euc_jp') for r in range(0xB0,0xD0) for c in range(0xA1,0xFF) if r!=0xCF or c<=0xD3]`,
     'zh-Hans': `[bytes([r,c]).decode('gb2312') for r in range(0xB0,0xD8) for c in range(0xA1,0xFF) if r!=0xD7 or c<=0xF9]`,
     'zh-Hant': `[ch for h in range(0xA4,0xC7) for l in list(range(0x40,0x7F))+list(range(0xA1,0xFF)) for ch in [bytes([h,l]).decode('big5','ignore')] if len(ch)==1 and not (h==0xC6 and l>0x7E)]`,
+    yue: `[ch for h in range(0xA4,0xC7) for l in list(range(0x40,0x7F))+list(range(0xA1,0xFF)) for ch in [bytes([h,l]).decode('big5','ignore')] if len(ch)==1 and not (h==0xC6 and l>0x7E)]`, // the same Big5 level-1 sample as zh-Hant
     ko: `[bytes([r,c]).decode('euc_kr') for r in range(0xB0,0xC9) for c in range(0xA1,0xFF)]`,
   }[lang];
   const all = set ? JSON.parse(cp.execFileSync('python3', ['-P', '-c', `import json; print(json.dumps(''.join(${set})))`]).toString()) : '';

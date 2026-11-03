@@ -116,9 +116,9 @@ html[data-layout="phone"] #modal .panel.frsheet .panel-body{padding-bottom:14px}
    Gift cells get two columns on CJK phones, and CJK names are 20 px in the phone list. 4: the Undo button stays on one line. 5: the count sits inside the cell's crayon line. 6: Thai marks clear the button's top line */
 :is(.fr-nm,.fr-prev,.mb-t b){overflow-wrap:break-word;line-break:strict}
 .fr-gnm{overflow-wrap:anywhere;line-break:strict}
-:is(:lang(ja),:lang(zh)) :is(.fr-nm,.fr-prev){word-break:keep-all}
+:is(:lang(ja),:lang(zh),:lang(yue)) :is(.fr-nm,.fr-prev){word-break:keep-all}
 :lang(ja) .fr-gnm{word-break:auto-phrase}
-@media (max-width:430px){ html[data-layout="phone"]:is(:lang(ja),:lang(zh)) .fr-giftgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
-html[data-layout="phone"]:is(:lang(ja),:lang(zh)) .fr-nm{font-size:20px}
+@media (max-width:430px){ html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(yue)) .fr-giftgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(yue)) .fr-nm{font-size:20px}
 .toast.fr-undo .btn{flex:none;white-space:nowrap}
 :lang(th) .fr-wbtn{line-height:1.5;min-height:52px;padding-top:13px;padding-bottom:7px}

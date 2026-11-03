@@ -31,18 +31,18 @@ function openSettings() {
     lsDel(SAVE_KEY); S = null; levelQueue = []; closeModal(); toast(tt('settings.reset_done', 'Save deleted. Fresh crayons.')); go('title');
   };
 }
-/* ---- v2.14 the language picker (V214.md 5): a "Language" row with the current language's own name; it opens the list of the 11 native
+/* ---- v2.14 the language picker (V214.md 5): a "Language" row with the current language's own name; it opens the list of the 12 native
    names (each with its English name in small text) and "Use device language". The names never translate. Shared with the title chip (01_title.js). ---- */
 function langName(c) { return (PIM && PIM.LANGS[c]) || c; }
 function langListHTML() {
   const pick = S ? S.lang : (i18nReal(prefs.langPick) ? prefs.langPick : null), dev = i18nDevice(), en = (c) => (PIM && PIM.LANG_EN[c]) || c;
-  const row = (code, main, sub, on) => `<button class="btn langopt${on ? ' on yes' : ''}" data-lang="${code}" aria-pressed="${on}"${code !== '' ? ` lang="${code}"` : ''}><span class="lang-n">${esc(main)}</span>${sub ? `<span class="lang-e" lang="en">${esc(sub)}</span>` : ''}</button>`;
+  const row = (code, main, sub, on) => `<button class="btn langopt${on ? ' on yes' : ''}" data-lang="${code}" aria-pressed="${on}"${code !== '' ? ` lang="${PIM ? PIM.htmlLang(code) : code}"` : ''}><span class="lang-n">${esc(main)}</span>${sub ? `<span class="lang-e" lang="en">${esc(sub)}</span>` : ''}</button>`;
   return `<div class="langlist" role="group" aria-label="${esc(tt('settings.language', 'Language'))}">${I18N_CODES.map((c) => row(c, langName(c), en(c) !== langName(c) ? en(c) : '', pick === c)).join('')}`
     + `${row('', tt('settings.lang_device', 'Use device language'), langName(dev), pick == null)}</div>`;
 }
 function langRowHTML() {
   const busy = tlangBusy();
-  return `<div class="langrow"><span class="lang-l">${esc(tt('settings.language', 'Language'))}</span><button class="btn langbtn" id="setLang" aria-expanded="false"${busy ? ' disabled' : ''}><span lang="${esc(tlang())}">${esc(langName(I18N.ps ? 'en' : tlang()))}</span></button></div>`
+  return `<div class="langrow"><span class="lang-l">${esc(tt('settings.language', 'Language'))}</span><button class="btn langbtn" id="setLang" aria-expanded="false"${busy ? ' disabled' : ''}><span lang="${esc(PIM ? PIM.htmlLang(tlang()) : tlang())}">${esc(langName(I18N.ps ? 'en' : tlang()))}</span></button></div>`
     + (busy ? `<p class="small langbusy">${esc(tlangBusyText())}</p>` : '') + `<div class="langbox" id="setLangBox" hidden></div>`;
 }
 // wires the list inside `box` (a settings panel or the title's language sheet); after() runs when a language was chosen on the title screen
@@ -56,7 +56,7 @@ function langBind(p) {
 // the first-run chip on the title screen (no save yet): a globe and the current language's own name, one tap to the list (V214.md 5)
 function titleLangChip() {
   const c = I18N.ps ? 'en' : tlang();
-  return `<button class="btn tlang" id="tLang" aria-label="${esc(tt('settings.language', 'Language'))}: ${esc(langName(c))}"><svg class="tlang-ic" viewBox="-12 -12 24 24" aria-hidden="true"><g fill="none" stroke="#5B3D32" stroke-width="1.8" stroke-linecap="round"><circle r="9.5" fill="#CFE6F2"/><path d="M-9.5 0 H9.5 M0 -9.5 Q-6 0 0 9.5 M0 -9.5 Q6 0 0 9.5 M-8 -5 Q0 -2.5 8 -5 M-8 5 Q0 2.5 8 5"/></g></svg><span lang="${esc(c)}">${esc(langName(c))}</span></button>`;
+  return `<button class="btn tlang" id="tLang" aria-label="${esc(tt('settings.language', 'Language'))}: ${esc(langName(c))}"><svg class="tlang-ic" viewBox="-12 -12 24 24" aria-hidden="true"><g fill="none" stroke="#5B3D32" stroke-width="1.8" stroke-linecap="round"><circle r="9.5" fill="#CFE6F2"/><path d="M-9.5 0 H9.5 M0 -9.5 Q-6 0 0 9.5 M0 -9.5 Q6 0 0 9.5 M-8 -5 Q0 -2.5 8 -5 M-8 5 Q0 2.5 8 5"/></g></svg><span lang="${esc(PIM ? PIM.htmlLang(c) : c)}">${esc(langName(c))}</span></button>`;
 }
 function titleLangBind() {
   const b = document.getElementById('tLang'); if (!b) return;

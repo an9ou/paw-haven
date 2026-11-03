@@ -34,7 +34,7 @@ eq(M.format('{n, plural, one {# cão} other {# cães}}', { n: 0 }, 'pt-BR'), '0 
 eq(M.format('{n, plural, one {# Hund} other {# Hunde}}', { n: 0 }, 'de'), '0 Hunde', 'de 0 is other');
 // many (fr/es/pt for a million) falls back to other when there is no many branch
 eq(sp(M.format(FR, { n: 1000000 }, 'fr')), '1 000 000 chiens', 'fr many -> other');
-for (const l of ['ja', 'zh-Hans', 'zh-Hant', 'ko', 'th', 'id']) {
+for (const l of ['ja', 'zh-Hans', 'zh-Hant', 'yue', 'ko', 'th', 'id']) {
   for (const n of [0, 1, 2, 21]) eq(M.pluralCat(n, l), 'other', `${l} ${n} is other`);
   eq(M.format('{n, plural, one {ONE} other {#匹}}', { n: 1 }, l), '1匹', `${l} one branch unused`);
 }
@@ -105,19 +105,32 @@ eq(M.num(1234.5, 'de'), '1.234,5', 'num de');
 eq(M.num(1234, 'ja'), '1,234', 'num ja');
 ok(/2569/.test(M.date(new Date(2026, 9, 18), 'th', { year: 'numeric' })), 'th dates use the Buddhist year by default');
 ok(/2026/.test(M.date(new Date(2026, 9, 18), 'ja', { year: 'numeric' })), 'ja dates stay Gregorian');
+// yue (v2.20): Intl gets the Hong Kong Chinese locale (Chromium has no yue data and would fall back to en-US), <html lang> gets script and region
+eq(M.intlOf('yue'), 'zh-HK', 'intlOf yue'); eq(M.intlOf('zh-Hant'), 'zh-Hant', 'intlOf keeps the other codes'); eq(M.intlOf('en'), 'en', 'intlOf en');
+eq(M.htmlLang('yue'), 'yue-Hant-HK', 'htmlLang yue'); eq(M.htmlLang('zh-Hant'), 'zh-Hant', 'htmlLang keeps the other codes');
+eq(M.num(1234567.5, 'yue'), '1,234,567.5', 'num yue');
+eq(M.date(new Date(2026, 10, 3), 'yue', { month: 'long', day: 'numeric', weekday: 'long' }), M.date(new Date(2026, 10, 3), 'zh-HK', { month: 'long', day: 'numeric', weekday: 'long' }), 'date yue = zh-HK');
+ok(/11月3日/.test(M.date(new Date(2026, 10, 3), 'yue', { month: 'long', day: 'numeric' })), 'date yue is Chinese, not English');
+eq(M.list(['A', 'B', 'C'], 'yue'), M.list(['A', 'B', 'C'], 'zh-HK'), 'list yue = zh-HK');
+ok(!/,|and/.test(M.list(['A', 'B', 'C'], 'yue')), 'list yue has no English "and"');
+eq(M.format('{n, plural, one {ONE} other {#隻狗}}', { n: 1234 }, 'yue'), '1,234隻狗', 'yue plural: other, # grouped');
 
 /* ---- LANGS and pickLang ---- */
-const CODES = ['en', 'ja', 'zh-Hans', 'zh-Hant', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
+const CODES = ['en', 'ja', 'zh-Hans', 'zh-Hant', 'yue', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
 eq(JSON.stringify(M.CODES), JSON.stringify(CODES), 'CODES in picker order');
-eq(M.LANGS.ja, '日本語', 'native name ja'); eq(M.LANGS['zh-Hant'], '繁體中文', 'native name zh-Hant'); eq(M.LANGS['pt-BR'], 'Português (Brasil)', 'native name pt-BR');
+eq(M.LANGS.ja, '日本語', 'native name ja'); eq(M.LANGS['zh-Hant'], '繁體中文', 'native name zh-Hant'); eq(M.LANGS.yue, '廣東話', 'native name yue'); eq(M.LANG_EN.yue, 'Cantonese', 'English name yue'); eq(M.LANGS['pt-BR'], 'Português (Brasil)', 'native name pt-BR');
 CODES.forEach((c) => { ok(typeof M.LANGS[c] === 'string' && M.LANGS[c], 'LANGS has ' + c); ok(typeof M.LANG_EN[c] === 'string' && M.LANG_EN[c], 'LANG_EN has ' + c); });
 const PICK = [
-  [['zh-TW'], 'zh-Hant'], [['zh-HK'], 'zh-Hant'], [['zh-MO'], 'zh-Hant'], [['zh-Hant'], 'zh-Hant'], [['zh-Hant-TW'], 'zh-Hant'], [['zh-Hant-HK'], 'zh-Hant'],
+  [['zh-TW'], 'zh-Hant'], [['zh-Hant'], 'zh-Hant'], [['zh-Hant-TW'], 'zh-Hant'],
+  // v2.20 (owner): Hong Kong and Macau get Cantonese; Taiwan and a bare zh-Hant stay zh-Hant
+  [['zh-HK'], 'yue'], [['zh-MO'], 'yue'], [['zh-Hant-HK'], 'yue'], [['zh-Hant-MO'], 'yue'], [['zh_HK'], 'yue'], [['zh-hant-hk'], 'yue'],
+  [['yue'], 'yue'], [['yue-HK'], 'yue'], [['yue-Hant'], 'yue'], [['yue-Hant-HK'], 'yue'], [['yue-Hans-CN'], 'yue'], [['zh-yue'], 'yue'], [['zh-yue-HK'], 'yue'],
+  [['zh-Hans-HK'], 'zh-Hans'], [['en-HK'], 'en'], [['fr-FR', 'zh-HK'], 'fr'], [['zh-TW', 'zh-HK'], 'zh-Hant'], [['nl', 'yue-HK', 'zh-TW'], 'yue'],
   [['zh'], 'zh-Hans'], [['zh-CN'], 'zh-Hans'], [['zh-SG'], 'zh-Hans'], [['zh-Hans'], 'zh-Hans'], [['zh-Hans-CN'], 'zh-Hans'], [['zh_TW'], 'zh-Hant'],
   [['pt'], 'pt-BR'], [['pt-PT'], 'pt-BR'], [['pt-BR'], 'pt-BR'], [['es-MX'], 'es'], [['es-419'], 'es'], [['es'], 'es'],
   [['ja-JP'], 'ja'], [['ja'], 'ja'], [['ko-KR'], 'ko'], [['fr-CA'], 'fr'], [['de-AT'], 'de'], [['th-TH'], 'th'], [['id-ID'], 'id'], [['in-ID'], 'id'],
   [['en-GB'], 'en'], [['EN-us'], 'en'], [['nl-NL', 'de-DE'], 'de'], [['nl', 'sv'], 'en'], [[], 'en'], [null, 'en'], [undefined, 'en'], ['fr-FR', 'fr'],
-  [['', '  ', 42, 'ko'], 'ko'], [['ar-EG', 'zh-HK', 'ja'], 'zh-Hant'], [['it-IT', 'pt-BR', 'es-ES'], 'pt-BR'], [['zh-hant'], 'zh-Hant'], [['pt-br'], 'pt-BR']
+  [['', '  ', 42, 'ko'], 'ko'], [['ar-EG', 'zh-HK', 'ja'], 'yue'], [['ar-EG', 'zh-TW', 'ja'], 'zh-Hant'], [['it-IT', 'pt-BR', 'es-ES'], 'pt-BR'], [['zh-hant'], 'zh-Hant'], [['pt-br'], 'pt-BR']
 ];
 for (const [inp, want] of PICK) eq(M.pickLang(inp), want, 'pickLang ' + JSON.stringify(inp));
 CODES.forEach((c) => eq(M.pickLang([c]), c, 'pickLang round trip ' + c));
@@ -134,7 +147,7 @@ if (fs.existsSync(gdir)) {
   for (const f of fs.readdirSync(gdir).filter((x) => x.endsWith('.json')).sort()) {
     const lang = f.slice(0, -5), where = 'glossary/' + f, g = readJson(path.join(gdir, f), where);
     if (!g) continue;
-    ok(CODES.includes(lang) && lang !== 'en', `${where}: file name is one of the 10 codes`);
+    ok(CODES.includes(lang) && lang !== 'en', `${where}: file name is one of the 11 codes`);
     eq(g.lang, lang, `${where}: lang`);
     const bk = Object.keys(g.breeds || {});
     ok(G.BREEDS.every((k) => typeof g.breeds[k] === 'string' && g.breeds[k].trim()), `${where}: every breed key has a name (missing: ${G.BREEDS.filter((k) => !(g.breeds || {})[k]).join(' ')})`);
@@ -180,7 +193,7 @@ function checkDir(dir, label, flatOnly) {
   for (const f of files) {
     const lang = f.slice(0, -5), where = label + '/' + f, j = readJson(path.join(dir, f), where);
     if (!j) continue;
-    ok(CODES.includes(lang), `${where}: file name is one of the 11 codes`);
+    ok(CODES.includes(lang), `${where}: file name is one of the 12 codes`);
     if (flatOnly) ok(Object.values(j).every((v) => typeof v === 'string'), `${where}: flat keys, string values only`);
     tables[lang] = flat(j, '', {});
   }
@@ -221,7 +234,7 @@ const ord = path.join(ROOT, 'game/i18n/ORDER.txt');
 if (fs.existsSync(ord)) {
   const list = fs.readFileSync(ord, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
   eq(list[0], 'en.json', 'game/i18n/ORDER.txt starts with en.json');
-  ok(list.every((f) => CODES.includes(f.replace(/\.json$/, ''))), 'game/i18n/ORDER.txt lists only the 11 codes');
+  ok(list.every((f) => CODES.includes(f.replace(/\.json$/, ''))), 'game/i18n/ORDER.txt lists only the 12 codes');
   eq(JSON.stringify(list.map((f) => f.replace(/\.json$/, ''))), JSON.stringify(CODES.filter((c) => list.includes(c + '.json'))), 'game/i18n/ORDER.txt is in CODES order');
 }
 
