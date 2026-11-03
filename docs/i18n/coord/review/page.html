@@ -1,0 +1,350 @@
+<title>廣東話 Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+HK:wght@400;500;700&display=swap">
+<style>
+/* Layout: one sketchbook column of paper slips; a sticky pencil-box bar holds progress, tabs and filters. */
+:root {
+  --paper: #FAF3DF;      /* sketchbook page */
+  --sheet: #FFFCF3;      /* a slip of paper on the page */
+  --ink: #3F2A1C;        /* brown crayon ink */
+  --ink-soft: #7A6250;   /* pencil text */
+  --line: #DCCBA9;       /* pencil line */
+  --yellow: #F2C744;     /* crayon yellow (OK) */
+  --pink: #F28FA5;       /* crayon pink (change) */
+  --blue: #8EC0EA;       /* crayon blue (notes) */
+  --on-crayon: #2B1E12;  /* text on a crayon fill */
+  --good: #4F7F2E;       /* saved */
+  --warn: #A1462B;       /* cannot save */
+  --q-bg: #F6EBCB;       /* question card */
+  --f-display: "LXGW WenKai TC", "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", sans-serif;
+  --f-yue: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei", "Heiti TC", sans-serif;
+  --f-en: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-key: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #1E1813; --sheet: #2A211A; --ink: #F3E8D6; --ink-soft: #BDA991; --line: #4B3E31;
+  --yellow: #E6BC3D; --pink: #E58A9F; --blue: #7FB0DA; --on-crayon: #241810; --good: #9CC77A; --warn: #F0987C; --q-bg: #33291F;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #1E1813; --sheet: #2A211A; --ink: #F3E8D6; --ink-soft: #BDA991; --line: #4B3E31;
+  --yellow: #E6BC3D; --pink: #E58A9F; --blue: #7FB0DA; --on-crayon: #241810; --good: #9CC77A; --warn: #F0987C; --q-bg: #33291F;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-en); font-size: 16px; line-height: 1.55; -webkit-text-size-adjust: 100%; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+:lang(yue), :lang(zh-HK), .zh { font-family: var(--f-yue); }
+button, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+/* header */
+header.top { padding-block: 28px 8px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 2.4rem; line-height: 1.15; margin: 0 0 4px; text-wrap: balance; display: inline-block; position: relative; }
+h1::after { content: ""; position: absolute; left: -4px; right: -8px; bottom: -2px; height: 12px; z-index: -1; background: var(--yellow); opacity: .85;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C30 3 60 10 90 6 S150 2 198 7' stroke='black' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C30 3 60 10 90 6 S150 2 198 7' stroke='black' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+header.top { isolation: isolate; }
+.sub { font-family: var(--f-display); color: var(--ink-soft); font-size: 1.05rem; margin: 6px 0 18px; }
+.intro { display: grid; gap: 14px; }
+.intro p { margin: 0; max-width: 62ch; }
+.intro .zh { font-size: 1.06rem; line-height: 1.75; }
+.intro .en { color: var(--ink-soft); font-size: .95rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 0; padding: 0; list-style: none; font-size: .92rem; color: var(--ink-soft); }
+.legend b { color: var(--ink); font-family: var(--f-yue); }
+
+/* sticky bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 1.5px dashed var(--line); margin-top: 18px; }
+.bar .wrap { gap: 8px; }
+.bar .wrap { padding-block: 10px; display: grid; gap: 10px; }
+.prog { display: flex; align-items: center; gap: 12px; font-variant-numeric: tabular-nums; }
+.prog-txt { font-family: var(--f-display); font-size: 1.1rem; white-space: nowrap; }
+.prog-txt small { font-family: var(--f-en); color: var(--ink-soft); font-size: .8rem; }
+.meter { flex: 1; min-width: 0; height: 12px; border-radius: 8px 5px 9px 6px; border: 1.5px solid var(--ink-soft); overflow: hidden; background: var(--sheet); }
+.meter i { display: block; height: 100%; width: 0; background: var(--yellow); transition: width .3s; }
+.tabs, .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { flex: 1 1 0; min-width: 0; min-height: 48px; border: 1.5px solid var(--line); background: var(--sheet); border-radius: 12px 9px 13px 8px; padding: 4px 6px; cursor: pointer; display: grid; place-items: center; line-height: 1.2; }
+.tab b { font-family: var(--f-display); font-size: 1rem; }
+.tab span { font-size: .72rem; color: var(--ink-soft); }
+.tab em { font-style: normal; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.tab[aria-selected="true"] { border-color: var(--ink); background: var(--q-bg); box-shadow: inset 0 -4px 0 var(--yellow); }
+.tools { display: grid; gap: 10px; padding-block: 14px 0; }
+.chip { flex: 1 1 auto; min-height: 44px; padding: 4px 12px; line-height: 1.2; border: 1.5px solid var(--line); background: transparent; border-radius: 22px; cursor: pointer; font-size: .9rem; }
+.chip .zh { font-weight: 700; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.status { font-size: .88rem; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--sheet); }
+.status.warn { border-color: var(--warn); color: var(--warn); }
+.status .zh { font-weight: 700; }
+
+/* list */
+main { padding-block: 8px 60px; }
+.sec-lead { margin: 4px 0 14px; color: var(--ink-soft); font-size: .95rem; max-width: 62ch; }
+.sec-lead .zh { color: var(--ink); display: block; font-size: 1rem; }
+h3.grp { font-family: var(--f-display); font-size: 1.3rem; font-weight: 700; margin: 26px 0 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+h3.grp small { font-family: var(--f-en); font-weight: 400; font-size: .85rem; color: var(--ink-soft); }
+.list { display: grid; gap: 14px; }
+.row { background: var(--sheet); border: 1.5px solid var(--line); border-radius: 16px 11px 18px 10px / 11px 16px 10px 17px; padding: 14px 14px 12px; display: grid; gap: 8px; min-width: 0; }
+.row.v-ok { border-color: var(--yellow); }
+.row.v-change { border-color: var(--pink); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 20px; }
+.key { font-family: var(--f-key); font-size: .7rem; color: var(--ink-soft); opacity: .8; overflow-wrap: anywhere; min-width: 0; }
+.badge { font-size: .72rem; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--good); color: var(--good); white-space: nowrap; }
+.saved { margin-left: auto; font-size: .78rem; color: var(--good); white-space: nowrap; opacity: 0; transition: opacity .2s; }
+.saved.on { opacity: 1; }
+.saved.err { color: var(--warn); opacity: 1; }
+.en { margin: 0; color: var(--ink-soft); font-size: .95rem; overflow-wrap: anywhere; }
+.yue { margin: 0; font-family: var(--f-yue); font-size: 1.375rem; line-height: 1.6; font-weight: 500; overflow-wrap: anywhere; }
+.q { background: var(--q-bg); border-radius: 10px 14px 9px 13px; padding: 10px 12px; display: grid; gap: 4px; }
+.q p { margin: 0; }
+.q .zh { font-size: 1rem; line-height: 1.65; }
+.q .qen { font-size: .86rem; color: var(--ink-soft); }
+.q-h { font-family: var(--f-display); font-size: .8rem; color: var(--ink-soft); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.btn { min-height: 46px; padding: 0 16px; border: 2px solid var(--ink-soft); background: transparent; border-radius: 14px 10px 15px 9px; cursor: pointer; font-family: var(--f-yue); font-weight: 700; font-size: 1rem; }
+.btn.ok[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--on-crayon); }
+.btn.chg[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--on-crayon); }
+.btn.ok, .btn.chg { flex: 1 1 6em; padding: 0 10px; }
+.btn.note { flex: 0 0 auto; padding: 0 12px; border-style: dashed; font-weight: 500; font-size: .92rem; }
+.btn.note[aria-expanded="true"] { border-color: var(--blue); border-style: solid; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: .82rem; color: var(--ink-soft); }
+.field label .zh { color: var(--ink); font-weight: 700; }
+textarea { width: 100%; min-height: 84px; resize: vertical; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); padding: 10px 12px; font-size: 1.15rem; line-height: 1.55; }
+textarea.yue-in { font-family: var(--f-yue); font-size: 1.25rem; }
+textarea.note-in { font-size: 1rem; min-height: 64px; }
+.empty { text-align: center; padding: 40px 10px; color: var(--ink-soft); font-family: var(--f-display); font-size: 1.1rem; }
+footer { padding-block: 10px 40px; color: var(--ink-soft); font-size: .88rem; text-align: center; }
+@media (min-width: 640px) { .intro { grid-template-columns: 1fr 1fr; gap: 24px; } h1 { font-size: 2.8rem; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top wrap">
+  <h1>廣東話 Check</h1>
+  <p class="sub">Doodle Doggo · 香港廣東話翻譯 · Hong Kong Cantonese translation</p>
+  <div class="intro">
+    <div class="zh" lang="zh-HK">
+      <p>你好！多謝你幫手睇吓。Doodle Doggo 係一個好溫馨嘅網頁遊戲：玩家領養一隻用蠟筆畫嘅狗狗，啲狗特登畫到醜醜哋，醜得好得意。可以餵佢、同佢玩、帶佢散步、種菜。遊戲入面永遠唔會有壞事發生。</p>
+      <p style="margin-top:10px">我哋特登用香港人平時講嘅廣東話口語。小朋友都會玩，所以字要簡單親切。狗狗嘅笑話係特登傻傻哋嘅。如果有句讀落怪怪哋、似台灣或者普通話、太正式，或者唔禮貌，請撳「改一改」，寫你覺得好啲嘅講法。</p>
+    </div>
+    <div class="en" lang="en">
+      <p>Hello, and thank you! Doodle Doggo is a cozy browser game: you adopt a crayon-drawn dog, drawn ugly-cute on purpose, then feed it, play, go for walks and grow a garden. Nothing bad ever happens in the game.</p>
+      <p style="margin-top:10px">The words are spoken Hong Kong Cantonese on purpose, and kids read them too, so they should be simple and kind. The dog jokes are meant to be silly. Please fix anything that sounds wrong, Taiwanese or Mandarin, too formal, or rude.</p>
+    </div>
+  </div>
+  <ul class="legend" style="margin-top:14px">
+    <li><b>Mochi</b> = 狗狗個名 · the dog's name</li>
+    <li><b>［朋友］</b> 方括號：遊戲自動填，請保留 · filled in by the game, please keep</li>
+    <li><b>自動儲存</b> · answers save by themselves</li>
+  </ul>
+</header>
+
+<div class="bar" id="bar">
+  <div class="wrap">
+    <div class="prog">
+      <span class="prog-txt"><span id="pDone">0</span> / <span id="pTotal">0</span> 已睇 <small>checked</small></span>
+      <span class="meter" aria-hidden="true"><i id="pBar"></i></span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-A" data-sec="A" aria-selected="true"><b>請你睇吓</b><span>Please check</span><em id="cA">0/0</em></button>
+      <button class="tab" role="tab" id="tab-B" data-sec="B" aria-selected="false"><b>玩家最常見</b><span>Seen most</span><em id="cB">0/0</em></button>
+      <button class="tab" role="tab" id="tab-C" data-sec="C" aria-selected="false"><b>網站</b><span>Website</span><em id="cC">0/0</em></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap tools">
+    <div class="filters" role="group" aria-label="Filter">
+      <button class="chip" id="f-all" data-f="all" aria-pressed="true"><span class="zh">全部</span> All</button>
+      <button class="chip" id="f-todo" data-f="todo" aria-pressed="false"><span class="zh">未睇</span> Not checked yet</button>
+      <button class="chip" id="f-chg" data-f="change" aria-pressed="false"><span class="zh">改咗</span> Changed</button>
+    </div>
+    <div class="status" id="status"><span class="zh">連接緊儲存位置…</span> Connecting to saved answers…</div>
+</div>
+
+<main class="wrap">
+  <p class="sec-lead" id="secLead"></p>
+  <div id="list"></div>
+</main>
+<footer class="wrap">
+  <span class="zh" lang="zh-HK">每次撳掣或者打完字都會自動儲存，你可以隨時返嚟繼續。</span><br>
+  Every tap and every edit saves by itself. Come back any time to carry on.
+</footer>
+
+<script>
+const ROWS = /*ROWS*/[];
+const LEAD = {
+  A: ['翻譯嘅人唔肯定嘅地方。每行有一條問題，答 OK 或者寫你嘅講法就得。', 'The translators were unsure about these. Each line has a question: say OK or type your wording.'],
+  B: ['玩家最常見嘅句子。綠色「作者已確認」嗰啲遊戲作者已經睇過，你都可以再講意見。', 'The lines players see most. Lines marked "approved by the owner" were already checked by the game’s maker; you can still comment.'],
+  C: ['doodledoggo.app 介紹網站上面嘅字。', 'Words from the doodledoggo.app introduction website.']
+};
+const S = { sec: 'A', f: 'all' };
+try { const m = JSON.parse(localStorage.getItem('yc_view') || '{}'); if (/^[ABC]$/.test(m.sec)) S.sec = m.sec; if (/^(all|todo|change)$/.test(m.f)) S.f = m.f; } catch (e) {}
+const byId = new Map(ROWS.map((r) => [r.id, r]));
+const ans = {};          // id -> { verdict, text, comment }
+const local = {};        // id -> local draft text kept while switching OK/change
+const dirty = new Set(); // ids with unsaved typing
+let db = null, col = null, uid = null, readOnly = false, gotSnap = false;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const A = (id) => ans[id] || { verdict: '', text: '', comment: '' };
+
+function setStatus(zh, en, warn) {
+  const el = $('#status');
+  if (!zh) { el.hidden = true; return; }
+  el.hidden = false; el.classList.toggle('warn', !!warn);
+  el.innerHTML = `<span class="zh">${zh}</span> ${en}`;
+}
+
+function counts() {
+  const c = { A: [0, 0], B: [0, 0], C: [0, 0] }; let done = 0;
+  for (const r of ROWS) { const v = A(r.id).verdict; c[r.sec][1]++; if (v) { c[r.sec][0]++; done++; } }
+  $('#pDone').textContent = done; $('#pTotal').textContent = ROWS.length;
+  $('#pBar').style.width = (ROWS.length ? done / ROWS.length * 100 : 0) + '%';
+  for (const s of 'ABC') $('#c' + s).textContent = c[s][0] + '/' + c[s][1];
+}
+
+function rowHTML(r) {
+  const a = A(r.id), v = a.verdict;
+  const editVal = a.text || local[r.id] || r.yue;
+  const q = r.sec === 'A' ? `<div class="q"><span class="q-h">問題 · Question</span><p class="zh" lang="zh-HK">${esc(r.qzh || '')}</p><p class="qen" lang="en">${esc(r.q || '')}</p></div>` : '';
+  const keyTxt = r.ex ? `${r.key} (e.g. ${r.ex})` : r.key;
+  return `<article class="row${v ? ' v-' + v : ''}" data-id="${esc(r.id)}">
+    <div class="meta"><code class="key">${esc(keyTxt)}</code>${r.ok ? '<span class="badge"><span class="zh">作者已確認</span> · approved by the owner</span>' : ''}<span class="saved" aria-live="polite"></span></div>
+    <p class="en" lang="en">${esc(r.en)}</p>
+    <p class="yue" lang="yue-Hant-HK">${esc(r.yue)}</p>
+    ${q}
+    <div class="acts">
+      <button class="btn ok" type="button" data-act="ok" aria-pressed="${v === 'ok'}">OK 冇問題</button>
+      <button class="btn chg" type="button" data-act="change" aria-pressed="${v === 'change'}">改一改</button>
+      <button class="btn note" type="button" data-act="note" aria-expanded="${!!a.comment}" aria-label="備註 Comment">＋備註</button>
+    </div>
+    <div class="field edit"${v === 'change' ? '' : ' hidden'}><label for="e-${esc(r.id)}"><span class="zh">你嘅講法</span> · Your wording</label><textarea class="yue-in" id="e-${esc(r.id)}" lang="yue-Hant-HK" rows="2">${esc(editVal)}</textarea></div>
+    <div class="field cmt"${a.comment ? '' : ' hidden'}><label for="n-${esc(r.id)}"><span class="zh">備註（可以唔填）</span> · Comment (optional)</label><textarea class="note-in" id="n-${esc(r.id)}" rows="2">${esc(a.comment || '')}</textarea></div>
+  </article>`;
+}
+
+function visible(r) {
+  if (r.sec !== S.sec) return false;
+  const v = A(r.id).verdict;
+  if (S.f === 'todo') return !v;
+  if (S.f === 'change') return v === 'change';
+  return true;
+}
+
+function render() {
+  for (const s of 'ABC') $('#tab-' + s).setAttribute('aria-selected', String(S.sec === s));
+  for (const b of document.querySelectorAll('.chip')) b.setAttribute('aria-pressed', String(b.dataset.f === S.f));
+  $('#secLead').innerHTML = `<span class="zh" lang="zh-HK">${LEAD[S.sec][0]}</span>${LEAD[S.sec][1]}`;
+  let html = '', grp = null, open = false, n = 0;
+  for (const r of ROWS) {
+    if (!visible(r)) continue;
+    const g = r.group[0] + '|' + r.group[1];
+    if (g !== grp) { if (open) html += '</div>'; html += `<h3 class="grp"><span lang="zh-HK">${esc(r.group[0])}</span><small>${esc(r.group[1])}</small></h3><div class="list">`; grp = g; open = true; }
+    html += rowHTML(r); n++;
+  }
+  if (open) html += '</div>';
+  if (!n) html = `<p class="empty"><span lang="zh-HK">呢度暫時冇嘢。</span><br><small>Nothing here right now.</small></p>`;
+  $('#list').innerHTML = html;
+  counts();
+  try { localStorage.setItem('yc_view', JSON.stringify(S)); } catch (e) {}
+}
+
+function patchRow(id) {
+  const el = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`); if (!el) return;
+  const a = A(id), v = a.verdict;
+  el.classList.toggle('v-ok', v === 'ok'); el.classList.toggle('v-change', v === 'change');
+  $('[data-act="ok"]', el).setAttribute('aria-pressed', String(v === 'ok'));
+  $('[data-act="change"]', el).setAttribute('aria-pressed', String(v === 'change'));
+  $('.edit', el).hidden = v !== 'change';
+  const e = $('.yue-in', el), c = $('.note-in', el);
+  if (document.activeElement !== e && !dirty.has(id) && a.text) e.value = a.text;
+  if (document.activeElement !== c && !dirty.has(id) && a.comment && c.value !== a.comment) { c.value = a.comment; $('.cmt', el).hidden = false; $('[data-act="note"]', el).setAttribute('aria-expanded', 'true'); }
+}
+
+function mark(id, state) {
+  const el = document.querySelector(`.row[data-id="${CSS.escape(id)}"] .saved`); if (!el) return;
+  el.classList.remove('on', 'err');
+  if (state === 'saving') { el.textContent = '儲存緊…'; el.classList.add('on'); }
+  else if (state === 'saved') { el.textContent = '已儲存 ✓'; el.classList.add('on'); }
+  else if (state === 'error') { el.textContent = '未儲存到 · not saved'; el.classList.add('err'); }
+}
+
+// one write at a time per document, typing coalesced
+const chains = {}, timers = {};
+function queueSave(id, delay) {
+  clearTimeout(timers[id]);
+  if (delay) { dirty.add(id); timers[id] = setTimeout(() => queueSave(id, 0), delay); return; }
+  dirty.delete(id);
+  if (!col || readOnly) { mark(id, 'error'); return; }
+  const r = byId.get(id), a = A(id);
+  const body = { key: r.key, file: r.file, section: r.sec, verdict: a.verdict || '', text: a.verdict === 'change' ? (a.text || '') : '', comment: a.comment || '', en: r.en, yue: r.raw, shown: r.yue, by: uid || '', updatedAt: new Date().toISOString() };
+  if (r.ex) body.example = r.ex;
+  mark(id, 'saving');
+  chains[id] = (chains[id] || Promise.resolve()).then(() => col.doc(id).set(body)).then(() => mark(id, 'saved'), (e) => {
+    mark(id, 'error');
+    if (e && (e.code === 'invalid_argument' || e.code === 'not_granted' || e.code === 'revoked')) { readOnly = true; cannotSave(); }
+    else if (e && e.code === 'quota_exceeded') setStatus('儲存位置滿咗，請話俾邀請你嘅朋友知。', 'The answer store is full. Please tell the friend who sent you this page.', true);
+    else setStatus('啱啱有一句未儲存到，請等一陣再撳一次。', 'One answer did not save. Wait a moment and tap it again.', true);
+  });
+}
+function cannotSave() {
+  setStatus('你可以睇，但係答案未儲存到。請叫邀請你嘅朋友喺「分享」俾你可以編輯嘅權限，再重新開呢頁。', 'You can read this page, but answers can’t be saved yet. Ask the friend who sent it to give you edit access under Share, then open the page again.', true);
+}
+
+function setAns(id, patch) { ans[id] = Object.assign({}, A(id), patch); }
+
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('button'); if (!t) return;
+  if (t.dataset.sec) { S.sec = t.dataset.sec; render(); window.scrollTo({ top: Math.min(window.scrollY, $('#bar').offsetTop + 1) }); return; }
+  if (t.dataset.f) { S.f = t.dataset.f; render(); return; }
+  const row = t.closest('.row'); if (!row) return; const id = row.dataset.id, a = A(id);
+  if (t.dataset.act === 'ok') { setAns(id, { verdict: a.verdict === 'ok' ? '' : 'ok' }); patchRow(id); counts(); queueSave(id, 0); }
+  else if (t.dataset.act === 'change') {
+    const on = a.verdict !== 'change';
+    if (on) { const ta = $('.yue-in', row); setAns(id, { verdict: 'change', text: a.text || local[id] || ta.value }); }
+    else { local[id] = a.text; setAns(id, { verdict: '' }); }
+    patchRow(id); counts(); queueSave(id, 0);
+    if (on) { const ta = $('.yue-in', row); ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {} }
+  } else if (t.dataset.act === 'note') {
+    const f = $('.cmt', row), open = f.hidden; f.hidden = !open; t.setAttribute('aria-expanded', String(open)); if (open) $('.note-in', row).focus();
+  }
+});
+document.addEventListener('input', (ev) => {
+  const ta = ev.target; const row = ta.closest && ta.closest('.row'); if (!row) return; const id = row.dataset.id;
+  if (ta.classList.contains('yue-in')) { setAns(id, { text: ta.value, verdict: 'change' }); local[id] = ta.value; }
+  else if (ta.classList.contains('note-in')) setAns(id, { comment: ta.value });
+  mark(id, 'saving'); queueSave(id, 800);
+});
+document.addEventListener('focusout', (ev) => { const row = ev.target.closest && ev.target.closest('.row'); if (row && dirty.has(row.dataset.id)) queueSave(row.dataset.id, 0); });
+
+render();
+
+(async () => {
+  const cl = window.claude;
+  if (!cl || !cl.use) { setStatus('呢個頁面要喺 claude.ai 開，答案先儲存到。', 'Open this page on claude.ai so your answers can be saved.', true); return; }
+  const [d, u] = await Promise.all([cl.use('db'), cl.use('user')]);
+  db = d;
+  if (!db) { setStatus('請先登入 claude.ai，答案先儲存到。', 'Please sign in to claude.ai so your answers can be saved.', true); return; }
+  col = db.collection('answers');
+  if (u) {
+    try { uid = await u.id(); } catch (e) {}
+    try { const can = await u.can('data.write'); if (can === false) { readOnly = true; cannotSave(); } } catch (e) {}
+  }
+  const slow = setTimeout(() => { if (!gotSnap) setStatus('暫時連唔到已儲存嘅答案，你照填，一陣會再試。', 'Saved answers can’t be reached yet. Keep going; it will try again.', true); }, 10000);
+  col.onSnapshot((snap) => {
+    let changed = false;
+    for (const ch of snap.docChanges()) {
+      const id = ch.doc.id; if (!byId.has(id)) continue;
+      if (dirty.has(id)) continue;
+      if (ch.type === 'removed') { delete ans[id]; }
+      else { const x = ch.doc.data() || {}; ans[id] = { verdict: x.verdict || '', text: x.text || '', comment: x.comment || '' }; }
+      patchRow(id); changed = true;
+    }
+    if (!snap.metadata.fromCache && !gotSnap) { gotSnap = true; clearTimeout(slow); if (!readOnly) setStatus(''); }
+    if (changed) counts();
+  }, (e) => { clearTimeout(slow); if (e && e.code === 'revoked') { readOnly = true; cannotSave(); } else setStatus('同儲存位置斷咗線，請重新開呢頁。', 'Lost the link to saved answers. Please open the page again.', true); });
+})();
+</script>

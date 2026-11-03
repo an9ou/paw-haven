@@ -1,0 +1,3247 @@
+{
+ "BOOST": {
+  "coins": 2,
+  "bond": 3,
+  "nap": 6
+ },
+ "BOND_TH": [
+  0,
+  60,
+  180,
+  450,
+  700,
+  1000,
+  1400,
+  1900,
+  2500,
+  3200
+ ],
+ "FOOD": [
+  {
+   "n": "Fresh Water",
+   "price": 0,
+   "hunger": 0,
+   "happy": 5,
+   "energy": 10,
+   "note": "Free. Refills every 2 game hours."
+  },
+  {
+   "n": "Basic Kibble",
+   "price": 5,
+   "hunger": 30,
+   "note": "+30 Hunger. Crunchy brown circles. A classic."
+  },
+  {
+   "n": "Puppy Kibble",
+   "price": 6,
+   "hunger": 30,
+   "pupHappy": 5,
+   "note": "+30 Hunger. Small soft bites. Puppies under 6 months get +5 Happiness."
+  },
+  {
+   "n": "Bone-shaped Biscuit",
+   "price": 8,
+   "hunger": 10,
+   "happy": 10,
+   "bond": 2,
+   "note": "+10 Hunger, +10 Happiness. Shaped like a bone, which is very meta."
+  },
+  {
+   "n": "Chicken & Rice Bowl",
+   "price": 15,
+   "hunger": 50,
+   "happy": 5,
+   "note": "+50 Hunger, +5 Happiness. Tastes like Sunday."
+  },
+  {
+   "n": "Salmon Pâté",
+   "price": 30,
+   "hunger": 60,
+   "happy": 10,
+   "clean": 10,
+   "note": "+60 Hunger, +10 Happiness, +10 Cleanliness (shiny coat)."
+  },
+  {
+   "n": "Pupcake",
+   "price": 60,
+   "hunger": 20,
+   "happy": 30,
+   "note": "+30 Happiness and double Bond for 1 game hour. 1 per day."
+  },
+  {
+   "n": "Carrot Sticks",
+   "price": 4,
+   "hunger": 10,
+   "happy": 5,
+   "clean": 5,
+   "snack": true,
+   "v24": true,
+   "tip": "Crunchy and safe raw or cooked. Cut them small for little dogs.",
+   "note": "+10 Hunger, +5 Happiness, clean teeth."
+  },
+  {
+   "n": "Apple Slices",
+   "price": 6,
+   "hunger": 10,
+   "happy": 10,
+   "snack": true,
+   "v24": true,
+   "tip": "Core and seeds out, every time. Apple seeds hold a little cyanide.",
+   "note": "+10 Hunger, +10 Happiness. No seeds, ever."
+  },
+  {
+   "n": "Blueberry Bites",
+   "price": 8,
+   "hunger": 10,
+   "happy": 10,
+   "bond": 1,
+   "snack": true,
+   "v24": true,
+   "tip": "Blueberries are a safe berry for dogs. Grapes and raisins never are.",
+   "note": "+10 Hunger, +10 Happiness, a little Bond."
+  },
+  {
+   "n": "Seedless Watermelon Cubes",
+   "price": 9,
+   "hunger": 10,
+   "happy": 10,
+   "energy": 10,
+   "snack": true,
+   "v24": true,
+   "tip": "Seedless and rind-free only. The rind can block a tummy.",
+   "note": "+10 Hunger, +10 Happiness, +10 Energy."
+  },
+  {
+   "n": "Sweet Potato Chews",
+   "price": 10,
+   "hunger": 20,
+   "happy": 5,
+   "snack": true,
+   "v24": true,
+   "tip": "Always cooked and plain, never raw. Raw sweet potato is hard to digest.",
+   "note": "+20 Hunger, +5 Happiness. A long chew."
+  },
+  {
+   "n": "Pumpkin Purée",
+   "price": 12,
+   "hunger": 25,
+   "happy": 5,
+   "clean": 5,
+   "v24": true,
+   "tip": "Plain cooked pumpkin only, never pie filling. It is gentle on tummies.",
+   "note": "+25 Hunger, +5 Happiness. Gentle on tummies."
+  },
+  {
+   "n": "Turkey Meatballs",
+   "price": 18,
+   "hunger": 45,
+   "happy": 10,
+   "v24": true,
+   "tip": "Plain cooked turkey, no onion or garlic. Those are poison for dogs.",
+   "note": "+45 Hunger, +10 Happiness. Sunday dinner, dog edition."
+  },
+  {
+   "n": "Baked Pumpkin Wedges",
+   "fest": "leaf",
+   "price": 8,
+   "hunger": 15,
+   "happy": 10,
+   "snack": true,
+   "v25": true,
+   "tip": "Plain baked pumpkin, no spice and no sugar. Nutmeg is not for dogs.",
+   "note": "+15 Hunger, +10 Happiness. Soft, orange, gone in two bites."
+  },
+  {
+   "n": "Sweet Potato Coins",
+   "fest": "leaf",
+   "price": 9,
+   "hunger": 15,
+   "happy": 5,
+   "clean": 5,
+   "snack": true,
+   "v25": true,
+   "tip": "Baked soft and plain, never raw. Let them cool before the first bite.",
+   "note": "+15 Hunger, +5 Happiness, clean teeth. Chewy little rounds."
+  },
+  {
+   "n": "Warm Bone Broth",
+   "fest": "leaf",
+   "price": 10,
+   "hunger": 10,
+   "happy": 10,
+   "energy": 5,
+   "warm": 60,
+   "snack": true,
+   "v25": true,
+   "tip": "Plain and strained, no onion, garlic or salt. Cooked bones can splinter, so none stay in the cup.",
+   "note": "+10 Hunger, +10 Happiness, +5 Energy, warm paws for an hour."
+  },
+  {
+   "n": "Ghost Biscuits",
+   "fest": "halloween",
+   "price": 9,
+   "hunger": 10,
+   "happy": 15,
+   "snack": true,
+   "v25": true,
+   "tip": "Plain oats and plain yoghurt, nothing else. Chocolate is never for dogs, it is poison to them.",
+   "note": "+10 Hunger, +15 Happiness. Oat biscuits with a yoghurt ghost on top."
+  },
+  {
+   "n": "Candy Corn Carrots",
+   "fest": "halloween",
+   "price": 6,
+   "hunger": 10,
+   "happy": 5,
+   "clean": 5,
+   "snack": true,
+   "v25": true,
+   "tip": "No sugar at all, just carrot. Real sweets can hold xylitol, which is poison for dogs.",
+   "note": "+10 Hunger, +5 Happiness, clean teeth. Carrot points that only look like sweets."
+  },
+  {
+   "n": "Monster Meatball",
+   "fest": "halloween",
+   "price": 14,
+   "hunger": 30,
+   "happy": 10,
+   "v25": true,
+   "tip": "Plain cooked turkey, no onion or garlic. Grapes and raisins never go near it, they are poison for dogs.",
+   "note": "+30 Hunger, +10 Happiness. A turkey meatball with a carrot-slice eye."
+  },
+  {
+   "n": "Pumpkin Patch Pupcake",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 14,
+   "hunger": 15,
+   "happy": 20,
+   "snack": true,
+   "tip": "Plain pumpkin, oat flour and plain yoghurt, no sugar. Chocolate never goes in a dog's cake, it is poison to them.",
+   "note": "+15 Hunger, +20 Happiness. A little pumpkin cake with a yoghurt swirl."
+  },
+  {
+   "n": "Apple Monster Biscuits",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 8,
+   "hunger": 10,
+   "happy": 10,
+   "bond": 1,
+   "snack": true,
+   "tip": "Apple flesh only, the core and pips stay out. Oats and water hold it together, no sugar needed.",
+   "note": "+10 Hunger, +10 Happiness, a little Bond. Oat biscuits with googly apple eyes."
+  },
+  {
+   "n": "Sweet Potato Bones",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 10,
+   "hunger": 20,
+   "happy": 5,
+   "clean": 5,
+   "snack": true,
+   "tip": "Baked plain sweet potato, never raw and never buttered. Nutmeg and other baking spices stay in the kitchen, they make dogs ill.",
+   "note": "+20 Hunger, +5 Happiness, clean teeth. Baked bone shapes to crunch."
+  },
+  {
+   "n": "Frozen Yoghurt Ghosts",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 9,
+   "hunger": 5,
+   "happy": 15,
+   "cool": 30,
+   "snack": true,
+   "tip": "Plain yoghurt only, no sugar and no sweetener. Xylitol is poison for dogs, so check the pot every time.",
+   "note": "+5 Hunger, +15 Happiness, cools the dog. Little frozen ghosts that melt fast."
+  },
+  {
+   "n": "Warm Carob Cup",
+   "fest": "snow",
+   "price": 8,
+   "hunger": 5,
+   "happy": 15,
+   "warm": 60,
+   "snack": true,
+   "v28": true,
+   "tip": "Carob is safe for dogs and only looks like cocoa. Real cocoa and chocolate are poison to them, so the mugs never get mixed up.",
+   "note": "+5 Hunger, +15 Happiness, warm paws for an hour. Looks like cocoa. Is not cocoa."
+  },
+  {
+   "n": "Snowflake Oat Cookies",
+   "fest": "snow",
+   "price": 9,
+   "hunger": 10,
+   "happy": 10,
+   "bond": 1,
+   "snack": true,
+   "v28": true,
+   "tip": "Rolled oats, egg and pumpkin, baked plain. Festive cookies often hide macadamia nuts, which make dogs wobbly and ill, so these have none.",
+   "note": "+10 Hunger, +10 Happiness, a little Bond. Oat cookies cut like snowflakes."
+  },
+  {
+   "n": "Snow Day Stew",
+   "fest": "snow",
+   "price": 14,
+   "hunger": 30,
+   "happy": 10,
+   "v28": true,
+   "tip": "Lean chicken with no skin and no bones. Gravy and fatty leftovers upset a dog's tummy, so they stay on the people plates.",
+   "note": "+30 Hunger, +10 Happiness. Chicken, carrot and green beans, cooked soft."
+  },
+  {
+   "n": "Pup Kinton",
+   "fest": "newyear",
+   "price": 10,
+   "hunger": 15,
+   "happy": 15,
+   "snack": true,
+   "v28": true,
+   "tip": "Plain mashed sweet potato, no sugar and no chestnut syrup. Mochi never goes in a dog's bowl, it is far too sticky to swallow safely.",
+   "note": "+15 Hunger, +15 Happiness. Golden sweet potato mash, for a lucky year."
+  },
+  {
+   "n": "Reindeer Crunch",
+   "fest": "winter",
+   "fm": true,
+   "cold": true,
+   "price": 8,
+   "hunger": 10,
+   "happy": 10,
+   "clean": 5,
+   "snack": true,
+   "tip": "Carrot and apple, cut small, with the core and every seed taken out. Apple seeds are not safe for dogs, so not one goes in the bag.",
+   "note": "+10 Hunger, +10 Happiness, clean teeth. Carrot sticks and apple pieces, a crunchy reindeer supper."
+  },
+  {
+   "n": "Turkey & Cranberry Bites",
+   "fest": "winter",
+   "fm": true,
+   "price": 12,
+   "hunger": 20,
+   "happy": 15,
+   "snack": true,
+   "tip": "Plain cooked turkey with no skin, bones, gravy or seasoning, and just a few fresh cranberries. Cranberry sauce is full of sugar, so only the fresh berries go in.",
+   "note": "+20 Hunger, +15 Happiness. Little turkey bites, each with a fresh cranberry on top."
+  },
+  {
+   "n": "Frozen Yoghurt Snowballs",
+   "fest": "winter",
+   "fm": true,
+   "cold": true,
+   "price": 9,
+   "hunger": 5,
+   "happy": 15,
+   "bond": 1,
+   "snack": true,
+   "tip": "Plain unsweetened yoghurt only, never a sweetened or light pot, which can hide xylitol. Dairy is a treat for dogs, so two or three little snowballs are plenty.",
+   "note": "+5 Hunger, +15 Happiness, a little Bond. Round frozen snowballs that crunch, then melt."
+  },
+  {
+   "n": "Sweet Potato Strip",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 15,
+   "hunger": 10,
+   "happy": 10,
+   "snack": true,
+   "v211": true,
+   "tip": "Steamed and dried plain sweet potato, nothing added. Cut it into small strips so it is not a choking piece.",
+   "note": "+10 Hunger, +10 Happiness. A chewy Asakusa favourite, made for dogs."
+  },
+  {
+   "n": "Dog Senbei",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 12,
+   "hunger": 5,
+   "happy": 10,
+   "snack": true,
+   "v211": true,
+   "tip": "A plain rice cracker made for dogs, with no salt and no soy sauce. The ones people eat are far too salty.",
+   "note": "+5 Hunger, +10 Happiness. A crunchy round rice cracker."
+  },
+  {
+   "n": "Frozen Pupsicle",
+   "price": 22,
+   "hunger": 15,
+   "happy": 20,
+   "energy": 10,
+   "cool": 60,
+   "snack": true,
+   "v24": true,
+   "tip": "Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.",
+   "note": "+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour."
+  }
+ ],
+ "TOYS": [
+  {
+   "n": "Tennis Ball",
+   "price": 40,
+   "bond": 1,
+   "note": "Ball play: 2 coins per return."
+  },
+  {
+   "n": "Squeaky Duck",
+   "price": 50,
+   "bond": 1,
+   "note": "Squeeze: +10 Happiness. The neighbours love it (no)."
+  },
+  {
+   "n": "Rope Tug",
+   "price": 60,
+   "bond": 1,
+   "note": "Tug-of-war: +15 Happiness, -10 Energy, +5 Bond."
+  },
+  {
+   "n": "Plush Bone",
+   "price": 80,
+   "bond": 1,
+   "note": "Nap buddy: +10% nap Energy. Works automatically."
+  },
+  {
+   "n": "Frisbee",
+   "price": 120,
+   "bond": 3,
+   "note": "Long floaty throws: 3 coins per return, +20 Happiness."
+  },
+  {
+   "n": "Puzzle Feeder",
+   "price": 150,
+   "bond": 4,
+   "note": "Every meal: +10 Happiness and double Bond. Automatic."
+  },
+  {
+   "n": "Snuffle Mat",
+   "price": 70,
+   "bond": 2,
+   "v24": true,
+   "note": "Snuffle: hide kibble in the mat, the nose finds it. +Happiness, a little Bond."
+  },
+  {
+   "n": "Treat Cone",
+   "price": 90,
+   "bond": 2,
+   "v24": true,
+   "note": "Lick: a treat cone to lick clean, slowly. Calm +Happiness."
+  },
+  {
+   "n": "Bubble Machine",
+   "price": 110,
+   "bond": 3,
+   "v24": true,
+   "note": "Bubbles: dog-safe bubbles to chase and pop. +Happiness, +coins per pop."
+  },
+  {
+   "n": "Paddling Pool",
+   "price": 130,
+   "bond": 4,
+   "v24": true,
+   "note": "Splash: a cool paddle on hot days. +Happiness, +Cleanliness, cools the dog."
+  },
+  {
+   "n": "Agility Tunnel",
+   "price": 150,
+   "bond": 5,
+   "v24": true,
+   "note": "Zoom: run the tunnel, then do it again faster. +Happiness, -Energy, +Bond."
+  },
+  {
+   "n": "Squeaky Pumpkin",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 45,
+   "bond": 1,
+   "note": "Squeak: a soft pumpkin that squeaks when pounced. +Happiness."
+  },
+  {
+   "n": "Plush Ghost",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 55,
+   "bond": 1,
+   "note": "Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond."
+  },
+  {
+   "n": "Bat-Wing Flyer",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 65,
+   "bond": 2,
+   "note": "Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy."
+  },
+  {
+   "n": "Trick-or-Treat Bucket",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 80,
+   "bond": 2,
+   "note": "Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond."
+  },
+  {
+   "n": "Squeaky Bat",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 50,
+   "bond": 1,
+   "note": "Squeeze: a soft purple bat that squeaks. +Happiness."
+  },
+  {
+   "n": "Pumpkin Ball",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 45,
+   "bond": 1,
+   "note": "Fetch: a squishy pumpkin ball that bounces a bit wonky. 2 coins per return."
+  },
+  {
+   "n": "Rope Mummy",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 60,
+   "bond": 1,
+   "note": "Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond."
+  },
+  {
+   "n": "Glow-in-the-Dark Bone",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 70,
+   "bond": 2,
+   "note": "Night fetch: a rubber bone that glows after dark. +Happiness, -Energy."
+  },
+  {
+   "n": "Soft Spider Plush",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 65,
+   "bond": 2,
+   "note": "Nap buddy: a round fuzzy spider with a bow. +10% nap Energy."
+  },
+  {
+   "n": "Squeaky Snowman",
+   "fest": "winter",
+   "fm": true,
+   "price": 50,
+   "bond": 1,
+   "note": "Squeeze: a soft little snowman in a bobble hat that squeaks. +Happiness."
+  },
+  {
+   "n": "Candy-Cane Rope",
+   "fest": "winter",
+   "fm": true,
+   "price": 60,
+   "bond": 1,
+   "note": "Tug-of-war: a red-and-white striped rope with a green bow. +Happiness, -Energy, a little Bond."
+  },
+  {
+   "n": "Plush Penguin",
+   "fest": "winter",
+   "fm": true,
+   "price": 65,
+   "bond": 2,
+   "note": "Nap buddy: a round soft penguin to tuck in with. +10% nap Energy."
+  },
+  {
+   "n": "Snowball Ball",
+   "fest": "winter",
+   "fm": true,
+   "price": 45,
+   "bond": 1,
+   "note": "Fetch: a fluffy white ball, a snowball that never melts. 2 coins per return."
+  },
+  {
+   "n": "Present Puzzle Box",
+   "fest": "winter",
+   "fm": true,
+   "price": 75,
+   "bond": 2,
+   "note": "Puzzle: lift the lids of a wrapped present to find the treats inside. +Happiness."
+  },
+  {
+   "n": "Squeaky Ghost",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 50,
+   "bond": 1,
+   "note": "Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return."
+  },
+  {
+   "n": "Shinkansen Plush",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 80,
+   "bond": 1,
+   "v211": true,
+   "note": "Zoom: a soft bullet train to roll along the ground and chase. +Happiness."
+  }
+ ],
+ "CLOTHES": [
+  {
+   "n": "Red Bandana",
+   "slot": "neck",
+   "price": 50,
+   "bond": 1,
+   "perk": "+1 dog friend on every walk."
+  },
+  {
+   "n": "Party Hat",
+   "slot": "head",
+   "price": 60,
+   "bond": 3,
+   "perk": "Pupcakes give +50% Happiness."
+  },
+  {
+   "n": "Bow Tie",
+   "slot": "neck",
+   "price": 70,
+   "bond": 2,
+   "perk": "Compliments on walks pay +2 extra coins."
+  },
+  {
+   "n": "Flower Crown",
+   "slot": "head",
+   "price": 90,
+   "bond": 3,
+   "perk": "+2 leaves and flowers on every walk."
+  },
+  {
+   "n": "Heart Sunglasses",
+   "slot": "eyes",
+   "price": 100,
+   "bond": 5,
+   "perk": "+10% walk Happiness on sunny days."
+  },
+  {
+   "n": "Yellow Raincoat",
+   "slot": "body",
+   "price": 120,
+   "bond": 2,
+   "perk": "Raincoat: no mud and +5 Happiness on rainy walks and outings."
+  },
+  {
+   "n": "Polka-dot Raincoat",
+   "slot": "body",
+   "price": 140,
+   "bond": 2,
+   "perk": "Raincoat: no mud and +5 Happiness in the rain. Dots are 40% more waterproof (not true)."
+  },
+  {
+   "n": "Frog Raincoat",
+   "slot": "body",
+   "price": 160,
+   "bond": 3,
+   "perk": "Raincoat: no mud and +5 Happiness in the rain. Ribbit."
+  },
+  {
+   "n": "Bubble Raincoat",
+   "slot": "body",
+   "price": 220,
+   "bond": 5,
+   "perk": "Raincoat: no mud and +5 Happiness in the rain. See-through, so everyone sees the fur."
+  },
+  {
+   "n": "Rain Hat",
+   "slot": "head",
+   "price": 80,
+   "bond": 2,
+   "perk": "No soggy shake needed after rain."
+  },
+  {
+   "n": "Pom-pom Beanie",
+   "slot": "head",
+   "price": 90,
+   "bond": 3,
+   "perk": "Warm: no shivering in the snow."
+  },
+  {
+   "n": "Knit Winter Sweater",
+   "slot": "body",
+   "price": 150,
+   "bond": 4,
+   "perk": "Warm: no shivering in the snow, and snowy walks tire 10% less."
+  },
+  {
+   "n": "Superhero Cape",
+   "slot": "body",
+   "price": 250,
+   "bond": 6,
+   "perk": "Walk speed +15%. Whoosh."
+  },
+  {
+   "n": "Sailor Collar",
+   "slot": "neck",
+   "price": 45,
+   "bond": 1,
+   "v24": true,
+   "perk": "Ship-shape: the water bowl refills in 1 game hour instead of 2."
+  },
+  {
+   "n": "Chef Hat",
+   "slot": "head",
+   "price": 60,
+   "bond": 2,
+   "v24": true,
+   "perk": "Chef's kiss: meals give +5 Happiness."
+  },
+  {
+   "n": "Tutu",
+   "slot": "body",
+   "price": 65,
+   "bond": 2,
+   "v24": true,
+   "perk": "Twirl: the daily fashion bonus gives +10 Happiness instead of +5."
+  },
+  {
+   "n": "Cowboy Hat",
+   "slot": "head",
+   "price": 70,
+   "bond": 2,
+   "v24": true,
+   "perk": "Yeehaw: naps outdoors restore 10% more."
+  },
+  {
+   "n": "Pyjamas",
+   "slot": "body",
+   "price": 80,
+   "bond": 2,
+   "v24": true,
+   "perk": "Bedtime: naps restore 15% more. The Nightcap appears at nap time."
+  },
+  {
+   "n": "Bumblebee Suit",
+   "slot": "body",
+   "price": 85,
+   "bond": 3,
+   "v24": true,
+   "perk": "Bzzz: snacks give +5 Happiness."
+  },
+  {
+   "n": "Wizard Hat",
+   "slot": "head",
+   "price": 90,
+   "bond": 4,
+   "v24": true,
+   "perk": "Magic hands: petting gives +1 extra Bond."
+  },
+  {
+   "n": "Happi Coat",
+   "slot": "body",
+   "price": 95,
+   "bond": 3,
+   "v24": true,
+   "perk": "Festival power: Pupcake power lasts 2 game hours instead of 1."
+  },
+  {
+   "n": "Cozy Hoodie",
+   "slot": "body",
+   "price": 0,
+   "bond": 1,
+   "v24": true,
+   "reward": true,
+   "perk": "Warm: no shivering in the snow. Hood up, ears out."
+  },
+  {
+   "n": "Knit Scarf",
+   "slot": "neck",
+   "price": 0,
+   "bond": 1,
+   "v24": true,
+   "reward": true,
+   "perk": "Warm: no shivering in the snow. Mrs. Plum knitted too much again."
+  },
+  {
+   "n": "Leaf Beret",
+   "slot": "head",
+   "fest": "leaf",
+   "price": 55,
+   "bond": 1,
+   "v25": true,
+   "perk": "Warm: no shivering in the snow. Tilted, like a painter."
+  },
+  {
+   "n": "Autumn Scarf",
+   "slot": "neck",
+   "fest": "leaf",
+   "price": 50,
+   "bond": 1,
+   "v25": true,
+   "perk": "Warm: no shivering in the snow. With the Leaf Beret, the daily fashion bonus gives +10 Happiness."
+  },
+  {
+   "n": "Ghost Sheet",
+   "slot": "body",
+   "fest": "halloween",
+   "price": 60,
+   "bond": 1,
+   "v25": true,
+   "perk": "Boo: the parade loves it. Nobody can see the tail wag, but it is wagging."
+  },
+  {
+   "n": "Pumpkin Suit",
+   "slot": "body",
+   "fest": "halloween",
+   "price": 65,
+   "bond": 1,
+   "v25": true,
+   "perk": "Round: naps in the Pumpkin Cottage restore 10% more."
+  },
+  {
+   "n": "Parade Rosette",
+   "slot": "neck",
+   "fest": "halloween",
+   "price": 0,
+   "bond": 1,
+   "v25": true,
+   "reward": true,
+   "perk": "Pride: won at the Halloween costume parade. It is a little bent."
+  },
+  {
+   "n": "Witch Hat",
+   "slot": "head",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 60,
+   "bond": 1,
+   "perk": "Pointy: a crooked tip and an orange band. It is not magic, but it looks it."
+  },
+  {
+   "n": "Vampire Cape",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 75,
+   "bond": 1,
+   "perk": "Swish: a high collar and a red lining. Very dramatic, not at all bitey."
+  },
+  {
+   "n": "Candy Corn Bandana",
+   "slot": "neck",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 50,
+   "bond": 1,
+   "perk": "Sweet look: candy-corn stripes and no actual sugar."
+  },
+  {
+   "n": "Bat Wings",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Flap: felt wings that bounce when the tail wags."
+  },
+  {
+   "n": "Pumpkin Patch Suit",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Round and proud: crayon pumpkin ribs, a leafy collar and a curly stem on top."
+  },
+  {
+   "n": "Trick-or-Treat Ghost",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Boo: a soft sheet with two eye holes and a little pumpkin bucket to carry."
+  },
+  {
+   "n": "Little Bat Costume",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "price": 75,
+   "bond": 1,
+   "perk": "Flutter: a purple hood with pointy ears, small wings and an orange frill."
+  },
+  {
+   "n": "Little Witch Hat & Cape",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 75,
+   "bond": 1,
+   "perk": "Spellbound: a short purple cape with yellow stars and a small crooked hat. No spells, only cuddles."
+  },
+  {
+   "n": "Scarecrow Overalls",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Harvest look: patched denim dungarees and a floppy straw hat. The crows want to be friends."
+  },
+  {
+   "n": "Mummy Wraps",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Wrapped up: soft cream bandages and a band above the eyes. One loose end, on purpose."
+  },
+  {
+   "n": "Skeleton Suit",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 75,
+   "bond": 2,
+   "perk": "Glow bones: a soft black suit with friendly white crayon bones and a little bone hair clip."
+  },
+  {
+   "n": "Black Cat Ears & Bow",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 60,
+   "bond": 1,
+   "perk": "Meow?: black felt cat ears and a big orange bow on the tail. Nobody is fooled. Everybody approves."
+  },
+  {
+   "n": "Pirate Hat & Sash",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 75,
+   "bond": 2,
+   "perk": "Ahoy: a black tricorn with a paw print and a red sash. No eyepatch, both eyes on the snacks."
+  },
+  {
+   "n": "Dinosaur Hood",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 85,
+   "bond": 2,
+   "perk": "Rawr: a green suit with soft spikes and a hood with felt teeth. The face stays open for kisses."
+  },
+  {
+   "n": "Little Owl Wings",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 70,
+   "bond": 2,
+   "perk": "Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least."
+  },
+  {
+   "n": "Wizard Robe & Star Hat",
+   "slot": "body",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 85,
+   "bond": 3,
+   "perk": "Starlight: a navy robe with stars and a moon, and a tall star-tipped hat."
+  },
+  {
+   "n": "Lion Mane",
+   "slot": "neck",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "price": 60,
+   "bond": 1,
+   "perk": "Roar (quietly): a big golden mane round the face. Every dog is the king of the yard."
+  },
+  {
+   "n": "Father Christmas Suit",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 85,
+   "bond": 2,
+   "perk": "Ho ho ho: a red coat with fluffy white trim, a big belt and a floppy hat with a pompom. The beard is optional, and missing."
+  },
+  {
+   "n": "Little Elf Outfit",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Busy helper: a green tunic with a pointy hem, a red collar and a pointy hat with a bell on the tip."
+  },
+  {
+   "n": "Gingerbread Pup Suit",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 70,
+   "bond": 1,
+   "perk": "Iced: a soft brown suit with white icing squiggles and two gumdrop buttons. A look, not a snack."
+  },
+  {
+   "n": "Snowman Suit",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 75,
+   "bond": 1,
+   "perk": "Frosty: a white suit with coal buttons and a little top hat. The carrot sits on the hat, well away from the nose."
+  },
+  {
+   "n": "Polar Bear Hood",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 80,
+   "bond": 2,
+   "perk": "Warm: no shivering in the snow. A fluffy white suit and a hood with two round bear ears, the face open for kisses."
+  },
+  {
+   "n": "Penguin Suit",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 80,
+   "bond": 2,
+   "perk": "Waddle: black and white with two little flippers, and a tiny penguin face on top of the hood."
+  },
+  {
+   "n": "Puffer Jacket",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 75,
+   "bond": 1,
+   "perk": "Warm: no shivering in the snow. A bright quilted puffer with a pink trim and a zip pull, and a hat still fits on top."
+  },
+  {
+   "n": "Nutcracker Jacket & Hat",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 85,
+   "bond": 3,
+   "perk": "Attention: a red soldier jacket with gold buttons and a tall black hat with a red plume. Stands to attention for snacks."
+  },
+  {
+   "n": "Snowflake Wings",
+   "slot": "body",
+   "fest": "winter",
+   "fm": true,
+   "price": 70,
+   "bond": 2,
+   "perk": "Flutter: pale blue paper snowflakes on a soft strap. No two are the same."
+  },
+  {
+   "n": "Jingle Bell Collar",
+   "slot": "neck",
+   "fest": "winter",
+   "fm": true,
+   "price": 55,
+   "bond": 1,
+   "perk": "Jingle: a soft red felt collar with three little gold bells. Everyone hears you coming."
+  },
+  {
+   "n": "Very Ugly Sweater",
+   "slot": "body",
+   "fest": "snow",
+   "price": 65,
+   "bond": 1,
+   "v28": true,
+   "perk": "Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake."
+  },
+  {
+   "n": "Reindeer Antlers",
+   "slot": "head",
+   "fest": "snow",
+   "price": 55,
+   "bond": 1,
+   "v28": true,
+   "perk": "Jingle: a little bell on each antler. Not warm. Very festive."
+  },
+  {
+   "n": "Snowflake Snood",
+   "slot": "neck",
+   "fest": "snow",
+   "price": 50,
+   "bond": 1,
+   "v28": true,
+   "perk": "Warm: no shivering in the snow. A knitted tube, so no ends to trip on."
+  },
+  {
+   "n": "Ugly Sweater Rosette",
+   "slot": "neck",
+   "fest": "lights",
+   "price": 0,
+   "bond": 1,
+   "v28": true,
+   "reward": true,
+   "perk": "Pride: won at the Ugly Sweater Contest. It is uglier than the sweater."
+  },
+  {
+   "n": "Year of the Sheep Hood",
+   "slot": "head",
+   "fest": "newyear",
+   "ed": 2027,
+   "price": 0,
+   "bond": 1,
+   "v28": true,
+   "reward": true,
+   "perk": "Warm: no shivering in the snow. Woolly sheep ears for the Year of the Sheep. The Border Collie has been told."
+  },
+  {
+   "n": "Shibuya Bandana",
+   "slot": "neck",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 60,
+   "bond": 1,
+   "v211": true,
+   "perk": "Scramble: green, with little crossing stripes. Everyone stops to say hello."
+  },
+  {
+   "n": "Asakusa Bandana",
+   "slot": "neck",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 60,
+   "bond": 1,
+   "v211": true,
+   "perk": "Lucky red: a tiny lantern in the corner, like the big one at the temple gate."
+  },
+  {
+   "n": "Tokyo Tower Bandana",
+   "slot": "neck",
+   "fest": "tokyo",
+   "tokyo": true,
+   "price": 60,
+   "bond": 1,
+   "v211": true,
+   "perk": "Tall look: orange and white stripes, like the tower on a sunny day."
+  },
+  {
+   "n": "Astronaut Helmet",
+   "slot": "head",
+   "price": 0,
+   "bond": 1,
+   "v24": true,
+   "reward": true,
+   "perk": "Space-proof: no soggy shake after rain, no shivering in the snow."
+  },
+  {
+   "n": "Doggy Life Vest",
+   "slot": "body",
+   "price": 0,
+   "bond": 1,
+   "v215": true,
+   "reward": true,
+   "perk": "Safe swimmer: a bright vest with two buckles. Free from the Splash Pool."
+  },
+  {
+   "n": "Crayon Crown",
+   "slot": "head",
+   "price": 0,
+   "bond": 1,
+   "v217": true,
+   "reward": true,
+   "perk": "Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift."
+  },
+  {
+   "n": "Golden Collar",
+   "slot": "neck",
+   "price": 0,
+   "bond": 1,
+   "v217": true,
+   "reward": true,
+   "perk": "Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift."
+  }
+ ],
+ "HOUSES": [
+  {
+   "n": "Cardboard Box",
+   "price": 0,
+   "bond": 1,
+   "comfort": 0,
+   "hd": 4,
+   "note": "Free. Has a flap. Smells like delivery."
+  },
+  {
+   "n": "Classic Wooden Doghouse",
+   "price": 300,
+   "bond": 2,
+   "comfort": 0.15,
+   "hd": 3.5,
+   "note": "A name plate! Spelled almost right."
+  },
+  {
+   "n": "Cozy Cottage",
+   "price": 800,
+   "bond": 4,
+   "comfort": 0.3,
+   "hd": 3,
+   "note": "Chimney, flower box, mortgage."
+  },
+  {
+   "n": "Snow Igloo",
+   "price": 1500,
+   "bond": 6,
+   "comfort": 0.4,
+   "hd": 3,
+   "note": "Cool and cozy. Huskies get double the bonus."
+  },
+  {
+   "n": "Treehouse Den",
+   "price": 2500,
+   "bond": 7,
+   "comfort": 0.55,
+   "hd": 2.5,
+   "note": "Has a ladder. Dogs cannot climb ladders. Details."
+  },
+  {
+   "n": "Royal Castle Kennel",
+   "price": 5000,
+   "bond": 9,
+   "comfort": 0.75,
+   "hd": 2,
+   "note": "Cardboard turrets. Fit for royalty, or a very good boy."
+  },
+  {
+   "n": "Little Tea House",
+   "price": 450,
+   "bond": 3,
+   "comfort": 0.2,
+   "hd": 3,
+   "v24": true,
+   "note": "A teapot on the roof. The dog does not drink tea. The teapot is for guests."
+  },
+  {
+   "n": "Beach Hut",
+   "price": 650,
+   "bond": 4,
+   "comfort": 0.25,
+   "hd": 3,
+   "v24": true,
+   "note": "Striped door, surfboard, sand in everything."
+  },
+  {
+   "n": "Camper Van",
+   "price": 1200,
+   "bond": 5,
+   "comfort": 0.35,
+   "hd": 2.5,
+   "v24": true,
+   "note": "The wheels are painted on. It has never moved. It has been everywhere."
+  },
+  {
+   "n": "Pumpkin Cottage",
+   "price": 1800,
+   "bond": 6,
+   "comfort": 0.45,
+   "hd": 2.5,
+   "v24": true,
+   "note": "Round orange walls and a leaf for a roof. Smells faintly of pie."
+  },
+  {
+   "n": "Lighthouse Kennel",
+   "price": 3000,
+   "bond": 8,
+   "comfort": 0.6,
+   "hd": 2,
+   "v24": true,
+   "note": "The lamp turns at night. Ships are confused."
+  },
+  {
+   "n": "Friendly Haunted Kennel",
+   "price": 900,
+   "bond": 3,
+   "comfort": 0.25,
+   "hd": 3,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl."
+  },
+  {
+   "n": "Gingerbread Kennel",
+   "price": 900,
+   "bond": 3,
+   "comfort": 0.25,
+   "hd": 3,
+   "fest": "winter",
+   "fm": true,
+   "note": "A little brown house with white icing on the roof and gumdrops by the door. A look, not a snack: it is wood all the way through."
+  },
+  {
+   "n": "Rocket Ship",
+   "price": 0,
+   "bond": 1,
+   "comfort": 0.55,
+   "hd": 2,
+   "v24": true,
+   "reward": true,
+   "note": "Countdown painted on the side. Launch is cancelled, forever, for naps."
+  }
+ ],
+ "BEDS": [
+  {
+   "n": "Old Blanket",
+   "price": 0,
+   "bond": 1,
+   "bonus": 0,
+   "note": "A folded patchwork blanket. Smells like home."
+  },
+  {
+   "n": "Plaid Pillow",
+   "price": 180,
+   "bond": 1,
+   "bonus": 0.05,
+   "note": "A big square plaid cushion with a button tuft."
+  },
+  {
+   "n": "Fluffy Donut Bed",
+   "price": 250,
+   "bond": 2,
+   "bonus": 0.1,
+   "note": "A round fluffy donut ring in pastel pink."
+  },
+  {
+   "n": "Banana Bed",
+   "price": 350,
+   "bond": 3,
+   "bonus": 0.1,
+   "note": "A comedy banana. The peel is the blanket."
+  },
+  {
+   "n": "Hammock Cot",
+   "price": 450,
+   "bond": 3,
+   "bonus": 0.15,
+   "note": "A wooden cot with a striped canvas hammock."
+  },
+  {
+   "n": "Cloud Bed",
+   "price": 900,
+   "bond": 6,
+   "bonus": 0.3,
+   "note": "A puffy cloud with a little rainbow pillow."
+  },
+  {
+   "n": "Royal Canopy Bed",
+   "price": 2000,
+   "bond": 8,
+   "bonus": 0.45,
+   "note": "Velvet, gold trim, curtains and a crown."
+  },
+  {
+   "n": "Knitted Nest",
+   "price": 150,
+   "bond": 1,
+   "bonus": 0.05,
+   "v27": true,
+   "note": "A chunky knitted ring with a dip in the middle. Room for one dog, or two puppies."
+  },
+  {
+   "n": "Witch-Hat Bed",
+   "price": 420,
+   "bond": 2,
+   "bonus": 0.1,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A soft purple cushion under a floppy witch hat roof. Sold only at the Halloween Market."
+  },
+  {
+   "n": "Cauldron Bed",
+   "price": 300,
+   "bond": 2,
+   "bonus": 0.1,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A round black pot with a lilac cushion inside. The only thing brewing is a nap."
+  },
+  {
+   "n": "Bat-Cave Cushion",
+   "price": 250,
+   "bond": 1,
+   "bonus": 0.05,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A cosy dark cave with a purple cushion and one sleepy felt bat on the roof."
+  },
+  {
+   "n": "Pumpkin Patch Bed",
+   "price": 350,
+   "bond": 2,
+   "bonus": 0.1,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A hollow orange pumpkin with a cream cushion and a curly stem. Smells of nothing at all."
+  },
+  {
+   "n": "Moon and Stars Tent",
+   "price": 450,
+   "bond": 3,
+   "bonus": 0.15,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "note": "A navy tent with crayon stars and a crescent moon. Dark inside, perfect for long naps."
+  },
+  {
+   "n": "Present-Box Bed",
+   "price": 300,
+   "bond": 2,
+   "bonus": 0.1,
+   "fest": "winter",
+   "fm": true,
+   "note": "An open present box with a soft cushion inside and its lid stood up behind, bow and all. The best present is a nap."
+  },
+  {
+   "n": "Little Sleigh Bed",
+   "price": 350,
+   "bond": 2,
+   "bonus": 0.1,
+   "fest": "winter",
+   "fm": true,
+   "note": "A small red wooden sleigh with curly ends, gold runners and a tartan cushion. It never goes anywhere, except to sleep."
+  },
+  {
+   "n": "Snowball Nest",
+   "price": 250,
+   "bond": 1,
+   "bonus": 0.05,
+   "fest": "winter",
+   "fm": true,
+   "note": "A round, fluffy white nest, soft as fresh snow and never cold."
+  },
+  {
+   "n": "Giant Mitten Bed",
+   "price": 450,
+   "bond": 3,
+   "bonus": 0.15,
+   "fest": "winter",
+   "fm": true,
+   "note": "A huge knitted mitten with a fleecy lining to curl up inside. Somebody lost the other one."
+  }
+ ],
+ "HM_DECOR": {
+  "Giant Crayon Box": {
+   "prop": "crayonbox",
+   "at": [
+    536,
+    296,
+    112,
+    90
+   ],
+   "vb": [
+    200,
+    160
+   ],
+   "story": "Every crayon is taller than a dog. Nobody has ever finished colouring."
+  },
+  "Family Photo Frame": {
+   "prop": "photoframe",
+   "at": [
+    404,
+    236,
+    112,
+    98
+   ],
+   "vb": [
+    160,
+    140
+   ],
+   "story": "Everyone who ever shared this yard is on the fence. The ugly ones are the best."
+  },
+  "Doggy Ramp": {
+   "prop": "doggyramp",
+   "at": [
+    536,
+    432,
+    82,
+    50
+   ],
+   "vb": [
+    200,
+    120
+   ],
+   "story": "Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it."
+  },
+  "Rocking Chair": {
+   "prop": "rockingchair",
+   "at": [
+    910,
+    452,
+    84,
+    84
+   ],
+   "vb": [
+    160,
+    160
+   ],
+   "story": "A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies."
+  },
+  "Jack-o-Lantern Trio": {
+   "prop": "hwlanterns",
+   "at": [
+    440,
+    528,
+    112,
+    67
+   ],
+   "vb": [
+    200,
+    120
+   ],
+   "price": 120,
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "story": "Three pumpkins, three faces, all of them smiling. They glow a little after dark."
+  },
+  "Paper Bat Bunting": {
+   "prop": "hwbunting",
+   "at": [
+    650,
+    298,
+    160,
+    43
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 90,
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "story": "Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past."
+  },
+  "Friendly Scarecrow": {
+   "prop": "hwscarecrow",
+   "at": [
+    762,
+    262,
+    92,
+    130
+   ],
+   "vb": [
+    140,
+    200
+   ],
+   "price": 140,
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "story": "A pumpkin head and a big grin. The crows sit on his arms to chat."
+  },
+  "Pumpkin Lantern": {
+   "prop": "fmlantern",
+   "at": [
+    566,
+    446,
+    60,
+    80
+   ],
+   "vb": [
+    120,
+    160
+   ],
+   "price": 80,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "lit": true,
+   "story": "A round pumpkin lantern on a little post. It glows softly after dark."
+  },
+  "Ghost Garland": {
+   "prop": "hwgarland",
+   "at": [
+    100,
+    220,
+    200,
+    60
+   ],
+   "vb": [
+    300,
+    90
+   ],
+   "price": 100,
+   "fest": "halloween",
+   "ed": 2026,
+   "v26": true,
+   "story": "Little cloth ghosts holding hands. They say boo very quietly."
+  },
+  "Ghost Lantern String": {
+   "prop": "hmghostlights",
+   "at": [
+    300,
+    196,
+    200,
+    54
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 110,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "lit": true,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "story": "Little paper ghost lanterns on a string. After dark they glow softly, and each one smiles."
+  },
+  "Pumpkin Fairy Lights": {
+   "prop": "hmpumpkinlights",
+   "at": [
+    520,
+    200,
+    200,
+    54
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 100,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "lit": true,
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "story": "Tiny pumpkin bulbs on a green wire. They light up the fence when the sun goes down."
+  },
+  "Friendly Fence Web": {
+   "prop": "hmfenceweb",
+   "at": [
+    820,
+    230,
+    96,
+    84
+   ],
+   "vb": [
+    160,
+    140
+   ],
+   "price": 80,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "story": "A wobbly crayon web with a round little spider in a bow. She waves at every dog who passes."
+  },
+  "Cardboard Black Cat": {
+   "prop": "hmcatcutout",
+   "at": [
+    880,
+    380,
+    66,
+    88
+   ],
+   "vb": [
+    120,
+    160
+   ],
+   "price": 90,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "story": "A cardboard cat painted black, with a big smile. The dogs sniff it every morning, just in case."
+  },
+  "Cauldron Planter": {
+   "prop": "hmcauldron",
+   "at": [
+    180,
+    420,
+    98,
+    84
+   ],
+   "vb": [
+    140,
+    120
+   ],
+   "price": 120,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "halloween",
+   "ed": 2026,
+   "fm": true,
+   "story": "A black pot on stubby legs, full of sunflowers and pansies. Both are safe for dogs to sniff."
+  },
+  "Felt Fir Tree": {
+   "prop": "wmfirtree",
+   "at": [
+    540,
+    282,
+    91,
+    130
+   ],
+   "vb": [
+    140,
+    200
+   ],
+   "price": 140,
+   "bond": 2,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "winter",
+   "fm": true,
+   "story": "A soft felt fir in a pot, hung with paper stars the size of a paw. Felt, because real fir needles can upset a dog's tummy."
+  },
+  "Yard Snowman": {
+   "prop": "wmsnowman",
+   "at": [
+    544,
+    488,
+    84,
+    108
+   ],
+   "vb": [
+    140,
+    180
+   ],
+   "price": 120,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "winter",
+   "fm": true,
+   "story": "Lumpy, a bit lopsided, with a carrot nose and a knitted scarf. He waves with his longer arm."
+  },
+  "Candy-Cane Fairy Lights": {
+   "prop": "wmcanelights",
+   "at": [
+    620,
+    258,
+    200,
+    54
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 100,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "lit": true,
+   "fest": "winter",
+   "fm": true,
+   "story": "Red-and-white striped bulbs on a green wire. After dark the fence looks like a row of sweets."
+  },
+  "Present Pile": {
+   "prop": "wmpresents",
+   "at": [
+    304,
+    524,
+    96,
+    72
+   ],
+   "vb": [
+    160,
+    120
+   ],
+   "price": 90,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "winter",
+   "fm": true,
+   "story": "Three wrapped boxes with big bows. They are empty, but every dog checks, every single day."
+  },
+  "Star Lantern": {
+   "prop": "wmstarlantern",
+   "at": [
+    846,
+    420,
+    60,
+    100
+   ],
+   "vb": [
+    120,
+    200
+   ],
+   "price": 110,
+   "bond": 2,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "lit": true,
+   "fest": "winter",
+   "fm": true,
+   "story": "A paper star on a wooden post, with little holes cut in it. After dark it glows and puts stars on the snow."
+  },
+  "Bird Bath": {
+   "prop": "birdbath",
+   "at": [
+    24,
+    300,
+    66,
+    88
+   ],
+   "vb": [
+    120,
+    160
+   ],
+   "price": 90,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A stone bowl on a pedestal for the garden birds. The sparrows splash in it every morning and the dogs watch, very politely."
+  },
+  "Flower Barrel": {
+   "prop": "flowerbarrel",
+   "at": [
+    96,
+    318,
+    84,
+    72
+   ],
+   "vb": [
+    140,
+    120
+   ],
+   "price": 80,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "An old wooden barrel full of sunflowers and snapdragons. Both are safe for dogs, who sniff every single one."
+  },
+  "String Lights": {
+   "prop": "stringlights",
+   "at": [
+    384,
+    182,
+    210,
+    56
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 100,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "lit": true,
+   "v27": true,
+   "story": "Little round bulbs on a long wire. They come on by themselves when it gets dark, which looks like magic but is a timer."
+  },
+  "Garden Bench": {
+   "prop": "bench",
+   "at": [
+    720,
+    518,
+    130,
+    78
+   ],
+   "vb": [
+    200,
+    120
+   ],
+   "price": 120,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A painted wooden bench with room for one person and three dogs. The dogs always get the good end."
+  },
+  "Hammock": {
+   "prop": "hammock",
+   "at": [
+    844,
+    330,
+    156,
+    84
+   ],
+   "vb": [
+    260,
+    140
+   ],
+   "price": 140,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A striped hammock between two posts. It swings in the breeze and nobody has ever got out of it gracefully."
+  },
+  "Wind Chime": {
+   "prop": "windchime",
+   "at": [
+    580,
+    190,
+    40,
+    80
+   ],
+   "vb": [
+    80,
+    160
+   ],
+   "price": 70,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "v27": true,
+   "story": "Bamboo tubes and a little wooden bird that clink in the breeze. The dogs tilt their heads at every note."
+  },
+  "Sandbox": {
+   "prop": "sandbox",
+   "at": [
+    300,
+    524,
+    120,
+    72
+   ],
+   "vb": [
+    200,
+    120
+   ],
+   "price": 110,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A wooden box of soft sand with a little spade. The one place in the yard where digging gets a round of applause."
+  },
+  "Stepping Stones": {
+   "prop": "steppingstones",
+   "at": [
+    560,
+    540,
+    168,
+    56
+   ],
+   "vb": [
+    240,
+    80
+   ],
+   "price": 60,
+   "room": "yard",
+   "zone": "floor",
+   "flat": true,
+   "kind": "decor",
+   "v27": true,
+   "story": "Five flat stones in a wobbly line across the grass. Every dog hops them in a different order."
+  },
+  "Braided Rag Rug": {
+   "prop": "ragrug",
+   "at": [
+    628,
+    524,
+    216,
+    72
+   ],
+   "vb": [
+    240,
+    80
+   ],
+   "price": 80,
+   "room": "house",
+   "zone": "floor",
+   "flat": true,
+   "kind": "decor",
+   "v27": true,
+   "story": "A round rug braided from old shirts and one sock. It is the warmest spot on the floor at four o'clock."
+  },
+  "Toy Basket": {
+   "prop": "toybasket",
+   "at": [
+    300,
+    524,
+    84,
+    70
+   ],
+   "vb": [
+    120,
+    100
+   ],
+   "price": 70,
+   "room": "house",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A wicker basket of squeaky friends. Every toy comes out and not one of them ever goes back in."
+  },
+  "Cushion Pile": {
+   "prop": "cushionpile",
+   "at": [
+    440,
+    524,
+    126,
+    70
+   ],
+   "vb": [
+    180,
+    100
+   ],
+   "price": 90,
+   "room": "house",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "Six squashy cushions in a heap. Officially for people, unofficially for dogs."
+  },
+  "Boston Fern": {
+   "prop": "fern",
+   "at": [
+    532,
+    320,
+    78,
+    104
+   ],
+   "vb": [
+    120,
+    160
+   ],
+   "price": 80,
+   "room": "house",
+   "zone": "floor",
+   "kind": "decor",
+   "v27": true,
+   "story": "A big leafy fern on a little wooden stand. Boston ferns are safe around dogs, which is why this one was picked."
+  },
+  "Cuckoo Clock": {
+   "prop": "cuckooclock",
+   "at": [
+    784,
+    206,
+    60,
+    96
+   ],
+   "vb": [
+    100,
+    160
+   ],
+   "price": 120,
+   "room": "house",
+   "zone": "wall",
+   "kind": "decor",
+   "v27": true,
+   "story": "A carved wooden clock with a little bird inside. On the hour it pops out, and every dog in the house answers it."
+  },
+  "Paw Print Pictures": {
+   "prop": "pawpictures",
+   "at": [
+    212,
+    236,
+    140,
+    70
+   ],
+   "vb": [
+    200,
+    100
+   ],
+   "price": 90,
+   "room": "house",
+   "zone": "wall",
+   "kind": "decor",
+   "v27": true,
+   "story": "Three little frames, each with one muddy paw print. The artists signed them by sitting on them."
+  },
+  "Moon Lamp": {
+   "prop": "moonlamp",
+   "at": [
+    548,
+    436,
+    60,
+    84
+   ],
+   "vb": [
+    100,
+    140
+   ],
+   "price": 100,
+   "room": "house",
+   "zone": "floor",
+   "kind": "decor",
+   "lit": true,
+   "v27": true,
+   "story": "A round paper moon on a little wooden stand. It glows after dark, so nobody trips over a sleeping dog."
+  },
+  "Patchwork Quilt": {
+   "prop": "wallquilt",
+   "at": [
+    656,
+    206,
+    126,
+    98
+   ],
+   "vb": [
+    180,
+    140
+   ],
+   "price": 110,
+   "room": "house",
+   "zone": "wall",
+   "kind": "decor",
+   "v27": true,
+   "story": "A quilt hung on the wall, one square for every dog who ever lived here. There is plenty of room for more squares."
+  },
+  "Dog Play Tower": {
+   "prop": "playtower",
+   "at": [
+    840,
+    216,
+    160,
+    208
+   ],
+   "vb": [
+    200,
+    260
+   ],
+   "price": 320,
+   "bond": 3,
+   "room": "house",
+   "zone": "floor",
+   "kind": "furniture",
+   "v27": true,
+   "story": "Three carpet steps, a cubby hole and a rope to bat. The top step belongs to whoever got there first.",
+   "spots": {
+    "top": {
+     "x": 100,
+     "y": 92,
+     "w": 200,
+     "pose": "sit",
+     "face": "right"
+    },
+    "cubby": {
+     "x": 100,
+     "y": 250,
+     "w": 200,
+     "pose": "sleep",
+     "face": "right",
+     "front": true
+    }
+   }
+  },
+  "Tunnel Sofa": {
+   "prop": "tunnelsofa",
+   "at": [
+    612,
+    296,
+    240,
+    128
+   ],
+   "vb": [
+    300,
+    160
+   ],
+   "price": 360,
+   "bond": 3,
+   "room": "house",
+   "zone": "floor",
+   "kind": "furniture",
+   "v27": true,
+   "story": "A squashy little sofa with a tunnel straight through the middle. Dogs go in one end and come out the other, very pleased with themselves.",
+   "spots": {
+    "tunnel": {
+     "x": 150,
+     "y": 154,
+     "w": 200,
+     "pose": "walk",
+     "face": "right",
+     "front": true
+    },
+    "seat": {
+     "x": 150,
+     "y": 70,
+     "w": 200,
+     "pose": "down",
+     "face": "left"
+    }
+   }
+  },
+  "Ball Pit": {
+   "prop": "ballpit",
+   "at": [
+    4,
+    476,
+    192,
+    112
+   ],
+   "vb": [
+    240,
+    140
+   ],
+   "price": 280,
+   "bond": 2,
+   "room": "house",
+   "zone": "floor",
+   "kind": "furniture",
+   "v27": true,
+   "story": "A soft round pit full of bright balls. Jumping in is allowed, and so is lying very still.",
+   "spots": {
+    "a": {
+     "x": 96,
+     "y": 124,
+     "w": 200,
+     "pose": "happy",
+     "face": "right",
+     "front": true
+    },
+    "b": {
+     "x": 150,
+     "y": 124,
+     "w": 200,
+     "pose": "rollover",
+     "face": "left",
+     "front": true
+    }
+   }
+  },
+  "Sofa Ramp": {
+   "prop": "sofaramp",
+   "at": [
+    120,
+    300,
+    208,
+    128
+   ],
+   "vb": [
+    260,
+    160
+   ],
+   "price": 200,
+   "bond": 2,
+   "room": "house",
+   "zone": "floor",
+   "kind": "furniture",
+   "v27": true,
+   "story": "A carpeted ramp up to a cushioned top step. Short legs, long backs and old knees all get up without a jump.",
+   "spots": {
+    "top": {
+     "x": 204,
+     "y": 60,
+     "w": 200,
+     "pose": "sit",
+     "face": "left",
+     "via": {
+      "x": 40,
+      "y": 152
+     }
+    }
+   }
+  },
+  "Window Seat": {
+   "prop": "windowseat",
+   "at": [
+    0,
+    232,
+    176,
+    192
+   ],
+   "vb": [
+    220,
+    240
+   ],
+   "price": 260,
+   "bond": 2,
+   "room": "house",
+   "zone": "floor",
+   "kind": "furniture",
+   "lit": true,
+   "v27": true,
+   "story": "A cushioned seat under a little round window. The best place in the house to watch the postman and the birds.",
+   "spots": {
+    "seat": {
+     "x": 110,
+     "y": 176,
+     "w": 200,
+     "pose": "sit",
+     "face": "right"
+    }
+   }
+  },
+  "Paper Snowflake Garland": {
+   "prop": "wnsnowflakes",
+   "at": [
+    620,
+    196,
+    210,
+    56
+   ],
+   "vb": [
+    300,
+    80
+   ],
+   "price": 90,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "fest": "snow",
+   "v28": true,
+   "story": "Paper snowflakes cut by the Nguyen kids, no two the same. Some of them are dogs, if you squint."
+  },
+  "Felt Holly Wreath": {
+   "prop": "wnwreath",
+   "at": [
+    880,
+    200,
+    72,
+    72
+   ],
+   "vb": [
+    120,
+    120
+   ],
+   "price": 80,
+   "room": "yard",
+   "zone": "wall",
+   "kind": "decor",
+   "fest": "snow",
+   "v28": true,
+   "story": "A round wreath of felt leaves and red felt berries. Real holly berries make dogs ill, so these ones are felt."
+  },
+  "Red Wooden Sled": {
+   "prop": "wnsled",
+   "at": [
+    24,
+    506,
+    130,
+    78
+   ],
+   "vb": [
+    200,
+    120
+   ],
+   "price": 110,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "snow",
+   "v28": true,
+   "story": "A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it."
+  },
+  "Kadomatsu Pair": {
+   "prop": "nykadomatsu",
+   "at": [
+    866,
+    404,
+    80,
+    100
+   ],
+   "vb": [
+    160,
+    200
+   ],
+   "price": 120,
+   "room": "yard",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "newyear",
+   "v28": true,
+   "story": "Bamboo, pine and plum by the gate to welcome the new year's luck. The dogs sniff it every morning to check the luck is still there."
+  },
+  "Lucky Cat": {
+   "prop": "luckycat",
+   "at": [
+    470,
+    436,
+    64,
+    80
+   ],
+   "vb": [
+    80,
+    100
+   ],
+   "price": 150,
+   "room": "house",
+   "zone": "floor",
+   "kind": "decor",
+   "fest": "tokyo",
+   "tokyo": true,
+   "v211": true,
+   "story": "A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way."
+  }
+ },
+ "ROUTES": {
+  "park": {
+   "n": "Sunny Park",
+   "bond": 1,
+   "secs": 60,
+   "energy": 15,
+   "happy": 15,
+   "clean": 5,
+   "coins": [
+    20,
+    30
+   ],
+   "bp": 8,
+   "pool": [
+    "coin",
+    "leaf",
+    "flower",
+    "bone"
+   ]
+  },
+  "river": {
+   "n": "Riverside Trail",
+   "bond": 2,
+   "secs": 75,
+   "energy": 25,
+   "happy": 20,
+   "clean": 10,
+   "coins": [
+    35,
+    50
+   ],
+   "bp": 11,
+   "pool": [
+    "coin",
+    "leaf",
+    "shell"
+   ]
+  },
+  "woods": {
+   "n": "Maple Woods",
+   "bond": 5,
+   "secs": 90,
+   "energy": 30,
+   "happy": 25,
+   "clean": 15,
+   "coins": [
+    50,
+    70
+   ],
+   "bp": 13,
+   "pool": [
+    "coin",
+    "acorn",
+    "leaf",
+    "flower"
+   ],
+   "dig": 3
+  },
+  "beach": {
+   "n": "Seashell Beach",
+   "bond": 8,
+   "secs": 90,
+   "energy": 30,
+   "happy": 30,
+   "clean": 20,
+   "coins": [
+    60,
+    80
+   ],
+   "bp": 15,
+   "pool": [
+    "coin",
+    "shell"
+   ],
+   "dig": 3
+  },
+  "town": {
+   "n": "Town Loop",
+   "bond": 1,
+   "secs": 60,
+   "energy": 15,
+   "happy": 15,
+   "clean": 5,
+   "coins": [
+    25,
+    35
+   ],
+   "bp": 9,
+   "pool": [
+    "coin",
+    "leaf",
+    "bone"
+   ]
+  },
+  "hilltop": {
+   "n": "Hilltop Trail",
+   "bond": 4,
+   "secs": 75,
+   "energy": 25,
+   "happy": 25,
+   "clean": 10,
+   "coins": [
+    45,
+    60
+   ],
+   "bp": 12,
+   "pool": [
+    "coin",
+    "flower",
+    "leaf"
+   ]
+  },
+  "pier": {
+   "n": "Pier Boardwalk",
+   "bond": 6,
+   "secs": 75,
+   "energy": 25,
+   "happy": 25,
+   "clean": 10,
+   "coins": [
+    55,
+    70
+   ],
+   "bp": 13,
+   "pool": [
+    "coin",
+    "shell"
+   ]
+  }
+ },
+ "RAR_P": [
+  55,
+  30,
+  12,
+  3
+ ],
+ "RAR_COINS": [
+  40,
+  80,
+  150,
+  300
+ ],
+ "TREASURES": [
+  {
+   "n": "Acorn Cap",
+   "r": 1,
+   "routes": [
+    "woods",
+    "park",
+    "hilltop"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Explorer Goggles",
+   "r": 2,
+   "routes": [
+    "river",
+    "woods",
+    "hilltop"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Seashell Necklace",
+   "r": 1,
+   "routes": [
+    "beach",
+    "river",
+    "pier"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Mossy Poncho",
+   "r": 0,
+   "routes": [
+    "woods",
+    "river"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Clover Collar",
+   "r": 3,
+   "routes": [
+    "park",
+    "river",
+    "woods",
+    "beach",
+    "hilltop",
+    "pier"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Wild Berries",
+   "r": 0,
+   "routes": [
+    "park",
+    "woods",
+    "town",
+    "hilltop"
+   ],
+   "kind": "food"
+  },
+  {
+   "n": "Duck's Picnic Sandwich",
+   "r": 1,
+   "routes": [
+    "river",
+    "park",
+    "town"
+   ],
+   "kind": "food"
+  },
+  {
+   "n": "Golden Bone",
+   "r": 2,
+   "routes": [
+    "park",
+    "river",
+    "woods",
+    "beach",
+    "hilltop",
+    "pier"
+   ],
+   "kind": "food"
+  },
+  {
+   "n": "Driftwood Stick",
+   "r": 0,
+   "routes": [
+    "beach",
+    "river",
+    "pier"
+   ],
+   "kind": "toy"
+  },
+  {
+   "n": "Rubber Chicken",
+   "r": 1,
+   "routes": [
+    "park",
+    "town"
+   ],
+   "kind": "toy"
+  },
+  {
+   "n": "Glow Ball",
+   "r": 2,
+   "routes": [
+    "woods",
+    "beach",
+    "hilltop"
+   ],
+   "kind": "toy"
+  },
+  {
+   "n": "Lucky Penny",
+   "r": 0,
+   "routes": [
+    "park",
+    "river",
+    "town"
+   ],
+   "kind": "charm"
+  },
+  {
+   "n": "Sparkle Stone",
+   "r": 2,
+   "routes": [
+    "river",
+    "beach",
+    "pier"
+   ],
+   "kind": "charm"
+  },
+  {
+   "n": "Old Map Piece (Park)",
+   "r": 1,
+   "routes": [
+    "park"
+   ],
+   "kind": "quest"
+  },
+  {
+   "n": "Old Map Piece (River)",
+   "r": 1,
+   "routes": [
+    "river"
+   ],
+   "kind": "quest"
+  },
+  {
+   "n": "Old Map Piece (Woods)",
+   "r": 2,
+   "routes": [
+    "woods"
+   ],
+   "kind": "quest"
+  },
+  {
+   "n": "Old Map Piece (Beach)",
+   "r": 2,
+   "routes": [
+    "beach"
+   ],
+   "kind": "quest"
+  },
+  {
+   "n": "Sun Hat",
+   "r": 1,
+   "routes": [
+    "beach",
+    "park"
+   ],
+   "kind": "wearable"
+  },
+  {
+   "n": "Squeaky Hedgehog",
+   "r": 1,
+   "routes": [
+    "woods",
+    "park"
+   ],
+   "kind": "toy"
+  }
+ ],
+ "tools": [
+  {
+   "cat": "tools",
+   "n": "Gene Sniffer",
+   "price": 1200,
+   "bond": 6,
+   "desc": "A pocket gadget that reads coat genes. Free sniffs at the Vet and on the Playdate Board."
+  }
+ ],
+ "crops": [
+  {
+   "id": "peas",
+   "name": "Peas",
+   "seasons": [
+    "spring"
+   ],
+   "hours": 2,
+   "regrow": null,
+   "picks": null,
+   "yield": 3,
+   "seed": 2,
+   "sell": 1,
+   "hardy": false,
+   "seedItem": "Pea Seeds",
+   "item": "Peas"
+  },
+  {
+   "id": "spinach",
+   "name": "Spinach",
+   "seasons": [
+    "winter",
+    "spring"
+   ],
+   "hours": 2,
+   "regrow": null,
+   "picks": null,
+   "yield": 2,
+   "seed": 2,
+   "sell": 2,
+   "hardy": true,
+   "seedItem": "Spinach Seeds",
+   "item": "Spinach"
+  },
+  {
+   "id": "carrot",
+   "name": "Carrot",
+   "seasons": [
+    "spring",
+    "autumn"
+   ],
+   "hours": 3,
+   "regrow": null,
+   "picks": null,
+   "yield": 2,
+   "seed": 2,
+   "sell": 2,
+   "hardy": false,
+   "seedItem": "Carrot Seeds",
+   "item": "Carrot"
+  },
+  {
+   "id": "blueberries",
+   "name": "Blueberries",
+   "seasons": [
+    "summer"
+   ],
+   "hours": 4,
+   "regrow": 2,
+   "picks": 4,
+   "yield": 4,
+   "seed": 8,
+   "sell": 1,
+   "hardy": false,
+   "seedItem": "Blueberry Seeds",
+   "item": "Blueberries"
+  },
+  {
+   "id": "sweet-potato",
+   "name": "Sweet Potato",
+   "seasons": [
+    "summer",
+    "autumn"
+   ],
+   "hours": 4,
+   "regrow": null,
+   "picks": null,
+   "yield": 2,
+   "seed": 3,
+   "sell": 3,
+   "hardy": false,
+   "seedItem": "Sweet Potato Seeds",
+   "item": "Sweet Potato"
+  },
+  {
+   "id": "pumpkin",
+   "name": "Pumpkin",
+   "seasons": [
+    "autumn"
+   ],
+   "hours": 6,
+   "regrow": null,
+   "picks": null,
+   "yield": 1,
+   "seed": 4,
+   "sell": 7,
+   "hardy": false,
+   "seedItem": "Pumpkin Seeds",
+   "item": "Pumpkin"
+  }
+ ],
+ "pantry": [
+  {
+   "id": "oats",
+   "name": "Oats",
+   "price": 2
+  },
+  {
+   "id": "rice",
+   "name": "Rice",
+   "price": 3
+  },
+  {
+   "id": "egg",
+   "name": "Egg",
+   "price": 3
+  },
+  {
+   "id": "chicken",
+   "name": "Chicken",
+   "price": 8,
+   "note": "boneless"
+  }
+ ],
+ "FM": [
+  {
+   "id": "halloween",
+   "items": {
+    "decor": [
+     "Pumpkin Lantern",
+     "Jack-o-Lantern Trio",
+     "Paper Bat Bunting",
+     "Friendly Scarecrow",
+     "Ghost Garland",
+     "Ghost Lantern String",
+     "Pumpkin Fairy Lights",
+     "Friendly Fence Web",
+     "Cardboard Black Cat",
+     "Cauldron Planter"
+    ],
+    "clothes": [
+     "Pumpkin Patch Suit",
+     "Little Bat Costume",
+     "Trick-or-Treat Ghost",
+     "Witch Hat",
+     "Vampire Cape",
+     "Bat Wings",
+     "Candy Corn Bandana",
+     "Ghost Sheet",
+     "Pumpkin Suit",
+     "Little Witch Hat & Cape",
+     "Scarecrow Overalls",
+     "Mummy Wraps",
+     "Skeleton Suit",
+     "Black Cat Ears & Bow",
+     "Pirate Hat & Sash",
+     "Dinosaur Hood",
+     "Little Owl Wings",
+     "Wizard Robe & Star Hat",
+     "Lion Mane"
+    ],
+    "homes": [
+     "Witch-Hat Bed",
+     "Pumpkin Cottage",
+     "Friendly Haunted Kennel",
+     "Cauldron Bed",
+     "Bat-Cave Cushion",
+     "Pumpkin Patch Bed",
+     "Moon and Stars Tent"
+    ],
+    "toys": [
+     "Squeaky Ghost",
+     "Squeaky Pumpkin",
+     "Plush Ghost",
+     "Bat-Wing Flyer",
+     "Trick-or-Treat Bucket",
+     "Squeaky Bat",
+     "Pumpkin Ball",
+     "Rope Mummy",
+     "Glow-in-the-Dark Bone",
+     "Soft Spider Plush"
+    ],
+    "treats": [
+     "Pumpkin Patch Pupcake",
+     "Apple Monster Biscuits",
+     "Sweet Potato Bones",
+     "Frozen Yoghurt Ghosts",
+     "Ghost Biscuits",
+     "Candy Corn Carrots",
+     "Monster Meatball"
+    ]
+   }
+  },
+  {
+   "id": "harvest",
+   "items": {
+    "clothes": [
+     "Leaf Beret",
+     "Autumn Scarf"
+    ],
+    "treats": [
+     "Baked Pumpkin Wedges",
+     "Sweet Potato Coins",
+     "Warm Bone Broth"
+    ]
+   }
+  },
+  {
+   "id": "winter",
+   "items": {
+    "decor": [
+     "Paper Snowflake Garland",
+     "Felt Holly Wreath",
+     "Red Wooden Sled",
+     "Felt Fir Tree",
+     "Yard Snowman",
+     "Candy-Cane Fairy Lights",
+     "Present Pile",
+     "Star Lantern"
+    ],
+    "clothes": [
+     "Very Ugly Sweater",
+     "Reindeer Antlers",
+     "Snowflake Snood",
+     "Father Christmas Suit",
+     "Little Elf Outfit",
+     "Gingerbread Pup Suit",
+     "Snowman Suit",
+     "Polar Bear Hood",
+     "Penguin Suit",
+     "Puffer Jacket",
+     "Nutcracker Jacket & Hat",
+     "Snowflake Wings",
+     "Jingle Bell Collar"
+    ],
+    "homes": [
+     "Gingerbread Kennel",
+     "Present-Box Bed",
+     "Little Sleigh Bed",
+     "Snowball Nest",
+     "Giant Mitten Bed"
+    ],
+    "toys": [
+     "Squeaky Snowman",
+     "Candy-Cane Rope",
+     "Plush Penguin",
+     "Snowball Ball",
+     "Present Puzzle Box"
+    ],
+    "treats": [
+     "Warm Carob Cup",
+     "Snowflake Oat Cookies",
+     "Snow Day Stew",
+     "Reindeer Crunch",
+     "Turkey & Cranberry Bites",
+     "Frozen Yoghurt Snowballs"
+    ]
+   }
+  },
+  {
+   "id": "newyear",
+   "items": {
+    "decor": [
+     "Kadomatsu Pair"
+    ],
+    "treats": [
+     "Pup Kinton"
+    ]
+   }
+  },
+  {
+   "id": "sakura",
+   "items": {}
+  }
+ ],
+ "FF_CAPS": {
+  "catch": {
+   "day": 20,
+   "round": 10,
+   "en": 5
+  },
+  "bubble": {
+   "day": 15,
+   "round": 8,
+   "en": 5
+  },
+  "seek": {
+   "day": 15,
+   "round": 10,
+   "en": 4
+  },
+  "show": {
+   "day": 20,
+   "round": 10,
+   "en": 4
+  },
+  "kite": {
+   "day": 15,
+   "round": 8,
+   "en": 5
+  },
+  "paper": {
+   "day": 15,
+   "round": 15,
+   "en": 6
+  },
+  "bakery": {
+   "day": 15,
+   "round": 15,
+   "en": 3
+  },
+  "wash": {
+   "day": 10,
+   "round": 10,
+   "en": 4
+  },
+  "stall": {
+   "week": 40
+  },
+  "photo": {
+   "week": 30
+  },
+  "toys": {
+   "day": 30
+  }
+ },
+ "FF_GAMES": {
+  "catch": {
+   "place": "park",
+   "bond": 1
+  },
+  "bubble": {
+   "place": "pool",
+   "bond": 3
+  },
+  "seek": {
+   "place": "yard",
+   "bond": 2
+  },
+  "show": {
+   "place": "square",
+   "bond": 4,
+   "who": "plum"
+  },
+  "kite": {
+   "place": "fujihill",
+   "bond": 5
+  },
+  "paper": {
+   "place": "square",
+   "bond": 2,
+   "job": true,
+   "who": "joe"
+  },
+  "bakery": {
+   "place": "cafe",
+   "bond": 2,
+   "job": true,
+   "who": "bea"
+  },
+  "wash": {
+   "place": "yard",
+   "bond": 3,
+   "job": true,
+   "who": "tanaka"
+  }
+ },
+ "MS_PAY": 15,
+ "PIP_CAP": 60,
+ "DD_COIN": 10,
+ "DD_COIN_DAY": 20,
+ "TK_TICKET": 60,
+ "TK_OMI_PRICE": 10,
+ "twPortraitCost": 500,
+ "AG_COIN_DAY": 40,
+ "AG_COINS": [
+  0,
+  10,
+  20,
+  30
+ ],
+ "BL_COIN_SES": 16,
+ "BL_COIN_DAY": 40,
+ "BL_TOYS": {
+  "Tennis Ball": {
+   "prop": [
+    "prop",
+    "ball"
+   ],
+   "g": 1900,
+   "bounce": 0.55,
+   "fric": 2.4,
+   "spin": 0.35,
+   "vzK": 1,
+   "coin": 2,
+   "hap": 15,
+   "en": 1
+  },
+  "Glow Ball": {
+   "prop": [
+    "item",
+    "Glow Ball"
+   ],
+   "g": 1900,
+   "bounce": 0.5,
+   "fric": 2.4,
+   "spin": 0.35,
+   "vzK": 1,
+   "coin": 2,
+   "hap": 15,
+   "en": 1,
+   "glow": true
+  },
+  "Frisbee": {
+   "prop": [
+    "prop",
+    "frisbee"
+   ],
+   "g": 950,
+   "bounce": 0.12,
+   "fric": 4.5,
+   "spin": 0.9,
+   "vzK": 0.62,
+   "coin": 3,
+   "hap": 20,
+   "en": 1.5,
+   "float": true
+  },
+  "Driftwood Stick": {
+   "prop": [
+    "item",
+    "Driftwood Stick"
+   ],
+   "g": 1900,
+   "bounce": 0.28,
+   "fric": 5,
+   "spin": 1.8,
+   "vzK": 1,
+   "coin": 3,
+   "hap": 15,
+   "en": 1
+  },
+  "Squeaky Ghost": {
+   "prop": [
+    "item",
+    "Squeaky Ghost"
+   ],
+   "coin": 2,
+   "hap": 15,
+   "en": 1,
+   "g": 1700,
+   "bounce": 0.45,
+   "fric": 3,
+   "spin": 0.6,
+   "vzK": 0.95
+  },
+  "Pumpkin Ball": {
+   "prop": [
+    "item",
+    "Pumpkin Ball"
+   ],
+   "coin": 2,
+   "hap": 15,
+   "en": 1,
+   "g": 1850,
+   "bounce": 0.5,
+   "fric": 2.6,
+   "spin": 0.9,
+   "vzK": 1
+  },
+  "Snowball Ball": {
+   "prop": [
+    "item",
+    "Snowball Ball"
+   ],
+   "coin": 2,
+   "hap": 15,
+   "en": 1,
+   "g": 1800,
+   "bounce": 0.38,
+   "fric": 3.2,
+   "spin": 0.4,
+   "vzK": 0.95
+  }
+ },
+ "FW_CAL_COIN_CAP": 80,
+ "FW_DG_COIN_CAP": 160,
+ "PK_BONUS": 0.1,
+ "TK_SOUVENIRS": {
+  "shibuya": [
+   "Shibuya Bandana"
+  ],
+  "asakusa": [
+   "Asakusa Bandana",
+   "Lucky Cat"
+  ],
+  "tokyotower": [
+   "Tokyo Tower Bandana",
+   "Shinkansen Plush"
+  ]
+ },
+ "TK_SNACKS": [
+  "Sweet Potato Strip",
+  "Dog Senbei"
+ ]
+}
