@@ -110,3 +110,48 @@ One ask (save) · 4 hashtags · search: "cozy dog game", "chow chow", "relaxing 
 
 **Alt text:** `A fluffy crayon Chow Chow sits on a wooden pier at sunset, with Mt. Fuji and a sailboat behind him. A hand tosses him a biscuit; he catches it, munches it happily and hops up with heart eyes.`
 
+---
+
+# Ad 3: cuddle time with Bao on the pier (3 Nov 2026)
+
+Owner, 3 Nov 2026, after Ad 2: "can we throw different snacks? or we cuddle Bao instead" (choice window: "Cuddle Bao"). Same place, dog, light and length as Ad 2; no throw.
+
+| File | What |
+|---|---|
+| `doodle-doggo-cuddle-reel-chow-pier.mp4` | **Ad 3: cuddle time.** 1080 x 1920, 30 fps, 11 s, the pier's music and sea ambience, soft fur-rub sounds per stroke, scritch ticks and a soft boop when the heart eyes come. |
+| `cuddle-cover-chow-pier.jpg` | Its cover: Bao with dreamy eyes under the hand at sunset, the logo above, in the grid's 3:4 crop. |
+
+Remake: `ACT=cuddle DOG=chow SCENE=pier TIP=186,104 NODE_PATH=$(npm root -g) node brand/instagram/launch/munch_reel/build_munch.js <workdir>` (works for any dog and place: `ACT=cuddle` with any `DOG` and `SCENE`).
+
+**What happens:** Bao sits on the pier at dusk and looks up, curious, as the player's hand comes in (the game's own flat "down" trick-signal hand, mirrored, its arrow and motion ticks taken off, a blue sleeve to the edge). The hand strokes his head four times (he leans into each stroke) with dreamy eyes, then heart eyes with pink hearts floating up; a quick scritch; the hand leaves; a wink and the happy hop up to beg with heart eyes; then the end card ("a free cozy dog game", "play free at doodledoggo.app"). Real art only; the same depth as Ads 1 and 2, without the blurred biscuits in front.
+
+## Running it as an ad
+
+Same set-up as Ads 1 and 2 (Traffic, https://doodledoggo.app, "Play game", Reels and Stories), a fresh creative in the same ad set.
+
+**Primary text, option A (the cuddle one)**
+```
+Give a fluffy crayon dog a head rub on a pier at sunset 🌅 No timers, no pressure, just a good dog. Free in your browser, no download.
+```
+**Primary text, option B (the collection one, as Ad 1)**
+```
+35 crayon dogs to adopt, dress up and spoil 🐶 Walk the town, grow a garden, take naps. A free cozy dog game, no download.
+```
+**Headline** (pick one): `Free cozy dog game, no download` · `Cuddle time 🐶` · `Adopt a crayon dog 🐶`
+**Description:** `Play free in your browser.`
+
+## If it is also posted on the profile (Instagram)
+
+```
+save this for when you need a soft minute 🌅 it's cuddle time on the pier with Bao 🐶
+
+the sun was going down behind Mt. Fuji and the sky turned pink 🗻🩷 so we gave Bao the Chow Chow a head rub. four slow strokes 🤚 a quick scritch. his eyes went dreamy 😌 then turned into hearts 💕 then he hopped up for more. no timer. nothing to win. just a fluffy crayon dog who loves you back 🐾
+
+if you want a relaxing game for tonight 🌙 Doodle Doggo is our free cozy dog game 🎮 it plays in your browser on your phone or computer, and you can adopt one of 35 crayon dogs and give every one of them a cuddle 💛⛵
+
+#DoodleDoggo #CozyGames #ChowChow #RelaxingGames
+```
+One ask (save) · 4 hashtags · search: "cozy dog game", "chow chow", "relaxing game" · no link · 12 emoji (1.9 per 100 characters), none as bullets · linter READY · human score 78.8 PASS.
+
+**Alt text:** `A fluffy crayon Chow Chow sits on a wooden pier at sunset, with Mt. Fuji behind him. A hand strokes his head; his eyes go dreamy, then turn into hearts as pink hearts float up, and he hops up happily.`
+
