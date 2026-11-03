@@ -9,7 +9,7 @@
 | X | the same English video | none needed |
 | RedNote / 小红书 | `doodle-doggo-friends-rednote.mp4` (Mandarin voice zf_073, Chinese subtitles, no link, no QR, 42 s) | `brand/rednote/rednote-06-friends.jpg` (3:4) |
 
-Everything below is checked: English with `ig-caption` (READY) and `ig-human` (PASS), RedNote by hand (no link, title 20 characters at most, the game's own zh-Hans words). Wording rule: "no chat, no messages", never "no typing".
+Everything below is checked: English with `ig-caption` (READY) and `ig-human` (PASS), RedNote by hand (the site only as text to search in the browser, no clickable link or QR, title 20 characters at most, the game's own zh-Hans words). Wording rule: "no chat, no messages", never "no typing".
 
 ## Instagram (Reel)
 
@@ -80,7 +80,7 @@ Doodle Doggo 好友功能来啦！🎉 11月7日上线
 
 我们的好友码在视频最后👀 评论区交换好友码吧～👇
 
-免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+免费，没有广告，在浏览器搜索 DoodleDoggo.app 就能玩
 
 #DoodleDoggo #交换好友码 #治愈系游戏 #独立游戏 #我在小红书做游戏 #狗狗 #萌宠 #柯基 #腊肠犬 #蜡笔画
 ```

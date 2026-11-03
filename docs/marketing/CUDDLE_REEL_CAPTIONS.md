@@ -7,9 +7,9 @@ Ad 3 of the snack/cuddle ads (`SNACK_REEL_ADS.md`), made 3 Nov 2026. Bao the Cho
 | Instagram Reels | `brand/instagram/launch/munch_reel/doodle-doggo-cuddle-reel-chow-pier.mp4` (11 s) | `cuddle-cover-chow-pier.jpg` (the grid shows its 3:4 middle) |
 | YouTube Shorts | the same video | YouTube picks a frame or uses the cover |
 | X | the same video | none needed |
-| RedNote / 小红书 | `doodle-doggo-cuddle-reel-chow-pier-rednote.mp4` (the end card in Chinese: "免费的治愈系狗狗游戏", "搜索 Doodle Doggo 就能玩"; no link) | `brand/rednote/rednote-07-cuddle.jpg` (3:4, "今天也要摸摸狗狗"); also `munch_reel/cuddle-cover-chow-pier-rednote.jpg` |
+| RedNote / 小红书 | `doodle-doggo-cuddle-reel-chow-pier-rednote.mp4` (the end card in Chinese: "免费的治愈系狗狗游戏", "浏览器搜索 DoodleDoggo.app 就能玩": the site named as something to search, no clickable link or QR; owner, 3 Nov 2026) | `brand/rednote/rednote-07-cuddle.jpg` (3:4, "今天也要摸摸狗狗"); also `munch_reel/cuddle-cover-chow-pier-rednote.jpg` |
 
-Hook for Shorts and X: **"you can't stop at 1 head rub with this fluffy dog"** (`ig-reel` hookscore 81.4 STRONG, the best of 11). The line in quotes is the game's own Chow Chow line (`data.breed_pers.chow.ask.0`: "{name} allows you one pet. Maybe two." / "{name}允许你摸一下。也许两下。"). English checked with `ig-caption` and `ig-human`; RedNote by hand (no link, title 9 characters, the game's zh-Hans words: 松狮犬, 灯塔码头).
+Hook for Shorts and X: **"you can't stop at 1 head rub with this fluffy dog"** (`ig-reel` hookscore 81.4 STRONG, the best of 11). The line in quotes is the game's own Chow Chow line (`data.breed_pers.chow.ask.0`: "{name} allows you one pet. Maybe two." / "{name}允许你摸一下。也许两下。"). English checked with `ig-caption` and `ig-human`; RedNote by hand (the site only as text to search in the browser, no clickable link, title 9 characters, the game's zh-Hans words: 松狮犬, 灯塔码头).
 
 ## Instagram
 
@@ -74,7 +74,7 @@ Human score 95.9 PASS.
 我们摸了五下，Bao一点都不介意😌
 
 这是我们做的免费小游戏 Doodle Doggo：35只蜡笔画的狗狗可以领养，带狗狗散步、种菜、摸摸狗狗。没有计时，没有输赢，也不会有不好的事情发生🐾
-没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+没有广告，在浏览器搜索 DoodleDoggo.app 就能玩
 
 你最想摸哪一只狗狗？评论区告诉我们～
 
@@ -84,5 +84,5 @@ Human score 95.9 PASS.
 > Petting Bao the Chow Chow's head on the lighthouse pier at sunset. Four strokes, then a scritch; his sleepy eyes turned into hearts.
 > The game says a Chow Chow "allows you one pet. Maybe two." We petted him five times and Bao didn't mind at all.
 > This is our free little game Doodle Doggo: 35 crayon dogs to adopt; walk your dog, grow vegetables, pet your dog. No timer, no winning or losing, and nothing bad ever happens.
-> No ads, plays in your browser; search Doodle Doggo to find it.
+> No ads; search DoodleDoggo.app in your browser to play.
 > Which dog would you most like to pet? Tell us in the comments!

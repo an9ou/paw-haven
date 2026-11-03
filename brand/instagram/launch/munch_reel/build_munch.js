@@ -41,8 +41,8 @@ const TAG = KEY + (SCENE === 'yard' ? '' : '-' + SCENE);
 // ACT=cuddle (owner, 3 Nov 2026: "or we cuddle Bao instead"): no throw; the player's flat hand (the game's "down" trick-signal hand, its arrow
 // and motion ticks taken off) comes in and strokes the dog's head four times, then a quick scritch; curious, dreamy, then heart eyes with hearts
 // floating up, a wink and the same happy hop. Files: doodle-doggo-cuddle-reel-<dog>[-<scene>].mp4 and cuddle-cover-<dog>[-<scene>].jpg.
-// REDNOTE=1: the RedNote cut. The clip has no words until the end card, so only the end card changes: "免费的治愈系狗狗游戏" and "搜索 Doodle Doggo 就能玩"
-// in LXGW WenKai (no link anywhere, RedNote rule), ink-centred and checked with centre_text.js; files get -rednote, and a 3:4 cover with a Chinese
+// REDNOTE=1: the RedNote cut. The clip has no words until the end card, so only the end card changes: "免费的治愈系狗狗游戏" and "浏览器搜索 DoodleDoggo.app 就能玩"
+// in LXGW WenKai (owner, 3 Nov 2026: RedNote may name the site as something to search in the browser; still no clickable link or QR), ink-centred and checked with centre_text.js; files get -rednote, and a 3:4 cover with a Chinese
 // title is written to brand/rednote/ (RN_COVER=<name>.jpg, RN_TITLE=<words>). Re-render only the end card over a copy of the English workdir:
 // FRAMES=228-330 (marketing rule: never re-render a whole video for a change to one part).
 const RN = !!process.env.REDNOTE, ZHF = "'LXGW WenKai', Caveat";
@@ -81,16 +81,16 @@ const depthFx = (t, d) => { let g = '';
   const FONTS = `<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet"><style>html,body{margin:0;background:#fff}svg{display:block}.hide{display:none}</style>`;
   await p.setContent(`<!doctype html><meta charset="utf-8">${FONTS}<div id="s"></div><span style="font-family:Caveat">a</span>`);
   await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
-  let RNEND = null; const RN_TITLE = process.env.RN_TITLE || '今天也要摸摸狗狗';
+  let RNEND = null; const RN_TITLE = process.env.RN_TITLE || '今天也要摸摸狗狗', RN_PLAY = '浏览器搜索 DoodleDoggo.app 就能玩';
   if (RN) { // the Chinese end card words, measured and ink-centred in the page (centre_text.js), then reused as fixed SVG
     await p.addStyleTag({ url: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css' });
     await p.addScriptTag({ content: require('../centre_text.js').CENTRE_JS });
-    RNEND = await p.evaluate(async ([fam, title]) => { const txt = '免费的治愈系狗狗游戏搜索 Doodle Doggo 就能玩' + title;
+    RNEND = await p.evaluate(async ([fam, title, play]) => { const txt = '免费的治愈系狗狗游戏' + play + title;
       await Promise.all(['700 40px "LXGW WenKai"', '700 40px Caveat'].map((f) => document.fonts.load(f, txt)));
-      let size = 78; const w = (z) => { const k = inkOf('搜索 Doodle Doggo 就能玩', z, fam); return k.L + k.R; }; while (w(size) > 760) size -= 2;
+      let size = 78; const w = (z) => { const k = inkOf(play, z, fam); return k.L + k.R; }; while (w(size) > 780) size -= 2;
       return { sub: centred([{ s: '免费的治愈系狗狗游戏', size: 60, fill: '#8A7468' }], 540, 1045, fam).svg,
-        pill: pill('搜索 Doodle Doggo 就能玩', 540, 1333, size, fam, { fill: '#FFE3A1', padX: 48 }),
-        title: pill(title, 540, 1580, 72, fam, { fill: '#FFFDF7', padX: 46 }) }; }, [ZHF, RN_TITLE]);
+        pill: pill(play, 540, 1333, size, fam, { fill: '#FFE3A1', padX: 44 }),
+        title: pill(title, 540, 1580, 72, fam, { fill: '#FFFDF7', padX: 46 }) }; }, [ZHF, RN_TITLE, RN_PLAY]);
   }
   const page = (g) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
   const shot = async (svg, file, type = 'png') => { await p.evaluate((sv) => { document.getElementById('s').innerHTML = sv; }, svg); await p.evaluate(() => document.fonts.ready);

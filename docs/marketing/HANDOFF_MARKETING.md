@@ -8,7 +8,7 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
 3. Captions (IG, Shorts, X, RedNote) are in `docs/marketing/TRICK_REEL.md` and `SAFE_REEL.md`. The dancing Reel is in `FREESTYLE_REEL.md`; the RedNote profile and the hello post are in `REDNOTE.md`.
 4. Owner rules from 29–30 Oct:
    - Render the English version first; make the RedNote version only after approval.
-   - RedNote never shows the game link ("搜索 Doodle Doggo" instead).
+   - RedNote never shows a clickable game link or a QR. Since 3 Nov 2026 (owner) end cards and captions may say "在浏览器搜索 DoodleDoggo.app 就能玩"; before that it was "搜索 Doodle Doggo".
    - Instagram captions are English only; RedNote is Simplified Chinese with the game's own zh-Hans names.
    - Background text must not compete with on-screen notes.
    - Halloween Reels use the approved Halloween lo-fi beat (`brand/instagram/launch/spooky_lofi.js`).

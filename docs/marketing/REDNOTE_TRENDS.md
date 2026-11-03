@@ -47,7 +47,7 @@ A test worth running: post #1 as a picture post and #3 as a video, then compare 
 ## Rules this plan keeps
 
 - Food facts only from the game's reviewed zh-Hans text: no doses, no first aid beyond "不小心吃了？马上联系兽医。". 韭菜 (Chinese chives) isn't in the game's text (it says 韭葱 and 细香葱), so a dumpling post leaves it out unless the game text is reviewed and extended first.
-- No link on RedNote: "搜索 Doodle Doggo".
+- No clickable link or QR on RedNote; since 3 Nov 2026 (owner): "在浏览器搜索 DoodleDoggo.app 就能玩" (earlier: "搜索 Doodle Doggo").
 - Nothing bad ever happens: a useful post always ends on the safe swap, never on harm.
 - English first only applies to Reels made for every platform. RedNote-only posts are made in zh-Hans and need the owner's go-ahead before they're made.
 

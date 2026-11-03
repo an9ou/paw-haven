@@ -161,7 +161,7 @@ Doodle Doggo 好友功能来啦！🎉 11月7日上线
 
 我们的好友码在视频最后👀 评论区交换好友码吧～👇
 
-免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+免费，没有广告，在浏览器搜索 DoodleDoggo.app 就能玩
 
 #DoodleDoggo #交换好友码 #治愈系游戏 #独立游戏 #我在小红书做游戏 #狗狗 #萌宠 #柯基 #腊肠犬 #蜡笔画
 ```
@@ -170,9 +170,9 @@ Doodle Doggo 好友功能来啦！🎉 11月7日上线
 > Pick a friend name (two words, the same as on Dog Cards), share your friend code, and then your dog can: visit a friend's yard and pet their dogs (+1 Bond for both); leave a paw print, one of 12 notes; send a gift once a day (a snack, seeds or something from the garden); take a friend's dog on your walk, and they get a letter.
 > No chat, no messages. The notes are ready-made, you can only add a friend by friend code or invite link, and you can remove or block any time. Safe for kids too.
 > Our friend code is at the end of the video. Swap friend codes in the comments!
-> Free, no ads, plays in your browser; search Doodle Doggo to find it.
+> Free, no ads; search DoodleDoggo.app in your browser to play.
 
-Checked by hand (RedNote rules): no link, no QR, title 15 characters with the emoji (20 max), the game's own zh-Hans words (好友名, 好友码, 做客, 摸摸, 亲密度, 留个爪印, 小纸条, 送一份礼物, 一起散步, 删除, 屏蔽), one ask (评论区交换好友码). On 7 Nov the post goes up after 00:00 JST, when Friends is live. The "carousel" as a RedNote 图文 ("3步加好友") comes next.
+Checked by hand (RedNote rules): no clickable link and no QR (the site only as text to search in the browser, owner 3 Nov 2026), title 15 characters with the emoji (20 max), the game's own zh-Hans words (好友名, 好友码, 做客, 摸摸, 亲密度, 留个爪印, 小纸条, 送一份礼物, 一起散步, 删除, 屏蔽), one ask (评论区交换好友码). On 7 Nov the post goes up after 00:00 JST, when Friends is live. The "carousel" as a RedNote 图文 ("3步加好友") comes next.
 
 ## Fixes after the owner's first look (2 Nov 2026)
 
