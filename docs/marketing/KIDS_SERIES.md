@@ -17,16 +17,20 @@ Owner: "I want to create a series of children videos ... that allows parents to 
 
 Noodle shows each rule the right way, with a friendly dog (pick one at random, not black or white, not Noodle; the dog's grown-up is a game person, e.g. from the town families or Gerald, if the art has people; else the grown-up is only a hand on the lead and a voice). The child is "you": the player's crayon hand (the trick-signal hands, as in the cuddle Reel).
 
-| Beat | Noodle says (draft) | On screen |
-|---|---|---|
-| Hello | "Hi, friends! I'm Noodle. Today I'll show you how to say hello to a dog. Gently!" | Noodle in the yard, waving tail |
-| 1. Ask first | "Before you pet a dog, ask the grown-up: may I say hello? If they say no, that's okay. We can wave instead!" | the dog on a lead with its grown-up; a wave |
-| 2. Let the dog sniff | "Stand still and hold your hand low, like this. Let the dog come to you and sniff. Sniffing is how dogs say hello!" | the hand low and still, the dog sniffs (sniff pose) |
-| 3. Gentle pets | "Pet softly on the side or the back. Slow and gentle. Not the face, not the tail." | the hand strokes the dog's side; hearts |
-| 4. When the dog walks away | "If the dog walks away, it means: that's enough for now. Let it go. That's being a good friend." | the dog trots off happily |
-| Also | "And when a dog is sleeping or eating, we let it be." | a dog asleep in its bed; a dog at its bowl |
-| Recap | "Let's say it together: 1. ask first. 2. let it sniff. 3. gentle pets!" | three big numbered cards |
-| Bye | "Bye-bye, friends! See you next time." | Noodle in his bed or waving |
+**Script checked against the sources (3 Nov 2026).** Changes from the first draft: rule 2 no longer says "hold your hand low" (no source says it; Dogs Trust says arms by your sides and wait, HSE a hand with fingers curled in), rule 3 is the shoulder or side and "3 strokes, then stop" (Dogs Trust), not "the back". The friendly dog: **Bagel the Beagle** (not Noodle, not black or white, not the Chow Chow of the last ads). The dog's grown-up is a lead going up out of the frame and a speech bubble (the game has no people drawn big enough).
+
+| Beat | Noodle says (final) | On screen | Source |
+|---|---|---|---|
+| Hello | "Hi, friends! I'm Noodle. Today I'll show you how to say hello to a dog. Gently!" | Noodle in the yard, waving tail | |
+| 1. Ask first | "Before you pet a dog, ask the dog's grown-up: may I say hello? If they say no, that's okay. We can wave instead!" | Bagel on a lead (the lead runs up out of the frame); bubbles "May I say hello?" and "Yes!"; then a wave | Dogs Trust, Royal Kennel Club, AVMA |
+| 2. Stand still | "Stand still, with your hands down. Let the dog come to you and sniff. Sniffing is how dogs say hello! If the dog doesn't come, that's okay too." | the hand low and still; Bagel walks up and sniffs it | Dogs Trust, HSE, AVMA |
+| 3. Pet softly | "Pet softly, on the shoulder or the side. Not the face. One, two, three... then stop. Does the dog want more? It leans in. Yes, please!" | the hand strokes Bagel's shoulder three times, counted 1. 2. 3.; Bagel leans in; hearts | Dogs Trust (3 strokes), HSE (not the face) |
+| 4. Let it go | "If the dog walks away, it means: that's enough for now. Let it go. That's being a good friend." | Bagel trots off happily | Royal Kennel Club, AVMA |
+| Also | "And when a dog is sleeping or eating, we let it be." | Bagel asleep in a bed; Bagel at a bowl | Royal Kennel Club, HSE, AVMA |
+| Recap | "Let's say it together! One: ask first. Two: stand still. Three: pet softly. Four: let it go." | four big cards: "1. Ask first." "2. Stand still." "3. Pet softly." "4. Let it go." | |
+| Bye | "Bye-bye, friends! See you next time." | Noodle waving, then in his bed; the small logo | |
+
+Sources opened (3 Nov 2026): AVMA dog bite prevention https://www.avma.org/resources/pet-owners/dog-bite-prevention ; Dogs Trust "How to greet a dog" poster https://www.dogstrust.org.uk/downloads/how-greet-a-dog-poster-2025.pdf ; Royal Kennel Club Safe and Sound https://www.royalkennelclub.com/safeandsound ; HSE Ireland, teaching safety around dogs https://www.hse.ie/babies-children/child-safety/pets/teaching-safety-around-dogs/ . The Blue Dog (now https://bluedog.blogs.lincoln.ac.uk/about) teaches parents to spot risky moments rather than rule lists; the parents' description says a grown-up should always be there. AKC pages opened only say dogs need quiet time when resting or eating. "Be a tree" (later episode): Royal Kennel Club says stand still, arms folded, don't stare, don't run; so "don't look at the dog", not "look at your feet". "Hugs": HSE says hugs and kisses are a common cause of bites; say "hugs can scare some dogs".
 
 Later episodes of the same series: "Be a tree" (a dog you don't know runs up: stand still, arms folded, look at your feet), "Dogs don't like hugs" (pet the side instead), "Quiet around sleeping dogs", "Reading a dog's tail and ears", "Gentle with puppies".
 
@@ -46,6 +50,16 @@ A slow walk through the sketchbook town as day turns to night (the game's `dusk`
 | Goodnight | "Goodnight, friends. Sweet dreams." | Noodle asleep, Zzz, slow fade |
 
 Music: the game's own night music, very soft; ambience (crickets, waves) where the game has it. Voice slower and softer than pilot 1. No end-card text except the small logo.
+
+## Build kit (3 Nov 2026, the same for every episode)
+
+- **Files:** each episode is one script in `brand/kids/<episode>/build_<name>.js` (Node + Playwright, frames as SVG screenshots, like `brand/instagram/launch/munch_reel/build_munch.js`), and its voice script `vo_<name>.py` (Kokoro, like `friends_reel/vo_friends.py`). Usage: `NODE_PATH=$(npm root -g) node brand/kids/<episode>/build_<name>.js <workdir> <vo dir>`; `FORMAT=wide` (16:9, default) or `FORMAT=tall` (9:16 cut); `ONLY=stills` (key frames only); `FRAMES=a-b` (re-render only those frames over a copy of an earlier full workdir; owner's rule).
+- **Outputs** next to the script: `doodle-doggo-kids-<name>.mp4` (16:9), `-tall.mp4` (9:16), `<name>-thumb.jpg` (16:9 YouTube thumbnail 1920 x 1080), `<name>-cover-tall.jpg` (9:16 cover, all that matters inside the middle 1080 x 1440 and inside SAFE). Keep each mp4 under 50 MB (`-tune animation`, crf 22 or so).
+- **Frame:** wide 1920 x 1080 at 25 fps; tall 1080 x 1920 at 25 fps. The game's real art only (`PawArt.dog`, `.scene`, `.prop`, `.bed`, `.item`), no game UI, no Japanese. Calm: slow camera moves and 1 s cross-fades, no hard cuts, no flashing, no shake.
+- **Read-along subtitles:** **Andika Bold** (Google Fonts; a font made for children learning to read), ink `#5B3D32` on a cream pill `#FFFDF7` with a 4 px ink stroke, made with `pill()` from `brand/instagram/launch/centre_text.js` (in a `<g data-box>`) and `centreCheck()` on every frame (the build stops if anything is more than 1.5 px off). One short line at a time (at most about 30 characters), timed by each chunk's share of its line. Wide: 60 px, centred on x 960, y 975. Tall: 58 px, inside SAFE (x 60..890, y 270..1440, centre x 475) with `safeCheck()` on every frame. Titles and number cards in Caveat Bold.
+- **Voice:** Kokoro `af_bella`, slower than the Reels (pilot 1 at 0.9x, the bedtime walk at 0.85x), short warm sentences; a pause of about 0.6 s between lines.
+- **Sound:** the game's own music and ambience from `mods/pawaudio.js` `_render` (place and time segments), very soft under the voice (the music about 14 dB below the voice); fade in 2 s, fade out 3 s; no sudden sounds; whole mix `loudnorm=I=-18:TP=-2`.
+- **No selling inside an episode:** no "play", link, price or QR; the small logo only on the last card. The game link goes only in the parents' description.
 
 ## Sources to check the dog-manners rules against
 
