@@ -43,7 +43,7 @@ require('./test_lib').run('i18n_smoke', async (t) => {
     await p.click('[data-act=journal]'); ok(await p.waitForSelector('.panel.journal').then(() => true, () => false), `${lang}: journal opens`); await checkBraces(lang + ' journal'); await t.closeX(); await t.modalGone();
     await ev(() => document.getElementById('gearBtn').click());
     ok(await t.until(() => !!document.getElementById('setLang')), `${lang}: Settings has the Language row`);
-    await p.click('#setLang'); ok(await t.until(() => document.querySelectorAll('#setLangBox [data-lang]').length === M.CODES.length + 1), `${lang}: the list shows ${M.CODES.length} languages + "Use device language"`);
+    await p.click('#setLang'); ok(await t.until((n) => document.querySelectorAll('#setLangBox [data-lang]').length === n, M.CODES.length + 1), `${lang}: the list shows ${M.CODES.length} languages + "Use device language"`);
     await checkBraces(lang + ' settings'); await t.closeX(); await t.modalGone();
     await p.click('[data-act=map]'); await p.waitForSelector('[data-area=park]'); await checkBraces(lang + ' map'); await p.keyboard.press('Escape'); await t.untilMode('yard');
 
