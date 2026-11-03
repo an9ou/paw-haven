@@ -68,3 +68,4 @@ Use well-known dog bite prevention advice for children (for example the AVMA's d
 ## Status
 
 - 3 Nov 2026: plan and draft scripts written; owner picked the two pilots. Next: check the rules against the sources, find the art (people in the game, dog poses: sniff, walk, sleep, yawn, eat; the bed), make the voice, build both pilots (16:9 and 9:16), covers, YouTube titles and descriptions (for parents, "Made for kids"), then send to the owner for approval.
+- 3 Nov 2026: both pilots built in English and sent to the owner for approval: Dog manners 1 (2:15 + 60 s cut, Bagel the Beagle) and Noodle's Bedtime Walk (3:34 + 55 s cut). Titles, descriptions, upload settings and captions: `KIDS_PILOTS.md`. Next, after approval: RedNote cuts (Mandarin voice zf_073 at 1.0x, Chinese subtitles, 3:4 covers).
