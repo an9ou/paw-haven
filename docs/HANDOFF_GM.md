@@ -1,3 +1,13 @@
+# Game Manager handoff — CURRENT (3 Nov 2026, ~17:00 UTC)
+
+Previous GM: session_01D6KLY2qfApYztR64M3Vg3Z (handed over at a big context). Marketing: session_01D6KLY4SUhaKgw7gNy3UxU3 (tag team:marketing, new 3 Nov).
+1. **v2.19 release on Fri 6 Nov 14:00 UTC** (launch 15:00 UTC = 7 Nov 00:00 JST). The old GM's send_later trig_01FwHbG9zniEsP4yCQ7CjndA fires into the OLD session: make your own send_later for 2026-11-06T14:00:00Z with the prompt in docs/briefs/V219_RELEASE_PROMPT.md, check it with get_trigger, THEN delete trig_01FwHbG9zniEsP4yCQ7CjndA.
+2. **Cantonese (yue)**: translated (game + site), merged, on main behind `YUE_LIVE = false` (game/i18n/msg.js:49); the Pages test copy shows it (__ddYueTest). Waits for the owner's friend (native) on the review page https://claude.ai/artifact/H4jmY9E7bACCwDscp43CYG (DB collection `answers`) and then the owner's go-ahead: read the answers, apply fixes (map "Mochi" back to {name}), rerun i18n + PAW_LANGS=yue i18n_fit, ask the owner, then YUE_LIVE = true + release recipe (docs/i18n/coord/yue_plan.md). Never with the 5-minute default. Marketing texts say "11 languages": update at that release.
+3. **Daily rhythm** (owner, 3 Nov; docs/design/daily-rhythm.md): one mission a JST day (40 coins, a stamp each), daily bonuses once a JST day, first 5 walks a day full coins then half, game day = 1 real hour (GAME_SEC 2.5, BOOST.nap 15). NEXT JOB: build it on its own branch after the 7 Nov release; translate once in 12 languages; ships when green.
+4. **Kind shop** (docs/design/kind-shop.md, previews docs/design/shop_previews/, art world/pawart_shop.js not in the build; economy review https://claude.ai/artifact/5nkGvPomNM4QzPVC2j32pK + docs/design/economy-review.md). Waiting on the owner: items/prices/boost sizes (+20% walk coins: cap it, e.g. +30 a day), Stripe account, the web-ads network, a date. Big release rules.
+5. Owner's test copy: GitHub Pages (password screen; password known to the owner, never in the repo). Friends on there by default (__ddFrTest).
+6. Local worktrees of the old container (/home/user/paw-haven-yue, -shop) are gone in yours: everything is merged into the dev branch and pushed.
+
 # Game Manager handoff (1 Nov 2026, 19:45 UTC)
 
 Previous Game Manager: session_01D6KLY3EuQ2ya1GqT7VBhht (handed over at ~160k context under the 150k rule; archiving it was blocked by the permission classifier, so leave it if that happens again). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (tag team:marketing): brief it on v2.19 only once the owner has set the date.
