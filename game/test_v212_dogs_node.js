@@ -28,7 +28,7 @@ const good = (svg, vb, lab) => {
 };
 
 console.log('-- keys and names');
-ok(JSON.stringify(PA.DOGS.map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS lists the 35 keys, the fourteen v2.12 ones appended in order');
+ok(JSON.stringify(PA.DOGS.map((d) => d.key).slice(0, 35)) === JSON.stringify(ALL), 'PawArt.DOGS starts with the 35 keys, the fourteen v2.12 ones appended in order (v2.21 appends its five after them)');
 ok(!SRC.includes('PLACEHOLDER') || ONLY.length, 'no PLACEHOLDER rows left (every ART lane has landed)');
 const BR = { dobie: 'Doberman', corso: 'Cane Corso', pitbull: 'Pit Bull', minpin: 'Miniature Pinscher', lab: 'Labrador Retriever', malamute: 'Alaskan Malamute', chow: 'Chow Chow', stdpoodle: 'Standard Poodle', schnauzer: 'Miniature Schnauzer', westie: 'West Highland White Terrier', yorkie: 'Yorkshire Terrier', bichon: 'Bichon Frise', maltese: 'Maltese', shihtzu: 'Shih Tzu' };
 NEW.forEach((k) => { const d = PA.DOGS.find((x) => x.key === k); ok(d && d.breed === BR[k] && d.name && d.personality && d.joke, k + ': name, breed, personality and joke');

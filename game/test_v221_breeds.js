@@ -171,7 +171,8 @@ require('./test_lib').run('v221_breeds', async (t) => {
   {
     const art = rd('dogs/pawart_dogs.js'), keys = art.match(/const KEYS=\[([^\]]*)\]/)[1].replace(/['\s]/g, '').split(','), live = /const MS2_LIVE = true/.test(rd('game/src/24b_missions2.js'));
     const missing = NEW.filter((k) => !keys.includes(k) || !new RegExp('SP\\.' + k + '=\\{').test(art));
-    ok(keys.slice(0, 35).join() === G.BREEDS.slice(0, 35).join() && (keys.length === 35 || keys.join() === G.BREEDS.join()), 'PawArt KEYS: the 35, then the five in BREEDS order once the ART lanes add them');
+    const ext = keys.slice(35);// the ART lanes land one at a time: the keys after the 35 are new ones, in BREEDS order (all five once both lanes are in)
+    ok(keys.slice(0, 35).join() === G.BREEDS.slice(0, 35).join() && ext.every((k, i) => NEW.includes(k) && (!i || NEW.indexOf(k) > NEW.indexOf(ext[i - 1]))), 'PawArt KEYS: the 35, then the new ones in BREEDS order as the ART lanes add them (' + (ext.join(' ') || 'none yet') + ')');
     ok(!live || !missing.length, `MS2_LIVE is on, so every new breed needs its own art (missing: ${missing.join(' ') || 'none'})`);
     if (missing.length && !live) console.log(`  note: art pending for ${missing.join(', ')} (drawn as the mutt placeholder; MS2_LIVE is off, so it cannot ship)`);
   }
