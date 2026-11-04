@@ -60,9 +60,24 @@ const NEWS_V219 = {
     { ic: () => nwSafe(() => ICON('lock')), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
   ]
 };
+/* v2.20 "Missions v2" (V220.md, docs/design/missions-v2.md): nwSort adds this entry once the Japan date reaches its date, so the news never shows Missions v2 before the release */
+const nwMsArt = (k, ...a) => nwSafe(() => (typeof ms2Art === 'function' ? ms2Art(k, ...a) : '')); // PawArt.MISSIONS through ms2Art, '' until the art lands
+const NEWS_V220 = {
+  id: '2.20', date: '2026-11-14', // LAUNCH DATE: set at release (owner's date)
+  c: '#FFF1C9', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v220.title', 'More little things to do'),
+  items: [
+    { ic: () => nwMsArt('tab', 'today') || nwSafe(() => msHudIcon()), tx: () => tt('nw.v220.helps', "Two little helps a day beside the mission. Finish all three for a treat from Gerald's pouch") },
+    { ic: () => nwMsArt('tab', 'week') || nwSafe(() => ICON('walk')), tx: () => tt('nw.v220.board', "Gerald's help-wanted board comes every Monday. Do any {need} of its {notes} notes for a thank-you letter with {n} coins", { need: MSW_NEED, notes: MSW_NOTES, n: MSW_COINS }) },
+    { ic: () => nwMsArt('medal') || nwSafe(() => ICON('star')), tx: () => tt('nw.v220.badges', 'Badges for all the things you love to do, with stickers, titles, cups and the Crayon Medal') },
+    { ic: () => nwMsArt('tab', 'notebook') || fwCalIcon(), tx: () => tt('nw.v220.notebook', "New in town? Gerald's notebook has one page a day for your first {n} days", { n: 14 }) },
+    { ic: () => nwMsArt('chart', []) || nwSafe(() => ICON('bond')), tx: () => tt('nw.v220.grow', "Growing up moments for every dog, marked on a crayon height chart in each dog's Profile") }
+  ]
+};
+const nwV220Due = () => jstISO() >= NEWS_V220.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
@@ -113,6 +128,7 @@ function nwExpose() {
   window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
+    v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)
     drop: () => { nwSort(); if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; } };
 }
 setInterval(() => { try { nwExpose(); nwTry(); } catch (e) { console.warn('nw tick', e); } }, 500);
