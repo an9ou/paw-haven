@@ -25,6 +25,8 @@ let itchHtml = html.includes('</head>') ? html.replace('</head>', () => HIDE_DEV
 const bodyEnd = itchHtml.lastIndexOf('</body>');
 itchHtml = bodyEnd >= 0 ? itchHtml.slice(0, bodyEnd) + STRIP_DEV + itchHtml.slice(bodyEnd) : itchHtml + STRIP_DEV;
 if (/<script>window\.__ddFrTest=1|<script>window\.__ddYueTest=1|<script>window\.__ddMs2Test=1|id="ddGate"|dd_gate_v1/.test(itchHtml)) { console.error('itch: the Pages-only password screen or the Friends / Cantonese / Missions v2 test flag leaked into the itch.io copy'); process.exit(1); }
+// v2.21 (V221.md 6): with MS2_LIVE on, the five new breeds are on too, so each must have its own art (never the mutt placeholder)
+if (/const MS2_LIVE = true/.test(fs.readFileSync(path.join(root, 'game', 'src', '24b_missions2.js'), 'utf8'))) { const arts = fs.readFileSync(path.join(root, 'dogs', 'pawart_dogs.js'), 'utf8'), miss = ['dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'].filter((k) => !new RegExp('SP\\.' + k + '=\\{').test(arts)); if (miss.length) { console.error('itch: MS2_LIVE is on but these v2.21 breeds have no art yet: ' + miss.join(', ')); process.exit(1); } }
 fs.writeFileSync(path.join(out, 'index.html'), itchHtml);
 // the brand files the page links to (relative href/src), plus the icons the web manifest names
 const brand = path.join(root, 'brand'), want = new Set();

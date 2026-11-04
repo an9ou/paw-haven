@@ -125,7 +125,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
   const vf = 'game/src/16_voices_idle.js', vs = rd(vf);
   const ds = table(vf, 'const DOG_SIZE = '); ok(NEW.every((k) => ds[k] === INFO[k][4]), 'DOG_SIZE matches genes SIZE');
   full('ECHO_P', table(vf, 'const ECHO_P = ')); full('ECHO_KIND', table(vf, 'const ECHO_KIND = '));
-  ok(NEW.every((k) => vs.includes("pk === '" + k + "'")) && /\.concat\(nbOn\(\) \? V221_KEYS : \[\]\)\); playBark/.test(vs), 'idle weights know the five, npcBark has them only while on');
+  ok(NEW.every((k) => vs.includes("pk === '" + k + "'")) && /\.concat\(v221On\(\) \? V221_KEYS : \[\]\)\); playBark/.test(vs), 'idle weights know the five, npcBark has them only while on');
   const ears = table('game/src/31_winter.js', 'const WN_EARS = '); ok(NEW.every((k) => ['prick', 'flop'].includes(ears[k])), 'WN_EARS prick or flop');
   full('Mt. Fuji jpPlaceLines', table('game/src/33_japan.js', 'const jpPlaceLines = '));
   const pers = table('game/src/36_personality.js', 'const BREED_PERS = '), known = new Set(Object.keys(pers).filter((k) => !NEW.includes(k)).map((k) => pers[k].trait));
@@ -178,7 +178,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
 
   sec('4. the gate off: a new game and an old save never see the five');
   await t.newGame({}, { coins: 1000 });
-  const off = await ev(() => { const P = window.__paw, N = P.nb, days = [], wk = [], pb = []; const d0 = new Date('2026-11-04T12:00:00');
+  const off = await ev(() => { const P = window.__paw, N = P.v221, days = [], wk = [], pb = []; const d0 = new Date('2026-11-04T12:00:00');
     for (let i = 0; i < 120; i++) { const d = new Date(d0.getTime() + i * 864e5), iso = d.toISOString().slice(0, 10); P.rescuesOn(iso).forEach((r) => days.push(r.key)); P.town.boardDogs(iso).forEach((x) => pb.push(x.key)); if (i % 7 === 0) P.sr.roster(iso).forEach((x) => wk.push(x.key)); }
     return { on: N.on(), live: N.live(), dogs: N.dogs(), tabs: N.coatBreeds(), cards: N.cardBreeds(), lists: { n: P.dc.lists.nameN, live: P.dc.lists.live.length }, rescues: days, roster: wk, board: pb, keys: N.keys }; });
   ok(!off.on && off.live.length === 35 && off.dogs.length === 35 && off.tabs.length === 35 && off.cards.length === 35, `off: 35 live keys, starters, coat tabs and card breeds (${off.live.length}/${off.dogs.length}/${off.tabs.length}/${off.cards.length})`);
@@ -194,7 +194,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
   const save = await ev(() => { window.__paw.saveNow(); return localStorage.getItem('pawhaven_proto_v1'); });
   await t.ctx.close();
   const p1 = await t.mk({ storage: { pawhaven_proto_v1: save } }); await p1.goto(require('./test_lib').URL); await p1.waitForSelector('#tContinue'); await p1.click('#tContinue'); await t.calm();
-  const old = await ev(() => ({ on: window.__paw.nb.on(), dogs: window.__paw.nb.dogs(), mode: window.__paw.mode, n: window.__paw.S.dogs.length }));
+  const old = await ev(() => ({ on: window.__paw.v221.on(), dogs: window.__paw.v221.dogs(), mode: window.__paw.mode, n: window.__paw.S.dogs.length }));
   ok(old.mode === 'yard' && !old.on && old.dogs.every((k) => !NEW.includes(k)) && old.n === 1, 'an old save continues with the five off');
   await t.ctx.close();
   {
@@ -219,7 +219,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(await t.until(() => !!document.querySelector('#dogArt svg.pa-dog')), 'drawn in the yard (its own art, or the mutt placeholder until the art lands)');
     ok((await ev(() => window.__paw.coat(window.__paw.S.dog))).coatName === coat, 'starter coat ' + coat);
     await t.patch({ bond: { level: 8, pts: 2500 }, coins: 2000, house: 'Royal Castle Kennel', careDays: 60, stats: { hunger: 90, happy: 90, energy: 90, clean: 90 } });
-    const on = await ev((NEW) => { const P = window.__paw, N = P.nb, days = []; const d0 = new Date('2026-11-04T12:00:00');
+    const on = await ev((NEW) => { const P = window.__paw, N = P.v221, days = []; const d0 = new Date('2026-11-04T12:00:00');
       for (let i = 0; i < 120; i++) P.rescuesOn(new Date(d0.getTime() + i * 864e5).toISOString().slice(0, 10)).forEach((r) => days.push(r.key));
       return { on: N.on(), live: N.live().length, tabs: N.coatBreeds().length, cards: N.cardBreeds().length, nameN: P.dc.lists.nameN, newRescues: [...new Set(days.filter((k) => NEW.includes(k)))], art: N.ownArt() }; }, NEW);
     ok(on.on && on.live === 40 && on.tabs === 40 && on.cards === 40 && on.nameN === 120, `on: 40 live keys, coat tabs and card breeds, 120 card names (${JSON.stringify(on)})`);
@@ -245,7 +245,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(w.no === 'merle', 'two merle Aussies are never paired (code ' + w.no + ')');
     ok(w.yes && w.ok && w.pups.length >= 2 && w.pups.every((x) => x.key === 'aussie' && x.M !== 'MM' && COATS.aussie.includes(x.coat)), 'a merle and a plain Aussie: pups never M/M, all catalogue coats ' + JSON.stringify(w.pups));
     ok(/bernese/.test(w.giant), 'the giant rules include the Bernese (' + w.giant + ')');
-    const flip = await ev(() => { const P = window.__paw, a = P.nb.dogs().length; P.ms2.test(false); const b = P.nb.dogs().length, c = P.nb.live().length; P.ms2.test(true); return [a, b, c, P.nb.dogs().length]; });
+    const flip = await ev(() => { const P = window.__paw, a = P.v221.dogs().length; P.ms2.test(false); const b = P.v221.dogs().length, c = P.v221.live().length; P.ms2.test(true); return [a, b, c, P.v221.dogs().length]; });
     ok(flip.join() === '40,35,35,40', 'the switch flips at run time (on 40, off 35, on 40): ' + flip.join());
     await t.SH('01_v221_on_yard');
   }

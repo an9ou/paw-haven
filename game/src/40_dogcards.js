@@ -19,7 +19,7 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
   'Bean', 'Button', 'Sunny', 'Lucky', 'Bingo', 'Rufus', 'Benji', 'Archie', 'Frankie', 'Louie', 'Marley', 'Maggie', 'Poppy', 'Sasha', 'Tilly', 'Sammy', 'Bruno', 'Otis', 'Juno', 'Chip'];
 const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd',
   'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu', // v2.12: the fourteen (V212.md 2)
-  'Dalmatian', 'Berner', 'Aussie', 'Cavalier', 'Jack Russell']; // v2.21: the five (V221.md 2), used only while nbOn() (dcNameN)
+  'Dalmatian', 'Berner', 'Aussie', 'Cavalier', 'Jack Russell']; // v2.21: the five (V221.md 2), used only while v221On() (dcNameN)
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
 // v2.14 (V214.md 4.3): Dog Cards stay language-neutral. The Worker, the saves and the lists keep only indices; each viewer sees the word at an index in
 // their own language. DC_PET_NAMES are names and never change. The lists stay append only, in every language
@@ -67,7 +67,7 @@ function dcMode() {
 const dcAcct = () => dcMode() === 'on' && !CL.anon && !!CL.email; // only email accounts share a card
 const dcOptIn = () => !!S && S.dc.on && !!CL.uid && S.dc.uid === CL.uid; // switched on by this account (a save that stays on a device after a log out never shares for the next account)
 const dcBreedsAll = () => { const G = PGN(); return (G && G.BREEDS) || []; };
-const dcBreeds = () => dcBreedsAll().filter(brLive); // v2.21: the breeds a card may carry now (the five new ones only while nbOn(); they sit at the end, so no index moves)
+const dcBreeds = () => dcBreedsAll().filter(brLive); // v2.21: the breeds a card may carry now (the five new ones only while v221On(); they sit at the end, so no index moves)
 const dcNameN = () => DC_PET_NAMES.length + Math.min(DC_BREED_WORDS.length, dcBreeds().length); // the dog names a card may use now (115 while the five are off)
 const dcNameOk = (i) => Number.isInteger(i) && i >= 0 && i < dcNameN() && DC_DOG_NAMES[i] != null;
 const dcDay = () => jstISO(); // one day for the paws on both sides: the Worker counts them by the Japan day too (dcDay in worker.js)
@@ -449,10 +449,10 @@ function dcExpose() {
   };
 }
 on('game:ready', () => setTimeout(dcExpose, 0)); setTimeout(dcExpose, 0);
-/* v2.21 "Five New Friends" (V221.md 7): the gate's test hook (the switch is nbOn() in 00_core.js; ms2.test(v) flips it at run time) */
-function nbExpose() {
+/* v2.21 "Five New Friends" (V221.md 7): the gate's test hook (the switch is v221On() in 00_core.js; ms2.test(v) flips it at run time) */
+function v221Expose() {
   if (!window.__paw) return;
-  window.__paw.nb = { keys: V221_KEYS.slice(), on: () => nbOn(), live: () => liveBreedKeys().slice(), dogs: () => dogsList().map((d) => d.key), coatBreeds: () => coatBreeds(),
+  window.__paw.v221 = { keys: V221_KEYS.slice(), on: () => v221On(), live: () => liveBreedKeys().slice(), dogs: () => dogsList().map((d) => d.key), coatBreeds: () => coatBreeds(),
     cardBreeds: () => dcBreeds().slice(), ownArt: () => V221_KEYS.filter((k) => artKey(k) === k) }; // ownArt: the new keys PawArt draws itself (the rest fall back to the mutt)
 }
-on('game:ready', () => setTimeout(nbExpose, 0)); setTimeout(nbExpose, 0);
+on('game:ready', () => setTimeout(v221Expose, 0)); setTimeout(v221Expose, 0);

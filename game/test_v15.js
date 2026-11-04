@@ -82,7 +82,7 @@ require('./test_lib').run('v15', async (t) => {
   await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 60; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 60 care days, the Castle
   await t.home('yard'); ok(await t.toShelter(), 'shelter opens');
   const stK = await ev(() => [...document.querySelectorAll('.shcard.starter [data-shadopt]')].map((b) => b.dataset.shadopt.split('|')[1]));
-  const NB = await ev(() => window.PawGenes.BREEDS.length);
+  const NB = await ev(() => window.__paw.v221.live().length); // v2.21: the breeds shown now (35 while the five are off, V221.md 7)
   ok(NB === 35 && stK.length === NB - 1 && ['chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'].every((k) => stK.includes(k)), `shelter: ${NB - 1} starter cards left (${NB} breeds, Mochi home): ` + stK.join(','));
   const labs = await ev(() => [...document.querySelectorAll('.shcard.starter .shdog svg.pa-dog')].map((x) => x.getAttribute('aria-label')));
   ok(['Chihuahua', 'Pug', 'Greyhound', 'Beagle'].every((br) => labs.some((l) => l.includes(br))), 'new starter cards draw their own breed');

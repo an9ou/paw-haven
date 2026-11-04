@@ -161,6 +161,13 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] 2 of 2625 face renders still change scale by less than 1%. `dogs/pawart_dogs.js`
 - [ ] The photo face picker shows the leader's head only. `game/src/41_expressions.js`
 
+## Five New Friends (v2.21, V221.md)
+- [x] Genes, every breed table, the gate (v221On = ms2On), Dog Card words, Worker DC_LIM in source, glossaries, en.json, NEWS_V221, suite v221_breeds.
+- [ ] ART A (dalmatian, bernese, aussie) and ART B (cavalier, jrt): V221.md 5. Until then they draw as the mutt (artKey); itch.js and v221_breeds refuse MS2_LIVE without the art.
+- [ ] Numbers batch after the art: SHADES to the final SP colours, BL_HEAD, toys BREED_M, NOSE_DY / NOSE_DX, voice TRIM / NB_TRIM (V221.md 6).
+- [ ] Translations of the new keys (one batch) and tools/i18n_fonts.js for the new CJK and Thai glyphs; the site rows (V221.md 8).
+- [ ] At the launch: deploy the Worker (DC_LIM 120 / 40) with MS2_LIVE, set NEWS_V220.date (NEWS_V221 follows it).
+
 ## Fourteen New Friends (v2.12)
 - [ ] `NOSE_DX` has no rows for the seven v2.11 breeds (`akita`, `spitz`, `pom`, `afghan`, `dane`, `mastiff`, `gsd`), so their treat lure starts at the default x. `game/src/15b_trick_games.js`
 - [ ] The training lure position comes from `dogTo(0, 0, 1)`, not from each dog's size class. `game/src/15b_trick_games.js`

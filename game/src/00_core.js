@@ -250,14 +250,14 @@ const sigOf = (k) => SIG[k] || SIG_FB;
 const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu',
   'dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'];
 /* v2.21 "Five New Friends" (V221.md): five breeds appended. They launch with v2.20 "Little Helps" on the owner's date, so they are off until the same
-   switch (nbOn() = ms2On(), 24b_missions2.js: MS2_LIVE, the Pages-only window.__ddMs2Test or the dev panel's prefs.ms2Test). While off no list a player can
+   switch (v221On() = ms2On(), 24b_missions2.js: MS2_LIVE, the Pages-only window.__ddMs2Test or the dev panel's prefs.ms2Test). While off no list a player can
    see has them: adoption and the shelter starters (dogsList), rescues, the shelter roster and the playdate board (liveBreedKeys, the same draws as
    v2.20), Dog Cards (dcBreeds), the Journal's breeds and mixes (liveBreeds, brLive) and the passing town dogs. Their table rows are always there.
    Art: until the ART lanes land a breed, artKey() draws it as the neutral mutt (never ships: v221_breeds fails while MS2_LIVE is on without the art). */
 const V221_KEYS = ['dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'];
-function nbOn() { try { return typeof ms2On === 'function' && !!ms2On(); } catch (e) { return false; } } // the one switch (24b_missions2.js loads later: a call before it is off)
-const brLive = (k) => !V221_KEYS.includes(k) || nbOn(); // a breed key a player may see now
-const liveBreedKeys = () => (nbOn() ? BREED_KEYS : BREED_KEYS.filter(brLive)); // BREED_KEYS while on, the 35 older keys (the v2.20 draws) while off
+function v221On() { try { return typeof ms2On === 'function' && !!ms2On(); } catch (e) { return false; } } // the one switch (24b_missions2.js loads later: a call before it is off)
+const brLive = (k) => !V221_KEYS.includes(k) || v221On(); // a breed key a player may see now
+const liveBreedKeys = () => (v221On() ? BREED_KEYS : BREED_KEYS.filter(brLive)); // BREED_KEYS while on, the 35 older keys (the v2.20 draws) while off
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -546,7 +546,7 @@ function artChunk(name) {
 }
 let dogsMemo = null;
 function dogsList() {
-  const d0 = PA().DOGS, d = Array.isArray(d0) && d0.length ? d0 : FALLBACK_DOGS, on = nbOn(); // v2.21: the five new breeds only while nbOn()
+  const d0 = PA().DOGS, d = Array.isArray(d0) && d0.length ? d0 : FALLBACK_DOGS, on = v221On(); // v2.21: the five new breeds only while v221On()
   if (dogsMemo && dogsMemo.src === d && dogsMemo.on === on) return dogsMemo.list;
   const list = d.filter((x) => x && x.key).concat(d === FALLBACK_DOGS ? [] : FALLBACK_DOGS.filter((f) => !d.some((x) => x && x.key === f.key))).filter((x) => on || !V221_KEYS.includes(x.key));
   dogsMemo = { src: d, on, list }; return list;

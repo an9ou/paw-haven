@@ -76,7 +76,7 @@ const NEWS_V220 = {
   ]
 };
 const nwV220Due = () => MS2_LIVE && jstISO() >= NEWS_V220.date; // the launch switch first (MS2_LIVE), then the date
-/* v2.21 "Five New Friends" (V221.md 8): launches with v2.20 on the same switch and date (nbOn = ms2On), so it shows only with MS2_LIVE on, from its date */
+/* v2.21 "Five New Friends" (V221.md 8): launches with v2.20 on the same switch and date (v221On = ms2On), so it shows only with MS2_LIVE on, from its date */
 const nwHead = (k) => nwSafe(() => art('dogHead', k)); // PawArt.dogHead (the neutral mutt until the art lands, artKey)
 const NEWS_V221 = {
   id: '2.21', date: NEWS_V220.date, // LAUNCH DATE: the v2.20 date (owner's date)

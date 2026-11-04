@@ -38,7 +38,7 @@
 
   const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd',
     'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu',
-    'dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt']; // v2.12: fourteen appended (V212.md 2); v2.21: five more (V221.md 2), shown only while the game's switch is on (nbOn)
+    'dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt']; // v2.12: fourteen appended (V212.md 2); v2.21: five more (V221.md 2), shown only while the game's switch is on (v221On)
   // Breed size for the v2 litter rules (small 1-3, medium 1-3, large 2-3 puppies).
   const SIZE = { shiba: 'medium', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium',
     poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small', akita: 'large', spitz: 'medium', pom: 'small', afghan: 'large', dane: 'large', mastiff: 'large', gsd: 'large',
