@@ -791,6 +791,7 @@ function freshState(key, name, sex) {
   v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   v2182Fields(st); st.newsSeen = nwLatest(); // v2.18.2 What's new: a brand-new save skips the news (the first-day guide shows what is there)
   v219Fields(st); // v2.19 Friends (V219.md 8)
+  v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   return linkDogs(st);
 }
 let S = null;
@@ -858,6 +859,7 @@ function migrate(s) {
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
   v219Fields(s); // v2.19 Friends (V219.md section 8): additive
   rhythmFields(s); // Daily rhythm (docs/design/daily-rhythm.md): additive
+  v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   return s;
 }
 /* Daily rhythm (owner, 3 Nov 2026; docs/design/daily-rhythm.md). Additive only: S.v stays 1.

@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7 tampons, c'est une surprise",
  "missions.stamp_card": "Carte de tampons",
  "missions.stamps1_html": "<b>{n} sur {total}</b> tampons. Chaque mission finie donne un tampon. Sept tampons, c'est une surprise.{cards, select, yes { Cartes complètes jusqu'ici : {c}.} other {}}",
- "missions.swap": "Changer",
- "missions.swap_note": "Un échange gratuit par jour.",
  "missions.swap_used": "Déjà changée aujourd'hui. Une nouvelle mission arrive demain.",
  "missions.swapped": "Nouvelle mission du jour : {mission}.",
  "missions.title": "Missions du jour",

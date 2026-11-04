@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7個印仔有驚喜",
  "missions.stamp_card": "印仔咭",
  "missions.stamps1_html": "<b>{n} / {total}</b>個印仔。每完成一個任務就有一個印仔。七個印仔有驚喜。{cards, select, yes {到而家儲滿咗{c}張咭。} other {}}",
- "missions.swap": "換一個",
- "missions.swap_note": "每日可以免費換一次。",
  "missions.swap_used": "今日換咗喇。聽日有新任務。",
  "missions.swapped": "今日嘅新任務：{mission}。",
  "missions.title": "每日任務",

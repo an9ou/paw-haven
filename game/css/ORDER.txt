@@ -32,6 +32,7 @@
 25_phone_walk.css
 26_phone_skill.css
 27_missions.css
+27b_missions2.css
 28_guide.css
 29_festival.css
 30_halloween.css

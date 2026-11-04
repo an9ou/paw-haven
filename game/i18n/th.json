@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "ครบ 7 ตราประทับมีเซอร์ไพรส์",
  "missions.stamp_card": "การ์ดตราประทับ",
  "missions.stamps1_html": "ตราประทับ <b>{n} จาก {total}</b> ทำภารกิจเสร็จแต่ละครั้งได้หนึ่งตราประทับ ครบเจ็ดตราประทับมีเซอร์ไพรส์{cards, select, yes { การ์ดที่เต็มแล้ว: {c} ใบ} other {}}",
- "missions.swap": "เปลี่ยน",
- "missions.swap_note": "เปลี่ยนฟรีได้วันละครั้ง",
  "missions.swap_used": "วันนี้เปลี่ยนแล้ว พรุ่งนี้มีภารกิจใหม่",
  "missions.swapped": "ภารกิจใหม่ของวันนี้: {mission}",
  "missions.title": "ภารกิจประจำวัน",

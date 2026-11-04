@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7 sellos son una sorpresa",
  "missions.stamp_card": "Tarjeta de sellos",
  "missions.stamps1_html": "<b>{n} de {total}</b> sellos. Cada misión terminada da un sello. Siete sellos son una sorpresa.{cards, select, yes { Tarjetas completas hasta ahora: {c}.} other {}}",
- "missions.swap": "Cambiarla",
- "missions.swap_note": "Un cambio gratis al día.",
  "missions.swap_used": "Ya la cambiaste hoy. Mañana llega una misión nueva.",
  "missions.swapped": "La nueva misión de hoy: {mission}.",
  "missions.title": "Misiones del día",

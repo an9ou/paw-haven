@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7 carimbos valem uma surpresa",
  "missions.stamp_card": "Cartela de carimbos",
  "missions.stamps1_html": "<b>{n} de {total}</b> carimbos. Cada missão terminada vale um carimbo. Sete carimbos valem uma surpresa.{cards, select, yes { Cartelas completas até agora: {c}.} other {}}",
- "missions.swap": "Trocar",
- "missions.swap_note": "Uma troca grátis por dia.",
  "missions.swap_used": "Já trocada hoje. Uma missão nova chega amanhã.",
  "missions.swapped": "A nova missão de hoje: {mission}.",
  "missions.title": "Missões do dia",

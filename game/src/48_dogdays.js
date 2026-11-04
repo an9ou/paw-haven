@@ -91,6 +91,7 @@ function ddWishDone(d, w) {
   if (w.fw && S.fw && S.fw.wish && S.fw.wish.id === d.id) { S.fw.wish.done = true; withDog(d, () => addStat('happy', 10)); }
   const p = ddToday(); if (p && p.id === d.id) p.wi = w.k; // only the writer's own wish goes on its page
   markDirty(); DD.chip = ''; ddChipSync();
+  trackAct('wish', { k: w.k, a: w.a || null, id: d.id }); // v2.20 Missions v2: the wish mission, badges, the notebook
   setTimeout(() => {
     if (!S || !dogById(d.id)) return;
     const got = DD.bond.filter((b) => b.id === d.id && b.t >= t0 - 4000).reduce((a, b) => a + b.n, 0);
@@ -212,7 +213,7 @@ function ddMeterSync() { // a see-through button over the Bond meter (at least 4
 
 /* ---------------- 3. the dog diary ---------------- */
 const DD_XC = { fetch: 'l', floatfetch: 's', toy: 'y', bath: 'b', nap: 'z', paddle: 's', sprinkle: 's', agility: 'a', photo: 'h', garden: 'g', cook: 'c', paw: 'v', leafpile: 'e', parade: 'e', sweater: 'e', snowdog: 'e', snowdrift: 'e', fortune: 'e', pet: 'p', adopt: 'n', mail: 'm', gaze: 'j', ride: 'r' };
-const DD_XORDER = 'nlasyrjebzpgchvm';
+const DD_XORDER = 'nlasyrjebzpgchvmq'; // v2.20: q, Gerald's treat pouch (24b_missions2.js), drawn as a pink paw first
 const DD_XIC = { n: 'family', l: 'ball', a: 't:Agility Tunnel', s: 'water-spray', y: 't:Squeaky Duck', r: 't:Train Ticket', j: 'w-dawn', e: 'leaf', b: 'tub', z: 'zzz', p: 'pet', g: 'garden', c: 'kitchen', h: 'camera', v: 'dogpark', m: 'mail' }; // the diary doodle: the game's own icons
 function ddPageNew() { const d = D(); return { g: day(), j: jstISO(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
 const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi));
@@ -283,6 +284,7 @@ function ddXLine(c) {
     case 'c': return tt('dd.x_cook', 'Something good was cooking in the kitchen.');
     case 'h': return tt('dd.x_photo', 'We took a photo. I did my best face.');
     case 'v': return tt('dd.x_visitor', 'A visiting dog said hello.');
+    case 'q': return tt('dd.x_pouch', 'We did all our jobs today, and Gerald gave me a treat from his pouch.');
     default: return tt('dd.x_mail', 'We read the mail together.');
   }
 }
@@ -303,9 +305,10 @@ function ddPageLines(p) {
 // a small doodle from the game's own icons: up to three things from the day
 function ddDoodle(p) {
   const ics = [];
+  if (p.x.includes('q') && typeof fwPawSVG === 'function') ics.push(fwPawSVG('#F28FA5')); // v2.20: the treat pouch's paw doodle
   if (p.wi) ics.push(ICON('heart')); if (ddArr(p.w).length) ics.push(ICON('walk')); if (ddArr(p.f).length) ics.push(art('item', p.f[0]));
   if (ddArr(p.t).length) ics.push(ICON('star')); if (ddArr(p.p).length) ics.push(ICON('map'));
-  for (const c of DD_XORDER) if (p.x.includes(c) && DD_XIC[c]) ics.push(/^t:/.test(DD_XIC[c]) ? art('item', DD_XIC[c].slice(2)) : ICON(DD_XIC[c]));
+  for (const c of DD_XORDER) if (c !== 'q' && p.x.includes(c) && DD_XIC[c]) ics.push(/^t:/.test(DD_XIC[c]) ? art('item', DD_XIC[c].slice(2)) : ICON(DD_XIC[c]));
   return ics.slice(0, 3).map((s, i) => `<span class="dd-dic" style="--r:${[-8, 6, -3][i]}deg">${s}</span>`).join('') + `<svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg>`;
 }
 function ddDiaryPages() { const L = S.dd.diary.slice(), t = S.dd.today; if (t && ddPageHas(t)) L.push(Object.assign({ now: 1 }, t)); return L; }

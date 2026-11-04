@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "スタンプ7つでおたのしみ",
  "missions.stamp_card": "スタンプカード",
  "missions.stamps1_html": "スタンプ<b>{total}こ中{n}こ</b>。ミッションを1つおえるたびにスタンプが1こもらえます。スタンプ7つでおたのしみがあります。{cards, select, yes {これまでにいっぱいになったカード: {c}まい。} other {}}",
- "missions.swap": "とりかえる",
- "missions.swap_note": "1日1回、無料でとりかえられます。",
  "missions.swap_used": "きょうはもうとりかえました。あしたは新しいミッションが来ます。",
  "missions.swapped": "きょうの新しいミッション: {mission}。",
  "missions.title": "きょうのミッション",

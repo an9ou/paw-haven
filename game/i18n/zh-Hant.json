@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7個印章有驚喜",
  "missions.stamp_card": "集章卡",
  "missions.stamps1_html": "<b>{n}/{total}</b>個印章。每完成一個任務就能拿到一個印章。七個印章會有驚喜。{cards, select, yes {目前集滿的卡片：{c}張。} other {}}",
- "missions.swap": "換一個",
- "missions.swap_note": "每天可以免費換一次。",
  "missions.swap_used": "今天已經換過了。明天會有新任務。",
  "missions.swapped": "今天的新任務：{mission}。",
  "missions.title": "每日任務",

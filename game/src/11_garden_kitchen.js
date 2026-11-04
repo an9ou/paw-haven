@@ -207,11 +207,12 @@ function enterKitchen() {
       if (!r || !r.recipe) return;
       (r.used || []).forEach(consumeIngredient);
       if (S.inv.dishes.length < 8) S.inv.dishes.push({ id: r.recipe, stars: clamp(r.stars || 1, 1, 3) });
+      const isNew = r.recipe !== 'mystery-mush' && !S.recipes.known.includes(r.recipe); // v2.20: the first time this dish is cooked (cook_new)
       if (r.recipe !== 'mystery-mush') {
         if (!S.recipes.known.includes(r.recipe)) S.recipes.known.push(r.recipe);
         S.recipes.best[r.recipe] = Math.max(S.recipes.best[r.recipe] || 0, r.stars || 1);
       }
-      audioCue(r.discovered ? 'discover' : 'cooked'); trackAct('cook', { dish: r.recipe, stars: r.stars || 1 });
+      audioCue(r.discovered ? 'discover' : 'cooked'); trackAct('cook', { dish: r.recipe, stars: r.stars || 1, discovered: isNew });
       const prep = { pumpkin: 1, 'sweet-potato': 1, spinach: 1, chicken: 1 }; // (the reveal card in the kitchen module has the notes)
       (r.used || []).forEach((u) => { const id = u && (u.id || u); if (prep[id] && !S.safetySeen.includes('prep-' + id)) S.safetySeen.push('prep-' + id); }); // the reveal card shows the note
       markDirty(); saveNow();

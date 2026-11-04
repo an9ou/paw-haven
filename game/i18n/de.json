@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7 Stempel sind eine Überraschung",
  "missions.stamp_card": "Stempelkarte",
  "missions.stamps1_html": "<b>{n} von {total}</b> Stempeln. Jede geschaffte Aufgabe bringt einen Stempel. Sieben Stempel sind eine Überraschung.{cards, select, yes { Volle Karten bisher: {c}.} other {}}",
- "missions.swap": "Tauschen",
- "missions.swap_note": "Einmal am Tag gratis tauschen.",
  "missions.swap_used": "Heute schon getauscht. Morgen kommt eine neue Aufgabe.",
  "missions.swapped": "Die neue Aufgabe für heute: {mission}.",
  "missions.title": "Tagesaufgaben",

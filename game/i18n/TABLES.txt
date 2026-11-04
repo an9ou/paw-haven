@@ -82,6 +82,7 @@ WRONG label
 TG_MISS *
 CHI_ALERT *
 MS_POOL t s
+MS_HELPS t s
 GD_STEPS t tp
 GD_LESSONS 2 3
 

@@ -33,6 +33,7 @@
 22d_reset.js
 22c_phone_shell.js
 24_missions.js
+24b_missions2.js
 25_guide.js
 26_festival.js
 27_halloween.js

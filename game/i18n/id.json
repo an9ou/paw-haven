@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "7 stempel itu kejutan",
  "missions.stamp_card": "Kartu stempel",
  "missions.stamps1_html": "<b>{n} dari {total}</b> stempel. Setiap misi yang selesai memberi satu stempel. Tujuh stempel itu kejutan.{cards, select, yes { Kartu penuh sejauh ini: {c}.} other {}}",
- "missions.swap": "Tukar",
- "missions.swap_note": "Tukar gratis sekali sehari.",
  "missions.swap_used": "Sudah ditukar hari ini. Misi baru datang besok.",
  "missions.swapped": "Misi baru hari ini: {mission}.",
  "missions.title": "Misi Harian",

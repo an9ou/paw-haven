@@ -6070,8 +6070,6 @@
  "missions.seven_surprise": "스탬프 7개면 깜짝 선물",
  "missions.stamp_card": "스탬프 카드",
  "missions.stamps1_html": "스탬프 <b>{total}개 중 {n}개</b>. 미션을 하나 끝낼 때마다 스탬프를 하나 받아요. 스탬프 7개면 깜짝 선물이 있어요.{cards, select, yes { 지금까지 다 채운 카드: {c}장.} other {}}",
- "missions.swap": "바꾸기",
- "missions.swap_note": "하루에 한 번 무료로 바꿀 수 있어요.",
  "missions.swap_used": "오늘은 이미 바꿨어요. 내일 새 미션이 와요.",
  "missions.swapped": "오늘의 새 미션: {mission}.",
  "missions.title": "오늘의 미션",
