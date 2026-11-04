@@ -8160,7 +8160,7 @@
  "yard.dug_today": "きょうはほった",
  "yard.dug_up_coins_in_the_sand": "砂の中から{n, plural, other {#コイン}}ほり出しました！　海ぞく犬です。",
  "yard.energy_n": "元気{n}",
- "yard.energy_refills_html": "元気はゲーム内1時間に<b>{n}</b>ずつ回復します{main}{extras}。",
+ "yard.energy_refills_min_html": "元気は1分ごとに<b>{n}</b>ずつ回復します{main}{extras}。",
  "yard.enter_shop": "{shop}に入る",
  "yard.favourite": "大好物！",
  "yard.favourite_food": "大好物！",

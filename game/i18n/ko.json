@@ -8160,7 +8160,7 @@
  "yard.dug_today": "오늘 팠어요",
  "yard.dug_up_coins_in_the_sand": "모래에서 {n, plural, other {#코인}}을 파냈어요! 해적 강아지예요.",
  "yard.energy_n": "기운 {n}",
- "yard.energy_refills_html": "기운이 게임 시간 1시간마다 <b>{n}</b>씩 차요 {main}{extras}.",
+ "yard.energy_refills_min_html": "기운이 1분마다 <b>{n}</b>씩 차요 {main}{extras}.",
  "yard.enter_shop": "{shop} 들어가기",
  "yard.favourite": "최애!",
  "yard.favourite_food": "제일 좋아하는 음식!",

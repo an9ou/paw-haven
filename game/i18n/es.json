@@ -8160,7 +8160,7 @@
  "yard.dug_today": "Cavado hoy",
  "yard.dug_up_coins_in_the_sand": "¡Salieron {n, plural, one {# moneda} other {# monedas}} de la arena! Aventura pirata.",
  "yard.energy_n": "Energía {n}",
- "yard.energy_refills_html": "La energía se recupera a <b>{n}</b> por hora de juego {main}{extras}.",
+ "yard.energy_refills_min_html": "La energía se recupera a <b>{n}</b> por minuto {main}{extras}.",
  "yard.enter_shop": "Entrar en {shop}",
  "yard.favourite": "¡le encanta!",
  "yard.favourite_food": "¡Su comida favorita!",

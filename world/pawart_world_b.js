@@ -3459,7 +3459,7 @@ PROPS.missioncard=function(b,o){
     if(!it){b.raw(b.st(`M60 ${y+2}H160`,GRAPH,1.4,.6).replace('stroke-linecap','stroke-dasharray="4 4" stroke-linecap'));return}
     // text stays left of x 146 (the paper ends near 176); p/n sits right-aligned at the row's end, between the rules
     // v2.14 fix: it.fs 13 (the game measured the row at 13 px) keeps the small size even when the row comes out as 2 lines
-    let fs=16,lh=16,L=wrapTxt(it.text,14,9);if(it.fs===13||L.length>2){fs=13;lh=13;L=wrapTxt(it.text,18,3)}
+    let fs=16,lh=16,L=wrapTxt(it.text,14,9);if(it.fs===13||L.length>2){fs=13;lh=13;L=wrapTxt(it.text,18,o.one?6:3)}
     const y0=y+6-(L.length-1)*lh/2;
     if(it.done){done++;L.forEach((ln,k)=>b.raw(`<path d="M60 ${R1(y0-5+k*lh)}H${R1(Math.min(144,62+txLen(ln)*fs*.37))}" stroke="#FFE59A" stroke-width="${fs*.75}" stroke-linecap="round" opacity=".7"/>`));
       b.raw(`<path d="M34 ${y-1}l6 7l14 -18" fill="none" stroke="${C.leafD}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 ${y-1}l6 7l14 -18" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>`,'top')}

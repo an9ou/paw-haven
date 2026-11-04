@@ -8160,7 +8160,7 @@
  "yard.dug_today": "Sudah menggali",
  "yard.dug_up_coins_in_the_sand": "Menggali {n, plural, one {# koin} other {# koin}} di pasir! Anjing bajak laut.",
  "yard.energy_n": "Energi {n}",
- "yard.energy_refills_html": "Energi pulih <b>{n}</b> per jam game {main}{extras}.",
+ "yard.energy_refills_min_html": "Energi pulih <b>{n}</b> per menit {main}{extras}.",
  "yard.enter_shop": "Masuk {shop}",
  "yard.favourite": "favorit!",
  "yard.favourite_food": "Makanan favorit!",

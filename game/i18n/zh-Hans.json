@@ -8160,7 +8160,7 @@
  "yard.dug_today": "今天挖过了",
  "yard.dug_up_coins_in_the_sand": "在沙子里挖出了{n, plural, other {#金币}}！海盗狗狗。",
  "yard.energy_n": "体力{n}",
- "yard.energy_refills_html": "每个游戏小时恢复<b>{n}</b>点体力{main}{extras}。",
+ "yard.energy_refills_min_html": "每分钟恢复<b>{n}</b>点体力{main}{extras}。",
  "yard.enter_shop": "进入{shop}",
  "yard.favourite": "最爱！",
  "yard.favourite_food": "最爱的食物！",

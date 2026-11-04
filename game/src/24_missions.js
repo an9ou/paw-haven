@@ -60,9 +60,12 @@ const MS_POOL = [
   // Daily rhythm: small stories round town. The Fun Fair (49_funfair.js) fires act 'funfair' { game } for its games, jobs, the stall and the photo contest
   { id: 'funfair', n: 1, w: 3, t: 'Play a game at the Fun Fair', s: 'Fun Fair game', g: () => msFf(false), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !FF_GAMES[a.game].job },
   { id: 'ffjob', n: 1, w: 3, t: 'Help a neighbour with a town job', s: 'Town job', g: () => msFf(true), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job },
-  { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && ffSaturday() && topBond() >= 2 && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
+  { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && msStallDay() && topBond() >= 2 && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
   { id: 'ffphoto', n: 1, w: 3, t: 'Enter a photo in the weekly photo contest', s: 'Photo contest', g: () => typeof ffOn === 'function' && ffOn() && !!S.ff && !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc), m: (a) => a.kind === 'funfair' && a.game === 'photo' }
 ];
+// Daily rhythm: the stall mission lasts a Japan day, the stall opens on the local Saturday: only when this local Saturday lasts until the Japan day ends
+// (Japan, the Americas, a European Saturday morning), so the stall never closes under an open mission. A Dev / test override (prefs.ffSat) just opens it
+function msStallDay() { if (prefs.ffSat !== undefined && prefs.ffSat !== null) return !!prefs.ffSat; const n = new Date(Date.now()); return n.getDay() === 6 && msResetAt() <= new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); } // as ffSaturday, on the same clock as jstISO
 // a Fun Fair game (job: a town job) the player can play now: the switch, the Bond, a place that exists
 function msFf(job) { return typeof ffOn === 'function' && ffOn() && !!S.ff && FF_KEYS.some((k) => !!FF_GAMES[k].job === job && topBond() >= FF_GAMES[k].bond && ffPlaceOk(k)); }
 const msW = (d) => (d.w == null ? 1 : d.w);
@@ -100,10 +103,14 @@ function msPick(date) {
   const rnd = msSeed(date), pool = msEligible(); if (!pool.length) return [];
   const it = msItem(msPickFrom(pool, rnd), rnd); return it ? [it] : [];
 }
+let msForced = null; // the list a test hook (ms.force) set: it may hold several missions
 /* a new Japan day: a fresh mission. An unfinished one is simply replaced, nothing is said about it */
 function msRoll(force) {
   if (!S) return null; msFields(); const t = jstISO(); // Daily rhythm: 00:00 JST (was the local date)
   if (S.missions.date !== t || force) { S.missions.date = t; S.missions.list = msPick(t); markDirty(); msRefresh(); }
+  else if (S.missions.list.length > 1 && S.missions.list !== msForced) { // Daily rhythm: an older build (a cached page, a second device) may bring today's three back through the cloud save: keep one, a finished one if any was finished (its coins and stamp were given), else the one with the most progress
+    const L = S.missions.list; S.missions.list = [L.find((x) => x && x.done) || L.filter((x) => x).sort((a, b) => (b.p || 0) - (a.p || 0))[0] || L[0]]; markDirty(); msRefresh();
+  }
   return S.missions;
 }
 function msToday() { const m = msRoll(); return m ? m.list : []; }
@@ -222,7 +229,7 @@ function msLines(t, fs, w, whole) { // whole: null when a word would have to be 
 }
 // returns { text } or, when the row was measured at 13 px, { text, fs: 13 }: the art then draws it at 13 px even as 2 lines (v2.14 fix: rows
 // measured at 13 px but drawn at 16 px ran into the "1/3" counter)
-function msRowText(t) {
+function msRowText(t, max = 3) { // max: the lines a row may take (Daily rhythm: 6 on the one-mission card, which has the room of three rows)
   if (!MS_WIDE.test(t)) return { text: esc(t) };
   let L = msLines(t, 16, MS_ROW_W), fs = 16;
   if (!L) return { text: esc(t) };
@@ -230,13 +237,13 @@ function msRowText(t) {
   if (L.length > 2 || !msLines(t, 16, MS_ROW_W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
     fs = 13; L = msLines(t, 13, MS_ROW_W);
     if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
-    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = msFont(13); let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
+    if (L.length > max) { L = L.slice(0, max); msCtx.font = msFont(13); let l = L[max - 1]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[max - 1] = l + '…'; }
   }
   if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
   return r(L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' '));
 }
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it)), { done: !!it.done, p: it.p || 0, n: it.n })), o = Object.assign({ items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') }, items.length === 1 ? { one: true } : {}); // Daily rhythm: one mission, one row (o.one) and a 0/1 badge
+  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it), list.length === 1 ? 6 : 3), { done: !!it.done, p: it.p || 0, n: it.n })), o = Object.assign({ items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') }, items.length === 1 ? { one: true } : {}); // Daily rhythm: one mission, one row (o.one) and a 0/1 badge
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
@@ -364,8 +371,8 @@ function msExpose() {
   if (!window.__paw) return;
   window.__paw.ms = {
     roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), hud: () => msHudSync(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
-    pay: MS_PAY, card: MS_CARD, cardCoins: MS_CARD_COINS, swap: () => msSwap(), swapFree: () => msSwapFree(), eligible: () => msEligible().map((d) => d.id), weight: (id) => { const d = msDef(id); return d ? msW(d) : null; }, fields: () => msFields(), resetAt: () => msResetAt().toISOString(),
-    force: (ids) => { msRoll(); S.missions.list = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
+    pay: MS_PAY, card: MS_CARD, cardCoins: MS_CARD_COINS, swap: () => msSwap(), swapFree: () => msSwapFree(), eligible: () => msEligible().map((d) => d.id), weight: (id) => { const d = msDef(id); return d ? msW(d) : null; }, fields: () => msFields(), stallDay: () => msStallDay(), resetAt: () => msResetAt().toISOString(),
+    force: (ids) => { msRoll(); S.missions.list = msForced = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
     text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
 }

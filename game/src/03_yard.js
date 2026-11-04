@@ -845,7 +845,7 @@ function sleepTray() {
   const more = (t) => tt('yard.nap_extra', ', {item}', { item: t });
   const main = indoor ? (b.bonus ? tt('yard.nap_indoors_bed', '({bed}: +25% indoors, +{pct}% bed)', { bed: homeName(b.n), pct: Math.round(b.bonus * 100) }) : tt('yard.nap_indoors', '({bed}: +25% indoors)', { bed: homeName(b.n) })) : h.comfort ? tt('yard.nap_comfort', '({house}: +{pct}% comfort)', { house: homeName(h.n), pct: Math.round(h.comfort * 100) }) : tt('yard.nap_cardboard', '(Cardboard Box: no comfort bonus, lots of character)');
   const nb = napBuddy(), extras = (nb === 'Plush Bone' ? more(tt('yard.nap_plush_bone', '+10% Plush Bone')) : nb ? more(tt('yard.nap_buddy', '+10% {toy}', { toy: homeName(nb) })) : '') + shNapNote() + (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? more(tt('yard.nap_pumpkin_suit', '+10% Pumpkin Suit')) : '') + (isNight() ? more(tt('yard.nap_night', '+40% night')) : '') + (weatherNow() === 'rain' ? more(tt('yard.nap_rain', '+20% rain on the roof')) : '');
-  const info = tt('yard.energy_refills_html', 'Energy refills at <b>{n}</b> per game hour {main}{extras}.', { n: Math.round(napRate()), main, extras }) + crNapLine();
+  const info = tt('yard.energy_refills_min_html', 'Energy refills at <b>{n}</b> a minute {main}{extras}.', { n: Math.round(napRate() / GAME_SEC), main, extras }) /* Daily rhythm: per real minute (a game hour is 2.5 minutes now) */ + crNapLine();
   if (isPhone()) {
     const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap

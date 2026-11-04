@@ -8160,7 +8160,7 @@
  "yard.dug_today": "Creusé aujourd'hui",
  "yard.dug_up_coins_in_the_sand": "{n, plural, one {# pièce déterrée} other {# pièces déterrées}} dans le sable ! Chien pirate.",
  "yard.energy_n": "Énergie {n}",
- "yard.energy_refills_html": "L'énergie remonte de <b>{n}</b> par heure de jeu {main}{extras}.",
+ "yard.energy_refills_min_html": "L'énergie remonte de <b>{n}</b> par minute {main}{extras}.",
  "yard.enter_shop": "Entrer : {shop}",
  "yard.favourite": "préféré !",
  "yard.favourite_food": "Plat préféré !",

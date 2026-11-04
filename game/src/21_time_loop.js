@@ -15,7 +15,8 @@ function tick() {
   S.gameMin += dt / GAME_SEC; const h = dt / 60 / GAME_SEC; // Daily rhythm: game time runs at 1 game minute per GAME_SEC real seconds
   // the game day (the "Day N" chip, an hour of play) still tells the listeners; the daily bonuses and the mission follow the Japan day (dailyCheck)
   const gday = day(); if (gday !== lastGameDay) { const was = lastGameDay; lastGameDay = gday; if (was) emit('day:new', { day: gday }); }
-  const wasDay = S.daily.day; if (dailyCheck() && wasDay) { toast(tt('time.new_real_day', 'A new day in town! The daily bonuses and a fresh mission are ready.'), 'gold'); emit('day:new', { day: gday, real: true }); }
+  const wasDay = S.daily.day; // an old save's numeric game day (the first run after the update) starts the Japan day quietly, no toast
+  if (dailyCheck() && wasDay) { if (typeof wasDay === 'string') toast(tt('time.new_real_day', 'A new day in town! The daily bonuses and a fresh mission are ready.'), 'gold'); emit('day:new', { day: gday, real: true }); }
   checkEnv();
   addStat('hunger', -6 * h * (S.dog.key === 'corgi' ? 1.2 : 1));
   const pack = S.dogs.length > 1 ? 0.75 : 1;

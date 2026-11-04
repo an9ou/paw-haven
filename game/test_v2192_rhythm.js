@@ -108,6 +108,108 @@ require('./test_lib').run('v2192_rhythm', async (t) => {
   const nap = await ev(() => window.__paw.shop.napRate());
   ok(nap >= 300 * 0.9, `a nap: ${Math.round(nap)} Energy a game hour = ${Math.round(nap / 2.5)} a real minute (as fast as before)`);
 
+  sec('7b. walks that covered no ground are not one of the day\'s walks (runner and classic)');
+  {
+    const runEnd = async (r) => {
+      await ev(() => { const S = window.__paw.S; S.walks = 3; S.sleeping = false; S.daily.walks = 2; S.dogs.forEach((d) => { d.stats.energy = 90; }); window.__paw.go('walk', 'park'); });
+      await t.walkGate(true); const c = await ev(() => window.__paw.S.coins);
+      await ev((r) => window.__opts.onEnd(r), r);
+      await t.until(() => !!document.getElementById('resOk'), null, 8000);
+      const o = await ev(() => ({ walks: window.__paw.S.daily.walks, coins: window.__paw.S.coins }));
+      await t.p.click('#resOk'); await t.untilMode('yard'); await t.lu(); await t.until(() => document.getElementById('modal').hidden, null, 3000);
+      return Object.assign(o, { paid: o.coins - c });
+    };
+    let e = await runEnd({ coins: 0, happiness: 0, bond: 0, energy: 0, cleanliness: 0, early: true, distance: 0 });
+    ok(e.walks === 2, `runner: "Head home early" at the start (0 distance) leaves the day's walk count at 2 (${e.walks})`);
+    e = await runEnd({ coins: 30, happiness: 4, bond: 1, energy: 2, cleanliness: 0, early: true, distance: 12 });
+    ok(e.walks === 3 && e.paid === 60, `runner: an early walk that went 12 m counts (walk ${e.walks}), full pay ${e.paid}`);
+    // the classic walk (no PawWalk): heading home at once does not count, a walk half done does
+    const keep = await ev(() => { const P = window.PawWalk; window.__rhStart = P.start; P.start = undefined; return true; });
+    const classic = async (half) => {
+      await ev(() => { const S = window.__paw.S; S.walks = 3; S.sleeping = false; S.daily.walks = 2; S.dogs.forEach((d) => { d.stats.energy = 90; }); window.__paw.go('walk', 'park'); });
+      await t.until(() => window.__paw.mode === 'walk' && !!document.getElementById('walkQuit') && !!window.__paw.W, null, 8000);
+      if (half) await ev(() => { const W = window.__paw.W; W.dist = W.len * 0.5; });
+      await t.p.click('#walkQuit');
+      await t.until(() => !!document.getElementById('resOk'), null, 8000);
+      const n = await ev(() => window.__paw.S.daily.walks);
+      await t.p.click('#resOk'); await t.untilMode('yard'); await t.lu(); await t.until(() => document.getElementById('modal').hidden, null, 3000);
+      return n;
+    };
+    try {
+      ok(keep && await classic(false) === 2, 'classic: home early at the start leaves the count at 2');
+      ok(await classic(true) === 3, 'classic: a walk half done counts (walk 3)');
+    } finally { await ev(() => { window.PawWalk.start = window.__rhStart; }); }
+  }
+
+  sec('7c. care days count the Japan day (as the feed / pet / play flags)');
+  {
+    const cd = await ev(() => {
+      const P = window.__paw, S = P.S, R = Date.now, out = {};
+      try {
+        S.careDays = 2; S.careDayLast = '2026-11-09'; // an old save's local date
+        Date.now = () => Date.UTC(2026, 10, 9, 16, 0, 0); // local (UTC) 9 Nov, Japan 10 Nov
+        P.spots.markCare(); out.a = [S.careDays, S.careDayLast];
+        Date.now = () => Date.UTC(2026, 10, 10, 9, 0, 0); // local 10 Nov morning, still Japan 10 Nov
+        P.spots.markCare(); out.b = [S.careDays, S.careDayLast];
+        Date.now = () => Date.UTC(2026, 10, 10, 15, 30, 0); // Japan 11 Nov
+        P.spots.markCare(); out.c = [S.careDays, S.careDayLast];
+      } finally { Date.now = R; }
+      return out;
+    });
+    ok(cd.a.join() === '3,2026-11-10' && cd.b.join() === '3,2026-11-10' && cd.c.join() === '4,2026-11-11', 'one care day a Japan day, an old local-date key compares as a date: ' + JSON.stringify(cd));
+  }
+
+  sec('7d. an older build brings three missions back through the cloud: one stays');
+  {
+    const tr = await ev(() => {
+      const P = window.__paw, j = P.rh.jst(), it = (id, p, done) => ({ id, n: 2, p, done });
+      const one = (list) => { P.S.missions = { date: j, list, stamps: 2, cards: 0, rewards: [], stampDay: '', swap: '', rhythm: 1 }; P.ms.roll(); return P.S.missions.list.map((x) => x.id + ':' + (x.done ? 'done' : x.p)).join(); };
+      const r = [one([it('walk', 1, null), it('bath', 2, j), it('cook', 0, null)]), one([it('walk', 0, null), it('cook', 1, null), it('photo', 0, null)])];
+      P.ms.force(['bath', 'walk', 'cook']); P.ms.roll(); r.push(P.S.missions.list.length); P.ms.force(['bath']);
+      return r;
+    });
+    ok(tr[0] === 'bath:done', 'a finished one stays (its coins and stamp were given): ' + tr[0]);
+    ok(tr[1] === 'cook:1', 'none finished: the one with the most progress stays: ' + tr[1]);
+    ok(tr[2] === 3, 'a test force keeps its three: ' + tr[2]);
+  }
+
+  sec('7e. the Saturday stall mission only when the local Saturday lasts the whole Japan day');
+  {
+    const sd = await ev(() => {
+      const P = window.__paw, R = Date.now, out = {};
+      if (!P.ff || new Date().getTimezoneOffset() !== 0) return null; // the times below are UTC = the test's local clock
+      P.ff.setSat(null);
+      try {
+        const at = (ms) => { Date.now = () => ms; return P.ms.stallDay(); };
+        const sat = (h) => Date.UTC(2026, 10, 14, h, 0, 0); // Sat 14 Nov 2026 (UTC = the test's local clock)
+        out.morning = at(sat(9)); // the Japan day 14 Nov ends 15:00 UTC: inside Saturday
+        out.evening = at(sat(16)); // the Japan day 15 Nov ends Sun 15:00: past Saturday
+        out.friday = at(Date.UTC(2026, 10, 13, 20, 0, 0));
+      } finally { Date.now = R; }
+      P.ff.setSat(true); out.forced = P.ms.stallDay(); P.ff.setSat(null);
+      return out;
+    });
+    if (!sd) console.log('   (skipped: no Fun Fair or not a UTC clock)');
+    else ok(sd.morning === true && sd.evening === false && sd.friday === false && sd.forced === true, 'stall mission days: ' + JSON.stringify(sd));
+  }
+
+  sec('7f. the news order with FR_LIVE on: newest date first, a newer version first on the same date');
+  {
+    const nl = await ev(() => { const N = window.__paw.nw; const a = N.v219(); N.add({ id: '9.9.10' }); N.add({ id: '9.9.9' }); const b = N.list(); N.drop(); N.drop(); return { a: a.slice(0, 3).join(), b: b.slice(0, 4).join(), c: N.list().slice(0, 2).join(), latest: N.latest() }; });
+    ok(nl.a === '2.19.2,2.19,2.18.4', 'with Friends live: ' + nl.a);
+    ok(nl.b === '9.9.10,9.9.9,2.19.2,2.19' && nl.c === '2.19.2,2.19' && nl.latest === '2.19.2', 'same date: the newer version first; drop takes the newest: ' + JSON.stringify(nl));
+  }
+
+  sec('7g. the nap line counts a real minute; no "new day" toast on the first run after the update');
+  {
+    const nm = await ev(() => { const P = window.__paw; return Math.round(P.shop.napRate() / P.rh.GAME_SEC); });
+    ok(nm >= 100 && nm < 400, 'a nap refills about ' + nm + ' Energy a real minute');
+    await ev(() => { window.__toasts.splice(0); window.__paw.S.daily.day = 41; });
+    ok(await t.until(() => typeof window.__paw.S.daily.day === 'string', null, 4000), 'the numeric game day becomes the Japan day');
+    await t.sleep(400);
+    ok(!(await ev(() => window.__toasts.some((x) => /new day in town/i.test(x)))), 'and no "A new day in town!" toast');
+  }
+
   sec('8. an old save holding three missions for today keeps one, additively');
   const mg = await ev(() => {
     const P = window.__paw, j = P.rh.jst(), it = (id, n, p, done) => ({ id, n, p, done });

@@ -8160,7 +8160,7 @@
  "yard.dug_today": "Heute gebuddelt",
  "yard.dug_up_coins_in_the_sand": "{n, plural, one {# Taler} other {# Taler}} im Sand ausgebuddelt! Piratenhund.",
  "yard.energy_n": "Energie {n}",
- "yard.energy_refills_html": "Energie füllt sich um <b>{n}</b> pro Spielstunde auf {main}{extras}.",
+ "yard.energy_refills_min_html": "Energie füllt sich um <b>{n}</b> pro Minute auf {main}{extras}.",
  "yard.enter_shop": "{shop} betreten",
  "yard.favourite": "Liebling!",
  "yard.favourite_food": "Lieblingsfutter!",

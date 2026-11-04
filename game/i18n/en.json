@@ -8160,7 +8160,7 @@
  "yard.dug_today": "Dug today",
  "yard.dug_up_coins_in_the_sand": "Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.",
  "yard.energy_n": "Energy {n}",
- "yard.energy_refills_html": "Energy refills at <b>{n}</b> per game hour {main}{extras}.",
+ "yard.energy_refills_min_html": "Energy refills at <b>{n}</b> a minute {main}{extras}.",
  "yard.enter_shop": "Enter {shop}",
  "yard.favourite": "favourite!",
  "yard.favourite_food": "Favourite food!",

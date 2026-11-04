@@ -8160,7 +8160,7 @@
  "yard.dug_today": "วันนี้ขุดแล้ว",
  "yard.dug_up_coins_in_the_sand": "ขุดเจอ {n, plural, other {# เหรียญ}}ในทราย! น้องหมาโจรสลัด",
  "yard.energy_n": "พลังงาน {n}",
- "yard.energy_refills_html": "พลังงานฟื้น <b>{n}</b> ต่อชั่วโมงในเกม {main}{extras}",
+ "yard.energy_refills_min_html": "พลังงานฟื้น <b>{n}</b> ต่อนาที {main}{extras}",
  "yard.enter_shop": "เข้า{shop}",
  "yard.favourite": "ของโปรด!",
  "yard.favourite_food": "อาหารโปรด!",
