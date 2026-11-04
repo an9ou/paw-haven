@@ -6,18 +6,27 @@ Owner, 29 Oct 2026: a RedNote account for Chinese-speaking players, suggested by
 
 Name: `Doodle Doggo` (the game's name stays in English, as it does in the Chinese version of the game).
 
-Bio (80 characters; RedNote allows 100):
+Bio (rewritten 4 Nov 2026, owner: the last bio was banned again; guide people to search "Doodle Doggo App" in the browser). 61 characters (RedNote allows 100). No link, no domain (no ".app" with a dot, which reads as a URL), no 免费 / 无广告 / 下载 claims, no other platform's name:
 ```
-🐾 一款画在铅笔素描本里的温馨狗狗游戏
-🐶 领养歪歪扭扭的蜡笔小狗，在富士山下散步
-🎮 免费 · 没有广告 · 浏览器直接玩
-🔍 搜索 Doodle Doggo 就能玩
+🐾 画在素描本里的蜡笔狗狗
+🐶 领养歪歪扭扭的小狗，在富士山下散步
+🌐 浏览器搜 Doodle Doggo App 就能玩
 ```
 
-> A cozy dog game drawn in a pencil sketchbook.
-> Adopt a wobbly crayon puppy and walk it under Mt. Fuji.
-> Free · no ads · plays right in your browser.
-> Search "Doodle Doggo" to play.
+> A crayon dog drawn in a sketchbook.
+> Adopt a wobbly puppy and walk it under Mt. Fuji.
+> Search "Doodle Doggo App" in your browser to play.
+
+Backup, if this one is flagged too (softer: no "搜", reads as a tip, not a call to action):
+```
+🐾 画在素描本里的蜡笔狗狗
+🐶 每天摸摸小狗，在富士山下散散步
+🌐 想一起玩：浏览器里找 Doodle Doggo App
+```
+
+If both are flagged: leave the search line out of the bio and put it in the pinned post's text instead.
+
+Old bio (banned, kept for the record): 🐾 一款画在铅笔素描本里的温馨狗狗游戏 / 🐶 领养歪歪扭扭的蜡笔小狗，在富士山下散步 / 🎮 免费 · 没有广告 · 浏览器直接玩 / 🔍 搜索 Doodle Doggo 就能玩
 
 Profile picture: the Halloween Noodle icon, `brand/instagram/doodle-doggo-instagram-halloween-512.png`, works here too.
 
