@@ -202,6 +202,14 @@ Non-coin rewards reused: stickers and the sticker-page mechanism (`ddStickerDefs
 - Desktop: the same sheet, two columns (clipboard left; stamp card, pouch and board summary right); Badges in two columns.
 - Calm rules: the clipboard shows a soft crayon dot only when something is newly done or the board is ready, never a red number. Badge tiers batch into one toast ("2 new badges") through the existing toast group; titles still use `titleGive`'s toast. Toasts wait for Gerald and the parade (`msGuideBusy`). The only popups are the stamp card prize (as today), the notebook day 7 and 14 gifts, and the Crayon Medal. No push or "come back" messages. The Growing up strip lives in the dog's Profile, not the sheet.
 
+## Decided (owner, 4 Nov 2026, choice window)
+1. Daily: **1 mission + 2 little helps** (Bond, no coins; all 3 give a dog-safe treat).
+2. Weekly: **Gerald's help-wanted board, 50 coins** (any 3 of 5, Monday 00:00 JST; every 4 boards an outfit).
+3. Badges: **cosmetics only** (stickers, rosettes, titles, cups, the Crayon Medal charm).
+4. New-player notebook: **14 days**.
+5-7 (not asked; the recommendations stand): old saves get backfilled badges but no notebook; no season pass; rewards arrive automatically, no claim chores.
+Big release: built part by part on its own branch, three reviews, translated once in 12 languages; goes live only with the owner's go-ahead and a launch date (after v2.19 on 7 Nov).
+
 ## 6. Options for the owner
 
 1. **Daily: one mission plus two little helps (recommended)**, versus one only (today) or three paid missions. Why: more to do each day, the small rows are kind one-tap acts, and income moves by 1 to 5% (three paid missions add 15 to 30 a day for the same play).
