@@ -43,7 +43,7 @@ function finishWalkMod(R, r) {
   const en = Math.abs(+r.energy || 0) * (buffOn('cool') ? 0.75 : 1); addStat('energy', -en);
   let cl = Math.abs(+r.cleanliness || 0); if (rainCoat) cl = 0; else if (e.weather === 'rain') cl += 5; addStat('clean', -cl);
   const pkFol = pkWalkDone(r, e); // v2.9 PACK: each follower gets the walk's stats and Bond
-  S.walks = (S.walks || 0) + 1; dailyCare('play'); markDirty(); trackAct('walk', { area: W.area, early: !!r.early, pack: 1 + (pkFol ? pkFol.length : 0) }); // v2.20: pack, the walkers
+  S.walks = (S.walks || 0) + 1; dailyCare('play'); markDirty(); trackAct('walk', { area: W.area, early: !!r.early, pack: 1 + (pkFol ? pkFol.length : 0), walkers: [S.dog.id].concat((pkFol || []).map((d) => d.id)) }); // v2.20: pack, the walkers (walkers: their ids, growing up)
   const t = r.treasure && r.treasure.name ? tInfo(r.treasure.name) : null, dup = r.treasure && r.treasure.dup;
   let tre;
   if (t) tre = `<div class="tfind"><div class="tbig">${art('item', t.n)}</div><div><h3>${esc(jrTN(t))}</h3>${stamp(t.r)}<p class="ab"><b>${esc(jrTAb(t))}.</b> ${esc(jrTTxt(t))}</p>${dup ? `<p class="small">${esc(tt('walk.res_dup', 'You already have one. A squirrel bought this one for 40 coins.'))}</p>` : t.kind === 'quest' ? `<p class="small">${esc(tt('walk.res_map', 'Map pieces: {n}/4.{done, select, yes { The map is complete! Check your yard for an X.} other {}}', { n: S.mapPieces.length, done: S.mapPieces.length >= 4 ? 'yes' : 'no' }))}</p>` : `<p class="small">${esc(tt('toys.in_journal', 'It is in your Treasure Journal now.'))}</p>`}</div></div>`;

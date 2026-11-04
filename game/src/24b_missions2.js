@@ -32,6 +32,9 @@ function v220Fields(s, fresh) {
   if (!ms2Obj(m.wkAreas)) m.wkAreas = {};
   if (m.nb === undefined || (m.nb !== null && !ms2Obj(m.nb))) m.nb = fresh ? {} : null;
   if (m.nb) { num(m.nb, 'pages'); if (!ms2Obj(m.nb.done)) m.nb.done = {}; if (!Array.isArray(m.nb.got)) m.nb.got = []; }
+  // part E (24e_notebook.js): day the local day the last page opened, p step counts { 'page.step': n }, seen pages looked at (the dot),
+  // pop the gift popups still to show (7, 14), dec the day-14 decoration given ('' none)
+  if (m.nb) { str(m.nb, 'day'); if (!ms2Obj(m.nb.p)) m.nb.p = {}; num(m.nb, 'seen'); if (!Array.isArray(m.nb.pop)) m.nb.pop = []; str(m.nb, 'dec'); }
   if (!ms2Obj(m.grow)) m.grow = {};
   return s;
 }
@@ -220,7 +223,7 @@ document.addEventListener('click', (e) => {
 });
 // the soft crayon dot on the clipboard (never a number): a help or the pouch newly done, or a later part's news (the board ready, a new badge)
 function ms2Dot(on) { MS2.dot = !!on; msHudSync(); }
-function ms2DotOn() { if (!S || !S.missions) return false; let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); } catch (e) { /* a later part */ } return o; }
+function ms2DotOn() { if (!S || !S.missions) return false; let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); if (!o && typeof msNbDot === 'function') o = !!msNbDot(); } catch (e) { /* a later part */ } return o; }
 
 /* ---------------- tests ---------------- */
 function ms2Expose() {

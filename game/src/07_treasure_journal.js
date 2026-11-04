@@ -10,6 +10,7 @@ function jrTitleName(t) {
     case 'Great-Great-Granddog': return tt('journal.title_great_granddog', 'Great-Great-Granddog');
     case 'Glitter Legend': return tt('journal.title_glitter_legend', 'Glitter Legend');
     case 'Friend of Doodle Doggo': return tt('journal.title_friend', 'Friend of Doodle Doggo');
+    case 'Town Regular': return tt('ms2n.title_regular', 'Town Regular'); // v2.20: the notebook's day 14 (24e_notebook.js)
     default: return typeof msTitleName === 'function' ? msTitleName(t) : t; // v2.20: the badge titles (24c_badges.js)
   }
 }

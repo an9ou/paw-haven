@@ -138,11 +138,11 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(await ev(() => !window.__paw.ms.swap() && !window.__paw.ms2.swap(1) && !window.__paw.ms.swapFree()), 'the mission and the other help cannot be swapped any more today');
   await t.closeX(); await t.modalGone();
 
-  sec('B6. the tab strip: Today, Week, Badges (Notebook later), crayon pills of 44 px');
+  sec('B6. the tab strip: Today, Week, Badges, and Notebook for a new player (part E), crayon pills of 44 px');
   await ev(() => window.__paw.ms.open());
   await t.until(() => !!document.querySelector('#modal .ms-pop .ms-tabs'), null, 4000);
   const tb = await ev(() => ({ tabs: [...document.querySelectorAll('#modal .ms-tab')].map((b) => b.dataset.mstab + ':' + b.getAttribute('aria-selected')), hs: [...document.querySelectorAll('#modal .ms-tab')].map((b) => b.getBoundingClientRect().height), body: !!document.querySelector('#modal .ms-tabbody .ms-body'), title: (document.querySelector('#modal .panel h2') || {}).textContent || '', helps: document.querySelectorAll('#modal .ms2-helps li').length, pouch: !!document.querySelector('#modal .ms2-pouch'), li: document.querySelectorAll('#modal .ms-pop .ms-list li').length }));
-  ok(tb.tabs.join() === 'today:true,week:false,badges:false' && tb.hs.every((h) => h >= 44), 'three tabs, Today open, each 44 px or more: ' + tb.tabs.join() + ' ' + tb.hs.map(Math.round).join());
+  ok(tb.tabs.join() === 'today:true,week:false,badges:false,notebook:false' && tb.hs.every((h) => h >= 44), 'four tabs for a new save (the notebook), Today open, each 44 px or more: ' + tb.tabs.join() + ' ' + tb.hs.map(Math.round).join());
   ok(tb.body && tb.helps === 2 && tb.pouch && tb.li === 1, 'Today: the clipboard (one story row), two help rows, the pouch line');
   await t.p.click('.ms-tab[data-mstab="week"]');
   ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msw .msw-note').length === 5 && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), 'Week: Gerald\'s help-wanted board, five notes (part D)');
@@ -322,6 +322,179 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(await ev(() => !window.__paw.msw.dot()), 'seeing the board clears its dot');
   await t.closeX(); await t.modalGone();
 
+  sec('E1. the notebook: one page per day played (clock stub), a skipped day opens only one new page, never more than 14');
+  await calmWishes();
+  const nbReset = () => ev(() => { const S = window.__paw.S; S.missions.nb = { pages: 0, done: {}, got: [], day: '', p: {}, seen: 0, pop: [], dec: '' }; S.mail = S.mail.filter((x) => x.id !== 'nb_week'); });
+  await nbReset();
+  const e1 = await ev(() => {
+    const P = window.__paw, N = P.msn, nb = () => P.S.missions.nb, R = Date.now, at = (d) => { Date.now = () => Date.UTC(2027, 0, d, 12, 0, 0); N.tick(); return nb().pages; }, out = {};
+    try {
+      out.fresh = !!P.S.fw.fresh; out.shown0 = N.shown();
+      out.d1 = at(10); out.d1b = at(10); out.d2 = at(11); out.d5 = at(14); out.back = at(12);
+      for (let d = 15; d < 40; d++) at(d); out.max = nb().pages;
+    } finally { Date.now = R; }
+    out.tabs = P.ms2.tabs(); out.html = N.html().replace(/<[^>]+>/g, ' ');
+    return out;
+  });
+  ok(e1.fresh && e1.shown0, 'a save that started with Puppy\'s first day (S.fw.fresh) has the notebook');
+  ok(e1.d1 === 1 && e1.d1b === 1 && e1.d2 === 2, 'day 1 opens page 1, a second look the same day opens nothing, the next day page 2 (' + [e1.d1, e1.d1b, e1.d2].join() + ')');
+  ok(e1.d5 === 3 && e1.back === 3, 'two days skipped: only one new page (3), a clock turned back opens nothing');
+  ok(e1.max === 14 && e1.tabs.includes('notebook'), 'never more than 14 pages; the Notebook tab is there: ' + e1.tabs.join());
+  ok(!/\b(lost|expired?|expires|missed|too late|streak|gone|sorry|sad)\b/i.test(e1.html), 'no loss, streak or expiry words on the page');
+
+  sec('E2. steps in any order, counted only on open pages; the day 3 gift; Sit three times');
+  await nbReset();
+  const e2 = await ev(() => {
+    const P = window.__paw, N = P.msn, S = P.S, nb = S.missions.nb, out = {}, c0 = S.coins, seeds = (S.inv.seeds && S.inv.seeds.carrot) || 0;
+    window.__msf(['gaze']); P.ms2.force(['h_pet', 'h_water']); window.__toasts.splice(0);
+    nb.pages = 2; nb.day = '2099-01-01';
+    P.ms.act('walk', { area: 'river', pack: 1 }); out.early = (nb.done[3] || []).length; // page 3 is not open yet
+    nb.pages = 3;
+    P.ms.act('walk', { area: 'river', pack: 1 }); P.ms.act('garden', { what: 'water', plot: 0 }); out.two = (nb.done[3] || []).slice(); out.got2 = nb.got.includes(3);
+    P.ms.act('garden', { what: 'plant', crop: 'carrot' }); out.got3 = nb.got.includes(3); out.seeds = ((S.inv.seeds && S.inv.seeds.carrot) || 0) - seeds;
+    nb.pages = 5; P.ms.act('trick', { name: 'Sit', place: 'yard', mode: 'lure' }); P.ms.act('trick', { name: 'Sit', place: 'yard', mode: 'lure' }); out.sit2 = (nb.done[5] || []).includes(0); out.p = nb.p['5.0'];
+    out.cnt = /2 \/ 3/.test(N.page(5) && N.html().replace(/<[^>]+>/g, ' ')); P.ms.act('trick', { name: 'Paw', place: 'yard', mode: 'lure' }); P.ms.act('trick', { name: 'Sit', place: 'yard', mode: 'lure' }); out.sit3 = (nb.done[5] || []).includes(0);
+    out.dc = S.coins - c0; return out;
+  });
+  ok(e2.early === 0, 'a step on a page that is not open yet does not count');
+  ok(e2.two.length === 2 && !e2.got2 && e2.got3, 'the Riverside walk and the watering first, the planting last: page 3 done');
+  ok(e2.seeds === 3, 'day 3: 3 Carrot Seeds (' + e2.seeds + ')');
+  ok(!e2.sit2 && e2.p === 2 && e2.cnt && e2.sit3, 'Practise Sit three times: 2 / 3 on the page, done on the third Sit (another trick does not count)');
+  ok(e2.dc === 0, 'the notebook pays no coins (' + e2.dc + ')');
+  ok(await t.waitToast(/^Notebook page done: The veggie patch\. Gerald gives you 3 Carrot Seeds for the veggie patch\.$/), 'toast "Notebook page done: The veggie patch. ..."');
+
+  sec('E3. a locked step reads "Opens at Bond N"; page 1 comes from the first-day guide');
+  const e3 = await ev(() => {
+    const P = window.__paw, N = P.msn, S = P.S, keep = S.dogs.map((d) => d.bond.level), out = {}, nb = S.missions.nb, kept = JSON.stringify([nb.done, nb.got]);
+    S.dogs.forEach((d) => { d.bond.level = 1; }); const g = S.gkEarly; S.gkEarly = false; nb.done[3] = []; nb.got = nb.got.filter((n) => n !== 3);
+    try { out.river = N.lock(3, 2); out.cook = N.lock(6, 1); out.tokyo = N.lock(11, 0); out.pool = N.lock(8, 0); N.page(3); out.html = N.html().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '); }
+    finally { S.dogs.forEach((d, i) => { d.bond.level = keep[i]; }); S.gkEarly = g; const k = JSON.parse(kept); nb.done = k[0]; nb.got = k[1]; }
+    out.open = N.lock(3, 2);
+    const gd = S.guide; S.guide = { step: 5, fw: 1, done: '2026-11-01' }; N.tick(); out.p1 = S.missions.nb.got.includes(1); S.guide = gd;
+    return out;
+  });
+  ok(e3.river === 2 && e3.cook === 3 && e3.tokyo === 3 && e3.pool === 2 && e3.open === 0, 'locks from the Bond gates: Riverside Trail 2, the kitchen 3, Tokyo 3, the Splash Pool 2; open at Bond 5: ' + JSON.stringify([e3.river, e3.cook, e3.tokyo, e3.pool, e3.open]));
+  ok(/Walk the Riverside Trail Opens at Bond 2/.test(e3.html), 'the locked step reads "Opens at Bond 2": ' + e3.html.slice(0, 160));
+  ok(e3.p1, 'page 1: the five first-day steps walked with Gerald are done');
+
+  sec('E4. the day 7 and day 14 gifts, once each, with their popups');
+  await ev(() => { const P = window.__paw; P.msw.force(['w_bath', 'w_walk', 'w_photo', 'w_treasure', 'w_trick']); P.S.missions.wk.got = ''; P.S.missions.wk.lt = null; P.S.missions.nb.pages = 14; P.go('yard'); });
+  await t.calm();
+  const e4 = await ev(() => {
+    const P = window.__paw, N = P.msn, S = P.S, nb = S.missions.nb, out = {}, c0 = S.coins;
+    S.titles = S.titles || {}; delete S.titles[N.title]; S.dd.fr = S.dd.fr.filter((f) => f !== N.frame);
+    out.f7 = N.finish(7); out.frame = S.dd.fr.filter((f) => f === N.frame).length; out.letter = S.mail.filter((x) => x.id === 'nb_week').length; out.pop = nb.pop.slice();
+    N.finish(7); out.frame2 = S.dd.fr.filter((f) => f === N.frame).length; out.letter2 = S.mail.filter((x) => x.id === 'nb_week').length; out.pop2 = nb.pop.length;
+    out.l = (S.mail.find((x) => x.id === 'nb_week') || {}).text; out.dc = S.coins - c0;
+    return out;
+  });
+  ok(e4.f7 && e4.frame === 1 && e4.letter === 1 && e4.pop.join() === '7', 'day 7: the First Week frame (photo mode) and Gerald\'s letter');
+  ok(e4.frame2 === 1 && e4.letter2 === 1 && e4.pop2 === 1, 'a second time gives nothing more');
+  ok(/^Dear friend, .+\.$/.test(e4.l || '') && !/;/.test(e4.l), 'the letter: ' + e4.l);
+  ok(e4.dc === 0, 'no coins with the day 7 gift');
+  ok(await t.until(() => !!document.querySelector('#modal .nb-giftpop'), null, 5000), 'the day 7 popup comes up in the quiet yard');
+  ok(await ev(() => /^One week together!/.test(document.querySelector('#modal .panel h2').textContent.trim()) && !!document.querySelector('.nb-giftpop .nb-popic svg')), 'the popup: "One week together!" with the frame');
+  await t.p.click('#nbPopOk'); await t.modalGone();
+  const e5 = await ev(() => {
+    const P = window.__paw, N = P.msn, S = P.S, nb = S.missions.nb, wk = S.missions.wk, out = {};
+    P.msw.force(['w_bath', 'w_walk', 'w_photo', 'w_treasure', 'w_trick']); wk.got = ''; wk.lt = null;
+    P.ms.act('bath', {}); N.tick(); out.one = nb.got.includes(14);
+    P.ms.act('bath', {}); P.ms.act('treasure', { name: 'x' }); P.ms.act('treasure', { name: 'y' }); out.rows = P.msw.done();
+    out.got = nb.got.includes(14); out.title = !!S.titles[N.title]; out.dec = nb.dec; out.owned = !!(S.decor && S.decor[nb.dec]); out.pop = nb.pop.slice();
+    N.finish(14); out.pop2 = nb.pop.length; return out;
+  });
+  ok(!e5.one && e5.rows === 2 && e5.got, 'day 14: one board row is not enough, two rows of the help-wanted board finish the page');
+  ok(e5.title && e5.dec && e5.owned && e5.pop.join() === '14' && e5.pop2 === 1, 'day 14: the title Town Regular and a Bond 1-2 decoration not owned (' + e5.dec + '), once');
+  ok(await t.until(() => !!document.querySelector('#modal .nb-giftpop'), null, 5000) && await ev(() => /^Town Regular!/.test(document.querySelector('#modal .panel h2').textContent.trim())), 'the day 14 popup: "Town Regular!"');
+  await t.p.click('#nbPopOk'); await t.modalGone();
+  ok(await ev(() => window.__paw.S.missions.nb.pop.length === 0 && (window.__paw.msn.popTick(), !document.querySelector('#modal .nb-giftpop'))), 'no popup a second time');
+
+  sec('E5. the 12 Notebook stickers, then the finished notebook moves under Badges');
+  const e6 = await ev(() => {
+    const P = window.__paw, N = P.msn, S = P.S, out = {};
+    N.sync(); P.msb.sync(); const pages = P.msb.ddPages(); out.order = pages.slice(-5).join();
+    out.tabsBefore = P.ms2.tabs().includes('notebook');
+    for (let n = 1; n <= 14; n++) N.finish(n);
+    P.dd.stickers(); const defs = P.dd.defs().filter((d) => /^nb_/.test(d.id)); out.defs = defs.length; out.got = defs.filter((d) => S.dd.st[d.id]).length;
+    out.pg = [...new Set(defs.map((d) => d.pg))].map((pg) => pages[pg]).join(); out.labels = defs.map((d) => d.label).slice(0, 2).join(' | ');
+    out.shown = N.shown(); out.tabs = P.ms2.tabs(); out.fold = /nb-fold/.test(P.msb.html()); out.doneHtml = /all 14 pages done/.test(N.doneHtml());
+    return out;
+  });
+  ok(e6.order === 'nb1,nb2,msb1,msb2,msb3', 'the two Notebook pages sit just before the Badges pages: ' + e6.order);
+  ok(e6.defs === 12 && e6.got === 12 && e6.pg === 'nb1,nb2', '12 Notebook stickers on two pages, all given: ' + e6.labels);
+  ok(e6.tabsBefore && !e6.shown && !e6.tabs.includes('notebook'), 'the Notebook tab goes once every page is done: ' + e6.tabs.join());
+  ok(e6.fold && e6.doneHtml, 'the finished notebook is folded under Badges');
+  await ev(() => { const P = window.__paw; P.ms2.open('badges'); });
+  ok(await t.until(() => !!document.querySelector('#modal .ms-pop .nb-fold > summary'), null, 4000), 'Badges shows the notebook fold: ' + await ev(() => [document.getElementById('modal').hidden, (document.querySelector('#modal .panel') || {}).className, window.__paw.ms2.tab(), !!document.querySelector('#modal .msb')].join()));
+  await t.p.click('#modal .nb-fold > summary');
+  ok(await t.until(() => document.querySelector('#modal .nb-fold').open && !!document.querySelector('#modal .nb-fold .nb-page'), null, 3000), 'opening the fold shows a notebook page');
+  await t.closeX(); await t.modalGone();
+
+  sec('E6. the Notebook tab: a page, its lesson and the How to play link');
+  await nbReset();
+  await ev(() => { const P = window.__paw, nb = P.S.missions.nb; nb.pages = 2; nb.day = '2099-01-01'; nb.seen = 0; P.msn.page(2); P.ms2.open('notebook'); });
+  ok(await t.until(() => !!document.querySelector('#modal .ms-pop .nb .nb-page[data-page="2"]'), null, 4000), 'the Notebook tab opens on page 2');
+  const e7 = await ev(() => { const pan = document.querySelector('#modal .ms-pop'); return { on: pan.querySelector('.ms-tab[data-mstab="notebook"]').getAttribute('aria-selected'), title: pan.querySelector('.nb-phead h4').textContent.trim(), steps: pan.querySelectorAll('.nb-step').length, lesson: pan.querySelector('.nb-lesson').textContent.trim(), how: pan.querySelector('.nb-how').textContent.trim(), pgn: pan.querySelector('.nb-pgn').textContent.trim(), next: (pan.querySelector('.nb-next') || {}).textContent, semi: [...pan.querySelectorAll('.nb *')].some((e) => e.children.length === 0 && /;/.test(e.textContent)) }; });
+  ok(e7.on === 'true' && e7.title === 'Settling in' && e7.steps === 3 && e7.pgn === 'Page 2 of 2', 'page 2 "Settling in": three steps, "Page 2 of 2"');
+  ok(/^Gerald says Puppies sleep up to 18 hours a day\. A tired dog is a happy dog\.$/.test(e7.lesson) && !e7.semi, 'Gerald\'s two-sentence lesson: ' + e7.lesson);
+  ok(/^How to play: .+/.test(e7.how) && /Page 3 opens on the next day you play\./.test(e7.next || ''), 'the How to play link and the next page line: ' + e7.how);
+  ok(await ev(() => !window.__paw.msn.dot()), 'seeing the notebook clears its dot');
+  await t.p.click('#modal [data-nbpg="1"]');
+  ok(await t.until(() => !!document.querySelector('#modal .nb-page[data-page="1"]'), null, 3000), 'Back flips to page 1');
+  await t.p.click('#modal .nb-how');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.journal .gd-lesson.nb-hl'), null, 4000), 'the link opens How to play at its lesson');
+  await t.closeX(); await t.modalGone();
+  await nbReset();
+
+  sec('F1. growing up: the moments of the current stage, a puppy switches at 6 months, an adult skips puppy and young');
+  const iso = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const f1 = await ev((b) => {
+    const P = window.__paw, G = P.msg, S = P.S, d = S.dog, out = {}, born = d.born, c0 = S.coins;
+    window.__msf(['gaze']); P.ms2.force(['h_pet', 'h_water']); S.missions.grow = {}; if (S.dd.today) S.dd.today.gu = [];
+    const ids = () => [...new DOMParser().parseFromString(G.html(d.id), 'text/html').querySelectorAll('.msg-m')].map((e) => e.dataset.moment).join();
+    d.born = b[0]; out.s5 = G.stage(d.id); out.m5 = ids();
+    P.ms.act('bath', { ids: [d.id] }); P.ms.act('walk', { area: 'woods', pack: 1, walkers: [d.id] }); P.ms.act('paddle', { name: d.name });
+    out.done5 = Object.keys(G.done(d.id)).join(); out.date = G.done(d.id).p_bath === P.rh.jst();
+    P.ms.act('walk', { area: 'park', pack: 1, walkers: [d.id] }); out.walk = !!G.done(d.id).p_walk;
+    const pg = P.S.dd.today; out.gu = !!(pg && (pg.gu || []).some((x) => x.i === d.id && x.m === 'p_bath')); out.lines = G.lines(Object.assign({}, pg, { id: d.id })).join(' | '); out.diary = P.dd.lines(pg).join(' | ');
+    d.born = b[1]; out.s6 = G.stage(d.id); out.m6 = ids();
+    P.ms.act('paddle', { name: d.name }); P.ms.act('bath', { ids: [d.id] }); out.y = !!G.done(d.id).y_paddle;
+    d.born = b[2]; out.sa = G.stage(d.id); out.ma = ids(); S.missions.grow[d.id] = {};
+    P.ms.act('bath', { ids: [d.id] }); P.ms.act('photo', { dogs: 1, how: 'save', names: [d.name] }); P.ms.act('travel', { place: 'cafe' }); G.tick(); out.adult = Object.keys(G.done(d.id)).sort().join();
+    out.html = G.html(d.id).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    out.dc = S.coins - c0; d.born = born; return out;
+  }, [iso(5), iso(6), iso(30)]);
+  ok(f1.s5 === 'puppy' && f1.m5 === 'p_bath,p_ball,p_walk,p_tag', '5 months: the four puppy moments: ' + f1.m5);
+  ok(f1.done5 === 'p_bath' && f1.date, 'a bath marks "First bath" with the Japan date; a long walk and a paddle do not count for a puppy');
+  ok(f1.walk, 'a short walk (the Sunny Park) is the puppy\'s first walk');
+  ok(f1.gu && /^I had my very first bath today\./.test(f1.lines) && /I had my very first bath today\./.test(f1.diary), 'a line on today\'s diary page in the dog\'s voice: ' + f1.lines.split(' | ')[0]);
+  ok(f1.s6 === 'young' && f1.m6 === 'y_trick,y_trail,y_paddle,y_photo' && f1.y, '6 months: the young moments, and now a paddle counts: ' + f1.m6);
+  ok(f1.sa === 'adult' && f1.ma === 'a_agility,a_bond5,a_pack,a_cafe' && f1.adult === 'a_bond5,a_cafe', 'an adult (adopted grown up) shows only the adult moments, a bath counts nothing (puppy and young skipped): ' + f1.adult);
+  ok(/Grown dogs need a walk and play every day\. A busy dog is a calm dog\./.test(f1.html) && /2 of 4 moments/.test(f1.html) && /Marked on /.test(f1.html), 'the stage lesson, "2 of 4 moments", dated marks');
+  ok(f1.dc === 0, 'growing up pays no coins (' + f1.dc + ')');
+
+  sec('F2. a moment as the daily wish: now and then, never a done one');
+  const f2 = await ev((b) => {
+    const P = window.__paw, G = P.msg, S = P.S, d = S.dog, born = d.born, out = { n: 0, bad: 0, ks: {} };
+    d.born = b; S.missions.grow[d.id] = { p_bath: '2026-11-01' };
+    for (let i = 1; i <= 60; i++) { const day = '2027-02-' + String(1 + (i % 28)).padStart(2, '0') + (i > 28 ? 'b' + i : ''), w = G.wish(d.id, day); if (!w) continue; out.n++; out.ks[w.m] = 1; if (w.m === 'p_bath' || w.m === 'p_tag' || !/^p_/.test(w.m)) out.bad++; }
+    let day = ''; for (let i = 1; i < 200 && !day; i++) { const k = '2027-03-x' + i; if (G.wish(d.id, k)) day = k; }
+    const mk = P.dd.make(day), gw = G.wish(d.id, day); out.make = mk.gm === gw.m && mk.k === gw.k;
+    d.born = born; S.missions.grow[d.id] = {}; return out;
+  }, iso(2));
+  ok(f2.n >= 8 && f2.n <= 35, 'a growing up moment is the wish on some days, not all (' + f2.n + ' of 60)');
+  ok(f2.bad === 0 && Object.keys(f2.ks).length >= 2, 'only moments not done yet, that a wish can make come true: ' + Object.keys(f2.ks).join());
+  ok(f2.make, 'the daily wish picker takes it (gm on the wish)');
+  ok(await ev(() => { const G = window.__paw.msg, d = window.__paw.S.dog, b = d.born, txt = []; [3, 8, 40, 100].forEach((n) => { const x = new Date(); x.setDate(x.getDate() - n); d.born = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; txt.push(G.html(d.id)); }); d.born = b; return txt.every((h) => /msg-m/.test(h)) && !/litter|have puppies|playdate/i.test(txt.join(' ').replace(/<[^>]+>/g, ' ')); }), 'no puppy or litter goal in any stage');
+
+  sec('F3. the strip in Journal > Profile');
+  await ev(() => { const P = window.__paw; P.dd.journal('profile'); });
+  ok(await t.until(() => !!document.querySelector('#modal .panel.journal .msg .msg-chart svg') && document.querySelectorAll('#modal .panel.journal .msg-m').length === 4, null, 4000), 'the Growing up strip: the height chart and four moments');
+  const f3 = await ev(() => { const s = document.querySelector('#modal .msg'), small = []; s.querySelectorAll('*').forEach((e) => { if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || e.closest('svg')) return; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.className + ':' + fs); }); return { small, h: s.querySelector('h4').textContent.trim(), cols: getComputedStyle(s.querySelector('.msg-list')).gridTemplateColumns.split(' ').length }; });
+  ok(f3.h === 'Growing up' && !f3.small.length && f3.cols === 2, 'desktop: "Growing up", two columns, no text under 13 px ' + f3.small.join(' '));
+  await t.SH('grow_desktop');
+  await t.closeX(); await t.modalGone();
+
   sec('A4. an old v2.19.2 save loads and backfills, additively (no notebook)');
   const old = await ev(() => {
     const S = JSON.parse(JSON.stringify(window.__paw.S)), m = S.missions;
@@ -359,6 +532,8 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(c7.golds >= 8 && c7.medal && !c7.pend && !c7.pop, 'eight golds or more (' + c7.golds + '): the Crayon Medal comes quietly, no popup');
   const c8 = await t.ev(() => { const P = window.__paw; P.msb.check(false); return P.S.mail.filter((x) => x.id === 'msb_backfill').length; });
   ok(c8 === 1, 'a second look sends no second letter');
+  const e9 = await t.ev(() => { const P = window.__paw; P.msb.sync(); return { nb: P.S.missions.nb, shown: P.msn.shown(), tabs: P.ms2.tabs(), pages: P.msb.ddPages().filter((k) => /^nb/.test(k)).length, html: P.msn.doneHtml() }; });
+  ok(e9.nb === null && !e9.shown && !e9.tabs.includes('notebook') && e9.pages === 0 && e9.html === '', 'an old save: no notebook, no Notebook tab, no Notebook sticker pages, nothing under Badges: ' + e9.tabs.join());
 
   sec('B7. phones: 390 and 360 wide, no text under 13 px, 44 px taps, no sideways scroll');
   await t.ctx.close();
@@ -407,6 +582,30 @@ require('./test_lib').run('v220_missions', async (t) => {
     ok(!pwk.small.length && pwk.taps.every((x) => x >= 43.5), `${w}: Week: no text under 13 px, tabs 44 px ` + pwk.small.slice(0, 4).join(' '));
     ok(pwk.over <= 1 && pwk.wide <= 1 && pwk.count === '1 of 3', `${w}: Week: no sideways scroll (${pwk.over}, ${pwk.wide}), "1 of 3" at the top`);
     await t.SH('phone_week_' + w);
+    // part E: the Notebook tab at this width (a new save: page 3 open, a locked step)
+    await t.ev(() => { const P = window.__paw, nb = P.S.missions.nb; nb.pages = 3; nb.day = '2099-01-01'; P.msn.page(3); P.ms2.tab('notebook'); });
+    await t.until(() => !!document.querySelector('#modal .ms-pop .nb .nb-page[data-page="3"]'), null, 4000);
+    const pnb = await t.ev(() => {
+      const pan = document.querySelector('#modal .panel.ms-pop'), body = pan.querySelector('.panel-body') || pan, small = [];
+      pan.querySelectorAll('.nb *').forEach((e) => { if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return; const r = e.getBoundingClientRect(); if (!r.width || e.closest('svg')) return; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.className + ':' + fs); });
+      const taps = [...pan.querySelectorAll('.nb-flip .btn, .nb-how, .ms-tab')].map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); });
+      return { small, taps, over: body.scrollWidth - body.clientWidth, wide: document.documentElement.scrollWidth - innerWidth, lock: [...pan.querySelectorAll('.nb-lock')].map((e) => e.textContent.trim()).join(), tabs: pan.querySelectorAll('.ms-tab').length };
+    });
+    ok(pnb.tabs === 4 && !pnb.small.length && pnb.taps.every((x) => x >= 43.5), `${w}: Notebook: four tabs, no text under 13 px, 44 px taps ` + pnb.small.slice(0, 4).join(' ') + ' ' + pnb.taps.map(Math.round).join());
+    ok(pnb.over <= 1 && pnb.wide <= 1 && /Opens at Bond 2/.test(pnb.lock), `${w}: Notebook: no sideways scroll (${pnb.over}, ${pnb.wide}), a locked step at Bond 1: ` + pnb.lock);
+    await t.SH('phone_notebook_' + w);
+    // part F: the Growing up strip in Journal > Profile at this width
+    await t.closeX(); await t.modalGone(); await t.ev(() => window.__paw.dd.journal('profile'));
+    await t.until(() => document.querySelectorAll('#modal .panel.journal .msg-m').length === 4, null, 4000);
+    const pgr = await t.ev(() => {
+      const pan = document.querySelector('#modal .panel.journal'), body = pan.querySelector('.panel-body') || pan, s = pan.querySelector('.msg'), small = [], br = body.getBoundingClientRect(), sr = s.getBoundingClientRect();
+      s.querySelectorAll('*').forEach((e) => { if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || e.closest('svg')) return; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.className + ':' + fs); });
+      return { small, cols: getComputedStyle(s.querySelector('.msg-list')).gridTemplateColumns.split(' ').length, inside: sr.left >= br.left - 1 && sr.right <= br.right + 1, over: body.scrollWidth - body.clientWidth, wide: document.documentElement.scrollWidth - innerWidth };
+    });
+    ok(pgr.cols === 1 && pgr.inside && !pgr.small.length, `${w}: Growing up: one column inside the Journal, no text under 13 px ` + pgr.small.slice(0, 4).join(' '));
+    ok(pgr.over <= 1 && pgr.wide <= 1, `${w}: Growing up: no sideways scroll (${pgr.over}, ${pgr.wide})`);
+    await t.SH('phone_grow_' + w);
+    await t.closeX(); await t.modalGone();
     if (w === 390) { // the same five after a reload, with their progress
       const before = await t.ev(() => { window.__paw.saveNow(); return JSON.stringify(window.__paw.S.missions.wk.list); });
       await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue', { timeout: 20000 }); await t.ev(() => document.getElementById('tContinue').click()); await t.untilMode('yard');

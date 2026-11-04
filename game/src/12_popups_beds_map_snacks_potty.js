@@ -63,7 +63,7 @@ function bedLayers() {
 function useBed(n) {
   if (!S.beds.includes(n)) return; hoSync();
   if (!S.bedAt[n]) S.bedAt[n] = hoFreeSpot(n, [BED_BOX[0], BED_BOX[1]]);
-  hoGiveBed(S.activeId, n); markDirty(); SFX.pop();
+  hoGiveBed(S.activeId, n); markDirty(); SFX.pop(); trackAct('bed', { name: n, dog: S.activeId }); // v2.20: a dog moved to another bed (the notebook's day 12)
   toast(tt('popup.inspects_the_turns_around_three', '{name} inspects the {bed}, turns around three times, and approves.', { name: NAME(), bed: tdata('beds.' + tid(n) + '.n', n) }), 'good');
   if (cur.mode === 'yard' && S.place === 'house') { const keepSleep = S.sleeping; go('yard'); if (keepSleep) sleepTray(); }
 }

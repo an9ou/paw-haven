@@ -43,6 +43,8 @@ function ddWishOpts(d) {
 function ddWishMake(d, day) {
   const fw = S.fw && S.fw.wish;
   if (fw && !fw.done && fw.for === day && fw.id === d.id && DD_FW[fw.k]) return { k: DD_FW[fw.k], a: null, done: 0, fw: 1 };
+  const gw = typeof msGrowWish === 'function' ? msGrowWish(d, day) : null; // v2.20: a growing up moment as today's wish, now and then (24f_grow.js)
+  if (gw) return { k: gw.k, a: gw.a, done: 0, gm: gw.m };
   const r = seeded(hashId(day + '|' + d.id)), o = ddWishOpts(d), [k, args] = o[Math.floor(r() * o.length) % o.length];
   let a = null;
   if (args && args.length) { const fav = k === 'snack' ? args.find((n) => ddArr(d.favFood).includes(n)) : null; a = fav || args[Math.floor(r() * args.length) % args.length]; }
@@ -142,6 +144,7 @@ function ddFrameName(f) {
   if (f === 'b3') return tt('dd.fr_b3', 'Bond 3: hearts');
   if (f === 'b5') return tt('dd.fr_b5', 'Bond 5: stars');
   if (f === 'b7') return tt('dd.fr_b7', 'Bond 7: flowers');
+  if (f === 'nbw') return tt('ms2n.frame', 'First week together'); // v2.20: the notebook's day 7 (24e_notebook.js)
   return tt('dd.fr_page', 'Stickers: {page}', { page: ddPageTitle(+f.slice(1)) });
 }
 function ddGiftLabel(L) { return L === 10 ? tlist(DD_B10.map((n) => shNameAny(n))) : tt('dd.fr_label', 'a photo frame ({name})', { name: ddFrameName(DD_BT[L]) }); }
@@ -216,7 +219,7 @@ const DD_XC = { fetch: 'l', floatfetch: 's', toy: 'y', bath: 'b', nap: 'z', padd
 const DD_XORDER = 'nlasyrjebzpgchvmq'; // v2.20: q, Gerald's treat pouch (24b_missions2.js), drawn as a pink paw first
 const DD_XIC = { n: 'family', l: 'ball', a: 't:Agility Tunnel', s: 'water-spray', y: 't:Squeaky Duck', r: 't:Train Ticket', j: 'w-dawn', e: 'leaf', b: 'tub', z: 'zzz', p: 'pet', g: 'garden', c: 'kitchen', h: 'camera', v: 'dogpark', m: 'mail' }; // the diary doodle: the game's own icons
 function ddPageNew() { const d = D(); return { g: day(), j: jstISO(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
-const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi));
+const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi || ddArr(p.gu).length)); // v2.20: gu, growing up moments (24f_grow.js)
 function ddDiaryClose() {
   const t = S.dd.today; if (!t || (t.j || '') === jstISO()) return; // Daily rhythm: a page a Japan day (was a game day; a page from before has no j and closes once)
   if (ddPageHas(t)) { S.dd.diary.push(t); if (S.dd.diary.length > DD_DIARY_MAX) S.dd.diary.splice(0, S.dd.diary.length - DD_DIARY_MAX); }
@@ -291,6 +294,7 @@ function ddXLine(c) {
 const ddTrickName = (n, key) => (n === 'Signature' ? tSig(key) : tTrick(n));
 function ddPageLines(p) {
   const v = ddVoice(p.k), r = seeded(hashId('dd|' + p.g + '|' + p.id)), L = [ddOpener(v, Math.floor(r() * 2) % 2)], ev = [];
+  if (ddArr(p.gu).length && typeof msGrowLines === 'function') ev.push(...msGrowLines(p)); // v2.20: growing up moments, first (24f_grow.js)
   if (p.wi) ev.push(tt('dd.d_wish', 'My wish came true: {wish}!', { wish: ddWishText(p.wi, null) }));
   if (ddArr(p.w).length) ev.push(tt('dd.d_walk', 'Walks today: {list}. I sniffed every single thing.', { list: tlist(p.w.map(ddRouteName)) }));
   if (ddArr(p.p).length) ev.push(tt('dd.d_place', "Today's outings: {list}.", { list: tlist(p.p.map(ddPlaceName)) }));
@@ -347,6 +351,7 @@ function ddPageTitle(i) {
     case 'cal': return tt('dd.pg_cal', 'Calendar days');
     case 'fair': case 'ribbons': return ffPageTitle(DD_PAGES[i]); // v2.18 (49_funfair.js)
     case 'msb1': case 'msb2': case 'msb3': return msPageTitle(DD_PAGES[i]); // v2.20 Badges (24c_badges.js)
+    case 'nb1': case 'nb2': return nbPageTitle(DD_PAGES[i]); // v2.20 the notebook (24e_notebook.js)
     default: return tt('dd.pg_year', 'A year of paws');
   }
 }
@@ -401,6 +406,7 @@ function ddStickerDefs() {
   add('d30', 10, 'p:#F28FA5', () => tt('dd.st_paws', '{n, plural, one {# paw stamped} other {# paws stamped}}', { n: 30 }), () => c('days') >= 30);
   [2, 3, 4, 6, 9, 12].forEach((n, i) => add('m' + n, 11, 'p:' + ['#C8E9CF', '#FFE3A1', '#F9C99E', '#CBE0F4', '#E0D5F0', '#F28FA5'][i], () => tt('dd.st_months', '{n, plural, one {Paws in # month} other {Paws in # months}}', { n }), () => ddArr(S.dd.mo).length >= n));
   if (typeof ffStickerAdd === 'function') ffStickerAdd(add); // v2.18: the Fun Fair and Ribbons pages (49_funfair.js), only while ffOn()
+  if (typeof nbStickerAdd === 'function') nbStickerAdd(add); // v2.20: the two Notebook pages (24e_notebook.js), a new player's only
   if (typeof msStickerAdd === 'function') msStickerAdd(add); // v2.20: the three Badges pages (24c_badges.js), after the Fun Fair pages
   DD.defs = L; return L;
 }
@@ -476,7 +482,7 @@ function ddCalSync() {
 }
 
 /* ---------------- photo frames (35_photo.js lists them) ---------------- */
-const DD_FCOL = { b3: '#F7B2C4', b5: '#FFE08A', b7: '#BDE7D2' };
+const DD_FCOL = { b3: '#F7B2C4', b5: '#FFE08A', b7: '#BDE7D2', nbw: '#E0D5F0' }; // v2.20 nbw: the notebook's First Week frame
 function ddFrameCol(f) { return DD_FCOL[f] || ['#F7B2C4', '#FFE08A', '#BDE7D2', '#CBE0F4', '#E0D5F0', '#FCD8BC'][(+String(f).slice(1) || 0) % 6]; }
 function ddFrameList() { return S && S.dd && ddOn() ? ddArr(S.dd.fr).map((f) => ({ k: 'dd' + f, n: ddFrameName(f), c: ddFrameCol(f) })) : []; }
 function ddPostcard(w, h, o) {

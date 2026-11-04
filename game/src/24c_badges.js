@@ -129,6 +129,7 @@ function msCardSticker() { MSB.card = true; try { if (typeof ddStickers === 'fun
 function msPagesSync() {
   if (typeof DD_PAGES === 'undefined' || !S || !S.dd) return;
   try { if (typeof ffPagesSync === 'function') ffPagesSync(); } catch (e) { /* the fair is not ready */ }
+  try { if (typeof nbPagesSync === 'function') nbPagesSync(); } catch (e) { /* part E: the two Notebook pages, before the Badges pages */ }
   const want = msAllowed() && Array.isArray(S.dogs) && S.dogs.length > 0, i0 = DD_PAGES.indexOf(MSB_PAGES[0]), end = DD_PAGES.length - MSB_PAGES.length;
   const old = MSB.order || DD_PAGES.slice();
   if (!want && i0 >= 0) DD_PAGES.splice(i0, MSB_PAGES.length);
@@ -186,7 +187,8 @@ function msBadgesHTML() {
   const medal = `<p class="msb-medalline${med ? ' got' : ''}"><span class="msb-medalsm" aria-hidden="true">${msbMedalArt()}</span><span>${esc(med ? tt('ms2b.medal_got', 'The Crayon Medal is yours. Find it in the Wardrobe, under Charm.') : tt('ms2b.medal_todo', 'Gold in {n} of {total} badges. Eight golds give the Crayon Medal.', { n: g, total: MSB_GOLDS }))}</span></p>`;
   return `<div class="msb"><div class="msb-head">${msbShelfHTML()}<div class="msb-headtxt"><p class="msb-count"><b>${esc(tt('ms2b.count', '{n} of {total} badges', { n: msbCount(), total: MS_TRACKS.length * 4 }))}</b></p><p class="msb-intro">${esc(tt('ms2b.intro', 'Badges grow with everything you do. Bronze gives a sticker, silver a rosette and Bond, gold a title and a cup, crayon a crayon star. No coins, just bragging rights.'))}</p>${medal}</div></div>`
     + `<ul class="msb-list">${open.map(msbRowHTML).join('')}</ul>`
-    + (top.length ? `<details class="msb-fold"><summary>${esc(tt('ms2b.fold', 'Gold and crayon badges ({n})', { n: top.length }))}</summary><ul class="msb-list">${top.map(msbRowHTML).join('')}</ul></details>` : '') + '</div>';
+    + (top.length ? `<details class="msb-fold"><summary>${esc(tt('ms2b.fold', 'Gold and crayon badges ({n})', { n: top.length }))}</summary><ul class="msb-list">${top.map(msbRowHTML).join('')}</ul></details>` : '')
+    + (typeof msNbDoneHTML === 'function' ? msNbDoneHTML() : '') + '</div>'; // part E: the finished notebook moves here
 }
 
 /* ---------------- wiring ---------------- */
