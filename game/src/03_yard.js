@@ -956,7 +956,9 @@ const HM_DECOR = {
   'Red Wooden Sled': { prop: 'wnsled', at: [24, 506, 130, 78], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', fest: 'snow', v28: true, story: 'A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it.' },
   'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' },
   // v2.11 Tokyo Trip (V211.md section 5.3): the Asakusa souvenir stand only (tokyo + fest 'tokyo', never at Barkitecture), placed with the v2.7 placement mode. Prop by TOKYO ART E (0 0 80 100, o.indoor)
-  'Lucky Cat': { prop: 'luckycat', at: [470, 436, 64, 80], vb: [80, 100], price: 150, room: 'house', zone: 'floor', kind: 'decor', fest: 'tokyo', tokyo: true, v211: true, story: 'A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way.' }
+  'Lucky Cat': { prop: 'luckycat', at: [470, 436, 64, 80], vb: [80, 100], price: 150, room: 'house', zone: 'floor', kind: 'decor', fest: 'tokyo', tokyo: true, v211: true, story: 'A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way.' },
+  // v2.20 Missions v2 (V220.md 5): the trophy shelf, a reward (no price, never sold). It holds one cup per gold badge track (msCups(), 24c_badges.js; 'c' once crayon), drawn by PawArt.MISSIONS.shelf / PawArt.prop('trophyshelf', { cups })
+  'Trophy Shelf': { prop: 'trophyshelf', at: [676, 290, 120, 135], vb: [160, 180], room: 'house', zone: 'floor', kind: 'decor', v220: true, story: 'A wooden shelf with room for eighteen little cups. Every gold badge puts one more on it, and somebody polishes them with a tail.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
@@ -972,7 +974,7 @@ function hmPhotoHeads() {
 // v2.7: indoor takes the house's (and the playroom's) softer indoor recolour, for the house items, beds and furniture
 function propTint(svg, lit, indoor) { const P = window.PawArt; return P && typeof P.tint === 'function' ? P.tint(svg, indoor ? { time: timePhase(), lit: !!lit, indoor: true } : { time: timePhase(), lit: !!lit }) : svg; }
 function hmDecorArt(name) {
-  const D = HM_DECOR[name], glows = D.lit || D.prop === 'hwlanterns', lit = glows && isNight(), a = glows ? art('prop', D.prop, { lit }) : art('prop', D.prop); // v2.6: the lantern trio glows after dark (v2.7: and every lit decoration)
+  const D = HM_DECOR[name], glows = D.lit || D.prop === 'hwlanterns', lit = glows && isNight(), a = glows ? art('prop', D.prop, { lit }) : D.prop === 'trophyshelf' ? art('prop', D.prop, { cups: typeof msCups === 'function' ? msCups() : [] }) : art('prop', D.prop); // v2.20: the trophy shelf shows the gold badge cups // v2.6: the lantern trio glows after dark (v2.7: and every lit decoration)
   let sv = place(propTint(a, lit, (D.room || 'yard') !== 'yard'), 0, 0, D.vb[0], D.vb[1]); // v2.6.1: yard decor takes the scene's time tint (v2.7: house things the indoor one)
   if (D.prop === 'photoframe') sv += `<g data-photo-heads>${hmPhotoHeads()}</g>`;
   return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${sv}</svg>`;

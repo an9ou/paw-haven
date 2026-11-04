@@ -1110,6 +1110,16 @@ function drawRosette(h,s,L,HT){// Parade Rosette: an orange crumpled rosette on 
   const ro=scallop(0,0,10.5,9.5,9,.24).map(q=>{const r2=rot(q,14);return[k[0]+r2[0]+(r2[1]<0?r2[1]*.18:0),k[1]+r2[1]*.86]});
   h.shape(ro.map(cl),OR,{w:2.8,step:30,ox:.6,oy:-.4,sc:1,amp:.5});h.shape(circ(k[0]+.6,k[1],5,4.4,8).map(cl),'#FFD23A',{w:2.2,ox:0,oy:0,sc:1,closed:1,amp:.3});h.dot(k[0]+.6,k[1],1.8,1.8,BK);
   h.line([[k[0]-8,k[1]-2],[k[0]-4,k[1]-6],[k[0]-1,k[1]-4]].map(cl),1.6,DK,.3)}
+function drawMedalCharm(h,s,L,HT,neck){// v2.20 Missions v2: the Crayon Medal charm (outfit.charm === 'Crayon Medal'; no other charm is drawn on the dog): a gold scalloped
+  // medal with a crayon on it, hung on a short pink ribbon from the collar line (its own little ribbon round the neck when no neck item is worn)
+  const a=neckAnchor(s,HT),cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  if(!neck){const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5,INK);h.line(pts,2.8,'#F28FA5',.4)}
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c=sag(lie?.22:.4),k=[c[0]-1,Math.min(c[1]+(lie?6:10),GY-12)];
+  h.line([c,[k[0]-.5,k[1]-5]].map(cl),3.2,INK,.2);h.line([c,[k[0]-.5,k[1]-5]].map(cl),1.6,'#F28FA5',.2);
+  h.shape(scallop(k[0],k[1],8.6,8.6,10,.16).map(cl),'#FFD152',{w:2.6,step:30,ox:0,oy:0,sc:1,amp:.35});
+  h.shape(circ(k[0],k[1],4.8,4.8,8).map(cl),'#FFFBF3',{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.2});
+  h.line([[k[0]-3,k[1]+2.5],[k[0]+2.7,k[1]-2.3]].map(cl),2.4,'#E8322B',.15);h.dot(k[0]+3.1,k[1]-2.7,.9,.9,INK)}
 function drawGhost(h,s,L,B,HT){// Ghost Sheet: one white sheet over body and head, scalloped hem, ear bumps, eye holes, tail out the back
   const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.fluff?1.12:1.1,P=[],SH='#D9D2C8';
   circ(0,b.ry*.12,b.rx*f,b.ry*(f+.22),16).forEach(q=>P.push(B(q)));
@@ -2110,6 +2120,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   else if(body==='Bumblebee Suit')HAT2.Antennae(h,s,L,HT);
   else if(body==='Pyjamas'&&outfit.sleepwear)HAT2.Nightcap(h,s,L,HT);
   if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
+  if(outfit&&outfit.charm==='Crayon Medal'&&!sheet)drawMedalCharm(h,s,L,HT,neck);// v2.20: the only charm drawn on the dog
   if(s.wet)wetDrops(h,s,L,B,HT,bp,hp,k,hat==='Rain Hat'||hat==='Astronaut Helmet');
   drawFx(h,s,L,B,HT);
   if(X&&X.fx){h.acc.push('<g pointer-events="none">');exSub(h,seed*3+k*131+7,g=>X.fx(g,s,L,B,HT));h.acc.push('</g>')}// the marks round the dog never take a tap
