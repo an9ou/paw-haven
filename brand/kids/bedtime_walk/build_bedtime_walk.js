@@ -1,22 +1,33 @@
-// Kids' episode "Noodle's Bedtime Walk" (docs/marketing/KIDS_SERIES.md, Pilot 2; Build kit there): a slow wind-down walk through the
-// sketchbook town as day turns to night, told by Noodle (vo_bedtime_walk.py: Kokoro af_bella at 0.85x). The yard at dusk (the sun going
-// down: the day render cross-fades into the dusk render), a slow walk through Maple Woods (walk pose, the three-frame line boil), the ducks
-// on the Sunny Park pond, the Lighthouse Pier from dusk to night (its light comes on), five stars over the Hilltop Meadow counted one by one
-// with big Caveat numbers, the moon, home: the yard at night with warm windows, a yawn, the Cloud Bed, a sleeping Noodle, little z's, and a
-// slow fade to dark with only the small logo. Calm above all: slow camera moves, 1.5 s cross-fades, no flashing, nothing scary.
+// Kids' episode "Noodle's Bedtime Walk" (docs/marketing/KIDS_SERIES.md, Pilot 2; Build kit there): a wind-down walk through the sketchbook
+// town as day turns to night, told by Noodle. Faster since the owner's notes of 4 Nov 2026 (about 2:23 instead of 3:34): voice Kokoro
+// af_bella at 0.95x (vo_bedtime_walk.py, lines "kids"), pauses of about 0.5 s, shorter holds, quicker pans, 0.8 s cross-fades; still calm
+// (no flashing, no shake). The yard at dusk (the day render cross-fades into the dusk render), a walk through Maple Woods (walk pose, the
+// three-frame line boil), the ducks on the Sunny Park pond, the Lighthouse Pier from dusk to night (its light comes on), five stars over
+// the Hilltop Meadow counted one by one with big Caveat numbers, the moon, home: the yard at night with warm windows, a yawn, the Cloud Bed,
+// a sleeping Noodle, little z's; then the scene fades to paper (#FFF8EC) and the shared end card (../endcard.js: logo, doodledoggo.app,
+// Instagram, X, YouTube) fades in and holds about 4.6 s while the music fades out softly under it.
+// The 9:16 cut is a FAST cut for teenagers (about 29 s, Reel pace, voice 1.1x, vo lines "teen" in their own vo dir, 0.5 s cross-fades):
+// the hook "POV: your dog's bedtime walk" (Caveat, inside SAFE) from the first frame, dusk, ducks, the stars 1-5 counted fast, bed,
+// goodnight, then the tall end card (about 3 s).
 // Real art only (PawArt.scene with v2.15 ground art, PawArt.dog, PawArt.bed; the game's own star), no game UI (hotspot tags, run gates and
-// hover outlines are taken out of the scenes), no Japanese, no selling words, the logo only at the very end.
+// hover outlines are taken out of the scenes), no Japanese, no selling words, the logo only on the end card.
+//   python3 vo_bedtime_walk.py <kokoro dir> <vo dir> af_bella 0.95 kids      (wide)  /  ... <vo teen dir> af_bella 1.1 teen   (tall)
 //   NODE_PATH=$(npm root -g) node brand/kids/bedtime_walk/build_bedtime_walk.js <workdir> <vo dir>
-//   FORMAT=wide (16:9, 1920 x 1080, default, about 3.5 min) or FORMAT=tall (the 9:16 cut, 1080 x 1920, about 55 s: dusk, ducks, stars, bed).
-//   ONLY=stills: key frames only (WORK/stills), plus the thumbnail (wide) or the tall cover. FRAMES=a-b: re-render only those frames over a
-//   copy of an earlier full workdir and encode again with the same sound (marketing rule: never re-render a whole video for a fix to one part).
+//   FORMAT=wide (16:9, 1920 x 1080, default) or FORMAT=tall (9:16, 1080 x 1920, with the teen vo dir).
+//   ONLY=stills: key frames only (WORK/stills; STRIP=t1,t2,... picks the times). ONLY=frames: frames only, no cover, sound or encode.
+//   FRAMES=a-b: re-render only those frames over a copy of an earlier full workdir and encode again with the same sound (marketing rule:
+//   never re-render a whole video for a fix to one part). The end card is in the last frames: the run prints "end card frames a-b"
+//   (wide 3360-3574, tall 595-724 at 25 fps); to change the handles, set IG_HANDLE / X_HANDLE / YT_HANDLE and re-render just those.
+//   PAR=n: render the frames in n child processes (each its own browser over a slice), then mix and encode as usual.
+//   The thumbnail (wide) and the tall cover are written only when missing or with COVER=1.
 // Read-along subtitles: Andika Bold, ink on a cream pill, one short line at a time, centreCheck() on every frame (and safeCheck() in tall).
 // Sound: the game's own music and ambience (mods/pawaudio.js _render, a segment per place and time, the lullaby 'sleep' music at the bed)
-// about 14 dB under the voice, fade in 2 s, fade out 3 s, the whole mix loudnorm I=-18 TP=-2.
+// about 14 dB under the voice, fade in 2 s, a soft fade out under the end card, the whole mix loudnorm I=-18 TP=-2.
 // Output next to this file: doodle-doggo-kids-bedtime-walk[-tall].mp4, bedtime-walk-thumb.jpg (wide), bedtime-walk-cover-tall.jpg (tall).
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../instagram/launch/centre_text.js');
+const { ENDCARD_JS, handles } = require('../endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..'), OUT = __dirname;
 const WORK = path.resolve(process.argv[2] || '/tmp/bedtime_walk'), VO = path.resolve(process.argv[3] || 'vo');
 const FORMAT = process.env.FORMAT || 'wide'; if (!['wide', 'tall'].includes(FORMAT)) throw new Error('FORMAT is wide or tall');
@@ -42,83 +53,87 @@ function dropG(svg, re) { let out = '', i = 0; for (;;) { const m = re.exec(svg.
 const clean = (svg) => dropG(svg, /<g data-(?:hot|shop|area)=/).replace(/<path class="pa-wa-hl"[^>]*\/>/g, '');
 const env = (time) => ({ time, weather: 'sunny', season: 'autumn', halloween: false, jp: true, v215: true });
 
-// ---- the timeline: shots that overlap by a 1.5 s cross-fade; times inside a shot are relative to its start ----
+// ---- the timeline: shots that overlap by a cross-fade (0.8 s wide, 0.5 s tall); times inside a shot are relative to its start ----
 // cam: keyframes [t, x, y, w] of the view on the scene (its height follows the frame's shape), eased between keyframes
 // bgs: the scene's time-of-day renders, a later one fading in over the one before (op(u))
 // dogs(u): Noodle as [{ pose, expr, x, y (the feet, scene units), D (scene units per dog-canvas unit), facing, op, walk }]
-const XF = 1.5, SHOTS = [], VOAT = []; let AT = 0;
+// say() returns the end of the line, so the next one follows after a short pause (P, about 0.5 s)
+const XF = TALL ? 0.5 : 0.8, P = 0.5, SHOTS = [], VOAT = []; let AT = 0;
 const shot = (o) => { o.a = AT; o.b = AT + o.len; SHOTS.push(o); AT = o.b - XF; return o; };
-const say = (s, k, u) => { if (VOD[k] == null) throw new Error('no voice line ' + k); VOAT.push({ k, at: s.a + u }); return u + VOD[k]; };
+const say = (s, k, u) => { if (VOD[k] == null) throw new Error('no voice line ' + k); if (u + VOD[k] > s.len - XF) throw new Error('line ' + k + ' runs past shot ' + s.id); VOAT.push({ k, at: s.a + u }); return u + VOD[k]; };
 const at = (s, u) => s.a + u;
 const sit = (x, y, D, facing, expr) => ({ pose: 'sit', expr, x, y, D, facing });
 const dis = (u, u0, d, A, B) => { const q = sm(seg(u, u0, u0 + d)); return q <= 0 ? [A] : q >= 1 ? [B] : [{ ...A, op: 1 - q }, { ...B, op: q }]; }; // a pose change: a soft dissolve
 const walkX = (u, u0, u1, x0, x1) => x0 + (x1 - x0) * seg(u, u0, u1);
 const STAR = 'M198.9 110.2L200.6 114.6L205 114.9L201.7 117.9L202.9 122.4L198.9 120.1L195 122.3L195.7 118L192.7 114.9L197 114.3Z'; // the game's night-sky star
 const BED = { name: 'Cloud Bed' };
-let STARS = null, ZZZ = null, END = null, TITLE = null;
+let STARS = null, ZZZ = null, END = null, TITLE = null, e;
+// END: paper [a, b] (the scene fades to paper), card [a, b] (the end card fades in, then holds to T). The end card's frames are the last ones,
+// from round(END.paper[0] * FPS) to NF - 1: re-render only them with FRAMES=a-b (e.g. new handles) over a copy of the full workdir.
 
 if (!TALL) {
-  const s1 = shot({ id: 'yard', len: 33, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
-    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 10.5, 19.5)) }],
-    cam: [[0, 120, 135, 820], [33, 160, 148, 770]],
+  const s1 = shot({ id: 'yard', len: 23, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
+    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 7.0, 13.0)) }],
+    cam: [[0, 120, 135, 820], [23, 160, 148, 770]],
     dogs: (u) => { const A = sit(620, 498, 1, 'right'), B = { pose: 'idle', x: 620, y: 498, D: 1, facing: 'right' };
-      if (u < 27) return dis(u, 24.4, 0.7, A, B); return [{ pose: 'walk', walk: 1, x: walkX(u, 27, 34, 620, 860), y: 498, D: 1, facing: 'right' }]; } });
-  TITLE = { a: at(s1, 0.8), b: at(s1, 8.2) };
-  say(s1, 'hello', 8.6); say(s1, 'sun', 12.6); say(s1, 'walk', 19.6);
-  const s2 = shot({ id: 'woods', len: 35, mus: { place: 'woods', time: 'dusk' }, fx: 'leaves', bgs: [{ scene: 'woods', time: 'dusk' }],
-    cam: [[0, 0, 94, 900], [35, 640, 94, 900]], camLinear: true,
-    dogs: (u) => [{ pose: 'walk', walk: 1, x: 430 + 640 * u / 35, y: 478, D: 1, facing: 'right' }] });
-  say(s2, 'step', 4.2); say(s2, 'leaves', 7.8); say(s2, 'step', 20.5);
-  const s3 = shot({ id: 'pond', len: 25, mus: { place: 'park', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'park', time: 'dusk' }],
-    cam: [[0, 160, 140, 800], [25, 110, 140, 800]],
-    dogs: (u) => { const A = { pose: 'walk', walk: 1, x: walkX(u, 0, 5.4, 900, 700), y: 480, D: 1, facing: 'left' }; return dis(u, 5.4, 0.7, A, sit(700, 480, 1, 'left', u > 7 && u < 16 ? 'curious' : undefined)); } });
-  say(s3, 'ducks0', 7.8); say(s3, 'ducks', 11.6);
-  const s4 = shot({ id: 'pier', len: 28, mus: { place: 'pier', time: 'dusk' }, mus2: { u: 9, place: 'pier', time: 'night' }, fx: 'dusknight', nightAt: [4, 12],
-    bgs: [{ scene: 'pier', time: 'dusk' }, { scene: 'pier', time: 'night', op: (u) => sm(seg(u, 4, 12)) }],
-    cam: [[0, 0, 20, 960], [28, 70, 20, 960]],
-    dogs: (u) => [sit(600, 432, 1, 'left', u > 5 && u < 13 ? 'wow' : undefined)] });
-  say(s4, 'light', 4.6); say(s4, 'sea', 15.6);
-  const s5 = shot({ id: 'hill', len: 42, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
-    cam: [[0, 100, 0, 1000], [23, 100, 0, 1000], [31, 600, 0, 1000], [42, 600, 0, 1000]],
-    dogs: (u) => { const A = { pose: 'down', expr: u > 5.5 && u < 22 ? 'wow' : u > 33 ? 'sleepy' : undefined, x: 800, y: 455, D: 1, facing: 'right' };
-      return dis(u, 37.2, 0.7, A, { pose: 'idle', expr: 'sleepy', x: 800, y: 455, D: 1, facing: 'right' }); } });
-  say(s5, 'count', 3.4);
-  STARS = { s: s5, u0: 6.0, gap: 3.0, numsOut: [20.5, 22.0], size: 4.4,
+      if (u < 17.6) return dis(u, 16.2, 0.7, A, B); return [{ pose: 'walk', walk: 1, x: walkX(u, 17.6, 24, 620, 840), y: 498, D: 1, facing: 'right' }]; } });
+  TITLE = { a: at(s1, 0.6), b: at(s1, 5.0), lines: [{ s: "Noodle's Bedtime Walk", size: 100, maxW: 1300 }], cx: 960, cy: 150 };
+  e = say(s1, 'hello', 4.6); e = say(s1, 'sun', e + P); say(s1, 'walk', 13.4);
+  const s2 = shot({ id: 'woods', len: 26, mus: { place: 'woods', time: 'dusk' }, fx: 'leaves', bgs: [{ scene: 'woods', time: 'dusk' }],
+    cam: [[0, 0, 94, 900], [26, 600, 94, 900]], camLinear: true,
+    dogs: (u) => [{ pose: 'walk', walk: 1, x: 430 + 600 * u / 26, y: 478, D: 1, facing: 'right' }] });
+  e = say(s2, 'step', 2.4); say(s2, 'leaves', e + P); say(s2, 'step', 13.5);
+  const s3 = shot({ id: 'pond', len: 18, mus: { place: 'park', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'park', time: 'dusk' }],
+    cam: [[0, 160, 140, 800], [18, 110, 140, 800]],
+    dogs: (u) => { const A = { pose: 'walk', walk: 1, x: walkX(u, 0, 4.0, 900, 700), y: 480, D: 1, facing: 'left' }; return dis(u, 4.0, 0.7, A, sit(700, 480, 1, 'left', u > 5 && u < 11.5 ? 'curious' : undefined)); } });
+  e = say(s3, 'ducks0', 5.2); say(s3, 'ducks', e + P);
+  const s4 = shot({ id: 'pier', len: 19, mus: { place: 'pier', time: 'dusk' }, mus2: { u: 6, place: 'pier', time: 'night' }, fx: 'dusknight', nightAt: [2.5, 9],
+    bgs: [{ scene: 'pier', time: 'dusk' }, { scene: 'pier', time: 'night', op: (u) => sm(seg(u, 2.5, 9)) }],
+    cam: [[0, 0, 20, 960], [19, 70, 20, 960]],
+    dogs: (u) => [sit(600, 432, 1, 'left', u > 3 && u < 9.5 ? 'wow' : undefined)] });
+  say(s4, 'light', 3.0); say(s4, 'sea', 10.6);
+  const s5 = shot({ id: 'hill', len: 30, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
+    cam: [[0, 100, 0, 1000], [16, 100, 0, 1000], [22, 600, 0, 1000], [30, 600, 0, 1000]],
+    dogs: (u) => { const A = { pose: 'down', expr: u > 4 && u < 15.5 ? 'wow' : u > 24 ? 'sleepy' : undefined, x: 800, y: 455, D: 1, facing: 'right' };
+      return dis(u, 26.2, 0.7, A, { pose: 'idle', expr: 'sleepy', x: 800, y: 455, D: 1, facing: 'right' }); } });
+  say(s5, 'count', 2.0);
+  STARS = { s: s5, u0: 3.8, gap: 2.2, numsOut: [14.8, 16.0], size: 4.4,
     at: [[255, 62], [405, 168], [600, 58], [800, 150], [960, 40]] }; // scene units (kept clear of the two kites and the moon)
   STARS.at.forEach((_, i) => say(s5, 'n' + (i + 1), STARS.u0 + i * STARS.gap + 0.3));
-  say(s5, 'moon', 30.2); say(s5, 'home0', 33.4);
-  const s6 = shot({ id: 'home', len: 58, mus: { place: 'yard', time: 'night' }, mus2: { u: 13.5, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
+  e = say(s5, 'moon', 22.2); say(s5, 'home0', e + P);
+  const s6 = shot({ id: 'home', len: 31, mus: { place: 'yard', time: 'night' }, mus2: { u: 9, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
     bed: { x: 700, y: 520, B: 0.9 },
-    cam: [[0, 150, 150, 800], [15, 150, 150, 800], [50, 420, 250, 560]],
+    cam: [[0, 150, 150, 800], [9, 150, 150, 800], [26, 420, 250, 560]],
     dogs: (u) => { const st = { pose: 'idle', x: 360, y: 520, D: 1, facing: 'right' }, sl = { ...st, expr: 'sleepy' }, yw = { pose: 'yawn', x: 360, y: 520, D: 1, facing: 'right' };
-      if (u < 6.2) return dis(u, 5.6, 0.6, { pose: 'walk', walk: 1, x: walkX(u, 0, 5.6, 170, 360), y: 520, D: 1, facing: 'right' }, st);
-      if (u < 8.4) return dis(u, 7.0, 0.6, st, sl);
-      if (u < 12.8) return dis(u, 8.4, 0.6, sl, yw);
-      return dis(u, 12.8, 1.2, yw, { pose: 'sleep', inBed: 1, facing: 'right' }); } });
-  say(s6, 'back', 6.2); say(s6, 'yawn', 9.0); say(s6, 'bed', 15.0); say(s6, 'night', 21.6); say(s6, 'dreams', 25.0);
-  ZZZ = { s: s6, u0: 16.5 }; END = { dark: [at(s6, 40), at(s6, 48)], logo: [at(s6, 48.6), at(s6, 50.4)], T: s6.b };
+      if (u < 4.6) return dis(u, 4.0, 0.6, { pose: 'walk', walk: 1, x: walkX(u, 0, 4.0, 170, 360), y: 520, D: 1, facing: 'right' }, st);
+      if (u < 6.6) return dis(u, 5.6, 0.6, st, sl);
+      if (u < 9.2) return dis(u, 6.6, 0.6, sl, yw);
+      return dis(u, 9.2, 1.2, yw, { pose: 'sleep', inBed: 1, facing: 'right' }); } });
+  say(s6, 'back', 4.6); say(s6, 'yawn', 7.2); say(s6, 'bed', 10.6); e = say(s6, 'night', 13.6); say(s6, 'dreams', e + P);
+  ZZZ = { s: s6, u0: 11.8 }; END = { paper: [at(s6, 22.4), at(s6, 25.0)], card: [at(s6, 25.2), at(s6, 26.4)], T: s6.b };
 } else {
-  // the 9:16 cut (45-60 s): dusk, ducks, stars 1-5, bed, goodnight. Noodle's feet stay above y 1240 (the subtitles sit at y 1360) and the
-  // views stay inside each scene (a tall view of a 600-high scene is narrow, so Noodle stands further back than in the wide cut)
-  const t1 = shot({ id: 'yard', len: 9.5, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
-    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 0.6, 6.6)) }],
-    cam: [[0, 352, 40, 315], [9.5, 368, 48, 300]], dogs: () => [sit(520, 400, 1, 'right')] });
-  TITLE = { a: at(t1, 0.4), b: at(t1, 4.6) };
-  say(t1, 'sun', 1.0); say(t1, 'walk', 3.4);
-  const t2 = shot({ id: 'ducks', len: 9.5, mus: { place: 'river', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'river', time: 'dusk' }],
-    cam: [[0, 975, 56, 300], [9.5, 975, 60, 296]], dogs: (u) => [sit(1049, 400, 0.85, 'right', u > 1 && u < 7 ? 'curious' : undefined)] });
-  say(t2, 'ducks0', 1.2); say(t2, 'ducks', 3.6);
-  const t3 = shot({ id: 'hill', len: 16.5, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
-    cam: [[0, 600, 4, 330], [16.5, 606, 8, 324]], dogs: (u) => [{ pose: 'down', expr: u > 2.6 ? 'wow' : undefined, x: 762, y: 376, D: 1, facing: 'right' }] });
-  say(t3, 'count', 1.0);
-  STARS = { s: t3, u0: 3.0, gap: 2.4, numsOut: [99, 100], size: 3.4, at: [[661, 105], [759, 96], [701, 175], [814, 163], [747, 236]] };
-  STARS.at.forEach((_, i) => say(t3, 'n' + (i + 1), STARS.u0 + i * STARS.gap + 0.3));
-  const t4 = shot({ id: 'home', len: 24, mus: { place: 'yard', time: 'night' }, mus2: { u: 5, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
+  // the fast 9:16 cut for teenagers (about 30 s, Reel pace, vo set "teen" at 1.1x): a hook in the first second, dusk, ducks, stars 1-5, bed,
+  // goodnight, the end card. Noodle's feet stay above y 1240 (the subtitles sit at y 1360) and the views stay inside each scene (a tall view
+  // of a 600-high scene is narrow, so Noodle stands further back than in the wide cut)
+  const t1 = shot({ id: 'yard', len: 6, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
+    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 0.2, 4.2)) }],
+    cam: [[0, 352, 40, 315], [6, 368, 48, 300]], dogs: () => [sit(520, 400, 1, 'right')] });
+  TITLE = { a: -1, b: at(t1, 3.6), lines: [{ s: 'POV:', size: 70, maxW: 690 }, { s: "your dog's bedtime walk", size: 84, maxW: 690 }], cx: 475, cy: 400 };
+  e = say(t1, 'sun', 0.3); say(t1, 'walk', e + 0.3);
+  const t2 = shot({ id: 'ducks', len: 4.5, mus: { place: 'river', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'river', time: 'dusk' }],
+    cam: [[0, 975, 56, 300], [4.5, 975, 60, 296]], dogs: (u) => [sit(1049, 400, 0.85, 'right', u > 0.3 ? 'curious' : undefined)] });
+  say(t2, 'ducks', 0.6);
+  const t3 = shot({ id: 'hill', len: 8, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
+    cam: [[0, 600, 4, 330], [8, 606, 8, 324]], dogs: (u) => [{ pose: 'down', expr: u > 1.8 ? 'wow' : undefined, x: 762, y: 376, D: 1, facing: 'right' }] });
+  say(t3, 'count', 0.4);
+  STARS = { s: t3, u0: 1.9, gap: 1.0, numsOut: [99, 100], size: 3.4, at: [[661, 105], [759, 96], [701, 175], [814, 163], [747, 236]] };
+  STARS.at.forEach((_, i) => say(t3, 'n' + (i + 1), STARS.u0 + i * STARS.gap + 0.2));
+  const t4 = shot({ id: 'home', len: 12, mus: { place: 'yard', time: 'night' }, mus2: { u: 1.5, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
     bed: { x: 640, y: 389, B: 0.72 },
-    cam: [[0, 404, 12, 330], [6, 404, 12, 330], [22, 512, 70, 250]],
-    dogs: (u) => dis(u, 4.4, 1.2, { pose: 'yawn', x: 452, y: 389, D: 1, facing: 'right' }, { pose: 'sleep', inBed: 1, facing: 'right' }) });
-  say(t4, 'yawn', 1.0); say(t4, 'bed', 6.0); say(t4, 'night', 9.0); say(t4, 'dreams', 11.6);
-  ZZZ = { s: t4, u0: 7.5 }; END = { dark: [at(t4, 14), at(t4, 19)], logo: [at(t4, 19.5), at(t4, 21)], T: t4.b };
+    cam: [[0, 404, 12, 330], [2, 404, 12, 330], [8.5, 512, 70, 250]],
+    dogs: (u) => dis(u, 1.4, 0.9, { pose: 'yawn', x: 452, y: 389, D: 1, facing: 'right' }, { pose: 'sleep', inBed: 1, facing: 'right' }) });
+  e = say(t4, 'yawn', 0.3); e = say(t4, 'bed', e + 0.3); e = say(t4, 'night', e + 0.4); say(t4, 'dreams', e + 0.3);
+  ZZZ = { s: t4, u0: 3.0 }; END = { paper: [at(t4, 6.8), at(t4, 8.0)], card: [at(t4, 8.1), at(t4, 8.8)], T: t4.b };
 }
 const T = END.T, NF = Math.round(T * FPS);
 
@@ -128,6 +143,7 @@ const SUBS_TX = { hello: ['Hello, friends.', "It's me, Noodle."], sun: ['The sun
   light: ['Look, the lighthouse', 'is turning on its light.'], sea: ['Goodnight, sea.'], count: ["Let's count the stars."],
   n1: ['1.'], n2: ['2.'], n3: ['3.'], n4: ['4.'], n5: ['5.'], moon: ["There's the moon."], home0: ["It's time to go home."],
   back: ['Back home.'], yawn: ['A big yawn.'], bed: ['A soft bed.'], night: ['Goodnight, friends.'], dreams: ['Sweet dreams.'] };
+if (TALL) Object.assign(SUBS_TX, { sun: ["Sun's going down."], walk: ['One last walk.'], ducks: ['Night night, ducks.'], count: ['Okay. Stars.'], bed: ['And... bed.'] }); // vo set "teen"
 const SUBS = [];
 VOAT.slice().sort((a, b) => a.at - b.at).forEach((v) => { const parts = SUBS_TX[v.k];
   if (parts.join(' ').replace(/[^a-z]/gi, '').toLowerCase() !== VOJ.text[v.k].replace(/[^a-z]/gi, '').toLowerCase() && !/^n\d$/.test(v.k)) throw new Error('subtitles differ from the voice: ' + v.k);
@@ -203,12 +219,14 @@ function shotFrame(s, t, oy = 0) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${FXDEFS}<g transform="translate(${f2(-v.x * v.k)} ${f2(-v.y * v.k + oy)}) scale(${r3(v.k)})">${g}</g>${fxLayer(s, u, t)}</svg>`;
   return { id: Math.max(0, SHOTS.indexOf(s)), op, imgs, svg, v, head };
 }
-// the overlay (screen units): the title, the big star numbers, the z's, the fade to dark, the logo, the subtitle
+// the overlay (screen units): the title, the big star numbers, the z's, the subtitle, the fade to paper and the shared end card (../endcard.js)
 const SUB = TALL ? { cx: 475, y: 1360, size: 58, maxW: 800 } : { cx: 960, y: 975, size: 60, maxW: 1500 };
 const LOGO_SVG = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, ''));
+const LOGO_INNER = LOGO_SVG.replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, ''); // the end card's logo: no paper rect
 function overlay(t, frames) {
-  const o = { title: null, nums: [], zzz: [], dark: 0, logo: 0, sub: null, paper: r3(1 - sm(seg(t, 0, 2.2))) };
-  if (TITLE && t > TITLE.a && t < TITLE.b) o.title = { s: "Noodle's Bedtime Walk", op: r3(Math.min(sm(seg(t, TITLE.a, TITLE.a + 1.2)), 1 - sm(seg(t, TITLE.b - 1.2, TITLE.b)))) };
+  const o = { title: null, nums: [], zzz: [], endPaper: 0, card: 0, sub: null, paper: TALL ? 0 : r3(1 - sm(seg(t, 0, 1.6))) };
+  if (TITLE && t > TITLE.a && t < TITLE.b) { const fi = TALL ? 0 : 1.0, fo = TALL ? 0.4 : 1.0; // tall: the hook is on screen from the first frame
+    o.title = { ...TITLE, op: r3(Math.min(TALL ? 1 : sm(seg(t, TITLE.a, TITLE.a + fi)), 1 - sm(seg(t, TITLE.b - fo, TITLE.b)))) }; }
   const fs5 = frames.find((f) => STARS && SHOTS[f.id] === STARS.s);
   if (fs5) { const v = fs5.v, out = 1 - sm(seg(t - STARS.s.a, STARS.numsOut[0], STARS.numsOut[1]));
     STARS.at.forEach(([x, y], i) => { const q = eo3(seg(t, starOn(i) + 0.15, starOn(i) + 1.0)) * out; if (q <= 0) return;
@@ -217,12 +235,12 @@ function overlay(t, frames) {
   const fz = frames.find((f) => f.head && ZZZ && SHOTS[f.id] === ZZZ.s);
   if (fz) { const v = fz.v, hx = (fz.head[0] - v.x) * v.k, hy = (fz.head[1] - v.y) * v.k, u = t - ZZZ.s.a;
     for (let j = 0; j < 4; j++) { const t0 = ZZZ.u0 + j * 1.9, period = 7.6; let q = (u - t0) / 5.2; if (u < t0) continue; q = ((u - t0) % period) / 5.2; if (q > 1) continue;
-      const fade = 1 - sm(seg(t, END.dark[0] - 1, END.dark[0] + 3));
+      const fade = 1 - sm(seg(t, END.paper[0] - 1.5, END.paper[0] + 0.5));
       o.zzz.push({ x: f1(TALL ? Math.min(800, hx - 70 - q * 90 + Math.sin(q * 5 + j) * 14) : hx + 20 + q * 120 + Math.sin(q * 5 + j) * 14), y: f1(hy - 70 - q * 200), size: Math.round((TALL ? 80 : 74) * (0.7 + 0.6 * q)), op: r3(Math.min(sm(q * 4), 1 - sm(seg(q, 0.6, 1))) * fade) }); } }
-  o.dark = r3(sm(seg(t, END.dark[0], END.dark[1])));
-  o.logo = r3(sm(seg(t, END.logo[0], END.logo[1])));
+  o.endPaper = r3(sm(seg(t, END.paper[0], END.paper[1])));
+  o.card = r3(sm(seg(t, END.card[0], END.card[1])));
   const u = SUBS.find((x) => t >= x.a && t < x.b);
-  if (u && o.dark < 0.5) o.sub = { s: u.s, op: r3(Math.min(sm((t - u.a) / 0.25), sm((u.b - t) / 0.3))) };
+  if (u && o.endPaper < 0.5) o.sub = { s: u.s, op: r3(Math.min(sm((t - u.a) / 0.25), sm((u.b - t) / 0.3))) };
   return o;
 }
 
@@ -234,7 +252,9 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const LOGO=${JSON.stringify(LOGO_SVG)}, SUB=${JSON.stringify(SUB)}, TALL=${TALL}, W=${W}, H=${H};
+${ENDCARD_JS}
+const LOGO=${JSON.stringify(LOGO_SVG)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, SUB=${JSON.stringify(SUB)}, TALL=${TALL}, W=${W}, H=${H};
+let CARD=null; // the end card (endCard() from ../endcard.js), made once the fonts are in
 function fitSize(s,size,fam,maxW){ while(size>20){ const k=inkOf(s,size,fam); if(k.L+k.R<=maxW) return size; size-=2; } return size; }
 window.frame=async function(frames,o){
   for(const n of [0,1]){ const el=document.getElementById('s'+n), f=frames[n];
@@ -246,15 +266,14 @@ window.frame=async function(frames,o){
     const sv=el.querySelector('.sv'); if(sv._s!==f.svg){ sv.innerHTML=f.svg; sv._s=f.svg; } }
   let g=o.paper>0?'<rect width="'+W+'" height="'+H+'" fill="${PAPER}" opacity="'+o.paper+'"/>':'';
   if(o.pre) g+=o.pre;
-  if(o.title){ const size=fitSize(o.title.s,TALL?84:100,'Caveat',TALL?690:1300); g+='<g opacity="'+o.title.op+'"><g transform="rotate(-1.5 '+(TALL?475:960)+' '+(TALL?400:150)+')">'+pill(o.title.s,TALL?475:960,TALL?400:150,size,'Caveat',{fill:'#FFFDF7',padX:46})+'</g></g>'; }
+  if(o.title){ const T_=o.title, n=T_.lines.length, sz=T_.lines.map((l)=>fitSize(l.s,l.size,'Caveat',l.maxW)), gap=10, hs=sz.map((z)=>Math.round(z*1.35));
+    let y=T_.cy-(hs.reduce((a,b)=>a+b,0)+gap*(n-1))/2; g+='<g opacity="'+T_.op+'"><g transform="rotate('+(TALL?-2:-1.5)+' '+T_.cx+' '+T_.cy+')">';
+    T_.lines.forEach((l,i)=>{ g+=pill(l.s,T_.cx,y+hs[i]/2,sz[i],'Caveat',{fill:i===0&&n>1?'#FFE3A1':'#FFFDF7',padX:46}); y+=hs[i]+gap; }); g+='</g></g>'; }
   for(const n of o.nums) g+='<g opacity="'+n.op+'" stroke="#5B3D32" stroke-width="9" stroke-linejoin="round" paint-order="stroke">'+centred([{s:n.s,size:n.size,fill:'#FFF3C4'}],n.x,n.y,'Caveat').svg+'</g>';
   for(const z of o.zzz) g+='<text x="'+z.x+'" y="'+z.y+'" font-family="Caveat" font-weight="700" font-size="'+z.size+'" fill="#FFF8EC" stroke="#5B3D32" stroke-width="5" paint-order="stroke" stroke-linejoin="round" opacity="'+z.op+'">Z</text>';
-  if(o.dark>0) g+='<rect width="'+W+'" height="'+H+'" fill="${DARK}" opacity="'+o.dark+'"/>';
-  if(o.logo>0){ const lw=TALL?520:440, lh=lw*280/900, cx=TALL?475:960, cy=TALL?860:540;
-    g+='<g opacity="'+o.logo+'" data-safe><defs><clipPath id="lclip"><rect x="'+(cx-lw/2)+'" y="'+(cy-lh/2)+'" width="'+lw+'" height="'+lh+'" rx="'+(lh*0.22)+'"/></clipPath></defs>'
-      +'<rect x="'+(cx-lw/2-10)+'" y="'+(cy-lh/2-10)+'" width="'+(lw+20)+'" height="'+(lh+20)+'" rx="'+(lh*0.26)+'" fill="#FFF8EC" opacity=".12"/>'
-      +'<g clip-path="url(#lclip)"><svg x="'+(cx-lw/2)+'" y="'+(cy-lh/2)+'" width="'+lw+'" height="'+lh+'" viewBox="0 0 900 280">'+LOGO+'</svg></g></g>'; }
   if(o.sub){ const size=fitSize(o.sub.s,SUB.size,'Andika',SUB.maxW); g+=pill(o.sub.s,SUB.cx,SUB.y,size,'Andika',{fill:'#FFFDF7',stroke:'#5B3D32',color:'#5B3D32',padX:34,op:(0.97*o.sub.op).toFixed(3)}); }
+  if(o.endPaper>0) g+='<rect width="'+W+'" height="'+H+'" fill="${PAPER}" opacity="'+o.endPaper+'"/>';
+  if(o.card>0){ if(!CARD) CARD=endCard(TALL?'tall':'wide', HANDLES, LOGO_INNER); g+='<g opacity="'+o.card+'">'+CARD+'</g>'; }
   if(o.extra) g+=o.extra;
   document.getElementById('ov').innerHTML=g;
   const bad=centreCheck(document.getElementById('ov')); if(bad.length) return 'not centred: '+bad.join('; ');
@@ -304,7 +323,7 @@ window.frame=async function(frames,o){
       const c = await b.newContext({ viewport: { width: 1600, height: 600 }, deviceScaleFactor: s.R }), q = await c.newPage();
       await q.setContent(`<style>html,body{margin:0}svg{display:block;width:1600px;height:600px}</style>${svg}`); await q.waitForTimeout(150); await q.screenshot({ path: bf }); await c.close(); }
     const fr = [shotFrame(s, 0.5, TALL ? 240 : 0)]; STARS = keep;
-    const o = { title: null, nums: [], zzz: [], dark: 0, logo: 0, sub: null, paper: 0 };
+    const o = { title: null, nums: [], zzz: [], endPaper: 0, card: 0, sub: null, paper: 0 };
     if (TALL) o.pre = '<defs><linearGradient id="skyb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262B4A"/><stop offset=".86" stop-color="#3A4472"/><stop offset="1" stop-color="#3A4472" stop-opacity="0"/></linearGradient>'
       + '<linearGradient id="grb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6F7B6A" stop-opacity="0"/><stop offset=".16" stop-color="#6F7B6A"/><stop offset="1" stop-color="#4E5A4C"/></linearGradient></defs>'
       + '<rect x="0" y="0" width="1080" height="288" fill="url(#skyb)"/><rect x="0" y="1640" width="1080" height="280" fill="url(#grb)"/>';
@@ -315,18 +334,25 @@ window.frame=async function(frames,o){
         + '<g clip-path="url(#cl2)"><svg x="' + lx + '" y="' + ly + '" width="' + lw + '" height="' + lh + '" viewBox="0 0 900 280">' + LOGO + '</svg></g><rect x="' + lx + '" y="' + ly + '" width="' + lw + '" height="' + lh + '" rx="' + lh * 0.22 + '" fill="none" stroke="#5B3D32" stroke-width="5"/></g>'; }, TALL);
     const err = await p.evaluate(([f, o]) => window.frame(f, o), [fr, o]); if (err) throw new Error('cover: ' + err);
     await p.screenshot({ path: file, type: 'jpeg', quality: 92 }); console.log('wrote', file); };
-  await coverPage(path.join(OUT, TALL ? 'bedtime-walk-cover-tall.jpg' : 'bedtime-walk-thumb.jpg'));
+  const coverFile = path.join(OUT, TALL ? 'bedtime-walk-cover-tall.jpg' : 'bedtime-walk-thumb.jpg'); // kept as it is unless COVER=1 (or missing)
+  if (process.env.ONLY !== 'frames' && (process.env.COVER === '1' || !fs.existsSync(coverFile))) await coverPage(coverFile);
 
   if (process.env.ONLY === 'stills') {
-    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : SHOTS.flatMap((s) => [s.a + 2.2, (s.a + s.b) / 2, s.b - XF - 0.6]).concat(STARS ? [starOn(4) + 1.5] : [], [END.logo[1] + 1]).sort((a, b) => a - b);
+    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : SHOTS.flatMap((s) => [s.a + 2.2, (s.a + s.b) / 2, s.b - XF - 0.6]).concat(STARS ? [starOn(4) + 1.5] : [], [END.paper[0] + 1.2, END.card[0] + 0.4, T - 0.1]).sort((a, b) => a - b);
     for (const [j, t] of ts.entries()) { await render(t, path.join(WORK, 'stills', `${FORMAT}_${String(j).padStart(2, '0')}_${t.toFixed(1)}.png`)); }
     console.log(ts.length, 'stills, T =', T.toFixed(2)); await b.close(); return;
   }
   const [FA, FB] = process.env.FRAMES ? process.env.FRAMES.split('-').map(Number) : [0, NF];
-  const t0 = Date.now();
-  for (let fi = FA; fi < Math.min(FB, NF); fi++) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`));
-    if (fi % 250 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
+  const t0 = Date.now(), PAR = +process.env.PAR || 1;
+  console.log('T =', T.toFixed(2), 's,', NF, 'frames; end card frames', Math.round(END.paper[0] * FPS) + '-' + (NF - 1));
+  if (PAR > 1 && !process.env.FRAMES) { // PAR=n: n child processes, each its own browser over a slice of the frames (ONLY=frames: frames, no sound)
+    const n = Math.ceil(NF / PAR); await Promise.all(Array.from({ length: PAR }, (_, i) => new Promise((ok, no) => {
+      const c = cp.spawn(process.execPath, [__filename, WORK, VO], { env: { ...process.env, PAR: '', ONLY: 'frames', FRAMES: `${i * n}-${Math.min(NF, (i + 1) * n)}` }, stdio: 'inherit' });
+      c.on('exit', (code) => code ? no(new Error('frames part ' + i + ' failed')) : ok()); })));
+  } else for (let fi = FA; fi < Math.min(FB, NF); fi++) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`));
+    if (fi % 250 === 0 || fi === FA) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
   await p.close();
+  if (process.env.ONLY === 'frames') { await b.close(); return; }
 
   // ---- sound: the game's music and ambience per place (very soft), Noodle's voice on top; kept in WORK so a FRAMES fix reuses it ----
   const mixWav = path.join(WORK, `mix_${FORMAT}.wav`);
@@ -345,7 +371,7 @@ window.frame=async function(frames,o){
     const vG = -18 - vI, mG = -18 - 14 - mI; console.log('voice', vI.toFixed(1), 'LUFS, music', mI.toFixed(1), 'LUFS: gains', vG.toFixed(1), mG.toFixed(1), 'dB');
     const pre = path.join(WORK, `premix_${FORMAT}.wav`);
     cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', voWav, '-i', path.join(WORK, `music_${FORMAT}.wav`), '-filter_complex',
-      `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},volume=${mG.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${(T - 3).toFixed(2)}:d=3[m];[m][v]amix=inputs=2:duration=first:normalize=0[a]`,
+      `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},volume=${mG.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${(END.card[0] - 0.6).toFixed(2)}:d=${(T - END.card[0] + 0.6).toFixed(2)}[m];[m][v]amix=inputs=2:duration=first:normalize=0[a]`,
       '-map', '[a]', '-ar', '44100', pre]);
     // the whole mix to -18 LUFS, true peak -2 (measured, then applied linearly)
     const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-18:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, m = JSON.parse(r.slice(r.lastIndexOf('{')));

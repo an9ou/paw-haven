@@ -1,14 +1,21 @@
 # Voice for the kids' episode "How to say hello to a dog" (Dog manners, ep. 1; docs/marketing/KIDS_SERIES.md, Pilot 1, the FINAL script table,
-# checked against Dogs Trust, the Royal Kennel Club, the AVMA and HSE Ireland on 3 Nov 2026). Told by Noodle the dachshund: Kokoro af_bella at 0.9x,
-# slower and warmer than the Reels. Every line is said exactly as the table writes it; a line is cut into its sentences (and the count into its
-# numbers) only so the pictures can follow the words: the words and their order never change.
+# checked against Dogs Trust, the Royal Kennel Club, the AVMA and HSE Ireland on 3 Nov 2026). Told by Noodle the dachshund: Kokoro af_bella.
+# Two line sets (owner, 4 Nov 2026):
+#   kids  the 16:9 YouTube episode, at 1.0x: every line said exactly as the table writes it; a line is cut into its sentences (and the count into
+#         its numbers) only so the pictures can follow the words: the words and their order never change.
+#   teen  the ~30 s 9:16 cut for teenagers, at 1.1x: a spoken hook and one short line per rule, each keeping the rule's meaning exactly (ask the
+#         dog's grown-up; stand still, let the dog come and sniff; pet softly on the shoulder or side, 3 strokes then stop; if the dog walks away,
+#         let it go). The count uses the same words as the episode.
 #   pip install kokoro-onnx soundfile ; model files: github.com/thewh1teagle/kokoro-onnx/releases (model-files-v1.0: kokoro-v1.0.int8.onnx, voices-v1.0.bin)
-#   python3 vo_dog_manners.py <modelDir> <outDir> [voice af_bella] [speed 0.9]
-# Writes <key>.wav per clip and vo.json ({dur, text}); build_dog_manners.js lays them out (about 0.6 s between lines) and cuts the subtitles.
+#   python3 vo_dog_manners.py <modelDir> <outDir> [voice af_bella] [speed 1.0] [set kids|teen]
+#   (the wide episode: ... af_bella 1.0 kids; the tall cut: ... af_bella 1.1 teen, into its own outDir)
+# Writes <key>.wav per clip and vo.json ({dur, text, voice, speed, set}); build_dog_manners.js lays them out and cuts the subtitles
+# (FORMAT=wide needs a kids vo dir, FORMAT=tall a teen one).
 import soundfile as sf, numpy as np, json, sys
 from kokoro_onnx import Kokoro
 k = Kokoro(sys.argv[1] + "/kokoro-v1.0.int8.onnx", sys.argv[1] + "/voices-v1.0.bin")
-OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "af_bella"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 0.9
+OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "af_bella"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
+SET = sys.argv[5] if len(sys.argv) > 5 else "kids"
 L = {
  # Hello
  "hi1": "Hi, friends! I'm Noodle.",
@@ -50,10 +57,19 @@ L = {
  "bye1": "Bye-bye, friends!",
  "bye2": "See you next time.",
 }
+TEEN = {
+ "tHook": "How to say hello to a dog.",
+ "tAsk": "Ask the dog's grown-up first.",
+ "tStill": "Stand still. Let the dog come and sniff.",
+ "tPet": "Pet softly, on the shoulder or side.",
+ "one": L["one"], "two": L["two"], "three": L["three"], "stop": L["stop"],
+ "tGo": "If the dog walks away, let it go.",
+}
+if SET == "teen": L = TEEN
 out = {}
 for key, text in L.items():
     a, sr = k.create(text, voice=V, speed=SP, lang="en-gb" if V.startswith("b") else "en-us")
     th = 0.01; idx = np.where(np.abs(a) > th)[0]; a = a[max(0, idx[0] - int(0.03 * sr)): idx[-1] + int(0.12 * sr)]
     fade = int(0.02 * sr); a[-fade:] *= np.linspace(1, 0, fade)
     sf.write(OUT + f"/{key}.wav", a, sr); out[key] = round(len(a) / sr, 3)
-json.dump({"dur": out, "text": L, "voice": V, "speed": SP}, open(OUT + "/vo.json", "w"), indent=1); print(out, "total", round(sum(out.values()), 2))
+json.dump({"dur": out, "text": L, "voice": V, "speed": SP, "set": SET}, open(OUT + "/vo.json", "w"), indent=1); print(out, "total", round(sum(out.values()), 2))

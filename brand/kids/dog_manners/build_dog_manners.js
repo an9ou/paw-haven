@@ -1,20 +1,30 @@
 // Kids' episode "How to say hello to a dog" (Dog manners, ep. 1): docs/marketing/KIDS_SERIES.md, Pilot 1 (the FINAL script table, checked against
-// Dogs Trust, the Royal Kennel Club, the AVMA and HSE Ireland) and its Build kit. Told by Noodle (vo_dog_manners.py: Kokoro af_bella at 0.9x).
+// Dogs Trust, the Royal Kennel Club, the AVMA and HSE Ireland) and its Build kit. Told by Noodle (vo_dog_manners.py, Kokoro af_bella).
 // The friendly dog is Bagel the Beagle; the child is "you": the game's own crayon hand (the trick-signal hands, as in the cuddle Reel) coming in
 // from the bottom edge, gentle and slow; the dog's grown-up is a lead from Bagel's collar running up out of the frame and a speech bubble from the top.
-// Real art only (PawArt.dog with the v2.13 faces, PawArt.scene, .prop, .bed), no game UI, no Japanese, nothing sold inside the episode (the small
-// logo only on the last card). Calm: slow camera, 1 s cross-fades, no hard cuts, no flashing, no shake; depth as in munch_reel/build_munch.js (a soft
-// scene behind, contact shadows, slow light motes, layers that move at their own speeds).
+// Real art only (PawArt.dog with the v2.13 faces, PawArt.scene, .prop, .bed), no game UI, no Japanese, nothing sold inside the episode. No hard
+// cuts, no flashing, no shake; depth as in munch_reel/build_munch.js (a soft scene behind, contact shadows, slow light motes, layers at their own speeds).
+// Owner's notes, 4 Nov 2026:
+//   wide = the YouTube episode for kids, faster: the voice at 1.0x, ~0.35 s between lines, holds halved, 0.6 s cross-fades (~1:40), every line of
+//          the final script.
+//   tall = a ~30 s cut for teenagers at Reel pace: the teen line set at 1.1x (short lines, each rule's meaning kept), the title card from frame 0 as
+//          the hook, the four rules as quick beats with their cards, everything inside SAFE (safeCheck every frame).
+//   Both end on the shared end card (brand/kids/endcard.js: logo, doodledoggo.app, Instagram / X / YouTube from IG_HANDLE / X_HANDLE / YT_HANDLE):
+//   the scene softens to paper, the card fades in and holds (~4.4 s wide, ~3.2 s tall) while the music fades out. The end-card frames come last and
+//   show nothing else, so they alone can be re-rendered (the build prints their FRAMES=a-b range). centreCheck on every frame, end card included.
 //
-//   NODE_PATH=$(npm root -g) node brand/kids/dog_manners/build_dog_manners.js <workdir> <vo dir>
-//   FORMAT=wide (16:9 1920 x 1080, default, the whole episode, ~2.5 min) | tall (9:16 1080 x 1920, the 45-60 s cut: the same voice clips, fewer of them)
-//   ONLY=stills: key frames only (STRIP=t1,t2,.. picks the times); ONLY=covers: the thumbnail (wide) or the tall cover only
+//   python3 brand/kids/dog_manners/vo_dog_manners.py <kokoro dir> <vo dir> af_bella 1.0 kids     (wide)
+//   python3 brand/kids/dog_manners/vo_dog_manners.py <kokoro dir> <vo teen dir> af_bella 1.1 teen (tall)
+//   NODE_PATH=$(npm root -g) node brand/kids/dog_manners/build_dog_manners.js <workdir> <vo dir>   (FORMAT=tall with the teen vo dir)
+//   FORMAT=wide (16:9 1920 x 1080, default, the kids' episode) | tall (9:16 1080 x 1920, the teen cut)
+//   ONLY=stills: key frames only (STRIP=t1,t2,.. picks the times); ONLY=covers: the thumbnail (wide) or the tall cover only (a full render leaves them)
 //   FRAMES=a-b: re-render only those frames over a workdir copied from an earlier full render, then encode again (marketing rule)
 //   PAR=n: frames rendered on n pages at once (default 3)
 // Outputs next to this file: doodle-doggo-kids-dog-manners.mp4, doodle-doggo-kids-dog-manners-tall.mp4, dog-manners-thumb.jpg, dog-manners-cover-tall.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../instagram/launch/centre_text.js');
+const { ENDCARD_JS, handles } = require('../endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..'), OUT = __dirname;
 const TALL = (process.env.FORMAT || 'wide') === 'tall';
 const WORK = path.resolve(process.argv[2] || '/tmp/dog_manners') + (TALL ? '/tall' : '/wide'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
@@ -56,35 +66,54 @@ const LY = TALL ? {
   views: { hello: '20 100 880 495', yard: '250 160 700 394', house: '120 110 760 428' },
 };
 
-// ---- the timeline: beats (each with its place) and Noodle's lines; the tall cut keeps fewer lines (same clips, same words) ----
-const TALL_SET = new Set(['hi1', 'hi2', 'ask1', 'still1', 'still2', 'pet1', 'one', 'two', 'three', 'stop', 'go1', 'go2', 'rc1', 'rc2', 'rc3', 'rc4', 'bye1', 'bye2']);
-const has = (k) => !TALL || TALL_SET.has(k);
-const GAP = TALL ? 0.45 : 0.7, HS = TALL ? 0.6 : 1; // the pause between lines; holds are shorter in the tall cut
+// ---- the timeline: beats (each with its place) and Noodle's lines ----
+// wide (kids, owner 4 Nov 2026: faster): the voice at 1.0x, about 0.35 s between lines, holds and cross-fades about halved (0.6 s cross-fades).
+// tall (teenagers, ~30 s, Reel pace): the teen line set at 1.1x, the title card from frame 0 as the hook, the four rules as quick beats.
+// Both end on the shared end card (brand/kids/endcard.js): M.soft = the scene softens to paper, M.card = the card fades in, held to the end.
+if ((VOJ.set || 'kids') !== (TALL ? 'teen' : 'kids')) throw new Error('FORMAT=' + (TALL ? 'tall needs a teen' : 'wide needs a kids') + ' vo dir (vo_dog_manners.py ... ' + (TALL ? '1.1 teen' : '1.0 kids') + ')');
+const has = (k) => D[k] != null;
+const GAP = 0.35, XF = TALL ? 0.25 : 0.3; // the pause between lines; half the cross-fade
 const BEATS = [], AT = {}, M = {}; let at = 0;
 const beat = (id, place) => { BEATS.push({ id, place, a: at }); };
 const say = (k, gap = GAP) => { if (!has(k)) return; AT[k] = at; at += D[k] + gap; };
 const hold = (s) => { at += s; }, mark = (n) => { M[n] = at; };
-beat('hello', 'hello'); hold(TALL ? 0.3 : 1.0); mark('nIn0'); hold(TALL ? 0 : 3.4); mark('nIn1'); hold(TALL ? 0.2 : 0.4);
-say('hi1', TALL ? GAP : 0.9); say('hi2', TALL ? GAP : 0.9); say('hi3', 0.6); mark('title0'); hold(TALL ? 0.2 : 4.6);
-const LAB = TALL ? 0.9 : 3.2;
-beat('ask', 'yard'); hold(0.5); mark('lab'); hold(LAB);
-say('ask1', 0.2); mark('yes'); hold(TALL ? 1.0 : 2.0); say('ask2', 0.9); mark('wave0'); say('ask3', 0); hold(TALL ? 1.6 : 3.2); mark('askEnd');
-beat('still', 'yard'); hold(0.5); mark('lab2'); hold(LAB);
-mark('handIn'); say('still1', TALL ? 0.35 : 1.4); mark('walk0'); say('still2', 0); hold(Math.max(GAP, (TALL ? 3.0 : 4.4) - D.still2)); mark('sniff');
-say('still3', 1.4); mark('sitDown'); say('still4', 0); hold(TALL ? 1.1 : 2.6);
-beat('pet', 'yard'); hold(0.5); mark('lab3'); hold(LAB);
-mark('reach0'); say('pet1', TALL ? 0.6 : 1.0); say('pet2', 1.2);
-const SP = TALL ? 1.75 : 2.4; mark('s0'); { const s0 = at; at = s0 + 0.55; say('one', 0); at = s0 + SP + 0.55; say('two', 0); at = s0 + 2 * SP + 0.55; say('three', 0); at = s0 + 3 * SP + 0.2; }
-mark('s1'); say('stop', TALL ? 0.6 : 1.0); mark('ask2b'); say('pet3', 0.6); mark('lean'); say('pet4', 0.35); say('pet5', 0); hold(TALL ? 1.5 : 3.0); mark('petEnd');
-beat('go', 'yard'); hold(0.5); mark('lab4'); hold(LAB);
-mark('go0'); say('go1', TALL ? 0.5 : 1.0); say('go2', TALL ? 0.4 : 1.4); say('go3', 0); hold(TALL ? 0.9 : 3.0);
-if (!TALL) { beat('bed', 'house'); hold(2.0); say('also1', 0); hold(1.8); beat('bowl', 'yard'); hold(1.0); say('also2', 0); hold(3.2); }
-beat('recap', 'hello'); hold(TALL ? 0.7 : 1.0); say('rc0', 1.0); for (const i of [1, 2, 3, 4]) { mark('rc' + i); say('rc' + i, TALL ? 0.5 : 1.4); } hold(TALL ? 0.6 : 2.0);
-beat('bye', 'hello'); hold(0.8); say('bye1', TALL ? 0.6 : 1.0); hold(TALL ? 0.4 : 1.2);
-beat('night', 'house'); hold(TALL ? 0.9 : 1.4); say('bye2', TALL ? 0.6 : 0.9); mark('logo'); hold(TALL ? 2.3 : 5.5);
+const LABG = TALL ? [0.5, 0.95] : [0.8, 1.4]; // the rule card pops in big, then glides to its corner between these (s after it pops)
+let SP;
+if (!TALL) {
+  beat('hello', 'hello'); hold(0.5); mark('nIn0'); hold(2.4); mark('nIn1'); hold(0.2);
+  say('hi1', 0.4); say('hi2', 0.4); say('hi3', 0.35); mark('title0'); hold(3.0);
+  const LAB = 2.0;
+  beat('ask', 'yard'); hold(0.3); mark('lab'); hold(LAB);
+  say('ask1', 0.2); mark('yes'); hold(1.3); say('ask2', 0.45); mark('wave0'); say('ask3', 0); hold(2.0); mark('askEnd');
+  beat('still', 'yard'); hold(0.3); mark('lab2'); hold(LAB);
+  mark('handIn'); say('still1', 0.6); mark('walk0'); say('still2', 0); hold(Math.max(GAP, 2.6 - D.still2)); mark('sniff');
+  say('still3', 0.6); mark('sitDown'); say('still4', 0); hold(1.8);
+  beat('pet', 'yard'); hold(0.3); mark('lab3'); hold(LAB);
+  mark('reach0'); say('pet1', 0.5); say('pet2', 0.6);
+  SP = 1.8; mark('s0'); { const s0 = at; at = s0 + 0.45; say('one', 0); at = s0 + SP + 0.45; say('two', 0); at = s0 + 2 * SP + 0.45; say('three', 0); at = s0 + 3 * SP + 0.2; }
+  mark('s1'); say('stop', 0.5); mark('ask2b'); say('pet3', 0.4); mark('lean'); say('pet4', 0.3); say('pet5', 0); hold(2.0); mark('petEnd');
+  beat('go', 'yard'); hold(0.3); mark('lab4'); hold(LAB);
+  mark('go0'); say('go1', 0.5); say('go2', 0.6); say('go3', 0); hold(2.1);
+  beat('bed', 'house'); hold(1.2); say('also1', 0); hold(1.1); beat('bowl', 'yard'); hold(0.6); say('also2', 0); hold(1.9);
+  beat('recap', 'hello'); hold(0.5); say('rc0', 0.5); for (const i of [1, 2, 3, 4]) { mark('rc' + i); say('rc' + i, 0.8); } hold(1.4);
+  beat('bye', 'hello'); hold(0.4); say('bye1', 0.5); hold(0.9);
+  beat('night', 'house'); hold(0.8); say('bye2', 0.6); mark('soft'); hold(0.9); mark('card'); hold(4.4);
+} else {
+  beat('hello', 'hello'); M.nIn0 = -2; M.nIn1 = -1; M.title0 = -1; hold(0.15); say('tHook', 0.8);
+  beat('ask', 'yard'); hold(0.15); mark('lab'); hold(0.35); say('tAsk', 0.1); mark('yes'); hold(1.4); mark('askEnd');
+  beat('still', 'yard'); hold(0.15); mark('lab2'); hold(0.3); mark('handIn'); { const a0 = at; say('tStill', 0); M.walk0 = a0 + D.tStill * 0.32; }
+  M.sniff = Math.max(at, M.walk0 + 2.1); at = M.sniff; hold(1.6);
+  beat('pet', 'yard'); hold(0.15); mark('lab3'); hold(0.25); mark('reach0'); say('tPet', 0.2);
+  SP = 1.05; mark('s0'); { const s0 = at; at = s0 + 0.3; say('one', 0); at = s0 + SP + 0.3; say('two', 0); at = s0 + 2 * SP + 0.3; say('three', 0); at = s0 + 3 * SP + 0.1; }
+  mark('s1'); say('stop', 0.2); mark('ask2b'); M.lean = M.s1 + 0.9; at = Math.max(at, M.lean + 1.8); mark('petEnd');
+  beat('go', 'yard'); hold(0.15); mark('lab4'); hold(0.3); mark('go0'); say('tGo', 0.3); hold(1.3);
+  mark('soft'); hold(0.5); mark('card'); hold(3.3);
+}
 const T = at, N = Math.round(T * FPS);
 BEATS.forEach((b, i) => { b.b = i + 1 < BEATS.length ? BEATS[i + 1].a : T; });
 console.log(TALL ? 'tall' : 'wide', 'T =', T.toFixed(2), 's,', N, 'frames;', BEATS.map((b) => b.id + ' ' + b.a.toFixed(1)).join(', '));
+const ENDF = [Math.floor(M.soft * FPS), N]; // the end card alone: FRAMES=a-b re-renders it (e.g. new handles) over an earlier full render
+console.log('end card: paper from', M.soft.toFixed(2), 's, card from', M.card.toFixed(2), 's; FRAMES=' + ENDF.join('-'));
 
 // ---- read-along subtitles: one short line at a time, each timed by its share of its clip (letters, plus a breath at a stop) ----
 const SUBS_TX = {
@@ -98,15 +127,19 @@ const SUBS_TX = {
   also1: ['And when a dog is sleeping,'], also2: ['or eating, we let it be.'],
   rc0: ["Let's say it together!"], rc1: ['One: ask first.'], rc2: ['Two: stand still.'], rc3: ['Three: pet softly.'], rc4: ['Four: let it go.'],
   bye1: ['Bye-bye, friends!'], bye2: ['See you next time.'],
+  // the teen cut (tHook has none: the title card on screen says it)
+  tAsk: ["Ask the dog's grown-up first."], tStill: ['Stand still.', 'Let the dog come and sniff.'], tPet: ['Pet softly,', 'on the shoulder or side.'],
+  tGo: ['If the dog walks away,', 'let it go.'],
 };
+const NOSUB = new Set(['tHook']);
 // the subtitles say exactly what Noodle says (the script's words): checked against the voice text
-for (const [k, parts] of Object.entries(SUBS_TX)) { const said = VOJ.text[k].replace(/\s+/g, ' ').trim(), shown = (['two', 'three'].includes(k) ? [parts[0].split(', ').pop()] : parts).join(' ');
+for (const k of Object.keys(VOJ.text)) { if (NOSUB.has(k)) continue; const parts = SUBS_TX[k]; if (!parts) throw new Error('no subtitle for ' + k); const said = VOJ.text[k].replace(/\s+/g, ' ').trim(), shown = (['two', 'three'].includes(k) ? [parts[0].split(', ').pop()] : parts).join(' ');
   if (said !== shown) throw new Error('subtitle for ' + k + ' is not the line: "' + shown + '" vs "' + said + '"'); }
 const SUBS = [];
-Object.keys(AT).sort((a, b) => AT[a] - AT[b]).forEach((k) => { const parts = SUBS_TX[k];
+Object.keys(AT).filter((k) => !NOSUB.has(k)).sort((a, b) => AT[a] - AT[b]).forEach((k) => { const parts = SUBS_TX[k];
   const wt = parts.map((x) => x.length + (/[.!?:,]$/.test(x) ? 5 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = AT[k];
   parts.forEach((x, i) => { const d = D[k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x, k, i }); t0 += d; }); });
-SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.45) : Math.min(T, u.b + 0.8); });
+SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.45) : Math.min(M.soft, u.b + 0.8); });
 const subAt = (k, i) => (SUBS.find((u) => u.k === k && u.i === i) || {}).a;
 
 // ---- art pieces ----
@@ -172,7 +205,7 @@ const L = LY, fr3 = (t) => Math.floor(t * 3) % 3;
 const breath = (t) => Math.sin(t * 2 * Math.PI * 0.5) * 1.5;
 const bagelBase = (o) => Object.assign({ key: BAGEL, pose: 'idle', expr: null, facing: 'left', x: L.BX, g: L.G, k: L.K, outfit: COLLAR }, o);
 const label = (n, s, t, t0) => { // the rule's card: pops in big, then glides to the top corner and stays
-  if (t < t0) return null; const q = eio(seg(t, t0 + 1.3, t0 + 2.2)), a = L.label.big;
+  if (t < t0) return null; const q = eio(seg(t, t0 + LABG[0], t0 + LABG[1])), a = L.label.big;
   return { s: n + '. ' + s, x: lerp(a.x, L.label.x, q), y: lerp(a.y, L.label.y, q), sc: lerp(a.sc, 1, q) * (0.85 + 0.15 * pop(seg(t, t0, t0 + 0.5))), op: ss(seg(t, t0, t0 + 0.35)) }; };
 const camZ = (t, b, z0 = 1.0, z1 = 1.045) => lerp(z0, z1, eio(seg(t, b.a - 0.5, b.b + 0.5)));
 // the hand's resting places
@@ -197,14 +230,14 @@ function vis(id, t) {
     return V;
   }
   if (id === 'ask') {
-    const d = bagelBase({ bob: 0 }); const cb = subAt('ask1', 2) || AT.ask1 + D.ask1 * 0.6;
+    const d = bagelBase({ bob: 0 }); const cb = TALL ? AT.tAsk + D.tAsk * 0.45 : subAt('ask1', 2);
     if (t > cb) d.expr = 'curious';
     if (t > M.yes + 0.3) { d.pose = 'happy'; d.expr = null; }
     V.text.label = label(1, 'Ask first.', t, M.lab);
     if (t > cb - 0.1) V.text.child = { s: 'May I say hello?', op: ss(seg(t, cb - 0.1, cb + 0.25)), sc: 0.85 + 0.15 * pop(seg(t, cb - 0.1, cb + 0.45)) };
     if (t > M.yes + 0.1) V.text.adult = { s: 'Yes!', op: ss(seg(t, M.yes + 0.1, M.yes + 0.45)), sc: 0.85 + 0.15 * pop(seg(t, M.yes + 0.1, M.yes + 0.6)) };
     // the wave: the open hand comes up from the bottom and waves, slowly
-    const w0 = has('ask3') ? M.wave0 - 0.4 : M.yes + 0.9, rest = TALL ? { kind: 'open', x: 250, y: 1150, r: -8, lean: 0.1 } : { kind: 'open', x: 560, y: 820, r: -8, lean: 0.12 };
+    const w0 = has('ask3') ? M.wave0 - 0.4 : 1e9, rest = TALL ? { kind: 'open', x: 250, y: 1150, r: -8, lean: 0.1 } : { kind: 'open', x: 560, y: 820, r: -8, lean: 0.12 };
     let h = null; if (t > w0) { const qi = eo3(seg(t, w0, w0 + 1.2)), qo = ss(seg(t, M.askEnd - 0.2, M.askEnd + 0.6)); h = handMix(HAND_OFF(rest), rest, qi * (1 - qo)); h.r += Math.sin((t - w0) * Math.PI * 2 * 0.75) * 11 * qi; }
     V.mid = motes(t, 1) + leadSVG(d, L.leadTop, 'line') + dogSVG(d, fr) + leadSVG(d, L.leadTop); V.front = handSVG(h) + motes(t, 2);
     return V;
@@ -236,7 +269,7 @@ function vis(id, t) {
     if (lean > 0.3) { d.pose = 'pet'; d.expr = 'hearts'; }
     const side = onDog(Object.assign({}, d, { lean: 0, dx: 0 }), mm.side);
     const REST = { kind: 'flat', x: side[0] - 10, y: side[1] + 6, r: TALL ? -40 : -38, lean: 0.1 }, LIFT = Object.assign({}, REST, { x: REST.x - 30, y: REST.y + 70, r: REST.r + 6 });
-    const r0 = M.reach0 + 0.2; let h = handMix(HAND_OFF(REST), REST, eo3(seg(t, r0, r0 + 2.0)));
+    const r0 = M.reach0 + 0.2; let h = handMix(HAND_OFF(REST), REST, eo3(seg(t, r0, r0 + (TALL ? 1.2 : 1.6))));
     const STROKE = mm.box[2] * L.K * 0.22;
     const strokeAt = (u) => { const w = 0.5 - 0.5 * Math.cos(u * 2 * Math.PI); return { x: REST.x + STROKE * w, y: REST.y - 6 * Math.sin(u * Math.PI * 2) * 0, r: REST.r + 4 * w }; };
     if (t >= s0 && t < s0 + 3 * SP) { const u = ((t - s0) / SP) % 1, st = strokeAt(u); h = Object.assign({}, REST, st); }
@@ -255,7 +288,7 @@ function vis(id, t) {
   if (id === 'go') {
     V.text.label = label(4, 'Let it go.', t, M.lab4);
     // Bagel turns and trots off happily, back across the grass, and sniffs about over there; the hand stays low and still
-    const w0 = M.go0 + 0.4, w1 = w0 + (TALL ? 2.8 : 5.4), q = ss(seg(t, w0, w1));
+    const w0 = M.go0 + 0.4, w1 = w0 + (TALL ? 2.0 : 3.2), q = ss(seg(t, w0, w1));
     const far = TALL ? { x: L.BX + 140, g: L.G - 110, k: L.K * 0.72 } : { x: L.BX + 360, g: L.G - 90, k: L.K * 0.72 };
     const d = bagelBase({ x: lerp(L.BX - 60, far.x, q), g: lerp(L.G, far.g, q), k: lerp(L.K, far.k, q), facing: t < w0 ? 'left' : 'right', pose: t < w0 ? 'idle' : t < w1 ? 'walk' : TALL ? 'idle' : 'sniff', sop: 1 - 0.3 * q });
     if (d.pose === 'walk') { d.bob = Math.abs(Math.sin((t - w0) * Math.PI * 2.6)) * 6; }
@@ -269,7 +302,6 @@ function vis(id, t) {
     const bed = id === 'bed' ? BEDS.bagel : BEDS.noodle, dk = kb * (who === NOODLE ? 0.74 : 1.0);
     const d = { key: who, pose: 'sleep', facing: who === NOODLE ? 'right' : 'left', x: bx + (who === NOODLE ? -6 * kb : 0), g: floor - (who === NOODLE ? 34 : 22) * kb, k: dk, outfit: who === BAGEL ? COLLAR : undefined, bob: breath(t) * 0.6 };
     V.mid = bedSVG(bed, bx, floor, kb, false) + dogSVG(d, fr, false) + bedSVG(bed, bx, floor, kb, true);
-    if (id === 'night') { const l0 = M.logo; if (t > l0) V.text.logo = ss(seg(t, l0, l0 + 1.0)); V.endFade = ss(seg(t, T - 1.6, T)); }
     V.focus = [bx, floor - 120];
     return V;
   }
@@ -282,18 +314,21 @@ function vis(id, t) {
   }
   throw new Error('no beat ' + id);
 }
-// the frame at t: the beat's look, cross-faded over 1 s into the next one; the subtitle on top
+// the frame at t: the beat's look, cross-faded over 2 XF into the next one; the subtitle on top; at the end the paper and the end card
 function frameState(t) {
   let i = BEATS.findIndex((b) => t >= b.a && t < b.b); if (i < 0) i = BEATS.length - 1;
   const b = BEATS[i], layers = [];
-  const prevQ = i > 0 ? 1 - ss(seg(t, b.a - 0.5, b.a + 0.5)) : 0, nextQ = i + 1 < BEATS.length ? ss(seg(t, b.b - 0.5, b.b + 0.5)) : 0;
+  const prevQ = i > 0 ? 1 - ss(seg(t, b.a - XF, b.a + XF)) : 0, nextQ = i + 1 < BEATS.length ? ss(seg(t, b.b - XF, b.b + XF)) : 0;
   if (prevQ > 0) layers.push({ v: vis(BEATS[i - 1].id, t), op: 1 });
   layers.push({ v: vis(b.id, t), op: prevQ > 0 ? 1 - prevQ : 1 });
   if (nextQ > 0) layers.push({ v: vis(BEATS[i + 1].id, t), op: nextQ });
   // text: from the layer that is most visible (labels, bubbles and numbers fade with their scene)
   const u = SUBS.find((x) => t >= x.a && t < x.b);
   const sub = u ? { s: u.s, op: Math.min(ss((t - u.a) / 0.12), ss((u.b - t) / 0.12)) } : null;
-  return { layers: layers.map((l) => ({ place: l.v.place, z: l.v.z, focus: l.v.focus, mid: l.v.mid, front: l.v.front, text: l.v.text, op: l.op, pale: l.v.pale || 0, endFade: l.v.endFade || 0 })), sub };
+  const soft = ss(seg(t, M.soft, M.soft + (TALL ? 0.5 : 0.8))), endq = ss(seg(t, M.card, M.card + (TALL ? 0.45 : 0.7)));
+  if (soft >= 1) layers.length = 0; // under the paper: nothing else is drawn (so the end-card frames depend on the card alone)
+  return { layers: layers.map((l) => ({ place: l.v.place, z: l.v.z, focus: l.v.focus, mid: l.v.mid, front: l.v.front, text: l.v.text, op: l.op, pale: l.v.pale || 0 })), sub: soft >= 1 ? null : sub,
+    soft: r3(soft), end: r3(endq), endS: r3(0.97 + 0.03 * eo3(seg(t, M.card, M.card + 0.9))) };
 }
 
 // ---- the page ----
@@ -301,10 +336,12 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}.hide{display:none}.bedfront svg *{visibility:hidden}.bedfront svg .pa-bed-front,.bedfront svg .pa-bed-front *{visibility:visible}</style>
 <svg id="root" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs><filter id="shadow" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="10"/></filter>
 <filter id="handsoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>${[1.6, 3.5, 9].map((s, d) => `<filter id="dof${d}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${s}"/></filter>`).join('')}</defs>
-<rect width="${W}" height="${H}" fill="${PAPER}"/><g id="L0"></g><g id="L1"></g><g id="L2"></g><rect id="fade" width="${W}" height="${H}" fill="${PAPER}" opacity="0"/><g id="tx"></g><g id="sub"></g></svg>
+<rect width="${W}" height="${H}" fill="${PAPER}"/><g id="L0"></g><g id="L1"></g><g id="L2"></g><rect id="fade" width="${W}" height="${H}" fill="${PAPER}" opacity="0"/><g id="tx"></g><g id="sub"></g><g id="end"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
+${ENDCARD_JS}
+const HANDLES=${JSON.stringify(handles())}; let END=null;
 const LOGO=${JSON.stringify(LOGO_SVG)}, W=${W},H=${H},TALL=${TALL},LY=${JSON.stringify(LY)},INK='${INK}',MUTED='${MUTED}',CREAM='${CREAM}',AND='${AND}',CAV='${CAV}';
 const $=(i)=>document.getElementById(i), sc=(x,y,s,g)=>'<g transform="translate('+x+' '+y+') scale('+s+') translate('+(-x)+' '+(-y)+')">'+g+'</g>';
 const BG={};
@@ -326,7 +363,6 @@ function textSVG(T){ let g='';
   if(T.nums) for(const n of T.nums){ g+='<g opacity="'+n.op+'">'+sc(n.x,n.y,n.sc,'<g data-box><circle cx="'+n.x+'" cy="'+n.y+'" r="'+LY.numR+'" fill="#FFE3A1" stroke="'+INK+'" stroke-width="6"/>'+centred([{s:n.s,size:LY.numSize}],n.x,n.y,CAV).svg+'</g>')+'</g>'; }
   if(T.cards){ const C=LY.cards, words=['Ask first.','Stand still.','Pet softly.','Let it go.'];
     for(const c of T.cards){ const y=C.y0+(c.i-1)*C.dy, x=C.x; g+='<g opacity="'+c.op+'">'+sc(x,y,c.sc,'<g transform="rotate('+[-1.5,1,-1,1.5][c.i-1]+' '+x+' '+y+')">'+card(x,y,C.w,C.h,[{s:c.i+'. '+words[c.i-1],size:C.size}],CAV,{fill:c.hi?'#FFE3A1':CREAM,sw:c.hi?6:5})+'</g>')+'</g>'; } }
-  if(T.logo){ const c=LY.logo, w=c.w*0.75; g+='<g opacity="'+T.logo+'" data-safe><svg x="'+(c.x-w/2)+'" y="'+(c.y-w*140/900)+'" width="'+w+'" height="'+(w*280/900)+'" viewBox="0 0 900 280">'+LOGO+'</svg></g>'; }
   return g; }
 window.frame=async function(S){
   for(let i=0;i<3;i++){ const el=$('L'+i), l=S.layers[i]; if(!l){ el.innerHTML=''; el.removeAttribute('data-k'); continue; }
@@ -336,11 +372,13 @@ window.frame=async function(S){
     el.innerHTML='<g transform="'+t(zb,-12*(z-1)/0.045)+'"><image href="'+BG[l.place]+'" width="'+W+'" height="'+H+'"/>'+(l.pale?'<rect width="'+W+'" height="'+H+'" fill="#FFF8EC" opacity="'+l.pale+'"/>':'')+'</g>'
       +'<g transform="'+t(z)+'">'+l.mid+'</g><g transform="'+t(zf,10*(z-1)/0.045)+'">'+l.front+'</g>';
   }
-  const top=S.layers.reduce((a,l)=>l.op>a.op?l:a,S.layers[0]);
-  $('fade').setAttribute('opacity',top.endFade*0.85);
-  let tx=''; for(const l of S.layers){ const g=textSVG(l.text); if(g) tx+='<g opacity="'+l.op+'">'+g+'</g>'; } $('tx').innerHTML=tx;
+  $('fade').setAttribute('opacity',S.soft);
+  let tx=''; for(const l of S.layers){ const g=textSVG(l.text); if(g) tx+='<g opacity="'+(l.op*(1-S.soft)).toFixed(3)+'">'+g+'</g>'; } $('tx').innerHTML=tx;
+  // the shared end card (brand/kids/endcard.js), over the paper: fades in as a whole with a small settle, no bounce
+  if(S.end>0){ if(!END) END=endCard(TALL?'tall':'wide',HANDLES,LOGO); const cx=TALL?475:W/2, cy=TALL?855:H/2;
+    $('end').innerHTML='<g opacity="'+S.end+'">'+sc(cx,cy,S.endS,END)+'</g>'; } else $('end').innerHTML='';
   let sub=''; if(S.sub){ let size=LY.subSize; const k=inkOf(S.sub.s,size,AND); if(k.L+k.R+60>LY.subMax) size=Math.floor(size*(LY.subMax-60)/(k.L+k.R));
-    sub=pill(S.sub.s,LY.subCX,LY.subY,size,AND,{op:(S.sub.op).toFixed(3),padX:32}); } $('sub').innerHTML=sub;
+    sub=pill(S.sub.s,LY.subCX,LY.subY,size,AND,{op:(S.sub.op*(1-S.soft)).toFixed(3),padX:32}); } $('sub').innerHTML=sub;
   await Promise.all([...document.querySelectorAll('image')].map((im)=>im.href&&im.href.baseVal?new Promise((r)=>{ const i=new Image(); i.onload=i.onerror=r; i.src=im.href.baseVal; }):0));
   const bad=centreCheck($('root')); const out=TALL?safeCheck($('root')):[]; return {bad,out}; };
 </script>`;
@@ -415,16 +453,18 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
     cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, '-q:v', '2', jpg]); console.log('wrote', jpg); };
   if (process.env.ONLY === 'covers') { await cover(); await br.close(); return; }
   if (process.env.ONLY === 'stills') {
-    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [M.nIn1 + 1, M.title0 + 1.5, M.yes + 0.8, (M.wave0 || M.yes + 2) + 1.2, M.lab2 + 0.6, M.walk0 + 2.0, M.sniff + 0.8,
-      M.reach0 + 2.3, M.s0 + 0.5 * SP, M.s0 + 2.5 * SP, M.lean + 1.2, M.go0 + 3.0, M.go0 + 6, ...(TALL ? [] : [BEATS.find((b) => b.id === 'bed').a + 1.5, BEATS.find((b) => b.id === 'bowl').a + 1.5, BEATS.find((b) => b.id === 'bowl').a]),
-      M.rc4 + 0.8, BEATS.find((b) => b.id === 'bye').a + 1.5, M.logo + 2];
+    const bA = (id) => BEATS.find((b) => b.id === id).a;
+    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : TALL
+      ? [0, 1.0, M.lab + 0.3, M.yes + 0.6, M.lab2 + 0.3, M.walk0 + 1.2, M.sniff + 0.6, M.lab3 + 0.3, M.s0 + 0.5 * SP, M.s0 + 2.5 * SP, M.lean + 1.0, M.lab4 + 0.3, M.go0 + 2.0, M.soft + 0.3, M.card + 0.2, T - 0.04]
+      : [M.nIn1 + 0.5, M.title0 + 1.0, M.yes + 0.6, M.wave0 + 1.0, M.lab2 + 0.4, M.walk0 + 1.2, M.sniff + 0.6, M.reach0 + 1.8, M.s0 + 0.5 * SP, M.s0 + 2.5 * SP, M.lean + 1.0, M.go0 + 2.5, M.go0 + 4.5,
+        bA('bed') + 1.0, bA('bowl') + 1.0, bA('bowl'), M.rc4 + 0.6, bA('bye') + 1.0, M.soft - 0.3, M.soft + 0.4, M.card + 0.3, T - 0.04];
     for (const [j, t] of ts.entries()) await render(p, t, path.join(WORK, `still${String(j).padStart(2, '0')}.png`), 'png');
-    console.log('stills', ts.map((t) => t.toFixed(2)).join(' ')); await cover(); await br.close(); return; }
+    console.log('stills', ts.map((t) => t.toFixed(2)).join(' ')); await br.close(); return; }
   const [FA, FB] = process.env.FRAMES ? process.env.FRAMES.split('-').map(Number) : [0, N];
   let next = FA, done = 0; const t0 = Date.now();
   await Promise.all(pages.map(async (q) => { while (next < Math.min(FB, N)) { const fi = next++; await render(q, fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.jpg`));
     if (++done % 250 === 0) console.log('frame', done, '/', Math.min(FB, N) - FA, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); } }));
-  if (!process.env.FRAMES) await cover();
+  // the covers are made only with ONLY=covers (owner, 4 Nov 2026: unchanged)
 
   // ---- sound: the game's own yard music, very soft (about 14 dB under the voice), fade in 2 s and out 3 s; Noodle's lines at their times ----
   const ap = await br.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ROOT, 'mods', 'pawaudio.js') });
@@ -442,7 +482,7 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
   console.log('voice', vI.toFixed(1), 'LUFS (speech), music', mI.toFixed(1), 'LUFS: music gain', gain.toFixed(1), 'dB');
   const mp4 = path.join(OUT, TALL ? 'doodle-doggo-kids-dog-manners-tall.mp4' : 'doodle-doggo-kids-dog-manners.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.jpg'), '-i', path.join(WORK, 'music.wav'), '-i', voice,
-    '-filter_complex', `[1:a]atrim=0:${T.toFixed(3)},volume=${gain.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${(T - 3).toFixed(2)}:d=3,aresample=44100[m];[2:a]aresample=44100,pan=stereo|c0=c0|c1=c0[v];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aresample=44100,alimiter=limit=0.76:level=false:attack=2:release=60[a]`,
+    '-filter_complex', `[1:a]atrim=0:${T.toFixed(3)},volume=${gain.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${M.soft.toFixed(2)}:d=${(T - M.soft).toFixed(2)},aresample=44100[m];[2:a]aresample=44100,pan=stereo|c0=c0|c1=c0[v];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aresample=44100,alimiter=limit=0.76:level=false:attack=2:release=60[a]`,
     '-map', '0:v', '-map', '[a]', '-t', T.toFixed(3), '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '22', '-pix_fmt', 'yuv420p', '-r', String(FPS),
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', mp4], { stdio: 'inherit' });
   const dur = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', mp4]).toString(), mb = fs.statSync(mp4).size / 1e6;
