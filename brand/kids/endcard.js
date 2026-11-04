@@ -7,7 +7,7 @@
 // wide 1920 x 1080: logo, the site pill, then the three socials in a row. tall 1080 x 1920: everything inside SAFE (x 60..890, y 270..1440,
 // centred on x 475), the socials stacked. Handles come from IG_HANDLE / X_HANDLE / YT_HANDLE; a missing one is drawn as a red "@ ?" with a red
 // PREVIEW sticker, so a preview can never be posted by mistake.
-const handles = () => ({ ig: process.env.IG_HANDLE || '@doodledoggo.app', x: process.env.X_HANDLE || '', yt: process.env.YT_HANDLE || '' });
+const handles = () => ({ ig: process.env.IG_HANDLE || '@doodledoggo.app', x: process.env.X_HANDLE || '@doodledoggoapp', yt: process.env.YT_HANDLE || '@DoodleDoggoApp' });
 const ENDCARD_JS = `
 function endIcons(kind, x, y, s){ const k=s/72, ink='#5B3D32', g=(b)=>'<g transform="translate('+x.toFixed(1)+' '+y.toFixed(1)+') scale('+k.toFixed(3)+')">'+b+'</g>';
   if(kind==='ig') return g('<rect x="-32" y="-32" width="64" height="64" rx="18" fill="#F6B8CF" stroke="'+ink+'" stroke-width="5"/><circle cx="0" cy="1" r="14" fill="#FFF8EC" stroke="'+ink+'" stroke-width="5"/><circle cx="18" cy="-18" r="4.5" fill="'+ink+'"/>');
