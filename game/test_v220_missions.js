@@ -1,7 +1,8 @@
 // v2.20 "Missions v2" (V220.md, docs/design/missions-v2.md): part A (save fields, the backfill of old saves, the counters, the new act data)
 // and part B (Today: one story mission and two little helps a Japan day, no coins for helps, Gerald's treat pouch once a Japan day, the free
 // swap on any one row, the tab strip), part C (Badges: 17 tracks, tiers from the counters, cosmetics only, the Badges sticker pages, the Crayon
-// Medal, an old save's quiet backfill and its one letter). Later parts (D Week, E Notebook, F Growing up) add their sections below.
+// Medal, an old save's quiet backfill and its one letter). Part D (Week: the help-wanted board, Monday 00:00 JST, any 3 of 5,
+// one letter with 50 coins, the neighbour card). Later parts (E Notebook, F Growing up) add their sections below.
 // node game/run_tests.js v220_missions
 require('./test_lib').run('v220_missions', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -144,7 +145,7 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(tb.tabs.join() === 'today:true,week:false,badges:false' && tb.hs.every((h) => h >= 44), 'three tabs, Today open, each 44 px or more: ' + tb.tabs.join() + ' ' + tb.hs.map(Math.round).join());
   ok(tb.body && tb.helps === 2 && tb.pouch && tb.li === 1, 'Today: the clipboard (one story row), two help rows, the pouch line');
   await t.p.click('.ms-tab[data-mstab="week"]');
-  ok(await t.until(() => /help-wanted board/.test((document.querySelector('#modal .ms-tabbody') || {}).textContent || '') && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), 'Week: a placeholder until part D');
+  ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msw .msw-note').length === 5 && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), 'Week: Gerald\'s help-wanted board, five notes (part D)');
   await t.p.click('.ms-tab[data-mstab="badges"]');
   ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msb .msb-row').length === 17, null, 3000), 'Badges: the 17 badge rows (part C)');
   await t.p.click('.ms-tab[data-mstab="today"]');
@@ -219,6 +220,108 @@ require('./test_lib').run('v220_missions', async (t) => {
   await t.SH('badges_desktop');
   await t.closeX(); await t.modalGone();
 
+  sec('D1. the help-wanted board: five notes a Japan week from named neighbours, gated, seeded');
+  await calmModals(); await ev(() => { window.__toasts.splice(0); });
+  const w1 = await ev(() => {
+    const P = window.__paw, W = P.msw, wk = P.S.missions.wk; wk.w = ''; wk.list = []; wk.got = ''; wk.lt = null; wk.seen = '';
+    const L = W.list(), ids = L.map((x) => x.id);
+    return { pool: W.pool.length, ids, whos: ids.map((id) => W.who(id)), w: wk.w, key: P.ms2.weekKey(), gates: ids.every((id) => W.gate(id)), again: W.list().map((x) => x.id).join(), pick: W.pick(wk.w).join(), fields: ['lt', 'cards', 'cg', 'seen'].every((k) => k in wk) };
+  });
+  ok(w1.pool >= 13 && w1.ids.length === 5 && new Set(w1.ids).size === 5, `${w1.pool} requests in the pool, five different notes: ` + w1.ids.join());
+  ok(w1.whos.every((k) => ['bea', 'pip', 'gerald', 'fair', 'cafe'].includes(k)) && new Set(w1.whos).size >= 4, 'from the named neighbours, one each where they can ask: ' + w1.whos.join());
+  ok(w1.w === w1.key && w1.again === w1.ids.join() && w1.pick === w1.ids.join(), 'the board of this Japan week (' + w1.w + '), the same five on a second look and from the seed');
+  ok(w1.gates, 'every note can be done now (its gate holds)');
+  ok(w1.fields, 'S.missions.wk has the part D fields (lt, cards, cg, seen)');
+
+  sec('D2. Monday 00:00 JST (Sunday 15:00 UTC) with a clock stub');
+  const w2 = await ev(() => {
+    const P = window.__paw, W = P.msw, wk = P.S.missions.wk, R = Date.now, out = {};
+    try {
+      Date.now = () => Date.UTC(2026, 10, 15, 14, 59, 0); wk.w = ''; wk.got = ''; out.w1 = (W.list(), wk.w); out.ids1 = wk.list.map((x) => x.id).join(); out.p1 = W.pick('2026-11-09').join();
+      Date.now = () => Date.UTC(2026, 10, 15, 14, 59, 59); W.list(); out.still = wk.w;
+      Date.now = () => Date.UTC(2026, 10, 15, 15, 0, 0); W.list(); out.w2 = wk.w; out.ids2 = wk.list.map((x) => x.id).join(); out.p2 = W.pick('2026-11-16').join(); out.fresh = wk.list.every((x) => !x.done && !x.p);
+    } finally { Date.now = R; }
+    wk.w = ''; W.list(); return out;
+  });
+  ok(w2.w1 === '2026-11-09' && w2.still === '2026-11-09' && w2.ids1 === w2.p1, 'Sunday 23:59 JST: still the board of Monday 9 November');
+  ok(w2.w2 === '2026-11-16' && w2.ids2 === w2.p2 && w2.fresh, 'Monday 00:00 JST: the board of the 16th, drawn by its seed (' + w2.ids2 + ')');
+
+  sec('D3. any 3 of 5 fill the board: a stamp, one letter with 50 coins the next morning, life.boards');
+  await calmWishes();
+  const w3 = await ev(() => {
+    const P = window.__paw, W = P.msw, S = P.S, wk = S.missions.wk; window.__msf(['gaze']); P.ms2.force(['h_pet', 'h_water']);
+    wk.got = ''; wk.card = 0; wk.lt = null; S.mail = S.mail.filter((x) => !/^msw_/.test(x.id));
+    W.force(['w_bath', 'w_walk', 'w_photo', 'w_treasure', 'w_trick']); window.__toasts.splice(0);
+    const c = S.coins, b = S.missions.life.boards, out = {};
+    P.ms.act('bath', {}); P.ms.act('bath', {}); P.ms.act('treasure', { name: 'x' }); P.ms.act('treasure', { name: 'y' }); P.ms.act('photo', {}); P.ms.act('photo', {});
+    out.two = W.done(); out.got0 = wk.got; out.bar = wk.list.find((x) => x.id === 'w_photo').p;
+    P.ms.act('photo', {}); out.three = W.done(); out.got = wk.got === wk.w; out.card = wk.card; out.boards = S.missions.life.boards - b; out.dc = S.coins - c;
+    out.lt = wk.lt && wk.lt.w === wk.w && wk.lt.ids.length === 3; out.mail = S.mail.filter((x) => /^msw_/.test(x.id)).length;
+    P.ms.act('walk', { area: 'park', pack: 1 }); for (let i = 0; i < 8; i++) P.ms.act('trick', { name: 'Sit', place: 'yard', mode: 'lure' });
+    out.four = W.done(); out.boards2 = S.missions.life.boards - b; out.card2 = wk.card; out.letterNow = W.letter(false);
+    return out;
+  });
+  ok(w3.two === 2 && !w3.got0 && w3.bar === 2, 'two notes done and a third on its way (2 of 3 photos): not filled yet');
+  ok(w3.three === 3 && w3.got && w3.card === 1 && w3.boards === 1, 'the third note fills the board: a stamp on the card (1), life.boards +1');
+  ok(w3.dc === 0 && w3.lt && w3.mail === 0, 'no coins at once, the letter waits for the next morning (' + w3.dc + ')');
+  ok(w3.four === 4 && w3.boards2 === 1 && w3.card2 === 1 && w3.letterNow === null, 'a fourth note: no second board, no second stamp, no letter the same day');
+  ok(await t.waitToast(/^Gerald's board is filled! A stamp on your neighbour card, and a thank-you letter with 50 coins comes tomorrow morning\.$/), 'toast "Gerald\'s board is filled! ..."');
+  ok(await t.waitToast(/^A note done for .+: .+\.$|board notes done/), 'note toasts, batched');
+  ok(await t.until(() => document.querySelector('#msBtn').classList.contains('dot'), null, 3000), 'the filled board lights the soft dot');
+  await ev(() => { window.__paw.S.missions.wk.lt.d = '2020-01-01'; });
+  ok(await t.until(() => window.__paw.S.mail.filter((x) => /^msw_/.test(x.id)).length === 1, null, 6000), 'a later morning: the letter arrives in a quiet yard');
+  const w4 = await ev(() => { const P = window.__paw, S = P.S, L = S.mail.filter((x) => /^msw_/.test(x.id)), m = L[0]; return { n: L.length, id: m.id, w: S.missions.wk.w, coins: m.gift && m.gift.coins, claimed: !!(m.gift && m.gift.claimed), from: m.from, text: m.text, lt: S.missions.wk.lt, again: P.msw.letter(true) }; });
+  ok(w4.n === 1 && w4.id === 'msw_' + w4.w && w4.coins === 50 && !w4.claimed && w4.lt === null && w4.again === null, 'exactly one letter for the board (msw_' + w4.w + '), 50 coins waiting for Collect');
+  ok(w4.from === 'Gerald' && /^Thank you for helping out: .+\. .+ 50 coins .+ Your neighbour card has 1 of 4 stamps now\.$/.test(w4.text) && !/;/.test(w4.text), 'the letter: ' + w4.text);
+  { const c0 = (await S()).coins; await ev(() => window.__paw.dd.mail()); await t.p.waitForSelector('.panel.mailbox .mb-item[data-mail^="msw_"]'); await t.p.click('.panel.mailbox .mb-item[data-mail^="msw_"]'); await t.p.waitForSelector('.panel.mailbox .mb-item.on[data-mail^="msw_"]'); await t.p.waitForSelector('.panel.mailbox .letter [data-mbget]');
+    await t.p.click('.letter [data-mbget]'); await t.p.waitForSelector('.letter .mb-got');
+    ok((await S()).coins === c0 + 50, 'Collect: +50 coins, raw (no BOOST), like the daily mission (' + ((await S()).coins - c0) + ')'); await t.closeX(); await t.modalGone(); }
+
+  sec('D4. the neighbour card: four boards give a Boutique outfit not owned, then a Pupcake');
+  const w5 = await ev(() => {
+    const P = window.__paw, W = P.msw, S = P.S, wk = S.missions.wk, wear = P.dd.wear, out = {};
+    S.inv.clothes = S.inv.clothes.filter((n) => n !== wear[0] && n !== wear[1]); wk.cards = 0; wk.card = 3; wk.got = ''; wk.lt = null;
+    out.next = W.next(); W.fill(); out.gift = S.inv.clothes.includes(out.next); out.card = wk.card; out.cards = wk.cards; out.cg = wk.cg.n; out.lg = wk.lt && wk.lt.g; out.st = !!S.dd.st.msb_card;
+    wear.forEach((n) => { if (!S.inv.clothes.includes(n)) S.inv.clothes.push(n); }); const nc = S.inv.clothes.length, pc = S.inv.food.Pupcake || 0;
+    wk.card = 3; wk.got = ''; wk.lt = null; out.next2 = W.next(); W.fill(); out.pup = (S.inv.food.Pupcake || 0) - pc; out.nc = S.inv.clothes.length - nc; out.cards2 = wk.cards; out.cg2 = wk.cg.n; wk.lt = null;
+    return out;
+  });
+  ok(w5.next === (await ev(() => window.__paw.dd.wear[0])) && w5.gift && w5.cg === w5.next && w5.lg === w5.next, 'the 4th stamp: the first Bond 1-2 Boutique outfit not owned (' + w5.next + '), in the Wardrobe');
+  ok(w5.card === 0 && w5.cards === 1 && w5.st, 'the card starts again (0 stamps, 1 full card), the first-card sticker is there');
+  ok(w5.next2 === '' && w5.pup === 1 && w5.nc === 0 && w5.cards2 === 2 && w5.cg2 === 'Pupcake', 'every outfit owned: a Pupcake instead');
+  ok(await t.waitToast(/^A full neighbour card! A gift for .+: the .+\. It is in the Wardrobe\.$/), 'toast "A full neighbour card! ..."');
+
+  sec('D5. a half-done board turns into next week\'s board, nothing lost, no sad words');
+  const w6 = await ev(() => {
+    const P = window.__paw, W = P.msw, wk = P.S.missions.wk, R = Date.now, out = {};
+    try {
+      Date.now = () => Date.UTC(2026, 10, 15, 14, 0, 0); wk.w = ''; wk.got = ''; W.list(); W.force(['w_walk', 'w_bath', 'w_photo', 'w_treasure', 'w_trick']);
+      wk.list[0].p = 4; wk.list[1].p = 2; wk.list[1].done = '2026-11-15'; out.before = JSON.stringify(wk.list);
+      Date.now = () => Date.UTC(2026, 10, 15, 15, 0, 0); W.list(); out.w = wk.w; out.after = JSON.stringify(wk.list); out.html = W.html();
+      wk.got = wk.w; Date.now = () => Date.UTC(2026, 10, 22, 15, 0, 0); W.list(); out.w3 = wk.w; out.ids3 = wk.list.map((x) => x.id).join(); out.p3 = W.pick('2026-11-23').join(); out.fresh3 = wk.list.every((x) => !x.done && !x.p);
+    } finally { Date.now = R; }
+    wk.w = ''; wk.got = ''; W.list(); out.toasts = window.__toasts.join(' | '); return out;
+  });
+  ok(w6.w === '2026-11-16' && w6.after === w6.before, 'Monday: the same five notes, their progress kept (4 of 6 walks, two baths done)');
+  ok(!/\b(lost|expired?|expires|missed|too late|ends|gone|sorry|sad)\b/i.test(w6.html.replace(/<[^>]+>/g, ' ') + ' ' + w6.toasts), 'no loss or expiry words on the board or in the toasts');
+  ok(w6.w3 === '2026-11-23' && w6.ids3 === w6.p3 && w6.fresh3, 'after a filled board, the next Monday brings a fresh board');
+
+  sec('D6. the Week tab and the desktop summary');
+  await ev(() => { const P = window.__paw, wk = P.S.missions.wk; wk.seen = ''; P.msw.force(['w_bath', 'w_walk', 'w_photo', 'w_treasure', 'w_trick']); wk.list[0].done = P.rh.jst(); wk.list[0].p = 2; wk.list[1].p = 3; P.ms.open(); });
+  ok(await t.until(() => !!document.querySelector('#modal .ms-pop .ms-side .msw-sum .msw-go'), null, 4000), 'Today: the board summary in the right column');
+  ok(await ev(() => /^Help-wanted board 1 of 3$/.test(document.querySelector('.msw-sum .msw-sumtxt p').textContent.trim())), 'the summary: "Help-wanted board 1 of 3"');
+  await t.p.click('.msw-go');
+  ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msw .msw-note').length === 5 && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), '"See the board" opens the Week tab: five pinned notes');
+  const w7 = await ev(() => { const pan = document.querySelector('#modal .ms-pop'), n = [...pan.querySelectorAll('.msw-note')];
+    return { count: pan.querySelector('.msw-count').textContent.trim(), head: pan.querySelector('.msw-head h3').textContent.trim(), art: !!pan.querySelector('.msw-art svg'), who: n[0].querySelector('.msw-who').textContent.trim(), what: n[1].querySelector('.msw-what').textContent.trim(), num: n[1].querySelector('.msw-num').textContent.trim(), done: n[0].classList.contains('done'),
+      bars: n.every((x) => !!x.querySelector('.msw-bar[role="progressbar"]')), card: !!pan.querySelector('.msw-card .msw-spots'), cols: getComputedStyle(pan.querySelector('.msw-notes')).gridTemplateColumns.split(' ').length, semi: [...pan.querySelectorAll('.msw *')].some((e) => e.children.length === 0 && /;/.test(e.textContent)), red: [...pan.querySelectorAll('.msw *')].some((e) => /rgb\(2[0-9]{2}, [0-4]?[0-9], [0-4]?[0-9]\)/.test(getComputedStyle(e).color)) }; });
+  ok(w7.count === '1 of 3' && /help-wanted board/.test(w7.head) && w7.art, 'the cork board header and "1 of 3" at the top: ' + w7.head);
+  ok(w7.who === 'Baker Bea' && /^Take .+ on 6 walks$/.test(w7.what) && w7.num === '3 / 6' && w7.done && w7.bars, 'a note: who asks, what, a small bar ("3 / 6"), a done note ticked');
+  ok(w7.card && w7.cols === 2 && !w7.semi && !w7.red, 'the neighbour card, two columns on desktop, no semicolons, no red numbers');
+  await t.SH('week_desktop');
+  ok(await ev(() => !window.__paw.msw.dot()), 'seeing the board clears its dot');
+  await t.closeX(); await t.modalGone();
+
   sec('A4. an old v2.19.2 save loads and backfills, additively (no notebook)');
   const old = await ev(() => {
     const S = JSON.parse(JSON.stringify(window.__paw.S)), m = S.missions;
@@ -289,6 +392,28 @@ require('./test_lib').run('v220_missions', async (t) => {
     ok(!pb.small.length && pb.cols === 1, `${w}: Badges in one column, no text under 13 px ` + pb.small.slice(0, 4).join(' '));
     ok(pb.sum >= 44 && pb.over <= 1 && pb.wide <= 1, `${w}: the fold is a 44 px tap, no sideways scroll (${Math.round(pb.sum)}, ${pb.over}, ${pb.wide})`);
     await t.SH('phone_badges_' + w);
+    // part D: a brand-new save (Bond 1) only gets notes it can do, then the Week tab at this width
+    const pw = await t.ev(() => { const P = window.__paw, ids = P.msw.list().map((x) => x.id); return { ids, gates: ids.every((id) => P.msw.gate(id)), bond: P.S.bond.level }; });
+    ok(pw.ids.length === 5 && pw.gates && !pw.ids.some((id) => ['w_routes', 'w_pool', 'w_cook', 'w_harvest', 'w_water', 'w_jobs'].includes(id)), `${w}: a new save (Bond ${pw.bond}) gets five notes it can do, none for a locked place: ` + pw.ids.join());
+    await t.ev(() => { const P = window.__paw; P.msw.force(['w_walk', 'w_bath', 'w_photo', 'w_treasure', 'w_trick']); P.S.missions.wk.list[0].p = 2; P.S.missions.wk.list[1].p = 2; P.S.missions.wk.list[1].done = P.rh.jst(); P.ms2.tab('week'); });
+    await t.until(() => document.querySelectorAll('#modal .ms-pop .msw-note').length === 5, null, 4000);
+    const pwk = await t.ev(() => {
+      const pan = document.querySelector('#modal .panel.ms-pop'), body = pan.querySelector('.panel-body') || pan, small = [], br = body.getBoundingClientRect();
+      pan.querySelectorAll('.msw *').forEach((e) => { if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return; const r = e.getBoundingClientRect(); if (!r.width || e.closest('svg')) return; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.className + ':' + fs); });
+      const notes = [...pan.querySelectorAll('.msw-note')].map((e) => e.getBoundingClientRect()), taps = [...pan.querySelectorAll('.ms-tab')].map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); });
+      return { small, taps, over: body.scrollWidth - body.clientWidth, wide: document.documentElement.scrollWidth - innerWidth, cols: getComputedStyle(pan.querySelector('.msw-notes')).gridTemplateColumns.split(' ').length, inside: notes.every((r) => r.left >= br.left - 1 && r.right <= br.right + 1), stacked: notes.every((r, i) => !i || r.top >= notes[i - 1].bottom - 1), count: pan.querySelector('.msw-count').textContent.trim(), sum: !!pan.querySelector('.msw-sum') };
+    });
+    ok(pwk.cols === 1 && pwk.stacked && pwk.inside, `${w}: the board is five pinned notes in one column, inside the sheet`);
+    ok(!pwk.small.length && pwk.taps.every((x) => x >= 43.5), `${w}: Week: no text under 13 px, tabs 44 px ` + pwk.small.slice(0, 4).join(' '));
+    ok(pwk.over <= 1 && pwk.wide <= 1 && pwk.count === '1 of 3', `${w}: Week: no sideways scroll (${pwk.over}, ${pwk.wide}), "1 of 3" at the top`);
+    await t.SH('phone_week_' + w);
+    if (w === 390) { // the same five after a reload, with their progress
+      const before = await t.ev(() => { window.__paw.saveNow(); return JSON.stringify(window.__paw.S.missions.wk.list); });
+      await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue', { timeout: 20000 }); await t.ev(() => document.getElementById('tContinue').click()); await t.untilMode('yard');
+      await t.until(() => !!(window.__paw && window.__paw.msw), null, 8000);
+      const after = await t.ev(() => JSON.stringify(window.__paw.msw.list()));
+      ok(after === before, '390: the same five notes after a reload, progress kept');
+    }
     if (w !== 360) await t.ctx.close();
   }
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));

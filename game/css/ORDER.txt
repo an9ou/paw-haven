@@ -34,6 +34,7 @@
 27_missions.css
 27b_missions2.css
 27c_badges.css
+27d_week.css
 28_guide.css
 29_festival.css
 30_halloween.css

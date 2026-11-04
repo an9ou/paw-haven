@@ -26,6 +26,9 @@ function v220Fields(s, fresh) {
   if (!ms2Obj(m.tr)) m.tr = {};
   if (m.trbf !== 0 && m.trbf !== 1) m.trbf = fresh ? 1 : 0; // part C: 0 until an old save's earned badges are given quietly (one letter)
   if (!ms2Obj(m.wk)) m.wk = {}; str(m.wk, 'w'); str(m.wk, 'got'); num(m.wk, 'card'); if (!Array.isArray(m.wk.list)) m.wk.list = [];
+  // part D (24d_week.js): lt the thank-you letter on its way (null or { w, d: local date filled, ids, c: card stamps, g: card gift }), cards: full
+  // neighbour cards, cg: this week's card gift { w, n }, seen: the board state last looked at (the soft dot)
+  if (m.wk.lt !== null && !ms2Obj(m.wk.lt)) m.wk.lt = null; num(m.wk, 'cards'); str(m.wk, 'seen'); if (!ms2Obj(m.wk.cg)) m.wk.cg = { w: '', n: '' };
   if (!ms2Obj(m.wkAreas)) m.wkAreas = {};
   if (m.nb === undefined || (m.nb !== null && !ms2Obj(m.nb))) m.nb = fresh ? {} : null;
   if (m.nb) { num(m.nb, 'pages'); if (!ms2Obj(m.nb.done)) m.nb.done = {}; if (!Array.isArray(m.nb.got)) m.nb.got = []; }

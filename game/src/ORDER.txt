@@ -35,6 +35,7 @@
 24_missions.js
 24b_missions2.js
 24c_badges.js
+24d_week.js
 25_guide.js
 26_festival.js
 27_halloween.js
