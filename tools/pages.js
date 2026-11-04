@@ -3,7 +3,7 @@
 //   --single       wrap the one-file paw_haven_prototype.html instead of the split build (all languages inline, nothing minified)
 //   --no-minify    keep the scripts and styles as they are (easier to debug in the browser)
 //   --out <dir>    write there instead of _site/ (game/test_v219_friends.js checks the Pages-only flags with it)
-//   --itch         the itch.io / doodledoggo.app /play/ copy (tools/itch.js): no password screen, no Friends or Cantonese test flag
+//   --itch         the itch.io / doodledoggo.app /play/ copy (tools/itch.js): no password screen, no Friends, Cantonese or Missions v2 test flag
 // Writes _site/index.html (plus .nojekyll) and copies the brand kit (icons, manifest, share card) from brand/.
 // v2.14 PERF (PERF.md): by default it ships the split build from _split/ (game/build.js publish, tools/split.js): English inline, lang/<code>.<hash>.js
 // per other language and photo_fonts.<hash>.js next to index.html, and minifies index.html with tools/minify.js (esbuild; without it: a warning).
@@ -27,8 +27,10 @@ fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(phot
 // game/src/50_friends.js reads window.__ddFrTest; FR_LIVE and the What's new entry stay off). itch.io, /play/ and the artifact never get either.
 // v2.20 (owner, 3 Nov 2026): and Cantonese shown (window.__ddYueTest: game/i18n/msg.js yueOn(), while YUE_LIVE is off), so the owner's friend can
 // check 廣東話 on the test copy before it goes live. Same rule: never itch.io, /play/ or the artifact.
-const FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>', YUE_TEST_FLAG = '<script>window.__ddYueTest=1</script>';
-let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG + YUE_TEST_FLAG) + rest + '</body></html>';
+// v2.20 "Little Helps" (owner, 4 Nov 2026): and Missions v2 on (window.__ddMs2Test: game/src/24b_missions2.js ms2On(), while MS2_LIVE is off; its What's new
+// entry stays off). Same rule: never itch.io, /play/ or the artifact.
+const FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>', YUE_TEST_FLAG = '<script>window.__ddYueTest=1</script>', MS2_TEST_FLAG = '<script>window.__ddMs2Test=1</script>';
+let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG + YUE_TEST_FLAG + MS2_TEST_FLAG) + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');

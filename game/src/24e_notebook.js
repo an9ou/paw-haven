@@ -87,7 +87,7 @@ const nbLesson = (p) => tdata('ms_nb.' + p.id + '.l', p.l, { dog: NAME() });
 
 /* ---------------- state ---------------- */
 // a new player's notebook (S.fw.fresh and nb not null), only while missions may progress (the harness: prefs.msTest)
-function nbOk() { return !!(S && S.missions && S.missions.nb && S.fw && S.fw.fresh && Array.isArray(S.dogs) && S.dogs.length && msAllowed()); }
+function nbOk() { return !!(S && S.missions && S.missions.nb && S.fw && S.fw.fresh && Array.isArray(S.dogs) && S.dogs.length && ms2Ok()); }
 const nbNb = () => S.missions.nb;
 const nbStepsDone = (n) => { const d = nbNb().done[n]; return Array.isArray(d) ? d : []; };
 const nbFinished = (n) => nbNb().got.includes(n);
@@ -177,7 +177,7 @@ function nbLetter() {
 }
 // the two gift popups (days 7 and 14), in a quiet yard: no modal, no guide, no level-up card
 function nbPopTick() {
-  if (!S || !S.missions || !S.missions.nb || !msAllowed()) return;
+  if (!S || !S.missions || !S.missions.nb || !ms2Ok()) return;
   const nb = S.missions.nb; if (!Array.isArray(nb.pop) || !nb.pop.length) return;
   if (cur.mode !== 'yard' || !modal.hidden || busy || msGuideBusy() || (typeof levelQueue !== 'undefined' && levelQueue.length) || S.missions.mpop === 1) return; // the Crayon Medal popup goes first
   nbPopup(nb.pop.shift()); markDirty();
@@ -200,7 +200,7 @@ function nbPopup(day) {
 // in the book while the save has a notebook, just before the Badges pages (msPagesSync calls this before it orders the Badges pages)
 function nbPagesSync() {
   if (typeof DD_PAGES === 'undefined' || !S) return;
-  const want = msAllowed() && !!(S.missions && S.missions.nb && S.fw && S.fw.fresh) && Array.isArray(S.dogs) && S.dogs.length > 0, has = DD_PAGES.includes(NB_ST_PAGES[0]);
+  const want = ms2Ok() && !!(S.missions && S.missions.nb && S.fw && S.fw.fresh) && Array.isArray(S.dogs) && S.dogs.length > 0, has = DD_PAGES.includes(NB_ST_PAGES[0]);
   if (want && !has) { const i = DD_PAGES.indexOf('msb1'); if (i >= 0) DD_PAGES.splice(i, 0, ...NB_ST_PAGES); else DD_PAGES.push(...NB_ST_PAGES); DD.defs = null; }
   else if (!want && has) { DD_PAGES.splice(DD_PAGES.indexOf(NB_ST_PAGES[0]), NB_ST_PAGES.length); DD.defs = null; }
 }
@@ -259,7 +259,7 @@ function msNbHTML(all) {
 }
 // the finished notebook, folded at the bottom of Badges (24c_badges.js msBadgesHTML)
 function msNbDoneHTML() {
-  if (!S || !S.missions || !S.missions.nb || !msAllowed() || S.missions.nb.got.length < NB_N) return '';
+  if (!S || !S.missions || !S.missions.nb || !ms2Ok() || S.missions.nb.got.length < NB_N) return '';
   return `<details class="nb-fold"${NB.fold ? ' open' : ''}><summary>${esc(tt('ms2n.fold', "Gerald's town notebook: all {n} pages done", { n: NB_N }))}</summary>${msNbHTML(true)}</details>`;
 }
 // the How to play page, at the lesson the notebook page links to

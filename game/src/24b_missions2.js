@@ -9,6 +9,15 @@
    for a new player); a tab whose part is not built yet shows a short placeholder. Under the test harness progress needs prefs.msTest (msAllowed).
    Calm: a soft crayon dot on the clipboard when a help or the pouch is newly done, batched toasts that wait for Gerald (msGuideBusy).
    Test hook: window.__paw.ms2. */
+/* The launch switch (owner, 4 Nov 2026; the v2.19 Friends pattern, 50_friends.js FR_LIVE): Missions v2 stays off until the owner's launch date.
+   Off, the player sees exactly the v2.19.2 missions (one mission, no tabs, helps, pouch, Week, Badges, Notebook, Growing up, no new story missions
+   in the draw, no news entry, the old lesson). The save fields and the lifetime counters are still kept, silently, so the badges are right when it
+   turns on; then an old or off-time save gets its earned badges quietly with one letter (S.missions.on2, trbf). On: MS2_LIVE, the GitHub Pages
+   test copy (tools/pages.js sets window.__ddMs2Test, never itch.io or /play/) or the dev panel's "Missions v2 test" switch (prefs.ms2Test). */
+const MS2_LIVE = false; // the Game Manager turns this on at the v2.20 release (owner's launch date)
+function ms2On() { return MS2_LIVE || (typeof window !== 'undefined' && !!window.__ddMs2Test) || !!(typeof prefs !== 'undefined' && prefs && prefs.ms2Test); }
+// Missions v2 progress: switched on, and (under the test harness) prefs.msTest like today's mission (msAllowed)
+const ms2Ok = () => ms2On() && msAllowed();
 const MS2 = { tab: 'today', dot: false, q: [], own: null, sfx: '', resets: [] }; // own: the S these caches belong to (ms2Mine), sfx: a sound held for Gerald
 const ms2Obj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
 const MS2_LIFE = ['ms', 'help', 'harvest', 'cook', 'bath', 'trick', 'fetch', 'boards'];
@@ -25,6 +34,8 @@ function v220Fields(s, fresh) {
   if (m.life.bf !== 1) { m.life.bf = 1; if (!fresh) ms2Backfill(s); }
   if (!ms2Obj(m.tr)) m.tr = {};
   if (m.trbf !== 0 && m.trbf !== 1) m.trbf = fresh ? 1 : 0; // part C: 0 until an old save's earned badges are given quietly (one letter)
+  // the launch switch: on2 1 once Missions v2 was on for this save. Until then the badges earned meanwhile are given quietly with one letter when it turns on
+  if (ms2On()) m.on2 = 1; else if (m.on2 !== 1) { m.on2 = 0; m.trbf = 0; }
   if (m.mpop !== 1) m.mpop = 0; // part C (fix batch): 1 while the Crayon Medal popup is still to show, saved so a reload before a quiet yard keeps it
   if (!ms2Obj(m.wk)) m.wk = {}; str(m.wk, 'w'); str(m.wk, 'got'); num(m.wk, 'card'); if (!Array.isArray(m.wk.list)) m.wk.list = [];
   // part D (24d_week.js): lt the thank-you letter on its way (null or { w, d: local date filled, ids, c: card stamps, g: card gift }), cards: full
@@ -125,7 +136,7 @@ const MS_HELPS = [
 ];
 const ms2HelpDef = (id) => MS_HELPS.find((x) => x.id === id);
 // the story missions today's little helps stand for (their x lists): the mission swap never draws one of them, so one act never ticks two rows
-function ms2HelpX() { const h = S && S.missions && S.missions.help; if (!h || h.date !== jstISO() || !Array.isArray(h.list)) return []; return h.list.reduce((a, it) => a.concat((it && (ms2HelpDef(it.id) || {}).x) || []), []); }
+function ms2HelpX() { const h = S && S.missions && S.missions.help; if (!ms2On() || !h || h.date !== jstISO() || !Array.isArray(h.list)) return []; return h.list.reduce((a, it) => a.concat((it && (ms2HelpDef(it.id) || {}).x) || []), []); }
 // the helps that can be drawn today: gate ok, not a repeat of the story mission (excl: mission ids) nor of a help in hand (ids)
 function ms2HelpEligible(excl, ids) {
   return MS_HELPS.filter((d) => { if ((ids && ids.includes(d.id)) || (d.x && excl && d.x.some((x) => excl.includes(x)))) return false; try { return !d.g || !!d.g(); } catch (e) { return false; } });
@@ -168,7 +179,7 @@ function ms2SwapRow(row) {
 function ms2PouchTreat(date) { const L = MS2_POUCH.filter((n) => FOOD.some((f) => f.n === n)); return L[((ms2Days('2026-01-01', date) % L.length) + L.length) % L.length]; }
 // all three rows done (a forced test list: every mission in it): one treat, once a Japan day, and a paw doodle on today's diary page
 function ms2PouchCheck() {
-  if (!S || !S.missions || !msAllowed() || cur.mode === 'title') return false;
+  if (!S || !S.missions || !ms2Ok() || cur.mode === 'title') return false;
   const m = S.missions, t = jstISO(); if (m.pouch.day === t) return false;
   const H = ms2Helps(), L = m.list; if (!H.length || !H.every((x) => x.done) || !L.every((x) => x && x.done)) return false;
   const n = ms2PouchTreat(t); m.pouch.day = t; m.pouch.n = n; m.pouch.c++;
@@ -182,7 +193,7 @@ function ms2PouchCheck() {
 function ms2OnAct(a) {
   if (!S || !a || !a.kind || cur.mode === 'title' || !S.missions || !S.missions.life) return;
   try { ms2Count(a); } catch (e) { console.warn('ms2 count', e); }
-  if (!msAllowed()) return;
+  if (!ms2Ok()) return; // off (MS2_LIVE): the counters above still count, nothing else
   const H = ms2Helps(); let changed = false, done = 0;
   H.forEach((it) => {
     const d = ms2HelpDef(it.id); if (!d || it.done) return;
@@ -246,12 +257,14 @@ document.addEventListener('click', (e) => {
 });
 // the soft crayon dot on the clipboard (never a number): a help or the pouch newly done, or a later part's news (the board ready, a new badge)
 function ms2Dot(on) { MS2.dot = !!on; msHudSync(); }
-function ms2DotOn() { if (!S || !S.missions) return false; ms2Mine(); let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); if (!o && typeof msNbDot === 'function') o = !!msNbDot(); } catch (e) { /* a later part */ } return o; }
+function ms2DotOn() { if (!S || !S.missions || !ms2On()) return false; ms2Mine(); let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); if (!o && typeof msNbDot === 'function') o = !!msNbDot(); } catch (e) { /* a later part */ } return o; }
 
 /* ---------------- tests ---------------- */
 function ms2Expose() {
   if (!window.__paw) return;
   window.__paw.ms2 = {
+    on: () => ms2On(), live: () => MS2_LIVE, test: (v) => { prefs.ms2Test = !!v; return ms2On(); }, howto: () => gdTabHTML(), // the launch switch (prefs.ms2Test is the dev panel's)
+    pagesFlag: () => { const p = prefs.ms2Test; let off, on; try { prefs.ms2Test = false; off = ms2On(); window.__ddMs2Test = 1; on = ms2On(); } finally { delete window.__ddMs2Test; prefs.ms2Test = p; } return { off, on }; }, // the Pages test copy's flag alone turns it on
     fields: (s, fresh) => v220Fields(s || S, fresh), backfill: (s) => ms2Backfill(s || S), helps: () => ms2Helps(), roll: (f) => ms2HelpRoll(f), pick: (date) => ms2HelpPick(date), pool: MS_HELPS.map((d) => d.id),
     eligible: () => ms2HelpEligible(S.missions.list.map((x) => x.id)).map((d) => d.id), swapFree: (row) => ms2SwapFree(row), swap: (row) => ms2SwapRow(row), pouch: () => ms2PouchCheck(), treat: (date) => ms2PouchTreat(date || jstISO()),
     force: (ids) => { ms2HelpRoll(); S.missions.help.list = ids.map((id) => { const d = ms2HelpDef(id); return d ? ms2Item(d) : null; }).filter(Boolean); markDirty(); msRefresh(); return S.missions.help.list; },

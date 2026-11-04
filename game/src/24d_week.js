@@ -111,7 +111,7 @@ function mswText(it, short) {
 
 /* ---------------- progress (the act bus) ---------------- */
 function msWeekOnAct(a) {
-  if (!S || !a || !a.kind || cur.mode === 'title' || !S.missions || !msAllowed()) return;
+  if (!S || !a || !a.kind || cur.mode === 'title' || !S.missions || !ms2Ok()) return;
   const L = msWeekRoll(), wk = S.missions.wk; if (!L.length) return;
   let changed = false; const now = [];
   L.forEach((it) => {
@@ -165,7 +165,7 @@ function msWeekLetter(now) {
 // the board's state as seen: its Monday, and + once it is filled. The dot: a filled board not looked at yet, or a new board after the first one was seen
 const mswKey = (wk) => wk.w + (wk.got === wk.w ? '+' : '');
 function msWeekDot() {
-  const wk = S && S.missions && S.missions.wk; if (!wk || !wk.w || !Array.isArray(wk.list) || !wk.list.length || !msAllowed() || cur.mode === 'title') return false;
+  const wk = S && S.missions && S.missions.wk; if (!wk || !wk.w || !Array.isArray(wk.list) || !wk.list.length || !ms2Ok() || cur.mode === 'title') return false;
   return wk.seen !== mswKey(wk) && (wk.got === wk.w || !!wk.seen);
 }
 function mswSeen() { const wk = S.missions.wk, k = mswKey(wk); if (wk.seen !== k) { wk.seen = k; markDirty(); setTimeout(() => msHudSync(), 0); } }
@@ -227,7 +227,7 @@ document.addEventListener('click', (e) => {
 /* ---------------- wiring ---------------- */
 // the roll (a new Monday) and the letter (a later morning, a quiet yard), every 2 s
 setInterval(() => {
-  if (!S || !S.missions || !S.missions.wk || cur.mode === 'title') return;
+  if (!S || !S.missions || !S.missions.wk || cur.mode === 'title' || !ms2On()) return; // off (MS2_LIVE): no board, no letter
   try {
     if (S.missions.wk.w !== ms2WeekKey()) { msWeekRoll(); msHudSync(); } // a new Monday board lights the soft dot at once
     if (S.missions.wk.lt && cur.mode === 'yard' && modal.hidden && !busy) msWeekLetter(false);

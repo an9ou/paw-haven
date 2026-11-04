@@ -66,7 +66,7 @@ function msCups() { if (!S || !S.missions || !S.missions.tr) return []; return M
 /* ---------------- giving tiers ---------------- */
 // quiet: no toasts, no Bond, titles written silently (an old save's first look, or a test). Returns [{ id, t }] of the tiers given now
 function msTierCheck(quiet) {
-  if (!S || !S.missions || !S.missions.tr || !msAllowed() || cur.mode === 'title' || !Array.isArray(S.dogs) || !S.dogs.length) return [];
+  if (!S || !S.missions || !S.missions.tr || !ms2Ok() || cur.mode === 'title' || !Array.isArray(S.dogs) || !S.dogs.length) return [];
   ms2Mine();
   const m = S.missions, back = m.trbf !== 1; quiet = !!quiet || back;
   const got = [], titles = [];
@@ -145,7 +145,7 @@ function msbMedalPop() {
   const o = p.querySelector('#msbOk'); if (o) o.onclick = () => { SFX.click(); closeModal(); };
   return p;
 }
-function msbMedalTick() { if (S && S.missions && S.missions.mpop === 1 && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length)) msbMedalPop(); }
+function msbMedalTick() { if (S && S.missions && ms2On() && S.missions.mpop === 1 && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length)) msbMedalPop(); }
 // the soft dot on the clipboard: a new tier, until the Badges tab is seen
 function msBadgeDot() { ms2Mine(); return !!MSB.dot; }
 // Part D: the first full neighbour card gives the 18th sticker (S.missions.wk.cards 1, or life.boards 4)
@@ -158,7 +158,7 @@ function msPagesSync() {
   ms2Mine(); // a swapped S (clApply) starts with no remembered order, as a fresh load does
   try { if (typeof ffPagesSync === 'function') ffPagesSync(); } catch (e) { /* the fair is not ready */ }
   try { if (typeof nbPagesSync === 'function') nbPagesSync(); } catch (e) { /* part E: the two Notebook pages, before the Badges pages */ }
-  const want = msAllowed() && Array.isArray(S.dogs) && S.dogs.length > 0, i0 = DD_PAGES.indexOf(MSB_PAGES[0]), end = DD_PAGES.length - MSB_PAGES.length;
+  const want = ms2Ok() && Array.isArray(S.dogs) && S.dogs.length > 0, i0 = DD_PAGES.indexOf(MSB_PAGES[0]), end = DD_PAGES.length - MSB_PAGES.length;
   const old = MSB.order || DD_PAGES.slice();
   if (!want && i0 >= 0) DD_PAGES.splice(i0, MSB_PAGES.length);
   else if (want && i0 !== end) { if (i0 >= 0) DD_PAGES.splice(i0, MSB_PAGES.length); DD_PAGES.push(...MSB_PAGES); }

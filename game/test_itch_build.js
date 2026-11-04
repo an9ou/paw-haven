@@ -65,4 +65,9 @@ require('./test_lib').run('itch_build', async (t) => {
   await p.evaluate(() => window.__paw.ph.open());
   ok(await t.until(() => { const s = window.__paw.ph.svg && window.__paw.ph.svg(); return !!s && s.includes("font-family:'Caveat'") && s.includes('base64'); }, null, 20000), 'the first photo loads the photo fonts and the postcard carries them');
   ok((await sideFiles(p)).filter((f) => /photo_fonts/.test(f)).length === 1, 'the photo fonts file came once');
+  // the GitHub Pages test copy's flags (tools/pages.js) never reach itch.io or /play/: Friends, Cantonese, v2.20 Missions v2 (MS2_LIVE), the password screen
+  sec('no Pages-only test flags');
+  const html = fs.readFileSync(path.join(ROOT, 'dist', 'itch', 'index.html'), 'utf8');
+  ok(!/window\.__ddFrTest=1|window\.__ddYueTest=1|window\.__ddMs2Test=1|dd_gate_v1/.test(html), 'dist/itch/index.html has no __ddFrTest, __ddYueTest or __ddMs2Test flag and no password screen');
+  ok(await p.evaluate(() => !window.__ddMs2Test && !!window.__paw.ms2 && window.__paw.ms2.on() === false), 'the itch.io copy runs with Missions v2 off (MS2_LIVE)');
 });

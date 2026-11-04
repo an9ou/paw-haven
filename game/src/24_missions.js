@@ -64,16 +64,16 @@ const MS_POOL = [
   { id: 'ffjob', n: 1, w: 3, t: 'Help a neighbour with a town job', s: 'Town job', g: () => msFf(true), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job },
   { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && msStallDay() && topBond() >= 2 && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
   { id: 'ffphoto', n: 1, w: 3, t: 'Enter a photo in the weekly photo contest', s: 'Photo contest', g: () => typeof ffOn === 'function' && ffOn() && !!S.ff && !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc), m: (a) => a.kind === 'funfair' && a.game === 'photo' },
-  // v2.20 Missions v2 (V220.md section 2, design 3.1): nine more small stories. New act data: walk pack, trick place, cook discovered, the acts wish and frvisit
-  { id: 'walk_fresh', n: 1, w: 3, t: 'Walk a route you have not walked this week', s: 'A fresh route', g: () => ms2FreshRoutes().length > 0, m: (a) => a.kind === 'walk' && !!a.area && !ms2Walked7(a.area) }, // wkAreas is written after this check (24b listens later)
-  { id: 'walk_dressed', n: 1, w: 3, t: 'Go for a walk in an outfit', s: 'A dressed-up walk', g: () => S.inv.clothes.length > 0, m: (a) => a.kind === 'walk' && ms2Dressed() },
-  { id: 'pack_walk', n: 1, w: 3, t: 'Walk with two or more dogs', s: 'Pack walk', g: () => typeof crPack === 'function' && !!crPack(), m: (a) => a.kind === 'walk' && (+a.pack || 1) >= 2 },
-  { id: 'cook_new', n: 1, w: 3, t: 'Cook a dish you have never cooked', s: 'A new dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' && !!a.discovered },
-  { id: 'decorate', n: 1, w: 3, t: 'Move a decoration at home', s: 'Redecorate', g: () => !!S.decor && Object.keys(S.decor).length > 0, m: (a) => a.kind === 'decorate' },
-  { id: 'cafe', n: 1, w: 3, t: 'Take {dog} to the café', s: 'Café visit', g: () => !!PLACES.cafe && topBond() >= (PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
-  { id: 'trick_show', n: 1, w: 3, t: 'Show a trick in the Town Square', s: 'Square show', g: () => !!PLACES.square && topBond() >= (PLACES.square.bond || 1) && TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' && a.place === 'square' },
-  { id: 'wish', n: 1, w: 3, t: "Make {dog}'s wish come true", s: 'A wish come true', g: () => typeof ddReady === 'function' && ddReady() && !(ddWish(D()) || {}).done, m: (a) => a.kind === 'wish' },
-  { id: 'friend_yard', n: 1, w: 3, t: "Visit a friend's yard", s: 'A friendly visit', g: () => FR_LIVE && frOn() && ms2FriendsN() > 0, m: (a) => a.kind === 'frvisit' } // only once Friends are live
+  // v2.20 Missions v2 (V220.md section 2, design 3.1): nine more small stories (v2: only while ms2On(), so with MS2_LIVE off the draw is v2.19.2's). New act data: walk pack, trick place, cook discovered, the acts wish and frvisit
+  { id: 'walk_fresh', n: 1, w: 3, v2: 1, t: 'Walk a route you have not walked this week', s: 'A fresh route', g: () => ms2FreshRoutes().length > 0, m: (a) => a.kind === 'walk' && !!a.area && !ms2Walked7(a.area) }, // wkAreas is written after this check (24b listens later)
+  { id: 'walk_dressed', n: 1, w: 3, v2: 1, t: 'Go for a walk in an outfit', s: 'A dressed-up walk', g: () => S.inv.clothes.length > 0, m: (a) => a.kind === 'walk' && ms2Dressed() },
+  { id: 'pack_walk', n: 1, w: 3, v2: 1, t: 'Walk with two or more dogs', s: 'Pack walk', g: () => typeof crPack === 'function' && !!crPack(), m: (a) => a.kind === 'walk' && (+a.pack || 1) >= 2 },
+  { id: 'cook_new', n: 1, w: 3, v2: 1, t: 'Cook a dish you have never cooked', s: 'A new dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' && !!a.discovered },
+  { id: 'decorate', n: 1, w: 3, v2: 1, t: 'Move a decoration at home', s: 'Redecorate', g: () => !!S.decor && Object.keys(S.decor).length > 0, m: (a) => a.kind === 'decorate' },
+  { id: 'cafe', n: 1, w: 3, v2: 1, t: 'Take {dog} to the café', s: 'Café visit', g: () => !!PLACES.cafe && topBond() >= (PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
+  { id: 'trick_show', n: 1, w: 3, v2: 1, t: 'Show a trick in the Town Square', s: 'Square show', g: () => !!PLACES.square && topBond() >= (PLACES.square.bond || 1) && TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' && a.place === 'square' },
+  { id: 'wish', n: 1, w: 3, v2: 1, t: "Make {dog}'s wish come true", s: 'A wish come true', g: () => typeof ddReady === 'function' && ddReady() && !(ddWish(D()) || {}).done, m: (a) => a.kind === 'wish' },
+  { id: 'friend_yard', n: 1, w: 3, v2: 1, t: "Visit a friend's yard", s: 'A friendly visit', g: () => FR_LIVE && frOn() && ms2FriendsN() > 0, m: (a) => a.kind === 'frvisit' } // only once Friends are live
 ];
 // Daily rhythm: the stall mission lasts a Japan day, the stall opens on the local Saturday: only when this local Saturday lasts until the Japan day ends
 // (Japan, the Americas, a European Saturday morning), so the stall never closes under an open mission. A Dev / test override (prefs.ffSat) just opens it
@@ -107,7 +107,8 @@ function msItem(def, rnd) {
 }
 /* the missions that can be picked today (gate and arg ok, weight above 0), without the ids in excl */
 function msEligible(excl) {
-  return MS_POOL.filter((d) => { if (msW(d) <= 0 || (excl && excl.includes(d.id))) return false; try { return (!d.g || d.g()) && (!d.arg || d.arg().length > 0); } catch (e) { return false; } });
+  const v2 = ms2On(); // v2.20: the nine new story missions only while Missions v2 is on (MS2_LIVE, 24b_missions2.js)
+  return MS_POOL.filter((d) => { if (msW(d) <= 0 || (excl && excl.includes(d.id)) || (d.v2 && !v2)) return false; try { return (!d.g || d.g()) && (!d.arg || d.arg().length > 0); } catch (e) { return false; } });
 }
 function msPickFrom(pool, rnd) { let x = rnd() * pool.reduce((a, d) => a + msW(d), 0); for (const d of pool) { x -= msW(d); if (x < 0) return d; } return pool[pool.length - 1]; }
 const msSeed = (date, extra) => seeded(hashId(date + '|' + ((S.dogs && S.dogs[0] && S.dogs[0].id) || 'dog') + (extra || '')));
@@ -277,6 +278,13 @@ const MS_TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.
 function msBodyHTML(stampNew) {
   const list = msToday(), m = S.missions, nd = list.filter((x) => x.done).length, total = list.length || 1;
   const lines = list.map((it) => `<li class="${it.done ? 'done' : ''}" data-ms="${esc(it.id)}">${MS_TICK}<span class="ms-t">${esc(msText(it))}</span><span class="ms-p">${it.done ? `+${MS_PAY}` : `${Math.min(it.p || 0, it.n)}/${it.n}`}</span></li>`).join('');
+  if (!ms2On()) { // v2.20 off (MS2_LIVE, 24b_missions2.js): exactly the v2.19.2 sheet, the mission's own swap and no helps
+    const swap1 = msSwapFree() ? `<p class="ms-swapline"><button class="btn ms-swap" type="button" id="msSwap">${esc(tt('missions.swap', 'Swap it'))}</button> <span class="small">${esc(tt('missions.swap_note', 'One free swap a day.'))}</span></p>`
+      : m.swap === jstISO() ? `<p class="small ms-swapline">${esc(tt('missions.swap_used', 'Swapped today. A new mission comes tomorrow.'))}</p>` : '';
+    return `<div class="ms-body"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="${esc(tt('missions.list_aria', "Today's missions"))}">${lines}</ul></div>
+    <div class="ms-side"><p class="ms-coins">${tt('missions.coins1_html', "Today's mission pays <b>{pay} coins</b> and a crayon stamp. Done today: <b>{nd} of {total}</b>.", { pay: MS_PAY, nd, total })}</p>${swap1}
+    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps1_html', '<b>{n} of {total}</b> stamps. Every finished mission earns a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p></div></div>`;
+  }
   // the free swap (Daily rhythm; v2.20: on any one row, 24b_missions2.js): the mission's button right under the card, the help rows carry their own
   const swap = ms2SwapLineHTML();
   // v2.20 fix batch: phones keep the little helps under the card; desktop puts them at the top of the right column (they fit there, Swap on one line)
@@ -289,16 +297,18 @@ function msBodyHTML(stampNew) {
 // v2.20: one sheet with tabs (Today, Week, Badges, Notebook: 24b_missions2.js), opened on a tab (Today by default)
 function msOpen(tab) {
   if (!S) return null; msRoll(); SFX.boop(700);
+  if (!ms2On()) return openModal(tt('missions.title', 'Daily missions'), msBodyHTML(false), { cls: 'ms-pop' }); // v2.20 off: the v2.19.2 sheet
   MS2.tab = typeof tab === 'string' && tab ? tab : 'today'; MS2.dot = false;
   const p = openModal(tt('journal.tab_missions', 'Missions'), ms2SheetHTML(false), { cls: 'ms-pop' });
   msHudSync(); return p;
 }
-function msTabHTML() { if (!S) return ''; msRoll(); return `${ms2SheetHTML(false)}<p class="small ms-reset">${esc(tt('missions.reset1', 'One mission a day. The next one comes at {time} your time (midnight in Japan). Finished or not, tomorrow brings a fresh one.', { time: tdate(msResetAt(), { hour: 'numeric', minute: '2-digit' }) }))}</p>`; }
+function msTabHTML() { if (!S) return ''; msRoll(); return `${ms2On() ? ms2SheetHTML(false) : msBodyHTML(false)}<p class="small ms-reset">${esc(tt('missions.reset1', 'One mission a day. The next one comes at {time} your time (midnight in Japan). Finished or not, tomorrow brings a fresh one.', { time: tdate(msResetAt(), { hour: 'numeric', minute: '2-digit' }) }))}</p>`; }
 /* redraw whatever shows the missions: the popup, the Journal tab, the yard clipboard */
 function msRefresh(stampNew) {
   if (!S || !S.missions) return;
-  const pop = $('#modal .panel.ms-pop .panel-body'); if (pop) pop.innerHTML = ms2SheetHTML(!!stampNew);
-  const jt = $('#modal .panel.journal .ms-sheet'); if (jt) jt.outerHTML = ms2SheetHTML(!!stampNew);
+  const v2 = ms2On(), body = () => (v2 ? ms2SheetHTML(!!stampNew) : msBodyHTML(!!stampNew)); // v2.20 off (MS2_LIVE): the v2.19.2 sheet
+  const pop = $('#modal .panel.ms-pop .panel-body'); if (pop) pop.innerHTML = body();
+  const jt = $(v2 ? '#modal .panel.journal .ms-sheet' : '#modal .panel.journal .ms-body'); if (jt) jt.outerHTML = body();
   msYardRedraw();
 }
 

@@ -42,7 +42,7 @@ const MS_GROW = [
 const msgDef = (id) => MS_GROW.find((x) => x.id === id);
 const msgName = (m) => tdata('ms_grow.' + m.id + '.t', m.t);
 const msgStage = (d) => lifeStage(ageMonths(d));
-function msgOk() { return !!(S && S.missions && S.missions.grow && Array.isArray(S.dogs) && S.dogs.length && msAllowed()); }
+function msgOk() { return !!(S && S.missions && S.missions.grow && Array.isArray(S.dogs) && S.dogs.length && ms2Ok()); }
 const msgOf = (d) => { const g = S.missions.grow[d.id]; return g && typeof g === 'object' && !Array.isArray(g) ? g : {}; };
 const msgDone = (d, id) => !!msgOf(d)[id];
 // the dogs an act was for: the walkers of a walk, the dog in the pool or on the course, the dogs in the photo, the dogs it names, else the active dog

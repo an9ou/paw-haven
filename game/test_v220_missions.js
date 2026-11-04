@@ -3,6 +3,8 @@
 // swap on any one row, the tab strip), part C (Badges: 17 tracks, tiers from the counters, cosmetics only, the Badges sticker pages, the Crayon
 // Medal, an old save's quiet backfill and its one letter). Part D (Week: the help-wanted board, Monday 00:00 JST, any 3 of 5,
 // one letter with 50 coins, the neighbour card). Later parts (E Notebook, F Growing up) add their sections below.
+// The launch switch (owner, 4 Nov 2026; the v2.19 Friends pattern): MS2_LIVE is off until the owner's launch date, so this suite turns Missions v2 on
+// with prefs.ms2Test (the dev panel's switch), as v219_friends does with prefs.frTest. Section L checks the off state (exactly v2.19.2) and a quiet turn-on.
 // node game/run_tests.js v220_missions
 require('./test_lib').run('v220_missions', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -567,7 +569,7 @@ require('./test_lib').run('v220_missions', async (t) => {
     return JSON.stringify(S);
   });
   const oldMeta = await ev(() => ({ coins: window.__oldCoins, bond: window.__oldBond }));
-  await t.ctx.close(); const p2 = await t.mk({ storage: { pawhaven_proto_v1: old }, prefs: { msTest: true, ddTest: true } }); await p2.goto(require('./test_lib').URL); await p2.waitForSelector('#tContinue'); await p2.click('#tContinue');
+  await t.ctx.close(); const p2 = await t.mk({ storage: { pawhaven_proto_v1: old }, prefs: { msTest: true, ddTest: true, ms2Test: true } }); await p2.goto(require('./test_lib').URL); await p2.waitForSelector('#tContinue'); await p2.click('#tContinue');
   await t.untilMode('yard'); await t.until(() => !!document.querySelector('#msBtn:not([hidden])') && !!(window.__paw && window.__paw.ms2), null, 8000);
   const o2 = await t.ev(() => { const S = window.__paw.S, m = S.missions; window.__paw.ms2.helps(); return { v: S.v, life: m.life, nb: m.nb, help: m.help.list.length, keys: Object.keys(m).join(' '), stamps: m.stamps, cards: m.cards }; });
   ok(o2.v === 1 && o2.stamps === 3 && o2.cards === 2, 'the old save loads, S.v 1, stamps and cards kept');
@@ -594,7 +596,7 @@ require('./test_lib').run('v220_missions', async (t) => {
   sec('B7. phones: 390 and 360 wide, no text under 13 px, 44 px taps, no sideways scroll');
   await t.ctx.close();
   for (const [w, h] of [[390, 844], [360, 740]]) {
-    await t.mk({ device: 'iPhone 15', prefs: { msTest: true } }); await t.p.setViewportSize({ width: w, height: h });
+    await t.mk({ device: 'iPhone 15', prefs: { msTest: true, ms2Test: true } }); await t.p.setViewportSize({ width: w, height: h });
     await t.p.goto(require('./test_lib').URL); await t.p.waitForSelector('#tNew, #tContinue'); await t.adopt({}); await t.calm();
     await t.until(() => !!(window.__paw && window.__paw.ms2), null, 6000);
     await t.ev(() => { const P = window.__paw; P.S.missions.swap = ''; P.S.missions.stamps = 0; P.ms.force(['bath']); P.ms2.force(['h_pet', 'h_water']); P.ms.open(); });
@@ -669,7 +671,87 @@ require('./test_lib').run('v220_missions', async (t) => {
       const after = await t.ev(() => JSON.stringify(window.__paw.msw.list()));
       ok(after === before, '390: the same five notes after a reload, progress kept');
     }
-    if (w !== 360) await t.ctx.close();
+    await t.ctx.close();
+  }
+
+  sec('L1. the launch switch: MS2_LIVE off, no test flag: exactly the v2.19.2 missions');
+  await t.newGame({ sex: 'girl', prefs: { msTest: true, ddTest: true } }, { bond: { level: 5, pts: 900 }, coins: 1000, stats: { hunger: 80, happy: 70, energy: 90, clean: 90 } });
+  await t.home('yard'); await t.freezeMotion(true);
+  await t.until(() => !!(window.__paw && window.__paw.ms && window.__paw.ms2 && window.__paw.msb && window.__paw.msn && window.__paw.msg && window.__paw.nw), null, 8000);
+  await calmWishes(); await ev(() => { window.__msf = (ids) => { const P = window.__paw; P.S.missions.stamps = 0; return P.ms.force(ids); }; });
+  const NINE = ['walk_fresh', 'walk_dressed', 'pack_walk', 'cook_new', 'decorate', 'cafe', 'trick_show', 'wish', 'friend_yard'];
+  const L0 = await ev(() => { const P = window.__paw, m = P.S.missions; return { live: P.ms2.live(), on: P.ms2.on(), flag: P.ms2.pagesFlag(), trbf: m.trbf, on2: m.on2, life: !!(m.life && m.life.bf === 1), nb: !!m.nb }; });
+  ok(L0.live === false && L0.on === false, 'off by default: MS2_LIVE false, no flag, no prefs.ms2Test');
+  ok(L0.flag && L0.flag.off === false && L0.flag.on === true, 'window.__ddMs2Test alone turns it on (the Pages test copy): ' + JSON.stringify(L0.flag));
+  ok(L0.life && L0.nb && L0.trbf === 0 && L0.on2 === 0, 'the save fields are still made (life, nb), quietly: trbf 0 and on2 0 until it turns on');
+  await ev(() => { window.__toasts.splice(0); window.__paw.ms.open(); });
+  await t.until(() => !!document.querySelector('#modal .panel.ms-pop .ms-list'), null, 4000);
+  const L1 = await ev(() => { const M = document.querySelector('#modal .panel.ms-pop'), h = M.querySelector('h2, h3'); return { tabs: M.querySelectorAll('.ms-tab, .ms-tabs, .ms-sheet').length, rows: M.querySelectorAll('.ms-list li').length, helps: M.querySelectorAll('.ms2-helps, .ms2-h, .ms2-pouch, .ms2-swap, .msw-sum, .ms-left').length, title: h ? h.textContent.trim() : '', swap: (M.querySelector('#msSwap') || {}).textContent || '', note: (M.querySelector('.ms-swapline .small') || {}).textContent || '' }; });
+  ok(L1.tabs === 0 && L1.rows === 1 && L1.helps === 0, `the sheet: no tabs, one mission, no little helps, pouch or board (${L1.tabs}, ${L1.rows}, ${L1.helps})`);
+  ok(/Daily missions/.test(L1.title) && (L1.swap === '' || (L1.swap === 'Swap it' && L1.note === 'One free swap a day.')), `the v2.19.2 title and swap line: "${L1.title}", "${L1.swap}", "${L1.note}"`);
+  await t.closeX();
+  const L2 = await ev(() => {
+    const P = window.__paw, S = P.S, m = S.missions, c = S.coins, h0 = m.life.harvest, hp0 = m.life.help;
+    window.__msf(['gaze']); ['pet', 'water', 'nap', 'scoop', 'photo'].forEach((k) => P.ms.act(k, { name: 'Fresh Water' })); P.ms.act('garden', { what: 'harvest', crop: 'carrot' });
+    return { dc: S.coins - c, help: m.help.list.length, hp: m.life.help - hp0, harvest: m.life.harvest - h0, pouch: m.pouch.day, dot: document.querySelector('#msBtn').classList.contains('dot'), tabs: P.ms2.tabs().length };
+  });
+  ok(L2.help === 0 && L2.hp === 0 && L2.pouch === '' && L2.dc === 0, 'no little helps and no pouch: the help list stays empty, life.help 0, +0 coins: ' + JSON.stringify(L2));
+  ok(L2.harvest === 1, 'the lifetime counters still count, silently (a harvest: +1)');
+  await t.p.waitForTimeout(900);
+  ok(!L2.dot && !(await ev(() => document.querySelector('#msBtn').classList.contains('dot'))) && !(await ev(() => window.__toasts.some((x) => /little help|treat pouch|badge/i.test(x)))), 'no soft dot, no help, pouch or badge toasts');
+  const L3 = await ev((nine) => {
+    const P = window.__paw, off = P.ms.eligible(), soff = P.ms2.swapPool(), days = [];
+    for (let i = 1; i <= 60; i++) days.push(P.ms.pick('2026-0' + (1 + (i % 9)) + '-' + String(1 + (i % 28)).padStart(2, '0')).map((x) => x.id).join());
+    P.ms2.test(true); const on = P.ms.eligible(); P.ms2.test(false);
+    return { off, on, soff, days, bad: off.concat(soff).filter((x) => nine.includes(x)), drawn: days.filter((d) => nine.includes(d)) };
+  }, NINE);
+  ok(L3.bad.length === 0 && L3.drawn.length === 0, 'none of the nine new story missions in the draw or the swap (60 days): ' + L3.bad.concat(L3.drawn).join());
+  ok(L3.off.join() === L3.on.filter((x) => !NINE.includes(x)).join() && L3.on.length > L3.off.length, `the draw is v2.19.2's: the eligible list off is the list on without the nine (${L3.off.length} of ${L3.on.length})`);
+  const L4 = await ev(() => {
+    const P = window.__paw, S = P.S, R = Date.now, out = {};
+    try { Date.now = () => Date.UTC(2026, 11, 20, 3); out.due = P.nw.v220Due(); out.list = P.nw.list(); } finally { Date.now = R; }
+    S.walks = 60; S.ph = Object.assign(S.ph || {}, { n: 20 }); out.bond = S.bond.pts; out.coins = S.coins;
+    out.got = P.msb.check(false).length; out.tr = Object.keys(S.missions.tr).length; out.letter = (S.mail || []).filter((x) => x.id === 'msb_backfill').length;
+    out.pages = P.msb.ddPages().filter((k) => /^(msb|nb)\d/.test(k)).length; out.shelf = P.msb.shelf(); out.medal = S.inv.charms.includes(P.msb.medal);
+    out.nb = P.msn.shown(); out.nbTick = P.msn.tick(); out.grow = P.msg.html(); out.week = S.missions.wk.w;
+    const d = document.createElement('div'); d.innerHTML = P.ms2.howto(); const l = d.querySelector('.gd-lesson[data-lesson="missions"]'); out.lesson = l ? l.textContent : '';
+    return out;
+  });
+  ok(L4.due === false && !L4.list.includes('2.20'), 'no What\'s new entry for v2.20, even after its date: ' + L4.list.join());
+  ok(L4.got === 0 && L4.tr === 0 && L4.letter === 0 && !L4.shelf && !L4.medal, 'no badge checks: no tiers, no letter, no Trophy Shelf, no Crayon Medal (walks 60, photos 20)');
+  ok(L4.pages === 0, 'no Badges or Notebook sticker pages in the book');
+  ok(!L4.nb && !L4.nbTick && L4.grow === '' && L4.week === '', 'no notebook, no Growing up strip, no help-wanted board');
+  ok(/^Daily missions/.test(L4.lesson) && /One little mission a day: 40 coins/.test(L4.lesson) && !/little helps/.test(L4.lesson), 'How to play keeps the v2.19.2 missions lesson: ' + L4.lesson.slice(0, 60));
+  await t.p.waitForTimeout(3300); // the badge (3 s) and week (2 s) ticks run while off
+  ok(await ev(() => Object.keys(window.__paw.S.missions.tr).length === 0 && window.__paw.S.missions.wk.w === ''), 'the ticks stay quiet while off');
+
+  sec('L2. turning it on later: the badges earned meanwhile come quietly, with one letter');
+  await ev(() => { window.__toasts.splice(0); window.__paw.ms2.test(true); window.__paw.ms.fields(); });
+  ok(await t.until(() => window.__paw.S.missions.trbf === 1, null, 9000), 'the first look while on gives the earned badges (trbf 1)');
+  await t.p.waitForTimeout(1200);
+  const L5 = await ev((b) => { const P = window.__paw, S = P.S; return { on2: S.missions.on2, walker: P.msb.tier('walker'), photo: P.msb.tier('photo'), n: P.msb.count(), bond: S.bond.pts - b.bond, coins: S.coins - b.coins, letters: S.mail.filter((x) => x.id === 'msb_backfill').map((x) => x.text), toasts: window.__toasts.filter((x) => /New badge|new badges|New title/.test(x)) }; }, { bond: L4.bond, coins: L4.coins });
+  ok(L5.on2 === 1 && L5.walker === 's' && L5.photo === 's' && L5.n >= 4, 'walker and photographer silver (' + L5.n + ' badges in all): ' + JSON.stringify(L5));
+  ok(!L5.toasts.length && L5.bond === 0 && L5.coins === 0, 'no burst: no badge toasts, no silver Bond, no coins (' + L5.toasts.join(' | ') + ')');
+  ok(L5.letters.length === 1 && new RegExp('^You already earned ' + L5.n + ' badges').test(L5.letters[0]), 'one letter: ' + (L5.letters[0] || ''));
+  ok(await ev(() => { const P = window.__paw; P.msb.check(false); return P.S.mail.filter((x) => x.id === 'msb_backfill').length; }) === 1, 'a second look sends no second letter');
+  await ev(() => window.__paw.ms.open()); await t.until(() => !!document.querySelector('#modal .panel.ms-pop .ms-tab'), null, 4000);
+  ok(await ev(() => document.querySelectorAll('#modal .panel.ms-pop .ms-tab').length >= 3 && document.querySelectorAll('#modal .ms2-h').length === 2), 'on: the sheet has its tabs and two little helps');
+  await t.closeX();
+
+  sec('L3. the GitHub Pages test copy has window.__ddMs2Test, the itch.io / play copy never');
+  {
+    const path = require('path'), fs = require('fs'), cp = require('child_process'), os = require('os'), root = path.join(__dirname, '..');
+    const outA = fs.mkdtempSync(path.join(os.tmpdir(), 'ddpages-')), outB = fs.mkdtempSync(path.join(os.tmpdir(), 'dditch-'));
+    let a = '', b = '';
+    try {
+      cp.execFileSync('node', [path.join(root, 'tools', 'pages.js'), '--single', '--no-minify', '--out', outA], { stdio: 'ignore' }); a = fs.readFileSync(path.join(outA, 'index.html'), 'utf8');
+      cp.execFileSync('node', [path.join(root, 'tools', 'pages.js'), '--single', '--no-minify', '--itch', '--out', outB], { stdio: 'ignore' }); b = fs.readFileSync(path.join(outB, 'index.html'), 'utf8');
+    } catch (e) { /* the asserts say it */ }
+    const flag = '<script>window.__ddMs2Test=1</script>', at = a.indexOf(flag);
+    ok(at > 0 && a.indexOf('<script', at + flag.length) > at && a.indexOf('<body>') < at, 'the Pages copy sets window.__ddMs2Test before the game scripts');
+    ok(b.length > 100000 && !b.includes(flag), 'the itch.io / play copy (pages.js --itch) has no Missions v2 test flag');
+    ok(/__ddMs2Test=1/.test(fs.readFileSync(path.join(root, 'tools', 'itch.js'), 'utf8')), 'tools/itch.js refuses a copy with the flag');
+    fs.rmSync(outA, { recursive: true, force: true }); fs.rmSync(outB, { recursive: true, force: true });
   }
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
-}, { prefs: { msTest: true, ddTest: true } });
+}, { prefs: { msTest: true, ddTest: true, ms2Test: true } });

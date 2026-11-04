@@ -127,6 +127,8 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 
 - **v2.19 "Friends first"**: friends by code or invite link (a two-word friend name, no typing), visits to a friend's yard with pets and paw-print notes, one gift a day, and a friend's dog on your walk.
 
+- **v2.20 "Little Helps"** (merged, off until its launch date: `MS2_LIVE`): two little helps a day beside the mission and Gerald's treat pouch, a help-wanted board every Monday, badges from bronze to crayon with a Trophy Shelf and the Crayon Medal, a 14-day notebook for new players and Growing up moments for every dog.
+
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
 ## Made with Claude

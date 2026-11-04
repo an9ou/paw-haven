@@ -60,7 +60,8 @@ const NEWS_V219 = {
     { ic: () => nwSafe(() => ICON('lock')), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
   ]
 };
-/* v2.20 "Missions v2" (V220.md, docs/design/missions-v2.md): nwSort adds this entry once the Japan date reaches its date, so the news never shows Missions v2 before the release */
+/* v2.20 "Little Helps" (Missions v2; V220.md, docs/design/missions-v2.md): nwSort adds this entry only with MS2_LIVE on (24b_missions2.js; like Friends,
+   never on the GitHub Pages test copy or with the dev switch) and once the Japan date reaches its date, so the news never shows Missions v2 before the release */
 const nwMsArt = (k, ...a) => nwSafe(() => (typeof ms2Art === 'function' ? ms2Art(k, ...a) : '')); // PawArt.MISSIONS through ms2Art, '' until the art lands
 const NEWS_V220 = {
   id: '2.20', date: '2026-11-14', // LAUNCH DATE: set at release (owner's date)
@@ -74,7 +75,7 @@ const NEWS_V220 = {
     { ic: () => nwMsArt('chart', []) || nwSafe(() => ICON('bond')), tx: () => tt('nw.v220.grow', "Growing up moments for every dog, marked on a crayon height chart in each dog's Profile") }
   ]
 };
-const nwV220Due = () => jstISO() >= NEWS_V220.date;
+const nwV220Due = () => MS2_LIVE && jstISO() >= NEWS_V220.date; // the launch switch first (MS2_LIVE), then the date
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
 function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
