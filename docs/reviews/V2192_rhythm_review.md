@@ -14,3 +14,15 @@ Nice-to-have (do these too)
 8. "Energy refills at {n} per game hour" (03_yard.js:848) now shows 300+: show it per real minute instead (new key or changed English → translate that one line into all 11 non-English game languages in game/i18n/*.json in each language's existing terms, Cantonese yue is spoken HK Cantonese in Traditional characters per docs/i18n/yue.md, then regenerate game/i18n/packed.js and any CJK/Thai font subset that needs new glyphs, the way commit 9e27efd did it).
 9. Skip (owner decision, not now).
 10. Add tests for the classic-walk count and the early runner walk (part of 1).
+
+## Status
+1. Fixed in 94b00a1 (runner `went` before `walkCount()`; tests 7b, runner and classic).
+2. Fixed in 94b00a1 (`markCareDay` on `jstISO()`; an old local-date key compares as a plain date; test 7c).
+3. Fixed in 94b00a1 (`50_friends.js` identical to 83d2adb; `nwSort()` in `49c_news.js`; test 7f with the FR_LIVE line simulated).
+4. Fixed in 94b00a1 (`msStallDay()`; test 7e).
+5. Fixed in 94b00a1 (6 lines on the one-row card, art `o.one`; shots `*_missions_fix.png`).
+6. Fixed in 94b00a1 (`msRoll` trims, a finished one first; a test force keeps its list; test 7d).
+7. Fixed in 94b00a1 (test 7g).
+8. Fixed in 94b00a1 (new key `yard.energy_refills_min_html`, 11 languages, no new glyphs; packed.js).
+9. Skipped (owner decision).
+10. Fixed in 94b00a1 (7b).
