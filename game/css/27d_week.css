@@ -6,6 +6,12 @@
 .msw-art{flex:none;width:180px;display:block}
 .msw-art svg{width:100%;height:auto;display:block}
 .msw-headtxt{flex:1 1 240px;min-width:0}
+/* fix batch: the title on the cork board's paper banner (PawArt.MISSIONS.boardText: x 100..250, y 30..72 of 350 x 100) */
+.msw-board{position:relative;flex:1 1 300px;min-width:0;max-width:440px;container-type:inline-size}
+.msw-head .msw-board .msw-art{width:100%}
+.msw-board h3{position:absolute;left:28.6%;right:28.6%;top:30%;bottom:28%;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--font-hand);font-weight:700;font-size:clamp(14px,5cqw,22px);line-height:1;color:var(--ink);overflow-wrap:break-word;hyphens:auto}
+.msw-head.art .msw-headtxt{flex-basis:200px}
 .msw-headtxt h3{margin:0 0 2px;font-family:var(--font-hand);font-size:24px;line-height:1.1;overflow-wrap:anywhere}
 .msw-headtxt p{margin:0 0 4px}
 .msw-count{font-family:var(--font-hand);font-size:22px;line-height:1.1}
@@ -18,6 +24,10 @@
 .msw-note[data-v="3"]{background:#E5F3DC;transform:rotate(.5deg)}
 .msw-note[data-v="4"]{background:#FFEBD6;transform:rotate(-.8deg)}
 .msw-note.done{border-color:#3E9A6A}
+/* fix batch: the art lane's pinned note (PawArt.MISSIONS.note, 300 x 110) is the row itself, stretched, the text inside its noteText box (x 26..274, y 28..94) */
+.msw-note.art{background:none;border:0;box-shadow:none;transform:none;isolation:isolate;min-height:96px;padding:24px 9% 15px}
+.msw-note.art .msw-nbg{position:absolute;inset:0;z-index:-1;display:block;pointer-events:none}
+.msw-note.art .msw-nbg svg{width:100%;height:100%;display:block}
 .msw-nart{width:44px;height:44px;flex:none;display:block}
 .msw-nart svg{width:100%;height:100%;display:block;overflow:visible}
 .msw-nmain{flex:1 1 auto;min-width:0}
@@ -45,6 +55,8 @@
 .msw-sumtxt{flex:1 1 auto;min-width:0}
 .msw-sumtxt p{margin:0 0 4px;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
 .msw-go{min-height:44px;padding:4px 12px;font-size:16px}
+.ms-left .msw-sum{margin-top:0}
+.ms-left .msw-sumart{width:64px}
 
 html[data-layout="phone"] .msw-notes{grid-template-columns:minmax(0,1fr)}
 html[data-layout="phone"] .msw-head{gap:8px}

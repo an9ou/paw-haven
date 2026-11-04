@@ -37,6 +37,24 @@
 .nb-flip{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .nb-flip .btn{min-height:44px;min-width:88px;padding:4px 12px;font-size:16px}
 .nb-pgn{font-size:15px;text-align:center}
+/* fix batch: the art lane's page (PawArt.MISSIONS.page, a 320 x 240 tile: spiral, margin at x 58, ruled every 24 from y 20) is a repeat-y background at the
+   page's width; the text sits right of x 68 and every row is one ruled line tall (--L, container units), so the rows stay on the lines */
+.nb .nb-page.art{container-type:inline-size;--L:calc(100cqw * 24 / 320);width:100%;max-width:470px;margin:0 auto;padding:0;overflow:hidden;border-radius:4px;
+  background:#FFFDF6 var(--nbbg) repeat-y 0 0 / 100% auto;box-shadow:1px 2px 0 rgba(91,61,50,.16)}
+.nb .nb-page.art::before{content:'';display:block;height:calc(100cqw * 8 / 320 - 5px)}
+.nb .nb-page.art::after{content:'';display:block;height:calc(100cqw * 12 / 320)}
+.nb .nb-page.art > *{margin-left:calc(100cqw * 70 / 320);margin-right:calc(100cqw * 8 / 320)}
+.nb .nb-page.art .nb-phead{margin-top:0;margin-bottom:0;gap:0 8px;line-height:var(--L)}
+.nb .nb-page.art .nb-phead h4,.nb .nb-page.art .nb-day{line-height:var(--L)}
+.nb .nb-page.art .nb-steps{margin-top:0;margin-bottom:0;gap:0}
+.nb .nb-page.art .nb-step{min-height:var(--L);line-height:var(--L);gap:0 8px}
+.nb .nb-page.art .nb-step > svg{width:min(24px,var(--L));height:min(24px,var(--L))}
+.nb .nb-page.art .nb-ok,.nb .nb-page.art .nb-cnt,.nb .nb-page.art .nb-lock{line-height:1.2}
+.nb .nb-page.art .nb-gift{margin-top:0;margin-bottom:0;line-height:var(--L)}
+.nb .nb-page.art .nb-gic{width:var(--L);height:var(--L)}
+.nb .nb-page.art .nb-lesson{margin-top:0;margin-bottom:0;padding:0 8px;line-height:var(--L);background:rgba(255,243,184,.5)}
+.nb .nb-page.art .nb-howrow{margin-top:0;margin-bottom:0;min-height:calc(var(--L) * 2);display:flex;align-items:center}
+.nb .nb-page.art .nb-how{line-height:1.25}
 /* the finished notebook, folded under Badges */
 .nb-fold{border-top:2px dashed #C9B8A6;padding-top:6px}
 .nb-fold > summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-hand);font-weight:700;font-size:20px;list-style:none;overflow-wrap:anywhere}

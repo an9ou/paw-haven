@@ -139,7 +139,7 @@ function msWeekFill() {
   ms2Life('boards'); markDirty(); msHudSync(true);
   ms2Say(tt('ms2w.filled', "Gerald's board is filled! A stamp on your neighbour card, and a thank-you letter with {n} coins comes tomorrow morning.", { n: MSW_COINS }), 'gold', 'mswf');
   if (gift) ms2Say(gift.t === 'cloth' ? tt('ms2w.card_cloth', 'A full neighbour card! A gift for {name}: the {item}. It is in the Wardrobe.', { name: NAME(), item: shNameAny(gift.n) }) : tt('ms2w.card_food', 'A full neighbour card! A gift for {name}: a {item}. It is in the Feed tray.', { name: NAME(), item: shNameAny(gift.n) }), 'gold', 'mswc');
-  try { SFX.kaching(); } catch (e) { /* audio off */ }
+  ms2Sfx('kaching'); // waits for Gerald like the toasts
   return true;
 }
 // every 4 boards: a Bond 1-2 Boutique outfit not owned yet (the sticker book's own list and order), else a Pupcake
@@ -185,7 +185,8 @@ const MSW_TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12 l4 
 function mswNoteHTML(it, i) {
   const d = mswDef(it.id); if (!d) return '';
   const p = Math.min(it.p || 0, it.n), pct = Math.round(100 * p / (it.n || 1)), done = !!it.done, lbl = tt('ms2w.bar', '{n} of {total}', { n: p, total: it.n });
-  return `<li class="msw-note${done ? ' done' : ''}" data-req="${esc(it.id)}" data-v="${i % 5}"><span class="msw-nart" aria-hidden="true">${ms2Art('note', i % 5) || mswNoteFB(i)}</span><div class="msw-nmain"><p class="msw-who">${esc(mswWho(d.who))}</p><p class="msw-what">${esc(mswText(it))}</p>`
+  const na = ms2Art('note', i % 5); // the art lane's pinned note is the row itself (stretched, the text inside noteText), else a small note doodle on a crayon card
+  return `<li class="msw-note${done ? ' done' : ''}${na ? ' art' : ''}" data-req="${esc(it.id)}" data-v="${i % 5}">${na ? `<span class="msw-nbg" aria-hidden="true">${ms2Stretch(na)}</span>` : `<span class="msw-nart" aria-hidden="true">${mswNoteFB(i)}</span>`}<div class="msw-nmain"><p class="msw-who">${esc(mswWho(d.who))}</p><p class="msw-what">${esc(mswText(it))}</p>`
     + `<div class="msw-barrow"><span class="msw-bar" role="progressbar" aria-label="${esc(lbl)}" aria-valuemin="0" aria-valuemax="${it.n}" aria-valuenow="${p}"><i style="width:${pct}%"></i></span><span class="msw-num">${done ? `<span class="msw-tick">${MSW_TICK}</span>${esc(tt('ms2w.done', 'Done'))}` : `${tnum(p)} / ${tnum(it.n)}`}</span></div></div></li>`;
 }
 function mswCardHTML() {
@@ -203,7 +204,9 @@ function msWeekHTML() {
   mswSeen();
   const status = full ? (wk.lt && wk.lt.w === wk.w ? tt('ms2w.full_wait', "Board filled! Gerald's thank-you letter with {n} coins comes tomorrow morning.", { n: MSW_COINS }) : tt('ms2w.full_sent', "Board filled! Gerald's thank-you letter is in your mailbox."))
     : tt('ms2w.intro', 'Help with any three of these five notes and Gerald sends a thank-you letter with {n} coins.', { n: MSW_COINS });
-  const head = `<div class="msw-head"><span class="msw-art${ms2Art('board') ? ' art' : ''}" aria-hidden="true">${ms2Art('board') || mswBoardFB()}</span><div class="msw-headtxt"><h3>${esc(tt('ms2w.title', "Gerald's help-wanted board"))}</h3>`
+  // the art lane's cork board carries the title on its paper banner (boardText); the plain board keeps the title beside it
+  const ba = ms2Art('board'), h3 = `<h3>${esc(tt('ms2w.title', "Gerald's help-wanted board"))}</h3>`;
+  const head = `<div class="msw-head${ba ? ' art' : ''}">${ba ? `<div class="msw-board"><span class="msw-art art" aria-hidden="true">${ba}</span>${h3}</div>` : `<span class="msw-art" aria-hidden="true">${mswBoardFB()}</span>`}<div class="msw-headtxt">${ba ? '' : h3}`
     + `<p class="msw-count"><b>${esc(tt('ms2w.count', '{n} of {total}', { n: Math.min(nd, MSW_NEED), total: MSW_NEED }))}</b></p><p class="msw-intro">${esc(status)}</p></div></div>`;
   return `<div class="msw${full ? ' full' : ''}">${head}<ul class="msw-notes">${L.map(mswNoteHTML).join('')}</ul>${mswCardHTML()}</div>`;
 }
@@ -226,7 +229,7 @@ document.addEventListener('click', (e) => {
 setInterval(() => {
   if (!S || !S.missions || !S.missions.wk || cur.mode === 'title') return;
   try {
-    if (S.missions.wk.w !== ms2WeekKey()) msWeekRoll();
+    if (S.missions.wk.w !== ms2WeekKey()) { msWeekRoll(); msHudSync(); } // a new Monday board lights the soft dot at once
     if (S.missions.wk.lt && cur.mode === 'yard' && modal.hidden && !busy) msWeekLetter(false);
   } catch (e) { console.warn('week', e); }
 }, 2000);

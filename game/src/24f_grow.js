@@ -113,7 +113,7 @@ function msGrowHTML(d) {
   const W = S.dd && S.dd.wish && S.dd.wish.day === localISO() && S.dd.wish.w ? S.dd.wish.w[d.id] : null, gm = W && !W.done ? W.gm || '' : '';
   const day = (iso) => tdate(new Date(iso + 'T12:00:00'), { day: 'numeric', month: 'short' });
   const marks = MS_GROW.filter((m) => g[m.id]).sort((a, b) => String(g[a.id]).localeCompare(String(g[b.id]))).map((m) => ({ stage: m.st, label: day(g[m.id]), id: m.id }));
-  const chart = ms2Art('chart', marks.map((x) => ({ stage: x.stage, label: x.label })));
+  const chart = ms2Art('chart', marks.map((x) => ({ stage: x.stage, label: '' }))); // no pencil dates on the chart (they came out tiny): the list beside it gives every date
   const rows = L.map((m) => { const on = !!g[m.id]; return `<li class="msg-m${on ? ' done' : ''}" data-moment="${m.id}">${MS_TICK}<span class="msg-mt"><b>${esc(msgName(m))}</b><span class="msg-ms">${esc(on ? tt('ms2g.marked', 'Marked on {date}', { date: day(g[m.id]) }) : tdata('ms_grow.' + m.id + '.s', m.s, { name: d.name }))}</span></span>${!on && gm === m.id ? `<span class="msg-wish">${esc(tt('ms2g.wish', "Today's wish"))}</span>` : ''}</li>`; }).join('');
   return `<section class="msg" aria-label="${esc(tt('ms2g.title', 'Growing up'))}"><div class="msg-hd"><h4>${esc(tt('ms2g.title', 'Growing up'))}</h4><span class="msg-stage">${esc(gkStage(st))}</span><span class="msg-n">${esc(tt('ms2g.count', '{n} of {total} moments', { n, total: L.length }))}</span></div>`
     + `<div class="msg-body"><span class="msg-chart${chart ? ' art' : ''}" aria-hidden="true">${chart || msgChartFB(marks)}</span><ul class="msg-list">${rows}</ul></div>`

@@ -9,7 +9,7 @@
    for a new player); a tab whose part is not built yet shows a short placeholder. Under the test harness progress needs prefs.msTest (msAllowed).
    Calm: a soft crayon dot on the clipboard when a help or the pouch is newly done, batched toasts that wait for Gerald (msGuideBusy).
    Test hook: window.__paw.ms2. */
-const MS2 = { tab: 'today', dot: false, q: [] };
+const MS2 = { tab: 'today', dot: false, q: [], own: null, sfx: '', resets: [] }; // own: the S these caches belong to (ms2Mine), sfx: a sound held for Gerald
 const ms2Obj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
 const MS2_LIFE = ['ms', 'help', 'harvest', 'cook', 'bath', 'trick', 'fetch', 'boards'];
 
@@ -25,6 +25,7 @@ function v220Fields(s, fresh) {
   if (m.life.bf !== 1) { m.life.bf = 1; if (!fresh) ms2Backfill(s); }
   if (!ms2Obj(m.tr)) m.tr = {};
   if (m.trbf !== 0 && m.trbf !== 1) m.trbf = fresh ? 1 : 0; // part C: 0 until an old save's earned badges are given quietly (one letter)
+  if (m.mpop !== 1) m.mpop = 0; // part C (fix batch): 1 while the Crayon Medal popup is still to show, saved so a reload before a quiet yard keeps it
   if (!ms2Obj(m.wk)) m.wk = {}; str(m.wk, 'w'); str(m.wk, 'got'); num(m.wk, 'card'); if (!Array.isArray(m.wk.list)) m.wk.list = [];
   // part D (24d_week.js): lt the thank-you letter on its way (null or { w, d: local date filled, ids, c: card stamps, g: card gift }), cards: full
   // neighbour cards, cg: this week's card gift { w, n }, seen: the board state last looked at (the soft dot)
@@ -75,9 +76,29 @@ function ms2Count(a) {
 }
 // the art lane's pieces (V220.md section 5): '' until they are merged, so every caller has a plain fallback
 function ms2Art(k, ...args) { try { const M = window.PawArt && window.PawArt.MISSIONS; return M && typeof M[k] === 'function' ? String(M[k](...args) || '') : ''; } catch (e) { return ''; } }
+// an art piece stretched to fill its box (the Week notes, V220.md 5: "stretching to another aspect is fine")
+function ms2Stretch(svg) { return svg ? svg.replace(/^<svg\b([^>]*)>/, (m, a) => '<svg' + a.replace(/\s(preserveAspectRatio|width|height)="[^"]*"/g, '') + ' preserveAspectRatio="none">') : ''; }
+// an art piece as a CSS background image (the notebook page, a repeat-y tile): w x h its own box
+function ms2BgURL(svg, w, h) {
+  if (!svg) return '';
+  const s = svg.replace(/^<svg\b([^>]*)>/, (m, a) => '<svg' + a.replace(/\s(width|height)="[^"]*"/g, '') + (/\sxmlns=/.test(a) ? '' : ' xmlns="http://www.w3.org/2000/svg"') + ` width="${w}" height="${h}">`);
+  return `url("data:image/svg+xml,${encodeURIComponent(s)}")`;
+}
 // batched toasts: grouped by kind of news, and held while Gerald or the parade is talking
 function ms2Say(text, kind, group, many) { if (msGuideBusy()) MS2.q.push([text, kind, group, many]); else toast(text, kind, group ? { group, many } : {}); }
-function ms2Flush() { if (!MS2.q.length || msGuideBusy()) return; const q = MS2.q; MS2.q = []; q.forEach(([t, k, g, m], i) => setTimeout(() => toast(t, k, g ? { group: g, many: m } : {}), i * 700)); }
+// a sound that waits like the toasts (one held at a time, ms2Flush plays it once Gerald and the parade are done)
+function ms2Sfx(k) { if (msGuideBusy()) { MS2.sfx = k; return; } try { SFX[k](); } catch (e) { /* audio off */ } }
+// the in-memory state of Missions v2 belongs to one S: an import, a restore or a cloud pull (clApply, 22b_cloud.js) puts a new S in its place,
+// so the queue, the dots and each part's caches start again (a part adds its own reset with ms2OnSwap). Returns false when S was just swapped
+function ms2OnSwap(fn) { MS2.resets.push(fn); }
+function ms2Mine() {
+  if (MS2.own === S) return true;
+  const first = MS2.own === null; MS2.own = S; if (first || !S) return true;
+  MS2.q = []; MS2.dot = false; MS2.sfx = ''; MS2.tab = 'today';
+  MS2.resets.forEach((f) => { try { f(); } catch (e) { /* a part is not ready */ } });
+  return false;
+}
+function ms2Flush() { ms2Mine(); if (MS2.sfx && !msGuideBusy()) { const k = MS2.sfx; MS2.sfx = ''; ms2Sfx(k); } if (!MS2.q.length || msGuideBusy()) return; const q = MS2.q; MS2.q = []; q.forEach(([t, k, g, m], i) => setTimeout(() => toast(t, k, g ? { group: g, many: m } : {}), i * 700)); }
 
 /* ---------------- Part B: little helps ---------------- */
 // t: the row, s: the short name, g: the gate, m: does an act count, x: story missions it would repeat (never drawn beside them)
@@ -103,6 +124,8 @@ const MS_HELPS = [
   { id: 'h_paw', n: 1, t: 'Shake paws with a Dog Card dog', s: 'Paw shake', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'paw' }
 ];
 const ms2HelpDef = (id) => MS_HELPS.find((x) => x.id === id);
+// the story missions today's little helps stand for (their x lists): the mission swap never draws one of them, so one act never ticks two rows
+function ms2HelpX() { const h = S && S.missions && S.missions.help; if (!h || h.date !== jstISO() || !Array.isArray(h.list)) return []; return h.list.reduce((a, it) => a.concat((it && (ms2HelpDef(it.id) || {}).x) || []), []); }
 // the helps that can be drawn today: gate ok, not a repeat of the story mission (excl: mission ids) nor of a help in hand (ids)
 function ms2HelpEligible(excl, ids) {
   return MS_HELPS.filter((d) => { if ((ids && ids.includes(d.id)) || (d.x && excl && d.x.some((x) => excl.includes(x)))) return false; try { return !d.g || !!d.g(); } catch (e) { return false; } });
@@ -153,7 +176,7 @@ function ms2PouchCheck() {
   try { if (typeof ddReady === 'function' && ddReady()) { const p = ddToday(); if (p && !p.x.includes('q')) p.x += 'q'; } } catch (e) { /* no diary today */ }
   markDirty(); MS2.dot = true; msHudSync(true);
   ms2Say(tt('ms2.pouch_got', 'All three done! Gerald opens his treat pouch: one {treat} for {name}. It is in the Feed tray.', { treat: shNameAny(n), name: NAME() }), 'gold');
-  setTimeout(() => { try { SFX.kaching(); } catch (e) { /* audio off */ } }, 0);
+  setTimeout(() => ms2Sfx('kaching'), 0);
   return true;
 }
 function ms2OnAct(a) {
@@ -195,7 +218,7 @@ function ms2TabBody(stampNew) {
   return msBodyHTML(stampNew);
 }
 // the whole sheet: the tab strip and the open tab. The popup (msOpen) and Journal > Missions (msTabHTML) both show it
-function ms2SheetHTML(stampNew) { return `<div class="ms-sheet" data-tab="${MS2.tab}">${ms2TabsHTML()}<div class="ms-tabbody" role="tabpanel">${ms2TabBody(stampNew)}</div></div>`; }
+function ms2SheetHTML(stampNew) { ms2Mine(); return `<div class="ms-sheet" data-tab="${MS2.tab}">${ms2TabsHTML()}<div class="ms-tabbody" role="tabpanel">${ms2TabBody(stampNew)}</div></div>`; }
 // the two help rows under the clipboard (the story mission is the clipboard itself, the larger row)
 function ms2HelpsHTML() {
   const H = ms2Helps(), free = S.missions.swap !== jstISO();
@@ -223,7 +246,7 @@ document.addEventListener('click', (e) => {
 });
 // the soft crayon dot on the clipboard (never a number): a help or the pouch newly done, or a later part's news (the board ready, a new badge)
 function ms2Dot(on) { MS2.dot = !!on; msHudSync(); }
-function ms2DotOn() { if (!S || !S.missions) return false; let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); if (!o && typeof msNbDot === 'function') o = !!msNbDot(); } catch (e) { /* a later part */ } return o; }
+function ms2DotOn() { if (!S || !S.missions) return false; ms2Mine(); let o = MS2.dot; try { if (!o && typeof msWeekDot === 'function') o = !!msWeekDot(); if (!o && typeof msBadgeDot === 'function') o = !!msBadgeDot(); if (!o && typeof msNbDot === 'function') o = !!msNbDot(); } catch (e) { /* a later part */ } return o; }
 
 /* ---------------- tests ---------------- */
 function ms2Expose() {
@@ -233,7 +256,7 @@ function ms2Expose() {
     eligible: () => ms2HelpEligible(S.missions.list.map((x) => x.id)).map((d) => d.id), swapFree: (row) => ms2SwapFree(row), swap: (row) => ms2SwapRow(row), pouch: () => ms2PouchCheck(), treat: (date) => ms2PouchTreat(date || jstISO()),
     force: (ids) => { ms2HelpRoll(); S.missions.help.list = ids.map((id) => { const d = ms2HelpDef(id); return d ? ms2Item(d) : null; }).filter(Boolean); markDirty(); msRefresh(); return S.missions.help.list; },
     text: (it, s) => ms2HelpText(it, s), weekKey: (j) => ms2WeekKey(j), walked7: (a) => ms2Walked7(a), fresh: () => ms2FreshRoutes(), tab: (k) => { if (k) { MS2.tab = k; msRefresh(); } return MS2.tab; }, tabs: () => ms2Tabs().map((x) => x.k),
-    dot: () => ms2DotOn(), open: (k) => msOpen(k), get queue() { return MS2.q.length; }
+    dot: () => ms2DotOn(), open: (k) => msOpen(k), get queue() { return MS2.q.length; }, say: (t) => MS2.q.push([t, 'good']), swapPool: () => msEligible(msSwapExcl(S.missions)).map((d) => d.id), helpX: () => ms2HelpX(), outfit: (id) => outfitOf(id ? dogById(id) : D()), dogOutfit: () => dogOutfit()
   };
 }
 on('game:ready', () => setTimeout(ms2Expose, 0));

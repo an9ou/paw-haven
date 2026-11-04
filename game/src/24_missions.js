@@ -128,11 +128,13 @@ function msRoll(force) {
 }
 function msToday() { const m = msRoll(); return m ? m.list : []; }
 /* the free swap: once a Japan day, today's unfinished mission becomes another one (seeded, so a reload cannot reroll it) */
-function msSwapFree() { const m = S && S.missions; return !!m && m.swap !== jstISO() && m.list.some((x) => !x.done) && msEligible(m.list.map((x) => x.id)).length > 0; }
+// v2.20: the swap never draws a mission one of today's little helps stands for (24b_missions2.js ms2HelpX), so one act never ticks two rows
+const msSwapExcl = (m) => m.list.map((x) => x.id).concat(typeof ms2HelpX === 'function' ? ms2HelpX() : []);
+function msSwapFree() { const m = S && S.missions; return !!m && m.swap !== jstISO() && m.list.some((x) => !x.done) && msEligible(msSwapExcl(m)).length > 0; }
 function msSwap() {
   if (!S) return false; msRoll(); const m = S.missions, t = jstISO(), i = m.list.findIndex((x) => !x.done);
   if (m.swap === t || i < 0) return false;
-  const pool = msEligible(m.list.map((x) => x.id)); if (!pool.length) return false;
+  const pool = msEligible(msSwapExcl(m)); if (!pool.length) return false;
   const rnd = msSeed(t, '|swap'), it = msItem(msPickFrom(pool, rnd), rnd); if (!it) return false;
   m.list[i] = it; m.swap = t; markDirty(); SFX.boop(760);
   msSay(tt('missions.swapped', "Today's new mission: {mission}.", { mission: msText(it, true) }), 'good'); msRefresh(); return true;
@@ -275,11 +277,14 @@ const MS_TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.
 function msBodyHTML(stampNew) {
   const list = msToday(), m = S.missions, nd = list.filter((x) => x.done).length, total = list.length || 1;
   const lines = list.map((it) => `<li class="${it.done ? 'done' : ''}" data-ms="${esc(it.id)}">${MS_TICK}<span class="ms-t">${esc(msText(it))}</span><span class="ms-p">${it.done ? `+${MS_PAY}` : `${Math.min(it.p || 0, it.n)}/${it.n}`}</span></li>`).join('');
-  // the free swap (Daily rhythm; v2.20: on any one row, 24b_missions2.js): the mission's button here, the help rows carry their own
+  // the free swap (Daily rhythm; v2.20: on any one row, 24b_missions2.js): the mission's button right under the card, the help rows carry their own
   const swap = ms2SwapLineHTML();
-  return `<div class="ms-body"><div class="ms-left"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="${esc(tt('missions.list_aria', "Today's missions"))}">${lines}</ul></div>${ms2HelpsHTML()}</div>
-    <div class="ms-side"><p class="ms-coins">${tt('missions.coins1_html', "Today's mission pays <b>{pay} coins</b> and a crayon stamp. Done today: <b>{nd} of {total}</b>.", { pay: MS_PAY, nd, total })}</p>${swap}${ms2PouchHTML()}
-    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps1_html', '<b>{n} of {total}</b> stamps. Every finished mission earns a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p>${typeof msWeekSummaryHTML === 'function' ? msWeekSummaryHTML() : ''}</div></div>`;
+  // v2.20 fix batch: phones keep the little helps under the card; desktop puts them at the top of the right column (they fit there, Swap on one line)
+  // and the help-wanted summary under the card, so all of Today sits near the top
+  const ph = isPhone(), helps = ms2HelpsHTML(), sum = typeof msWeekSummaryHTML === 'function' ? msWeekSummaryHTML() : '';
+  return `<div class="ms-body"><div class="ms-left"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="${esc(tt('missions.list_aria', "Today's missions"))}">${lines}</ul></div>${swap}${ph ? helps : sum}</div>
+    <div class="ms-side"><p class="ms-coins">${tt('missions.coins1_html', "Today's mission pays <b>{pay} coins</b> and a crayon stamp. Done today: <b>{nd} of {total}</b>.", { pay: MS_PAY, nd, total })}</p>${ph ? '' : helps}${ms2PouchHTML()}
+    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps1_html', '<b>{n} of {total}</b> stamps. Every finished mission earns a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p>${ph ? sum : ''}</div></div>`;
 }
 // v2.20: one sheet with tabs (Today, Week, Badges, Notebook: 24b_missions2.js), opened on a tab (Today by default)
 function msOpen(tab) {

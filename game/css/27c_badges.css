@@ -50,9 +50,18 @@
 .msb-medalpop .foot .btn{min-height:44px}
 
 html[data-layout="phone"] .msb-list{grid-template-columns:minmax(0,1fr)}
-html[data-layout="phone"] .msb-head{gap:8px}
-html[data-layout="phone"] .msb-shelf{width:120px;min-height:54px}
-html[data-layout="phone"] .msb-shelf.art{width:140px}
+/* fix batch: the count and the medal line beside the shelf, the intro under both; tighter rows (the short "what counts" line hides, the bar says it) */
+html[data-layout="phone"] .msb-head{display:grid;grid-template-columns:120px minmax(0,1fr);gap:2px 10px;align-items:center}
+html[data-layout="phone"] .msb-headtxt{display:contents}
+html[data-layout="phone"] .msb-shelf,html[data-layout="phone"] .msb-shelf.art{width:120px;min-height:54px;grid-column:1;grid-row:1 / span 2}
+html[data-layout="phone"] .msb-count{grid-column:2;grid-row:1;align-self:end}
+html[data-layout="phone"] .msb-medalline{grid-column:2;grid-row:2;align-self:start}
+html[data-layout="phone"] .msb-intro{grid-column:1 / -1;grid-row:3}
+html[data-layout="phone"] .msb-d{display:none}
+html[data-layout="phone"] .msb-list{gap:6px}
+html[data-layout="phone"] .msb-row{padding:4px 8px;gap:6px}
+html[data-layout="phone"] .msb-ros{width:36px;height:36px}
+html[data-layout="phone"] .msb-barrow{margin:1px 0}
 html[data-layout="phone"] .msb-count{font-size:20px}
 html[data-layout="phone"] .msb-intro,html[data-layout="phone"] .msb-medalline{font-size:14px}
 html[data-layout="phone"] .msb-name{font-size:16px}

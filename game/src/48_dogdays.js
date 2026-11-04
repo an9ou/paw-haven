@@ -435,7 +435,9 @@ function ddPageGift(pg) {
   const r = ddPageReward(pg);
   if (r.t === 'cloth') S.inv.clothes.push(r.n); else if (!S.dd.fr.includes(r.f)) S.dd.fr.push(r.f);
   S.dd.pg[pg] = r.t === 'cloth' ? r.n : r.f; markDirty();
-  setTimeout(() => toast(tt('dd.pg_full', 'A full sticker page: {page}! Your gift: {gift}.', { page: ddPageTitle(pg), gift: r.t === 'cloth' ? shNameAny(r.n) : tt('dd.fr_label', 'a photo frame ({name})', { name: ddFrameName(r.f) }) }), 'gold'), 900);
+  const txt = tt('dd.pg_full', 'A full sticker page: {page}! Your gift: {gift}.', { page: ddPageTitle(pg), gift: r.t === 'cloth' ? shNameAny(r.n) : tt('dd.fr_label', 'a photo frame ({name})', { name: ddFrameName(r.f) }) });
+  if (typeof msbHush === 'function' && msbHush(txt)) return; // v2.20: a badge burst names the gift in its one toast (24c_badges.js)
+  setTimeout(() => (typeof ms2Say === 'function' ? ms2Say(txt, 'gold', 'ddpg') : toast(txt, 'gold')), 900); // v2.20: waits for Gerald like the mission toasts
 }
 function ddBookHTML() {
   if (!S || !S.dd) return ''; ddStickers(true);

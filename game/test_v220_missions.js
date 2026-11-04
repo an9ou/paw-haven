@@ -178,19 +178,24 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(c2.dc === 0 && c2.dc2 === 0, 'no coins from the tiers (' + c2.dc + ', ' + c2.dc2 + ')');
   ok(c2.dot && (await t.until(() => document.querySelector('#msBtn').classList.contains('dot'), null, 3000)), 'a new tier lights the soft dot');
   ok(await t.waitToast(/^New badge: Walker, (bronze|silver)\.$|new badges/), 'toast "New badge: Walker, ..."');
+  await ev(() => { window.__toasts.splice(0); });
   const c3 = await ev(() => {
-    const P = window.__paw, B = P.msb, S = P.S, L = S.missions.life, c = S.coins;
+    const P = window.__paw, B = P.msb, S = P.S, L = S.missions.life, c = S.coins; const shelf0 = B.shelf();
     S.walks = 600; L.harvest = 500; L.cook = 250; L.bath = 250; L.trick = 600; L.fetch = 1200; L.ms = 300; S.dd.wn = 250; S.ph = Object.assign(S.ph || {}, { n: 200 }); L.boards = 16;
     const got = B.check(false), cups = B.cups();
     return { n: got.length, dc: S.coins - c, golds: B.golds(), cups: cups.join(''), titles: ['Trail Pro', 'Green Paws', 'Kennel Chef', 'Bubble Boss', 'Trick Star', 'Fetch Legend', 'Mission Pup', 'Wish Maker', 'Snap Happy', 'Good Neighbour'].filter((x) => !S.titles[x]),
-      medal: S.inv.charms.includes(B.medal), pend: B.medalPending, nb: B.tier('neighbour'), count: B.count(), coins: S.coins };
+      medal: S.inv.charms.includes(B.medal), pend: B.medalPending, nb: B.tier('neighbour'), count: B.count(), coins: S.coins, shelf0, shelf: B.shelf(), out: !!(S.decor && S.decor['Trophy Shelf'] && S.decor['Trophy Shelf'].out), mpop: S.missions.mpop };
   });
   ok(c3.n >= 30 && c3.dc === 0, c3.n + ' tiers at once, coins unchanged (' + c3.dc + ')');
   ok(c3.golds === 10 && c3.cups === 'cccccccccg', 'ten gold tracks, ten cups on the shelf (nine crayon, Good neighbour gold): ' + c3.cups);
   ok(!c3.titles.length, 'each gold gives its title (titleGive): missing ' + c3.titles.join());
   ok(c3.nb === 'g', 'Good neighbour 16 of 15 boards: gold (life.boards, part D counts it)');
-  ok(c3.medal && c3.pend, 'eight golds: the Crayon Medal charm, its popup waits for a quiet yard');
-  ok(await t.waitToast(/^New title: Trail Pro/), 'titles keep titleGive\'s toast');
+  ok(c3.medal && c3.pend && c3.mpop === 1, 'eight golds: the Crayon Medal charm, its popup waits for a quiet yard (saved: missions.mpop 1)');
+  ok(!c3.shelf0 && c3.shelf && c3.out, 'the first gold cup brings the Trophy Shelf, put out in the house');
+  ok(await t.waitToast(/new badges\. See them in Missions, under Badges\. New titles: .*Trail Pro/), 'the burst names its titles in its one toast');
+  await t.p.waitForTimeout(1300);
+  const burst = await ev(() => window.__toasts.filter((x) => /new badges|^New badge|^New title|^A full sticker page|^New sticker/.test(x)));
+  ok(burst.length === 1 && /Trophy Shelf/.test(burst[0]), 'a badge burst is one toast (no title, sticker or page toasts of its own), with the shelf: ' + burst.join(' | ').slice(0, 400));
   const calmModals = async () => { await t.p.waitForTimeout(900); for (let i = 0; i < 8 && !(await ev(() => document.getElementById('modal').hidden)); i++) { await t.closeX(); await t.p.waitForTimeout(500); } }; // the silver Bond may bring level-up cards
   await calmModals();
   // the popup waits for a quiet yard: any level-up card (the silver Bond) is closed first, then the yard tick shows it
@@ -202,7 +207,7 @@ require('./test_lib').run('v220_missions', async (t) => {
   sec('C2. the Badges sticker pages, the neighbour card sticker, the Badges tab');
   const c5 = await ev(() => {
     const P = window.__paw, B = P.msb, S = P.S; B.sync(); const pages = B.ddPages(), defs = P.dd.defs().filter((d) => /^msb_/.test(d.id)), i0 = pages.indexOf('msb1');
-    const L = S.missions.life, bo = L.boards; delete S.dd.st.msb_card; L.boards = 2; P.dd.stickers(); const before = !!S.dd.st.msb_card; B.card(); L.boards = bo;
+    const L = S.missions.life, bo = L.boards; delete S.dd.st.msb_card; L.boards = 2; P.dd.stickers(); const before = !!S.dd.st.msb_card; const wc = S.missions.wk.cards; S.missions.wk.cards = 1; B.card(); S.missions.wk.cards = wc; L.boards = bo;
     return { tail: pages.slice(-3).join(), defs: defs.length, per: [0, 1, 2].map((k) => defs.filter((d) => d.pg === i0 + k).length).join(), before, card: !!S.dd.st.msb_card, walker: !!S.dd.st.msb_walker, coats: !!S.dd.st.msb_coats };
   });
   ok(c5.tail === 'msb1,msb2,msb3' && c5.defs === 18 && c5.per === '6,6,6', 'three Badges pages at the end of the book, 18 stickers, 6 a page: ' + c5.per);
@@ -308,7 +313,7 @@ require('./test_lib').run('v220_missions', async (t) => {
 
   sec('D6. the Week tab and the desktop summary');
   await ev(() => { const P = window.__paw, wk = P.S.missions.wk; wk.seen = ''; P.msw.force(['w_bath', 'w_walk', 'w_photo', 'w_treasure', 'w_trick']); wk.list[0].done = P.rh.jst(); wk.list[0].p = 2; wk.list[1].p = 3; P.ms.open(); });
-  ok(await t.until(() => !!document.querySelector('#modal .ms-pop .ms-side .msw-sum .msw-go'), null, 4000), 'Today: the board summary in the right column');
+  ok(await t.until(() => !!document.querySelector('#modal .ms-pop .ms-left .msw-sum .msw-go'), null, 4000), 'Today: the board summary under the card (desktop)');
   ok(await ev(() => /^Help-wanted board 1 of 3$/.test(document.querySelector('.msw-sum .msw-sumtxt p').textContent.trim())), 'the summary: "Help-wanted board 1 of 3"');
   await t.p.click('.msw-go');
   ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msw .msw-note').length === 5 && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), '"See the board" opens the Week tab: five pinned notes');
@@ -495,10 +500,58 @@ require('./test_lib').run('v220_missions', async (t) => {
   await t.SH('grow_desktop');
   await t.closeX(); await t.modalGone();
 
+  sec('G1. fix batch: the medal on the dog, the swap and the helps, the pop-up market, the open fold');
+  const g1 = await ev(() => {
+    const P = window.__paw, S = P.S, keep = S.outfit.charm, norm = (s) => String(s).replace(/(id="|#|href="#)[\w:-]+/g, '$1');
+    const art = (c) => { S.outfit.charm = c; const o = P.ms2.outfit(), w = P.ms2.dogOutfit(); return { o, w, svg: norm(window.PawArt.dog(S.dog.key, { pose: 'sit', outfit: o, facing: 'right' })) }; };
+    const none = art(null), medal = art('Crayon Medal'), shoe = art('Lucky Horseshoe'); S.outfit.charm = keep;
+    return { pass: medal.o.charm === 'Crayon Medal' && medal.w.charm === 'Crayon Medal', medal: !!none.svg && medal.svg !== none.svg, shoe: shoe.svg === none.svg };
+  });
+  ok(g1.pass && g1.medal && g1.shoe, 'outfitOf hands the charm to the dog art: the Crayon Medal shows on the yard dog, another charm draws nothing (' + JSON.stringify(g1) + ')');
+  const g2 = await ev(() => {
+    const P = window.__paw, S = P.S; S.missions.swap = ''; window.__msf(['bath']); P.ms2.force(['h_photo', 'h_trick']);
+    const a = P.ms2.swapPool(), x = P.ms2.helpX(); P.ms2.force(['h_pet', 'h_water']); const b = P.ms2.swapPool();
+    return { x, bad: a.filter((id) => ['photo', 'trick', 'trick_show'].includes(id)), photo: b.includes('photo') };
+  });
+  ok(!g2.bad.length && g2.photo && g2.x.includes('photo'), 'the mission swap never draws a mission a help stands for (Snap one photo, Practise a trick): ' + JSON.stringify(g2));
+  const g3 = await ev(() => { const P = window.__paw, S = P.S, v0 = P.msb.val('places'), pl = P.msb.places(); S.dd.pv.fmarket = 1; const v1 = P.msb.val('places'); delete S.dd.pv.fmarket; return { fm: pl.includes('fmarket'), same: v0 === v1, n: pl.length }; });
+  ok(!g3.fm && g3.same && g3.n >= 8, 'Out and about leaves out the festival pop-up market (' + g3.n + ' places)');
+  const g4 = await ev(() => { const P = window.__paw, m = P.S.missions, keep = Object.assign({}, m.tr), h0 = P.msb.html(); P.msb.tracks.forEach((id) => { if (!['g', 'c'].includes(m.tr[id])) m.tr[id] = 'g'; }); const h = P.msb.html(); m.tr = keep; return { open: /<details class="msb-fold" open>/.test(h), closed: /<details class="msb-fold">/.test(h0) }; });
+  ok(g4.open && g4.closed, 'every track gold or crayon: the fold opens, so the tab is never empty');
+
+  sec('G2. fix batch: the Crayon Medal notice survives a reload; a Monday board lights the dot');
+  await ev(() => { const S = window.__paw.S; S.missions.mpop = 1; window.__paw.saveNow(); });
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue', { timeout: 20000 }); await t.ev(() => document.getElementById('tContinue').click()); await t.untilMode('yard');
+  await t.until(() => !!(window.__paw && window.__paw.msb && window.__paw.msw), null, 8000);
+  ok(await ev(() => window.__paw.msb.medalPending), 'after a reload the Crayon Medal popup is still to come');
+  ok(await t.until(() => { const m = document.getElementById('modal'); if (document.querySelector('#modal .msb-medalpop')) return true; if (!m.hidden) { const x = m.querySelector('.panel .x'); if (x) x.click(); } else window.__paw.msb.medalTick(); return false; }, null, 10000), 'it shows in a quiet yard');
+  await t.closeX(); await t.modalGone();
+  ok(await ev(() => !window.__paw.msb.medalPending && window.__paw.S.missions.mpop === 0), 'shown once: mpop back to 0');
+  const g5 = await ev(async () => {
+    const P = window.__paw, S = P.S, wk = S.missions.wk, R = Date.now, wait = (ms) => new Promise((r) => setTimeout(r, ms)); P.msw.roll(); wk.seen = wk.w + (wk.got === wk.w ? '+' : '');
+    const b = document.getElementById('msBtn'), d0 = b.classList.contains('dot'), w0 = wk.w;
+    try { const t0 = R(); Date.now = () => t0 + 7 * 864e5; let on = false; for (let i = 0; i < 30 && !on; i++) { await wait(100); on = wk.w !== w0 && b.classList.contains('dot'); } return { d0, on, w: wk.w !== w0 }; } finally { Date.now = R; }
+  });
+  ok(!g5.d0 && g5.w && g5.on, 'a new Monday board lights the soft dot right away (' + JSON.stringify(g5) + ')');
+  await ev(() => { const P = window.__paw; P.ms.roll(true); P.ms2.roll(true); P.msw.roll(true); });
+
+  sec('G3. fix batch: a swapped S (an import, a restore, a cloud pull) resets the caches');
+  const g6 = await ev(async () => {
+    const P = window.__paw, B = P.msb, wait = (ms) => new Promise((r) => setTimeout(r, ms)); B.sync(); P.msn.page(3);
+    const pages = B.ddPages(), i0 = pages.indexOf('msb1'), withNb = pages.includes('nb1'), K = pages.indexOf('nb1');
+    P.ms2.say('a queued line'); const q0 = P.ms2.queue >= 0;
+    const data = JSON.parse(JSON.stringify(P.S)); data.missions.nb = null; data.dd.pg = {}; data.dd.pg[K] = 'Bow Tie';
+    const ok = window.__pawCloud.apply(data, null, ''); await wait(400); B.sync();
+    return { ok, withNb, K, i0, pg: Object.assign({}, P.S.dd.pg), after: B.ddPages().includes('nb1'), queue: P.ms2.queue, npg: P.msn.pg, q0 };
+  });
+  ok(g6.ok && g6.withNb && !g6.after, 'the swapped-in save has no notebook: its sticker pages leave the book (' + JSON.stringify(g6) + ')');
+  ok(g6.pg[g6.K] === 'Bow Tie' && Object.keys(g6.pg).length === 1, 'its page gifts stay where it saved them (no remap from the old save\'s order)');
+  ok(g6.queue === 0 && g6.npg === 0, 'the toast queue and the notebook page start again');
+
   sec('A4. an old v2.19.2 save loads and backfills, additively (no notebook)');
   const old = await ev(() => {
     const S = JSON.parse(JSON.stringify(window.__paw.S)), m = S.missions;
-    ['help', 'pouch', 'life', 'tr', 'trbf', 'wk', 'wkAreas', 'nb', 'grow'].forEach((k) => delete m[k]);
+    ['help', 'pouch', 'life', 'tr', 'trbf', 'mpop', 'wk', 'wkAreas', 'nb', 'grow'].forEach((k) => delete m[k]); if (S.decor) delete S.decor['Trophy Shelf'];
     // part C: the badges' own rewards are taken back out, so the backfill gives them again (the counters stay: walks 5000, photos 200, wishes 250)
     S.inv.charms = S.inv.charms.filter((x) => x !== 'Crayon Medal'); if (S.outfit.charm === 'Crayon Medal') S.outfit.charm = null;
     ['Trail Pro', 'Snap Happy', 'Wish Maker', 'Map Maker'].forEach((x) => { delete S.titles[x]; }); if (S.title && !S.titles[S.title]) S.title = '';
@@ -532,6 +585,8 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(c7.golds >= 8 && c7.medal && !c7.pend && !c7.pop, 'eight golds or more (' + c7.golds + '): the Crayon Medal comes quietly, no popup');
   const c8 = await t.ev(() => { const P = window.__paw; P.msb.check(false); return P.S.mail.filter((x) => x.id === 'msb_backfill').length; });
   ok(c8 === 1, 'a second look sends no second letter');
+  const c9 = await t.ev(() => { const S = window.__paw.S, L = S.mail.find((x) => x.id === 'msb_backfill'); return { shelf: !!(S.decor && S.decor['Trophy Shelf'] && S.decor['Trophy Shelf'].out), text: L ? L.text : '', toasts: window.__toasts.filter((x) => /Trophy Shelf|New for the house/.test(x)) }; });
+  ok(c9.shelf && /Trophy Shelf is already in the house/.test(c9.text) && !c9.toasts.length, 'an old save with golds gets the Trophy Shelf silently, the letter names it');
   const e9 = await t.ev(() => { const P = window.__paw; P.msb.sync(); return { nb: P.S.missions.nb, shown: P.msn.shown(), tabs: P.ms2.tabs(), pages: P.msb.ddPages().filter((k) => /^nb/.test(k)).length, html: P.msn.doneHtml() }; });
   ok(e9.nb === null && !e9.shown && !e9.tabs.includes('notebook') && e9.pages === 0 && e9.html === '', 'an old save: no notebook, no Notebook tab, no Notebook sticker pages, nothing under Badges: ' + e9.tabs.join());
 

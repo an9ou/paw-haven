@@ -72,7 +72,7 @@ function eatBowlDX(d, ty) {
   if (!d) return 0; const w = wetDog(d), k = typeof rmScene === 'function' && rmScene() && typeof rmKd === 'function' ? rmKd(d, 500 + (ty || 0)) : 1;
   return Math.round((eatNoseX(d, Object.assign({ outfit: shSleepOutfit(d, 'eat') }, w ? { wet: w } : {})) - 170) * (DW / 240) * (k || 1));
 }
-const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: typeof plWearing === 'function' && plWearing(d) ? PL_VEST : d.outfit.body }); // v2.15: the pool's life vest is draw-only (45_pool.js)
+const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: typeof plWearing === 'function' && plWearing(d) ? PL_VEST : d.outfit.body, charm: d.outfit.charm || null }); // v2.15: the pool's life vest is draw-only (45_pool.js). v2.20: the charm too (the dog art draws only the Crayon Medal, V220.md)
 // Rainy days (wet dogs): a dog drawn in a rainy outdoor scene (where the rain overlay falls, or on a rainy walk) is drawn wet (PawArt.dog wet option,
 // dogs/pawart_dogs.js), unless it wears a raincoat. Only the scene renders take it (the leader, the pack, Dog Card and playdate visitors, the walk);
 // cards, menus and photos stay dry. Indoors (the house, the café, the vet, the salon) and every scene without the rain overlay stay dry.

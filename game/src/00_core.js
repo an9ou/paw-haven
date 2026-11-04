@@ -1194,7 +1194,7 @@ const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (type
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
 const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 && S.stats.happy > 80 && S.stats.energy > 80 && S.stats.clean > 80);
-const dogOutfit = () => ({ head: S.outfit.head, eyes: S.outfit.eyes, neck: S.outfit.neck, body: S.outfit.body });
+const dogOutfit = () => ({ head: S.outfit.head, eyes: S.outfit.eyes, neck: S.outfit.neck, body: S.outfit.body, charm: S.outfit.charm || null }); // v2.20: the charm too (the dog art draws only the Crayon Medal)
 const wearing = (n) => SLOTS.some((k) => S.outfit[k] === n) || S.outfit.charm === n;
 const tInfo = (n) => TREASURES.find((t) => t.n === n);
 /* ---- v2.14 display text of the core tables (V214.md 4.3). The English names stay the data, the keys and the save values; only what is shown

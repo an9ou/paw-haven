@@ -9,7 +9,8 @@
    no title. No puppy or litter track (welfare). Old saves: the first check gives every earned tier quietly (no toasts, no Bond) and sends one
    letter. New tiers: one batched toast through ms2Say, the soft dot until the Badges tab is seen. Under the harness: prefs.msTest (msAllowed).
    Test hook: window.__paw.msb. */
-const MSB = { dot: false, card: false, medal: false, t: 0, order: null };
+const MSB = { dot: false, t: 0, order: null, hush: null }; // hush: while msTierCheck gives stickers, a full page's gift line joins the badge toast (msbHush)
+const MSB_SHELF = 'Trophy Shelf'; // the house decoration (HM_DECOR, a reward never sold), given at the first gold cup
 const MSB_TIERS = ['b', 's', 'g', 'c'];
 const MSB_PAGES = ['msb1', 'msb2', 'msb3']; // the three Badges sticker pages (6 stickers each)
 const MSB_GOLDS = 8; // golds for the Crayon Medal
@@ -24,7 +25,7 @@ const msbLife = (k) => msbN(S && S.missions && S.missions.life && S.missions.lif
 const msbPv = () => (S && S.dd && S.dd.pv && typeof S.dd.pv === 'object' ? S.dd.pv : {});
 const MSB_ROUTES = ['park', 'river', 'woods', 'beach', 'sunflower', 'bamboo', 'cliffs']; // the seven walking routes
 // the town's places (not the yard or the house, not the run tracks (Trail explorer), not Tokyo: Tokyo has its own track)
-function msbPlaces() { const tk = typeof TK_PLACES === 'object' && TK_PLACES ? TK_PLACES : {}; return Object.keys(PLACES).filter((k) => k !== 'yard' && k !== 'house' && !tk[k] && !(PLACES[k] && (PLACES[k].run || PLACES[k].tokyo))); }
+function msbPlaces() { const tk = typeof TK_PLACES === 'object' && TK_PLACES ? TK_PLACES : {}; return Object.keys(PLACES).filter((k) => k !== 'yard' && k !== 'house' && !tk[k] && !(PLACES[k] && (PLACES[k].run || PLACES[k].tokyo || PLACES[k].fm))); } // fm: the festival pop-up market (49_market.js) comes and goes
 // id, n: the name, d: what counts, title: the gold title (Coats: none, its titles come from the Coat Collection), ic: the sticker art, tiers: [b, s, g, c]
 const MS_TRACKS = [
   { id: 'walker', n: 'Walker', d: 'Walks finished', title: 'Trail Pro', ic: 'i:walk', tiers: [10, 50, 200, 500], val: () => msbN(S.walks) },
@@ -66,50 +67,76 @@ function msCups() { if (!S || !S.missions || !S.missions.tr) return []; return M
 // quiet: no toasts, no Bond, titles written silently (an old save's first look, or a test). Returns [{ id, t }] of the tiers given now
 function msTierCheck(quiet) {
   if (!S || !S.missions || !S.missions.tr || !msAllowed() || cur.mode === 'title' || !Array.isArray(S.dogs) || !S.dogs.length) return [];
+  ms2Mine();
   const m = S.missions, back = m.trbf !== 1; quiet = !!quiet || back;
-  const got = [];
+  const got = [], titles = [];
   MS_TRACKS.forEach((d) => {
     const have = msbTi(msTierOf(d.id)), now = msbTi(msTierReached(d.id));
-    for (let i = have + 1; i <= now; i++) { const t = MSB_TIERS[i]; m.tr[d.id] = t; got.push({ id: d.id, t }); msbReward(d, t, quiet); }
+    for (let i = have + 1; i <= now; i++) { const t = MSB_TIERS[i]; m.tr[d.id] = t; got.push({ id: d.id, t }); const tl = msbReward(d, t, quiet); if (tl) titles.push(tl); }
   });
-  if (back) { m.trbf = 1; markDirty(); if (got.length) msbLetter(msbCount()); }
+  const shelf = msbGolds() >= 1 && msbShelfGive(); // the Trophy Shelf comes with the first gold cup (an old save with golds gets it with its quiet look)
+  if (back) { m.trbf = 1; markDirty(); if (got.length) msbLetter(msbCount(), msbHasShelf()); }
   if (msbGolds() >= MSB_GOLDS) msMedalGive(quiet);
   if (!got.length) return got;
   markDirty();
+  MSB.hush = []; // a full sticker page's gift joins the one badge toast (quiet: nothing is said, the gift is given all the same)
   try { if (typeof ddStickers === 'function') { msPagesSync(); ddStickers(true); } } catch (e) { /* no sticker book yet */ }
+  const gifts = MSB.hush || []; MSB.hush = null;
   if (!quiet) {
     MSB.dot = true; msHudSync(true);
-    const d0 = msbDef(got[0].id);
-    ms2Say(got.length === 1 ? tt('ms2b.new_one', 'New badge: {badge}, {tier}.', { badge: msbName(d0), tier: msbTierName(got[0].t) }) : tt('ms2b.new_many', '{n} new badges. See them in Missions, under Badges.', { n: got.length }),
-      'gold', 'msb', (k) => tt('ms2b.new_many', '{n} new badges. See them in Missions, under Badges.', { n: k }));
+    // a burst is one toast: the badges, the titles they bring, the shelf, a full page's gift (calm rule, V220.md 0)
+    const d0 = msbDef(got[0].id), many = (k) => tt('ms2b.new_many', '{n} new badges. See them in Missions, under Badges.', { n: k });
+    let line = got.length === 1 ? tt('ms2b.new_one', 'New badge: {badge}, {tier}.', { badge: msbName(d0), tier: msbTierName(got[0].t) }) : many(got.length);
+    if (titles.length) line += ' ' + tt('ms2b.new_titles', '{n, plural, one {New title} other {New titles}}: {list}.', { n: titles.length, list: tlist(titles.map(msTitleName)) });
+    if (shelf) line += ' ' + tt('ms2b.shelf_new', 'Gerald brings a Trophy Shelf for the house, to keep your gold cups on.');
+    gifts.forEach((g) => { line += ' ' + g; });
+    ms2Say(line, 'gold', 'msb', many);
+    if (titles.length) ms2Sfx('fanfare');
   }
+  if (got.some((g) => g.t === 'g' || g.t === 'c')) msbShelfRedraw();
   msRefresh(); return got;
 }
+// a full sticker page's gift line while msTierCheck gives stickers (48_dogdays.js ddPageGift asks): true when the badge toast takes it
+function msbHush(text) { if (!MSB.hush) return false; MSB.hush.push(text); return true; }
+// the Trophy Shelf: put out in the house (as jrDecor does), without its own toast (the badge toast or Gerald's letter names it)
+const msbHasShelf = () => !!(S && S.decor && S.decor[MSB_SHELF]);
+function msbShelfGive() {
+  if (typeof HM_DECOR === 'undefined' || !HM_DECOR[MSB_SHELF] || msbHasShelf()) return false;
+  if (typeof hmDecorFields === 'function') hmDecorFields(); S.decor = S.decor || {}; S.decor[MSB_SHELF] = { got: localISO(), out: true }; markDirty(); return true;
+}
+// a new cup or a crayon cup: redraw the room when the player is in it
+function msbShelfRedraw() {
+  try { const room = typeof hoRoomOf === 'function' ? hoRoomOf(MSB_SHELF) : 'house'; if (msbHasShelf() && cur.mode === 'yard' && S.place === room && !(typeof HO === 'object' && HO && HO.pl) && typeof hmDecorRedraw === 'function') hmDecorRedraw(); } catch (e) { /* not in the house */ }
+}
 // what one tier gives: b the sticker (its test reads S.missions.tr), s Bond, g the title, c the crayon star and cup (both drawn from S.missions.tr)
+// gold: the title is written here, without titleGive's own toast and fanfare: the badge toast names it (one toast for a burst). Returns the new title
 function msbReward(d, t, quiet) {
   if (t === 's' && !quiet) addBond(MSB_BOND());
   if (t === 'g' && d.title) {
-    if (quiet) { jrFields(); if (!S.titles[d.title]) { S.titles[d.title] = localISO(); markDirty(); } } else titleGive(d.title); // titleGive has its own toast
+    jrFields(); if (S.titles[d.title]) return '';
+    S.titles[d.title] = localISO(); if (!quiet && !S.title) { S.title = d.title; jrShowTitle(); } markDirty();
+    return quiet ? '' : d.title;
   }
+  return '';
 }
 // an old save's first look: one quiet letter from Gerald, once
-function msbLetter(n) {
+function msbLetter(n, shelf) {
   if (typeof mailPush !== 'function' || !n) return;
   mailPush({ kind: 'news', id: 'msb_backfill', from: tt('ms2b.letter_from', 'Gerald'), title: tt('ms2b.letter_title', 'Your badges'),
-    text: tt('ms2b.letter_text', 'You already earned {n, plural, one {# badge} other {# badges}} for everything you and {name} have done in town. Open Missions and look under Badges. Gold ones put a cup on your trophy shelf.', { n, name: NAME() }),
+    text: tt('ms2b.letter_text', 'You already earned {n, plural, one {# badge} other {# badges}} for everything you and {name} have done in town. Open Missions and look under Badges. Gold ones put a cup on your trophy shelf.', { n, name: NAME() })
+      + (shelf ? ' ' + tt('ms2b.letter_shelf', 'Your Trophy Shelf is already in the house, with a cup for every gold badge.') : ''),
     ps: tt('ms2b.letter_ps', 'Gerald, who keeps a list of everything') });
 }
 // the Crayon Medal: once, at 8 golds. A popup when the yard is quiet (an old save's first look just puts it in the Wardrobe)
 function msMedalGive(quiet) {
   if (!S || !S.inv || !Array.isArray(S.inv.charms) || S.inv.charms.includes(MS_MEDAL)) return false;
-  S.inv.charms.push(MS_MEDAL); markDirty();
-  if (!quiet) MSB.medal = true;
+  S.inv.charms.push(MS_MEDAL); if (!quiet) S.missions.mpop = 1; markDirty(); // the popup waits for a quiet yard, saved (a reload keeps it)
   return true;
 }
 // the art lane's medal, else a plain crayon medal (every fill inside its outline)
 function msbMedalArt() { return ms2Art('medal') || artReal('item', MS_MEDAL) || '<svg viewBox="-20 -20 40 40"><path d="M-8 -19 L-2 -6 L2 -6 L8 -19 L3 -19 L0 -12 L-3 -19Z" fill="#CBE0F4" stroke="#5B3D32" stroke-width="1.8" stroke-linejoin="round"/><circle cy="5" r="12" fill="#F6CF57" stroke="#5B3D32" stroke-width="2.2"/><circle cy="5" r="7.5" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"/><path d="M0 0.5 L1.6 3.6 L5 4 L2.5 6.3 L3.1 9.6 L0 8 L-3.1 9.6 L-2.5 6.3 L-5 4 L-1.6 3.6Z" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.1" stroke-linejoin="round"/></svg>'; }
 function msbMedalPop() {
-  MSB.medal = false;
+  S.missions.mpop = 0; markDirty();
   const wear = S.outfit && S.outfit.charm === MS_MEDAL;
   const p = openModal(esc(tt('ms2b.medal_title', 'The Crayon Medal')), `<div class="msb-medal"><span class="msb-medalic" aria-hidden="true">${msbMedalArt()}</span><p>${esc(tt('ms2b.medal_text', 'Gold in eight badges! The Crayon Medal is yours, a charm for {name}. Pure bragging rights.', { name: NAME() }))}</p></div>`,
     { cls: 'msb-medalpop', foot: `${wear ? '' : `<button class="btn" type="button" id="msbWear">${esc(tt('ms2b.medal_wear', 'Wear it'))}</button>`}<button class="btn" type="button" id="msbOk">${esc(tt('ms2b.medal_ok', 'Lovely'))}</button>` });
@@ -118,16 +145,17 @@ function msbMedalPop() {
   const o = p.querySelector('#msbOk'); if (o) o.onclick = () => { SFX.click(); closeModal(); };
   return p;
 }
-function msbMedalTick() { if (MSB.medal && S && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length)) msbMedalPop(); }
+function msbMedalTick() { if (S && S.missions && S.missions.mpop === 1 && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length)) msbMedalPop(); }
 // the soft dot on the clipboard: a new tier, until the Badges tab is seen
-function msBadgeDot() { return !!MSB.dot; }
-// Part D: the first full neighbour card gives the 18th sticker (life.boards 4 also gives it)
-function msCardSticker() { MSB.card = true; try { if (typeof ddStickers === 'function') { msPagesSync(); return ddStickers(false); } } catch (e) { /* no sticker book yet */ } return []; }
+function msBadgeDot() { ms2Mine(); return !!MSB.dot; }
+// Part D: the first full neighbour card gives the 18th sticker (S.missions.wk.cards 1, or life.boards 4)
+function msCardSticker() { try { if (typeof ddStickers === 'function') { msPagesSync(); return ddStickers(false); } } catch (e) { /* no sticker book yet */ } return []; }
 
 /* ---------------- the three Badges sticker pages ---------------- */
 // they sit at the end of the book, after the Fun Fair pages; page gifts (S.dd.pg, by page number) follow their page when the order changes
 function msPagesSync() {
   if (typeof DD_PAGES === 'undefined' || !S || !S.dd) return;
+  ms2Mine(); // a swapped S (clApply) starts with no remembered order, as a fresh load does
   try { if (typeof ffPagesSync === 'function') ffPagesSync(); } catch (e) { /* the fair is not ready */ }
   try { if (typeof nbPagesSync === 'function') nbPagesSync(); } catch (e) { /* part E: the two Notebook pages, before the Badges pages */ }
   const want = msAllowed() && Array.isArray(S.dogs) && S.dogs.length > 0, i0 = DD_PAGES.indexOf(MSB_PAGES[0]), end = DD_PAGES.length - MSB_PAGES.length;
@@ -144,7 +172,7 @@ function msStickerAdd(add) {
   if (!S || !S.missions || !DD_PAGES.includes(MSB_PAGES[0])) return;
   const pg = DD_PAGES.indexOf(MSB_PAGES[0]);
   MS_TRACKS.forEach((d, i) => add('msb_' + d.id, pg + Math.floor(i / 6), d.ic, () => tt('ms2b.st_badge', '{badge} badge', { badge: msbName(d) }), () => msbTi(msTierOf(d.id)) >= 0));
-  add('msb_card', pg + 2, 'i:star', () => tt('ms2b.st_card', 'The first neighbour card'), () => MSB.card || msbLife('boards') >= 4);
+  add('msb_card', pg + 2, 'i:star', () => tt('ms2b.st_card', 'The first neighbour card'), () => msbLife('boards') >= 4 || !!(S.missions.wk && S.missions.wk.cards >= 1));
 }
 function msPageTitle(k) { return k === 'msb2' ? tt('ms2b.pg_2', 'Badges: home and play') : k === 'msb3' ? tt('ms2b.pg_3', 'Badges: fun in town') : tt('ms2b.pg_1', 'Badges: out and about'); }
 
@@ -187,11 +215,12 @@ function msBadgesHTML() {
   const medal = `<p class="msb-medalline${med ? ' got' : ''}"><span class="msb-medalsm" aria-hidden="true">${msbMedalArt()}</span><span>${esc(med ? tt('ms2b.medal_got', 'The Crayon Medal is yours. Find it in the Wardrobe, under Charm.') : tt('ms2b.medal_todo', 'Gold in {n} of {total} badges. Eight golds give the Crayon Medal.', { n: g, total: MSB_GOLDS }))}</span></p>`;
   return `<div class="msb"><div class="msb-head">${msbShelfHTML()}<div class="msb-headtxt"><p class="msb-count"><b>${esc(tt('ms2b.count', '{n} of {total} badges', { n: msbCount(), total: MS_TRACKS.length * 4 }))}</b></p><p class="msb-intro">${esc(tt('ms2b.intro', 'Badges grow with everything you do. Bronze gives a sticker, silver a rosette and Bond, gold a title and a cup, crayon a crayon star. No coins, just bragging rights.'))}</p>${medal}</div></div>`
     + `<ul class="msb-list">${open.map(msbRowHTML).join('')}</ul>`
-    + (top.length ? `<details class="msb-fold"><summary>${esc(tt('ms2b.fold', 'Gold and crayon badges ({n})', { n: top.length }))}</summary><ul class="msb-list">${top.map(msbRowHTML).join('')}</ul></details>` : '')
+    + (top.length ? `<details class="msb-fold"${open.length ? '' : ' open'}><summary>${esc(tt('ms2b.fold', 'Gold and crayon badges ({n})', { n: top.length }))}</summary><ul class="msb-list">${top.map(msbRowHTML).join('')}</ul></details>` : '')
     + (typeof msNbDoneHTML === 'function' ? msNbDoneHTML() : '') + '</div>'; // part E: the finished notebook moves here
 }
 
 /* ---------------- wiring ---------------- */
+ms2OnSwap(() => { MSB.order = null; MSB.dot = false; MSB.hush = null; clearTimeout(MSB.t); });
 on('act', () => { clearTimeout(MSB.t); MSB.t = setTimeout(() => { try { msTierCheck(false); } catch (e) { console.warn('badges', e); } }, 400); });
 on('game:ready', () => setTimeout(() => { try { msPagesSync(); msTierCheck(false); } catch (e) { console.warn('badges', e); } msbExpose(); }, 600));
 setInterval(() => { if (!S || cur.mode === 'title') return; try { msPagesSync(); msTierCheck(false); msbMedalTick(); } catch (e) { /* not ready */ } }, 3000);
@@ -199,8 +228,8 @@ function msbExpose() {
   if (!window.__paw) return;
   window.__paw.msb = {
     tracks: MS_TRACKS.map((d) => d.id), val: (id) => msTrackVal(id), tiers: (id) => msTrackTiers(id), tier: (id) => msTierOf(id), reached: (id) => msTierReached(id), check: (q) => msTierCheck(q),
-    html: () => msBadgesHTML(), cups: () => msCups(), dot: () => msBadgeDot(), golds: () => msbGolds(), count: () => msbCount(), medal: MS_MEDAL, medalTick: () => msbMedalTick(), get medalPending() { return MSB.medal; },
-    card: () => msCardSticker(), sync: () => msPagesSync(), pages: MSB_PAGES.slice(), title: (t) => msTitleName(t), places: () => msbPlaces(), ddPages: () => DD_PAGES.slice()
+    html: () => msBadgesHTML(), cups: () => msCups(), dot: () => msBadgeDot(), golds: () => msbGolds(), count: () => msbCount(), medal: MS_MEDAL, medalTick: () => msbMedalTick(), get medalPending() { return !!(S && S.missions && S.missions.mpop === 1); },
+    shelf: () => msbHasShelf(), get order() { return MSB.order ? MSB.order.slice() : null; }, card: () => msCardSticker(), sync: () => msPagesSync(), pages: MSB_PAGES.slice(), title: (t) => msTitleName(t), places: () => msbPlaces(), ddPages: () => DD_PAGES.slice()
   };
 }
 on('yard:enter', () => { if (window.__paw && !window.__paw.msb) msbExpose(); });

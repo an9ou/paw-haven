@@ -160,13 +160,13 @@ function nbFinish(n) {
     if (p.gift !== 'regular') ms2Say(tt('ms2n.done_sticker', 'Notebook page done: {page}. A new sticker for your sticker book.', { page }), 'gold', 'msnd', (k) => tt('ms2n.done_many', '{n} notebook pages done. New stickers in your sticker book.', { n: k }));
   }
   NB.dot = true; msHudSync(true);
-  try { SFX.kaching(); } catch (e) { /* audio off */ }
+  ms2Sfx('kaching'); // waits for Gerald like the toasts (page 1 can finish at the end of the first-day guide)
 }
 const nbSeedName = () => (typeof fwDgSeedName === 'function' ? fwDgSeedName() : 'Carrot Seeds');
 // day 14: the first Bond 1-2 shop decoration not owned (a yard or house decoration, not a festival one), else three biscuits
 function nbDecorGift() {
   const n = Object.keys(HM_DECOR).find((k) => { const x = HM_DECOR[k]; return x.v27 && x.kind === 'decor' && !x.fest && !x.ed && !x.fm && !x.reward && (x.bond || 1) <= 2 && !(S.decor && S.decor[k]); });
-  if (n) { if (typeof hmDecorFields === 'function') hmDecorFields(); S.decor = S.decor || {}; S.decor[n] = { got: localISO(), out: false }; markDirty(); return n; }
+  if (n) { if (typeof hmDecorFields === 'function') hmDecorFields(); S.decor = S.decor || {}; S.decor[n] = { got: localISO(), out: false }; markDirty(); emit('decor:new', { name: n }); return n; } // as jrDecor: the room redraw and its "New for the house" line
   S.inv.food['Bone-shaped Biscuit'] = (S.inv.food['Bone-shaped Biscuit'] || 0) + 3; markDirty(); return '';
 }
 function nbLetter() {
@@ -179,14 +179,14 @@ function nbLetter() {
 function nbPopTick() {
   if (!S || !S.missions || !S.missions.nb || !msAllowed()) return;
   const nb = S.missions.nb; if (!Array.isArray(nb.pop) || !nb.pop.length) return;
-  if (cur.mode !== 'yard' || !modal.hidden || busy || msGuideBusy() || (typeof levelQueue !== 'undefined' && levelQueue.length) || (typeof MSB === 'object' && MSB.medal)) return;
+  if (cur.mode !== 'yard' || !modal.hidden || busy || msGuideBusy() || (typeof levelQueue !== 'undefined' && levelQueue.length) || S.missions.mpop === 1) return; // the Crayon Medal popup goes first
   nbPopup(nb.pop.shift()); markDirty();
 }
 function nbPopup(day) {
   const nb = S.missions.nb, frame = typeof fwFrameSVG === 'function' ? fwFrameSVG('#C3B1E6') : ICON('camera');
   const title = day === 14 ? tt('ms2n.pop14_title', 'Town Regular!') : tt('ms2n.pop7_title', 'One week together!');
   const text = day === 14
-    ? (nb.dec ? tt('ms2n.pop14_text', 'Fourteen pages! You and {name} know the whole town now. Your new title is Town Regular, and Gerald gives you the {decor} for your home. Put it out with Arrange the yard.', { name: NAME(), decor: tdata('hm_decor.' + tid(nb.dec) + '.n', nb.dec) })
+    ? (nb.dec ? tt('ms2n.pop14_text', 'Fourteen pages! You and {name} know the whole town now. Your new title is Town Regular, and Gerald gives you the {decor} for your home. Put it out with {room, select, house {Arrange the house} other {Arrange the yard}}.', { name: NAME(), decor: tdata('hm_decor.' + tid(nb.dec) + '.n', nb.dec), room: typeof hoRoomOf === 'function' && HM_DECOR[nb.dec] ? hoRoomOf(nb.dec) : 'yard' })
       : tt('ms2n.pop14_food', 'Fourteen pages! You and {name} know the whole town now. Your new title is Town Regular, and Gerald gives you three {food}.', { name: NAME(), food: shNameAny('Bone-shaped Biscuit') }))
     : tt('ms2n.pop7_text', 'Seven pages, and {name} already feels at home. Gerald gives you the First Week photo frame for photo mode, and there is a letter for you in the mailbox.', { name: NAME() });
   const ic = day === 14 ? ((nb.dec && artReal('prop', (HM_DECOR[nb.dec] || {}).prop)) || iconOr('star', doodle('spark', 0, 0, 1))) : frame;
@@ -212,7 +212,7 @@ function nbStickerAdd(add) {
 function nbPageTitle(k) { return k === 'nb2' ? tt('ms2n.pg_2', "Gerald's notebook: week two") : tt('ms2n.pg_1', "Gerald's notebook: week one"); }
 
 /* ---------------- the Notebook tab ---------------- */
-function msNbDot() { if (!nbOk()) return false; const nb = nbNb(); return NB.dot || nb.pages > Math.max(1, nb.seen || 0); }
+function msNbDot() { if (!nbOk()) return false; ms2Mine(); const nb = nbNb(); return NB.dot || nb.pages > Math.max(1, nb.seen || 0); }
 // the How to play lesson a page links to: its title (the eight lessons, the Training Ground, the Splash Pool, the Fun Fair cards)
 function nbHowTitle(k) {
   const r = GD_LESSONS.find((x) => x[0] === k); if (r) return tdata('gd_lessons.' + r[0] + '_' + r[1] + '.2', r[2]);
@@ -238,6 +238,7 @@ function nbGiftText(p) {
 // the whole tab (or, with all, the finished notebook under Badges): one page at a time, Back and Next
 function msNbHTML(all) {
   if (!S || !S.missions || !S.missions.nb) return '';
+  ms2Mine();
   const nb = nbNb(), open = Math.max(1, nb.pages);
   if (!all && (nb.seen || 0) < nb.pages) { nb.seen = nb.pages; markDirty(); }
   if (NB.dot && !all) { NB.dot = false; setTimeout(() => msHudSync(), 0); }
@@ -247,7 +248,8 @@ function msNbHTML(all) {
     + `<p class="nb-intro">${esc(tt('ms2n.intro', 'A new page opens on each day you play. The days do not need to be in a row, and the steps can go in any order.'))}</p></div></div>`;
   const steps = p.steps.map((s, i) => nbStepHTML(n, s, i)).join('');
   const gift = `<p class="nb-gift${fin ? ' got' : ''}"><span class="nb-gic" aria-hidden="true">${p.gift === 'week' && typeof fwFrameSVG === 'function' ? fwFrameSVG('#C3B1E6') : p.gift === 'seeds' ? art('item', 'Carrot Seeds') : iconOr('star', doodle('spark', 0, 0, 1))}</span><span>${esc(fin ? tt('ms2n.gift_got', 'Page done. Your gift: {gift}.', { gift: nbGiftText(p) }) : tt('ms2n.gift_todo', 'Finish this page for {gift}.', { gift: nbGiftText(p) }))}</span></p>`;
-  const page = `<article class="nb-page${pa ? ' art' : ''}${fin ? ' done' : ''}" data-page="${n}" aria-label="${esc(nbTitle(p))}"><span class="nb-pageart" aria-hidden="true">${pa || nbPageFB()}</span>`
+  // the art lane's page is a repeat-y tile (320 x 240, ruled every 24): a CSS background at the page's width, the rows on its lines (27e_notebook.css)
+  const page = `<article class="nb-page${pa ? ' art' : ''}${fin ? ' done' : ''}" data-page="${n}" aria-label="${esc(nbTitle(p))}"${pa ? ` style="--nbbg:${esc(ms2BgURL(pa, 320, 240))}"` : ''}>${pa ? '' : `<span class="nb-pageart" aria-hidden="true">${nbPageFB()}</span>`}`
     + `<header class="nb-phead"><span class="nb-day">${esc(tt('ms2n.day', 'Day {n}', { n }))}</span><h4>${esc(nbTitle(p))}</h4></header><ul class="nb-steps">${steps}</ul>${gift}`
     + `<p class="nb-lesson"><b>${esc(tt('ms2n.gerald_says', 'Gerald says'))}</b> ${esc(nbLesson(p))}</p>`
     + `<p class="nb-howrow"><button class="btn nb-how" type="button" data-nbhow="${esc(p.how)}">${esc(tt('ms2n.how', 'How to play: {lesson}', { lesson: nbHowTitle(p.how) }))}</button></p></article>`;
@@ -279,8 +281,9 @@ function nbExpose() {
   window.__paw.msn = {
     pages: () => MS_NB.map((p) => p.id), shown: () => msNbShown(), tick: () => msNbTick(), day: () => nbDay(), nb: () => S.missions.nb, html: (all) => msNbHTML(all), doneHtml: () => msNbDoneHTML(), dot: () => msNbDot(),
     mark: (n, i) => nbMark(n, i), finish: (n) => { const p = nbPage(n); p.steps.forEach((s, i) => nbMark(n, i)); return nbFinished(n); }, lock: (n, i) => nbLockOf(nbPage(n).steps[i]), page: (n) => { NB.pg = n; msRefresh(); return n; },
-    stickers: NB_STICKERS.slice(), title: NB_TITLE, frame: NB_FRAME, popTick: () => nbPopTick(), sync: () => nbPagesSync(), how: (k) => nbHowTitle(k), gift: () => nbDecorGift()
+    get pg() { return NB.pg; }, stickers: NB_STICKERS.slice(), title: NB_TITLE, frame: NB_FRAME, popTick: () => nbPopTick(), sync: () => nbPagesSync(), how: (k) => nbHowTitle(k), gift: () => nbDecorGift()
   };
 }
+ms2OnSwap(() => { NB.pg = 0; NB.dot = false; NB.fold = false; });
 on('game:ready', () => { NB.pg = 0; NB.dot = false; setTimeout(nbExpose, 0); });
 on('yard:enter', () => { if (window.__paw && !window.__paw.msn) nbExpose(); });
