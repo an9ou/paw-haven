@@ -1,19 +1,22 @@
 /* ======================= TIME LOOP ======================= */
 function applyAway() {
-  if (!S) return; const secs = clamp((Date.now() - (S.lastReal || Date.now())) / 1000, 0, 7 * 86400); const hrs = secs / 60;
+  if (!S) return; const secs = clamp((Date.now() - (S.lastReal || Date.now())) / 1000, 0, 7 * 86400); const hrs = secs / 60 / GAME_SEC; // game hours (Daily rhythm: 2.5 real minutes each)
   if (secs < 5) return;
-  S.gameMin += secs;
+  S.gameMin += secs / GAME_SEC;
   const fl = (v, rate, floor) => (v > floor ? Math.max(floor, v - rate * hrs) : v);
   S.dogs.forEach((d) => { const s = d.stats; s.hunger = fl(s.hunger, 3, 30); s.happy = fl(s.happy, 2, 40); s.clean = fl(s.clean, 1, 40); s.energy = clamp(s.energy + 20 * hrs, 0, 100); });
   S.lastReal = Date.now(); dailyCheck(); markDirty();
   if (secs > 120) setTimeout(() => { if (cur.mode === 'yard') toast(tt('time.away', 'While you were away, {name} napped for {hrs, plural, one {# game hour} other {# game hours}} and missed you a normal amount.', { name: NAME(), hrs: Math.round(hrs) }), 'gold'); }, 800);
 }
-let lastTick = performance.now(), saveClock = 0, voiceClock = 0;
+let lastTick = performance.now(), saveClock = 0, voiceClock = 0, lastGameDay = 0;
 function tick() {
   const now = performance.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
   if (!S || !['yard', 'market', 'map', 'shelter', 'walk', 'fetch', 'bath', 'toy'].includes(cur.mode)) return;
-  S.gameMin += dt; const h = dt / 60;
-  const wasDay = S.daily.day; if (dailyCheck() && wasDay) { toast(tt('time.day_begins', 'Day {day} begins. Daily bonuses reset.', { day: day() }), 'gold'); emit('day:new', { day: day() }); }
+  S.gameMin += dt / GAME_SEC; const h = dt / 60 / GAME_SEC; // Daily rhythm: game time runs at 1 game minute per GAME_SEC real seconds
+  // the game day (the "Day N" chip, an hour of play) still tells the listeners; the daily bonuses and the mission follow the Japan day (dailyCheck)
+  const gday = day(); if (gday !== lastGameDay) { const was = lastGameDay; lastGameDay = gday; if (was) emit('day:new', { day: gday }); }
+  const wasDay = S.daily.day; // an old save's numeric game day (the first run after the update) starts the Japan day quietly, no toast
+  if (dailyCheck() && wasDay) { if (typeof wasDay === 'string') toast(tt('time.new_real_day', 'A new day in town! The daily bonuses and a fresh mission are ready.'), 'gold'); emit('day:new', { day: gday, real: true }); }
   checkEnv();
   addStat('hunger', -6 * h * (S.dog.key === 'corgi' ? 1.2 : 1));
   const pack = S.dogs.length > 1 ? 0.75 : 1;
@@ -34,3 +37,10 @@ function tick() {
   saveClock += dt; if (saveClock > 3 && dirty) { saveClock = 0; saveNow(); }
 }
 
+/* Daily rhythm (docs/design/daily-rhythm.md) test hook: window.__paw.rh */
+function rhExpose() {
+  if (!window.__paw || window.__paw.rh) return;
+  window.__paw.rh = { GAME_SEC, WALK_FULL, nap: BOOST.nap, jst: () => jstISO(), day: () => day(), dailyCheck: () => dailyCheck(), away: () => applyAway(), walkCount: () => walkCount(), share: (c, p, s) => walkShare(c, p, s), tired: (n) => walkTiredLine({ n }) };
+}
+on('game:ready', () => setTimeout(rhExpose, 0));
+setTimeout(rhExpose, 0);

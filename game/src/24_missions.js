@@ -1,61 +1,74 @@
 /* ======================= v2.4: 24_missions.js (SHOP & MISSIONS lane, tag ms) =======================
-   Daily missions: 3 a day on a crayon checklist card, about 15 coins each, a crayon stamp for all 3, a reward at 7 stamps.
-   Spec: V24.md section 4. Data: S.missions. API: msOpen(), msToday(), msTabHTML(). Listens to on('act', ...). */
-const MS_PAY = 15, MS_CARD = 7;
+   Daily missions: one a Japan day (Daily rhythm, owner 3 Nov 2026; it was 3 a local day at 15 coins) on a crayon checklist card, 40 coins and a
+   crayon stamp each, a reward at 7 stamps, one free swap a day. The pool favours missions that make a small story (w: 3); the ones that happen
+   anyway (feeding, petting, naps, scooping, letters: w: 0) are never picked, they stay for old saves and tests.
+   Spec: V24.md section 4, docs/design/daily-rhythm.md. Data: S.missions. API: msOpen(), msToday(), msTabHTML(), msSwap(). Listens to on('act', ...). */
+const MS_PAY = 40, MS_CARD = 7, MS_CARD_COINS = 150; // raw coins (no BOOST), as before: 40 a mission, 150 and a Pupcake from the third full card on
 const MS_V24FOOD = () => FOOD.filter((f) => f.v24).map((f) => f.n);
 const MS_V24TOYS = () => TOYS.filter((x) => x.v24).map((x) => x.n).concat('Squeaky Hedgehog');
 /* the pool. t: the card line, s: the short toast name, g: the gate (eligible today), m: does an act count. shop: the "shop" group (one a day at most) */
 const MS_POOL = [
-  { id: 'feed2', n: 2, t: 'Feed {dog} twice', s: 'Feed twice', m: (a) => a.kind === 'feed' },
-  { id: 'pet', n: 1, t: 'Pet {dog} until the tail goes', s: 'Petting', m: (a) => a.kind === 'pet' },
+  { id: 'feed2', n: 2, w: 0, t: 'Feed {dog} twice', s: 'Feed twice', m: (a) => a.kind === 'feed' },
+  { id: 'pet', n: 1, w: 0, t: 'Pet {dog} until the tail goes', s: 'Petting', m: (a) => a.kind === 'pet' },
   { id: 'toy', n: 1, t: 'Play with a toy', s: 'Play with a toy', m: (a) => a.kind === 'toy' || a.kind === 'fetch' },
   { id: 'walk', n: 1, t: 'Go for a walk', s: 'Go for a walk', m: (a) => a.kind === 'walk' },
-  { id: 'walk_river', n: 1, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => topBond() >= ROUTES.river.bond, m: (a) => a.kind === 'walk' && a.area === 'river' },
+  { id: 'walk_river', n: 1, w: 3, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => topBond() >= ROUTES.river.bond, m: (a) => a.kind === 'walk' && a.area === 'river' },
   { id: 'bath', n: 1, t: 'Give {dog} a bath', s: 'Bath time', m: (a) => a.kind === 'bath' },
-  { id: 'nap', n: 1, t: 'Tuck {dog} in for a nap', s: 'Nap time', m: (a) => a.kind === 'nap' },
+  { id: 'nap', n: 1, w: 0, t: 'Tuck {dog} in for a nap', s: 'Nap time', m: (a) => a.kind === 'nap' },
   { id: 'wear', n: 1, t: 'Put on an outfit', s: 'Put on an outfit', g: () => S.inv.clothes.length > 0, m: (a) => a.kind === 'wear' },
   { id: 'trick', n: 1, t: 'Practise a trick', s: 'Practise a trick', g: () => TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' },
-  { id: 'garden_plant', n: 1, t: 'Plant a seed', s: 'Plant a seed', g: () => gkOn() && gardenUnlocked() && Object.values(S.inv.seeds || {}).some((v) => v > 0), m: (a) => a.kind === 'garden' && a.what === 'plant' },
-  { id: 'harvest', n: 1, t: 'Harvest a crop', s: 'Harvest a crop', g: () => gkOn() && gardenUnlocked() && !!(S.garden && Array.isArray(S.garden.plots) && S.garden.plots.some((p) => p && p.crop)), m: (a) => a.kind === 'garden' && a.what === 'harvest' },
-  { id: 'cook', n: 1, t: 'Cook a dish', s: 'Cook a dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' },
+  { id: 'garden_plant', n: 1, w: 3, t: 'Plant a seed', s: 'Plant a seed', g: () => gkOn() && gardenUnlocked() && Object.values(S.inv.seeds || {}).some((v) => v > 0), m: (a) => a.kind === 'garden' && a.what === 'plant' },
+  { id: 'harvest', n: 1, w: 3, t: 'Harvest a crop', s: 'Harvest a crop', g: () => gkOn() && gardenUnlocked() && !!(S.garden && Array.isArray(S.garden.plots) && S.garden.plots.some((p) => p && p.crop)), m: (a) => a.kind === 'garden' && a.what === 'harvest' },
+  { id: 'cook', n: 1, w: 3, t: 'Cook a dish', s: 'Cook a dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' },
   { id: 'buy', n: 1, t: 'Buy something on Market Street', s: 'Market Street shopping', shop: true, m: (a) => a.kind === 'buy' && !['stall', 'popup', 'station', 'tokyo', 'market'].includes(a.shop) }, // v2.5/v2.6: the stall and the pop-up are in the Square, not on Market Street
   { id: 'buy_food_new', n: 1, t: 'Try a new snack from Kibble Corner', s: 'New snack', shop: true, m: (a) => a.kind === 'buy' && a.cat === 'food' && MS_V24FOOD().includes(a.name) },
   { id: 'feed_new', n: 1, t: 'Feed {dog} the {arg}', s: 'Feed the {arg}', arg: () => MS_V24FOOD().filter((n) => (S.inv.food[n] || 0) > 0), m: (a, it) => a.kind === 'feed' && a.name === it.arg },
   { id: 'toy_new', n: 1, t: 'Play with the {arg}', s: 'Play with the {arg}', arg: () => MS_V24TOYS().filter((n) => owns('toys', n)), m: (a, it) => (a.kind === 'toy' || a.kind === 'fetch') && a.name === it.arg },
-  { id: 'mail', n: 1, t: 'Read a letter', s: 'Read a letter', g: () => typeof mailUnread === 'function' && mailUnread() > 0, m: (a) => a.kind === 'mail' },
-  { id: 'scoop', n: 1, t: 'Clean up after {dog}', s: 'Clean up', m: (a) => a.kind === 'scoop' },
+  { id: 'mail', n: 1, w: 0, t: 'Read a letter', s: 'Read a letter', g: () => typeof mailUnread === 'function' && mailUnread() > 0, m: (a) => a.kind === 'mail' },
+  { id: 'scoop', n: 1, w: 0, t: 'Clean up after {dog}', s: 'Clean up', m: (a) => a.kind === 'scoop' },
   { id: 'treasure', n: 1, t: 'Dig up a treasure', s: 'Dig up a treasure', m: (a) => a.kind === 'treasure' },
   // v2.5: watering (the garden onWater callback) and the festival missions. The FESTIVAL lane fires leafpile / parade / buy shop:'stall'
   { id: 'garden_water', n: 1, t: 'Water the garden', s: 'Water the garden', g: () => gkOn() && gardenUnlocked() && !!(S.garden && Array.isArray(S.garden.plots) && S.garden.plots.some((p) => p && p.crop)), m: (a) => a.kind === 'garden' && a.what === 'water' },
-  { id: 'stall', n: 1, t: 'Buy a treat at the Harvest Stall', s: 'Harvest Stall', shop: true, g: () => festOn('leaf'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' }, // v2.17.1: the Festive Market's treats count too
-  { id: 'leafpile', n: 1, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
-  { id: 'parade', n: 1, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
-  { id: 'photo', n: 1, t: 'Take a photo of your pack', s: 'Take a photo', m: (a) => a.kind === 'photo' }, // v2.9 PHOTO lane: fired once per saved photo (35_photo.js)
-  { id: 'travel', n: 1, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
+  { id: 'stall', n: 1, w: 3, t: 'Buy a treat at the Harvest Stall', s: 'Harvest Stall', shop: true, g: () => festOn('leaf'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' }, // v2.17.1: the Festive Market's treats count too
+  { id: 'leafpile', n: 1, w: 3, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
+  { id: 'parade', n: 1, w: 3, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
+  { id: 'photo', n: 1, w: 3, t: 'Take a photo of your pack', s: 'Take a photo', m: (a) => a.kind === 'photo' }, // v2.9 PHOTO lane: fired once per saved photo (35_photo.js)
+  { id: 'travel', n: 1, w: 3, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
   // v2.8 Winter & New Year (V28.md section 1): WINTER fires snowdrift / snowdog / sweater and buy shop:'stall', NEW YEAR fires fortune. Lane gates are guarded
-  { id: 'snowdrift', n: 1, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
-  { id: 'snowdog', n: 1, t: 'Build a snowdog', s: 'Snowdog', g: () => typeof wnSnowdogFree === 'function' && !!wnSnowdogFree(), m: (a) => a.kind === 'snowdog' && !!a.done },
-  { id: 'wstall', n: 1, t: 'Buy a warm treat from Baker Bea', s: 'Winter Stall', shop: true, g: () => festOn('snow'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' && ((f) => ['snow', 'newyear', 'winter'].includes(f.fest) && !f.cold)(FOOD.find((f) => f.n === a.name) || {}) }, // warm treats only: FOOD rows with cold: true (Reindeer Crunch, Frozen Yoghurt Snowballs) do not count
-  { id: 'sweater', n: 1, t: 'Enter the Ugly Sweater Contest', s: 'Sweater Contest', g: () => festOn('lights'), m: (a) => a.kind === 'sweater' },
-  { id: 'yearclean', n: 1, t: 'Year-end clean: give {dog} a bath', s: 'Year-end clean', g: () => nyEve(), m: (a) => a.kind === 'bath' },
-  { id: 'fortune', n: 1, t: 'Draw a New Year fortune', s: 'New Year fortune', g: () => nyDays() && !(S.ny && S.ny.fortune && S.ny.fortune.date === localISO()), m: (a) => a.kind === 'fortune' },
+  { id: 'snowdrift', n: 1, w: 3, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
+  { id: 'snowdog', n: 1, w: 3, t: 'Build a snowdog', s: 'Snowdog', g: () => typeof wnSnowdogFree === 'function' && !!wnSnowdogFree(), m: (a) => a.kind === 'snowdog' && !!a.done },
+  { id: 'wstall', n: 1, w: 3, t: 'Buy a warm treat from Baker Bea', s: 'Winter Stall', shop: true, g: () => festOn('snow'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' && ((f) => ['snow', 'newyear', 'winter'].includes(f.fest) && !f.cold)(FOOD.find((f) => f.n === a.name) || {}) }, // warm treats only: FOOD rows with cold: true (Reindeer Crunch, Frozen Yoghurt Snowballs) do not count
+  { id: 'sweater', n: 1, w: 3, t: 'Enter the Ugly Sweater Contest', s: 'Sweater Contest', g: () => festOn('lights'), m: (a) => a.kind === 'sweater' },
+  { id: 'yearclean', n: 1, w: 3, t: 'Year-end clean: give {dog} a bath', s: 'Year-end clean', g: () => nyEve(), m: (a) => a.kind === 'bath' },
+  { id: 'fortune', n: 1, w: 3, t: 'Draw a New Year fortune', s: 'New Year fortune', g: () => nyDays() && !(S.ny && S.ny.fortune && S.ny.fortune.date === localISO()), m: (a) => a.kind === 'fortune' },
   // v2.8 Mt. Fuji Lookout (V28.md section 12.4): FUJI HILL fires gaze { first }; travel is the core act. jpHillOpen(): jpOn(), the scene exists, Bond 2
-  { id: 'gaze', n: 1, t: 'Look at Mt. Fuji from the Mt. Fuji Lookout', s: 'Look at Mt. Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
-  { id: 'hatsufuji', n: 1, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
-  { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
+  { id: 'gaze', n: 1, w: 3, t: 'Look at Mt. Fuji from the Mt. Fuji Lookout', s: 'Look at Mt. Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
+  { id: 'hatsufuji', n: 1, w: 3, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
+  { id: 'travel_fuji', n: 1, w: 3, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
   // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
-  { id: 'tokyo_ride', n: 1, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
-  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' },
+  { id: 'tokyo_ride', n: 1, w: 3, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
+  { id: 'tokyo_stamp', n: 1, w: 3, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' },
   // v2.15 Training Ground (V215.md 6.1, 44_agility.js): agility fires act 'agility' { rosettes, low }
-  { id: 'agility', n: 1, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
-  { id: 'agility_ros', n: 1, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
-  { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
+  { id: 'agility', n: 1, w: 3, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
+  { id: 'agility_ros', n: 1, w: 3, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
+  { id: 'travel_training', n: 1, w: 3, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
   // v2.15 Splash Pool (V215.md 6.2, 45_pool.js): the paddle fires act 'paddle' { name, step }, float fetch fires 'floatfetch' { name }
-  { id: 'pool_paddle', n: 1, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
-  { id: 'pool_float', n: 1, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
+  { id: 'pool_paddle', n: 1, w: 3, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
+  { id: 'pool_float', n: 1, w: 3, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
   // v2.15 run tracks (V215.md 6.3, 46_tracks.js): a walk on one of the three new routes
-  { id: 'new_trail', n: 1, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && topBond() >= ((ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) }
+  { id: 'new_trail', n: 1, w: 3, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && topBond() >= ((ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) },
+  // Daily rhythm: small stories round town. The Fun Fair (49_funfair.js) fires act 'funfair' { game } for its games, jobs, the stall and the photo contest
+  { id: 'funfair', n: 1, w: 3, t: 'Play a game at the Fun Fair', s: 'Fun Fair game', g: () => msFf(false), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !FF_GAMES[a.game].job },
+  { id: 'ffjob', n: 1, w: 3, t: 'Help a neighbour with a town job', s: 'Town job', g: () => msFf(true), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job },
+  { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && msStallDay() && topBond() >= 2 && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
+  { id: 'ffphoto', n: 1, w: 3, t: 'Enter a photo in the weekly photo contest', s: 'Photo contest', g: () => typeof ffOn === 'function' && ffOn() && !!S.ff && !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc), m: (a) => a.kind === 'funfair' && a.game === 'photo' }
 ];
+// Daily rhythm: the stall mission lasts a Japan day, the stall opens on the local Saturday: only when this local Saturday lasts until the Japan day ends
+// (Japan, the Americas, a European Saturday morning), so the stall never closes under an open mission. A Dev / test override (prefs.ffSat) just opens it
+function msStallDay() { if (prefs.ffSat !== undefined && prefs.ffSat !== null) return !!prefs.ffSat; const n = new Date(Date.now()); return n.getDay() === 6 && msResetAt() <= new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); } // as ffSaturday, on the same clock as jstISO
+// a Fun Fair game (job: a town job) the player can play now: the switch, the Bond, a place that exists
+function msFf(job) { return typeof ffOn === 'function' && ffOn() && !!S.ff && FF_KEYS.some((k) => !!FF_GAMES[k].job === job && topBond() >= FF_GAMES[k].bond && ffPlaceOk(k)); }
+const msW = (d) => (d.w == null ? 1 : d.w);
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {
   if (!S) return; let m = S.missions;
@@ -66,34 +79,61 @@ function msFields() {
   if (typeof m.cards !== 'number') m.cards = 0;
   if (!Array.isArray(m.rewards)) m.rewards = [];
   if (typeof m.stampDay !== 'string') m.stampDay = '';
+  if (typeof m.swap !== 'string') m.swap = ''; // Daily rhythm: the Japan date of today's free swap ('' = not used)
+  // Daily rhythm: an old save may hold today's three missions. It keeps one: the first unfinished one (the most progress first), so today's
+  // mission can still be done for 40 coins and a stamp; if all three were done (the stamp was given), the first of them. Once (m.rhythm)
+  if (m.rhythm !== 1) {
+    m.rhythm = 1;
+    if (m.list.length > 1) { const open = m.list.filter((x) => x && !x.done).sort((a, b) => (b.p || 0) - (a.p || 0)); m.list = [open[0] || m.list.find((x) => x && x.done) || m.list[0]]; }
+  }
 }
 function msItem(def, rnd) {
   const it = { id: def.id, n: def.n, p: 0, done: null };
   if (def.arg) { const a = def.arg(); if (!a.length) return null; it.arg = a[Math.floor(rnd() * a.length)]; }
   return it;
 }
-/* pick 3 missions for a date, seeded by the date and the first dog: the same day and dog give the same 3 */
-function msPick(date) {
-  const rnd = seeded(hashId(date + '|' + ((S.dogs && S.dogs[0] && S.dogs[0].id) || 'dog')));
-  const pool = MS_POOL.filter((d) => { try { return (!d.g || d.g()) && (!d.arg || d.arg().length > 0); } catch (e) { return false; } });
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  const out = []; let shop = false;
-  for (const d of pool) { if (out.length >= 3) break; if (d.shop && shop) continue; const it = msItem(d, rnd); if (!it) continue; if (d.shop) shop = true; out.push(it); }
-  return out;
+/* the missions that can be picked today (gate and arg ok, weight above 0), without the ids in excl */
+function msEligible(excl) {
+  return MS_POOL.filter((d) => { if (msW(d) <= 0 || (excl && excl.includes(d.id))) return false; try { return (!d.g || d.g()) && (!d.arg || d.arg().length > 0); } catch (e) { return false; } });
 }
-/* a new real day: three fresh missions. Unfinished ones are simply replaced, nothing is said about them */
+function msPickFrom(pool, rnd) { let x = rnd() * pool.reduce((a, d) => a + msW(d), 0); for (const d of pool) { x -= msW(d); if (x < 0) return d; } return pool[pool.length - 1]; }
+const msSeed = (date, extra) => seeded(hashId(date + '|' + ((S.dogs && S.dogs[0] && S.dogs[0].id) || 'dog') + (extra || '')));
+/* pick the day's mission (Daily rhythm: one, weighted to the story missions), seeded by the date and the first dog: the same day and dog give the same one */
+function msPick(date) {
+  const rnd = msSeed(date), pool = msEligible(); if (!pool.length) return [];
+  const it = msItem(msPickFrom(pool, rnd), rnd); return it ? [it] : [];
+}
+let msForced = null; // the list a test hook (ms.force) set: it may hold several missions
+/* a new Japan day: a fresh mission. An unfinished one is simply replaced, nothing is said about it */
 function msRoll(force) {
-  if (!S) return null; msFields(); const t = localISO();
+  if (!S) return null; msFields(); const t = jstISO(); // Daily rhythm: 00:00 JST (was the local date)
   if (S.missions.date !== t || force) { S.missions.date = t; S.missions.list = msPick(t); markDirty(); msRefresh(); }
+  else if (S.missions.list.length > 1 && S.missions.list !== msForced) { // Daily rhythm: an older build (a cached page, a second device) may bring today's three back through the cloud save: keep one, a finished one if any was finished (its coins and stamp were given), else the one with the most progress
+    const L = S.missions.list; S.missions.list = [L.find((x) => x && x.done) || L.filter((x) => x).sort((a, b) => (b.p || 0) - (a.p || 0))[0] || L[0]]; markDirty(); msRefresh();
+  }
   return S.missions;
 }
 function msToday() { const m = msRoll(); return m ? m.list : []; }
+/* the free swap: once a Japan day, today's unfinished mission becomes another one (seeded, so a reload cannot reroll it) */
+function msSwapFree() { const m = S && S.missions; return !!m && m.swap !== jstISO() && m.list.some((x) => !x.done) && msEligible(m.list.map((x) => x.id)).length > 0; }
+function msSwap() {
+  if (!S) return false; msRoll(); const m = S.missions, t = jstISO(), i = m.list.findIndex((x) => !x.done);
+  if (m.swap === t || i < 0) return false;
+  const pool = msEligible(m.list.map((x) => x.id)); if (!pool.length) return false;
+  const rnd = msSeed(t, '|swap'), it = msItem(msPickFrom(pool, rnd), rnd); if (!it) return false;
+  m.list[i] = it; m.swap = t; markDirty(); SFX.boop(760);
+  msSay(tt('missions.swapped', "Today's new mission: {mission}.", { mission: msText(it, true) }), 'good'); msRefresh(); return true;
+}
+document.addEventListener('click', (e) => { const b = e.target && e.target.closest && e.target.closest('.ms-swap'); if (!b || !S) return; e.stopPropagation(); msSwap(); });
+// when the next mission comes, in the player's own clock (00:00 JST)
+function msResetAt() { const j = jstISO(); return new Date(Date.UTC(+j.slice(0, 4), +j.slice(5, 7) - 1, +j.slice(8, 10)) + 15 * 3600e3); }
 function msText(it, short) {
   const d = msDef(it.id); if (!d) return it.id;
   if (d.id === 'buy' && typeof mpOn === 'function' && mpOn()) return short ? tt('map215.ms_buy_s', 'Shopping in town') : tt('map215.ms_buy_t', 'Buy something at a shop in town'); // v2.15: the shops have their own places, so no Market Street wording
   return tdata('ms_pool.' + d.id + (short ? '.s' : '.t'), short ? d.s : d.t, { dog: NAME(), arg: it.arg ? shNameAny(it.arg) : '' }); // v2.14 i18n: the pool text is a message with {dog} and {arg}
 }
 const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).length : 0);
+const msTotal = () => (S && S.missions && S.missions.list.length) || 1; // 1 a day (a forced test list may hold more)
 
 /* ---- progress ---- */
 let msQueue = [];
@@ -104,31 +144,30 @@ function msFlush() { if (!msQueue.length || msGuideBusy()) return; const q = msQ
 function msAllowed() { return !navigator.webdriver || !!prefs.msTest; }
 function msOnAct(a) {
   if (!S || !a || !a.kind || cur.mode === 'title' || !msAllowed()) return; msRoll();
-  const m = S.missions; let changed = false;
+  const m = S.missions; let changed = false, stamp = false;
   m.list.forEach((it) => {
     const d = msDef(it.id); if (!d || it.done) return;
     let hit = false; try { hit = d.m(a, it); } catch (e) { hit = false; }
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
-    if (it.p >= it.n) { it.done = localISO(); const c = addCoins(MS_PAY, { raw: true }); msSay(tt('missions.done', 'Mission done: {mission}. +{n} coins.', { mission: msText(it, true), n: c }), 'gold'); setTimeout(() => msHudSync(true), 0); } // v2.16.1: the top-bar clipboard hops
+    if (it.p >= it.n) { // Daily rhythm: every finished mission pays 40 raw coins and stamps the card
+      it.done = jstISO(); const c = addCoins(MS_PAY, { raw: true }); stamp = true; m.stamps++; m.stampDay = m.date;
+      msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
+    }
   });
   if (!changed) return;
   markDirty();
-  if (m.list.length && m.list.every((x) => x.done) && m.stampDay !== m.date) {
-    m.stampDay = m.date; m.stamps++;
-    setTimeout(() => msSay(tt('missions.all_done', 'All three done! A crayon stamp for today.'), 'gold'), 800);
-    if (m.stamps >= MS_CARD) { m.stamps = 0; m.cards++; msReward(); }
-    else msRefresh(true);
-  } else msRefresh();
+  if (stamp && m.stamps >= MS_CARD) { m.stamps = 0; m.cards++; msReward(); }
+  else msRefresh(stamp);
 }
 on('act', msOnAct);
 
-/* ---- the 7-stamp rewards: Astronaut Helmet, then the Rocket Ship, then 120 coins and a Pupcake ---- */
+/* ---- the 7-stamp rewards: Astronaut Helmet, then the Rocket Ship, then 150 coins (Daily rhythm; it was 120) and a Pupcake ---- */
 function msReward() {
   const m = S.missions; let kind;
   if (!m.rewards.includes('Astronaut Helmet')) { kind = 'helmet'; m.rewards.push('Astronaut Helmet'); if (!owns('clothes', 'Astronaut Helmet')) S.inv.clothes.push('Astronaut Helmet'); }
   else if (!m.rewards.includes('Rocket Ship')) { kind = 'rocket'; m.rewards.push('Rocket Ship'); if (!owns('houses', 'Rocket Ship')) S.inv.houses.push('Rocket Ship'); }
-  else { kind = 'coins'; addCoins(120, { raw: true }); S.inv.food.Pupcake = (S.inv.food.Pupcake || 0) + 1; }
+  else { kind = 'coins'; addCoins(MS_CARD_COINS, { raw: true }); S.inv.food.Pupcake = (S.inv.food.Pupcake || 0) + 1; }
   markDirty(); saveNow(); msRefresh(true);
   msWhenFree(() => msRewardPop(kind));
 }
@@ -137,7 +176,7 @@ function msRewardPop(kind) {
   const art1 = kind === 'helmet' ? itemArt('Astronaut Helmet') : kind === 'rocket' ? (artReal('house', 'Rocket Ship') || itemArt('Rocket Ship')) : itemArt('Pupcake');
   const txt = kind === 'helmet' ? tt('missions.prize_helmet_html', '<p>Seven stamps! The card is full.</p><p>A prize for <b>{name}</b>: the <b>{item}</b>. No soggy shake after rain, no shivering in the snow. It is in the Wardrobe.</p>', { name: NAME(), item: shNameAny('Astronaut Helmet') })
     : kind === 'rocket' ? tt('missions.prize_rocket_html', '<p>Another full card! The prize is a whole <b>{item}</b>.</p><p>Launch is cancelled, forever, for naps. Move in now?</p>', { item: shNameAny('Rocket Ship') })
-    : tt('missions.prize_coins_html', '<p>Another full card! <b>+120 coins</b> and one <b>{item}</b>.</p><p>A new card starts tomorrow.</p>', { item: shNameAny('Pupcake') });
+    : tt('missions.prize_coins2_html', '<p>Another full card! <b>+{n} coins</b> and one <b>{item}</b>.</p><p>A new card starts tomorrow.</p>', { n: tnum(MS_CARD_COINS), item: shNameAny('Pupcake') });
   const later = esc(tt('missions.later', 'Later'));
   const foot = kind === 'rocket' ? `<button class="btn no" id="msLater">${later}</button><button class="btn yes big" id="msMove">${esc(tt('missions.move_in', 'Move in'))}</button>`
     : kind === 'helmet' ? `<button class="btn no" id="msLater">${later}</button><button class="btn yes big" id="msWear">${esc(tt('missions.wear_it', 'Wear it'))}</button>` : `<button class="btn yes big" id="msLater">${esc(tt('missions.yay', 'Yay!'))}</button>`;
@@ -190,7 +229,7 @@ function msLines(t, fs, w, whole) { // whole: null when a word would have to be 
 }
 // returns { text } or, when the row was measured at 13 px, { text, fs: 13 }: the art then draws it at 13 px even as 2 lines (v2.14 fix: rows
 // measured at 13 px but drawn at 16 px ran into the "1/3" counter)
-function msRowText(t) {
+function msRowText(t, max = 3) { // max: the lines a row may take (Daily rhythm: 6 on the one-mission card, which has the room of three rows)
   if (!MS_WIDE.test(t)) return { text: esc(t) };
   let L = msLines(t, 16, MS_ROW_W), fs = 16;
   if (!L) return { text: esc(t) };
@@ -198,20 +237,20 @@ function msRowText(t) {
   if (L.length > 2 || !msLines(t, 16, MS_ROW_W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
     fs = 13; L = msLines(t, 13, MS_ROW_W);
     if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
-    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = msFont(13); let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
+    if (L.length > max) { L = L.slice(0, max); msCtx.font = msFont(13); let l = L[max - 1]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[max - 1] = l + '…'; }
   }
   if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
   return r(L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' '));
 }
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it)), { done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') };
+  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it), list.length === 1 ? 6 : 3), { done: !!it.done, p: it.p || 0, n: it.n })), o = Object.assign({ items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') }, items.length === 1 ? { one: true } : {}); // Daily rhythm: one mission, one row (o.one) and a 0/1 badge
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
 function msCardFB(o) {
-  const lines = o.items.map((it, i) => { const y = 92 + i * 54, tl = msWrap(it.text, 19); return `<rect x="22" y="${y - 16}" width="20" height="20" rx="3" fill="#FFFBF3" stroke="${INKG}" stroke-width="2.2" transform="rotate(${[-3, 2, -1][i % 3]} 32 ${y - 6})"/>${it.done ? `<path d="M25 ${y - 6} l6 7 l12 -16" fill="none" stroke="#3E9A6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ''}${tl.map((l, k) => `<text x="50" y="${y + k * 18}" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${l}</text>`).join('')}${it.n > 1 ? `<text x="178" y="${y}" text-anchor="end" font-family="Caveat,cursive" font-size="15" fill="${INKG}">${Math.min(it.p, it.n)}/${it.n}</text>` : ''}<path d="M48 ${y + 26} q60 3 128 -1" fill="none" stroke="#C9B8A6" stroke-width="1.2"/>`; }).join('');
+  const lines = o.items.map((it, i) => { const y = (o.one ? 146 : 92) + i * 54, tl = msWrap(it.text, 19); return `<rect x="22" y="${y - 16}" width="20" height="20" rx="3" fill="#FFFBF3" stroke="${INKG}" stroke-width="2.2" transform="rotate(${[-3, 2, -1][i % 3]} 32 ${y - 6})"/>${it.done ? `<path d="M25 ${y - 6} l6 7 l12 -16" fill="none" stroke="#3E9A6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ''}${tl.map((l, k) => `<text x="50" y="${y + k * 18}" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${l}</text>`).join('')}${it.n > 1 ? `<text x="178" y="${y}" text-anchor="end" font-family="Caveat,cursive" font-size="15" fill="${INKG}">${Math.min(it.p, it.n)}/${it.n}</text>` : ''}<path d="M48 ${y + 26} q60 3 128 -1" fill="none" stroke="#C9B8A6" stroke-width="1.2"/>`; }).join('');
   const nd = o.items.filter((x) => x.done).length;
-  return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="8" y="16" width="184" height="236" rx="12" fill="#D9A877" stroke="${INKG}" stroke-width="3"/><path d="M14 30 q2 100 0 210" stroke="#B9875A" stroke-width="2" fill="none" opacity=".6"/><rect x="18" y="32" width="164" height="210" rx="4" fill="#FFFBF3" stroke="${INKG}" stroke-width="2" transform="rotate(-1 100 137)"/><rect x="70" y="6" width="60" height="30" rx="7" fill="#C9CED6" stroke="${INKG}" stroke-width="2.6"/><circle cx="100" cy="16" r="5" fill="#FFFBF3" stroke="${INKG}" stroke-width="2"/><text x="28" y="58" font-family="Caveat,cursive" font-weight="700" font-size="20" fill="${INKG}">${esc(tt('missions.today', 'Today'))}</text><text x="176" y="58" text-anchor="end" font-family="Caveat,cursive" font-size="14" fill="${INKG}">${o.day || ''}</text>${lines}<g transform="translate(160 232) rotate(-8)"><circle r="16" fill="#F9D56E" stroke="${INKG}" stroke-width="2.2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${nd}/3</text></g></svg>`;
+  return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="8" y="16" width="184" height="236" rx="12" fill="#D9A877" stroke="${INKG}" stroke-width="3"/><path d="M14 30 q2 100 0 210" stroke="#B9875A" stroke-width="2" fill="none" opacity=".6"/><rect x="18" y="32" width="164" height="210" rx="4" fill="#FFFBF3" stroke="${INKG}" stroke-width="2" transform="rotate(-1 100 137)"/><rect x="70" y="6" width="60" height="30" rx="7" fill="#C9CED6" stroke="${INKG}" stroke-width="2.6"/><circle cx="100" cy="16" r="5" fill="#FFFBF3" stroke="${INKG}" stroke-width="2"/><text x="28" y="58" font-family="Caveat,cursive" font-weight="700" font-size="20" fill="${INKG}">${esc(tt('missions.today', 'Today'))}</text><text x="176" y="58" text-anchor="end" font-family="Caveat,cursive" font-size="14" fill="${INKG}">${o.day || ''}</text>${lines}<g transform="translate(160 232) rotate(-8)"><circle r="16" fill="#F9D56E" stroke="${INKG}" stroke-width="2.2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${nd}/${o.items.length || 1}</text></g></svg>`;
 }
 function msStampArt() { const s = S.missions.stamps; return artReal('prop', 'stampcard', { stamps: s, title: tt('missions.stamp_card', 'Stamp card') }) || msStampFB(s); }
 function msStampFB(s) {
@@ -221,18 +260,21 @@ function msStampFB(s) {
 const MS_TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2.2"/><path class="ms-tk" d="M6 12 l4 5 l9 -11" fill="none" stroke="#3E9A6A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 /* the popup / tab body: the clipboard with today's lines, the coin line, the stamp card */
 function msBodyHTML(stampNew) {
-  const list = msToday(), m = S.missions, nd = list.filter((x) => x.done).length;
+  const list = msToday(), m = S.missions, nd = list.filter((x) => x.done).length, total = list.length || 1;
   const lines = list.map((it) => `<li class="${it.done ? 'done' : ''}" data-ms="${esc(it.id)}">${MS_TICK}<span class="ms-t">${esc(msText(it))}</span><span class="ms-p">${it.done ? `+${MS_PAY}` : `${Math.min(it.p || 0, it.n)}/${it.n}`}</span></li>`).join('');
+  // the free swap (Daily rhythm): a button while today's mission is open and the swap is unused, else a short line once it is used
+  const swap = msSwapFree() ? `<p class="ms-swapline"><button class="btn ms-swap" type="button" id="msSwap">${esc(tt('missions.swap', 'Swap it'))}</button> <span class="small">${esc(tt('missions.swap_note', 'One free swap a day.'))}</span></p>`
+    : m.swap === jstISO() ? `<p class="small ms-swapline">${esc(tt('missions.swap_used', 'Swapped today. A new mission comes tomorrow.'))}</p>` : '';
   return `<div class="ms-body"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="${esc(tt('missions.list_aria', "Today's missions"))}">${lines}</ul></div>
-    <div class="ms-side"><p class="ms-coins">${tt('missions.coins_html', 'Each mission pays <b>{pay} coins</b>. Done today: <b>{nd} of 3</b>, {got} of {max} coins.', { pay: MS_PAY, nd, got: nd * MS_PAY, max: 3 * MS_PAY })}</p>
-    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps_html', '<b>{n} of {total}</b> stamps. All three missions in a day earn a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p></div></div>`;
+    <div class="ms-side"><p class="ms-coins">${tt('missions.coins1_html', "Today's mission pays <b>{pay} coins</b> and a crayon stamp. Done today: <b>{nd} of {total}</b>.", { pay: MS_PAY, nd, total })}</p>${swap}
+    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps1_html', '<b>{n} of {total}</b> stamps. Every finished mission earns a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p></div></div>`;
 }
 function msOpen() {
   if (!S) return null; msRoll(); SFX.boop(700);
   const p = openModal(tt('missions.title', 'Daily missions'), msBodyHTML(false), { cls: 'ms-pop' });
   return p;
 }
-function msTabHTML() { if (!S) return ''; msRoll(); return `${msBodyHTML(false)}<p class="small ms-reset">${esc(tt('missions.reset', 'Missions reset every real day at midnight. Finished or not, tomorrow brings three new ones.'))}</p>`; }
+function msTabHTML() { if (!S) return ''; msRoll(); return `${msBodyHTML(false)}<p class="small ms-reset">${esc(tt('missions.reset1', 'One mission a day. The next one comes at {time} your time (midnight in Japan). Finished or not, tomorrow brings a fresh one.', { time: tdate(msResetAt(), { hour: 'numeric', minute: '2-digit' }) }))}</p>`; }
 /* redraw whatever shows the missions: the popup, the Journal tab, the yard clipboard */
 function msRefresh(stampNew) {
   if (!S || !S.missions) return;
@@ -288,9 +330,9 @@ document.addEventListener('click', (e) => {
 }, true);
 function msYardSVG() {
   if (!S || S.place !== 'yard') return '';
-  msFields(); if (S.missions.date !== localISO()) msRoll();
-  const [x, y, w, h] = MS_YARD, nd = msDoneN();
-  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('missions.yard_aria', 'Daily missions: {nd} of 3 done', { nd }))}" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit()}</g>`;
+  msFields(); if (S.missions.date !== jstISO()) msRoll();
+  const [x, y, w, h] = MS_YARD, nd = msDoneN(), tot = msTotal();
+  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="${esc(msHudLabel(nd))}" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= tot ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/${tot}</text></g>${msYardHit()}</g>`;
 }
 function msYardBind() {
   const g = $('#msCardG'); if (!g) return;
@@ -302,7 +344,7 @@ function msYardBind() {
 // msYardSVG and the tap-rect helpers above stay for the old tests' sake only; nothing draws them now.
 function msYardRedraw() { const old = $('#msCardG'); if (old) old.remove(); msHudSync(); }
 function msHudIcon() { return iconOr('missions', '<path d="M-9 -12h18v24h-18z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="2"/><path d="M-5 0l4 4l7 -9" fill="none" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>'); }
-const msHudLabel = (nd) => tt('missions.yard_aria', 'Daily missions: {nd} of 3 done', { nd });
+const msHudLabel = (nd) => tt('missions.hud_aria', 'Daily mission: {nd} of {total} done', { nd, total: msTotal() });
 function msHudSync(ping) {
   const coins = $('#coins'); if (!coins) return; let b = $('#msBtn');
   if (!b) {
@@ -310,16 +352,16 @@ function msHudSync(ping) {
     b = $('#msBtn'); b.onclick = (e) => { e.stopPropagation(); SFX.click(); msOpen(); };
   }
   const on = !!S && !!S.missions && cur.mode !== 'title';
-  if (on) { msFields(); if (S.missions.date !== localISO()) msRoll(); }
-  const nd = on ? msDoneN() : 0, txt = nd + '/3';
+  if (on) { msFields(); if (S.missions.date !== jstISO()) msRoll(); }
+  const nd = on ? msDoneN() : 0, tot = on ? msTotal() : 1, txt = nd + '/' + tot;
   if (b.hidden === on) b.hidden = !on; if (!on) return;
   const n = b.querySelector('.ms-n'); if (n.textContent !== txt) n.textContent = txt;
   const lbl = msHudLabel(nd); if (b.getAttribute('aria-label') !== lbl) { b.setAttribute('aria-label', lbl); b.title = lbl; }
-  b.dataset.done = String(nd); b.classList.toggle('all', nd >= 3);
+  b.dataset.done = String(nd); b.classList.toggle('all', nd >= tot);
   if (ping && !motionOff()) { b.classList.remove('ms-ping'); void b.offsetWidth; b.classList.add('ms-ping'); }
 }
 // the "..." menu on phones: the missions with their count
-function msMenuBtn() { if (!S || !S.missions) return ''; const nd = msDoneN(); return `<button class="btn big" id="mmMs" aria-label="${esc(msHudLabel(nd))}"><span class="ic">${msHudIcon()}</span>${esc(tt('missions.title', 'Daily missions'))} <b class="ms-cnt">${nd}/3</b></button>`; }
+function msMenuBtn() { if (!S || !S.missions) return ''; const nd = msDoneN(); return `<button class="btn big" id="mmMs" aria-label="${esc(msHudLabel(nd))}"><span class="ic">${msHudIcon()}</span>${esc(tt('missions.title', 'Daily missions'))} <b class="ms-cnt">${nd}/${msTotal()}</b></button>`; }
 on('yard:enter', () => { if (window.__paw && !window.__paw.ms) msExpose(); if (S && S.place === 'yard') msYardRedraw(); });
 on('scene:redraw', () => { if (S && S.place === 'yard') msYardRedraw(); });
 on('game:ready', () => setTimeout(msHudSync, 0));
@@ -329,9 +371,10 @@ function msExpose() {
   if (!window.__paw) return;
   window.__paw.ms = {
     roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), hud: () => msHudSync(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
-    force: (ids) => { msRoll(); S.missions.list = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
+    pay: MS_PAY, card: MS_CARD, cardCoins: MS_CARD_COINS, swap: () => msSwap(), swapFree: () => msSwapFree(), eligible: () => msEligible().map((d) => d.id), weight: (id) => { const d = msDef(id); return d ? msW(d) : null; }, fields: () => msFields(), stallDay: () => msStallDay(), resetAt: () => msResetAt().toISOString(),
+    force: (ids) => { msRoll(); S.missions.list = msForced = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
     text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
 }
 on('game:ready', () => { msFields(); setTimeout(msExpose, 0); });
-setInterval(() => { if (S && cur.mode !== 'title') { msFlush(); if (S.missions && S.missions.date && S.missions.date !== localISO()) msRoll(); } msHudSync(); }, 1000);
+setInterval(() => { if (S && cur.mode !== 'title') { msFlush(); if (S.missions && S.missions.date && S.missions.date !== jstISO()) msRoll(); } msHudSync(); }, 1000);

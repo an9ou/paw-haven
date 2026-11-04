@@ -74,7 +74,8 @@ const FF_ICON = { catch: 'Treat Jar', bubble: 'Golden Bubble', seek: 'Crayon Box
 
 /* ---------------- the day, the week, the caps ---------------- */
 const ffWeekOf = (iso) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); };
-function ffToday() { const F = S.ff, t = localISO(); if (F.day !== t) { F.day = t; F.c = {}; markDirty(); } return F; }
+// Daily rhythm: the daily caps follow the Japan day, like the toy cap (the stall and the photo contest keep the local Saturday and week)
+function ffToday() { const F = S.ff, t = jstISO(); if (F.day !== t) { F.day = t; F.c = {}; markDirty(); } return F; }
 function ffLeft(k) {
   if (!S || !S.ff) return 0;
   if (k === 'stall') { const m = S.ff.mk; return m.day === localISO() ? Math.max(0, FF_CAPS.stall.week - m.coins) : FF_CAPS.stall.week; }
@@ -153,7 +154,7 @@ function ffCan(k, loud) {
     : S.sleeping || d.sleeping ? tt('ff.asleep', '{name} is asleep. The Fun Fair can wait.', { name: d.name })
     : ageMonths(d) < 3 ? tt('ff.young', '{name} is a bit little for this. Watching is fun too.', { name: d.name })
     : (S.stats.energy || 0) < FF_CAPS[k].en + 5 ? tt('ff.tired', '{name} is too tired to play. A nap would help.', { name: d.name })
-    : k === 'wash' && S.ff.wash.day === localISO() ? tt('ff.wash_done', '{dog} has had a wash today. Come back tomorrow.', { dog: ffWashDog().name }) : '';
+    : k === 'wash' && S.ff.wash.day === jstISO() ? tt('ff.wash_done', '{dog} has had a wash today. Come back tomorrow.', { dog: ffWashDog().name }) : '';
   if (why && loud && why !== 'none') nope(why);
   return !why;
 }
@@ -302,10 +303,11 @@ function ffPageTitle(k) { return k === 'fair' ? tt('ff.pg_fair', 'Fun Fair') : t
 /* ---------------- the neighbour's dog (the wash) and the thank-you letter ---------------- */
 const FF_WASH_BREEDS = ['beagle', 'corgi', 'westie', 'pug', 'bichon', 'collie', 'shiba', 'lab', 'schnauzer', 'mutt'];
 const FF_WASH_NAMES = ['Hana', 'Kuri', 'Momo', 'Taro', 'Sora', 'Mugi', 'Kinako', 'Pochi'];
-function ffWashDog() { const r = seeded(hashId('ffwash|' + localISO())); const key = FF_WASH_BREEDS[Math.floor(r() * FF_WASH_BREEDS.length)], name = FF_WASH_NAMES[Math.floor(r() * FF_WASH_NAMES.length)]; return { id: 'ffwash', key, name, sex: r() < 0.5 ? 'female' : 'male', outfit: { head: null, eyes: null, neck: 'Red Bandana', body: null }, born: null }; }
+// Daily rhythm: one wash a Japan day
+function ffWashDog() { const r = seeded(hashId('ffwash|' + jstISO())); const key = FF_WASH_BREEDS[Math.floor(r() * FF_WASH_BREEDS.length)], name = FF_WASH_NAMES[Math.floor(r() * FF_WASH_NAMES.length)]; return { id: 'ffwash', key, name, sex: r() < 0.5 ? 'female' : 'male', outfit: { head: null, eyes: null, neck: 'Red Bandana', body: null }, born: null }; }
 function ffWashLetter(dog) {
   if (typeof mailPush !== 'function') return;
-  mailPush({ kind: 'postcard', id: 'ff_wash_' + localISO(), from: tt('ff.who_tanaka_from', 'The Tanakas'), title: tt('ff.wash_title', 'Thank you from {dog}', { dog: dog.name }),
+  mailPush({ kind: 'postcard', id: 'ff_wash_' + jstISO(), from: tt('ff.who_tanaka_from', 'The Tanakas'), title: tt('ff.wash_title', 'Thank you from {dog}', { dog: dog.name }),
     text: tt('ff.wash_text', '{dog} came home fluffy, clean and very proud. Thank you to you and {name} for the lovely bath. {dog} has been sniffing the towel all evening.', { dog: dog.name, name: NAME() }), ps: tt('ff.wash_ps', 'A wag from {dog}', { dog: dog.name }) });
 }
 

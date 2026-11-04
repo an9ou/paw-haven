@@ -86,7 +86,7 @@ function intro() {
   const nm = NAME();
   const pages = [
     [tt('adopt.welcome_to_doodle_doggo', 'Welcome to Doodle Doggo'), `<p>${tt('adopt.population_you_html', 'Population: you, <b>{name}</b>, and one suspicious duck.', { name: nm })}</p><p>${tt('adopt.is_now_your_dog_there_html', '{name} is now your dog. There is no take-backs policy. {name} checked.', { name: nm })}</p>`],
-    [tt('adopt.how_this_works', 'How this works'), `<p>${tt('adopt.keep_the_four_meters_up_html', 'Keep the four meters up: <b>Hunger</b>, <b>Happiness</b>, <b>Energy</b>, <b>Cleanliness</b>. Nothing bad ever happens if they drop. {name} just gets very dramatic about it.', { name: nm })}</p><p>${tt('adopt.every_game_hour_here_is', 'Every game hour here is one real minute.')}</p>`],
+    [tt('adopt.how_this_works', 'How this works'), `<p>${tt('adopt.keep_the_four_meters_up_html', 'Keep the four meters up: <b>Hunger</b>, <b>Happiness</b>, <b>Energy</b>, <b>Cleanliness</b>. Nothing bad ever happens if they drop. {name} just gets very dramatic about it.', { name: nm })}</p><p>${tt('adopt.game_day_real_hour', 'A game day here is one real hour.')}</p>`],
     [tt('adopt.your_starter_kit', 'Your starter kit'), `<p>${tt('adopt.5_basic_kibble_3_bone', '5 Basic Kibble, 3 Bone-shaped Biscuits, 1 Pupcake, a Tennis Ball, a Cardboard Box (luxury) and 150 Paw Coins.')}</p><p>${tt('adopt.tip_rub_html', '<b>Tip:</b> rub {name} with your mouse or finger to pet. Go on. Rub.', { name: nm })}</p>`]
   ];
   let i = 0;

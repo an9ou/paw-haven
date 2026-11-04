@@ -230,7 +230,7 @@ function dig(o) {
   if (o.treasure) {
     const L = W.loot; W.found = L; updateDigs();
     if (L.item) { const g = grantTreasure(L.item, W.area); L.dup = g.dup; L.first = g.first; }
-    else W.coins += L.coins;
+    else { W.coins += L.coins; W.pouch = (W.pouch || 0) + L.coins; } // Daily rhythm: a pouch keeps its full coins on a tired walk
     setTimeout(() => {
       SFX.treasure(); setTimeout(SFX.fanfare, 300); audioCue('treasure');
       const fx = $('#fx'); if (fx) { fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(artReal('collectible', 'chest') || art('collectible', 'dig'), sx - 45, 220, 90, 90)}${L.item ? place(art('item', L.item.n), sx - 32, 150, 64, 64) : ''}</g>`); setTimeout(() => { const g = fx.lastElementChild; if (g) g.remove(); }, 1400); }
@@ -262,7 +262,8 @@ function endWalk(complete) {
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
   const base = Math.round(RAND(R.coins[0], R.coins[1]) * frac);
   const penny = S.outfit.charm === 'Lucky Penny' ? 1.1 : 1;
-  const coins = addCoins(pkWalkCoins((base + W.coins) * penny)); // v2.9 PACK: +10% (rounded down) with 2 or more walkers
+  const wk = frac > 0.05 || W.found ? walkCount() : null; // Daily rhythm: a walk that counts is walk n of the Japan day; after the 5th, half coins (the pouch part stays whole)
+  const coins = addCoins(pkWalkCoins(walkShare((base + W.coins) * penny, (W.pouch || 0) * penny, wk ? wk.share : 1))); // v2.9 PACK: +10% (rounded down) with 2 or more walkers
   const happy = Math.round((R.happy * frac + W.happy + (W.wx === 'rain' && hasRaincoat() ? 5 : 0)) * (W.wx === 'sunny' && S.outfit.eyes === 'Heart Sunglasses' ? 1.1 : 1) * (favAct('walks') ? 1.5 : 1));
   addStat('happy', happy);
   const cleanLoss = Math.round(R.clean * frac + (W.wx === 'rain' && !hasRaincoat() ? 5 * frac : 0)) - (W.wx === 'rain' && hasRaincoat() ? Math.round(R.clean * frac) : 0);
@@ -283,7 +284,7 @@ function endWalk(complete) {
   const extra = W.extra.length ? `<p class="small">${esc(tt('walk.res_extra', 'Also found on the path: {list}.', { list: tlist(W.extra.map((e) => e.dup ? tt('walk.res_extra_dup', '{item} (sold, duplicate)', { item: jrTN(e.item) }) : jrTN(e.item))) }))}</p>` : '';
   const junk = W.junk.length ? `<p class="small">${esc(tt('walk.res_junk', 'Junk dug up (turned into coins): {list}.', { list: tlist(W.junk.map((k) => k === 'junk-sock' ? tt('walk.junk_sock', 'a sock') : tt('walk.junk_rock', 'a rock'))) }))}</p>` : '';
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
-  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}
+  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}${walkTiredLine(wk)}
     ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet

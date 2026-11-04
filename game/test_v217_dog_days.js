@@ -133,14 +133,16 @@ run('v217_dog_days', async (t) => {
   ok(await ev(() => !Object.values(window.__paw.S.dd.bt).some((v) => v !== 1)), 'each gift once');
   await t.ctx.close();
 
-  sec('4. the dog diary: summaries per game day, text from templates at display time, the last 60 pages');
+  sec('4. the dog diary: summaries per Japan day (Daily rhythm; a game day before), text from templates at display time, the last 60 pages');
   await fresh(); await setWish({ k: 'photo', a: null });
   await ev(() => { const P = window.__paw; P.ms.act('walk', { area: 'park' }); P.ms.act('feed', { name: 'Basic Kibble', ids: [P.S.dog.id] }); P.ms.act('trick', { name: 'Sit', grade: 'Good', learned: true }); P.ms.act('fetch', { name: 'Tennis Ball' }); P.ms.act('bath', {}); P.ms.act('travel', { place: 'square' }); });
   let d = await dd();
   ok(d.today && d.today.w.includes('park') && d.today.f.includes('Basic Kibble') && d.today.t.includes('Sit') && /l/.test(d.today.x) && /b/.test(d.today.x) && d.today.p.includes('square'), 'today\'s page collects the day: ' + JSON.stringify(d.today));
   ok(!/Dear diary|sniffed/.test(JSON.stringify(d)), 'the save keeps summaries, never the text');
   await ev(() => { window.__paw.S.gameMin += 1440; window.__paw.dd.close(); });
-  d = await dd(); ok(d.diary.length === 1 && d.today === null, 'a new game day closes the page into the diary');
+  d = await dd(); ok(d.diary.length === 0 && !!d.today, 'a new game day keeps the page open (Daily rhythm)');
+  await ev(() => { window.__paw.S.dd.today.j = '2000-01-01'; window.__paw.dd.close(); });
+  d = await dd(); ok(d.diary.length === 1 && d.today === null, 'a new Japan day closes the page into the diary');
   const lines = await ev(() => window.__paw.dd.lines(window.__paw.S.dd.diary[0]));
   ok(/^Dear diary/.test(lines[0]) && lines.some((l) => /Walks today: Sunny Park\./.test(l)) && lines.some((l) => /I ate Basic Kibble/.test(l)) && lines.some((l) => /I learned Sit/.test(l)) && lines.some((l) => /We played ball/.test(l)) && lines.some((l) => /Today's outings: Town Square\./.test(l)), 'the page reads in the dog\'s voice: ' + lines.join(' / '));
   const voices = await ev(() => ['shiba', 'golden', 'corgi', 'dachs', 'pug', 'husky', 'mutt'].map((k) => window.__paw.dd.voice(k)));

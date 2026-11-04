@@ -260,7 +260,7 @@ function slotsFree() { return dogSlots().free; }
 function reqText(r) { return r.k === 'dog1' ? tt('pack.req_a_dog_at_bond', 'a dog at Bond {bond}', { bond: r.bond }) : r.k === 'housefits' ? tt('pack.req_a_house_that_fits', 'a house that fits {fits}', { fits: r.fits }) : r.house ? r.label : tt('pack.req_progress', '{label} ({have}/{need})', { label: r.label, have: Math.min(r.have, r.need), need: r.need }); }
 /* care days: marked by the feed / pet / play paths of this lane, and by watching the daily-care flags (walks, fetch, tricks in other lanes) */
 function markCareDay() {
-  if (!S || !S.dogs) return; spotsInit(); const t = localISO();
+  if (!S || !S.dogs) return; spotsInit(); const t = jstISO(); // Daily rhythm: a care day is a Japan day, as the feed / pet / play flags (an old save's local date compares as a plain date string)
   if (S.careDayLast === t) return; S.careDayLast = t; S.careDays = (S.careDays || 0) + 1; markDirty(); setTimeout(spotsCheck, 700);
   shCareGift(); // v2.4 SHOP: the Cozy Hoodie at 14 care days
 }

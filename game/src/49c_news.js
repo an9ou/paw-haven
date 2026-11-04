@@ -13,6 +13,17 @@ const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +
 const nwItemArt = (n) => art('item', n);
 const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
+  { // Daily rhythm (docs/design/daily-rhythm.md). The date is a placeholder until the release day is set (after v2.19, 7 Nov 2026)
+    id: '2.19.2', date: '2026-11-08', c: '#E2F0D9', d: 'paw', pic: 'dog',
+    title: () => tt('nw.v2192.title', 'A calmer day in town'),
+    items: [
+      { ic: () => nwSafe(() => msHudIcon()), tx: () => tt('nw.v2192.mission', 'One daily mission now, worth {n} coins and a crayon stamp, with one free swap a day', { n: MS_PAY }) },
+      { ic: () => nwItemArt('Pupcake'), tx: () => tt('nw.v2192.stamps', 'Every finished mission stamps the card. Seven stamps bring a surprise, and later cards give {n} coins and a Pupcake', { n: MS_CARD_COINS }) },
+      { ic: () => nwSafe(() => ICON('sleep')), tx: () => tt('nw.v2192.clock', 'A calmer clock: a game day lasts one real hour, so dogs get hungry and sleepy more slowly') },
+      { ic: () => fwCalIcon(), tx: () => tt('nw.v2192.daily', 'Daily bonuses and the mission start again every day at midnight in Japan') },
+      { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v2192.walks', 'The first {n} walks of a day pay full coins. After that your dog is happily tired and walks pay half', { n: WALK_FULL }) }
+    ]
+  },
   {
     id: '2.18.4', date: '2026-10-30', c: '#D3E4F4', d: 'snow', pic: { item: 'Snowman Suit' },
     title: () => tt('nw.v2184.title', 'The Winter Market is coming!'),
@@ -36,7 +47,7 @@ const NEWS = [
     ]
   }
 ];
-/* v2.19 "Friends first": 50_friends.js puts this entry first only when FR_LIVE is on, so the news never shows Friends before the release */
+/* v2.19 "Friends first": 50_friends.js adds this entry only when FR_LIVE is on (nwSort puts it in date order), so the news never shows Friends before the release */
 const nwFrArt = (k) => nwSafe(() => { const P = window.PawArt; return P && P.FRIENDS && typeof P.FRIENDS[k] === 'function' ? P.FRIENDS[k]() : ''; });
 const NEWS_V219 = {
   id: '2.19', date: '2026-11-07', c: '#FFE3EC', d: 'paw', pic: 'dog',
@@ -49,7 +60,10 @@ const NEWS_V219 = {
     { ic: () => nwSafe(() => ICON('lock')), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
   ]
 };
-const nwLatest = () => NEWS[0].id;
+// Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
+const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
+function nwSort() { NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
 function nwPic(e) {
@@ -66,6 +80,7 @@ function nwEntryHTML(e, big) {
 function nwOpen(auto) {
   if (!S) return false;
   if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
+  nwSort();
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`
       : `<div class="nw-sheet">${nwEntryHTML(NEWS[0], true)}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
@@ -95,9 +110,10 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), list: () => NEWS.map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
-    drop: () => { if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; } };
+    v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
+    drop: () => { nwSort(); if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; } };
 }
 setInterval(() => { try { nwExpose(); nwTry(); } catch (e) { console.warn('nw tick', e); } }, 500);
 on('game:ready', () => { NW.calm = 0; nwExpose(); });

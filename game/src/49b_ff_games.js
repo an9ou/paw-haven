@@ -341,7 +341,7 @@ const FF_DEF = {
     move(G, x, y, e) { const D2 = G.data; if (D2.step === 1) return; if (e.pointerType !== 'mouse' && !G.hold) return; if (D2.lx == null) { D2.lx = x; D2.ly = y; return; } const d = Math.hypot(x - D2.lx, y - D2.ly); D2.lx = x; D2.ly = y; if (this.over(G, x, y)) this.bump(G, d / 26, x, y); },
     key(G, e, dn) { const D2 = G.data; if (e.key !== ' ' && e.key !== 'Enter') return false; if (D2.step === 1) D2.sp = dn; else if (dn) this.bump(G, 6, D2.cx + RAND(-90, 90), D2.base - 200 + RAND(-40, 40)); return true; },
     coins: (G) => (G.data.step > 2 ? 10 : Math.floor((G.data.p[0] + G.data.p[1] + G.data.p[2]) / 30)),
-    done(G) { const W2 = S.ff.wash; W2.day = localISO(); W2.n = (W2.n || 0) + 1; ffWashLetter(G.data.vis); },
+    done(G) { const W2 = S.ff.wash; W2.day = jstISO(); W2.n = (W2.n || 0) + 1; ffWashLetter(G.data.vis); },
     extra: () => tt('ff.r_letter', 'A thank-you letter is on its way to your mailbox.'),
     title: (G) => tt('ff.r_wash_title', '{dog} is squeaky clean!', { dog: G.data.vis.name }),
     result: (G) => (G.data.step > 2 ? tt('ff.r_wash', '{name} watched the whole bath and approved. The Tanakas are delighted.', { name: G.d.name }) : tt('ff.r_wash_part', 'Nearly done! {dog} is mostly clean and very happy.', { dog: G.data.vis.name }))
