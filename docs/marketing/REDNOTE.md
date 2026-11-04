@@ -34,7 +34,9 @@ Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (
 
 **English first, RedNote after approval (owner, 30 Oct 2026).** For every new Reel or post, render only the English version first. Make the RedNote version only after the owner approves the English one.
 
-**Update (owner, 3 Nov 2026): RedNote end cards and captions may now say "在浏览器搜索 DoodleDoggo.app 就能玩" (search DoodleDoggo.app in the browser to play).** The site appears only as text to search: still no clickable link, no QR code and no link sticker. Posts already made keep "搜索 Doodle Doggo". **Earlier rule, no game link on RedNote (owner, 29 Oct 2026).** The bio, posters, captions and videos for RedNote never show doodledoggo.app or any other link; they say "搜索 Doodle Doggo" (search Doodle Doggo) instead. RedNote also holds back posts that send people to outside sites.
+**Update (4 Nov 2026, recommended default under the 5-minute rule; the owner can still change it): new RedNote posts, end cards and captions say "在浏览器搜 Doodle Doggo App 就能玩" (search Doodle Doggo App in the browser), the same words as the new bio, and never "DoodleDoggo.app" with a dot, which reads as a URL and is the likely reason for the bans.** Posts already made are left as they are.
+
+**Earlier update (owner, 3 Nov 2026), replaced by the line above: RedNote end cards and captions may now say "在浏览器搜索 DoodleDoggo.app 就能玩" (search DoodleDoggo.app in the browser to play).** The site appears only as text to search: still no clickable link, no QR code and no link sticker. Posts already made keep "搜索 Doodle Doggo". **Earlier rule, no game link on RedNote (owner, 29 Oct 2026).** The bio, posters, captions and videos for RedNote never show doodledoggo.app or any other link; they say "搜索 Doodle Doggo" (search Doodle Doggo) instead. RedNote also holds back posts that send people to outside sites.
 
 ## First post: the hello poster
 
