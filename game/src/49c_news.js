@@ -14,7 +14,7 @@ const nwItemArt = (n) => art('item', n);
 const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
   { // Daily rhythm (docs/design/daily-rhythm.md). The date is a placeholder until the release day is set (after v2.19, 7 Nov 2026)
-    id: '2.19.2', date: '2026-11-08', c: '#E2F0D9', d: 'paw', pic: 'dog',
+    id: '2.19.2', date: '2026-11-04', c: '#E2F0D9', d: 'paw', pic: 'dog',
     title: () => tt('nw.v2192.title', 'A calmer day in town'),
     items: [
       { ic: () => nwSafe(() => msHudIcon()), tx: () => tt('nw.v2192.mission', 'One daily mission now, worth {n} coins and a crayon stamp, with one free swap a day', { n: MS_PAY }) },
