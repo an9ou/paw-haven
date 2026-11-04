@@ -1,6 +1,7 @@
 // v2.20 "Missions v2" (V220.md, docs/design/missions-v2.md): part A (save fields, the backfill of old saves, the counters, the new act data)
 // and part B (Today: one story mission and two little helps a Japan day, no coins for helps, Gerald's treat pouch once a Japan day, the free
-// swap on any one row, the tab strip). Later parts (C Badges, D Week, E Notebook, F Growing up) add their sections below.
+// swap on any one row, the tab strip), part C (Badges: 17 tracks, tiers from the counters, cosmetics only, the Badges sticker pages, the Crayon
+// Medal, an old save's quiet backfill and its one letter). Later parts (D Week, E Notebook, F Growing up) add their sections below.
 // node game/run_tests.js v220_missions
 require('./test_lib').run('v220_missions', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -145,7 +146,7 @@ require('./test_lib').run('v220_missions', async (t) => {
   await t.p.click('.ms-tab[data-mstab="week"]');
   ok(await t.until(() => /help-wanted board/.test((document.querySelector('#modal .ms-tabbody') || {}).textContent || '') && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), 'Week: a placeholder until part D');
   await t.p.click('.ms-tab[data-mstab="badges"]');
-  ok(await t.until(() => /Badges for walks/.test((document.querySelector('#modal .ms-tabbody') || {}).textContent || ''), null, 3000), 'Badges: a placeholder until part C');
+  ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msb .msb-row').length === 17, null, 3000), 'Badges: the 17 badge rows (part C)');
   await t.p.click('.ms-tab[data-mstab="today"]');
   ok(await t.until(() => !!document.querySelector('#modal .ms-tabbody .ms-body'), null, 3000), 'back to Today');
   ok(await ev(() => !document.querySelector('#msBtn').classList.contains('dot')), 'opening the sheet clears the soft dot');
@@ -153,15 +154,89 @@ require('./test_lib').run('v220_missions', async (t) => {
   await t.closeX(); await t.modalGone();
   await ev(() => window.__paw.go('yard'));
 
+  sec('C1. badges: 17 tracks, tiers from the counters, no coins, no puppy track');
+  const c1 = await ev(() => {
+    const P = window.__paw, B = P.msb, S = P.S;
+    return { ids: B.tracks, n: B.tracks.length, tiers: B.tracks.map((id) => B.tiers(id).length === 4 && B.tiers(id).every((x, i, a) => i === 0 || x > a[i - 1])), coats: B.tiers('coats').join(), tr: JSON.stringify(S.missions.tr), trbf: S.missions.trbf };
+  });
+  ok(c1.n === 17 && c1.tiers.every(Boolean), '17 tracks, four rising tiers each: ' + c1.ids.join(' '));
+  ok(!c1.ids.some((id) => /pup|litter|breed|playdate/i.test(id)) && !c1.ids.includes('puppies'), 'no puppy or litter track');
+  ok(c1.coats === '5,15,30,50', 'Coats: the Coat Collection milestones 5 / 15 / 30 / 50');
+  ok(c1.trbf === 1, 'a new save never gets the backfill letter (trbf 1): ' + c1.tr);
+  await ev(() => { window.__toasts.splice(0); });
+  const c2 = await ev(() => {
+    const P = window.__paw, B = P.msb, S = P.S, c = S.coins, b = S.bond.pts; S.walks = 12; P.ms.act('pet', {});
+    const r1 = B.reached('walker'), got = B.check(false).map((x) => x.id + ':' + x.t).join();
+    const one = { got, r1, tier: B.tier('walker'), dc: S.coins - c, db: S.bond.pts - b, st: !!(S.dd.st && S.dd.st.msb_walker) };
+    S.walks = 60; const b2 = S.bond.pts; one.got2 = B.check(false).map((x) => x.id + ':' + x.t).join(); one.db2 = S.bond.pts - b2; one.dc2 = S.coins - c; one.dot = B.dot();
+    return one;
+  });
+  ok(c2.r1 === 'b' && c2.got === 'walker:b' && c2.tier === 'b', 'Walker 12 of 10: bronze (' + c2.got + ')');
+  ok(c2.st, 'bronze: the Walker sticker on the Badges page');
+  ok(c2.got2 === 'walker:s' && c2.db2 > 0 && c2.db === 0, 'Walker 60 of 50: silver gives Bond for the active dog (+' + c2.db2 + '), bronze none');
+  ok(c2.dc === 0 && c2.dc2 === 0, 'no coins from the tiers (' + c2.dc + ', ' + c2.dc2 + ')');
+  ok(c2.dot && (await t.until(() => document.querySelector('#msBtn').classList.contains('dot'), null, 3000)), 'a new tier lights the soft dot');
+  ok(await t.waitToast(/^New badge: Walker, (bronze|silver)\.$|new badges/), 'toast "New badge: Walker, ..."');
+  const c3 = await ev(() => {
+    const P = window.__paw, B = P.msb, S = P.S, L = S.missions.life, c = S.coins;
+    S.walks = 600; L.harvest = 500; L.cook = 250; L.bath = 250; L.trick = 600; L.fetch = 1200; L.ms = 300; S.dd.wn = 250; S.ph = Object.assign(S.ph || {}, { n: 200 }); L.boards = 16;
+    const got = B.check(false), cups = B.cups();
+    return { n: got.length, dc: S.coins - c, golds: B.golds(), cups: cups.join(''), titles: ['Trail Pro', 'Green Paws', 'Kennel Chef', 'Bubble Boss', 'Trick Star', 'Fetch Legend', 'Mission Pup', 'Wish Maker', 'Snap Happy', 'Good Neighbour'].filter((x) => !S.titles[x]),
+      medal: S.inv.charms.includes(B.medal), pend: B.medalPending, nb: B.tier('neighbour'), count: B.count(), coins: S.coins };
+  });
+  ok(c3.n >= 30 && c3.dc === 0, c3.n + ' tiers at once, coins unchanged (' + c3.dc + ')');
+  ok(c3.golds === 10 && c3.cups === 'cccccccccg', 'ten gold tracks, ten cups on the shelf (nine crayon, Good neighbour gold): ' + c3.cups);
+  ok(!c3.titles.length, 'each gold gives its title (titleGive): missing ' + c3.titles.join());
+  ok(c3.nb === 'g', 'Good neighbour 16 of 15 boards: gold (life.boards, part D counts it)');
+  ok(c3.medal && c3.pend, 'eight golds: the Crayon Medal charm, its popup waits for a quiet yard');
+  ok(await t.waitToast(/^New title: Trail Pro/), 'titles keep titleGive\'s toast');
+  const calmModals = async () => { await t.p.waitForTimeout(900); for (let i = 0; i < 8 && !(await ev(() => document.getElementById('modal').hidden)); i++) { await t.closeX(); await t.p.waitForTimeout(500); } }; // the silver Bond may bring level-up cards
+  await calmModals();
+  // the popup waits for a quiet yard: any level-up card (the silver Bond) is closed first, then the yard tick shows it
+  ok(await t.until(() => { const m = document.getElementById('modal'); if (document.querySelector('#modal .msb-medalpop #msbWear')) return true; if (!m.hidden) { const x = m.querySelector('.panel .x'); if (x) x.click(); } else window.__paw.msb.medalTick(); return false; }, null, 10000), 'the Crayon Medal popup, with "Wear it"');
+  await t.p.click('#msbWear'); await t.modalGone();
+  ok(await ev(() => window.__paw.S.outfit.charm === 'Crayon Medal' && !window.__paw.msb.medalPending), 'Wear it: the medal in the charm slot');
+  const c4 = await ev(() => { const P = window.__paw, B = P.msb, S = P.S, c = S.coins; S.walks = 5000; const g = B.check(false); return { g: g.length, dc: S.coins - c, medals: S.inv.charms.filter((x) => x === B.medal).length }; });
+  ok(c4.g === 0 && c4.dc === 0 && c4.medals === 1, 'nothing new past crayon, one medal only');
+  sec('C2. the Badges sticker pages, the neighbour card sticker, the Badges tab');
+  const c5 = await ev(() => {
+    const P = window.__paw, B = P.msb, S = P.S; B.sync(); const pages = B.ddPages(), defs = P.dd.defs().filter((d) => /^msb_/.test(d.id)), i0 = pages.indexOf('msb1');
+    const L = S.missions.life, bo = L.boards; delete S.dd.st.msb_card; L.boards = 2; P.dd.stickers(); const before = !!S.dd.st.msb_card; B.card(); L.boards = bo;
+    return { tail: pages.slice(-3).join(), defs: defs.length, per: [0, 1, 2].map((k) => defs.filter((d) => d.pg === i0 + k).length).join(), before, card: !!S.dd.st.msb_card, walker: !!S.dd.st.msb_walker, coats: !!S.dd.st.msb_coats };
+  });
+  ok(c5.tail === 'msb1,msb2,msb3' && c5.defs === 18 && c5.per === '6,6,6', 'three Badges pages at the end of the book, 18 stickers, 6 a page: ' + c5.per);
+  ok(c5.walker && !c5.coats, 'a bronze tier puts its sticker in, an unearned one does not');
+  ok(!c5.before && c5.card, 'Part D: msCardSticker() gives the first neighbour card sticker');
+  await calmModals(); await ev(() => window.__paw.ms2.open('badges'));
+  ok(await t.until(() => document.querySelectorAll('#modal .ms-pop .msb-row').length === 17, null, 4000), 'the sheet opens on the Badges tab: 17 rows');
+  const c6 = await ev(() => { const pan = document.querySelector('#modal .ms-pop'); const fold = pan.querySelector('.msb-fold'); const row = pan.querySelector('.msb-row[data-track="treasure"]');
+    return { fold: fold ? fold.querySelectorAll('.msb-row').length : 0, open: pan.querySelectorAll('.msb > .msb-list > .msb-row').length, num: row ? row.querySelector('.msb-num').textContent : '', next: row ? row.querySelector('.msb-next').textContent : '',
+      cols: getComputedStyle(pan.querySelector('.msb-list')).gridTemplateColumns.split(' ').length, dot: document.querySelector('#msBtn').classList.contains('dot'), semi: [...pan.querySelectorAll('.msb *')].some((e) => e.children.length === 0 && /;/.test(e.textContent)) }; });
+  ok(c6.fold === 10 && c6.open === 7, 'gold and crayon tracks folded at the bottom (' + c6.fold + ' folded, ' + c6.open + ' open)');
+  ok(/^0 \/ 5$/.test(c6.num.trim()) && /^Next at 5: a sticker$/.test(c6.next.trim()), 'a row: the bar "0 / 5" and the next reward: ' + c6.num + ' | ' + c6.next);
+  ok(c6.cols === 2, 'desktop: two columns');
+  ok(!c6.dot && !c6.semi, 'seeing the Badges tab clears the dot, no semicolons');
+  await t.SH('badges_desktop');
+  await t.closeX(); await t.modalGone();
+
   sec('A4. an old v2.19.2 save loads and backfills, additively (no notebook)');
   const old = await ev(() => {
     const S = JSON.parse(JSON.stringify(window.__paw.S)), m = S.missions;
-    ['help', 'pouch', 'life', 'tr', 'wk', 'wkAreas', 'nb', 'grow'].forEach((k) => delete m[k]);
+    ['help', 'pouch', 'life', 'tr', 'trbf', 'wk', 'wkAreas', 'nb', 'grow'].forEach((k) => delete m[k]);
+    // part C: the badges' own rewards are taken back out, so the backfill gives them again (the counters stay: walks 5000, photos 200, wishes 250)
+    S.inv.charms = S.inv.charms.filter((x) => x !== 'Crayon Medal'); if (S.outfit.charm === 'Crayon Medal') S.outfit.charm = null;
+    ['Trail Pro', 'Snap Happy', 'Wish Maker', 'Map Maker'].forEach((x) => { delete S.titles[x]; }); if (S.title && !S.titles[S.title]) S.title = '';
+    Object.keys(S.dd.st || {}).forEach((k) => { if (/^msb_/.test(k)) delete S.dd.st[k]; }); S.mail = (S.mail || []).filter((x) => x.id !== 'msb_backfill');
+    window.__oldCoins = S.coins; window.__oldBond = S.bond.pts;
+    // counters the save already knows, enough for eight golds: walks, photos, wishes (above), and routes, places, treasures, agility, the Fun Fair
+    window.__paw.msb.places().concat(['park', 'river', 'woods', 'beach', 'sunflower', 'bamboo', 'cliffs']).forEach((k) => { S.dd.pv[k] = 1; });
+    for (let i = 0; i < 25; i++) S.found['T' + i] = 1; S.dd.cnt.ag = 300; S.ff = S.ff || {}; S.ff.n = Object.assign(S.ff.n || {}, { catch: 500 });
     m.stamps = 3; m.cards = 2; S.recipes = Object.assign(S.recipes || {}, { best: { a: 1, b: 2, c: 1, d: 3 } }); S.garden.harvests = { carrot: 5, peas: 2 };
     S.dd.wk = { bath: 2, trick: 3, ball: 4 }; S.bl = Object.assign(S.bl || {}, { n: 6 }); S.dog.tricks = { Sit: { p: 1, shows: 5 }, Paw: { p: 0.5, shows: 1 } };
     (S.dogs || []).forEach((d, i) => { if (i === 0) d.tricks = S.dog.tricks; });
     return JSON.stringify(S);
   });
+  const oldMeta = await ev(() => ({ coins: window.__oldCoins, bond: window.__oldBond }));
   await t.ctx.close(); const p2 = await t.mk({ storage: { pawhaven_proto_v1: old }, prefs: { msTest: true, ddTest: true } }); await p2.goto(require('./test_lib').URL); await p2.waitForSelector('#tContinue'); await p2.click('#tContinue');
   await t.untilMode('yard'); await t.until(() => !!document.querySelector('#msBtn:not([hidden])') && !!(window.__paw && window.__paw.ms2), null, 8000);
   const o2 = await t.ev(() => { const S = window.__paw.S, m = S.missions; window.__paw.ms2.helps(); return { v: S.v, life: m.life, nb: m.nb, help: m.help.list.length, keys: Object.keys(m).join(' '), stamps: m.stamps, cards: m.cards }; });
@@ -170,6 +245,17 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(o2.nb === null && o2.help === 2, 'no notebook for an old save (nb null), two helps today: ' + o2.keys);
   const bf2 = await t.ev(() => { const P = window.__paw, L = P.S.missions.life; L.cook = 50; P.ms2.fields(); P.ms2.backfill(); return L.cook; });
   ok(bf2 === 50, 'the backfill never lowers a counter');
+  sec('C3. the old save gets its earned badges quietly, and one letter');
+  ok(await t.until(() => window.__paw.S.missions.trbf === 1, null, 9000), 'the first look gives the earned badges (trbf 1)');
+  await t.p.waitForTimeout(1200);
+  const c7 = await t.ev(() => { const P = window.__paw, B = P.msb, S = P.S; return { walker: B.tier('walker'), photo: B.tier('photo'), wish: B.tier('wish'), titles: ['Trail Pro', 'Snap Happy', 'Wish Maker'].filter((x) => S.titles[x]).length, toasts: window.__toasts.filter((x) => /New badge|new badges|New title/.test(x)), letters: S.mail.filter((x) => x.id === 'msb_backfill'), coins: S.coins, bond: S.bond.pts, count: B.count(), medal: S.inv.charms.includes(B.medal), pend: B.medalPending, st: !!S.dd.st.msb_walker, golds: B.golds(), pop: !!document.querySelector('.msb-medalpop') }; });
+  ok(c7.walker === 'c' && c7.photo === 'c' && c7.wish === 'c' && c7.titles === 3 && c7.st, 'walks, photos and wishes: crayon at once, with their titles and stickers');
+  ok(!c7.toasts.length, 'no badge or title toasts for the backfill: ' + c7.toasts.join(' | '));
+  ok(c7.letters.length === 1 && new RegExp('^You already earned ' + c7.count + ' badges').test(c7.letters[0].text), 'one letter: ' + (c7.letters[0] || {}).text);
+  ok(c7.coins === oldMeta.coins && c7.bond === oldMeta.bond, 'no coins and no Bond from the backfill (' + (c7.coins - oldMeta.coins) + ', ' + (c7.bond - oldMeta.bond) + ')');
+  ok(c7.golds >= 8 && c7.medal && !c7.pend && !c7.pop, 'eight golds or more (' + c7.golds + '): the Crayon Medal comes quietly, no popup');
+  const c8 = await t.ev(() => { const P = window.__paw; P.msb.check(false); return P.S.mail.filter((x) => x.id === 'msb_backfill').length; });
+  ok(c8 === 1, 'a second look sends no second letter');
 
   sec('B7. phones: 390 and 360 wide, no text under 13 px, 44 px taps, no sideways scroll');
   await t.ctx.close();
@@ -190,6 +276,19 @@ require('./test_lib').run('v220_missions', async (t) => {
     ok(ph.taps.length >= 6 && ph.taps.every((x) => x >= 43.5), `${w}: tabs and Swap pills are 44 px or more: ` + ph.taps.map(Math.round).join());
     ok(ph.over <= 1 && ph.wide <= 1, `${w}: no sideways scroll (${ph.over}, ${ph.wide})`);
     await t.SH('phone_' + w);
+    // part C: the Badges tab at this width (some tracks gold, so the fold shows too)
+    await t.ev(() => { const P = window.__paw, S = P.S; S.walks = 250; if (S.dd) S.dd.wn = 80; S.missions.life.ms = 40; P.msb.check(true); P.ms2.tab('badges'); });
+    await t.until(() => document.querySelectorAll('#modal .ms-pop .msb-row').length === 17, null, 4000);
+    await t.ev(() => { const d = document.querySelector('#modal .ms-pop .msb-fold'); if (d) d.open = true; });
+    const pb = await t.ev(() => {
+      const pan = document.querySelector('#modal .panel.ms-pop'), body = pan.querySelector('.panel-body') || pan, small = [];
+      pan.querySelectorAll('.msb *').forEach((e) => { if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return; const r = e.getBoundingClientRect(); if (!r.width || e.closest('svg')) return; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.className + ':' + fs); });
+      const sum = pan.querySelector('.msb-fold > summary'), sr = sum ? sum.getBoundingClientRect() : { height: 0 };
+      return { small, sum: sr.height, over: body.scrollWidth - body.clientWidth, wide: document.documentElement.scrollWidth - innerWidth, cols: getComputedStyle(pan.querySelector('.msb-list')).gridTemplateColumns.split(' ').length };
+    });
+    ok(!pb.small.length && pb.cols === 1, `${w}: Badges in one column, no text under 13 px ` + pb.small.slice(0, 4).join(' '));
+    ok(pb.sum >= 44 && pb.over <= 1 && pb.wide <= 1, `${w}: the fold is a 44 px tap, no sideways scroll (${Math.round(pb.sum)}, ${pb.over}, ${pb.wide})`);
+    await t.SH('phone_badges_' + w);
     if (w !== 360) await t.ctx.close();
   }
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));

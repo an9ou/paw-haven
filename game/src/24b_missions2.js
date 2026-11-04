@@ -24,6 +24,7 @@ function v220Fields(s, fresh) {
   if (!ms2Obj(m.life)) m.life = {}; MS2_LIFE.forEach((k) => num(m.life, k));
   if (m.life.bf !== 1) { m.life.bf = 1; if (!fresh) ms2Backfill(s); }
   if (!ms2Obj(m.tr)) m.tr = {};
+  if (m.trbf !== 0 && m.trbf !== 1) m.trbf = fresh ? 1 : 0; // part C: 0 until an old save's earned badges are given quietly (one letter)
   if (!ms2Obj(m.wk)) m.wk = {}; str(m.wk, 'w'); str(m.wk, 'got'); num(m.wk, 'card'); if (!Array.isArray(m.wk.list)) m.wk.list = [];
   if (!ms2Obj(m.wkAreas)) m.wkAreas = {};
   if (m.nb === undefined || (m.nb !== null && !ms2Obj(m.nb))) m.nb = fresh ? {} : null;

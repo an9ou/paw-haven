@@ -10,7 +10,7 @@ function jrTitleName(t) {
     case 'Great-Great-Granddog': return tt('journal.title_great_granddog', 'Great-Great-Granddog');
     case 'Glitter Legend': return tt('journal.title_glitter_legend', 'Glitter Legend');
     case 'Friend of Doodle Doggo': return tt('journal.title_friend', 'Friend of Doodle Doggo');
-    default: return t;
+    default: return typeof msTitleName === 'function' ? msTitleName(t) : t; // v2.20: the badge titles (24c_badges.js)
   }
 }
 // the treasure text of a TREASURES row (name, ability, text)

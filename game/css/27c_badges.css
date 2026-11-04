@@ -1,0 +1,60 @@
+/* v2.20 Missions v2, part C: the Badges tab (24c_badges.js, V220.md). One row per track: rosette, name, bar "37 / 50", next reward;
+   gold and crayon tracks folded at the bottom. Desktop: two columns. Phones (360 / 390): one column, text never under 13 px, 44 px taps. */
+.msb{display:flex;flex-direction:column;gap:12px;min-width:0}
+.msb-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.msb-shelf{flex:none;width:150px;min-height:64px;display:flex;align-items:flex-end;justify-content:center;padding:4px 6px 6px;border-bottom:5px solid #C99A6B;border-radius:4px}
+.msb-shelf.art{border:0;padding:0;width:180px}
+.msb-shelf > svg{width:100%;height:auto;display:block}
+.msb-cups{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:flex-end}
+.msb-cups svg{width:22px;height:26px;display:block}
+.msb-cup0{display:block;width:30px;height:24px;border:2px dashed #C9B8A6;border-radius:4px 4px 12px 12px}
+.msb-headtxt{flex:1 1 240px;min-width:0}
+.msb-headtxt p{margin:0 0 4px}
+.msb-count{font-family:var(--font-hand);font-size:22px;line-height:1.1}
+.msb-intro{font-size:15px;line-height:1.35}
+.msb-medalline{display:flex;align-items:center;gap:8px;font-size:15px;line-height:1.3}
+.msb-medalsm{width:34px;height:34px;flex:none;display:block}
+.msb-medalsm svg{width:100%;height:100%;display:block}
+.msb-medalline:not(.got) .msb-medalsm{opacity:.45;filter:grayscale(.7)}
+.msb-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.msb-row{display:flex;align-items:flex-start;gap:8px;min-width:0;padding:6px 8px;border:2px solid #D9CBB9;border-radius:12px 16px 11px 15px;background:rgba(255,251,243,.75)}
+.msb-row[data-tier="c"]{border-color:#F28FA5}
+.msb-ros{width:44px;height:44px;flex:none;display:block}
+.msb-ros svg{width:100%;height:100%;display:block;overflow:visible}
+.msb-main{flex:1 1 auto;min-width:0}
+.msb-main p{margin:0}
+.msb-name{font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.msb-tier{font-size:14px;color:#6E5A4E}
+.msb-star{display:inline-block;width:18px;height:18px;margin-left:4px;vertical-align:-3px}
+.msb-star svg{width:100%;height:100%;display:block}
+.msb-d,.msb-next{font-size:14px;line-height:1.3;color:#5B4A40;overflow-wrap:anywhere}
+.msb-barrow{display:flex;align-items:center;gap:8px;margin:3px 0}
+.msb-bar{flex:1 1 auto;min-width:40px;height:12px;border:2px solid var(--ink);border-radius:8px 10px 7px 9px;background:#FFFBF3;overflow:hidden;display:block}
+.msb-bar i{display:block;height:100%;background:#9ED7B4}
+.msb-row[data-tier="b"] .msb-bar i{background:#E0A86E}
+.msb-row[data-tier="s"] .msb-bar i{background:#B9C3CF}
+.msb-row[data-tier="g"] .msb-bar i,.msb-row[data-tier="c"] .msb-bar i{background:#F6CF57}
+.msb-num{flex:none;font-size:14px;font-variant-numeric:tabular-nums}
+.msb-fold{border-top:2px dashed #C9B8A6;padding-top:6px}
+.msb-fold > summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-hand);font-weight:700;font-size:20px;list-style:none}
+.msb-fold > summary::-webkit-details-marker{display:none}
+.msb-fold > summary::before{content:'+';display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid var(--ink);border-radius:50%;font-size:18px;line-height:1}
+.msb-fold[open] > summary::before{content:'-'}
+.msb-fold > summary:focus-visible{outline:3px solid #F28FA5;outline-offset:2px}
+.msb-fold .msb-list{margin-top:6px}
+/* the Crayon Medal popup */
+.msb-medal{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.msb-medalic{width:120px;height:120px;display:block}
+.msb-medalic svg{width:100%;height:100%;display:block}
+.msb-medal p{margin:0;max-width:380px;font-size:17px;line-height:1.4}
+.msb-medalpop .foot .btn{min-height:44px}
+
+html[data-layout="phone"] .msb-list{grid-template-columns:minmax(0,1fr)}
+html[data-layout="phone"] .msb-head{gap:8px}
+html[data-layout="phone"] .msb-shelf{width:120px;min-height:54px}
+html[data-layout="phone"] .msb-shelf.art{width:140px}
+html[data-layout="phone"] .msb-count{font-size:20px}
+html[data-layout="phone"] .msb-intro,html[data-layout="phone"] .msb-medalline{font-size:14px}
+html[data-layout="phone"] .msb-name{font-size:16px}
+html[data-layout="phone"] .msb-fold > summary{font-size:18px}
+html[data-layout="phone"] .msb-medal p{font-size:16px}
