@@ -17,3 +17,4 @@ For every Marketing session (branch `marketing/launch`). Read these with `CLAUDE
 - **Site links (21 Oct 2026):** the game plays right on https://doodledoggo.app (say "play right on doodledoggo.app", never "tap Play at itch.io on our site"). The How to play page, https://doodledoggo.app/guide, is the link for "new here? start here" posts.
 - **The Noodle story videos never show game UI.**
 - **Reports:** no progress updates; report when the whole task is done, and send the Game Manager a one-line done note.
+- **Every video's end card (owner, 4 Nov 2026):** the game logo, the website (doodledoggo.app) and our Instagram, X and YouTube, each with its icon and handle. Instagram is @doodledoggo.app; the X and YouTube handles come from the owner (write them here when known). This replaces the kids' rule of "the logo only" on the last card. RedNote still never shows a link, a domain or a QR.
