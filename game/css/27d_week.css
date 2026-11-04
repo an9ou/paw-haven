@@ -63,7 +63,7 @@ html[data-layout="phone"] .msw-head{gap:8px}
 html[data-layout="phone"] .msw-art{width:140px}
 html[data-layout="phone"] .msw-headtxt h3{font-size:21px}
 html[data-layout="phone"] .msw-count{font-size:20px}
-html[data-layout="phone"] .msw-intro,html[data-layout="phone"] .msw-card p{font-size:14px}
+html[data-layout="phone"] .msw-intro,html[data-layout="phone"] .msw-card p,html[data-layout="phone"] .msw-num{font-size:15px} /* v2.20 fit: phone text is 15 px or more (FIT.md font rule) */
 html[data-layout="phone"] .msw-who{font-size:17px}
 html[data-layout="phone"] .msw-what{font-size:15px}
 html[data-layout="phone"] .msw-note{transform:none}
