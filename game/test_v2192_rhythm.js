@@ -193,11 +193,11 @@ require('./test_lib').run('v2192_rhythm', async (t) => {
     else ok(sd.morning === true && sd.evening === false && sd.friday === false && sd.forced === true, 'stall mission days: ' + JSON.stringify(sd));
   }
 
-  sec('7f. the news order with FR_LIVE on: newest date first, a newer version first on the same date');
+  sec('7f. the news order with FR_LIVE on (2.19.2 shipped 4 Nov, Friends 7 Nov, so Friends is the newest): newest date first, a newer version first on the same date');
   {
     const nl = await ev(() => { const N = window.__paw.nw; const a = N.v219(); N.add({ id: '9.9.10' }); N.add({ id: '9.9.9' }); const b = N.list(); N.drop(); N.drop(); return { a: a.slice(0, 3).join(), b: b.slice(0, 4).join(), c: N.list().slice(0, 2).join(), latest: N.latest() }; });
-    ok(nl.a === '2.19.2,2.19,2.18.4', 'with Friends live: ' + nl.a);
-    ok(nl.b === '9.9.10,9.9.9,2.19.2,2.19' && nl.c === '2.19.2,2.19' && nl.latest === '2.19.2', 'same date: the newer version first; drop takes the newest: ' + JSON.stringify(nl));
+    ok(nl.a === '2.19,2.19.2,2.18.4', 'with Friends live: ' + nl.a);
+    ok(nl.b === '9.9.10,9.9.9,2.19,2.19.2' && nl.c === '2.19,2.19.2' && nl.latest === '2.19', 'same date: the newer version first; drop takes the newest: ' + JSON.stringify(nl));
   }
 
   sec('7g. the nap line counts a real minute; no "new day" toast on the first run after the update');
