@@ -155,7 +155,7 @@ function vetV2Bind(p, d) {
 function playboardDogs(dk = localISO()) {
   const r = seeded(hashId('playboard|' + dk)), G = PGN(), sexes = ['male', 'female', 'male', 'female'], used = new Set();
   return sexes.map((sex, i) => {
-    const key = BREED_KEYS[Math.floor(r() * BREED_KEYS.length)], months = 14 + Math.floor(r() * 47);
+    const keys = liveBreedKeys(), key = keys[Math.floor(r() * keys.length)], months = 14 + Math.floor(r() * 47); // v2.21: the 35 while the five are off
     const pool = sex === 'male' ? NPC_BOYS : NPC_GIRLS; let name = pool[Math.floor(r() * pool.length)]; while (used.has(name)) name = pool[(pool.indexOf(name) + 1) % pool.length]; used.add(name);
     const owner = TOWN_FAMILIES[Math.floor(r() * TOWN_FAMILIES.length)]; let line = NPC_LINES[Math.floor(r() * NPC_LINES.length)]; while (used.has(line)) line = NPC_LINES[(NPC_LINES.indexOf(line) + 1) % NPC_LINES.length]; used.add(line);
     const lineIdx = NPC_LINES.indexOf(line); // the shown line is npcLineText(n) (the stored n.owner / n.line stay English: litters keep the owner)

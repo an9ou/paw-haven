@@ -37,12 +37,13 @@ run('v211_cards', async (t) => {
   await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
   const L = await ev(() => { const l = window.__paw.dc.lists; return { a: l.a.length, b: l.b.length, n: l.n.length, outfit: l.outfits.length, breeds: l.breeds.length, words: l.a.concat(l.b, l.n), outfits: l.outfits }; });
   ok(L.a === lim.a && L.b === lim.b && L.n === lim.n && L.outfit === lim.outfit, `DC_WORDS_A ${L.a}, DC_WORDS_B ${L.b}, DC_DOG_NAMES ${L.n}, DC_OUTFITS ${L.outfit} match the Worker's DC_LIM`);
-  ok(L.breeds === lim.breed && lim.breed === 35, `PawGenes BREEDS (${L.breeds}) is the Worker's 35 breeds (v2.12)`);
+  ok(L.breeds === lim.breed && lim.breed === 40, `PawGenes BREEDS (${L.breeds}) is the Worker's 40 breeds (v2.21)`);
   ok(L.n - 80 === lim.breed, 'one breed name word per breed the Worker allows');
   ok(L.words.slice(0, 40 + 40 + 80 + 21).every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word up to v2.11 is one plain capitalised word');
-  ok(L.words.slice(181).every((w) => /^[A-Z][a-z]+( [A-Z][a-z]+)?$/.test(w)) && L.words.slice(181).filter((w) => / /.test(w)).join() === 'Big Poodle,Shih Tzu', 'the v2.12 breed words are plain capitalised words (two of them, Big Poodle and Shih Tzu, have two)');
-  ok(L.n === 115 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd,'
-    + 'Dobie,Corso,Pittie,Pinscher,Lab,Malamute,Chow,Big Poodle,Schnauzer,Westie,Yorkie,Bichon,Maltese,Shih Tzu', '80 pet names, then the 35 breed name words (the v2.12 fourteen appended)');
+  ok(L.words.slice(181).every((w) => /^[A-Z][a-z]+( [A-Z][a-z]+)?$/.test(w)) && L.words.slice(181).filter((w) => / /.test(w)).join() === 'Big Poodle,Shih Tzu,Jack Russell', 'the v2.12 and v2.21 breed words are plain capitalised words (three of them, Big Poodle, Shih Tzu and Jack Russell, have two)');
+  ok(L.n === 120 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd,'
+    + 'Dobie,Corso,Pittie,Pinscher,Lab,Malamute,Chow,Big Poodle,Schnauzer,Westie,Yorkie,Bichon,Maltese,Shih Tzu,Dalmatian,Berner,Aussie,Cavalier,Jack Russell', '80 pet names, then the 40 breed name words (the v2.12 fourteen, then the v2.21 five appended)');
+  ok(await ev(() => { const l = window.__paw.dc.lists; return l.live.length === 35 && l.nameN === 115; }), 'v2.21 off (nbOn): a card carries only the 35 older breeds and 115 dog names');
   ok(L.outfit === 50 && L.outfits.slice(44).join() === 'Shibuya Bandana,Asakusa Bandana,Tokyo Tower Bandana,Pumpkin Patch Suit,Trick-or-Treat Ghost,Little Bat Costume', 'DC_OUTFITS ends with the Tokyo bandanas and the three v2.11.1 costumes (appended)');
   ok(L.outfits.length === new Set(L.outfits).size, 'no outfit is listed twice');
   ok(await ev(() => window.__paw.dc.lists.outfits.slice(0, 44).every((n) => typeof n === 'string' && /Bandana|Hat|Tie|Crown|Sunglasses|Raincoat|Beanie|Sweater|Cape|Collar|Tutu|Pyjamas|Suit|Coat|Hoodie|Scarf|Beret|Sheet|Rosette|Wings|Antlers|Snood|Hood|Helmet|Cap|Goggles|Necklace|Poncho/.test(n))), 'DC_OUTFITS are the game\'s wearables');

@@ -35,7 +35,12 @@
     "yorkie": "Yorkshire terrier",
     "bichon": "Bichon à poil frisé",
     "maltese": "Bichon maltais",
-    "shihtzu": "Shih tzu"
+    "shihtzu": "Shih tzu",
+    "dalmatian": "Dalmatien",
+    "bernese": "Bouvier bernois",
+    "aussie": "Berger australien",
+    "cavalier": "Cavalier king charles",
+    "jrt": "Jack russell terrier"
   },
   "terms": {
     "Doodle Doggo": "Doodle Doggo",

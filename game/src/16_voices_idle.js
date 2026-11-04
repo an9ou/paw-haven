@@ -1,9 +1,9 @@
 /* ======================= v1.6b: dog voices + natural idle behaviour ======================= */
 /* ---- voices ---- */
-const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium', poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small', akita: 'large', spitz: 'medium', pom: 'small', afghan: 'large', dane: 'large', mastiff: 'large', gsd: 'large', dobie: 'large', corso: 'large', pitbull: 'medium', minpin: 'small', lab: 'large', malamute: 'large', chow: 'medium', stdpoodle: 'large', schnauzer: 'small', westie: 'small', yorkie: 'small', bichon: 'small', maltese: 'small', shihtzu: 'small' };
+const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium', poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small', akita: 'large', spitz: 'medium', pom: 'small', afghan: 'large', dane: 'large', mastiff: 'large', gsd: 'large', dobie: 'large', corso: 'large', pitbull: 'medium', minpin: 'small', lab: 'large', malamute: 'large', chow: 'medium', stdpoodle: 'large', schnauzer: 'small', westie: 'small', yorkie: 'small', bichon: 'small', maltese: 'small', shihtzu: 'small', dalmatian: 'large', bernese: 'large', aussie: 'medium', cavalier: 'small', jrt: 'small' };
 /* v2.12: the new breeds: chance to answer another dog and the kind of bark they answer with */
-const ECHO_P = { dobie: 0.35, corso: 0.1, pitbull: 0.35, minpin: 0.55, lab: 0.3, malamute: 0.4, chow: 0.1, stdpoodle: 0.3, schnauzer: 0.55, westie: 0.45, yorkie: 0.55, bichon: 0.35, maltese: 0.3, shihtzu: 0.2 };
-const ECHO_KIND = { dobie: 'woof', corso: 'woof', pitbull: 'play', minpin: 'alert', lab: 'woof', malamute: 'talk', chow: 'woof', stdpoodle: 'woof', schnauzer: 'alert', westie: 'alert', yorkie: 'yip', bichon: 'yip', maltese: 'yip', shihtzu: 'yip' };
+const ECHO_P = { dobie: 0.35, corso: 0.1, pitbull: 0.35, minpin: 0.55, lab: 0.3, malamute: 0.4, chow: 0.1, stdpoodle: 0.3, schnauzer: 0.55, westie: 0.45, yorkie: 0.55, bichon: 0.35, maltese: 0.3, shihtzu: 0.2, dalmatian: 0.35, bernese: 0.15, aussie: 0.5, cavalier: 0.25, jrt: 0.55 };
+const ECHO_KIND = { dobie: 'woof', corso: 'woof', pitbull: 'play', minpin: 'alert', lab: 'woof', malamute: 'talk', chow: 'woof', stdpoodle: 'woof', schnauzer: 'alert', westie: 'alert', yorkie: 'yip', bichon: 'yip', maltese: 'yip', shihtzu: 'yip', dalmatian: 'woof', bernese: 'woof', aussie: 'alert', cavalier: 'yip', jrt: 'alert' };
 /* v1.7: how each breed answers another dog's bark (greyhounds rarely bark, but roo along with a howl) */
 function echoBark(o, kind) {
   const howly = kind === 'howl' || kind === 'talk';
@@ -43,8 +43,8 @@ function barkDog(d, kind, opts = {}) {
   return true;
 }
 function alertBark() { const d = D(); if (!d || S.sleeping) return false; const ok = barkDog(d, 'alert', { ambient: true }); if (ok && cur.mode === 'yard' && !busy) { idleStop(); setTemp('idle', 1400); const fx = $('#dogFx'); if (fx) { fx.classList.add('tk-look'); setTimeout(() => fx.classList.remove('tk-look'), 1400); } } return ok; }
-function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu']); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
-const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert', samoyed: 'talk', collie: 'alert', pom: 'alert', gsd: 'alert', minpin: 'alert', malamute: 'talk', schnauzer: 'alert', westie: 'alert', yorkie: 'alert' };
+function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'].concat(nbOn() ? V221_KEYS : [])); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
+const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert', samoyed: 'talk', collie: 'alert', pom: 'alert', gsd: 'alert', minpin: 'alert', malamute: 'talk', schnauzer: 'alert', westie: 'alert', yorkie: 'alert', aussie: 'alert', jrt: 'alert' };
 const speakKind = (d) => SPEAK_KIND[d.key] || 'woof';
 const GREET_KIND = { greyhound: 'talk', beagle: 'howl', pug: 'huff', samoyed: 'talk', frenchie: 'huff', malamute: 'talk', shihtzu: 'huff' };
 function greetBark(d) {
@@ -123,6 +123,12 @@ function idleWeights() {
   if (pk === 'bichon') { w.zoomies += 1.5; w.social += 2; }
   if (pk === 'maltese') { w.sit += 2; w.look += 1; }
   if (pk === 'shihtzu') { w.down += 3; w.nap += 2; w.zoomies *= 0.3; }
+  // v2.21 Five New Friends
+  if (pk === 'dalmatian') { w.zoomies += 1.5; w.look += 1; }
+  if (pk === 'bernese') { w.down += 3; w.social += 1.5; w.zoomies *= 0.4; if (weatherNow() === 'snow') w.zoomies += 2; }
+  if (pk === 'aussie') { w.watch += 3; w.look += 2; w.zoomies += 1; }
+  if (pk === 'cavalier') { w.sit += 2; w.social += 2; w.nap += 1; }
+  if (pk === 'jrt') { w.sniff += 2; w.zoomies += 2.5; w.nap *= 0.6; }
   if (typeof pupIdleWeights === 'function') pupIdleWeights(w, d, stage); // v2: puppies and nursing mums (16b)
   if (typeof hoIdleWeights === 'function') hoIdleWeights(w, d, stage); // v2.7 HOME: furniture use in the house (28_home.js)
   if (rmFree()) { const p = rmPers(d); w.roam = 1.5 + 4 * p.energy; if (p.trait === 'aloof') w.roam += 1; } // v2.10 ROAM: the leader walks to a spot of its own (37_roam.js)

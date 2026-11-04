@@ -9,6 +9,7 @@ const ok = (c, m) => { if (c) pass++; else { fail++; console.log('FAIL', m); } }
 const NEW = ['dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
 const OLD = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
 const ALL = OLD.concat(NEW);
+const REAL = ALL.concat(['dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt']); // v2.21: the five appended (their own checks: test_v221_breeds.js)
 
 // the text of the literal that follows `marker` (string and comment aware bracket match), evaluated
 function closeOf(s, i) {
@@ -40,10 +41,10 @@ const mustHaveNew = (label, t) => full(label, t, NEW);
 
 // the order of the keys
 const artKeys = rd('dogs/pawart_dogs.js').match(/const KEYS=\[([^\]]*)\]/)[1].replace(/['\s]/g, '').split(',');
-ok(artKeys.join() === ALL.join() || artKeys.join() === ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].concat(NEW).join(), 'dogs/pawart_dogs.js KEYS ends with the 14 new keys in V212.md order');
+ok(artKeys.slice(0, 35).join() === ALL.join() || artKeys.join() === ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].concat(NEW).join(), 'dogs/pawart_dogs.js KEYS ends with the 14 new keys in V212.md order');
 const bk = table('game/src/00_core.js', 'const BREED_KEYS = ');
-ok(bk.join() === artKeys.join(), 'BREED_KEYS equals the PawArt KEYS (35, same order)');
-ok(bk.length === 35, 'BREED_KEYS has 35 keys');
+ok(bk.slice(0, 35).join() === ALL.join() && (artKeys.length === 35 || bk.join() === artKeys.join()), 'BREED_KEYS starts with the 35 PawArt KEYS in order (v2.21: the art KEYS follow BREED_KEYS once the ART lanes land)');
+ok(bk.length === 40 && bk.slice(35).join() === ['dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'].join(), 'BREED_KEYS has 40 keys, the v2.21 five appended (V221.md 2)');
 
 // 00_core.js
 const core = 'game/src/00_core.js';
@@ -80,17 +81,17 @@ const spec = rd('V212.md'); NEW.forEach((k) => {
   const m = spec.match(new RegExp('^\\| ' + k + ' \\| (Dobermans|Cane|Pit|Min|Labs|Malamutes|That|Poodle|Westies|Yorkie|Shih)[^|]*\\|$', 'm'));
   ok(m && tips[k] === m[0].slice(m[0].indexOf('|', 2) + 2, m[0].lastIndexOf('|') - 1), 'BD_TIPS.' + k + ' is the V212.md text');
 });
-const nm = table(yard, 'const NOSE_MUL = '); ok(Object.keys(nm).every((k) => ALL.includes(k)), 'NOSE_MUL keys are real breeds');
-const hot = table(yard, 'const BD_HOT = '); ok(Object.keys(hot).every((k) => tips[k] || ALL.includes(k)), 'BD_HOT keys are real breeds');
+const nm = table(yard, 'const NOSE_MUL = '); ok(Object.keys(nm).every((k) => REAL.includes(k)), 'NOSE_MUL keys are real breeds');
+const hot = table(yard, 'const BD_HOT = '); ok(Object.keys(hot).every((k) => tips[k] || REAL.includes(k)), 'BD_HOT keys are real breeds');
 
 // the other game files
 const jr = rd('game/src/07_treasure_journal.js');
-ok(/return b\.slice\(0, 35\)/.test(jr), 'coatBreeds() keeps 35 breeds');
+ok(/return b\.slice\(0, 40\)\.filter\(brLive\)/.test(jr), 'coatBreeds() keeps 40 breeds, the v2.21 five only while they are on (brLive)');
 full('DISH_FAV', table('game/src/11_garden_kitchen.js', 'const DISH_FAV = ')); full('BUDDY_FB', table('game/src/11_garden_kitchen.js', 'const BUDDY_FB = '));
 full('PERS', table('game/src/15_trick_training.js', 'const PERS = '));
 mustHaveNew('NOSE_DY', table('game/src/15b_trick_games.js', 'const NOSE_DY = '));
-const nx = table('game/src/15b_trick_games.js', 'const NOSE_DX = '); ok(Object.keys(nx).every((k) => ALL.includes(k)), 'NOSE_DX keys are real breeds');
-ok(table('game/src/15b_trick_games.js', 'const FOOD_DOGS = ').every((k) => ALL.includes(k)), 'FOOD_DOGS are real breeds');
+const nx = table('game/src/15b_trick_games.js', 'const NOSE_DX = '); ok(Object.keys(nx).every((k) => REAL.includes(k)), 'NOSE_DX keys are real breeds');
+ok(table('game/src/15b_trick_games.js', 'const FOOD_DOGS = ').every((k) => REAL.includes(k)), 'FOOD_DOGS are real breeds');
 const combo = table('game/src/15b_trick_games.js', 'const SIG_COMBO = '); full('SIG_COMBO', combo);
 const tricks = ['Sit', 'Paw', 'Lie Down', 'Roll Over', 'Spin', 'Play Dead', 'Dance', 'Bow'];
 NEW.forEach((k) => ok(combo[k].length === 3 && combo[k].every((t) => tricks.includes(t)), 'SIG_COMBO.' + k + ' is three known tricks'));
@@ -99,8 +100,8 @@ const sizes = table(v, 'const DOG_SIZE = '); full('DOG_SIZE', sizes);
 NEW.forEach((k) => ok(['small', 'medium', 'large'].includes(sizes[k]), 'DOG_SIZE.' + k + ' is a class'));
 const ep = table(v, 'const ECHO_P = '), ek = table(v, 'const ECHO_KIND = '); mustHaveNew('ECHO_P (bark replies)', ep); mustHaveNew('ECHO_KIND (bark replies)', ek);
 NEW.forEach((k) => { ok(vs.includes("'" + k + "'") && vs.includes("pk === '" + k + "'"), 'idle weights and npcBark know ' + k); });
-const sk = table(v, 'const SPEAK_KIND = '); ok(Object.keys(sk).every((k) => ALL.includes(k)), 'SPEAK_KIND keys are real breeds');
-const gk = table(v, 'const GREET_KIND = '); ok(Object.keys(gk).every((k) => ALL.includes(k)), 'GREET_KIND keys are real breeds');
+const sk = table(v, 'const SPEAK_KIND = '); ok(Object.keys(sk).every((k) => REAL.includes(k)), 'SPEAK_KIND keys are real breeds');
+const gk = table(v, 'const GREET_KIND = '); ok(Object.keys(gk).every((k) => REAL.includes(k)), 'GREET_KIND keys are real breeds');
 const ears = table('game/src/31_winter.js', 'const WN_EARS = '); full('WN_EARS', ears);
 NEW.forEach((k) => ok(ears[k] === 'prick' || ears[k] === 'flop', 'WN_EARS.' + k + ' is prick or flop'));
 full('Mt. Fuji lines (jpPlaceLines)', table('game/src/33_japan.js', 'const jpPlaceLines = '));
@@ -108,7 +109,7 @@ const bl = table('game/src/38_ball.js', 'const BL_HEAD = '); full('BL_HEAD', bl)
 NEW.forEach((k) => ok(Array.isArray(bl[k]) && bl[k].length === 4 && bl[k].every(Number.isFinite), 'BL_HEAD.' + k + ' is [x, y, rx, ry]'));
 const tk = table('game/src/39_tokyo.js', 'const TK_LINES = '); full('TK_LINES', tk);
 NEW.forEach((k) => ok(['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'].every((p) => tk[k] && tk[k][p]), 'TK_LINES.' + k + ' has the six Tokyo places'));
-ok(rd('game/src/30_shelter.js').includes('BREED_KEYS[Math.floor(r() * BREED_KEYS.length)]'), 'the shelter roster picks from BREED_KEYS (all 35)');
+ok(rd('game/src/30_shelter.js').includes('const keys = liveBreedKeys(), key = keys[Math.floor(r() * keys.length)]'), 'the shelter roster picks from liveBreedKeys() (the 35, or all 40 once the v2.21 five are on)');
 
 // the modules
 const bm = table('mods/toys.js', 'var BREED_M = '); full('toys BREED_M', bm);

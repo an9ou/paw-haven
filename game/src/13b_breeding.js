@@ -50,7 +50,8 @@ on('game:ready', () => { brBackfill(); brStoneLetter(); setTimeout(breedTick, 12
 
 /* ---- v2.1 ancestry: { breedKey: fraction } (PawGenes.ancestry when present, else the same rules here) ---- */
 const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd',
-  'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu']; // v2.12: the same order as PawGenes.BREEDS
+  'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu',
+  'dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt']; // v2.12: the same order as PawGenes.BREEDS (v2.21: five appended)
 const brKeyOf = (k) => (BR_KEYS.includes(k) ? k : 'mutt');
 function brAncRound(a) { const o = {}; let t = 0; Object.keys(a).forEach((k) => { t += a[k]; }); Object.keys(a).forEach((k) => { const v = Math.round((a[k] / (t || 1)) * 64) / 64; if (v > 0) o[k] = v; }); return o; }
 function brAncLocal(rec, depth, memo) {

@@ -18,7 +18,8 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
   'Lola', 'Nala', 'Stella', 'Zoe', 'Willow', 'Honey', 'Peanut', 'Waffles', 'Pancake', 'Muffin', 'Cookie', 'Tofu', 'Kuma', 'Hana', 'Sora', 'Yuki', 'Momo', 'Kiki', 'Taro', 'Pip',
   'Bean', 'Button', 'Sunny', 'Lucky', 'Bingo', 'Rufus', 'Benji', 'Archie', 'Frankie', 'Louie', 'Marley', 'Maggie', 'Poppy', 'Sasha', 'Tilly', 'Sammy', 'Bruno', 'Otis', 'Juno', 'Chip'];
 const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd',
-  'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu']; // v2.12: the fourteen (V212.md 2)
+  'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu', // v2.12: the fourteen (V212.md 2)
+  'Dalmatian', 'Berner', 'Aussie', 'Cavalier', 'Jack Russell']; // v2.21: the five (V221.md 2), used only while nbOn() (dcNameN)
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
 // v2.14 (V214.md 4.3): Dog Cards stay language-neutral. The Worker, the saves and the lists keep only indices; each viewer sees the word at an index in
 // their own language. DC_PET_NAMES are names and never change. The lists stay append only, in every language
@@ -65,7 +66,10 @@ function dcMode() {
 }
 const dcAcct = () => dcMode() === 'on' && !CL.anon && !!CL.email; // only email accounts share a card
 const dcOptIn = () => !!S && S.dc.on && !!CL.uid && S.dc.uid === CL.uid; // switched on by this account (a save that stays on a device after a log out never shares for the next account)
-const dcBreeds = () => { const G = PGN(); return (G && G.BREEDS) || []; };
+const dcBreedsAll = () => { const G = PGN(); return (G && G.BREEDS) || []; };
+const dcBreeds = () => dcBreedsAll().filter(brLive); // v2.21: the breeds a card may carry now (the five new ones only while nbOn(); they sit at the end, so no index moves)
+const dcNameN = () => DC_PET_NAMES.length + Math.min(DC_BREED_WORDS.length, dcBreeds().length); // the dog names a card may use now (115 while the five are off)
+const dcNameOk = (i) => Number.isInteger(i) && i >= 0 && i < dcNameN() && DC_DOG_NAMES[i] != null;
 const dcDay = () => jstISO(); // one day for the paws on both sides: the Worker counts them by the Japan day too (dcDay in worker.js)
 const dcCardName = (c) => tt('cards.name_pattern', '{a} {b}', { a: dcWordA(c.name[0]), b: dcWordB(c.name[1]) }); // the card name order is the translator's (fr, es, pt may write {b} {a})
 const dcGiven = (c) => S && S.dc.given[c.id] === dcDay();
@@ -78,19 +82,19 @@ function dcDog(c, i) {
   const genes = x.c && typeof x.c === 'object' ? Object.assign({}, base || {}, x.c) : base;
   const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null };
   if (wear) outfit[wear.slot] = wear.n;
-  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: DC_DOG_NAMES[x.n] ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
+  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: dcNameOk(x.n) ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
   if (x.a === 'pup') d.born = localISO(new Date(Date.now() - 3 * 864e5)); // a puppy: about 3 dog months old
   return d;
 }
 // a card this copy can show: name words and at least one dog it knows
 function dcShowable(c) {
   if (!c || typeof c.id !== 'string' || !Array.isArray(c.name) || !Array.isArray(c.dogs) || DC_WORDS_A[c.name[0]] == null || DC_WORDS_B[c.name[1]] == null) return false;
-  return c.dogs.some((x, i) => x && DC_DOG_NAMES[x.n] != null && !!dcDog(c, i));
+  return c.dogs.some((x, i) => x && dcNameOk(x.n) && !!dcDog(c, i));
 }
 async function dcApi(method, path, body) { const r = await clApi(method, path, body); return r; }
 
 /* ---------------- my card (the payload) ---------------- */
-function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return i; }
+function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return dcNameOk(i) ? i : -1; }
 function dcDefaultNm(d) { const own = dcOwnNameIdx(d); if (own >= 0) return own; const b = dcBreeds().indexOf(d.key); return b >= 0 && b < DC_BREED_WORDS.length ? DC_PET_NAMES.length + b : 0; }
 function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0) return i; } return -1; }
 function dcCoat(d) {
@@ -99,7 +103,7 @@ function dcCoat(d) {
   return Object.keys(out).length ? out : null;
 }
 function dcDogOf(d, nm) {
-  const own = dcOwnNameIdx(d), n = own >= 0 ? own : (typeof nm === 'number' && DC_DOG_NAMES[nm] != null ? nm : dcDefaultNm(d)); // its own name when the list has it
+  const own = dcOwnNameIdx(d), n = own >= 0 ? own : (dcNameOk(nm) ? nm : dcDefaultNm(d)); // its own name when the list has it
   return { b: dcBreeds().indexOf(d.key), c: dcCoat(d), o: dcOutfitIdx(d), a: ageMonths(d) < 6 ? 'pup' : 'adult', s: d.sex === 'female' ? 'f' : 'm', sp: d.sparkle ? 1 : 0, n };
 }
 const dcCanShow = (d) => !!d && dcBreeds().indexOf(d.key) >= 0;
@@ -356,7 +360,7 @@ function dcSettings(force) {
   if (!ed.dogs.length) ed.dogs = S.dogs.filter(dcCanShow).slice(0, DC_MAX_DOGS).map((d) => ({ id: d.id, nm: dcDefaultNm(d) }));
   const rows = S.dogs.filter(dcCanShow).map((d) => {
     const own = dcOwnNameIdx(d), sel = ed.dogs.find((x) => x.id === d.id), nm = sel && typeof sel.nm === 'number' ? sel.nm : dcDefaultNm(d);
-    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">${esc(tt('cards.card_name_is', 'Card name: {name}', { name: dcNameShown(own) }))}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES, nm, tt('cards.card_name', 'Card name'), (i, w) => dcNameShown(i))}</div>`;
+    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">${esc(tt('cards.card_name_is', 'Card name: {name}', { name: dcNameShown(own) }))}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES.slice(0, dcNameN()), nm, tt('cards.card_name', 'Card name'), (i, w) => dcNameShown(i))}</div>`;
   }).join('');
   const p = openModal(tt('cards.my_title', 'My Dog Card'), `<div class="dc-set"><label class="tog dc-share"><input type="checkbox" id="dcOn" ${ed.on ? 'checked' : ''}> ${esc(tt('cards.share', 'Share my Dog Card'))}</label>
     <p class="small">${esc(tt('cards.privacy', "Other players see your card name, your dogs' drawings, breeds, coats, outfits, card names and paws. Never your email. Turning it off deletes the card."))}</p>
@@ -437,7 +441,7 @@ window.addEventListener('focus', () => { if (DC.uid && Date.now() - DC.syncAt > 
 function dcExpose() {
   if (!window.__paw) return;
   window.__paw.dc = {
-    mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreeds() },
+    mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreedsAll(), get live() { return dcBreeds(); }, get nameN() { return dcNameN(); } }, // v2.21: breeds = every PawGenes breed (the Worker's DC_LIM), live = the ones a card may carry now
     visitors: () => DC.vis.map((v) => ({ card: v.card.id, i: v.i, key: v.dog.key, size: sizeOf(v.dog), name: v.dog.name, x: v.x, y: v.y, k: v.k, hidden: v.hidden, moving: !!v.tw, tap: rmTapBox(v.x, v.y, v.k) })),
     cards: () => (DC.cards || []).map((c) => c.id), visit: (ids) => { DC.pick = ids || null; DC.place = ''; DC.cards = null; return dcVisit(); },
     card: (id) => dcCard((DC.cards || []).concat(DC_FAKE).find((c) => c.id === id)), give: (id) => { const c = (DC.cards || []).concat(DC_FAKE).find((x) => x.id === id); return c ? dcGive(c, document.querySelector('#modal .panel')) : false; },
@@ -445,3 +449,10 @@ function dcExpose() {
   };
 }
 on('game:ready', () => setTimeout(dcExpose, 0)); setTimeout(dcExpose, 0);
+/* v2.21 "Five New Friends" (V221.md 7): the gate's test hook (the switch is nbOn() in 00_core.js; ms2.test(v) flips it at run time) */
+function nbExpose() {
+  if (!window.__paw) return;
+  window.__paw.nb = { keys: V221_KEYS.slice(), on: () => nbOn(), live: () => liveBreedKeys().slice(), dogs: () => dogsList().map((d) => d.key), coatBreeds: () => coatBreeds(),
+    cardBreeds: () => dcBreeds().slice(), ownArt: () => V221_KEYS.filter((k) => artKey(k) === k) }; // ownArt: the new keys PawArt draws itself (the rest fall back to the mutt)
+}
+on('game:ready', () => setTimeout(nbExpose, 0)); setTimeout(nbExpose, 0);

@@ -51,11 +51,12 @@ const EXPECT = {
   shihtzu:   { name: 'Gold and white',      eyes: 'brown', base: '#E0A458', light: '#FFFBF2', dark: '#9A6430', white: 0.6 }
 };
 const V212 = ['dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
-ok(Object.keys(EXPECT).length === 35 && G.BREEDS.length === 35, '35 breeds');
+ok(Object.keys(EXPECT).length === 35 && G.BREEDS.length === 40, '40 breeds (35 with EXPECT rows; the v2.21 five have their own checks below)');
 ok(G.BREEDS.slice(10, 14).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended after the first ten');
 ok(G.BREEDS.slice(14, 17).join() === 'akita,spitz,pom', 'v2.11 keys appended after the v2.5 ones');
 ok(G.BREEDS.slice(17, 21).join() === 'afghan,dane,mastiff,gsd', 'the owner\'s four more appended after pom');
-ok(G.BREEDS.slice(21).join() === V212.join(), 'the fourteen v2.12 keys appended at the end of BREEDS, in order');
+ok(G.BREEDS.slice(21, 35).join() === V212.join(), 'the fourteen v2.12 keys appended after the v2.11 ones, in order');
+ok(G.BREEDS.slice(35).join() === 'dalmatian,bernese,aussie,cavalier,jrt', 'the five v2.21 keys appended at the end of BREEDS, in order (V221.md 2)');
 console.log('Starter phenotypes:');
 for (const k of Object.keys(EXPECT)) {
   const p = G.phenotype(G.STARTER_GENES[k], k), e = EXPECT[k];
@@ -263,6 +264,7 @@ for (const b of G.BREEDS) {
   else if (b === 'collie') near(merle / N, 0.20, 0.015, 'collie merle rate');
   else if (b === 'dane') near(merle / N, 0.20, 0.015, 'Great Dane merle rate');
   else if (b === 'chihuahua') near(merle / N, 0.10, 0.012, 'chihuahua merle rate');
+  else if (b === 'aussie') near(merle / N, 0.35, 0.02, 'Australian Shepherd merle rate (v2.21; M/m only)');
   else ok(merle === 0, `${b}: no merle`);
 }
 ok(counts.golden.ee === 1, 'goldens are always e/e');

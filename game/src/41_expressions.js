@@ -64,6 +64,7 @@ const BREED_FACES = {
   minpin: ['zoomies', 'proud', 'surprised'], lab: ['yum', 'hearts', 'zoomies'], malamute: ['surprised', 'zoomies', 'blep'], chow: ['pout', 'sleepy', 'proud'],
   stdpoodle: ['proud', 'wink', 'curious'], schnauzer: ['curious', 'surprised', 'proud'], westie: ['curious', 'guilty', 'sneeze'], yorkie: ['pout', 'wink', 'proud'],
   bichon: ['zoomies', 'hearts', 'wow'], maltese: ['dreamy', 'hearts', 'wink'], shihtzu: ['sleepy', 'dreamy', 'blep'],
+  dalmatian: ['zoomies', 'proud', 'wow'], bernese: ['dreamy', 'hearts', 'sleepy'], aussie: ['curious', 'wink', 'zoomies'], cavalier: ['hearts', 'dreamy', 'pout'], jrt: ['zoomies', 'surprised', 'blep'], // v2.21
 };
 const EX_FAV = 2.5, EX_FAV_BASE = 1; // an event may set its own base (fav): the idle roam faces lean on the favourites more, a meal less (it is mostly yum)
 const EX_ROAM_RATE = 1 / 30; // roam faces a second for an ordinary dog (x 0.4 + 0.8 energy + 0.6 attention): a busy scene of four shows one every few seconds

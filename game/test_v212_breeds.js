@@ -47,7 +47,7 @@ require('./test_lib').run('v212_breeds', async (t) => {
   sec('adopt each new breed through the UI, then feed, pet and walk');
   for (const [k, br, coat] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
-    if (k === 'dobie') ok(await p.locator('.heads button').count() === 35 && await ev(() => window.PawGenes.BREEDS.length) === 35, '35 dogs in the adoption carousel, 35 PawGenes breeds');
+    if (k === 'dobie') ok(await p.locator('.heads button').count() === 35 && await ev(() => window.PawGenes.BREEDS.length) === 40, '35 dogs in the adoption carousel (the v2.21 five are off), 40 PawGenes breeds');
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
@@ -91,8 +91,8 @@ require('./test_lib').run('v212_breeds', async (t) => {
   sec('the litter rules list the new keys once (litters like V212.md 3)');
   const rules = await ev(() => { const L = window.PawBreeding.RULES.litters, all = [].concat(L.small.breeds, L.medium.breeds, L.large.breeds, L.giant.breeds); return { L, dupes: all.length - new Set(all).size, n: all.length, giant: window.PawBreeding.RULES.giant.breeds.join() }; });
   const want = { small: ['minpin', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'], medium: ['pitbull', 'schnauzer'], large: ['dobie', 'corso', 'lab', 'malamute', 'chow', 'stdpoodle'] };
-  ok(Object.keys(want).every((g) => want[g].every((k) => rules.L[g].breeds.includes(k))) && rules.dupes === 0 && rules.n === 35, 'each new key in its litter group, every breed once (' + rules.n + ')');
-  ok(rules.giant === 'dane,mastiff' && rules.L.giant.breeds.join() === 'dane,mastiff', 'the giant rules stay the Great Dane and the English Mastiff only');
+  ok(Object.keys(want).every((g) => want[g].every((k) => rules.L[g].breeds.includes(k))) && rules.dupes === 0 && rules.n === 40, 'each new key in its litter group, every breed once (' + rules.n + ')');
+  ok(rules.giant === 'dane,mastiff,bernese' && rules.L.giant.breeds.join() === 'dane,mastiff,bernese', 'the giant rules are the Great Dane and the English Mastiff (v2.21: and the Bernese Mountain Dog)');
 
   sec('Journal: the coat tab lists 35 breeds, each new page its catalogue');
   await t.ctx.close(); await t.newGame({}, { coins: 1000 }); const p = t.p;

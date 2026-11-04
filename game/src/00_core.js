@@ -236,12 +236,28 @@ const SIG = {
   yorkie: { n: 'The Tiny Diva Spin', fx: 'tk-spin', pose: 'happy', always: true, snd: 'alert', say: 'I am small and I am a star. The bow stays on. Always.' },
   bichon: { n: 'The Powder Puff Spin', fx: 'tk-spin', pose: 'happy', say: 'Boing, boing, spin. I am a cloud with a very happy tail.' },
   maltese: { n: 'The Silk Swish', fx: 'tk-bow', pose: 'happy', say: 'A gentle bow and a swish of silk. Applause may be quiet.' },
-  shihtzu: { n: 'The Royal Flop', fx: 'tk-lie', pose: 'down', say: 'The top-knot stays up. The rest of me is a rug. Goodnight, court.' }
+  shihtzu: { n: 'The Royal Flop', fx: 'tk-lie', pose: 'down', say: 'The top-knot stays up. The rest of me is a rug. Goodnight, court.' },
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: { n: 'The Spot Check', fx: 'tk-spin', pose: 'happy', say: 'A full spin so you can count the spots. Still too many. Ta-da.' },
+  bernese: { n: 'The Big Gentle Lean', fx: 'tk-bow', pose: 'sit', say: 'I lean on you very slowly. That is a Bernese hug. You are welcome.' },
+  aussie: { n: 'The Round-Up', fx: 'tk-dance', pose: 'happy', say: 'Everyone is in a neat circle now. Even the leaves. Job done.' },
+  cavalier: { n: 'The Royal Ear Swish', fx: 'tk-bow', pose: 'sit', say: 'A bow, a swish of the ears and a very sweet look. That is the whole show.' },
+  jrt: { n: 'The Pogo Jump', fx: 'tk-spin', pose: 'happy', say: 'Boing. Boing. BOING. I can see over the fence now. Hello, fence.' }
 };
 const SIG_FB = { n: 'The Grand Finale', fx: 'tk-bow', pose: 'happy', say: 'Ta-da! (Applause, please.)' };
 const sigOf = (k) => SIG[k] || SIG_FB;
 /* v1.7: every breed key in the game, in PawArt order (unknown keys fall back to generic content) */
-const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
+const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu',
+  'dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'];
+/* v2.21 "Five New Friends" (V221.md): five breeds appended. They launch with v2.20 "Little Helps" on the owner's date, so they are off until the same
+   switch (nbOn() = ms2On(), 24b_missions2.js: MS2_LIVE, the Pages-only window.__ddMs2Test or the dev panel's prefs.ms2Test). While off no list a player can
+   see has them: adoption and the shelter starters (dogsList), rescues, the shelter roster and the playdate board (liveBreedKeys, the same draws as
+   v2.20), Dog Cards (dcBreeds), the Journal's breeds and mixes (liveBreeds, brLive) and the passing town dogs. Their table rows are always there.
+   Art: until the ART lanes land a breed, artKey() draws it as the neutral mutt (never ships: v221_breeds fails while MS2_LIVE is on without the art). */
+const V221_KEYS = ['dalmatian', 'bernese', 'aussie', 'cavalier', 'jrt'];
+function nbOn() { try { return typeof ms2On === 'function' && !!ms2On(); } catch (e) { return false; } } // the one switch (24b_missions2.js loads later: a call before it is off)
+const brLive = (k) => !V221_KEYS.includes(k) || nbOn(); // a breed key a player may see now
+const liveBreedKeys = () => (nbOn() ? BREED_KEYS : BREED_KEYS.filter(brLive)); // BREED_KEYS while on, the 35 older keys (the v2.20 draws) while off
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -348,7 +364,13 @@ const PLACE_LINES = {
   yorkie: { house: 'The sofa is mine. The cushion is mine. You may sit on the floor.', park: 'Big dogs everywhere. I will stroll straight through. They will move.', river: 'Water is wet. I have decided I do not love that. Carry me, please.', woods: 'Leaves in the silk. I will allow it. Briefly.', beach: 'Sand and silk are not friends. Hold me and I will look at it.', market: 'Carry me and I will supervise. Put me down and I will still supervise.' },
   bichon: { house: 'A fluffy cushion! We match! I will bounce on it in a circle.', park: 'Hello! Hello! Hello! I am so happy I could pop like a cloud!', river: 'The water is lovely. I will watch it. I will not get my puff wet.', woods: 'Bounce, bounce, leaf. Bounce, bounce, stick. This is a great game.', beach: 'Sand on my puff. I am a sugar cookie now. Hello!', market: 'Everyone says I look like a cotton ball. I say thank you.' },
   maltese: { house: 'A soft cushion and a window. I will lie on both. Gracefully.', park: 'I will float around the park. Please notice the silk.', river: 'Water near my fringe. I will admire it from your arms.', woods: 'The leaves are very big. I am a small white cloud among them.', beach: 'The sand is rough on silk. I will watch it from your lap.', market: 'A small dog in a long white coat. I will wait by you and look lovely.' },
-  shihtzu: { house: 'The sofa is soft. The sun is warm. I am not moving. Goodnight.', park: 'I walked to a bench. I sat on the bench. That was the whole walk.', river: 'Water. Ducks. Shade. I will watch from the nicest spot.', woods: 'Shady and quiet. My kind of walk. Wake me if there is a snack.', beach: 'Hot sand, short nose. Shade and water, please. Then a nap.', market: 'I will ride in your arms and wave at the shops with my top-knot.' }
+  shihtzu: { house: 'The sofa is soft. The sun is warm. I am not moving. Goodnight.', park: 'I walked to a bench. I sat on the bench. That was the whole walk.', river: 'Water. Ducks. Shade. I will watch from the nicest spot.', woods: 'Shady and quiet. My kind of walk. Wake me if there is a snack.', beach: 'Hot sand, short nose. Shade and water, please. Then a nap.', market: 'I will ride in your arms and wave at the shops with my top-knot.' },
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: { house: 'The sofa is white. I am white with spots. We match. Mostly.', park: 'A whole park to run around! I will do laps. Many laps.', river: 'Water! I will run alongside it. That is what I do best. Running alongside.', woods: 'The trees have spots of sunlight. Like me. Hello, cousins.', beach: 'Sand on spots. Spots on sand. I am a very fun puzzle now.', market: 'I will trot beside you past every stall, nice and neat. Like a coach dog.' },
+  bernese: { house: 'I found the coolest spot on the floor. I will be a rug there now.', park: 'Hello, everybody. I am big and fluffy and I would like to say hello to all of you.', river: 'Cool water. Lovely. I will just stand in it for a while.', woods: 'Mountains, almost. Trees, definitely. I feel at home.', beach: 'The sea breeze is nice and cool. The sand is for lying in.', market: 'I will walk slowly so everyone can pat me. It is a public service.' },
+  aussie: { house: 'Everything is in its place. I checked. Twice. Now what is my job?', park: 'So many dogs to keep in a group. I will help. They did not ask. I will help.', river: 'The ducks are in a line. I did that. You are welcome, ducks.', woods: 'Trails! Sticks! Things to watch! My brain is very busy and very happy.', beach: 'I will herd the waves. They keep coming back. Good waves.', market: 'I will keep an eye on the whole street. Every stall. Every pigeon.' },
+  cavalier: { house: 'A cushion, a sunny window and you. That is my perfect day.', park: 'A gentle stroll and a sniff of the flowers. Then a lap, please.', river: 'I will look at the river from right here. Next to you. That is the best view.', woods: 'Leaves stick to my ears. I am wearing the woods now.', beach: 'Sand in my ear feathers. I am a little beach now. A sweet one.', market: 'Everyone says hello to me here. I say hello back with my whole tail.' },
+  jrt: { house: 'I checked under the sofa. And behind it. And inside it. All clear.', park: 'Ball! Squirrel! Hole! Ball again! I love this place!', river: 'Splash! I went in. I came out. I went in again. Very fast.', woods: 'Something lives under that root. I must say hello. With digging.', beach: 'Dig, dig, dig. I am going to the other side of the world.', market: 'I am small and very quick. I can see every stall from down here.' }
 };
 const DUCK_LINES = ['A duck looks at you. You look at the duck. Nobody blinks.', 'The ducks are holding a meeting. You were not invited.', 'One duck is wearing a tiny hat. Probably.'];
 const FAV = {
@@ -387,9 +409,15 @@ const FAV = {
   yorkie: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'petting' },
   bichon: { food: ['Pupcake'], toy: 'Squeaky Duck', act: 'tricks' },
   maltese: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'petting' },
-  shihtzu: { food: ['Pupcake'], toy: 'Plush Bone', act: 'feeding' }
+  shihtzu: { food: ['Pupcake'], toy: 'Plush Bone', act: 'feeding' },
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'walks' },
+  bernese: { food: ['Basic Kibble'], toy: 'Plush Bone', act: 'petting' },
+  aussie: { food: ['Bone-shaped Biscuit'], toy: 'Frisbee', act: 'tricks' },
+  cavalier: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'petting' },
+  jrt: { food: ['Bone-shaped Biscuit'], toy: 'Tennis Ball', act: 'digging' }
 };
-const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9, akita: 0.65, spitz: 1.3, pom: 1.6, afghan: 0.85, dane: 0.5, mastiff: 0.45, gsd: 0.95, dobie: 0.85, corso: 0.5, pitbull: 1, minpin: 1.55, lab: 0.95, malamute: 0.85, chow: 0.7, stdpoodle: 1.1, schnauzer: 1.4, westie: 1.35, yorkie: 1.6, bichon: 1.2, maltese: 1.15, shihtzu: 1 };
+const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9, akita: 0.65, spitz: 1.3, pom: 1.6, afghan: 0.85, dane: 0.5, mastiff: 0.45, gsd: 0.95, dobie: 0.85, corso: 0.5, pitbull: 1, minpin: 1.55, lab: 0.95, malamute: 0.85, chow: 0.7, stdpoodle: 1.1, schnauzer: 1.4, westie: 1.35, yorkie: 1.6, bichon: 1.2, maltese: 1.15, shihtzu: 1, dalmatian: 1, bernese: 0.6, aussie: 1.15, cavalier: 1.3, jrt: 1.45 };
 const FALLBACK_DOGS = [
   { key: 'shiba', name: 'Mochi', breed: 'Shiba Inu', personality: 'Proud, independent, dramatic', joke: 'heh.' },
   { key: 'corgi', name: 'Biscuit', breed: 'Corgi', personality: 'Cheerful, greedy for food', joke: 'Is that a snack? Is everything a snack?' },
@@ -426,7 +454,13 @@ const FALLBACK_DOGS = [
   { key: 'yorkie', name: 'Toffee', breed: 'Yorkshire Terrier', personality: 'A tiny terrier with silky hair and a giant attitude.', joke: 'I am in charge here. Please lift me onto the sofa.' },
   { key: 'bichon', name: 'Meringue', breed: 'Bichon Frise', personality: 'A happy cotton ball who bounces everywhere.', joke: 'Is this a haircut or a cloud? Yes.' },
   { key: 'maltese', name: 'Marshmallow', breed: 'Maltese', personality: 'A gentle little lap dog in a long white coat.', joke: 'I do not walk. I float, elegantly.' },
-  { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' }
+  { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' },
+  // v2.21 Five New Friends (V221.md 4): the SP rows the ART lanes give dogs/pawart_dogs.js copy these
+  { key: 'dalmatian', name: 'Sprinkles', breed: 'Dalmatian', personality: 'A spotty athlete who loves a long run and a crowd to show off to.', joke: 'Yes, I have counted my spots. I lost count. Twice.' },
+  { key: 'bernese', name: 'Fondue', breed: 'Bernese Mountain Dog', personality: 'A big, gentle, fluffy friend. Happiest leaning on the people it loves.', joke: 'I am not lying on your feet. I am keeping them warm.' },
+  { key: 'aussie', name: 'Pavlova', breed: 'Australian Shepherd', personality: 'A clever, busy herder with a lot of ideas. Needs a job, any job.', joke: 'I have herded the cushions. They are in a circle now. You are next.' },
+  { key: 'cavalier', name: 'Scone', breed: 'Cavalier King Charles Spaniel', personality: 'A sweet little lap dog with soft feathered ears. Friends with everyone.', joke: 'My ears are not hair. They are a gentle hug for my face.' },
+  { key: 'jrt', name: 'Pickle', breed: 'Jack Russell Terrier', personality: 'A small dog with an enormous amount of bounce. Digs, jumps and never stops.', joke: 'I am not hyper. I am just ready. For everything. Right now.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: tt('core.generic_breed', 'Mystery Pup'), personality: tt('core.generic_personality', 'A little bit of everything'), joke: tt('core.generic_joke', 'Hi! I am a dog. Probably.') });
 const JOKES = {
@@ -465,7 +499,13 @@ const JOKES = {
   yorkie: ['I am in charge here. Please lift me onto the sofa.', 'Tiny dog, long hair, enormous opinions.', 'The bow stays. I will fight for the bow.', 'I weigh as much as a loaf of bread. A very bossy loaf.', 'I bark at the big dogs. They do not know I am small. I will not tell them.'],
   bichon: ['Is this a haircut or a cloud? Yes.', 'Boing boing boing. That is how I say hello.', 'I am a cotton ball with a heartbeat.', 'Brush me and I will be a cloud again. A bigger cloud.', 'I spin because I am happy. Also because I can.'],
   maltese: ['I do not walk. I float, elegantly.', 'My hair is longer than my legs. I manage.', 'The topknot keeps the world out of my eyes. It also looks nice.', 'A lap is a throne. This is my throne.', 'Brush me daily and I will tell you I love you. Quietly.'],
-  shihtzu: ['Top-knot up. Nap time down.', 'My face is flat so I can reach the pillow faster.', 'I am a small lion. A sleepy one. Roar. Zzz.', 'My hair is so long I walk on a rug of me.', 'The lap is warm. The sun is warm. I am warm. Zzz.']
+  shihtzu: ['Top-knot up. Nap time down.', 'My face is flat so I can reach the pillow faster.', 'I am a small lion. A sleepy one. Roar. Zzz.', 'My hair is so long I walk on a rug of me.', 'The lap is warm. The sun is warm. I am warm. Zzz.'],
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: ['Yes, I have counted my spots. I lost count. Twice.', 'I was born white. The spots came later. Fashionably late.', 'Run? Yes. Run more? Yes. Run back? Also yes.', 'I am a connect-the-dots puzzle. Please do not draw on me.', 'Fire trucks used to have dogs like me. I would like a ride.'],
+  bernese: ['I am not lying on your feet. I am keeping them warm.', 'I lean on people. It is how I say I love you. Also I am tired.', 'Snow is my favourite weather. Summer is my favourite nap.', 'I shed a little. A little dog every week.', 'I am a big dog with a small-dog heart. It is a very big heart, actually.'],
+  aussie: ['I have herded the cushions. They are in a circle now. You are next.', 'Give me a job. Any job. Counting leaves? I will do it.', 'My eyes are watching you. Both of them. All the time.', 'I am not bossy. I am organising.', 'You sat down. I sat down. We are a team now.'],
+  cavalier: ['My ears are not hair. They are a gentle hug for my face.', 'I have never met a lap I did not like.', 'I am a little bit royal. The cushion is my throne.', 'I will follow you to the kitchen. And back. And to the kitchen.', 'Sweet face, soft ears, big eyes. My whole plan is to be loved.'],
+  jrt: ['I am not hyper. I am just ready. For everything. Right now.', 'I can jump higher than the fence. Please do not tell the fence.', 'A hole! I made it. It is for you. You are welcome.', 'Small dog. Big plans. Bigger jumps.', 'I chased the ball. Then the other ball. Then a leaf. Busy day.']
 };
 const NPC_JOKES = ['Nice leash. Is that leash new?', 'I am Gary. I have never been happy.', 'Have you seen my ball? It is round. Ball-coloured.', 'WOOF. Sorry. Wrong dog.', 'I ate a bee once. Zero stars.', 'Your human walks funny. Mine too.', 'Sniff my bum? Rude not to.', 'I live here. On this exact spot.'];
 const SMELLS = ['Smells like a sandwich from 2014.', 'Smells like ANOTHER DOG. Scandalous.', 'Smells like adventure. No wait, a sock.', 'Smells like rain and old crisps.', 'Smells like... a squirrel\'s diary.', 'Sniff sniff. Interesting. Very interesting.'];
@@ -506,9 +546,10 @@ function artChunk(name) {
 }
 let dogsMemo = null;
 function dogsList() {
-  const d = PA().DOGS; if (!Array.isArray(d) || !d.length) return FALLBACK_DOGS;
-  if (dogsMemo && dogsMemo.src === d) return dogsMemo.list;
-  const list = d.filter((x) => x && x.key).concat(FALLBACK_DOGS.filter((f) => !d.some((x) => x && x.key === f.key))); dogsMemo = { src: d, list }; return list;
+  const d0 = PA().DOGS, d = Array.isArray(d0) && d0.length ? d0 : FALLBACK_DOGS, on = nbOn(); // v2.21: the five new breeds only while nbOn()
+  if (dogsMemo && dogsMemo.src === d && dogsMemo.on === on) return dogsMemo.list;
+  const list = d.filter((x) => x && x.key).concat(d === FALLBACK_DOGS ? [] : FALLBACK_DOGS.filter((f) => !d.some((x) => x && x.key === f.key))).filter((x) => on || !V221_KEYS.includes(x.key));
+  dogsMemo = { src: d, on, list }; return list;
 }
 function dogInfo(key) { return dogsList().find((d) => d.key === key) || FALLBACK_DOGS.find((d) => d.key === key) || GENERIC_DOG(key); }
 // Nest an art SVG string inside a parent SVG at x,y,w,h.

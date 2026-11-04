@@ -154,7 +154,7 @@ if (yueGlobal !== undefined) globalThis.__ddYueTest = yueGlobal;
 
 /* ---- 2. glossaries ---- */
 const G = require(path.join(ROOT, 'mods/genes.js'));
-eq(G.BREEDS.length, 35, 'BREEDS has 35 keys');
+eq(G.BREEDS.length, 40, 'BREEDS has 40 keys (v2.21)');
 // the franchise names in every language (V214.md section 10): English plus the common local spellings
 const FRANCHISE = /nintendo|pok[eé]mon|animal crossing|任天堂|ポケモン|ポケットモンスター|どうぶつの森|宝可梦|寶可夢|精灵宝可梦|神奇宝贝|神奇寶貝|动物森友会|動物森友會|集合啦|닌텐도|포켓몬|동물의 숲|นินเทนโด|โปเกมอน|แอนิมอล ครอสซิง/i;
 const GL = {};

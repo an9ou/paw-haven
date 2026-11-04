@@ -26,14 +26,14 @@ function srWeekKey(dk) { const d = new Date(dk + 'T12:00:00'); d.setDate(d.getDa
 function srTrait(id) { const i = hashId('trait|' + id) % SR_TRAITS.length; return tdata('sr_traits.' + i, SR_TRAITS[i]); }
 // a list of a dog's room lines, shown in the player's language (SR_LINES keeps the English)
 const srLines = (k) => SR_LINES[k].map((s, i) => tdata('sr_lines.' + k + '.' + i, s));
-// The playroom roster for a date: today's 2 rescues (rescuesToday, kind 'rescue'; its seeded picks follow BREED_KEYS, so a new breed reshuffles them) then 4 residents of the week (kind 'resident'):
+// The playroom roster for a date: today's 2 rescues (rescuesToday, kind 'rescue'; its seeded picks follow liveBreedKeys(), so a new breed reshuffles them once it is on) then 4 residents of the week (kind 'resident'):
 // a puppy (3 to 5 months), a senior (96 to 150 months) and two adults (12 to 60 months), any of the 17 breeds, coats from PawGenes.
 // Seeded, never saved. Dogs already home (dogById) or adopted from here before (S.shelter.adopted) are left out.
 function srRoster(dk) {
   dk = dk || localISO(); const wk = srWeekKey(dk), r = seeded(hashId('resident|' + wk)), G = PGN(), taken = new Set();
   const ages = [[3, 5], [96, 150], [12, 60], [12, 60]];
   const res = ages.map(([a, b], i) => {
-    const key = BREED_KEYS[Math.floor(r() * BREED_KEYS.length)], sex = r() < 0.5 ? 'female' : 'male', months = a + Math.floor(r() * (b - a + 1));
+    const keys = liveBreedKeys(), key = keys[Math.floor(r() * keys.length)], sex = r() < 0.5 ? 'female' : 'male', months = a + Math.floor(r() * (b - a + 1)); // v2.21: the 35 while the five are off (the same week as v2.20)
     let ni = Math.floor(r() * SR_NAMES.length); while (taken.has(ni)) ni = (ni + 1) % SR_NAMES.length; taken.add(ni);
     let genes = null; if (G && typeof G.randomGenotype === 'function') { try { genes = G.randomGenotype(key, r); } catch (e) { genes = null; } }
     if (!genes) { const g = STARTER_GENES[key] || STARTER_GENES.mutt; genes = { B: g.B.slice(), D: g.D.slice(), E: g.E.slice(), S: g.S.slice(), M: g.M.slice(), Bl: g.Bl.slice() }; }

@@ -77,7 +77,13 @@ const PL_LINES = {
   yorkie: 'I may be tiny, but I rule this pool and its parasol.',
   bichon: 'Splash, bounce, splash! A fluffy cloud in the water.',
   maltese: 'A silky paddle and a tiny, graceful shake.',
-  shihtzu: 'The step is lovely. I will paddle my toes, then relax.'
+  shihtzu: 'The step is lovely. I will paddle my toes, then relax.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: 'A cool swim after a long run. Then a very spotty shake.',
+  bernese: 'Cool water for a big warm dog. I will wade in slowly.',
+  aussie: 'I will swim a lap and herd the floating toys back to you.',
+  cavalier: 'My ears float! I will paddle on the step and look sweet.',
+  jrt: 'SPLASH! In. Out. In again. Is this a game? It is a game.'
 };
 // a getter, so the line follows the player's language (03_yard.js placeAmbient reads PLACE_LINES[breed].pool at run time)
 Object.keys(PL_LINES).forEach((b) => { if (PLACE_LINES[b]) Object.defineProperty(PLACE_LINES[b], 'pool', { get: () => tdata('pl_lines.' + b, PL_LINES[b]), enumerable: true, configurable: true }); });

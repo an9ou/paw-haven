@@ -83,7 +83,7 @@ run('v215_places', async (t) => {
   ok(await ev(() => window.__paw.S.ag.seen === true), 'S.ag.seen is set');
   {
     const L = await ev(() => { const B = Object.keys(window.__paw.ag.lines); return { n: B.length, miss: B.filter((b) => !window.__paw.mp.line(b, 'training')) }; });
-    ok(L.n === 35 && !L.miss.length, `every one of the 35 breeds has a Training Ground arrival line (${L.n}, missing ${L.miss.join(' ')})`);
+    ok(L.n === 40 && !L.miss.length, `every one of the 40 breeds has a Training Ground arrival line (${L.n}, missing ${L.miss.join(' ')})`);
     ok(await ev(() => { const l = window.__paw.ag.lesson(); return Array.isArray(l) && l.length === 4 && !/;/.test(l[3]); }), "Gerald's guide has the agility card");
     ok(await ev(() => window.__paw.ms.pool.includes('agility') && window.__paw.ms.pool.includes('agility_ros') && window.__paw.ms.pool.includes('travel_training')), 'the agility missions are in the pool');
   }
@@ -203,7 +203,7 @@ run('v215_places', async (t) => {
     const V = await ev(() => { const c = window.__paw.pl.vestRow(); return c ? { slot: c.slot, price: c.price, reward: !!c.reward, fest: c.fest || null, shop: window.__paw.pl.inShop() } : null; });
     ok(V && V.slot === 'body' && V.price === 0 && V.reward && !V.fest && !V.shop, 'the vest is a body slot row, price 0, never in a shop: ' + JSON.stringify(V));
     const L = await ev(() => { const B = Object.keys(window.__paw.pl.lines); return { n: B.length, miss: B.filter((b) => !window.__paw.mp.line(b, 'pool')) }; });
-    ok(L.n === 35 && !L.miss.length, `every one of the 35 breeds has a Splash Pool arrival line (${L.n}, missing ${L.miss.join(' ')})`);
+    ok(L.n === 40 && !L.miss.length, `every one of the 40 breeds has a Splash Pool arrival line (${L.n}, missing ${L.miss.join(' ')})`);
     ok(await ev(() => { const l = window.__paw.pl.lesson(); return Array.isArray(l) && l.length === 4 && !/;/.test(l[3]); }), "Gerald's guide has the pool card");
     ok(await ev(() => window.__paw.ms.pool.includes('pool_paddle') && window.__paw.ms.pool.includes('pool_float')), 'the pool missions are in the pool');
     await ev(() => { document.querySelector('#placeBtns [data-pl]').click(); });

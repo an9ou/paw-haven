@@ -12,8 +12,8 @@ const NAMED = G.BREEDS.filter((k) => k !== 'mutt');
 const BANNED = /nintendo|nintendogs|pok[eé]mon|animal crossing/i;
 
 /* 1. MIXES: all 595 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds, 45 with the first three v2.11 breeds, 74 with the owner's four more, 385 with the v2.12 fourteen) */
-ok(G.BREEDS.length === 35, '35 breeds');
-ok(Object.keys(G.MIXES).length === 595, `595 MIXES entries (got ${Object.keys(G.MIXES).length})`);
+ok(G.BREEDS.length === 40, '40 breeds (v2.21: five appended)');
+ok(Object.keys(G.MIXES).length === 780, `780 MIXES entries (595, then 185 with the v2.21 five: got ${Object.keys(G.MIXES).length})`);
 const names = new Set();
 let pairs = 0;
 for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.length; j++) {
@@ -42,8 +42,8 @@ for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.lengt
     }
   }
 }
-ok(pairs === 595, '595 pairs walked');
-ok(names.size === 561, `561 unique named mixes (got ${names.size})`);
+ok(pairs === 780, '780 pairs walked');
+ok(names.size === 741, `741 unique named mixes (561, then the 180 v2.21 names: got ${names.size})`);
 // examples from the brief
 const want = { 'beagle|pug': 'Puggle', 'chihuahua|dachs': 'Chiweenie', 'golden|husky': 'Goberian', 'corgi|husky': 'Horgi', 'chihuahua|pug': 'Chug', 'corgi|dachs': 'Dorgi', 'shiba|corgi': 'Shorgi', 'golden|beagle': 'Beago', 'greyhound|beagle': 'Greagle' };
 for (const k of Object.keys(want)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want[k], `${k} = ${want[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }

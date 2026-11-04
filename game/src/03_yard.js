@@ -373,7 +373,13 @@ const WX_LINES = {
   yorkie: { rain: 'Rain on silk! No. No no no. Carry me. Indoors.', coat: 'Tiny raincoat on. The silk is safe. I am a small waterproof queen.', snow: 'Snow is as tall as me. Sweater. Now. Also carry me.', warm: 'Sweater on. I am a small, silky snowball with a bow.', hot: '*pant* Tiny dogs get hot too. Shade and a drink, please.', night: '*yawn* Tiny yawn. The bow stays on. Goodnight.', dawn: 'Good morning. I have been awake for hours. Brush me.' },
   bichon: { rain: 'Rain makes the puff droop. I am a sad, damp cloud.', coat: 'Raincoat on. The puff is safe. Boing!', snow: 'Snow! I match the snow! Nobody can find me! Boing!', warm: 'A sweater on a puff in the snow. A very fluffy snowball. Boing!', hot: '*pant* All this white fluff and all this sun. Shade, please.', night: '*yawn* Puff off. Sleep on.', dawn: 'Morning! Boing, boing! The puff is already perfect!' },
   maltese: { rain: 'Rain on the silk. Absolutely not. Indoors, with a towel.', coat: 'Raincoat on. The fringe is saved. The day is saved.', snow: 'Snow on the long hair. Cold and soggy. A sweater, please.', warm: 'Sweater and snow. I will float through it. Elegantly.', hot: '*pant* A long white coat in the sun. Shade and water, please.', night: '*yawn* A small white cloud settles down. Goodnight.', dawn: 'Good morning. Please brush the fringe. Gently.' },
-  shihtzu: { rain: 'Rain. No thank you. I will be on the sofa. Zzz.', coat: 'Raincoat on. The top-knot stays dry. Mostly. *snort*', snow: 'Cold nose, cold toes. Sweater, please. Then a nap.', warm: 'Sweater and snow. I could nap in it. Do not let me.', hot: '*snort pant* Short nose and warm sun. Shade and water, please.', night: '*SNORE* (that was a yawn)', dawn: 'Morning? Already? The top-knot needs five more hours.' }
+  shihtzu: { rain: 'Rain. No thank you. I will be on the sofa. Zzz.', coat: 'Raincoat on. The top-knot stays dry. Mostly. *snort*', snow: 'Cold nose, cold toes. Sweater, please. Then a nap.', warm: 'Sweater and snow. I could nap in it. Do not let me.', hot: '*snort pant* Short nose and warm sun. Shade and water, please.', night: '*SNORE* (that was a yawn)', dawn: 'Morning? Already? The top-knot needs five more hours.' },
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: { rain: 'Rain on my spots. Do they wash off? No. Good.', coat: 'Raincoat on. My spots are dry and safe. Let us run.', snow: 'Snow! I am a white dog in white snow. Only the spots show.', warm: 'Sweater on. Spots under wraps. Ready to run.', hot: '*pant* Too warm for a long run. Shade and water first, please.', night: '*yawn* Ran all day. Spots are tired. Goodnight.', dawn: 'Morning! Is it time to run? It feels like time to run.' },
+  bernese: { rain: 'Rain is fine. I am waterproof. Mostly. I am fluffy.', coat: 'Raincoat on. A very big raincoat. I look smart.', snow: 'SNOW! This is my weather! I will roll in it right now!', warm: 'I have my own sweater. It is my fur. But thank you.', hot: '*pant* Too hot for this big coat. Shade and water, please. Lots of water.', night: '*yawn* A big dog needs a big sleep. Goodnight.', dawn: 'Good morning. I am up. Slowly. Very slowly. Up.' },
+  aussie: { rain: 'Rain. The sheep would not like this. I do not mind.', coat: 'Raincoat on. Now nothing stops the herding.', snow: 'Snow! I will round up every snowflake. One by one.', warm: 'Sweater on. Warm and ready to work.', hot: '*pant* Warm. I will herd the shade and sit in it. With water.', night: '*yawn* Everyone is home. Everyone is counted. Goodnight.', dawn: 'Morning! What is the job today? I am ready for the job.' },
+  cavalier: { rain: 'Rain on my ears. My lovely ears. Please carry me.', coat: 'Raincoat on. My ears are tucked in. Thank you.', snow: 'Snow is pretty. From inside. On a lap.', warm: 'Sweater on. Cosy and sweet. Lap next?', hot: '*pant* Warm. A cool spot in the shade and some water, please.', night: '*yawn* Cuddled up and ready to sleep. Goodnight.', dawn: 'Morning! Is it breakfast? Is it cuddles? Both is fine.' },
+  jrt: { rain: 'Rain! Puddles! I will jump in every one!', coat: 'Raincoat on. Still fast. Still jumping.', snow: 'Snow! I will dig a tunnel to the other side!', warm: 'Sweater on. Now I am a warm rocket.', hot: '*pant* Hot. I will dig a cool hole in the shade. Water too.', night: '*yawn* I stopped. I really stopped. Goodnight.', dawn: 'MORNING! Ball? Walk? Hole? All three? All three!' }
 };
 /* v1.7: per-breed lines for feeding, potty, greetings and walks ({n} name, {He}/{he}/{him}/{his} pronouns) */
 const EAT_LINES = { shiba: '{n} ate it slowly. {sex, select, female {She} other {He}} wants you to know who is in charge.', corgi: '{n} finished and checked the bowl for a sequel. {sex, select, female {She} other {He}} is still checking.', golden: '{n} ate it, then thanked you with {sex, select, female {her} other {his}} whole tail. And the bum.', dachs: '{n} ate it, then tried to bury the bowl. {sex, select, female {She} other {He}} is saving it for later.', husky: '{n} ate it and sang {sex, select, female {her} other {his}} review. AWOO.', mutt: '{n} ate it and looked at you like you hung the moon. {sex, select, female {She} other {He}} means it.', chihuahua: '{n} ate three bites, growled at the bowl, then finished {sex, select, female {her} other {his}} meal.', pug: '{n} inhaled it. {sex, select, female {Her} other {His}} snorts say ten out of ten.', greyhound: '{n} ate it delicately with {sex, select, female {her} other {his}} very long face, then lay down.', beagle: '{n} finished in one second. {sex, select, female {She} other {He}} is now sniffing for crumbs in the next street.', poodle: '{n} ate it neatly and checked {sex, select, female {her} other {his}} curls for crumbs. None. Of course.', collie: '{n} ate it fast, then went to check on everyone else\'s bowl.', samoyed: '{n} ate it with a smile. Somehow {sex, select, female {she} other {he}} smiled the whole time.', frenchie: '{n} ate it with a lot of snorting. {sex, select, female {She} other {He}} rates it highly.', akita: '{n} ate calmly, then sat tall and looked at the door.', spitz: '{n} ate it daintily and checked {sex, select, female {her} other {his}} white fluff for crumbs. Spotless.', pom: '{n} ate it in four tiny bites and asked for more in a very tiny voice.', afghan: '{n} ate it elegantly and flicked {sex, select, female {her} other {his}} ears back. Not a crumb on the silk.', dane: '{n} ate the whole bowl in three gulps and politely licked the floor.', mastiff: '{n} ate it slowly and happily. The drool was a generous review.', gsd: '{n} ate it neatly, then sat up straight and waited for the next job.',
@@ -391,7 +397,13 @@ const EAT_LINES = { shiba: '{n} ate it slowly. {sex, select, female {She} other 
   yorkie: '{n} ate it in tiny bites, one eye on the bowl and one on you. Very refined.',
   bichon: '{n} ate it, bounced twice and then spun around the bowl. Dinner is a party.',
   maltese: '{n} ate it delicately, one tiny bite at a time, and kept the fringe out of the bowl.',
-  shihtzu: '{n} ate it slowly, then flopped down for a nap right next to the bowl.'
+  shihtzu: '{n} ate it slowly, then flopped down for a nap right next to the bowl.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: '{n} ate it all neatly, then looked at you for the next part of the plan. A run, maybe.',
+  bernese: '{n} ate it slowly and politely, then leaned on you to say thank you.',
+  aussie: '{n} ate it fast, then checked every bowl in the house. All clear.',
+  cavalier: '{n} ate it daintily, ears tucked to one side, then asked for a cuddle.',
+  jrt: '{n} ate it in four seconds, then jumped up to see if there was more.'
 };
 const POTTY_LINES = { shiba: '{n} did {sex, select, female {her} other {his}} business and then pretended it never happened.', corgi: '{n} finished and looked at you. Snack for good potty? Snack?', golden: '{n} went potty and is SO proud. Tell everyone.', dachs: '{n} went, then tried to dig a hole for it. Thorough.', husky: '{n} went potty and announced it to the whole street. AWOO.', mutt: '{n} went and checked you saw. Good dog? Good dog.', chihuahua: '{n} picked the exact spot after inspecting nine others. Security reasons.', pug: '{n} went potty, snorted twice and sat down for a rest.', greyhound: '{n} went potty, then did one victory lap.', beagle: '{n} sniffed for two whole minutes first. Research is important.', poodle: '{n} chose the tidiest spot in the yard. Of course {sex, select, female {she} other {he}} did.', collie: '{n} went potty, then checked everyone else was still in the yard.', samoyed: '{n} went potty and smiled about it. Every time.', frenchie: '{n} went potty, snorted once and sat down for a rest.', akita: '{n} went potty without any fuss and trotted back with great dignity.', spitz: '{n} went potty and struck a little pose. In case anyone was watching.', pom: '{n} went potty and did a little spin to celebrate. Yip!', afghan: '{n} chose a spot with a view. Even this needs elegance.', dane: '{n} went potty and then did a very long stretch. There is a lot to stretch.', mastiff: '{n} went potty slowly, sighed and flopped down for a rest.', gsd: '{n} went potty, checked the fence line and came back. Job done.',
   // v2.12 Fourteen New Friends
@@ -408,7 +420,13 @@ const POTTY_LINES = { shiba: '{n} did {sex, select, female {her} other {his}} bu
   yorkie: '{n} went potty and looked at you. A treat is expected. A tiny, firm look.',
   bichon: '{n} went potty and bounced back for a cuddle. Boing, boing.',
   maltese: '{n} went potty on the very cleanest patch of grass. Standards.',
-  shihtzu: '{n} went potty and then lay down on the nearest sunny spot. A short, sleepy break.'
+  shihtzu: '{n} went potty and then lay down on the nearest sunny spot. A short, sleepy break.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: '{n} went potty and then trotted a quick lap of the garden. All done.',
+  bernese: '{n} went potty and then lay down in the cool grass for a little rest.',
+  aussie: '{n} went potty and then checked that everyone was still where {sex, select, female {she} other {he}} left them.',
+  cavalier: '{n} went potty and then trotted back to you, ears bouncing.',
+  jrt: '{n} went potty and then dug a very fast hole next to it. Two jobs done.'
 };
 const GREET_LINES = { shiba: 'Oh. You are back. I did not notice. (Tail: wagging.)', corgi: 'YOU ARE BACK! Did you bring snacks? You smell like snacks!', golden: 'You came back! Best day! Again!', dachs: 'You are home! I dug you a welcome hole.', husky: 'AWOO! Where were you! Tell me everything! AWOO!', mutt: 'You came back. I knew you would. Hi.', chihuahua: 'WHO GOES THERE. Oh. You. Welcome home. Still checking your ID.', pug: '*snort* You are back. Lap, please. Right now.', greyhound: '*soft roo* You are home. I will lean on you now.', beagle: 'AROOO! I smelled you coming from the corner! What did you eat?', poodle: 'You are back. I knew the time to the minute.', collie: 'You are back! Now everyone is here. I counted.', samoyed: 'Woo-woo! You are home! Look at my smile!', frenchie: '*snort* You are back. Foot, please. I am sitting on it.', akita: 'You are back. Good. Now everything is as it should be.', spitz: 'You are back! Look at my fluff! I fluffed it just for you!', pom: 'YIP YIP YIP! You are home! I spun three times! I will do four!', afghan: 'You are back. I have been gazing out of the window. Very beautifully.', dane: 'You are home! *the tail clears the table* Sorry! Welcome home!', mastiff: '*slow wag* You are home. I will lean on you now. All of me.', gsd: 'You are home! I checked the garden. All clear. Hello!',
   // v2.12 Fourteen New Friends
@@ -425,7 +443,13 @@ const GREET_LINES = { shiba: 'Oh. You are back. I did not notice. (Tail: wagging
   yorkie: 'Finally. You are late. I forgive you. Pick me up.',
   bichon: 'BOING! You are home! I am a happy cloud! Spin, spin, spin!',
   maltese: 'You are home. I floated to the door. Please admire the entrance.',
-  shihtzu: '*yawn* You are home. Good. Lap, please. I will nap there.'
+  shihtzu: '*yawn* You are home. Good. Lap, please. I will nap there.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: 'You are home! Let us go for a run! Right now! I will get my lead!',
+  bernese: 'You are home. I will lean on you now. For a long time.',
+  aussie: 'You are back! Everyone is here now. I can stop counting.',
+  cavalier: 'You are home! I missed you! Lap, please. Right away.',
+  jrt: 'YOU ARE BACK! I jumped so high! Did you see? I will do it again!'
 };
 const WALK_LINES = { shiba: '{n} walked like the path was built for {sex, select, female {her} other {him}}. It was not.', corgi: '{n} checked every bench for dropped snacks. Two found. Zero shared.', golden: '{n} said hello to every dog, person, and one lamp post.', dachs: '{n} wanted to dig at every single X. And several non-Xs.', husky: '{n} howled at three dogs, one bus, and the concept of walking.', mutt: '{n} kept looking back to check you were still there. You were.', chihuahua: '{n} barked at a dog fourteen times bigger. The dog apologised.', pug: '{n} walked the whole way. Mostly. The last bit was a carry.', greyhound: '{n} sprinted for six seconds and strolled for the rest. Perfect walk.', beagle: '{n} sniffed the whole route. Beagle nose: the Nose-o-meter reached 25% further.', poodle: '{n} trotted the whole way like {sex, select, female {she} other {he}} was in a show. {sex, select, female {She} other {He}} was.', collie: '{n} kept everyone in a neat group. Including two pigeons.', samoyed: '{n} smiled at every person on the route. Most of them smiled back.', frenchie: '{n} took a short walk with lots of sitting. Exactly right.', akita: '{n} walked beside you at a calm, steady pace. Nobody was in a hurry.', spitz: '{n} pranced the whole way with {sex, select, female {her} other {his}} tail up. Four people called {sex, select, female {her} other {him}} fluffy.', pom: '{n} took three steps for each of yours and never stopped. A small engine.', afghan: '{n} floated along with {sex, select, female {her} other {his}} hair streaming. Three people asked for a photo.', dane: '{n} took long, slow strides. Everyone looked up, and up, and then smiled.', mastiff: '{n} walked at a steady, gentle pace and stopped for every pat. It took a while and it was lovely.', gsd: '{n} kept pace beside you and checked every corner. Nothing out of order.',
   // v2.12 Fourteen New Friends
@@ -442,9 +466,15 @@ const WALK_LINES = { shiba: '{n} walked like the path was built for {sex, select
   yorkie: '{n} marched past three big dogs like a tiny queen. They all moved over.',
   bichon: '{n} bounced along like a cotton ball on springs. Everyone smiled.',
   maltese: '{n} glided along with {sex, select, female {her} other {his}} fringe swaying. Someone asked for a photo.',
-  shihtzu: '{n} walked to the first bench, sat on it and decided that was a good walk.'
+  shihtzu: '{n} walked to the first bench, sat on it and decided that was a good walk.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: '{n} trotted beside you the whole way, spots bouncing. A proper coach dog.',
+  bernese: '{n} took the walk at a calm, steady pace and said hello to everyone on the way.',
+  aussie: '{n} kept the whole walk in order. The pigeons were very well herded.',
+  cavalier: '{n} enjoyed a gentle stroll, then asked to be carried for the last bit.',
+  jrt: '{n} pulled towards every hole, every squirrel and every ball. A very full walk.'
 };
-const NOSE_MUL = { beagle: 1.25, lab: 1.2, westie: 1.1, schnauzer: 1.1, pitbull: 1.1 };
+const NOSE_MUL = { beagle: 1.25, lab: 1.2, westie: 1.1, schnauzer: 1.1, pitbull: 1.1, jrt: 1.15 };
 const noseMul = (d = D()) => NOSE_MUL[d && d.key] || 1;
 function breedLine(map, d) {
   const l = d && map[d.key]; if (!l) return '';
@@ -472,9 +502,15 @@ const BD_TIPS = { frenchie: 'Flat faces breathe hard in heat. Short walks, shade
   yorkie: 'Yorkie hair grows long and needs a gentle brush most days. Tiny dogs need a harness and soft hands too.',
   bichon: 'That cotton-ball coat keeps growing and tangles. A brush every few days and a trim now and then keep it fluffy.',
   maltese: 'That long silky white coat needs a daily brush. A little topknot keeps the hair out of the eyes.',
-  shihtzu: 'Shih Tzus have long hair and short noses. A daily brush, a topknot for the eyes and shade on warm days help a lot.'
+  shihtzu: 'Shih Tzus have long hair and short noses. A daily brush, a topknot for the eyes and shade on warm days help a lot.',
+  // v2.21 Five New Friends (V221.md 4): the V221.md 3 care notes
+  dalmatian: 'Dalmatians love long runs and lots of fresh water. Some hear only a little, and they learn hand signals just as happily.',
+  bernese: 'Berners are big, gentle and slow to grow up. That thick coat loves cool days, so shade and water help in summer.',
+  aussie: 'Aussies are clever and busy and love a job. Training games, puzzles and long walks keep that smart head happy.',
+  cavalier: 'Cavaliers love a lap and a gentle walk. A yearly heart check at the vet helps keep that big heart in good shape.',
+  jrt: 'Jack Russells are small dogs with very big energy. Long walks, digging games and a good fence keep them happy and safe.'
 };
-const BD_HOT = { frenchie: 1, pug: 1, mastiff: 1, chow: 1, malamute: 1, shihtzu: 1 }; // v2.11: only these tips are about heat, so only they toast on the first hot day (the others show on the adoption card)
+const BD_HOT = { frenchie: 1, pug: 1, mastiff: 1, chow: 1, malamute: 1, shihtzu: 1, bernese: 1 }; // v2.11: only these tips are about heat, so only they toast on the first hot day (the others show on the adoption card)
 function bdTip(key) { return BD_TIPS[key] ? tdata('bd_tips.' + key, BD_TIPS[key]) : ''; }
 function bdHotTip(d) {
   if (!S || !d || !BD_HOT[d.key]) return; const tip = bdTip(d.key); if (!tip) return;

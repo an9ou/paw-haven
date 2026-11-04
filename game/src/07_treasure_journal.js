@@ -298,7 +298,7 @@ function jrFamCheck() {
   return got;
 }
 function jrCheckAll() { try { coatSync(); coatRewardsCheck(); jrFamCheck(); } catch (e) { console.warn('journal check', e); } }
-const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 35); }; // v2.12: 35 breeds
+const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 40).filter(brLive); }; // v2.12: 35 breeds; v2.21: 40, the five new ones only while nbOn()
 function coatCatalogOf(key) {
   try { const G = window.PawGenes; if (G && typeof G.coatCatalog === 'function') { const c = G.coatCatalog(key); if (Array.isArray(c) && c.length) return c; } } catch (e) { /* older genes module */ }
   return null;
@@ -390,7 +390,7 @@ function jrMixesStrip() {
     if (r.mix) { if (r.mix.a) have.breed.add(r.mix.a); if (r.mix.b) have.breed.add(r.mix.b); note(r.mix.name); if (r.mix.grand) have.grand.add(r.mix.grand); }
     try { const anc = typeof ancOf === 'function' ? ancOf(r) : r.anc || null; if (anc) { Object.keys(anc).forEach((k) => { if (anc[k] > 0) have.breed.add(k); }); if (G && typeof G.grandMix === 'function') { const g = G.grandMix(anc); if (g && g.name && g.kind !== 'breed') (g.kind === 'mix' ? have.mix : have.grand).add(g.name); } } } catch (e) { /* ancestry not ready */ }
   });
-  const mixNames = []; try { Object.keys((G && G.MIXES) || {}).forEach((k) => { const n = G.MIXES[k].name; if (n && n !== 'Mutt mix' && !mixNames.includes(n)) mixNames.push(n); }); } catch (e) { /* no table */ }
+  const mixNames = []; try { Object.keys((G && G.MIXES) || {}).filter((k) => k.split('|').every(brLive)).forEach((k) => { const n = G.MIXES[k].name; if (n && n !== 'Mutt mix' && !mixNames.includes(n)) mixNames.push(n); }); } catch (e) { /* no table */ }
   const chip = (txt, on, cls) => `<span class="mchip ${cls} ${on ? 'found' : 'unk'}" ${on ? '' : `title="${tt('journal.not_found', 'Not found yet')}"`}>${on ? esc(txt) : '?'}</span>`;
   const bN = breeds.filter((k) => have.breed.has(k)).length, mN = mixNames.filter((n) => have.mix.has(n)).length, gN = JR_GRAND.filter((n) => have.grand.has(n) || have.mix.has(n)).length;
   return `<div class="cmixes" aria-label="${tt('journal.mixes_aria', 'Breeds and mixes')}"><h4>${tt('journal.mixes_title_html', 'Breeds &amp; Mixes')} <span class="small">${esc(tt('journal.mixes_count', '{b} of {total} breeds, {m, plural, one {# mix} other {# mixes}}, {g, plural, one {# grand-mix} other {# grand-mixes}}', { b: bN, total: breeds.length, m: mN, g: gN }))}</span></h4>

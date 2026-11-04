@@ -76,9 +76,24 @@ const NEWS_V220 = {
   ]
 };
 const nwV220Due = () => MS2_LIVE && jstISO() >= NEWS_V220.date; // the launch switch first (MS2_LIVE), then the date
+/* v2.21 "Five New Friends" (V221.md 8): launches with v2.20 on the same switch and date (nbOn = ms2On), so it shows only with MS2_LIVE on, from its date */
+const nwHead = (k) => nwSafe(() => art('dogHead', k)); // PawArt.dogHead (the neutral mutt until the art lands, artKey)
+const NEWS_V221 = {
+  id: '2.21', date: NEWS_V220.date, // LAUNCH DATE: the v2.20 date (owner's date)
+  c: '#E9F3FF', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v221.title', 'Five new friends at the shelter'),
+  items: [
+    { ic: () => nwHead('dalmatian'), tx: () => tt('nw.v221.dalmatian', 'Dalmatians, black or liver spotted, who love a long run') },
+    { ic: () => nwHead('bernese'), tx: () => tt('nw.v221.bernese', 'Bernese Mountain Dogs, big, gentle and fluffy in three colours') },
+    { ic: () => nwHead('aussie'), tx: () => tt('nw.v221.aussie', 'Australian Shepherds in black, red and merle, with or without copper and white') },
+    { ic: () => nwHead('cavalier'), tx: () => tt('nw.v221.cavalier', 'Cavalier King Charles Spaniels: Blenheim, tricolour, ruby and black and tan') },
+    { ic: () => nwHead('jrt'), tx: () => tt('nw.v221.jrt', 'Jack Russell Terriers, small, white and full of bounce') }
+  ]
+};
+const nwV221Due = () => MS2_LIVE && jstISO() >= NEWS_V221.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

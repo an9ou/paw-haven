@@ -333,7 +333,7 @@ setTimeout(spotsExpose, 0);
 /* ---- shelter: rescues + starters ---- */
 const RESCUE_NAMES = ['Sir Wigglesworth', 'Potato', 'Captain Socks', 'Noodle Jr.', 'Biscotti', 'Mayor Fluff', 'Pickles', 'Waffles', 'Tater Tot', 'Professor Paws', 'Beans', 'Lady Snorts', 'Meatball', 'Dumpling', 'Turbo', 'Nugget'];
 function rescuesToday(dk = localISO()) {
-  const r = seeded(hashId('rescue|' + dk)), keys = BREED_KEYS, G = PGN();
+  const r = seeded(hashId('rescue|' + dk)), keys = liveBreedKeys(), G = PGN(); // v2.21: the 35 while the five are off (the same rescues as v2.20)
   return [0, 1].map((i) => {
     const key = keys[Math.floor(r() * keys.length)], sex = r() < 0.5 ? 'female' : 'male', months = 8 + Math.floor(r() * 29), name = RESCUE_NAMES[Math.floor(r() * RESCUE_NAMES.length)];
     let genes = null; if (G && typeof G.randomGenotype === 'function') { try { genes = G.randomGenotype(key, r); } catch (e) { genes = null; } }
