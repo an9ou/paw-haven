@@ -7176,7 +7176,7 @@ PA.FRIENDS={badge:()=>serve('fr:badge',frBadge),card:code=>serve('fr:card:'+(cod
                               PawArt.item('Trophy Shelf') (three cups). The yard / house decoration: see HM_DECOR 'Trophy Shelf' (game code).
    rosette(t)    icon 64x64   a ribbon rosette, t 'b' | 's' | 'g' | 'c' (crayon: rainbow petals), bold lines for 24 to 32 px. Others draw 'b'.
    medal()       item 64x64   the Crayon Medal charm (= PawArt.item('Crayon Medal')): a gold scalloped medal with a crayon on it, rainbow ribbon.
-                              Charms are not drawn on the dog (no slot art in dogs/pawart_dogs.js), so the medal is an item card only.
+                              On the dog it is drawMedalCharm in dogs/pawart_dogs.js (outfit.charm 'Crayon Medal', the only charm drawn).
    board()       prop 350x100 Gerald's help-wanted cork board header: wooden frame, cork, pinned notes at both ends, a plain paper banner in
                               the middle for the HTML title: PA.MISSIONS.boardText { x1 100, x2 250, y1 30, y2 72, cx 175, cy 51 }.
    note(i)       prop 300x110 a pinned paper note, i 0..4 (others wrap): 0 cream + red pin, 1 yellow + two pink tapes, 2 blue + blue pin + dog-ear,
