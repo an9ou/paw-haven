@@ -7165,6 +7165,204 @@ PA.FRIENDS={badge:()=>serve('fr:badge',frBadge),card:code=>serve('fr:card:'+(cod
   paw:()=>serve('fr:paw',frPaw),ribbon:()=>serve('fr:ribbon',frRibbon),wheel:()=>serve('fr:wheel',frWheel),
   poster:()=>serve('fr:poster',frPoster),posterBox:JSON.parse(JSON.stringify(FR_PB)),cardQR:Object.assign({},FR_QR),cardLine:Object.assign({},FR_LINE),wheelText:{x1:24,x2:136,y1:30,y2:190,cy:110,band:[92,128]}};
 
+/* ---------- v2.20 "Missions v2": the missions art (docs/design/missions-v2.md sections 3.3 to 3.5, 4 "New art", 5). PA.MISSIONS groups it;
+   each call is an SVG string (cached per argument, fresh ids each time). Every colour fill sits inside its own outline (b.sh lays the fill
+   inside the line, the marks are clipped to their shape); the page and the chart are pencil lines only. No words baked in.
+   shelf(cups)   prop 160x180 the trophy shelf: a wooden standing shelf, a crest with a crayon star, paper bunting, three shelves of 6 cup
+                              slots. cups = array of 'b' bronze | 's' silver | 'g' gold | 'c' crayon (a cream cup with rainbow crayon scribbles),
+                              anything else is skipped, 18 at most. Filled top shelf first, 6 a shelf, each shelf's cups centred (17 = 6, 6, 5),
+                              the shelves' tops at y 70, 118, 166.
+                              Also PawArt.prop('trophyshelf', { cups }) (the same drawing, PROP_VB 0 0 160 180, feet at y 177) and the item card
+                              PawArt.item('Trophy Shelf') (three cups). The yard / house decoration: see HM_DECOR 'Trophy Shelf' (game code).
+   rosette(t)    icon 64x64   a ribbon rosette, t 'b' | 's' | 'g' | 'c' (crayon: rainbow petals), bold lines for 24 to 32 px. Others draw 'b'.
+   medal()       item 64x64   the Crayon Medal charm (= PawArt.item('Crayon Medal')): a gold scalloped medal with a crayon on it, rainbow ribbon.
+                              Charms are not drawn on the dog (no slot art in dogs/pawart_dogs.js), so the medal is an item card only.
+   board()       prop 350x100 Gerald's help-wanted cork board header: wooden frame, cork, pinned notes at both ends, a plain paper banner in
+                              the middle for the HTML title: PA.MISSIONS.boardText { x1 100, x2 250, y1 30, y2 72, cx 175, cy 51 }.
+   note(i)       prop 300x110 a pinned paper note, i 0..4 (others wrap): 0 cream + red pin, 1 yellow + two pink tapes, 2 blue + blue pin + dog-ear,
+                              3 pink + mint tape, 4 mint + yellow pin. Tilt under 1 degree. Text area left plain: PA.MISSIONS.noteText
+                              { x1 26, x2 274, y1 28, y2 94 }. Stretching to another aspect is fine (preserveAspectRatio="none").
+   page()        tile 320x240 a notebook page, pencil only: a spiral down the left (one ring every 24), a double margin line at x 58, ruled
+                              lines every 24 (y 20, 44, ... 236). Seamless top to bottom (background-repeat: repeat-y). Text: PA.MISSIONS.pageText
+                              { x1 68, x2 312, pitch 24, first 20 } (baselines on the lines).
+   chart(marks)  prop 160x400 a pencil height chart on a paper wall strip, pencil only: a ruler down the left (floor y 380), a pencil doodle per
+                              stage on the right (puppy paw, young ball, adult bone, senior cushion). marks = [{ stage, label }] in order; the k-th
+                              mark of a stage (k 0..4, later ones share k 4) is a tick at y = PA.MISSIONS.chartY[stage] - 15 k, from x 16 to x 70; its label (escaped, 10
+                              characters) is drawn left-aligned at x 76, y + 4 in pencil (pass label '' to write it in HTML instead).
+                              chartY = { puppy: 344, young: 258, adult: 172, senior: 86 } (each stage owns the band y .. y - 60, its doodle at
+                              x 132, y - 30); chartTick(stage, k) -> { x1, x2, y, lx }. Coordinates in the 160x400 box.
+   tab(k)        icon 64x64   the sheet tab icons, bold for 24 to 28 px: 'today' clipboard, 'week' pinned note, 'badges' gold rosette,
+                              'notebook' little spiral notebook. Others draw 'today'.
+   pouch()       item 64x64   Gerald's treat pouch: a cloth pouch with a red drawstring bow and a pink paw patch. */
+const MS_T={b:{f:'#DE9B62',d:'#A9683C',l:'#F4D2B2'},s:{f:'#CDD6E2',d:'#8796AC',l:'#F2F5F9'},g:{f:'#FFD152',d:'#DDA130',l:'#FFF0C2'},c:{f:'#FFF4DC',d:'#E58FA5',l:'#FFFBF3'}};
+const MS_RAIN=['#F28FA5','#F9B97A','#FFE08A','#9CCB86','#7FB7E0','#B9A6E8'];
+const msTier=t=>MS_T[t]?t:'b';
+const PENC='#8C7F76';// the pencil (graphite) line of the page and the chart
+// rainbow crayon scribble bands across a box (clipped by the shape they are marks of)
+function msRain(x0,y0,x1,y1,w,a){const M=[],h=y1-y0,sl=Math.tan(a||.5)*h;let i=0;
+  for(let x=x0-sl-w;x<x1+w;x+=w,i++)M.push({pts:[[x,y1+1],[x+w*.92,y1+1],[x+w*.92+sl,y0-1],[x+sl,y0-1]],fill:MS_RAIN[i%6],k:0,op:.85});return M}
+// one cup standing at (cx, by), s = scale (1: 22 tall, 20 wide with the handles)
+function msCup(b,cx,by,s,t,o={}){const T=MS_T[t]||MS_T.b,X=v=>cx+v*s,Y=v=>by-v*s,lw=o.lw||.42;
+  // handles: pencil loops either side of the bowl
+  b.ln([[X(-6.4),Y(19)],[X(-9.6),Y(18.4)],[X(-9.4),Y(14.6)],[X(-5),Y(12.4)]],{w:1.5*s*lw/.42});
+  b.ln([[X(6.4),Y(19)],[X(9.6),Y(18.4)],[X(9.4),Y(14.6)],[X(5),Y(12.4)]],{w:1.5*s*lw/.42});
+  b.sh([[X(-1.7),Y(3)],[X(1.7),Y(3)],[X(1.2),Y(9)],[X(-1.2),Y(9)]],T.d,{k:0,hatch:0,hl:0,lw:lw*.8,base:T.f,dr:0});
+  b.sh(RR(X(-6),Y(3.4),12*s,3.4*s,1.2*s),T.d,{k:.05,hatch:0,hl:0,lw:lw,base:T.f,dr:0,marks:t==='c'?msRain(X(-6),Y(3.4),X(6),Y(0),2.4*s,.6):[]});
+  const bowl=[[X(-7.2),Y(21.4)],[X(7.2),Y(21.4)],[X(6.6),Y(15.6)],[X(3.8),Y(10.6)],[X(0),Y(8.8)],[X(-3.8),Y(10.6)],[X(-6.6),Y(15.6)]];
+  const M=t==='c'?msRain(X(-8),Y(22),X(8),Y(8),2.6*s,.55):[{pts:[[X(2.4),Y(21)],[X(7.6),Y(21)],[X(7.6),Y(8)],[X(1.4),Y(8)]],fill:T.d,op:.55,k:0}];
+  M.push({pts:E(X(-3),Y(17.4),1.5*s,2.6*s,8,-.3),fill:'#FFFFFF',op:t==='b'?.45:.7});
+  b.sh(bowl,T.f,{k:.12,hatch:0,hl:0,lw:lw,base:T.l,dr:0,marks:M});
+  b.ln([[X(-7),Y(21.2)],[X(0),Y(20.4)],[X(7),Y(21.2)]],{w:.8*s*lw/.42,col:mix(T.d,INK,.3),op:.8});
+  if(t==='g'||t==='c')b.sh(starP(X(.4),Y(15.2),2.6*s,1.2*s),t==='g'?'#FFF6CF':'#FFE08A',{k:0,hatch:0,hl:0,lw:lw*.55,dr:0});
+}
+const MS_SLOT=22,MS_ROWS=[70,118,166];
+function msShelf(b,cups){
+  b.shadow(80,177,72,3.5);
+  // the back, the two sides and their feet
+  b.sh(RR(12,24,136,148,2),'#F6E3C6',{k:0,hatch:0,hl:0,lw:.7,base:'#FBF0DE',dr:0,inner:b.st(b.jl(30,50,30,160,.6)+b.jl(130,40,130,150,.6),'#E6CBA6',1.2,.6)});
+  [[4,24],[146,24]].forEach(([x,y])=>{b.sh(RR(x,y,10,150,3),C.wood,{k:.04,hatch:0,hl:0,lw:.95,base:'#F3DDB4',det:[[[x+5,y+20],[x+5.4,y+60]],[[x+4.6,y+90],[x+5,y+130]]],dw:.55,dcol:C.woodD});
+    b.sh(RR(x-1,173,12,5,2),C.woodD,{k:0,hatch:0,hl:0,lw:.7,base:C.wood})});
+  // the crest: an arched board with a crayon star and two little laurel sprigs
+  b.sh([[1,32],[1,23],[28,21],[48,13],[80,6],[112,13],[132,21],[159,23],[159,32]],C.wood,{k:.12,hatch:0,hl:0,lw:1,base:'#F3DDB4',sh:C.woodD,
+    det:[[[16,28],[56,25]],[[104,25],[144,28]]],dw:.5,dcol:C.woodD});
+  b.sh(starP(80,20,8.6,4),'#FFE08A',{k:0,hatch:0,hl:0,lw:.55,dr:.1});
+  [[-1,62],[1,98]].forEach(([d,x])=>{b.ln([[x,22],[x+d*10,18.4]],{w:.9,col:'#6FA25A'});[0,1,2].forEach(i=>b.sh(leafP(x+d*(2.5+i*3.2),21.4-i*1.1,4.6,3,d>0?-.9:-2.25),'#9CCB86',{k:.2,hatch:0,hl:0,lw:.35,dr:0}))});
+  // paper bunting under the crest
+  b.ln([[18,33],[50,38],[80,39.5],[110,38],[142,33]],{w:.7,col:GRAPH});
+  [[28,35.4,'#F7B2C4'],[46,37.6,'#B9D4F3'],[64,39,'#FFE08A'],[96,39,'#BDE7D2'],[114,37.6,'#D3C6F1'],[132,35.4,'#F9B97A']].forEach(([x,y,c])=>b.sh([[x-4.4,y-.4],[x+4.4,y+.4],[x+.3,y+7.6]],c,{k:.1,hatch:0,hl:0,lw:.4,dr:0}));
+  // the three shelves (cups stand on y 70, 118, 166)
+  MS_ROWS.forEach(y=>b.sh(RR(6,y,148,7,2),C.wood,{k:.04,hatch:0,hl:0,lw:.95,base:'#F3DDB4',marks:[{pts:[[0,y+4.6],[160,y+4.6],[160,y+8],[0,y+8]],fill:C.woodD,op:.6,k:0}]}));
+  // the cups: top shelf first, 6 a shelf, each shelf centred
+  const L=(Array.isArray(cups)?cups:[]).filter(c=>MS_T[c]).slice(0,18);
+  MS_ROWS.forEach((y,r)=>{const row=L.slice(r*6,r*6+6),x0=80-(row.length-1)*MS_SLOT/2;row.forEach((t,i)=>msCup(b,x0+i*MS_SLOT,y+.4,1.15,t))});
+  b.ex('spark',150,9,4,'#FFE59A');
+}
+function msRosette(t){t=msTier(t);const T=MS_T[t],b=mk('icon','ms:rosette:'+t),cr=t==='c';
+  const tl=cr?'#7FB7E0':T.f,tr=cr?'#F28FA5':T.f,md=cr?'#5E95C9':T.d;
+  b.sh([[24,40],[31,44],[27,61],[23,57],[17,59.5]],tl,{k:.05,hatch:0,hl:0,lw:.75,base:mix(tl,'#FFFFFF',.4),marks:[{pts:[[14,52],[32,52],[32,56],[14,56]],fill:md,op:.6,k:0}]});
+  b.sh([[40,40],[33,44],[37,61],[41,57],[47,59.5]],tr,{k:.05,hatch:0,hl:0,lw:.75,base:mix(tr,'#FFFFFF',.4),marks:[{pts:[[32,52],[50,52],[50,56],[32,56]],fill:cr?'#D9708E':T.d,op:.6,k:0}]});
+  const RM=cr?MS_RAIN.map((c,i)=>{const a0=i/6*Math.PI*2-Math.PI/2,a1=(i+1)/6*Math.PI*2-Math.PI/2;return {pts:[[32,27],[32+Math.cos(a0)*30,27+Math.sin(a0)*30],[32+Math.cos((a0+a1)/2)*32,27+Math.sin((a0+a1)/2)*32],[32+Math.cos(a1)*30,27+Math.sin(a1)*30]],fill:c,k:0}})
+    :[{pts:E(37,32,21,19,16),fill:T.d,op:.4}];
+  b.sh(cloudP(32,27,24,24,10,.15,60),T.f,{k:.1,hatch:0,hl:0,lw:.85,base:T.l,marks:RM});
+  b.sh(E(32,27,11,11,14),'#FFFBF3',{hatch:0,hl:0,lw:.7,base:'#FFFFFF'});
+  b.sh(starP(32,27.6,8,3.8),cr?'#FFE08A':T.f,{k:0,hatch:0,hl:0,lw:.5,base:T.l,dr:.1,marks:cr?[]:[{pts:starP(33.4,29,6,2.8),fill:T.d,op:.45,k:0}]});
+  if(t==='g'||cr)b.ex('spark',56,8,3.6,cr?'#F9C7D6':'#FFE59A');
+  return b.svg('0 0 64 64','',{b:'Bronze',s:'Silver',g:'Gold',c:'Crayon'}[t]+' rosette')}
+ITEMS['Crayon Medal']=function(b){
+  // the ribbon: two rainbow-striped straps meeting behind the medal
+  b.sh([[12,4],[24,4],[35,30],[26,33]],'#FFF4DC',{k:0,hatch:0,hl:0,lw:.9,base:'#FFFBF3',marks:[[0,'#F28FA5'],[4,'#FFE08A'],[8,'#7FB7E0']].map(([d,c])=>({pts:[[12+d,0],[16+d,0],[30+d,36],[26+d,36]],fill:c,k:0}))});
+  b.sh([[52,4],[40,4],[29,30],[38,33]],'#FFF4DC',{k:0,hatch:0,hl:0,lw:.9,base:'#FFFBF3',marks:[[0,'#9CCB86'],[4,'#B9A6E8'],[8,'#F9B97A']].map(([d,c])=>({pts:[[48-d,0],[52-d,0],[38-d,36],[34-d,36]],fill:c,k:0}))});
+  // the medal: a scalloped gold disc, a cream middle with a crayon across it
+  b.sh(cloudP(32,43,18.5,18.5,16,.07,64),C.gold,{k:.1,hatch:0,hl:0,lw:1,base:'#FFF0C2',marks:[{pts:E(36,47,15,14,14),fill:C.goldD,op:.5}]});
+  b.sh(E(32,43,13.6,13.6,16),'#FFFBF3',{hatch:0,hl:0,lw:.8,base:'#FFFFFF'});
+  const RC=pts=>rot(pts,-.62,32,43);
+  b.sh(RC([[20,39.4],[37,39.4],[44.4,43],[37,46.6],[20,46.6]]),'#F08A86',{k:0,hatch:0,hl:0,lw:.75,dr:0,marks:[{pts:RC([[37,36],[46,36],[46,50],[37,50]]),fill:'#FFE3C2',k:0},{pts:RC([[41.4,36],[46,36],[46,50],[41.4,50]]),fill:'#E46F6B',k:0},
+    {pts:RC([[23.4,36],[25.6,36],[25.6,50],[23.4,50]]),fill:'#FFFBF3',op:.85,k:0},{pts:RC([[30.4,36],[32.6,36],[32.6,50],[30.4,50]]),fill:'#FFFBF3',op:.85,k:0}]});
+  b.ex('glint',22,35,4);b.ex('spark',55,22,3.6,'#FFE59A');b.ex('spark',9,46,3,'#F9C7D6');
+};
+function msBoard(){const b=mk('prop','ms:board');
+  b.raw(`<path d="M8 10L346 8L347 98L6 99Z" fill="${SHADOW}" opacity=".7"/>`,'under');
+  b.sh(RR(3,4,343,91,8),C.wood,{k:.04,hatch:0,hl:0,lw:1.1,base:'#F3DDB4',det:[[[20,8.6],[120,8]],[[230,90.6],[330,90]]],dw:.5,dcol:C.woodD});
+  let sp='';for(let i=0;i<70;i++){const x=14+b.r()*322,y=15+b.r()*70;sp+=`<circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(.6+b.r()*1)}" fill="#9C6E4C" opacity="${R1(.25+b.r()*.3)}"/>`}
+  b.sh(RR(12,13,326,74,3),'#DDB07F',{k:0,hatch:1,hl:0,lw:.85,base:'#EACB9F',inner:sp});
+  // the plain banner for the title
+  b.sh([[92,21],[258,20],[259,79],[91,80]],'#FFFBF3',{k:0,hatch:0,hl:0,lw:.85,base:'#FFFFFF',dr:.2});
+  b.raw(`<rect data-text x="100" y="30" width="150" height="42" fill="none" stroke="none" pointer-events="none"/>`,'top');
+  pushpin(b,98,26,'#E46F6B');pushpin(b,252,25,'#7FC7EE');
+  // notes at both ends
+  b.sh(rot(RR(20,22,40,34,2),-.12,40,39),'#B9D4F3',{k:0,hatch:0,hl:0,lw:.7,dr:.2,inner:b.st('M25 33.5h24M26 40h20M26 46.5h14',INK,1,.45)});pushpin(b,40,24,'#FFD56B');
+  b.sh(rot(RR(46,47,36,31,2),.1,64,62),'#FFF6CC',{k:0,hatch:0,hl:0,lw:.7,dr:.2});paw(b,64,64,4.4,'#F28FA5',{noline:1,a:.1});pushpin(b,63,49,'#9CCB86');
+  b.sh(rot(RR(270,21,38,32,2),.1,289,37),'#FDE6EC',{k:0,hatch:0,hl:0,lw:.7,dr:.2});b.ex('heart',289,39,5,'#F7B2C4');pushpin(b,288,23,'#7FC7EE');
+  b.sh(rot(RR(296,46,36,33,2),-.08,314,62),'#E3F4EA',{k:0,hatch:0,hl:0,lw:.7,dr:.2,inner:b.st('M301 57h24M301 63.5h19M301 70h22',INK,1,.45)});pushpin(b,314,48,'#E46F6B');
+  b.ex('spark',82,16,3.6,'#FFE59A');b.ex('dots',266,74,4);
+  return b.svg('0 0 350 100','','Help wanted board')}
+const MS_NOTE=[['#FFFBF3','pin','#E46F6B',-.012],['#FFF6CC','tape2','#F7B9C6',.01],['#E4EEFB','pinear','#7FC7EE',-.006],['#FDE6EC','tape','#BDE7D2',.014],['#E3F4EA','pin','#FFD56B',-.009]];
+function msNote(i){i=((i|0)%5+5)%5;const [pap,kind,col,a]=MS_NOTE[i],b=mk('prop','ms:note'+i),R=pts=>rot(pts,a,150,56);
+  b.raw(`<path d="${ptsD(R([[12,15],[294,13],[295,107],[11,108]]))}Z" fill="${SHADOW}" opacity=".75"/>`,'under');
+  const paper=kind==='pinear'?[[8,10],[292,9],[292,86],[276,102],[8,102]]:[[8,10],[292,9],[292,102],[8,102]];
+  b.sh(R(paper),pap,{k:0,hatch:0,hl:0,lw:.85,base:mix(pap,'#FFFFFF',.4),dr:.2});
+  b.raw(`<rect data-text x="26" y="28" width="248" height="66" fill="none" stroke="none" pointer-events="none"/>`,'top');
+  if(kind==='pinear')b.sh(R([[292,86],[279,89],[276,102]]),mix(pap,INK,.12),{k:0,hatch:0,hl:0,lw:.6,dr:0});
+  const c=R([[150,15],[30,14],[270,14],[150,9]]);
+  if(kind==='pin'||kind==='pinear')pushpin(b,c[0][0],c[0][1],col);
+  else if(kind==='tape')tapeB(b,c[3][0],c[3][1],56,a*57.3-3,col);
+  else{tapeB(b,c[1][0]-8,c[1][1]-2,40,-28,col);tapeB(b,c[2][0]+8,c[2][1]-2,40,28,col)}
+  b.ex(['spark','heart','dots','spark','heart'][i],[272,24,268,28,276][i],[21,22,20,21,22][i],3.2,['#FFE59A','#F7B2C4',null,'#FFE59A','#F7B2C4'][i]);
+  return b.svg('0 0 300 110','','Note')}
+function msPage(){const b=mk('prop','ms:page'),pl=(d,w,op)=>b.raw(b.st(d,PENC,w,op));
+  b.raw(`<rect x="0" y="0" width="320" height="240" fill="${PAPER}"/>`,'under');
+  // ruled lines every 24 (hand-drawn, a touch uneven) and the double margin line, both running off the tile
+  for(let y=20;y<240;y+=24)pl(`M62 ${y}Q${R1(150+(b.r()-.5)*40)} ${R1(y+(b.r()-.5)*.9)} 322 ${R1(y+(b.r()-.5)*.6)}`,.9,.55);
+  pl('M58 -2L58.4 60L57.8 130L58.3 190L58 242',.9,.6);pl('M61.4 -2L61.8 70L61.2 150L61.7 242',.7,.45);
+  // the spiral: a punched hole and a wire ring every 24, pencil only
+  for(let y=12;y<240;y+=24){b.sh(E(22,y,3.6,3.2,10),'#EFE6DA',{k:0,hatch:0,hl:0,lw:.3,ink:PENC,base:'#F4EDE3',dr:0});
+    pl(`M22 ${y}C14 ${y-1} 3 ${y-4} 2 ${y-8}`,2.4,.8);pl(`M22.6 ${y+.6}C15 ${y} 5 ${y-3} 3 ${y-7}`,.8,.5)}
+  return b.svg('0 0 320 240','','Notebook page')}
+const MS_CY={puppy:344,young:258,adult:172,senior:86},MS_TK={x1:16,x2:70,lx:76,step:15,max:5};
+const msTick=(st,k)=>({x1:MS_TK.x1,x2:MS_TK.x2,y:(MS_CY[st]||MS_CY.puppy)-MS_TK.step*Math.max(0,Math.min(MS_TK.max-1,k|0)),lx:MS_TK.lx});
+function msChart(marks){const b=mk('prop','ms:chart'),pl=(d,w,op,col)=>b.raw(b.st(d,col||PENC,w,op));
+  b.raw(`<path d="M16 10L152 8L151 396L15 397Z" fill="${SHADOW}" opacity=".6"/>`,'under');
+  b.sh([[10,6],[148,5],[149,392],[11,394]],PAPER,{k:0,hatch:0,hl:0,lw:.7,ink:PENC,base:'#FFFFFF',dr:.1});
+  // the ruler: a tick every 10 from the floor (y 380), longer every 50
+  let d='';for(let y=380,i=0;y>12;y-=10,i++)d+=`M12 ${y}h${i%5?6:13}`;pl(d,.9,.75);
+  pl('M10.5 380.5C50 379 110 381.4 148.6 380',1.3,.8);
+  // the stage doodles, pencil only: puppy paw, young ball, adult bone, senior cushion
+  const dx=132;
+  const pw=MS_CY.puppy-30;pl(`M${dx-5} ${pw+2}Q${dx} ${pw-5} ${dx+5} ${pw+2}Q${dx} ${pw+6} ${dx-5} ${pw+2}Z`,1,.85);[[-6,-4],[-2.2,-7],[2.2,-7],[6,-4]].forEach(([x,y])=>pl(`M${dx+x-1.4} ${pw+y}a1.4 1.6 0 1 0 2.8 0a1.4 1.6 0 1 0 -2.8 0`,.9,.85));
+  const yb=MS_CY.young-30;pl(`M${dx-6} ${yb}a6 6 0 1 0 12 0a6 6 0 1 0 -12 0M${dx-5} ${yb-3}Q${dx} ${yb+1} ${dx+5} ${yb-3}M${dx-5} ${yb+3}Q${dx} ${yb-1} ${dx+5} ${yb+3}`,1,.85);
+  const ab=MS_CY.adult-30;b.loop(boneP(dx,ab,22,9),{w:1.1,col:PENC,op:.85,k:.2});
+  const sb=MS_CY.senior-30;pl(`M${dx-9} ${sb+4}Q${dx-10} ${sb-4} ${dx-6} ${sb-5}Q${dx} ${sb-3} ${dx+6} ${sb-5}Q${dx+10} ${sb-4} ${dx+9} ${sb+4}Q${dx} ${sb+6} ${dx-9} ${sb+4}ZM${dx-3} ${sb-1}l1 1.4M${dx+3} ${sb-1}l-1 1.4`,1,.85);
+  // a faint band line under each stage
+  Object.keys(MS_CY).forEach(s=>pl(`M80 ${MS_CY[s]+12}Q110 ${MS_CY[s]+12.6} 146 ${MS_CY[s]+11.6}`,.6,.3));
+  // the dated ticks
+  const cnt={};(Array.isArray(marks)?marks:[]).forEach(m=>{const st=m&&MS_CY[m.stage]?m.stage:null;if(!st)return;const k=cnt[st]=(cnt[st]||0)+1,t=msTick(st,k-1);
+    pl(`M${t.x1} ${t.y}Q${R1((t.x1+t.x2)/2)} ${R1(t.y+(b.r()-.5)*1.2)} ${t.x2} ${t.y}M${t.x2-1} ${t.y-3}l1.6 6`,1.5,.95,'#6E625A');
+    if(m.label)b.tx(t.lx,t.y+4,esc(String(m.label).slice(0,10)),12,{anchor:'start',col:'#6E625A'})});
+  return b.svg('0 0 160 400','','Height chart')}
+function msTab(k){k=['today','week','badges','notebook'].includes(k)?k:'today';if(k==='badges')return msRosette('g').replace('aria-label="Gold rosette"','aria-label="Badges"');
+  const b=mk('icon','ms:tab:'+k);
+  if(k==='today'){b.sh(RR(11,9,42,51,6),C.wood,{k:.04,hatch:0,hl:0,lw:1.2,base:'#F3DDB4'});
+    b.sh(RR(17,16,30,38,2),'#FFFBF3',{k:0,hatch:0,hl:0,lw:.9,base:'#FFFFFF'});
+    b.ln([[29,28],[42,28]],{w:2.2,col:GRAPH});b.ln([[29,40],[40,40]],{w:2.2,col:GRAPH});
+    b.ln([[20,28],[23,31],[27,24]],{w:2.4,col:'#5E9E3A'});b.loop(RR(20,36,6,7,1.6),{w:1.6});
+    b.sh(RR(22,5,20,9,3),C.grey,{k:0,hatch:0,hl:0,lw:1})}
+  else if(k==='week'){b.sh(rot(RR(11,13,42,42,2),-.1,32,34),'#FFE08A',{k:0,hatch:0,hl:0,lw:1.2,base:'#FFF3C8',marks:[{pts:rot([[11,48],[53,48],[53,56],[11,56]],-.1,32,34),fill:'#F9CF6A',op:.6,k:0}]});
+    b.ln(rot([[18,30],[44,30]],-.1,32,34),{w:2.2,col:GRAPH});b.ln(rot([[18,40],[38,40]],-.1,32,34),{w:2.2,col:GRAPH});
+    b.sh(E(31,14,6,6,10),'#E46F6B',{k:0,hatch:0,hl:0,lw:.9,base:'#F4A6A0'});b.raw('<ellipse cx="29" cy="12" rx="1.8" ry="1.4" fill="#fff" opacity=".85"/>','top')}
+  else{b.sh(RR(14,8,38,50,4),'#9ED8D2',{k:.04,hatch:0,hl:0,lw:1.2,base:'#D2EFEC',marks:[{pts:[[38,0],[44,0],[44,64],[38,64]],fill:'#6FBDB5',op:.55,k:0}]});
+    b.sh(RR(22,18,22,12,2),'#FFFBF3',{k:0,hatch:0,hl:0,lw:.8,base:'#FFFFFF'});b.ln([[26,24],[40,24]],{w:1.8,col:GRAPH});
+    paw(b,33,44,3.6,'#F28FA5',{noline:1});
+    [14,23,32,41,50].forEach(y=>b.ln([[19,y],[10,y-1],[10,y+3],[17,y+3.4]],{w:1.8,col:'#7D7A80'}))}
+  return b.svg('0 0 64 64','',{today:'Today',week:'This week',notebook:'Notebook'}[k])}
+function msPouch(){const b=mk('item','ms:pouch');
+  b.shadow(32,59,21,3);
+  b.sh([[22,24],[42,24],[46,30],[53,40],[54,50],[47,57],[32,59],[17,57],[10,50],[11,40],[18,30]],'#E8C597',{k:.18,sh:'#C99A72',base:'#F6E4C8',
+    det:[[[22,30],[19,44]],[[42,30],[45,44]]],dw:.6,dcol:'#C99A72'});
+  b.sh([[20,16],[26,19],[32,17],[38,19],[44,16],[43,24],[32,27],[21,24]],'#E8C597',{k:.2,hatch:0,hl:0,lw:.85,base:'#F6E4C8'});
+  b.ln([[20,24.4],[32,27.4],[44,24.4]],{w:1.8,col:'#E46F6B'});
+  b.sh([[31,26],[23,22],[20,26.5],[23,30],[31,27.6]],'#F08A86',{k:.2,hatch:0,hl:0,lw:.6,dr:0});b.sh([[33,26],[41,22],[44,26.5],[41,30],[33,27.6]],'#F08A86',{k:.2,hatch:0,hl:0,lw:.6,dr:0});
+  b.ln([[31,28],[28,35],[26,37]],{w:1.4,col:'#E46F6B'});b.ln([[33,28],[36,35],[38.4,36.6]],{w:1.4,col:'#E46F6B'});
+  b.sh(E(32,27,2.6,2.4,9),'#E46F6B',{hatch:0,hl:0,lw:.6,dr:0});
+  b.sh(E(32,45,9,8,14),'#FFF2DA',{hatch:0,hl:0,lw:.75,base:'#FFFBF3'});
+  b.raw(`<ellipse cx="32" cy="45" rx="7" ry="6" fill="none" stroke="${INK}" stroke-width=".7" stroke-dasharray="1.4 1.8" opacity=".6"/>`,'top');
+  paw(b,32,46.4,3,'#F28FA5',{noline:1});
+  b.ex('spark',53,16,3.4,'#FFE59A');
+  return b.svg('0 0 64 64','','Treat pouch')}
+PROPS.trophyshelf=function(b,o){msShelf(b,o&&o.cups)};
+PROP_VB.trophyshelf='0 0 160 180';
+{const _propMS=PA.prop;
+ PA.prop=function(name,o){if(name!=='trophyshelf')return _propMS.apply(this,arguments);
+  const L=(o&&Array.isArray(o.cups)?o.cups:[]).filter(c=>MS_T[c]).slice(0,18);
+  return serve('p:trophyshelf:'+L.join(''),()=>{const b=mk('prop','trophyshelf');msShelf(b,L);return b.svg(PROP_VB.trophyshelf,` data-cups="${L.length}"`,'Trophy shelf')})}}
+ITEMS['Trophy Shelf']=function(b){const s=mk('prop','trophyshelf');msShelf(s,['b','g','s']);const t=s.svg(PROP_VB.trophyshelf,'','').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'').split(IDT).join(IDT+'s');// the prop's own ids stay @PWB@ placeholders, so each card hands out fresh ones
+  b.raw(`<svg x="7" y="4" width="50" height="56" viewBox="0 0 160 180" overflow="hidden">${t}</svg>`)};
+PA.MISSIONS={shelf:cups=>PA.prop('trophyshelf',{cups}),rosette:t=>serve('ms:rosette:'+msTier(t),()=>msRosette(t)),medal:()=>PA.item('Crayon Medal'),
+  board:()=>serve('ms:board',msBoard),note:i=>serve('ms:note:'+(((i|0)%5+5)%5),()=>msNote(i)),page:()=>serve('ms:page',msPage),
+  chart:marks=>{const M=(Array.isArray(marks)?marks:[]).filter(m=>m&&MS_CY[m.stage]).map(m=>({stage:m.stage,label:m.label==null?'':String(m.label)}));return serve('ms:chart:'+JSON.stringify(M),()=>msChart(M))},
+  tab:k=>serve('ms:tab:'+k,()=>msTab(k)),pouch:()=>serve('ms:pouch',msPouch),
+  boardText:{x1:100,x2:250,y1:30,y2:72,cx:175,cy:51},noteText:{x1:26,x2:274,y1:28,y2:94},pageText:{x1:68,x2:312,pitch:24,first:20},
+  chartY:Object.assign({},MS_CY),chartTick:(st,k)=>msTick(st,k),tiers:['b','s','g','c'],tabs:['today','week','badges','notebook']};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};
