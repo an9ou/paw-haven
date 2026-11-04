@@ -114,6 +114,7 @@ const SUITES = {
   v218_fun_fair: { file: 'test_v218_fun_fair.js', group: 'all', est: 300, timeout: 1200 }, // v2.18 Fun Fair (V218.md): the eight games, the caps, the stall, the photo contest, the stickers, the phone layout
   v2182_news: { file: 'test_v2182_news.js', group: 'all', est: 120, timeout: 600 }, // v2.18.2 What's new in town (49c_news.js): once per id, not after a reload, new saves skip, never on the guide, fits everywhere
   v2192_rhythm: { file: 'test_v2192_rhythm.js', group: 'all', est: 90, timeout: 600 }, // Daily rhythm (docs/design/daily-rhythm.md): one mission a Japan day, 40 coins and a stamp, the swap, walks 6+ at half, daily bonuses on the Japan day, GAME_SEC, old saves
+  v220_missions: { file: 'test_v220_missions.js', group: 'all', est: 90, timeout: 600 }, // v2.20 Missions v2 (V220.md): save fields and backfill, little helps, the treat pouch, the swap on any row, the tabs; parts C-F add theirs
   v219_friends: { file: 'test_v219_friends.js', group: 'all', est: 180, timeout: 600 }, // v2.19 Friends parts 2-5 (V219.md 3-6, 8): codes, the sheet, the yard snapshot, visits, gifts, the walk together
   v2191_runner: { file: 'test_v2191_runner.js', group: 'all', est: 200, timeout: 480 }, // v2.19.1 the walk runner: followers duck, no sniff pause, the four power-ups (o._forcePower)
   wm_review: { file: 'test_wm_review.js', group: 'all', est: 90, timeout: 600 }, // Winter Market 2026 code review fixes (docs/design/winter-market.md): market roam, market balls, caps, buys, stalls, warm wear

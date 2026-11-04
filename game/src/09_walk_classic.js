@@ -271,7 +271,7 @@ function endWalk(complete) {
   const bond = frac > 0.05 ? addBond(R.bp * frac + W.bond) : 0;
   const energy = Math.round(W.e0 - S.stats.energy);
   const pkFol = pkWalkDoneClassic(happy, frac > 0.05 ? R.bp * frac + W.bond : 0, cleanLoss + W.clean, energy);
-  if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; trackAct('walk', { area: W.area, early: !complete }); }
+  if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; trackAct('walk', { area: W.area, early: !complete, pack: 1 + pkFol.length, walkers: [S.dog.id].concat(pkFol.map((d) => d.id)) }); } // v2.20: pack, the walkers (walkers: their ids, growing up)
   markDirty(); hideBubble(); setWalkPose('happy');
   const L = W.found;
   const frLine = typeof frWalkEnd !== 'function' ? '' : frac > 0.05 || L ? frWalkEnd(L && L.item && !L.dup ? L.item.n : null) : (frWalkDrop(), ''); // v2.19: a walk with a friend's dog (50_friends.js)

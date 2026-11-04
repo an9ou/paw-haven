@@ -44,6 +44,7 @@
 .gd-lesson:nth-child(4n+2){transform:rotate(.6deg)}.gd-lesson:nth-child(4n+3){transform:rotate(-.5deg)}
 .gd-lesson b{font-family:var(--font-hand);font-size:22px;line-height:1}
 .gd-lesson p{margin:2px 0 0}
+.gd-lesson p+p{margin-top:7px} /* v2.20: a lesson of several paragraphs (Missions) reads as paragraphs */
 .gd-lic{position:relative;flex:none;width:52px;height:52px;display:grid;place-items:center}
 .gd-lic > svg{width:34px;height:34px}
 .gd-lring{position:absolute;inset:0}

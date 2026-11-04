@@ -1,0 +1,80 @@
+/* v2.20 Missions v2, part E: Gerald's town notebook (24e_notebook.js, V220.md). One page at a time on lined paper (PawArt.MISSIONS.page, or a
+   plain page): the day, the title, the steps with ticks ("Opens at Bond N" for a locked place), the gift, Gerald's lesson, the How to play link,
+   Back and Next. The finished notebook folds under Badges. Phones (360 / 390): text never under 13 px, 44 px taps, nothing wider than the sheet. */
+.nb{display:flex;flex-direction:column;gap:10px;min-width:0}
+.nb-head{display:flex;align-items:center;gap:10px;min-width:0}
+.nb-headtxt{flex:1 1 auto;min-width:0}
+.nb-headtxt h3{margin:0 0 2px;font-family:var(--font-hand);font-size:24px;line-height:1.1;overflow-wrap:anywhere}
+.nb-headtxt p{margin:0 0 4px}
+.nb-count{font-family:var(--font-hand);font-size:21px;line-height:1.1}
+.nb-intro{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.nb-page{position:relative;isolation:isolate;min-width:0;padding:12px 14px 12px 40px;border-radius:6px;overflow:hidden}
+.nb-pageart{position:absolute;inset:0;z-index:-1;display:block;pointer-events:none}
+.nb-pageart svg{width:100%;height:100%;display:block}
+.nb-phead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+.nb-day{font-family:var(--font-hand);font-weight:700;font-size:18px;color:#8A5A4A}
+.nb-phead h4{margin:0;font-family:var(--font-hand);font-size:23px;line-height:1.1;overflow-wrap:anywhere}
+.nb-page.done .nb-phead h4::after{content:' \2713';color:#3E9A6A}
+.nb-steps{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:4px}
+.nb-step{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;min-height:40px;font-size:17px;line-height:1.25}
+.nb-step > svg{width:24px;height:24px;flex:none}
+.nb-step:not(.done) .ms-tk{display:none}
+.nb-step.done .nb-st{text-decoration:line-through;text-decoration-color:rgba(62,154,106,.7);text-decoration-thickness:2px}
+.nb-st{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}
+.nb-ok,.nb-cnt{flex:none;font-size:15px;font-variant-numeric:tabular-nums}
+.nb-ok{color:#2F7A52}
+.nb-lock{flex:none;display:inline-block;padding:1px 8px 2px;border:1.6px dashed #8A7566;border-radius:10px 12px 9px 13px;background:#FFFBF3;font-size:14px;color:var(--ink)}
+.nb-step.locked .nb-st{color:#6E5A4E}
+.nb-gift{display:flex;align-items:center;gap:8px;margin:4px 0 6px;font-size:16px;line-height:1.3}
+.nb-gic{width:36px;height:36px;flex:none;display:block}
+.nb-gic svg{width:100%;height:100%;display:block}
+.nb-gift.got .nb-gic{filter:drop-shadow(0 0 3px #F9D56E)}
+.nb-lesson{margin:0 0 8px;padding:6px 10px;border-left:3px solid #F2C744;background:rgba(255,243,184,.55);font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.nb-lesson b{font-family:var(--font-hand);font-size:18px;margin-right:4px}
+.nb-howrow{margin:0}
+.nb-how{min-height:44px;padding:4px 12px;font-size:16px;max-width:100%;white-space:normal;text-align:left}
+.nb-next{margin:0;font-size:15px;line-height:1.35;color:#6E5A4E}
+.nb-flip{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nb-flip .btn{min-height:44px;min-width:88px;padding:4px 12px;font-size:16px}
+.nb-pgn{font-size:15px;text-align:center}
+/* fix batch: the art lane's page (PawArt.MISSIONS.page, a 320 x 240 tile: spiral, margin at x 58, ruled every 24 from y 20) is a repeat-y background at the
+   page's width; the text sits right of x 68 and every row is one ruled line tall (--L, container units), so the rows stay on the lines */
+.nb .nb-page.art{container-type:inline-size;--L:calc(100cqw * 24 / 320);width:100%;max-width:470px;margin:0 auto;padding:0;overflow:hidden;border-radius:4px;
+  background:#FFFDF6 var(--nbbg) repeat-y 0 0 / 100% auto;box-shadow:1px 2px 0 rgba(91,61,50,.16)}
+.nb .nb-page.art::before{content:'';display:block;height:calc(100cqw * 8 / 320 - 5px)}
+.nb .nb-page.art::after{content:'';display:block;height:calc(100cqw * 12 / 320)}
+.nb .nb-page.art > *{margin-left:calc(100cqw * 70 / 320);margin-right:calc(100cqw * 8 / 320)}
+.nb .nb-page.art .nb-phead{margin-top:0;margin-bottom:0;gap:0 8px;line-height:var(--L)}
+.nb .nb-page.art .nb-phead h4,.nb .nb-page.art .nb-day{line-height:var(--L)}
+.nb .nb-page.art .nb-steps{margin-top:0;margin-bottom:0;gap:0}
+.nb .nb-page.art .nb-step{min-height:var(--L);line-height:var(--L);gap:0 8px}
+.nb .nb-page.art .nb-step > svg{width:min(24px,var(--L));height:min(24px,var(--L))}
+.nb .nb-page.art .nb-ok,.nb .nb-page.art .nb-cnt,.nb .nb-page.art .nb-lock{line-height:1.2}
+.nb .nb-page.art .nb-gift{margin-top:0;margin-bottom:0;line-height:var(--L)}
+.nb .nb-page.art .nb-gic{width:var(--L);height:var(--L)}
+.nb .nb-page.art .nb-lesson{margin-top:0;margin-bottom:0;padding:0 8px;line-height:var(--L);background:rgba(255,243,184,.5)}
+.nb .nb-page.art .nb-howrow{margin-top:0;margin-bottom:0;min-height:calc(var(--L) * 2);display:flex;align-items:center}
+.nb .nb-page.art .nb-how{line-height:1.25}
+/* the finished notebook, folded under Badges */
+.nb-fold{border-top:2px dashed #C9B8A6;padding-top:6px}
+.nb-fold > summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-hand);font-weight:700;font-size:20px;list-style:none;overflow-wrap:anywhere}
+.nb-fold > summary::-webkit-details-marker{display:none}
+.nb-fold > summary::before{content:'+';flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:2px solid var(--ink);border-radius:50%;font-size:18px;line-height:1}
+.nb-fold[open] > summary::before{content:'-'}
+/* the How to play lesson a page links to */
+.gd-lesson.nb-hl{outline:3px solid #F9D56E;outline-offset:3px;border-radius:10px}
+/* the day 7 and day 14 popups */
+.nb-pop{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.nb-popic{width:96px;height:96px;flex:none;display:block}
+.nb-popic svg{width:100%;height:100%;display:block}
+.nb-pop p{flex:1 1 220px;min-width:0;margin:0;font-size:17px;line-height:1.45}
+
+html[data-layout="phone"] .nb-headtxt h3{font-size:21px}
+html[data-layout="phone"] .nb-count{font-size:19px}
+html[data-layout="phone"] .nb-intro,html[data-layout="phone"] .nb-next{font-size:14px}
+html[data-layout="phone"] .nb-page{padding:10px 10px 10px 32px}
+html[data-layout="phone"] .nb-phead h4{font-size:21px}
+html[data-layout="phone"] .nb-step{font-size:16px}
+html[data-layout="phone"] .nb-lesson,html[data-layout="phone"] .nb-gift{font-size:15px}
+html[data-layout="phone"] .nb-flip .btn{min-width:76px}
+html[data-layout="phone"] .nb-popic{width:72px;height:72px}

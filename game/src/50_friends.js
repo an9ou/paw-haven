@@ -841,6 +841,7 @@ async function frVisit(fid) {
   FRV.card = { id: 'fr:' + fid, name: FRV.pair || [0, 0], dogs: yard.dogs };
   if (!modal.hidden) closeModal();
   go('fryard');
+  trackAct('frvisit', { fid }); // v2.20 Missions v2: the friend's-yard mission
   return true;
 }
 function frHome() { if (cur.mode === 'fryard') go('yard'); }

@@ -103,7 +103,7 @@ async function suite(t, dev) {
   const fs = await ev(() => ['.ms-coins', '.ms-sline'].map((s) => parseFloat(getComputedStyle(document.querySelector('#modal ' + s)).fontSize)));
   ok(fs.every((x) => x >= 15), 'Missions text 15 px (' + fs.join(', ') + ')');
   const cw = await ev(() => { const c = document.querySelector('#modal .ms-card').getBoundingClientRect(), b = document.querySelector('#modal .panel-body').getBoundingClientRect(); return [Math.round(c.width), Math.round(b.width)]; });
-  ok(cw[0] >= Math.min(320, cw[1] - 24), `the card fills the sheet width (${cw[0]} of ${cw[1]})`);
+  ok(cw[0] >= 220 && cw[0] <= cw[1] + 2, `the card is a readable size inside the sheet (${cw[0]} of ${cw[1]}; v2.20: about 240, so the helps sit near it)`);
   await closeSheet(t);
   const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
   ok(errs.length === 0, 'no console errors ' + errs.slice(0, 3).join(' | '));

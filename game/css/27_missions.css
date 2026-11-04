@@ -1,6 +1,7 @@
 /* v2.4 missions (SHOP & MISSIONS lane): the checklist card, the stamp card, the yard clipboard. Phone rules under html[data-layout="phone"]. */
 .panel.ms-pop{width:min(720px,100%)}
 .ms-body{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:18px;align-items:start}
+.ms-sheet .ms-body{grid-template-columns:minmax(0,260px) minmax(0,1fr)} /* v2.20 Missions v2 (the sheet with tabs); off (MS2_LIVE) the v2.19.2 sheet keeps 250 */
 .ms-cardwrap{position:relative}
 .ms-card{display:block;width:100%;aspect-ratio:200/260;transform:rotate(-1.5deg)}
 .ms-card svg,.ms-stampcard svg,.ms-prize-art svg{width:100%;height:100%;display:block}

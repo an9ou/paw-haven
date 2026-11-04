@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Missions v2 art gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pair{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px dashed #D8CBB8;padding:4px;flex-wrap:wrap}
+figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;margin-top:2px}
+.o figcaption{opacity:.55}svg{display:block;max-width:100%}.night{background:#2E2A33;border-radius:6px;padding:6px}.night figcaption{color:#FFF2DA}
+.scene{position:relative;overflow:hidden;border-radius:6px;border:1px solid #E3D2BA}.scene>.bg svg{width:100%;height:100%}.on{position:absolute}.on>svg{width:100%;height:100%;overflow:visible}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.pill{display:flex;align-items:center;gap:4px;padding:4px 10px 4px 6px;border:2px solid #5B3D32;border-radius:999px;background:#FFF2DA;font:700 15px 'Caveat',cursive}
+.pill.on2{background:#FFE08A}.pill span{width:24px;height:24px;display:block}
+.brow{display:flex;align-items:center;gap:8px;width:330px;padding:4px 8px;border-bottom:1px dashed #D8CBB8;font:13px system-ui}.brow span{width:28px;height:28px;flex:none}
+.notecol{width:340px;display:flex;flex-direction:column;gap:6px}.note{position:relative;width:340px;height:120px}.note>.bgx{position:absolute;inset:0}.note>.bgx svg{width:100%;height:100%}
+.note p{position:absolute;left:9%;right:9%;top:26%;margin:0;font:600 19px 'Caveat',cursive}
+.pg{width:330px;height:300px;background-size:100% auto;background-repeat:repeat-y;padding:0;position:relative;font:600 20px/24.75px 'Caveat',cursive}
+.pg p{margin:0;position:absolute;left:21.5%;right:3%;top:2px}
+.hdr{position:relative;width:350px}.hdr b{position:absolute;left:28.6%;width:42.8%;top:33%;text-align:center;font:700 26px 'Caveat',cursive;color:#B8536F}</style></head>
+<body>
+<h1>Doodle Doggo world art B: v2.20 "Missions v2" (PawArt.MISSIONS)</h1>
+<p>Each new drawing sits next to its nearest existing neighbour (greyed caption). Light paper and a dark backdrop.</p>
+<h2>Trophy shelf (160x180) with 0, 1, 8 and 17 cups, the item card, next to the Giant Crayon Box</h2><div class="row" id="shelf"></div>
+<h2>The shelf in the yard and the house at decoration size (100x112 world units)</h2><div class="row" id="yard"></div>
+<h2>Rosettes (64 and 28 px), next to the title icon and the Friend ribbon</h2><div class="row" id="ros"></div>
+<h2>Badge rows at phone size (28 px rosettes)</h2><div class="row" id="brows"></div>
+<h2>Crayon Medal and treat pouch (64 and 40), next to the Coat Collector Ribbon and the Sparkle Stone</h2><div class="row" id="medal"></div>
+<h2>Tabs (64 and 24 px), as crayon pills, next to the missions clipboard icon</h2><div class="row" id="tabs"></div>
+<h2>Help-wanted board header (350x100), next to the Playdates board</h2><div class="row" id="board"></div>
+<h2>Notes 0 to 4 (300x110), with HTML text on top, one column at phone width</h2><div class="row" id="notes"></div>
+<h2>Notebook page (320x240 tile, repeat-y) with HTML text, and the height chart (160x400)</h2><div class="row" id="page"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_c.js"></script>
+<script src="pawart_world_b.js"></script>
+<script src="../dogs/pawart_dogs.js"></script>
+<script>
+const PA=window.PawArt,M=PA.MISSIONS,W=window.innerWidth<600,SW=W?366:620,k=W?.62:1;
+function fig(svg,cap,w,old){return '<figure class="'+(old?'o':'')+'"><div style="width:'+w+'px">'+svg+'</div><figcaption style="max-width:'+Math.max(w,60)+'px">'+cap+'</figcaption></figure>'}
+function add(id,html,cls){const d=document.createElement('div');d.className='pair'+(cls?' '+cls:'');d.innerHTML=html;document.getElementById(id).appendChild(d)}
+const nightBox=html=>'<div class="night row">'+html+'</div>';
+const on=(svg,x,y,w,h)=>'<div class="on" style="left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px">'+svg+'</div>';
+const C17='gsbcgsbcgsbcgsbcg'.split(''),C8=['g','g','s','b','c','s','b','b'];
+const shelves=(night)=>[[[],'0 cups'],[['g'],'1 cup'],[C8,'8 cups'],[C17,'17 cups']].map(([c,l])=>fig(night?PA.tint(M.shelf(c),{time:'night'}):M.shelf(c),l,160*k)).join('');
+add('shelf',shelves(false)+fig(PA.item('Trophy Shelf'),'item card',64)+fig(PA.prop('crayonbox'),'crayon box',180*k,1));
+add('shelf',nightBox(shelves(true)));
+// in the yard and the house at decoration size
+function inScene(scene,env,svg,x,y,w,h,extra){const s=SW/1000;add('yard','<div class="scene" style="width:'+SW+'px;height:'+(SW*.6)+'px"><div class="bg" style="width:100%;height:100%">'+PA.scene(scene,env)+'</div>'+on(PA.prop('crayonbox'),536*s,296*s,112*s,90*s)+on(svg,x*s,y*s,w*s,h*s)+(extra||'')+'</div>')}
+inScene('yard',{},M.shelf(C8),380,284,100,112);
+inScene('yard',{time:'night'},PA.tint(M.shelf(C17),{time:'night'}),380,284,100,112);
+if(PA.scene)try{inScene('house',{},PA.tint(M.shelf(['g','c','s']),{time:'day',indoor:true}),380,312,100,112)}catch(e){}
+// rosettes
+const T=['b','s','g','c'];
+add('ros',T.map(t=>fig(M.rosette(t),t,64)).join('')+fig(PA.icon('title'),'title icon',64,1)+fig(PA.FRIENDS.ribbon(),'friend ribbon',64,1));
+add('ros',T.map(t=>fig(M.rosette(t),t+' 28',28)).join('')+fig(PA.icon('title'),'title 28',28,1)+fig(PA.FRIENDS.ribbon(),'ribbon 28',28,1));
+add('ros',nightBox(T.map(t=>fig(M.rosette(t),t,64)).join('')+T.map(t=>fig(M.rosette(t),t,28)).join('')));
+add('brows','<div>'+[['b','Walker','37 / 50'],['s','Gardener','61 / 150'],['g','Photographer','52 / 150'],['c','Tokyo traveller','7 / 7']].map(([t,n,v])=>'<div class="brow"><span>'+M.rosette(t)+'</span><b>'+n+'</b><i style="margin-left:auto">'+v+'</i></div>').join('')+'</div>');
+add('medal',fig(M.medal(),'Crayon Medal',64)+fig(M.medal(),'40',40)+fig(M.pouch(),'treat pouch',64)+fig(M.pouch(),'40',40)+fig(PA.item('Coat Collector Ribbon'),'Coat Collector Ribbon',64,1)+fig(PA.item('Sparkle Stone'),'Sparkle Stone',64,1));
+add('medal',nightBox(fig(M.medal(),'medal',64)+fig(M.pouch(),'pouch',64)+fig(M.medal(),'40',40)+fig(M.pouch(),'40',40)));
+const TB=[['today','Today'],['week','Week'],['badges','Badges'],['notebook','Notebook']];
+add('tabs',TB.map(([t,l])=>fig(M.tab(t),t,64)).join('')+fig(PA.icon('missions'),'missions icon',64,1));
+add('tabs','<div class="tabs">'+TB.map(([t,l],i)=>'<div class="pill'+(i?'':' on2')+'"><span>'+M.tab(t)+'</span>'+l+'</div>').join('')+'</div>');
+add('tabs',nightBox(TB.map(([t])=>fig(M.tab(t),t,24)).join('')+TB.map(([t])=>fig(M.tab(t),t,64)).join('')));
+add('board','<div class="hdr">'+M.board()+'<b>Help wanted</b></div>'+fig(PA.prop('playboard'),'playdates board',200*k,1));
+add('board',nightBox(fig(M.board(),'board',W?330:350)));
+const TXT=['Walk 6 times (2 / 6)','Harvest 3 crops for Baker Bea','Take 3 photos at the Pier','Win a ribbon at a Fun Fair game','Paddle or float fetch twice'];
+add('notes','<div class="notecol">'+[0,1,2,3,4].map(i=>'<div class="note"><div class="bgx">'+M.note(i).replace('<svg ','<svg preserveAspectRatio="none" ')+'</div><p>'+TXT[i]+'</p></div>').join('')+'</div>');
+add('notes',nightBox([0,1,2,3,4].map(i=>fig(M.note(i),'note '+i,W?160:220)).join('')));
+const pg='url("data:image/svg+xml,'+encodeURIComponent(M.page())+'")';
+add('page','<div class="pg"><p>Day 2: Settling in<br>Give Mochi a bath<br>Take a nap together<br>Try on the party gift<br>Puppies sleep up to 18 hours a day.<br>A tired dog is a happy dog.</p></div>');
+document.querySelectorAll('.pg').forEach(d=>d.style.backgroundImage=pg);
+const MK=[{stage:'puppy',label:'2 Nov'},{stage:'puppy',label:'3 Nov'},{stage:'puppy',label:'5 Nov'},{stage:'puppy',label:'6 Nov'},{stage:'young',label:'8 Nov'},{stage:'young',label:'12 Nov'},{stage:'adult',label:'1 Dec'},{stage:'senior',label:'4 Mar'}];
+add('page',fig(M.chart(MK),'chart, 8 marks',160)+fig(M.chart([]),'empty',160)+fig(M.chart([{stage:'puppy',label:''},{stage:'young',label:''}]),'no labels',120));
+add('page',nightBox(fig(M.chart(MK),'chart',120)+fig(M.page(),'page tile',200)));
+</script>
+</body></html>

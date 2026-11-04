@@ -267,7 +267,7 @@ const phDownloadOK = () => !PH.force && !(typeof clArtifact === 'function' && cl
 function phCounted(how) {
   const n = (PH.names && PH.names.length) || (PH.cap ? PH.cap.names.length : 1);
   S.ph.n = (S.ph.n || 0) + 1; if (!S.ph.first) S.ph.first = localISO(); markDirty(); saveNow();
-  trackAct('photo', { dogs: n, how });
+  trackAct('photo', { dogs: n, how, names: ((PH.names && PH.names.length ? PH.names : PH.cap ? PH.cap.names : []) || []).slice() }); // v2.20: names, the dogs in the photo (growing up)
 }
 async function phDeliver(blob) {
   const file = new File([blob], phFileName(), { type: 'image/png' });

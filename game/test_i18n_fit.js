@@ -212,7 +212,7 @@ async function worker(job) {
     const eachTab = async (pre, tabsSel, max) => {
       const n = await ev((s) => document.querySelectorAll(s).length, tabsSel);
       for (let i = 0; i < Math.min(n, max || 12); i++) {
-        const lbl = await ev(([s, i]) => { const b = document.querySelectorAll(s)[i]; if (!b) return null; const k = b.dataset.jt || b.dataset.tab || b.dataset.mt || b.dataset.ptab || b.dataset.trtab || b.dataset.wt || String(i); b.click(); return k; }, [tabsSel, i]);
+        const lbl = await ev(([s, i]) => { const b = document.querySelectorAll(s)[i]; if (!b) return null; const k = b.dataset.jt || b.dataset.tab || b.dataset.mt || b.dataset.ptab || b.dataset.trtab || b.dataset.wt || b.dataset.mstab || String(i); b.click(); return k; }, [tabsSel, i]);
         if (lbl == null) break; await sleep(250); await measure(`${pre}: ${lbl}`);
       }
     };
@@ -339,7 +339,8 @@ async function worker(job) {
       if (opened) { await sleep(400); await measure('mailbox: a letter'); }
       await closeAll();
     });
-    await step('missions', async () => { await ev(() => window.__paw.ms.open()); await modalUp(); await measure('missions'); await closeAll(); });
+    // v2.20 Missions v2: the sheet and each of its tabs (Today, Week, Badges, and the Notebook while a new player has one)
+    await step('missions', async () => { await ev(() => window.__paw.ms.open()); await modalUp(); await measure('missions'); await eachTab('missions', '#modal .ms-pop .ms-tab', 4); await closeAll(); });
     await step('dog card settings', async () => { await ev(() => window.__paw.dc.settings(true)); await modalUp(); await measure('dog cards: my card settings'); await closeAll(); });
     // ---------------------------------------------------------------- photo, training, ball ----------------------------------------------------------------
     await step('photo mode', async () => { await ev(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.active(), null, 5000); await sleep(600); await measure('photo mode'); await ev(() => window.__paw.ph.close()); await t.until(() => !window.__paw.ph.active(), null, 4000); });
