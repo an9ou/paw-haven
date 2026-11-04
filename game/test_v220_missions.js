@@ -148,6 +148,7 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msw .msw-note').length === 5 && document.querySelector('.ms-tab[data-mstab="week"]').getAttribute('aria-selected') === 'true', null, 3000), 'Week: Gerald\'s help-wanted board, five notes (part D)');
   await t.p.click('.ms-tab[data-mstab="badges"]');
   ok(await t.until(() => document.querySelectorAll('#modal .ms-tabbody .msb .msb-row').length === 17, null, 3000), 'Badges: the 17 badge rows (part C)');
+  await t.p.click('.ms-tab[data-mstab="notebook"]'); await t.until(() => !!document.querySelector('#modal .ms-tabbody .nb'), null, 3000); // a clock stub above (B2) may have opened page 2: its dot clears here
   await t.p.click('.ms-tab[data-mstab="today"]');
   ok(await t.until(() => !!document.querySelector('#modal .ms-tabbody .ms-body'), null, 3000), 'back to Today');
   ok(await ev(() => !document.querySelector('#msBtn').classList.contains('dot')), 'opening the sheet clears the soft dot');
@@ -529,8 +530,8 @@ require('./test_lib').run('v220_missions', async (t) => {
   ok(await ev(() => !window.__paw.msb.medalPending && window.__paw.S.missions.mpop === 0), 'shown once: mpop back to 0');
   const g5 = await ev(async () => {
     const P = window.__paw, S = P.S, wk = S.missions.wk, R = Date.now, wait = (ms) => new Promise((r) => setTimeout(r, ms)); P.msw.roll(); wk.seen = wk.w + (wk.got === wk.w ? '+' : '');
-    const b = document.getElementById('msBtn'), d0 = b.classList.contains('dot'), w0 = wk.w;
-    try { const t0 = R(); Date.now = () => t0 + 7 * 864e5; let on = false; for (let i = 0; i < 30 && !on; i++) { await wait(100); on = wk.w !== w0 && b.classList.contains('dot'); } return { d0, on, w: wk.w !== w0 }; } finally { Date.now = R; }
+    const b = document.getElementById('msBtn'), d0 = P.msw.dot(), w0 = wk.w; // the week's own dot (other news may light the button too)
+    try { const t0 = R(); Date.now = () => t0 + 7 * 864e5; let on = false; for (let i = 0; i < 30 && !on; i++) { await wait(100); on = wk.w !== w0 && P.msw.dot() && b.classList.contains('dot'); } return { d0, on, w: wk.w !== w0 }; } finally { Date.now = R; }
   });
   ok(!g5.d0 && g5.w && g5.on, 'a new Monday board lights the soft dot right away (' + JSON.stringify(g5) + ')');
   await ev(() => { const P = window.__paw; P.ms.roll(true); P.ms2.roll(true); P.msw.roll(true); });
