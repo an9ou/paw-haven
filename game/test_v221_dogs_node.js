@@ -78,7 +78,10 @@ const COATS = {
     { base: '#9A4E2A', light: '#E0A060', dark: '#6E3315', white: 0.25 }, { base: '#D9A07A', light: '#E0A060', dark: '#9A4E2A', white: 0.25, merle: true }],
   // Black, Blue merle, Black and white, Blue merle and white, Black and copper, Blue merle and copper, Blue merle tricolour, Yellow, Yellow and white, Red, Red merle,
   // Red and white, Red merle and white, Red and copper, Red merle and copper, Red tricolour, Red merle tricolour
-  // cavalier, jrt: ART B's rows
+  cavalier: [{ base: '#2B2430', light: '#C8743A', dark: '#1D1A22', white: 0.6 }, { base: '#C8642E', light: '#E8A06A', dark: '#8A3E1C', white: 0 }, { base: '#C8642E', light: '#E8A06A', dark: '#8A3E1C', white: 0.25 },
+    { base: '#2B2430', light: '#C8743A', dark: '#1D1A22', white: 0 }, { base: '#2B2430', light: '#C8743A', dark: '#1D1A22', white: 0.25 }],
+  // Tricolour, Ruby, Ruby (S/sp: a little white star on the chest), Black and tan, Black and tan (S/sp); Blenheim is the starter
+  jrt: [{ base: '#FBF8F2', light: '#D08A44', dark: '#2B2430', white: 0.6 }, { base: '#FBF8F2', light: '#FFFFFF', dark: '#2B2430', white: 0.6 }], // Tricolour, White and black; White and tan is the starter
 };
 NEW.filter((k) => HAVE.includes(k)).forEach((k) => {
   AGES.forEach((age) => [false, true].forEach((sp) => good(PA.dogHead(k, { age: age || undefined, sparkle: sp }), '0 0 100 100', `head ${k} ${age} ${sp}`)));
@@ -157,8 +160,20 @@ if (NEW.includes('aussie')) { const C = (base, light, dark, white, merle) => ({ 
   ok(!solid.includes('stroke="#FFFFFF" stroke-width') || true, 'aussie Black: renders'); ok(A(C('#2B2430', '#C8743A', '#1D1A22', 0.25, false), 'x') !== A(C('#2B2430', '#C8743A', '#1D1A22', 0, false), 'x'), 'aussie: white trim comes from coat.white');
   ok(PA.dog('aussie', { pose: 'sit', coat: Object.assign({ eyes: 'odd' }, bm), seed: 'e' }).includes('#3FA9F5'), 'aussie: odd eyes from coat.eyes'); }
 
+if (NEW.includes('cavalier')) { const C = (base, light, dark, white) => ({ base, light, dark, white }), V = (c, o) => PA.dog('cavalier', Object.assign({ pose: 'idle', anim: false }, o || {}, c ? { coat: c } : {}));
+  const bl = V(), ru = V(C('#C8642E', '#E8A06A', '#8A3E1C', 0)), tri = V(C('#2B2430', '#C8743A', '#1D1A22', 0.6)), bt = V(C('#2B2430', '#C8743A', '#1D1A22', 0));
+  ok(has(bl, '#C8642E') && has(bl, '#FFFFFF'), 'cavalier Blenheim: chestnut patches and ears on white'); ok(V(C('#C8642E', '#E8A06A', '#8A3E1C', 0.6)) === bl, 'cavalier: the Blenheim coat draws as the plain starter');
+  const wn = (x) => (x.match(/fill="#FFFFFF"/g) || []).length;
+  ok(wn(ru) < wn(bl) - 2 && has(ru, '#C8642E'), 'cavalier Ruby: solid chestnut, no white patches'); ok(has(tri, '#FFFFFF') && has(tri, '#2B2430') && has(tri, '#C8743A'), 'cavalier Tricolour: black patches on white, tan points');
+  ok(wn(bt) < wn(tri) - 2 && has(bt, '#C8743A'), 'cavalier Black and tan: black with tan points, no white patches');
+  const ear = (x) => (x.match(/<path d="M[^"]*" fill="#C8642E"\/>/g) || []).length; ok(ear(bl) >= 3, 'cavalier: the chestnut ear, saddle and rump on the Blenheim');
+  ok(PA.dog('cavalier', { pose: 'jump' }) !== PA.dog('cavalier', { pose: 'walk' }) && PA.dog('cavalier', { pose: 'shake' }).length > 0, 'cavalier: the long ears swing in jump and shake (earSwing; dogs/connect_check.js checks they stay on the skull)'); }
+if (NEW.includes('jrt')) { const J = (light, dark) => PA.dog('jrt', { pose: 'idle', anim: false, coat: { base: '#FBF8F2', light, dark, white: 0.6 } }), jt = PA.dog('jrt', { pose: 'idle', anim: false });
+  ok(has(jt, '#FBF8F2') && has(jt, '#C97A32') && has(jt, '#E0A050'), 'jrt White and tan: a white dog with tan patches and tan points');
+  const tri = J('#D08A44', '#2B2430'), wb = J('#FFFFFF', '#2B2430'); ok(has(tri, '#2B2430') && has(tri, '#D08A44'), 'jrt Tricolour: black patches, tan points'); ok(has(wb, '#2B2430') && !has(wb, '#D08A44'), 'jrt White and black: black patches, no tan');
+  ok(J('#E0A050', '#C97A32') === jt, 'jrt: the White and tan coat draws as the plain starter'); }
 console.log('-- older breeds unchanged (spot check; the full proof is dogs/check_identical.js origin/v2184-base)');
-// not the eat pose: v2.19 (owner, 2 Nov 2026) lowered every dog's head to the bowl on purpose, after v2184-base
+// the old eat pose changed on purpose in v2.19 (the head lowered to the bowl), after v2184-base, so the fifth pose here is walk
 let ref = null; for (const r of ['v2184-base', 'origin/v2184-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v2184-base ref here, skipped');
 else { const OLD = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));

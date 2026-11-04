@@ -173,6 +173,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
     const missing = NEW.filter((k) => !keys.includes(k) || !new RegExp('SP\\.' + k + '=\\{').test(art));
     const ext = keys.slice(35);// the ART lanes land one at a time: the keys after the 35 are new ones, in BREEDS order (all five once both lanes are in)
     ok(keys.slice(0, 35).join() === G.BREEDS.slice(0, 35).join() && ext.every((k, i) => NEW.includes(k) && (!i || NEW.indexOf(k) > NEW.indexOf(ext[i - 1]))), 'PawArt KEYS: the 35, then the new ones in BREEDS order as the ART lanes add them (' + (ext.join(' ') || 'none yet') + ')');
+    NEW.filter((k) => !missing.includes(k)).forEach((k) => ok(true, k + ': own art (a KEYS entry and an SP row)'));
     ok(!live || !missing.length, `MS2_LIVE is on, so every new breed needs its own art (missing: ${missing.join(' ') || 'none'})`);
     if (missing.length && !live) console.log(`  note: art pending for ${missing.join(', ')} (drawn as the mutt placeholder; MS2_LIVE is off, so it cannot ship)`);
   }
