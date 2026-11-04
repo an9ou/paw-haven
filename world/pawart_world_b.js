@@ -7199,20 +7199,22 @@ const MS_RAIN=['#F28FA5','#F9B97A','#FFE08A','#9CCB86','#7FB7E0','#B9A6E8'];
 const msTier=t=>MS_T[t]?t:'b';
 const PENC='#8C7F76';// the pencil (graphite) line of the page and the chart
 // rainbow crayon scribble bands across a box (clipped by the shape they are marks of)
-function msRain(x0,y0,x1,y1,w,a){const M=[],h=y1-y0,sl=Math.tan(a||.5)*h;let i=0;
-  for(let x=x0-sl-w;x<x1+w;x+=w,i++)M.push({pts:[[x,y1+1],[x+w*.92,y1+1],[x+w*.92+sl,y0-1],[x+sl,y0-1]],fill:MS_RAIN[i%6],k:0,op:.85});return M}
+function msRain(x0,y0,x1,y1,w,a,cols,op){const M=[],h=y1-y0,sl=Math.tan(a||.5)*h,C6=cols||MS_RAIN;let i=0;
+  for(let x=x0-sl-w;x<x1+w;x+=w,i++)M.push({pts:[[x,y1+1],[x+w*.92,y1+1],[x+w*.92+sl,y0-1],[x+sl,y0-1]],fill:C6[i%6],k:0,op:op||.85});return M}
+// the crayon cup's scribbles: a box of real crayons, a step brighter than the pastel rainbow so the cup holds its own beside gold at 75 px
+const MS_CUPRAIN=['#EE6F8E','#F5944A','#F7C933','#6DB356','#4F9AD6','#9A7FDB'];
 // one cup standing at (cx, by), s = scale (1: 22 tall, 20 wide with the handles)
-function msCup(b,cx,by,s,t,o={}){const T=MS_T[t]||MS_T.b,X=v=>cx+v*s,Y=v=>by-v*s,lw=o.lw||.42;
+function msCup(b,cx,by,s,t,o={}){const T=MS_T[t]||MS_T.b,X=v=>cx+v*s,Y=v=>by-v*s,lw=o.lw||(t==='c'?.5:.42);
   // handles: pencil loops either side of the bowl
   b.ln([[X(-6.4),Y(19)],[X(-9.6),Y(18.4)],[X(-9.4),Y(14.6)],[X(-5),Y(12.4)]],{w:1.5*s*lw/.42});
   b.ln([[X(6.4),Y(19)],[X(9.6),Y(18.4)],[X(9.4),Y(14.6)],[X(5),Y(12.4)]],{w:1.5*s*lw/.42});
   b.sh([[X(-1.7),Y(3)],[X(1.7),Y(3)],[X(1.2),Y(9)],[X(-1.2),Y(9)]],T.d,{k:0,hatch:0,hl:0,lw:lw*.8,base:T.f,dr:0});
-  b.sh(RR(X(-6),Y(3.4),12*s,3.4*s,1.2*s),T.d,{k:.05,hatch:0,hl:0,lw:lw,base:T.f,dr:0,marks:t==='c'?msRain(X(-6),Y(3.4),X(6),Y(0),2.4*s,.6):[]});
+  b.sh(RR(X(-6),Y(3.4),12*s,3.4*s,1.2*s),T.d,{k:.05,hatch:0,hl:0,lw:lw,base:T.f,dr:0,marks:t==='c'?msRain(X(-6),Y(3.4),X(6),Y(0),2.4*s,.6,MS_CUPRAIN,.95):[]});
   const bowl=[[X(-7.2),Y(21.4)],[X(7.2),Y(21.4)],[X(6.6),Y(15.6)],[X(3.8),Y(10.6)],[X(0),Y(8.8)],[X(-3.8),Y(10.6)],[X(-6.6),Y(15.6)]];
-  const M=t==='c'?msRain(X(-8),Y(22),X(8),Y(8),2.6*s,.55):[{pts:[[X(2.4),Y(21)],[X(7.6),Y(21)],[X(7.6),Y(8)],[X(1.4),Y(8)]],fill:T.d,op:.55,k:0}];
+  const M=t==='c'?msRain(X(-8),Y(22),X(8),Y(8),2.6*s,.55,MS_CUPRAIN,.95).concat([{pts:[[X(3),Y(21)],[X(7.6),Y(21)],[X(7.6),Y(8)],[X(2),Y(8)]],fill:'#B5577A',op:.22,k:0}]):[{pts:[[X(2.4),Y(21)],[X(7.6),Y(21)],[X(7.6),Y(8)],[X(1.4),Y(8)]],fill:T.d,op:.55,k:0}];
   M.push({pts:E(X(-3),Y(17.4),1.5*s,2.6*s,8,-.3),fill:'#FFFFFF',op:t==='b'?.45:.7});
   b.sh(bowl,T.f,{k:.12,hatch:0,hl:0,lw:lw,base:T.l,dr:0,marks:M});
-  b.ln([[X(-7),Y(21.2)],[X(0),Y(20.4)],[X(7),Y(21.2)]],{w:.8*s*lw/.42,col:mix(T.d,INK,.3),op:.8});
+  b.ln([[X(-7),Y(21.2)],[X(0),Y(20.4)],[X(7),Y(21.2)]],{w:(t==='c'?1.1:.8)*s*lw/.42,col:t==='c'?'#B5577A':mix(T.d,INK,.3),op:t==='c'?.95:.8});
   if(t==='g'||t==='c')b.sh(starP(X(.4),Y(15.2),2.6*s,1.2*s),t==='g'?'#FFF6CF':'#FFE08A',{k:0,hatch:0,hl:0,lw:lw*.55,dr:0});
 }
 const MS_SLOT=22,MS_ROWS=[70,118,166];
@@ -7228,8 +7230,8 @@ function msShelf(b,cups){
   b.sh(starP(80,20,8.6,4),'#FFE08A',{k:0,hatch:0,hl:0,lw:.55,dr:.1});
   [[-1,62],[1,98]].forEach(([d,x])=>{b.ln([[x,22],[x+d*10,18.4]],{w:.9,col:'#6FA25A'});[0,1,2].forEach(i=>b.sh(leafP(x+d*(2.5+i*3.2),21.4-i*1.1,4.6,3,d>0?-.9:-2.25),'#9CCB86',{k:.2,hatch:0,hl:0,lw:.35,dr:0}))});
   // paper bunting under the crest
-  b.ln([[18,33],[50,38],[80,39.5],[110,38],[142,33]],{w:.7,col:GRAPH});
-  [[28,35.4,'#F7B2C4'],[46,37.6,'#B9D4F3'],[64,39,'#FFE08A'],[96,39,'#BDE7D2'],[114,37.6,'#D3C6F1'],[132,35.4,'#F9B97A']].forEach(([x,y,c])=>b.sh([[x-4.4,y-.4],[x+4.4,y+.4],[x+.3,y+7.6]],c,{k:.1,hatch:0,hl:0,lw:.4,dr:0}));
+  b.ln([[18,33],[50,35.5],[80,36.5],[110,35.5],[142,33]],{w:.7,col:GRAPH});
+  [[28,34.6,'#F7B2C4'],[46,36,'#B9D4F3'],[64,36.8,'#FFE08A'],[96,36.8,'#BDE7D2'],[114,36,'#D3C6F1'],[132,34.6,'#F9B97A']].forEach(([x,y,c])=>b.sh([[x-4.4,y-.4],[x+4.4,y+.4],[x+.3,y+6.8]],c,{k:.1,hatch:0,hl:0,lw:.4,dr:0}));
   // the three shelves (cups stand on y 70, 118, 166)
   MS_ROWS.forEach(y=>b.sh(RR(6,y,148,7,2),C.wood,{k:.04,hatch:0,hl:0,lw:.95,base:'#F3DDB4',marks:[{pts:[[0,y+4.6],[160,y+4.6],[160,y+8],[0,y+8]],fill:C.woodD,op:.6,k:0}]}));
   // the cups: top shelf first, 6 a shelf, each shelf centred
