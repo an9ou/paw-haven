@@ -68,3 +68,25 @@ html[data-layout="phone"] #lvBtn .lv-track,html[data-layout="phone"] .lv-next{di
 .lv-lunext{font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.2}
 html[data-layout="phone"] .lv-nextl,html[data-layout="phone"] .lv-open ul{font-size:16px}
 html[data-layout="phone"] .lv-togo,html[data-layout="phone"] .lv-today,html[data-layout="phone"] .lv-stcount,html[data-layout="phone"] .lv-how{font-size:15px}
+
+/* ---- part G: the star stickers past level 20 (a section of the Level sheet) and the star card (.lv-stc, the level card's look) ---- */
+.lv-stk{display:flex;flex-direction:column;gap:6px}
+.lv-sgrid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}
+.lv-sti{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;text-align:center}
+.lv-sti .lv-sa{display:grid;place-items:center;width:60px;height:60px}
+.lv-sa svg{display:block;width:100%;height:100%;overflow:visible}
+.lv-sti:not(.on) .lv-sa{border:2px dashed rgba(91,61,50,.35);border-radius:50%;width:52px;height:52px;margin:4px}
+.lv-sti:not(.on) .lv-sa b{font-family:var(--font-hand);font-size:24px;color:var(--muted,#7A6255)}
+.lv-sl{font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.lv-sti:not(.on) .lv-sl{color:var(--muted,#7A6255)}
+.lv-sx{position:absolute;top:-2px;right:calc(50% - 38px);padding:0 5px;font-size:13px;line-height:18px;background:var(--w-yellow);border:1.5px solid var(--ink);border-radius:9px 7px 8px 6px;font-variant-numeric:tabular-nums}
+.lv-stkcard{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 4px}
+.lv-stkcard .lv-sa{display:block;width:64px;height:64px}
+.lv-stkcard.one .lv-sa{width:112px;height:112px;transform:rotate(-4deg)}
+.lv-stc .lv-stgot{font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.2}
+.lv-stwhere{color:var(--muted,#7A6255)}
+html[data-layout="phone"] .lv-sgrid{gap:6px 4px}
+html[data-layout="phone"] .lv-sti .lv-sa{width:52px;height:52px}
+html[data-layout="phone"] .lv-sti:not(.on) .lv-sa{width:46px;height:46px;margin:3px}
+html[data-layout="phone"] .lv-sx{right:calc(50% - 34px)}
+html[data-layout="phone"] .lv-stkcard.one .lv-sa{width:96px;height:96px}

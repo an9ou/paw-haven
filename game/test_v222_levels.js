@@ -12,6 +12,8 @@
 // Part D: D1 40 breeds x 10 habit lines and table 4.3, the Profile card, the Bond card box, the diary; D2 a mix's secret is seeded and stable;
 //   D3 off the weights are today's, on the trait weight x1.5 (and the other "does it more" numbers); D4 the bath zoomies once per bath, never with Motion off;
 //   D5 one letter for a 3-dog save
+// Part G: G1 a star fills: one sticker, its card once, kept over a reload, no coins or items; G2 the stickers come round after 8, a Bond card first;
+//   G3 the dev panel buttons; G4 an old player at 20 has 0 stickers, off means no card, no sheet, no dev action
 // The switch: MS2_LIVE is off until the launch, so this suite turns it on with prefs.ms2Test and the harness pref prefs.lvTest.
 // node game/run_tests.js v222_levels
 const { run, URL } = require('./test_lib');
@@ -442,6 +444,10 @@ run('v222_levels', async (t) => {
   ok(c2f[0] === 'That is all the growing for today. More tomorrow.', 'at the cap the sheet says more tomorrow: ' + JSON.stringify(c2f));
   await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); // level 20 and 2 stars + 400
   await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); });
+  ok(await t.until(() => !!document.getElementById('lvStOk'), null, 4000), 'G: the star card follows the level 20 card');
+  const g0 = await ev(() => ({ h2: document.querySelector('#modal h2').textContent, n: document.querySelectorAll('#modal .lv-stkcard .lv-sa svg').length, got: (document.querySelector('#modal .lv-stgot') || {}).textContent, many: /2 stars at once/.test(document.querySelector('#modal').textContent), shown: window.__paw.S.lv.st.shown }));
+  ok(g0.h2 === 'Star 2!' && g0.n === 2 && g0.got === 'A new sticker: Gold star and Bone.' && g0.many && g0.shown === 2, 'G: two stars at once = one card with both stickers ' + JSON.stringify(g0));
+  await ev(() => document.getElementById('lvStOk').click()); await t.modalGone();
   c2 = await hudNow();
   ok(c2.n === '20' && c2.aria === 'Town level 20, star 2. Opens your town level.' && c2.next === '' && c2.title === 'Level 20 · star 2', 'level 20 with 2 stars: ' + JSON.stringify([c2.aria, c2.title, c2.next]));
   const c2t = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), r = { top: (p.querySelector('.lv-top') || {}).textContent, star: (p.querySelector('.lv-starline') || {}).textContent, togo: (p.querySelector('.lv-stars .lv-togo') || {}).textContent, n: (p.querySelector('.lv-stcount') || {}).textContent, next: p.querySelectorAll('.lv-nextl li').length, crown: !!p.querySelector('.lv-sic svg') }; document.querySelector('#modal .panel .x').click(); return r; });
@@ -492,6 +498,74 @@ run('v222_levels', async (t) => {
   ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'its next level shows a card');
   ok(await ev(() => !document.querySelector('#modal .lv-gerald')), 'the old save\'s first card has no Gerald line');
   await t.p.click('#lvOk'); await t.modalGone();
+
+  /* ================= part G: the star stickers past level 20 (V222.md Decided 4, As built G) ================= */
+  sec('G1. a star fills: one sticker, its card once, kept over a reload; cosmetic only');
+  await fresh(BON);
+  await ev(() => window.__paw.lv.gain('board', 8570 - window.__paw.lv.xp()));
+  await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => document.getElementById('lvOk').click()); await t.modalGone();
+  await t.sleep(1800);
+  const sheetG = () => ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), cells = [...p.querySelectorAll('.lv-sgrid li.lv-sti')];
+    const r = { cells: cells.length, on: cells.filter((c) => c.classList.contains('on')).map((c) => +c.dataset.stk), x: cells.map((c) => (c.querySelector('.lv-sx') || {}).textContent || ''), names: cells.map((c) => c.querySelector('.lv-sl').textContent), art: cells.filter((c) => c.classList.contains('on') && c.querySelector('.lv-sa svg')).length, n: (p.querySelector('.lv-stcount') || {}).textContent, h3: (p.querySelector('.lv-stk h3') || {}).textContent };
+    document.querySelector('#modal .panel .x').click(); return r; });
+  let g1 = await sheetG();
+  ok(await ev(() => !document.getElementById('lvStOk') && window.__paw.S.lv.st.n === 0), 'level 20 with no full star: no star card');
+  ok(g1.cells === 8 && !g1.on.length && g1.h3 === 'Star stickers' && g1.names.join('|') === 'Gold star|Bone|Tennis ball|Paw heart|Kennel|Town house|Fire hydrant|Doggy face' && g1.n === 'No star stickers yet. Every full star gives one.', 'the sheet\'s sticker page: 8 empty cells ' + JSON.stringify(g1));
+  const g1a = await ev(() => { const P = window.__paw, S = P.S, a = { coins: S.coins, inv: JSON.stringify(S.inv), bond: JSON.stringify(S.dogs.map((d) => d.bond)) }; P.lv.gain('board', 999); const mid = S.lv.st.n; P.lv.sheet(); P.lv.gain('board', 1); P.saveNow();
+    return { mid, st: Object.assign({}, S.lv.st), same: a.coins === S.coins && a.inv === JSON.stringify(S.inv) && a.bond === JSON.stringify(S.dogs.map((d) => d.bond)), card: !!document.getElementById('lvStOk') }; });
+  ok(g1a.mid === 0 && g1a.st.n === 1 && g1a.st.xp === 0 && g1a.st.shown === 0 && !g1a.card, 'star 1 at exactly 1,000 XP, its card waits behind the open sheet ' + JSON.stringify(g1a));
+  ok(g1a.same, 'a star gives no coins, no items and no Bond');
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+  await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000);
+  ok(await t.until(() => !!document.getElementById('lvStOk'), null, 6000), 'after the reload the star card shows on the calm yard');
+  const g1c = await ev(() => { const p = document.querySelector('#modal .panel.lv-stc'); return p ? { h2: p.querySelector('h2').textContent, one: !!p.querySelector('.lv-stkcard.one .lv-sa svg'), n: p.querySelectorAll('.lv-stkcard .lv-sa').length, got: p.querySelector('.lv-stgot').textContent, shown: window.__paw.S.lv.st.shown, celebrate: p.classList.contains('celebrate') } : null; });
+  ok(g1c && g1c.h2 === 'Star 1!' && g1c.one && g1c.n === 1 && g1c.got === 'A new sticker: Gold star.' && g1c.shown === 1 && g1c.celebrate, 'the star card: ' + JSON.stringify(g1c));
+  await t.p.click('#lvStOk'); await t.modalGone(); await t.sleep(1800);
+  ok(await ev(() => !document.getElementById('lvStOk')), 'the star card shows once');
+  g1 = await sheetG();
+  ok(g1.on.join() === '0' && g1.art === 1 && g1.n === '1 star sticker so far.', 'the sheet: the Gold star is on the page ' + JSON.stringify([g1.on, g1.n]));
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+  await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000); await t.sleep(2200);
+  ok(await ev(() => !document.getElementById('lvStOk') && window.__paw.S.lv.st.n === 1 && window.__paw.S.lv.st.shown === 1), 'a reload after the card: no second card, the sticker is kept');
+
+  sec('G2. after eight stickers they come round again; a Bond card first, then the star card');
+  const g2 = await ev(() => { const L = window.__paw.lv; return [1, 2, 8, 9, 16, 17].map((k) => L.stk(k)); });
+  ok(g2.join() === '0,1,7,0,7,0', 'star k gives sticker (k - 1) % 8: ' + g2.join());
+  await ev(() => { const P = window.__paw; P.lv.gain('board', 8000); P.lv.bondUp(P.fw.BOND_TH[1] - P.S.bond.pts); }); // stars 2-9 and a Bond card in the same moment
+  ok(await t.until(() => !!document.getElementById('luOk'), null, 4000), 'the Bond card shows');
+  await t.sleep(1500); ok(await ev(() => !document.getElementById('lvStOk')), 'the star card never opens over the Bond card');
+  await t.p.click('#luOk');
+  ok(await t.until(() => !!document.getElementById('lvStOk'), null, 4000), 'the star card follows the Bond card');
+  const g2c = await ev(() => { const p = document.querySelector('#modal .panel.lv-stc'); return { h2: p.querySelector('h2').textContent, n: p.querySelectorAll('.lv-stkcard .lv-sa svg').length, one: !!p.querySelector('.lv-stkcard.one'), many: /8 stars at once/.test(p.textContent) }; });
+  ok(g2c.h2 === 'Star 9!' && g2c.n === 8 && !g2c.one && g2c.many, 'stars 2-9 at once: one card with the 8 new stickers ' + JSON.stringify(g2c));
+  await t.p.click('#lvStOk'); await t.modalGone();
+  g1 = await sheetG();
+  ok(g1.on.length === 8 && g1.art === 8 && g1.x[0] === '×2' && g1.x.slice(1).every((x) => !x) && g1.n === '9 star stickers so far. All eight found. Every new star adds one more.', 'the page after 9 stars: all 8 on, the Gold star ×2 ' + JSON.stringify([g1.x, g1.n]));
+
+  sec('G3. the dev panel buttons (V222.md 6)');
+  const g3 = await ev(() => { const L = window.__paw.lv, S = window.__paw.S, h = L.devHTML(), d = document.createElement('div'); d.innerHTML = h;
+    L.gain('care', 2); const t0 = L.today(); L.dev('today'); const t1 = L.today(); const xp0 = L.xp(); L.dev('xp'); const xp1 = L.xp(); const n0 = S.lv.st.n; L.dev('star'); const n1 = S.lv.st.n;
+    const m0 = (S.mail || []).filter((m) => m.id === 'lv_habits').length; L.dev('mail'); L.dev('mail'); const m1 = (S.mail || []).filter((m) => m.id === 'lv_habits').length;
+    return { ids: [...d.querySelectorAll('button')].map((b) => b.id), t0, t1, dx: xp1 - xp0, n0, n1, m0, m1, mailFlag: S.lv.mail }; });
+  ok(g3.ids.join() === 'dvLvXp,dvLvNext,dvLvStar,dvLvToday,dvLvMail', 'five buttons while ms2On: ' + g3.ids.join());
+  ok(g3.t0 === 2 && g3.t1 === 0 && g3.dx === 100 && g3.n1 === g3.n0 + 1 && g3.m1 === 1 && g3.mailFlag === 1, 'Reset today\'s XP, +100 XP (outside the cap), Fill a star, Show habits letter (one letter, sent again) ' + JSON.stringify(g3));
+  await t.until(() => !!document.getElementById('lvStOk'), null, 4000); await ev(() => { const b = document.getElementById('lvStOk'); if (b) b.click(); }); await t.modalGone();
+  let g3b = 0, g3x = 0; await t.dev(async () => { g3b = await ev(() => ['dvLvXp', 'dvLvNext', 'dvLvStar', 'dvLvToday', 'dvLvMail'].filter((id) => !!document.getElementById(id)).length); const x0 = await ev(() => window.__paw.lv.xp()); await t.p.click('#dvLvXp'); g3x = (await ev(() => window.__paw.lv.xp())) - x0; });
+  ok(g3b === 5 && g3x === 100, 'the five buttons are in the dev panel, and "Levels: +100 XP" works from it (+' + g3x + ')');
+
+  sec('G4. an old player at level 20 has 0 stickers; off means nothing');
+  await load(fix(FIX[3]), BON); await t.sleep(2200);
+  const g4 = await ev(() => ({ lv: window.__paw.lv.level(), st: Object.assign({}, window.__paw.S.lv.st), card: !!document.getElementById('lvStOk') }));
+  ok(g4.lv === 20 && g4.st.n === 0 && g4.st.shown === 0 && !g4.card, 'an old save that starts at 20: star 0, no card ' + JSON.stringify(g4));
+  g1 = await sheetG(); ok(!g1.on.length && g1.cells === 8, 'its sticker page is empty');
+  const g4s = await ev((k) => { window.__paw.saveNow(); return JSON.parse(localStorage.getItem(k)); }, SAVE);
+  g4s.lv.st = { n: 3, xp: 10, shown: 1 }; await load(g4s, BOFF); await t.sleep(2200);
+  const g4o = await ev(() => { const L = window.__paw.lv, S = window.__paw.S, a = JSON.stringify(S.lv.st); const r = { card: !!document.getElementById('lvStOk'), sheet: L.sheet(), maybe: L.card(), dev: L.dev('star'), html: L.devHTML() }; r.same = a === JSON.stringify(S.lv.st); r.pop = !!document.querySelector('.lv-stc, .lv-pop'); return r; });
+  ok(!g4o.card && g4o.sheet === null && g4o.maybe === null && !g4o.pop && g4o.same && /off/.test(g4o.dev), 'off: no star card (even with one owed), no sheet, the dev button does nothing ' + JSON.stringify(g4o));
+  await ev(() => window.__paw.lv.test(true));
+  ok(await t.until(() => !!document.getElementById('lvStOk'), null, 5000), 'switched on: the owed star card comes');
+  ok(await ev(() => document.querySelectorAll('#modal .lv-stkcard .lv-sa svg').length === 2 && document.querySelector('#modal h2').textContent === 'Star 3!'), 'it shows stars 2 and 3 (the one already shown is not repeated)');
+  await t.p.click('#lvStOk'); await t.modalGone();
 
   /* ================= part D: the habits (V222.md 4, 7.1 D) ================= */
   // the contract's own table 4.3 (B1, B2, B3, B5, B6, B7, B8, B9) and the categories (3.3)

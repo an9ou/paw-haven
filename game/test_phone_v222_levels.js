@@ -5,6 +5,8 @@
 //   and the "Opened so far" toggle are 44 px and on top, and every text is 13 px or more.
 // Part D: the Journal > Profile habits card fits each size (one column, 15 px lines, nothing past the card, the last row above the phone bar), and
 //   the Bond card with its habit box fits at 360 (OK on top, text 13 px or more).
+// Part G: at each size the star card (one sticker, and 3 at once at 360) fits with its OK on top, and the sheet's sticker page (4 x 2 cells) fits the
+//   width, no cell past the page, its last row above the phone bar, every label 13 px or more.
 // node game/run_tests.js phone_v222_levels   (--shots writes every size to game/shots_phone_v222_levels/)
 const { run } = require('./test_lib');
 const ON = { ms2Test: true, lvTest: true, tkTest: true, jpTest: true, ffTest: true };
@@ -43,11 +45,33 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         const r = P.getBoundingClientRect(), bar = document.getElementById('bar').getBoundingClientRect();
         const top = (q) => { const e = P.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(), c = document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2); return { w: b.width, h: b.height, on: !!c && e.contains(c) }; };
         const last = P.querySelector('.panel-body').lastElementChild, lb = last.getBoundingClientRect(), lc = document.elementFromPoint(lb.left + 8, (lb.top + lb.bottom) / 2);
-        return { small, r: [r.left, r.top, r.right, r.bottom], iw: innerWidth, ih: innerHeight, sw: document.documentElement.scrollWidth, x: top('.x'), ok: top('#lvOk'), sum: top('.lv-open summary'), lastOn: !!lc && P.contains(lc), barTop: bar.top, overBar: r.bottom > bar.top + 1 };
+        return { small, r: [r.left, r.top, r.right, r.bottom], iw: innerWidth, ih: innerHeight, sw: document.documentElement.scrollWidth, x: top('.x'), ok: top('#lvOk'), stok: top('#lvStOk'), sum: top('.lv-open summary'), lastOn: !!lc && P.contains(lc), barTop: bar.top, overBar: r.bottom > bar.top + 1 };
       }, sel);
-      const sheetCheck = async (tag) => {
+      const stkCheck = async (tag) => { // the sticker page inside the open sheet
+        const m = await ev(() => {
+          const P = document.querySelector('#modal .panel.lv-pop'), g = P.querySelector('.lv-stk'); if (!g) return null;
+          g.scrollIntoView({ block: 'end' }); const r = P.getBoundingClientRect(), gr = g.getBoundingClientRect(), cells = [...g.querySelectorAll('li.lv-sti')], bar = document.getElementById('bar').getBoundingClientRect();
+          const out = cells.filter((c) => { const b = c.getBoundingClientRect(); return b.left < gr.left - 1 || b.right > gr.right + 1; }).length, rows = new Set(cells.map((c) => Math.round(c.getBoundingClientRect().top))).size;
+          const lab = cells.map((c) => c.querySelector('.lv-sl')).filter((l) => l.scrollWidth > l.clientWidth + 1).length, last = cells[cells.length - 1].getBoundingClientRect(), hit = document.elementFromPoint((last.left + last.right) / 2, last.top + 10);
+          return { n: cells.length, rows, out, lab, g: [gr.left, gr.right], r: [r.left, r.right], lastB: last.bottom, barTop: bar.top, lastOn: !!hit && cells[cells.length - 1].contains(hit), fs: Math.min(...cells.map((c) => parseFloat(getComputedStyle(c.querySelector('.lv-sl')).fontSize))) };
+        });
+        ok(m && m.n === 8 && m.rows === 2 && !m.out && !m.lab && m.g[0] >= m.r[0] - 1 && m.g[1] <= m.r[1] + 1, `${tag}: the sticker page is 4 x 2 cells inside the sheet, no label cut ${JSON.stringify(m)}`);
+        ok(m && m.lastOn && m.lastB <= m.barTop + 1 && m.fs >= 13, `${tag}: its last row is on top above the phone bar, labels ${m && m.fs} px`);
+        await t.SH(`${tag}_stickers`);
+      };
+      const starCheck = async (tag, n) => {
+        ok(await t.until(() => !!document.getElementById('lvStOk'), null, 5000), `${tag}: the star card shows`);
+        await t.sleep(300); await t.SH(`${tag}_starcard`);
+        const m = await textCheck('#modal .panel.lv-stc'), k = await ev(() => document.querySelectorAll('#modal .lv-stkcard .lv-sa svg').length);
+        ok(k === n && m.r[0] >= -1 && m.r[2] <= m.iw + 1 && m.r[1] >= 0 && m.r[3] <= m.ih + 1 && m.sw <= m.iw, `${tag}: the star card with ${k} sticker(s) fits the screen ${JSON.stringify(m.r.map(Math.round))}`);
+        ok(m.stok && m.stok.w >= 44 && m.stok.h >= 44 && m.stok.on, `${tag}: its OK is a 44 px button on top ${JSON.stringify(m.stok)}`);
+        ok(!m.small.length, `${tag}: every star card text is 13 px or more ${m.small.slice(0, 4).join(', ')}`);
+        await p.click('#lvStOk'); await t.modalGone();
+      };
+      const sheetCheck = async (tag, stk) => {
         await p.click('#lvBtn'); ok(await t.until(() => !!document.querySelector('#modal .panel.lv-pop'), null, 3000), `${tag}: a tap on the star opens the sheet`);
         await t.sleep(300); await t.SH(`${tag}_sheet`);
+        if (stk) await stkCheck(tag);
         await ev(() => { const d = document.querySelector('.lv-open'); if (d) d.open = true; const b = document.querySelector('#modal .panel-body'); b.scrollTop = b.scrollHeight; });
         await t.sleep(200); const m = await textCheck('#modal .panel.lv-pop'); await t.SH(`${tag}_sheet_end`);
         ok(m.r[0] >= -1 && m.r[2] <= m.iw + 1 && m.r[1] >= 0 && m.r[3] <= m.ih + 1 && m.sw <= m.iw, `${tag}: the sheet fits the screen ${JSON.stringify(m.r.map(Math.round))} (${m.iw}x${m.ih})`);
@@ -109,8 +133,15 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         await habCheck(tag);
       }
       sec(`${lang}: level 20 with stars`);
-      await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); await cardCheck(`${lang}_393 level 20`);
-      await sheetCheck(`${lang}_393x659 level 20`);
+      await p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 4000);
+      await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); await cardCheck(`${lang}_360 level 20`);
+      await starCheck(`${lang}_360 2 stars at once`, 2);
+      for (const [W, H] of SIZES) {
+        const tag = `${lang}_${W}x${H} level 20`;
+        await p.setViewportSize({ width: W, height: H }); await t.until((w) => innerWidth === w, W, 4000);
+        await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('yard'); window.__paw.lv.dev('star'); }); await starCheck(tag, 1);
+        await sheetCheck(tag, true);
+      }
     }, { device: 'iPhone 15', map215: true, lang, timeout: 300000 });
   }
 })();

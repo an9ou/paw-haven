@@ -147,6 +147,7 @@ function lvFix(L) {
   ['src', 'seen', 'bl', 'got', 'once'].forEach((k) => { if (!lvObj(L[k])) L[k] = {}; });
   if (L.mail !== 0 && L.mail !== 1) L.mail = 1; if (L.from !== 'fresh' && L.from !== 'old') L.from = 'old';
   if (!lvObj(L.st)) L.st = {}; lvNum(L.st, 'n', 0); lvNum(L.st, 'xp', 0); lvNum(L.st, 'shown', 0);
+  L.st.n = Math.floor(L.st.n); L.st.shown = Math.min(Math.floor(L.st.shown), L.st.n); // part G: a star card is never owed for a star that is not there
   return L;
 }
 // the titles of levels 10 and 20, given quietly (the level card or the letter says so): into s.titles like titleGive, without its toast
@@ -210,7 +211,8 @@ function lvDay() {
   if (L.day !== j) { L.day = j; L.today = 0; L.src = {}; markDirty(); }
   return L;
 }
-// the only writer of XP. src: a daily source (LV_SRC) or a milestone (LV_MILE). o.once: a key counted only once ever. Returns the XP given
+// the only writer of XP. src: a daily source (LV_SRC), a milestone (LV_MILE) or 'dev' (the dev panel: outside the cap, like a milestone).
+// o.once: a key counted only once ever. Returns the XP given
 function lvGain(src, n, o) {
   o = o || {};
   if (!S || !lvOn() || (typeof cur === 'object' && cur && cur.mode === 'title')) return 0;
@@ -222,16 +224,16 @@ function lvGain(src, n, o) {
     const c = L.src[src] || 0; if (c >= LV_SRC[src][1]) return 0;
     g = Math.min(n, Math.max(0, LV_CAP - L.today)); if (g <= 0) return 0; // the cap: a quiet "more tomorrow"
     L.src[src] = c + 1; L.today += g;
-  } else if (!LV_MILE[src]) return 0;
-  const was = L.lv; L.xp += g;
+  } else if (!LV_MILE[src] && src !== 'dev') return 0;
+  const was = L.lv, stWas = L.st.n; L.xp += g;
   while (L.lv < LV_MAX && L.xp >= LV_AT[L.lv + 1]) { L.lv++; lvQueue.push(L.lv); }
   if (L.lv >= LV_MAX) { // past level 20: the XP fills a crayon star, each full star is one sticker (cosmetic, part E adds the set)
     L.st.xp += was >= LV_MAX ? g : Math.max(0, L.xp - LV_AT[LV_MAX]);
-    while (L.st.xp >= LV_STAR) { L.st.xp -= LV_STAR; L.st.n++; }
+    while (L.st.xp >= LV_STAR) { L.st.xp -= LV_STAR; L.st.n++; } // part G: each full star is the next sticker (lvStkAt), its card waits for a calm screen (lvMaybeShow)
   }
   if (L.lv > was) lvTitles(S);
   markDirty();
-  emit('lv:gain', { src, n: g, lv: L.lv, up: L.lv > was, star: L.st.n });
+  emit('lv:gain', { src, n: g, lv: L.lv, up: L.lv > was, star: L.st.n, stUp: L.st.n > stWas });
   return g;
 }
 // a dog reached a new Bond level (addBond's level loop): 20 XP a level, once per dog and level. Off: only the floor follows
@@ -390,9 +392,26 @@ function lvHudSync() {
 function lvNextSync() { try { lvHudSync(); } catch (e) { console.warn('lv hud', e); } }
 on('lv:gain', (g) => {
   lvNextSync(); const b = $('#lvBtn'); if (!b || document.documentElement.dataset.motion === 'off') return;
-  const c = g && g.up ? 'lv-pop' : 'lv-wig'; b.classList.remove('lv-pop', 'lv-wig'); void b.offsetWidth; b.classList.add(c);
-  clearTimeout(LVU.wig); LVU.wig = setTimeout(() => b.classList.remove('lv-pop', 'lv-wig'), g && g.up ? 700 : 450);
+  const up = !!(g && (g.up || g.stUp)), c = up ? 'lv-pop' : 'lv-wig'; b.classList.remove('lv-pop', 'lv-wig'); void b.offsetWidth; b.classList.add(c);
+  clearTimeout(LVU.wig); LVU.wig = setTimeout(() => b.classList.remove('lv-pop', 'lv-wig'), up ? 700 : 450);
 });
+/* part G: the star stickers past level 20 (V222.md Decided 4). The nth full star (S.lv.st.n) gives sticker (n - 1) % 8 of the art's 8
+   (PawArt.LEVELS.sticker); after the eighth they come round again and the page counts the copies ("x2"). Cosmetic only: no coins, no items.
+   The page is a section of the Level sheet (not the Dog Days book: its pages are six-cell grids that give an outfit or a frame when full). */
+const LV_STK_N = 8;
+const lvStkAt = (k) => (((Math.floor(k) - 1) % LV_STK_N) + LV_STK_N) % LV_STK_N; // star k (1-based) -> sticker index 0-7
+const lvStkCopies = (n, i) => (n > i ? Math.floor((n - 1 - i) / LV_STK_N) + 1 : 0); // how many of sticker i the first n stars gave
+function lvStkName(i) {
+  return [tt('lv.stk.0', 'Gold star'), tt('lv.stk.1', 'Bone'), tt('lv.stk.2', 'Tennis ball'), tt('lv.stk.3', 'Paw heart'),
+    tt('lv.stk.4', 'Kennel'), tt('lv.stk.5', 'Town house'), tt('lv.stk.6', 'Fire hydrant'), tt('lv.stk.7', 'Doggy face')][lvStkAt(i + 1)];
+}
+function lvStkArt(i) { return lvArt('sticker', i) || `<svg viewBox="-16 -16 32 32" aria-hidden="true">${doodle('spark', 0, 0, 1.1)}</svg>`; }
+// the 8 cells: { i, name, n: copies so far }
+function lvStkList() { const n = (S && S.lv && S.lv.st && S.lv.st.n) || 0; return Array.from({ length: LV_STK_N }, (_, i) => ({ i, name: lvStkName(i), n: lvStkCopies(n, i) })); }
+function lvStkPageHTML() {
+  const cells = lvStkList().map((c) => `<li class="lv-sti${c.n ? ' on' : ''}" data-stk="${c.i}"${c.n > 1 ? ` aria-label="${esc(c.name)} ×${tnum(c.n)}"` : ''}><span class="lv-sa" aria-hidden="true">${c.n ? lvStkArt(c.i) : '<b>?</b>'}</span><span class="lv-sl">${esc(c.name)}</span>${c.n > 1 ? `<b class="lv-sx" aria-hidden="true">×${tnum(c.n)}</b>` : ''}</li>`).join('');
+  return `<section class="lv-stk" aria-label="${esc(tt('lv.stk_h3', 'Star stickers'))}"><h3 class="lv-h3">${esc(tt('lv.stk_h3', 'Star stickers'))}</h3><ul class="lv-sgrid">${cells}</ul></section>`;
+}
 /* the Level sheet (V222.md 1.4) */
 function lvSheetHTML() {
   const L = S.lv, p = lvProg(), bar = (f) => `<span class="lv-bar" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(f * 100)}"><span class="fill" style="width:calc(${(f * 100).toFixed(1)}% - ${(f * 7).toFixed(1)}px)"></span></span>`;
@@ -401,10 +420,11 @@ function lvSheetHTML() {
   else {
     h += `<p class="lv-top">${esc(tt('lv.top', 'Top of the town. Every place is open.'))}</p>`;
     h += `<div class="lv-stars"><p class="lv-starline"><span class="lv-sic">${lvStarSVG(LV_MAX, p.frac, { top: true })}</span><b>${esc(lvStarText(p.star))}</b></p>${bar(p.frac)}<p class="lv-togo">${esc(tt('lv.star_to_go', '{n} to go for the next star', { n: tnum(p.stogo) }))}</p>`
-      + `<p class="lv-stcount">${esc(tt('lv.stars', '{n, plural, =0 {No star stickers yet. Every full star gives one.} one {# star sticker so far.} other {# star stickers so far.}}', { n: p.star }))} ${esc(tt('lv.stars_page', 'They will get a sticker page of their own.'))}</p></div>`;
+      + `<p class="lv-stcount">${esc(tt('lv.stars', '{n, plural, =0 {No star stickers yet. Every full star gives one.} one {# star sticker so far.} other {# star stickers so far.}}', { n: p.star }))}${p.star >= LV_STK_N ? ' ' + esc(tt('lv.stars_all', 'All eight found. Every new star adds one more.')) : ''}</p></div>`;
   }
   const full = L.today >= LV_CAP;
   h += `<p class="lv-today${full ? ' full' : ''}">${esc(full ? tt('lv.today_full', 'That is all the growing for today. More tomorrow.') : tt('lv.today', 'Today: {n} of {cap}', { n: tnum(L.today), cap: tnum(LV_CAP) }))}</p>`;
+  if (p.top) h += lvStkPageHTML(); // part G: the sticker page, under today's line
   if (!p.top) {
     const nx = []; for (let n = p.lv; n < Math.min(LV_MAX, p.lv + 3); n++) nx.push(`<li>${esc(lvNextText(n))}</li>`);
     h += `<h3 class="lv-h3">${esc(tt('fw.next', 'Next'))}</h3><ul class="lv-nextl">${nx.join('')}</ul>`;
@@ -428,7 +448,7 @@ function lvCalm() {
   return true;
 }
 function lvMaybeShow() {
-  if (!lvCalm()) return null; const L = S.lv; if (!(L.lv > L.shown)) return null;
+  if (!lvCalm()) return null; const L = S.lv; if (!(L.lv > L.shown)) return lvStarCard(); // part G: a star card waits behind any level card
   const levels = []; for (let n = L.shown + 1; n <= L.lv; n++) levels.push(n);
   const top = L.lv, first = L.from === 'fresh' && L.shown <= 1; // the Gerald line: a fresh save's first level card only
   L.shown = top; lvQueue = []; markDirty();
@@ -442,10 +462,48 @@ function lvMaybeShow() {
     + `<p>${esc(tt('core.lu_unlocked', 'Unlocked:'))}</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || `<li>${esc(tt('lv.next_more', 'a bit more of town'))}</li>`}</ul>`
     + `<p class="lv-lunext">${esc(nx ? tt('lv.lu_next', 'Next: {line}', { line: nx }) : tt('lv.top', 'Top of the town. Every place is open.'))}</p>`;
   openModal(`<span class="hl">${esc(tt('lv.lu_title', 'Town level {n}!', { n: top }))}</span>`, body, { cls: 'celebrate lv-lu', foot: `<button class="btn yes big" id="lvOk">${esc(tt('lv.ok', 'OK'))}</button>` });
-  $('#lvOk').onclick = () => { SFX.boop(700); closeModal(); };
+  $('#lvOk').onclick = () => { SFX.boop(700); closeModal(); if (S.lv.st.n > S.lv.st.shown) setTimeout(lvMaybeShow, 400); }; // part G: then a star card, as a level card follows a Bond card
   if (LV_TITLES[top] || levels.some((n) => LV_TITLES[n])) { hudDogKey = ''; setHudDog(); } // the level 10 / 20 title shows under the name
   lvNextSync();
   return levels;
+}
+/* part G: the star card (a star past level 20 filled): the level card's look, queued the same way (lvMaybeShow, after any Bond or level card);
+   S.lv.st.shown keeps it over a reload. Several stars at once give one card with each new sticker (the last 8 at most) */
+function lvStarCard() {
+  const L = S.lv, st = L.st; if (!(st.n > st.shown)) return null;
+  const from = st.shown + 1, to = st.n, ks = []; for (let k = Math.max(from, to - LV_STK_N + 1); k <= to; k++) ks.push(k);
+  st.shown = to; markDirty();
+  audioCue('levelup'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
+  const names = [...new Set(ks.map((k) => lvStkName(lvStkAt(k))))], nm = typeof tlist === 'function' ? tlist(names) : names.join(', ');
+  const body = `<div class="lv-stkcard${ks.length === 1 ? ' one' : ''}" aria-hidden="true">${ks.map((k) => `<span class="lv-sa">${lvStkArt(lvStkAt(k))}</span>`).join('')}</div>`
+    + `<p class="lv-stgot">${esc(tt('lv.st_got', 'A new sticker: {name}.', { name: nm }))}</p>`
+    + (to - from > 0 ? `<p>${esc(tt('lv.st_many', '{n, plural, one {(That is # star at once.)} other {(That is # stars at once. Busy paws.)}}', { n: to - from + 1 }))}</p>` : '')
+    + `<p class="lv-stwhere">${esc(tt('lv.st_where', 'Every full star past level 20 gives one. Tap your star to see them all.'))}</p>`;
+  openModal(`<span class="hl">${esc(tt('lv.st_title', 'Star {n}!', { n: tnum(to) }))}</span>`, body, { cls: 'celebrate lv-stc', foot: `<button class="btn yes big" id="lvStOk">${esc(tt('lv.ok', 'OK'))}</button>` });
+  $('#lvStOk').onclick = () => { SFX.boop(700); closeModal(); };
+  lvNextSync();
+  return ks;
+}
+/* the dev panel (V222.md 6; English only, like the rest of the panel; itch.io strips the panel): shown while ms2On(), they act while lvOn() */
+function lvDevHTML() {
+  if (typeof ms2On !== 'function' || !ms2On()) return '';
+  return '<button class="btn" id="dvLvXp">Levels: +100 XP</button><button class="btn" id="dvLvNext">Next level</button><button class="btn" id="dvLvStar">Fill a star</button><button class="btn" id="dvLvToday">Reset today\'s XP</button><button class="btn" id="dvLvMail">Show habits letter</button>';
+}
+function lvDev(what) {
+  if (!S || !lvOn() || !lvEnsure()) return 'Town levels are off (Missions v2 test, and not under the test harness).';
+  const L = S.lv;
+  if (what === 'xp') { lvGain('dev', 100); return `+100 XP: level ${L.lv}, ${L.xp} XP.`; }
+  if (what === 'next') { if (L.lv >= LV_MAX) return lvDev('star'); lvGain('dev', LV_AT[L.lv + 1] - L.xp); return `Town level ${L.lv}.`; }
+  if (what === 'star') { lvGain('dev', Math.max(0, LV_AT[LV_MAX] - L.xp) + LV_STAR - (L.lv >= LV_MAX ? L.st.xp : 0)); return `Level 20, star ${L.st.n}.`; }
+  if (what === 'today') { lvDay(); L.today = 0; L.src = {}; markDirty(); return 'Today\'s XP is back to 0.'; }
+  if (what === 'mail') {
+    if (Array.isArray(S.mail)) S.mail = S.mail.filter((m) => m.id !== 'lv_habits');
+    L.mail = 0; return lvMailSend() ? 'The habits letter is in the mailbox.' : 'No letter (no dog yet?).';
+  }
+  return '';
+}
+function lvDevBind() {
+  [['dvLvXp', 'xp'], ['dvLvNext', 'next'], ['dvLvStar', 'star'], ['dvLvToday', 'today'], ['dvLvMail', 'mail']].forEach(([id, w]) => { const b = document.getElementById(id); if (b) b.onclick = () => { const m = lvDev(w); if (m) toast(m); lvNextSync(); }; });
 }
 // How to play: one lesson while lvOn (25_guide.js lists it)
 function lvLesson() { return lvOn() ? ['levels', 'star', tt('lv.lesson_title', 'Town level'), tt('lv.lesson_text', 'Care, walks and missions grow your town level. Each level opens new places, walks and shop things, and nothing ever locks again.')] : null; }
@@ -472,6 +530,7 @@ function lvExpose() {
     wish: () => (typeof ddWishOpts === 'function' && S && S.dogs && S.dogs.length ? ddWishOpts(D()) : null), lock: (n, bond, owned) => lvShopLock(n, bond, !!owned), tags: (ids) => lvTags(ids),
     hud: () => { const b = lvHudSync(); return b ? { aria: b.getAttribute('aria-label'), title: b.title, n: b.querySelector('.lv-n').textContent, next: (b.querySelector('#lvNext') || {}).textContent || '' } : null; },
     unlocksText: (n) => lvUnlocksFor(n), lesson: () => lvLesson(), shown: () => (S && S.lv ? S.lv.shown : 0), calm: () => lvCalm(),
+    stickers: () => lvStkList(), stk: (k) => lvStkAt(k), dev: (w) => lvDev(w), devHTML: () => lvDevHTML(),
     hb: typeof hbHook === 'function' ? hbHook() : {}
   };
 }
