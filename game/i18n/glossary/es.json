@@ -230,7 +230,11 @@
     "rosette": "escarapela",
     "Doggy Life Vest": "Chaleco salvavidas perruno",
     "Float fetch": "Pelota flotante",
-    "Paddle": "Chapotear"
+    "Paddle": "Chapotear",
+    "Town level": "nivel de pueblo",
+    "Level (chip)": "Nivel",
+    "habit": "costumbre",
+    "star sticker": "pegatina de estrella"
   },
   "bans": [
     {
