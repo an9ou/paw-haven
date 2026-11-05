@@ -76,6 +76,37 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(ph.coatName === 'Yellow' && ph.merleHidden && G.isDoubleMerle(yellowMerle, { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'S'], M: ['M', 'm'], Bl: ['bl', 'bl'] }), 'a yellow Aussie with hidden merle still counts as merle for the pairing rule');
   }
   {
+    // code review 2: the Aussie like the real breed. Copper is the tan-point locus (PawGenes TAN: at_ copper, a/a none), independent of E;
+    // tricolour is the most common coat, two tricolours (E/E) never have a yellow pup, yellow (e/e) is rare
+    const A = (o) => Object.assign({ B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, o), nm = (o) => G.phenotype(A(o), 'aussie').coatName;
+    ok(nm({}) === 'Black tricolour' && nm({ E: ['E', 'e'] }) === 'Black tricolour' && nm({ A: ['at', 'a'] }) === 'Black tricolour' && nm({ A: ['a', 'a'] }) === 'Black and white' && nm({ A: ['a', 'a'], S: ['S', 'S'] }) === 'Black' && nm({ S: ['S', 'S'] }) === 'Black and copper',
+      'copper rides on the tan-point locus, not on E (E/E and E/e both tricolour; a/a no copper)');
+    const st = G.STARTER_GENES.aussie, rows = G.predict(st, st, 'aussie', 'aussie', { byCoat: true });
+    ok(rows[0].coat === 'Black tricolour' && !rows.some((x) => /Yellow/.test(x.coat)), 'two starter tricolours: Black tricolour first, never a yellow pup (' + rows.map((x) => x.coat + ' ' + x.pct.toFixed(0)).join(', ') + ')');
+    let triPairs = 0, yellow = 0; const r = Math.random;
+    for (let i = 0; i < 3000 && triPairs < 300; i++) { const a = G.randomGenotype('aussie', r), b = G.randomGenotype('aussie', r); if (G.isDoubleMerle(a, b) || a.E.includes('e') || b.E.includes('e') || !/tricolour/.test(G.phenotype(a, 'aussie').coatName) || !/tricolour/.test(G.phenotype(b, 'aussie').coatName)) continue; triPairs++; if (G.predict(a, b, 'aussie', 'aussie').some((x) => /Yellow/.test(x.coat))) yellow++; }
+    ok(triPairs >= 100 && yellow === 0, `${triPairs} pairs of tricolour Aussies (E/E): no yellow pup ever predicted (${yellow})`);
+    const cat = G.coatCatalog('aussie');
+    ok(cat.slice(0, 4).every((c) => /tricolour/.test(c.coat)) && cat[0].coat === 'Black tricolour' && cat.filter((c) => /Yellow/.test(c.coat)).every((c) => c.rare), 'the catalogue starts with the four tricolours (Black first), both yellows rare: ' + cat.slice(0, 5).map((c) => c.coat).join(', '));
+    let cu = 0, yl = 0; const N = 20000; for (let i = 0; i < N; i++) { const c = G.phenotype(G.randomGenotype('aussie', r), 'aussie').coatName; if (/copper|tricolour/.test(c)) cu++; if (/Yellow/.test(c)) yl++; }
+    ok(cu / N > 0.8 && yl / N < 0.02, `random Aussies: ${(100 * cu / N).toFixed(0)}% with copper, ${(100 * yl / N).toFixed(1)}% yellow`);
+    ok(G.describe(st).lines.length === 7 && G.describe(G.STARTER_GENES.collie).lines.length === 6, 'the gene test adds the tan-point line only for genes that carry it (' + G.describe(st).lines[6] + ')');
+  }
+  {
+    // every older coat comes out the same: seeded draws, litters (and the draws after them), predictions, catalogues and gene tests of the 35
+    // match the digest of the module before this fix (origin/v2184-base and 1eee4fe2 give the same digest)
+    const crypto = require('crypto'), OLD = G.BREEDS.slice(0, 35), h = (o) => crypto.createHash('sha1').update(JSON.stringify(o)).digest('hex').slice(0, 16);
+    const mul = (seed) => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+    const d = {}, rg = [], inh = [], pr = [], ds = [];
+    OLD.forEach((k, i) => { for (let s = 1; s <= 200; s++) { const r = mul(s * 977 + i), g = G.randomGenotype(k, r); rg.push([g, r(), G.phenotype(g, k, 'x' + s)]); } }); d.random = h(rg);
+    for (let s = 1; s <= 3000; s++) { const r = mul(s), a = OLD[s % 35], b = OLD[(s * 7) % 35], ga = G.randomGenotype(a, r), gb = G.randomGenotype(b, r), kid = G.inherit(ga, gb, r); inh.push([kid, r(), r(), G.phenotype(kid, a).coatName, G.isDoubleMerle(ga, gb)]); } d.inherit = h(inh);
+    for (let s = 1; s <= 300; s++) { const r = mul(s + 5e4), a = OLD[s % 35], b = OLD[(s * 3) % 35]; pr.push(G.predict(G.randomGenotype(a, r), G.randomGenotype(b, r), a, b)); pr.push(G.predict(G.randomGenotype(a, r), G.randomGenotype(a, r), a, a, { byCoat: true })); } d.predict = h(pr);
+    d.catalog = h(OLD.map((k) => [G.coatCatalog(k), G.coatCatalog(k, { all: true })]));
+    for (let s = 1; s <= 500; s++) ds.push(G.describe(G.randomGenotype(OLD[s % 35], mul(s + 9e4)))); d.describe = h(ds);
+    const want = { random: 'bcc1bd06925c44d4', inherit: '00cc0f2d55a2bdd1', predict: '639039fc30e43f29', catalog: 'c7aaec41f9cdd47a', describe: 'cecfefe30d2b0ef3' };
+    ok(JSON.stringify(d) === JSON.stringify(want), "the 35 older breeds' genetics are unchanged (seeded digest " + JSON.stringify(d) + ')');
+  }
+  {
     // the puppies of two dogs of the same new breed always have a coat of that breed (same-breed litters are legal coats)
     const r = Math.random; let bad = [];
     for (const k of NEW) for (let i = 0; i < 300; i++) { const a = G.randomGenotype(k, r), b = G.randomGenotype(k, r); if (G.isDoubleMerle(a, b)) continue; const c = G.phenotype(G.inherit(a, b, r), k).coatName; if (!cats[k].includes(c)) bad.push(k + ':' + c); }

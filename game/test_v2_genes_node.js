@@ -279,6 +279,7 @@ ok(G.predict(S.shiba, S.mutt, 'shiba', 'mutt').every((r) => !/urajiro/.test(r.co
 function independentNames(k) { // brute force every allele pair allowed by FREQ (written separately from the module)
   const f = G.FREQ[k], opts = (rec, dom, p) => (p <= 0 ? [[dom, dom]] : p >= 1 ? [[rec, rec]] : [[dom, dom], [dom, rec], [rec, rec]]);
   const L = [['B', opts('b', 'B', f.b)], ['D', opts('d', 'D', f.d)], ['E', opts('e', 'E', f.e)], ['S', opts('sp', 'S', f.sp)], ['M', f.M > 0 ? [['m', 'm'], ['M', 'm']] : [['m', 'm']]], ['Bl', opts('bl', 'Bl', 1 - f.Bl)]];
+  if (f.a > 0) L.push(['A', opts('a', 'at', f.a)]); // v2.21: the tan-point locus (PawGenes TAN), only for a breed that has it (the Aussie)
   const out = new Set();
   (function rec(i, g) { if (i === L.length) { out.add(G.phenotype(g, k).coatName); return; } for (const p of L[i][1]) { g[L[i][0]] = p; rec(i + 1, g); } })(0, {});
   return out;

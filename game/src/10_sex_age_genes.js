@@ -39,7 +39,7 @@ const STARTER_GENES = {
   // v2.21 (V221.md 3, the same as mods/genes.js)
   dalmatian: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black spotted', eyes: 'brown' },
   bernese: { B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Tricolour', eyes: 'brown' },
-  aussie: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black tricolour', eyes: 'brown' },
+  aussie: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], A: ['at', 'a'], coat: 'Black tricolour', eyes: 'brown' },
   cavalier: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blenheim', eyes: 'brown' },
   jrt: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White and tan', eyes: 'brown' }
 };

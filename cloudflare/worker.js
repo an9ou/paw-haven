@@ -198,7 +198,7 @@ const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 50 }; // v2.12: 35 bre
 //   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
 //   houses 14: every HOUSES row
 const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 };
-const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
+const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const dcKeys = (o, keys) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).every((k) => keys.includes(k)) && keys.every((k) => k in o);

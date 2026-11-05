@@ -35,6 +35,7 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'];
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
+const DC_TAN = ['at', 'a']; // v2.21: the tan-point locus (PawGenes TAN, the Aussie's copper). Sent only with MS2_LIVE (dcWireLive): the Worker of today refuses it
 const DC_PLACES = ['dogpark', 'yoyogi'];
 const DC_MAX_DOGS = 4, DC_VIS_CARDS = 2, DC_VIS_DOGS = 3;
 
@@ -100,6 +101,7 @@ function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'ne
 function dcCoat(d) {
   const g = d.genes; if (!g || typeof g !== 'object') return null;
   const out = {}; Object.keys(DC_LOCI).forEach((k) => { const v = g[k]; if (Array.isArray(v) && v.length === 2 && v.every((a) => DC_LOCI[k].includes(a))) out[k] = [v[0], v[1]]; });
+  if (dcWireLive() && Array.isArray(g.A) && g.A.length === 2 && g.A.every((a) => DC_TAN.includes(a))) out.A = [g.A[0], g.A[1]]; // v2.21
   return Object.keys(out).length ? out : null;
 }
 function dcDogOf(d, nm) {

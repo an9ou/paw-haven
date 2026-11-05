@@ -55,6 +55,12 @@
     Bl: { name: 'Husky blue eyes (ALX4-type)', alleles: ['Bl', 'bl'], dominant: 'Bl', rule: 'Bl/Bl gives blue eyes; Bl/bl gives blue eyes with a 1 in 4 chance of odd eyes instead.' } // copy-ok: reference text, not shown in the game
   };
   const LOCUS_KEYS = ['B', 'D', 'E', 'S', 'M', 'Bl'];
+  /* v2.21 (code review 2): the tan-point locus, kept apart from the six. Only a breed with copper points reads it (COPPER: the Aussie), only genes that
+     carry it have it (no older dog ever does, so every older result, seeded draw and Dog Card is unchanged), and a missing pair counts as at/at.
+     at is dominant (tan points: the Aussie's copper), a/a has none (a "bi" coat). It is independent of E, as the real A locus is. */
+  const TAN = { key: 'A', name: 'Tan points (A locus, ASIP)', alleles: ['at', 'a'], dominant: 'at', rule: 'at_ gives tan (copper) points on a dark coat; a/a gives none.' }; // copy-ok: reference text, not shown
+  const tanOk = (p) => Array.isArray(p) && p.length === 2 && p.every((x) => x === 'at' || x === 'a');
+  const tanOf = (g) => (g && tanOk(g.A) ? g.A : ['at', 'at']);
 
   // From V2_GENES.md (the v2 doc). Each must reproduce the starter dog's current art.
   const STARTER_GENES = {
@@ -100,7 +106,7 @@
     // v2.21 breeds (V221.md 3). Only the Australian Shepherd carries M (never M/M: isDoubleMerle blocks every pair of two M carriers)
     dalmatian: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, // black spotted; carries liver (b)
     bernese:   { B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'S'],   M: ['m', 'm'], Bl: ['bl', 'bl'] }, // tricolour, always
-    aussie:    { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'sp'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // black tricolour (copper E/e, white trim); carries red (b). Merle comes from rescues and playdates (FREQ M)
+    aussie:    { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'],  M: ['m', 'm'], Bl: ['bl', 'bl'], A: ['at', 'a'] }, // black tricolour (copper at_, white trim); carries red (b) and no-copper (a). Merle comes from rescues and playdates (FREQ M)
     cavalier:  { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, // Blenheim
     jrt:       { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }  // white and tan
   };
@@ -598,7 +604,7 @@
   // v2.12: any white spotting gene says "and white" (Gold and white Shih Tzu); no spotting gene is the solid coat
   const AND_WHITE = { shihtzu: true };
   /* v2.21 (V221.md 3). WHITE_WORD: the coat word already says the white (a white dog with spots or patches), so no spotting gene adds a word.
-     COPPER: copper points on a dark coat are E/e (the afghan's tan fold; shade key <pigment>'cu'), white trim is any spotting gene, and the name says
+     COPPER: copper points on a dark coat are at_ (the tan-point locus TAN, independent of E; shade key <pigment>'cu'), white trim is any spotting gene, and the name says
      "<coat> and copper", "<coat> and white" or "<coat> tricolour" (both). WHITE_TRIM caps the white to the trim (sp/sp draws like S/sp).
      PARTI_BY: sp/sp is the parti coat with its own name (Blenheim, Tricolour); S/S and S/sp are the whole colours (Ruby, Black and tan). */
   const WHITE_WORD = { dalmatian: true, jrt: true }, COPPER = { aussie: true }, WHITE_TRIM = { aussie: 0.25 };
@@ -614,6 +620,7 @@
   function normGenes(g) {
     const d = STARTER_GENES.mutt, out = {};
     LOCUS_KEYS.forEach((k) => { const p = g && Array.isArray(g[k]) && g[k].length === 2 ? g[k] : d[k]; out[k] = [p[0], p[1]]; });
+    if (g && tanOk(g.A)) out.A = [g.A[0], g.A[1]]; // v2.21: only when the genes carry the tan-point locus
     return out;
   }
   const genesOf = (x) => (x && x.genes ? x.genes : x);
@@ -621,7 +628,7 @@
 
   function shadeKey(g, breed, pig) {
     if (pig === 'black' && SOLID_E[breed] && both(g.E, 'E')) return 'solid';
-    if (COPPER[breed] && pig !== 'red' && pig !== 'cream' && has(g.E, 'e')) return pig + 'cu'; // v2.21 aussie: copper points
+    if (COPPER[breed] && pig !== 'red' && pig !== 'cream' && !both(tanOf(g), 'a')) return pig + 'cu'; // v2.21 aussie: copper points (at_, the tan-point locus; independent of E)
     if (WHITE_SP[breed] && both(g.S, 'sp') && (pig === 'red' || pig === 'cream')) return 'white'; // v2.12
     const dd = DOUBLE[breed] && DOUBLE[breed][pig]; // v2.12
     if (dd && both(g[dd[0]], dd[0])) return dd[1];
@@ -801,7 +808,7 @@
     // v2.21 breeds (V221.md 3): only the Aussie carries merle (M/m at most; isDoubleMerle blocks two carriers, hidden merle on yellow too)
     dalmatian: { b: 0.35, d: 0,    e: 0,    sp: 1.00, M: 0,    Bl: 0 },    // black or liver spots, always on white
     bernese:   { b: 0,    d: 0,    e: 0,    sp: 0,    M: 0,    Bl: 0 },    // tricolour, always
-    aussie:    { b: 0.45, d: 0,    e: 0.20, sp: 0.50, M: 0.35, Bl: 0.10 }, // black, red, blue merle, red merle, with or without copper and white; rare yellow; some blue eyes
+    aussie:    { b: 0.45, d: 0,    e: 0.10, sp: 0.70, M: 0.35, Bl: 0.10, a: 0.30 }, // black, red, blue merle, red merle, mostly tricolour (a: no-copper, TAN); rare yellow (1%); some blue eyes
     cavalier:  { b: 0,    d: 0,    e: 0.75, sp: 0.80, M: 0,    Bl: 0 },    // Blenheim, tricolour, ruby, black and tan
     jrt:       { b: 0,    d: 0,    e: 0.70, sp: 1.00, M: 0,    Bl: 0 }     // white with tan, white with black, tricolour
   };
@@ -815,7 +822,8 @@
       E: pair('e', 'E', f.e),
       S: pair('sp', 'S', f.sp),
       M: R() < f.M ? ['M', 'm'] : ['m', 'm'],
-      Bl: pair('bl', 'Bl', 1 - f.Bl)
+      Bl: pair('bl', 'Bl', 1 - f.Bl),
+      ...(f.a > 0 ? { A: pair('a', 'at', f.a) } : {}) // v2.21: the tan-point locus, drawn last and only for a breed that has it (no older draw moves)
     };
   }
 
@@ -823,6 +831,7 @@
   function inherit(mumGenes, dadGenes, rng) {
     const R = rngOf(rng), m = normGenes(genesOf(mumGenes)), d = normGenes(genesOf(dadGenes)), out = {};
     LOCUS_KEYS.forEach((k) => { out[k] = [m[k][R() < 0.5 ? 0 : 1], d[k][R() < 0.5 ? 0 : 1]]; });
+    if (m.A || d.A) { const ma = tanOf(m), da = tanOf(d); out.A = [ma[R() < 0.5 ? 0 : 1], da[R() < 0.5 ? 0 : 1]]; } // v2.21: only when a parent carries the tan-point locus (drawn last)
     return out;
   }
 
@@ -1263,7 +1272,9 @@
   }
   // all unordered genotype classes of the 6 loci with their probability for a pair of parents
   function offspringDist(ga, gb) {
-    const per = LOCUS_KEYS.map((k) => {
+    const keys = ga.A || gb.A ? LOCUS_KEYS.concat('A') : LOCUS_KEYS; // v2.21: the tan-point locus only when a parent carries it
+    if (keys !== LOCUS_KEYS) { ga = Object.assign({}, ga, { A: tanOf(ga) }); gb = Object.assign({}, gb, { A: tanOf(gb) }); }
+    const per = keys.map((k) => {
       const m = {};
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
         const pr = [ga[k][i], gb[k][j]], key = pr.join('/');
@@ -1273,8 +1284,8 @@
     });
     const out = [];
     (function rec(i, g, p) {
-      if (i === LOCUS_KEYS.length) { out.push({ g: Object.assign({}, g), p }); return; }
-      per[i].forEach((o) => { g[LOCUS_KEYS[i]] = o.pair; rec(i + 1, g, p * o.p); });
+      if (i === keys.length) { out.push({ g: Object.assign({}, g), p }); return; }
+      per[i].forEach((o) => { g[keys[i]] = o.pair; rec(i + 1, g, p * o.p); });
     })(0, {}, 1);
     return out; // covers the 4096 allele combinations exactly (merged by ordered pair)
   }
@@ -1334,7 +1345,7 @@
       ['S', locusClasses('sp', 'S', f.sp)],
       ['M', f.M > 0 ? [{ pair: ['m', 'm'], p: 1 - f.M }, { pair: ['M', 'm'], p: f.M }] : [{ pair: ['m', 'm'], p: 1 }]],
       ['Bl', locusClasses('bl', 'Bl', 1 - f.Bl)]
-    ];
+    ].concat(f.a > 0 ? [['A', locusClasses('a', 'at', f.a)]] : []); // v2.21: the tan-point locus for a breed that has it
     const out = [];
     (function rec(i, g, p) {
       if (i === per.length) { out.push({ g: Object.assign({}, g), p }); return; }
@@ -1357,21 +1368,21 @@
     deep: 'red genes and no chocolate gene from both parents',
     dblue: 'dilute and dark-coat genes from both parents',
     brindle: 'dark-coat genes from both parents',
-    // v2.21 aussie copper shade keys
-    blackcu: 'one red gene (for the copper points)',
-    livercu: 'chocolate genes from both parents with one red gene (for the copper points)',
-    bluecu: 'dilute genes from both parents with one red gene (for the copper points)',
-    lilaccu: 'chocolate and dilute genes from both parents with one red gene (for the copper points)'
-  };
+  }; // v2.21: the Aussie's copper shade keys (...cu) take the hint of their pigment, and no copper is its own part (hintFor)
   // The "how" hint is built from short noun phrases and joined by a list in the current language; it is made when asked for (never cached),
   // so a language switch shows at once.
   function hintFor(breed, sk, merle, whiteLvl, p, defaultSk) {
     const f = FREQ[breed], parts = [], need = (k) => D('pig_need.' + k, PIG_NEED[k]);
     // a pigment that every dog of this breed has (golden: always e/e) needs no hint
     const fixedRed = f.e >= 1 && (sk === 'red');
-    if (sk !== defaultSk && !fixedRed) parts.push(need(f.e >= 1 && sk === 'cream' ? 'blue' : f.e >= 1 && sk === 'redliver' ? 'liver' : sk));
+    if (COPPER[breed] && /^(black|liver|blue|lilac)(cu)?$/.test(sk)) { // v2.21 aussie: copper (at_) is the classic look, no copper needs a/a from both parents
+      const base = sk.replace(/cu$/, ''), dbase = String(defaultSk).replace(/cu$/, '');
+      if (base !== dbase) parts.push(need(base));
+      if (!/cu$/.test(sk)) parts.push(L('mod.genes.need_nocopper_both', 'no-copper genes from both parents'));
+    } else if (sk !== defaultSk && !fixedRed) parts.push(need(f.e >= 1 && sk === 'cream' ? 'blue' : f.e >= 1 && sk === 'redliver' ? 'liver' : sk));
     if (merle) parts.push(breed === 'dachs' ? L('mod.genes.need_dapple', 'one dapple parent (never two)') : L('mod.genes.need_merle', 'one merle parent (never two)'));
     if (PARTI_BY[breed]) { if (whiteLvl < 2) parts.push(L('mod.genes.need_solid_one', 'a solid-coat gene from one parent')); } // v2.21 cavalier: the parti coat is the classic one
+    else if (WHITE_TRIM[breed]) { if (!whiteLvl) parts.push(L('mod.genes.need_solid_both', 'solid-coat genes from both parents')); } // v2.21 aussie: the white trim is the classic look
     else if (whiteLvl === 2 && f.sp < 1) parts.push(L('mod.genes.need_spotting_both', 'spotting genes from both parents'));
     else if (whiteLvl === 1 && !WHITE_MARKED[breed]) parts.push(L('mod.genes.need_spotting_one', 'a spotting gene from one parent'));
     else if (whiteLvl === 0 && TRI_SOLID[breed] && TRI_SOLID[breed][sk] && !merle) parts.push(L('mod.genes.need_solid_both', 'solid-coat genes from both parents'));
@@ -1462,6 +1473,12 @@
     if (both(g.Bl, 'Bl')) lines.push(L('mod.genes.line_bl_blue', '{pair}: blue eyes', pr('Bl', 'Bl')));
     else if (has(g.Bl, 'Bl')) lines.push(L('mod.genes.line_bl_odd', '{pair}: blue eyes (sometimes one blue, one brown)', pr('Bl', 'Bl')));
     else lines.push(L('mod.genes.line_bl_none', '{pair}: no blue-eye gene', pr('Bl', 'Bl')));
+    // v2.21: the tan-point locus, only for genes that carry it (the Aussie and its family; every older dog keeps its six lines)
+    if (tanOk(g.A)) {
+      if (both(g.A, 'a')) lines.push(L('mod.genes.line_a_none', '{pair}: no copper points', pr('A', 'at')));
+      else if (has(g.A, 'a')) lines.push(L('mod.genes.line_a_carry', '{pair}: copper points, carries no copper', pr('A', 'at')));
+      else lines.push(L('mod.genes.line_a_copper', '{pair}: copper points', pr('A', 'at')));
+    }
 
     // the hidden genes (carriers keep their ids) and what a puppy could look like, as lists in the current language
     const CARRY = { liver: () => L('mod.genes.carry_liver', 'liver'), dilute: () => L('mod.genes.carry_dilute', 'dilute'), red: () => L('mod.genes.carry_red', 'red'),
@@ -1699,7 +1716,7 @@
     return { p, mult, parts, text };
   }
 
-  const api = { LOCI, LOCUS_KEYS, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, WORDS, WHITE_MARKED, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
+  const api = { LOCI, LOCUS_KEYS, TAN, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, WORDS, WHITE_MARKED, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
     BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog: coatCatalogV21, describe,
     ancestry, grandMix, sparkleOdds, fracText, GRAND_RECIPES,
     coatLabel, mixLabel, mixName, breedLabel: bn }; // v2.14: display helpers (the returned data stays English)
