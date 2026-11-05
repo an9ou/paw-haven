@@ -60,6 +60,21 @@ run('phone_v211_cards', async (t) => {
     await t.closeX();
   }
 
+  // v2.21 phone review 5: big visitors (a Bernese, an Aussie, a Dalmatian; the gate on, as the GitHub Pages copy) keep their drawn art inside the view at 360
+  sec('360 px (Galaxy S8): big visitors stay inside the view');
+  await t.newGame({ device: 'Galaxy S8', prefs: { ms2Test: true } }, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
+  await ev(() => { const F = window.__paw.dc.fake, B = window.PawGenes.BREEDS; if (!F.some((c) => c.id === 'town-v221')) F.push({ id: 'town-v221', fake: true, name: [3, 4], paws: 2, dogs: ['bernese', 'aussie', 'dalmatian'].map((k, i) => ({ b: B.indexOf(k), c: null, o: -1, a: 'adult', s: i % 2 ? 'f' : 'm', sp: 0, n: i })) }); });
+  await t.home('dogpark');
+  const outs = [];
+  for (let round = 0; round < 8; round++) {
+    await ev(() => window.__paw.dc.visit(['town-v221'])); await t.until(() => window.__paw.dc.visitors().length > 0, null, 4000); await t.sleep(300);
+    outs.push(...await ev(() => { const vr = document.getElementById('view').getBoundingClientRect(), out = [];
+      document.querySelectorAll('#dcVis .dcvis').forEach((g) => { if (g.style.display === 'none') return; let l = Infinity, r = -Infinity; g.querySelectorAll('.dc-art path, .dc-art ellipse, .dc-art circle, .dc-art polygon').forEach((e) => { const b = e.getBoundingClientRect(); if (b.width || b.height) { l = Math.min(l, b.left); r = Math.max(r, b.right); } }); if (l < vr.left - 1 || r > vr.right + 1) out.push(`${g.getAttribute('aria-label').split(',')[0]} ${Math.round(l)}..${Math.round(r)} of ${Math.round(vr.left)}..${Math.round(vr.right)}`); });
+      return out; }));
+  }
+  ok(!outs.length, `8 visits: every visiting dog's art is inside the view at 360 px ${outs.slice(0, 4).join(' | ')}`);
+  await t.SH('dogpark_big_visitors_360');
+
   sec('Pixel 7, mock mode: the Dog Card settings for an email account');
   const srv = makeServer();
   const p = await t.mk({ device: 'Pixel 7' });

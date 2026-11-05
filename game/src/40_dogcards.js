@@ -202,6 +202,7 @@ async function dcPickCards() {
 /* ---------------- visitors: placing and roaming (inside rmZone, at rmScale x the size class (dcK), held by the roam holds) ---------------- */
 const dcTapHeld = () => (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN; // ball play, photo mode, training own the taps
 const dcHeld = () => !rmOn() || !modal.hidden || (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN;
+const DC_ART_HW = 124; // half the width a dog's art can reach from its feet at scale 1 (the 264-wide dog box, DW, less its margin)
 const dcK = (v, y) => rmScale(y) * (v ? sizeK(v.dog) : 1); // v2.11.1: a visitor's drawn scale (depth times its size class)
 function dcCrop() { if (!isPhone()) { if (grWide()) { const c = grCam(); return [c.x, c.x + c.w]; } return [0, 1000]; } const w = rmCropW(), c = phCamHome; return [c - w / 2, c + w / 2]; } // phones: the home crop
 // the box a spot must stay clear of: every tappable thing (rmScan's boxes; feet only for big scenery), every player dog's tap rect where it is and
@@ -210,6 +211,7 @@ function dcOk(v, x, y) {
   const z = rmZoneOf(S.place); if (x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) return false; if (z.poly && !grIn(z.poly, x, y)) return false; // v2.15: the floor polygon
   const k = dcK(v, y), T = rmTapBox(x, y, k), cr = dcCrop();
   if (T[0] < cr[0] + 4 || T[0] + T[2] > cr[1] - 4 || T[1] < 0) return false;
+  if (isPhone() && (x - DC_ART_HW * k < cr[0] + 2 || x + DC_ART_HW * k > cr[1] - 2)) return false; // v2.21 phone review 5: the drawn dog too (a big dog's tail reaches past its tap rect)
   if (rmHard(x, y)) return false;
   if (rmBoxes().some((b) => b[4] !== 'scene' && b[4] !== 'dctag' && rmOver(T, b) > 0)) return false; // (the visitors' own tags are drawn under the visitors: not a box for them)
   // #dcVis is drawn behind #pack, so a player dog's tap rect always stays on top. A visitor may stand partly behind a player dog (further back,
