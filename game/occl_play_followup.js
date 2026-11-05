@@ -58,7 +58,9 @@ module.exports = {
     const sayRes = await ev(`(async () => { const say = document.querySelector('.pw-say'), hint = [...document.querySelectorAll('.pw-hint')].find((e) => +e.style.opacity >= 0.95 && e.getBoundingClientRect().right < innerWidth && e.getBoundingClientRect().left > 0); if (!hint) return { err: 'hint gone' };
       say.hidden = false; say.textContent = 'Psst: a long line of dog speech that is wide enough to reach'; say.style.left = '0px'; say.style.top = '0px';
       for (let k = 0; k < 3; k++) { const hr = hint.getBoundingClientRect(), sr = say.getBoundingClientRect(); say.style.left = (parseFloat(say.style.left) + (hr.left + hr.width / 2) - (sr.left + sr.width / 2)) + 'px'; say.style.top = (parseFloat(say.style.top) + (hr.top + hr.height / 2) - (sr.top + sr.height / 2)) + 'px'; }
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // the game measures at most every 150 ms (v2.19.1): keep the bubble on the moving hint for ~250 ms of frames
+      for (let f = 0; f < 15; f++) { await new Promise((r) => requestAnimationFrame(r)); const hr = hint.getBoundingClientRect(), sr = say.getBoundingClientRect(); say.style.left = (parseFloat(say.style.left) + (hr.left + hr.width / 2) - (sr.left + sr.width / 2)) + 'px'; say.style.top = (parseFloat(say.style.top) + (hr.top + hr.height / 2) - (sr.top + sr.height / 2)) + 'px'; }
+      await new Promise((r) => requestAnimationFrame(r));
       const sr = say.getBoundingClientRect(), hr2 = hint.getBoundingClientRect(); const overlap = sr.left < hr2.right && sr.right > hr2.left && sr.top < hr2.bottom && sr.bottom > hr2.top;
       const hv = getComputedStyle(hint).visibility, sv = getComputedStyle(say).visibility; say.hidden = true; return { overlap, hint: hv, say: sv }; })()`);
     ok(!sayRes.err && sayRes.overlap && sayRes.hint === 'hidden' && sayRes.say === 'visible', `${tag} runner: a hint hides while the speech bubble sits on it (${JSON.stringify(sayRes)})`);
