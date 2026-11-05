@@ -54,7 +54,7 @@ We made this slow, quiet walk for the last few minutes before lights out. The su
 
 There's the game's own soft night music, Noodle's gentle voice and big read-along words, 1 short line at a time. We kept out ads, loud sounds and fast cuts. It gets darker and quieter as it goes, and it ends with Noodle fast asleep.
 
-For grown-ups: it's 2 minutes 23 seconds long. Noodle walks through Maple Woods, past the duck pond in Sunny Park, onto the pier as the lighthouse comes on and up Hilltop Meadow to count the stars, then home to his Cloud Bed. Turn the brightness down and let it play to the end.
+For grown-ups: it's just under 2 minutes long. Noodle walks through Maple Woods, past the duck pond in Sunny Park, onto the pier as the lighthouse comes on and up Hilltop Meadow to count the stars, then home to his Cloud Bed. Turn the brightness down and let it play to the end.
 
 Noodle comes from Doodle Doggo, the free cozy dog game I draw like a pencil sketchbook (it's for grown-ups and older kids): https://doodledoggo.app
 
@@ -99,18 +99,21 @@ Checked 3 Nov 2026 with `.claude/skills/ig-human/detect.py` and `.claude/skills/
 - Bedtime Walk YouTube description: ig-human PASS (85). IG/TikTok caption: ig-caption READY, ig-human PASS (77).
 - No em dashes, no "ugly", no selling words; the link only in the YouTube descriptions, for parents; no Ko-fi link on kids' videos.
 
-## Files (English, waiting for the owner's approval)
+## Files (English)
+
+Owner, 5 Nov 2026: **the horizontal Dog manners episode is approved**; the horizontal Bedtime Walk was made faster to end in about 2 minutes (1:59, voice 1.0x, shorter shots; sent for approval); both episodes get RedNote Reels (below).
+
 
 | Episode | 16:9 (YouTube) | 9:16 (Shorts, IG, TikTok) | Thumbnail / cover |
 |---|---|---|---|
-| Dog manners 1: How to say hello to a dog | `brand/kids/dog_manners/doodle-doggo-kids-dog-manners.mp4` (1:39) | `-tall.mp4` (27 s, teen cut) | `dog-manners-thumb.jpg`, `dog-manners-cover-tall.jpg` |
-| Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (2:23) | `-tall.mp4` (29 s, teen cut) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
+| Dog manners 1: How to say hello to a dog | `brand/kids/dog_manners/doodle-doggo-kids-dog-manners.mp4` (1:39, **approved**) | `-tall.mp4` (27 s, teen cut) | `dog-manners-thumb.jpg`, `dog-manners-cover-tall.jpg` |
+| Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (1:59) | `-tall.mp4` (29 s, teen cut) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
 
 Remake or fix: `NODE_PATH=$(npm root -g) node brand/kids/<episode>/build_<name>.js <workdir> <vo dir>` with `FORMAT=tall`, `ONLY=stills`, `FRAMES=a-b` (see `KIDS_SERIES.md`, Build kit). Voices: `python3 brand/kids/<episode>/vo_<name>.py <kokoro model dir> <vo dir>`.
 
 ## RedNote / 小红书 (9:16 Reels, 5 Nov 2026)
 
-Owner, 5 Nov 2026: "Dog manners ... can create reels version for rednote". Simplified Chinese, no link, no domain, no handles, no QR (`REDNOTE.md`). The English under each part says what the Chinese says.
+Owner, 5 Nov 2026: "Dog manners and bedtime walk can create reels version for rednote". Simplified Chinese, no link, no domain, no handles, no QR (`REDNOTE.md`). The English under each part says what the Chinese says.
 
 ### Dog manners
 
@@ -143,3 +146,34 @@ Video: `brand/kids/dog_manners/doodle-doggo-kids-dog-manners-rednote.mp4` (32 s,
 > Met a cute dog and want to pet it? Remember these 4 first. 1. Ask the dog's owner first. 2. Stand still, hands low, let the dog come and sniff. 3. Pet the shoulder or side softly, three strokes, then stop. 4. If the dog walks away, let it go. The dog is comfortable and you can relax. Save this for the next dog you meet! The crayon dogs come from Doodle Doggo, a cozy crayon dog game. Search "Doodle Doggo App" in your browser to play.
 
 Remake: `python3 brand/kids/dog_manners/vo_dog_manners_zh.py <kokoro dir> <vo zh dir>` (misaki 0.9.4, jieba on PYTHONPATH; see the file's head), then `REDNOTE=1 FORMAT=tall NODE_PATH=$(npm root -g) node brand/kids/dog_manners/build_dog_manners.js <workdir> <vo zh dir>`; `ONLY=covers` makes the cover, `FRAMES=a-b` re-renders a part.
+
+### Bedtime Walk
+
+Video: `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk-rednote.mp4` (30 s, 5.4 MB, the fast 9:16 cut in Mandarin: Kokoro v1.1-zh `zf_073` at 1.1x, the Reel pace of the English teen cut; hook "POV: 狗狗的睡前散步", Chinese subtitles in LXGW WenKai, the stars counted 一 to 五 with 1. to 5. on screen; the RedNote end card). Cover (upload as the video's custom cover): `brand/rednote/rednote-09-bedtime.jpg` (1080 x 1440: "睡前散步", Noodle under the moon and five stars, the logo small).
+
+标题 (title, 10 characters; 20 max):
+```
+狗狗的睡前散步🌙晚安
+```
+
+> A dog's bedtime walk, goodnight.
+
+正文 (text):
+```
+睡觉前，带狗狗散最后一次步 🐾
+
+跟鸭鸭说晚安 🦆 一起数五颗星星 ⭐ 然后钻进软软的云朵狗窝，做个好梦 💤
+
+你家狗狗睡前也要散步吗？评论区告诉我 👇
+
+视频里的蜡笔狗狗来自 Doodle Doggo，一款治愈系蜡笔狗狗游戏
+浏览器搜 Doodle Doggo App 就能玩
+
+#睡前故事 #腊肠犬 #萌宠 #治愈系游戏
+```
+
+> One last walk with your dog before bed. Say goodnight to the ducks, count five stars together, then snuggle into the soft Cloud Bed and sweet dreams. Does your dog need a walk before bed too? Tell me in the comments. The crayon dog comes from Doodle Doggo, a cozy crayon dog game. Search "Doodle Doggo App" in your browser to play.
+
+Checked by hand (RedNote rules): no link, no domain with a dot, no 免费 / 无广告 / 下载, the game's own zh-Hans name 云朵狗窝 (Cloud Bed), one ask (comment), title within 20 characters.
+
+Remake: `python3 brand/kids/bedtime_walk/vo_bedtime_walk_zh.py <kokoro dir> <vo zh dir>` (needs `config-v1.1-zh.json`, the v1.1-zh vocab, in the kokoro dir, and misaki 0.9.x; see the file's head), then `REDNOTE=1 FORMAT=tall NODE_PATH=$(npm root -g) node brand/kids/bedtime_walk/build_bedtime_walk.js <workdir> <vo zh dir>` (writes the mp4 and the 3:4 cover); `FRAMES=625-754` re-renders the end card only.
