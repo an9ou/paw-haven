@@ -7365,6 +7365,186 @@ PA.MISSIONS={shelf:cups=>PA.prop('trophyshelf',{cups}),rosette:t=>serve('ms:rose
   boardText:{x1:100,x2:250,y1:30,y2:72,cx:175,cy:51},noteText:{x1:26,x2:274,y1:28,y2:94},pageText:{x1:68,x2:312,pitch:24,first:20},
   chartY:Object.assign({},MS_CY),chartTick:(st,k)=>msTick(st,k),tiers:['b','s','g','c'],tabs:['today','week','badges','notebook']};
 
+/* ---------- v2.22 "Town levels and dog habits": the levels art (V222.md 7.2 and its Decided 4). PA.LEVELS groups it; each call is an SVG
+   string (cached per argument, fresh ids each time). Crude crayon pieces in the pencil sketchbook: every colour fill sits inside its own outline
+   (b.sh lays the fill inside the line, the marks are clipped to their shape); the arc, the ground and the paths are pencil or crayon lines only.
+   No words or numbers baked in (the game writes them in HTML).
+   star(n, frac, o)  icon 48x48  the HUD badge, read at 34-36 px: a cream paper disc, a fat wobbly crayon star whose plain middle holds a 1-2 digit
+                                 number (the HTML .lv-n sits on it, centred at about 24, 26), and round the disc a crayon progress arc from the top,
+                                 clockwise (frac 0-1, 40 steps). o.top: a tiny crayon crown on the star's top point (level 20). n is not drawn.
+                                 The star, the disc and the crown are the same for every frac (only the arc changes). class lv-starsvg.
+   card()            strip 600x60  the level-up card: small sketched town roofs either side and a big crayon star in the middle. class lv-strip.
+   sheet()           strip 600x80  the Level sheet header: the town on the left, a dotted path climbing a hill to a star flag, trees on the right. lv-strip.
+   habit(cat)        icon 32x32  the habit rows, bold for 32 px: cat 1-10 or its key: 1 energy (paw with motion lines), 2 spot (a cushion with
+                                 an X), 3 trait (a sparkle), 4 ask (a hand and a heart), 5 bath (bubbles), 6 ball (tennis ball), 7 pack (two paws),
+                                 8 face (a crayon smile), 9 sleep (a moon and zzz), 10 secret (a small envelope with a heart). Others draw 1.
+   sticker(i)        icon 64x64  the star stickers past level 20, i 0-7 (others wrap): die-cut paper stickers with a white edge: 0 gold star,
+                                 1 bone, 2 tennis ball, 3 paw heart, 4 kennel, 5 town house, 6 fire hydrant, 7 crayon dog face. */
+const LV_CATS=['energy','spot','trait','ask','bath','ball','pack','face','sleep','secret'];
+const LV_STK=['Gold star','Bone','Tennis ball','Paw heart','Kennel','Town house','Fire hydrant','Doggy face'];
+const LV_ORA='#F4A262',LV_ORAD='#E07F3C',LV_STAR='#FFD95E',LV_STARD='#F2B43C';
+const lvCls=(s,c)=>s.replace('class="pa-wb ','class="'+c+' pa-wb ');
+// the builder, with its free pencil and crayon lines tagged data-ln (lines, not colour fills: the fill sweep tells them apart)
+const lvMk=(kind,name)=>{const b=mk(kind,name);b.ln=(pts,o={})=>{(o.top?b.T:o.under?b.U:b.L).push(b.lnS(pts,o).replace('<path ','<path data-ln="1" '));return b};return b};
+// a wobbly n-point star: the tips and the dips nudged by the builder's own stream (stable per builder name)
+function lvStarPts(b,cx,cy,R,r,j){return starP(cx,cy,R,r).map((p,i)=>{const a=Math.atan2(p[1]-cy,p[0]-cx),d=(i%2?r:R)*(1+(b.r()-.5)*j);return[cx+Math.cos(a)*d+(b.r()-.5)*j*4,cy+Math.sin(a)*d+(b.r()-.5)*j*4]})}
+// a crayon line along a circle from angle a0 to a1 (radians, clockwise from the top), radial wobble from rng q
+function lvArcD(cx,cy,rr,a0,a1,q,wob){const n=Math.max(2,Math.ceil(Math.abs(a1-a0)/(Math.PI/30))),P=[];
+  for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n-Math.PI/2,d=rr+(q()-.5)*wob;P.push([cx+Math.cos(a)*d,cy+Math.sin(a)*d])}
+  return 'M'+P.map(p=>R1(p[0])+' '+R1(p[1])).join('L')}
+function lvStar(frac,top){const f=Math.max(0,Math.min(1,+frac||0)),b=lvMk('icon','lv:star'),cx=24,cy=25.4,DY=24.6;
+  // the paper disc (a pencil edge) and the faint crayon track round it
+  b.sh(E(24,DY,19.4,19.4,26),'#FFF8EA',{k:1/6,hatch:0,hl:0,lw:.36,base:PAPER,ink:'#B5A496',dr:0,under:1});
+  const q0=rng(hashS('lv:track'));b.raw(b.st(lvArcD(24,DY,21.7,0,Math.PI*2,q0,.5)+'Z','#EADFCF',3.2,.95),'under');
+  // the star: fat arms so the middle holds two digits, a soft orange side, crayon strokes only in the arms (the middle stays plain)
+  const S5=lvStarPts(b,cx,cy,18.9,12.9,.045);
+  const arms=b.st(b.jl(9,20.5,14.5,20)+b.jl(34.5,19.8,39.4,20.6)+b.jl(22.6,10.6,25.6,11)+b.jl(15,37.4,17.6,33.6)+b.jl(33,37.6,30.6,33.6),'#F7C64E',1.3,.85);
+  b.sh(S5,LV_STAR,{k:.16,hatch:0,hl:0,lw:.56,base:'#FFF1B8',dr:.3,inner:arms,
+    marks:[{pts:[[30,30],[48,22],[48,48],[24,48],[24,38]],fill:LV_STARD,op:.38,k:0}]});
+  b.ex('glint',11.6,20.6,2.4);
+  if(top){// the tiny crayon crown on the top point, a little tilted
+    const T=pts=>rot(pts,-.16,24,5.6);
+    b.sh(T([[16.6,9.6],[16,3.4],[19.6,6],[24,.6],[28.4,6],[32,3.4],[31.4,9.6]]),'#FFD23A',{k:.1,hatch:0,hl:0,lw:.5,base:'#FFF0A8',dr:0,top:1,
+      marks:[{pts:T([[14,7.6],[34,7.6],[34,11],[14,11]]),fill:'#E8473D',k:0}]});
+    T([[19.6,8.9],[24,8.9],[28.4,8.9]]).forEach(([x,y],i)=>b.raw(`<circle cx="${R1(x)}" cy="${R1(y)}" r=".95" fill="${['#4F8FD6','#6DBE5A','#8E63C7'][i]}"/>`,'top'));
+  }
+  // the progress arc: a crayon stroke and a darker grain stroke over it, from the top, clockwise
+  if(f>0){const q=rng(hashS('lv:arc')),a1=Math.PI*2*f;
+    b.raw(b.st(lvArcD(24,DY,21.7,0,a1,q,.45),LV_ORA,3.6,1),'under');
+    b.raw(b.st(lvArcD(24,DY,22.3,.04,Math.max(.05,a1-.04),q,.6),LV_ORAD,1.2,.55),'under');
+    b.raw(b.st(lvArcD(24,DY,21,.06,Math.max(.07,a1-.06),q,.6),'#FFC98E',.9,.7),'under')}
+  return lvCls(b.svg('0 0 48 48',' preserveAspectRatio="xMidYMid meet" aria-hidden="true"',top?'Town level star with a crown':'Town level star'),'lv-starsvg')}
+// a little sketched town house: body, roof, a window or two, a door. x = left, y = ground, w, h = body, rf = roof height
+function lvHouse(b,x,y,w,h,rf,body,roof,o={}){const lw=o.lw||.7;
+  if(o.chim)b.sh(RR(x+w*.68,y-h-rf*.75,w*.13,rf*.6,.6),'#E7A58C',{k:0,hatch:0,hl:0,lw:lw*.8,dr:0});
+  b.sh([[x,y],[x,y-h],[x+w,y-h],[x+w,y]],body,{k:0,hatch:o.hatch??1,hl:0,lw:lw,dr:.3});
+  b.sh([[x-w*.1,y-h+.5],[x+w/2,y-h-rf],[x+w*1.1,y-h+.5]],roof,{k:.04,hatch:0,hl:0,lw:lw,dr:.3});
+  const ww=Math.min(w*.24,7),wh=Math.min(h*.32,7);
+  if(o.door!==0)b.sh(arch(x+w*.38,x+w*.38+Math.min(w*.26,8),y,y-Math.min(h*.6,13)),C.door,{k:0,hatch:0,hl:0,lw:lw*.8,base:'#7A5E52',dr:0});
+  (o.win||[[.16,.3]]).forEach(([fx,fy])=>b.sh(RR(x+w*fx,y-h+h*fy,ww,wh,1),o.wincol||'#FFE9A8',{k:0,hatch:0,hl:0,lw:lw*.7,dr:0,
+    inner:b.st(`M${R1(x+w*fx+ww/2)} ${R1(y-h+h*fy)}v${R1(wh)}`,INK,.7,.6)}));
+}
+function lvTree(b,x,y,s,col){b.ln([[x,y],[x+.4,y-s*.9]],{w:s*.17,col:C.woodD});b.sh(cloudP(x,y-s*1.25,s*.62,s*.56,7,.14,28),col||C.leaf,{k:1/6,hatch:1,hl:0,lw:.65,dr:.3})}
+function lvCard(){const b=lvMk('prop','lv:card'),G=52;
+  // the ground: a pencil line either side of the star (nothing is filled to the edge)
+  b.ln([[18,G+.6],[120,G],[220,G+.8]],{w:1.3,col:GRAPH});b.ln([[380,G+.8],[480,G],[582,G+.6]],{w:1.3,col:GRAPH});
+  // the town roofs, left and right
+  lvHouse(b,34,G,30,20,13,'#FDE6EC','#F28FA5',{win:[[.14,.28]],chim:1});
+  lvHouse(b,76,G,24,28,12,'#E4EEFB','#8FB8E8',{win:[[.18,.18]],door:0});
+  lvTree(b,118,G,14,C.leaf);
+  lvHouse(b,138,G,34,22,15,'#FFF3D6','#E2B07E',{win:[[.12,.26],[.66,.26]]});
+  lvHouse(b,190,G,22,16,10,'#E3F4EA','#9CCB86',{win:[[.56,.3]],door:0});
+  lvHouse(b,392,G,24,18,11,'#F2ECFB','#B9A6E8',{win:[[.18,.3]],door:0});
+  lvHouse(b,428,G,34,26,14,'#FFF3D6','#F08A86',{win:[[.12,.24],[.66,.24]],chim:1});
+  lvTree(b,480,G,13,'#B8DE9A');
+  lvHouse(b,500,G,26,20,12,'#E4EEFB','#F9B97A',{win:[[.16,.3]]});
+  lvHouse(b,540,G,28,30,13,'#FDE6EC','#9ED8D2',{win:[[.18,.16],[.18,.52]],door:0});
+  // bunting from the houses to the star
+  b.ln([[224,20],[248,26],[268,28]],{w:.7,col:GRAPH});b.ln([[332,28],[352,26],[376,20]],{w:.7,col:GRAPH});
+  [[236,23.6,'#F7B2C4'],[256,27.4,'#FFE08A'],[344,27.4,'#B9D4F3'],[364,23.6,'#BDE7D2']].forEach(([x,y,c])=>b.sh([[x-4,y-.6],[x+4,y+.6],[x+.4,y+6.6]],c,{k:.1,hatch:0,hl:0,lw:.45,dr:0}));
+  // the big star, with crayon rays and sparkles
+  b.shadow(300,57,26,2.4);
+  [[-.1,1],[.35,.8],[2.79,.8],[3.24,1],[3.7,.85],[5.72,.85]].forEach(([a,l])=>{const c=Math.cos(a),s=Math.sin(a);
+    b.ln([[300+c*31,30+s*27],[300+c*(31+7*l),30+s*(27+6*l)]],{w:1.6,col:LV_ORA})});
+  b.sh(lvStarPts(b,300,31.4,27,15.4,.05),LV_STAR,{k:.12,hl:0,lw:.95,base:'#FFF1B8',dr:.3,sh:LV_STARD,
+    inner:b.st(b.jl(282,24,292,22)+b.jl(306,14,309,20)+b.jl(310,40,318,46),'#F7C64E',2,.8),marks:[{pts:[[306,36],[336,26],[336,62],[296,62],[300,46]],fill:LV_STARD,op:.35,k:0}]});
+  b.ex('glint',282,24,4.4);b.ex('spark',258,10,4.6,'#FFE59A');b.ex('spark',346,9,3.8,'#F9C7D6');b.ex('spark',240,44,3,'#BFE6FA');b.ex('dots',352,44,4.4);
+  return lvCls(b.svg('0 0 600 60',' preserveAspectRatio="xMidYMid meet" aria-hidden="true"','Town level card'),'lv-strip')}
+function lvSheet(){const b=lvMk('prop','lv:sheet'),G=72;
+  b.ln([[14,G+.6],[150,G],[300,G+1]],{w:1.3,col:GRAPH});b.ln([[300,G+1],[450,G+.4],[586,G+.8]],{w:1.3,col:GRAPH});
+  // the hill (closed on the ground line), a dotted path climbing it, the star flag on top
+  b.sh([[318,G],[346,G-14],[380,G-30],[414,G-38],[448,G-32],[482,G-16],[508,G]],C.green,{k:.2,hl:0,lw:.75,dr:.3,base:'#E6F4D9'});
+  b.raw(b.st(`M232 ${G-1}Q290 ${G-4} 330 ${G-6}Q372 ${G-8} 360 ${G-16}Q352 ${G-24} 390 ${G-28}Q410 ${G-31} 414 ${G-37}`,'#B89A7E',1.6,.85).replace('/>',' stroke-dasharray="2.6 3.4"/>'));
+  b.ln([[414,G-37],[415,G-68]],{w:1.7,col:C.woodD});
+  b.sh([[415.4,G-68],[446,G-60],[415.6,G-51]],'#F08A86',{k:.08,hatch:0,hl:0,lw:.7,dr:.2,base:'#F9C3BE'});
+  b.sh(lvStarPts(b,425.6,G-59.6,6,3,.04),LV_STAR,{k:.1,hatch:0,hl:0,lw:.45,base:'#FFF1B8',dr:0});
+  paw(b,270,G-5,3,'#E8C597',{lw:.3,a:.25});paw(b,304,G-8,3,'#E8C597',{lw:.3,a:.1});
+  // the town on the left: houses and a little clock tower
+  lvHouse(b,26,G,32,24,14,'#FDE6EC','#F28FA5',{win:[[.14,.26]],chim:1});
+  lvHouse(b,68,G,22,38,13,'#FFF3D6','#E2B07E',{win:[[.2,.14],[.2,.5]],door:0});
+  b.sh(E(79,G-26,5.4,5.4,14),'#FFFBF3',{hatch:0,hl:0,lw:.5,dr:0,inner:b.st(`M79 ${G-29.6}V${G-26}L81.8 ${G-24.6}`,INK,1,.9)});
+  lvHouse(b,100,G,36,26,16,'#E4EEFB','#8FB8E8',{win:[[.12,.26],[.66,.26]]});
+  lvTree(b,152,G,15,C.leaf);
+  lvHouse(b,170,G,26,20,12,'#E3F4EA','#F9B97A',{win:[[.56,.3]],door:0});
+  // the right: trees and two more roofs
+  lvTree(b,522,G,16,'#B8DE9A');lvTree(b,540,G,12,C.leaf);
+  lvHouse(b,554,G,26,22,13,'#F2ECFB','#B9A6E8',{win:[[.18,.3]],door:0});
+  [0,1,2,3,4,5,6,7].forEach(i=>{const a=i*Math.PI/4+.2;b.ln([[566+Math.cos(a)*10.5,16+Math.sin(a)*10.5],[566+Math.cos(a)*14.5,16+Math.sin(a)*14.5]],{w:1.3,col:LV_ORA})});b.sh(E(566,16,7.4,7.4,14),'#FFE08A',{hatch:0,hl:0,lw:.55,dr:0,base:'#FFF3C8'});// a little crayon sun
+  b.ex('spark',388,14,4.4,'#FFE59A');b.ex('spark',456,8,3.4,'#F9C7D6');b.ex('spark',214,22,3.4,'#BFE6FA');b.ex('dots',486,40,4.2);
+  return lvCls(b.svg('0 0 600 80',' preserveAspectRatio="xMidYMid meet" aria-hidden="true"','Town level'),'lv-strip')}
+// the habit icons: drawn on the 64 icon grid (the icons' own weights), handed out as 32 x 32
+const LV_HB={
+ energy(b){paw(b,39,35,10.2,C.wood,{a:.28,lw:1.05});b.ln([[2,24],[15,24]],{w:3});b.ln([[1,35],[13,35]],{w:3});b.ln([[4,46],[15,46]],{w:3})},
+ spot(b){b.sh([[8,40],[10,28],[20,22],[44,22],[54,28],[56,40],[50,49],[14,49]],C.lav,{k:.22,lw:1.05,hl:0,
+    marks:[{pts:[[0,40],[64,40],[64,64],[0,64]],fill:C.lavD,op:.55,k:0}],det:[[[12,36],[32,39],[52,36]]],dw:1.3});
+  [[8,30],[56,30],[9,46],[55,46]].forEach(([x,y])=>b.sh(E(x,y,3,3,8),'#F7B2C4',{hatch:0,hl:0,lw:.6}));
+  b.ln([[22,23],[42,9]],{w:4.6,col:C.redD});b.ln([[22,9],[42,23]],{w:4.6,col:C.redD})},
+ trait(b){b.sh([[32,4],[37,25],[58,32],[37,39],[32,60],[27,39],[6,32],[27,25]],C.yel,{k:.18,lw:1.1,hl:0,marks:[{pts:[[32,32],[64,32],[64,64],[32,64]],fill:C.goldD,op:.45,k:0}]});
+  b.ex('spark',52,11,6,'#F9C7D6');b.ex('spark',12,52,4.6,'#BFE6FA')},
+ ask(b){ICONS.pet(b)},
+ bath(b){bubble(b,26,38,15,{lw:1.2});bubble(b,46,21,10,{lw:1.1});bubble(b,49,46,6.4,{lw:1});bubble(b,14,14,5,{lw:.9});
+  b.ln([[44,58],[58,58]],{w:2.6});b.ln([[50,52],[61,52]],{w:2.2})},
+ ball(b){b.shadow(32,58,17,3);b.sh(E(32,32,23,23,22),'#DDEB7E',{marks:[{pts:E(40,40,20,18,16),fill:'#BFD25A',op:.55}]});
+  b.ln([[15,15],[25,27],[25,38],[16,50]],{w:3.4,col:'#fff'});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:3.4,col:'#fff'});
+  b.ln([[15,15],[25,27],[25,38],[16,50]],{w:1.4});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:1.4})},
+ pack(b){paw(b,21,40,7.8,C.wood,{a:-.2,lw:1});paw(b,45,27,6.6,'#F6E4C8',{a:.22,lw:1});b.ex('heart',52,52,5,'#F7B2C4')},
+ face(b){b.sh(E(32,33,24,23,24),'#FFE3B0',{hl:0,lw:1.05,marks:[{pts:E(16,40,4.6,3,10),fill:PINK,op:.55},{pts:E(48,40,4.6,3,10),fill:PINK,op:.55}]});
+  b.dot(23,27,2.6);b.dot(41,27,2.6);
+  b.sh([[18,37],[46,37],[42,46],[32,51],[22,46]],'#F58EA2',{k:.25,lw:.9,hl:0,marks:[{pts:[[14,30],[50,30],[50,41],[14,41]],fill:'#FFFFFF',k:0}]});
+  b.ln([[16,37],[32,40],[48,37]],{w:2.6})},
+ sleep(b){const cx=27,cy=37,p=[];
+  for(let i=0;i<=16;i++){const a=(300-i*240/16)*Math.PI/180;p.push([cx+21*Math.cos(a),cy+21*Math.sin(a)])}
+  for(let i=1;i<16;i++){const a=(96+i*168/16)*Math.PI/180;p.push([cx+12.5+18.2*Math.cos(a),cy+18.2*Math.sin(a)])}
+  b.sh(p,'#FFE59A',{lw:1.05,hl:0});
+  b.sh(zP(40,4,13,-.08),C.blue,{k:0,hatch:0,hl:0,lw:.6,dr:0});b.sh(zP(51,21,9,.1),C.blue,{k:0,hatch:0,hl:0,lw:.5,dr:0});b.sh(zP(47,35,6,-.05),C.blue,{k:0,hatch:0,hl:0,lw:.4,dr:0})},
+ secret(b){b.sh(RR(6,16,52,36,3),C.cream,{k:0,lw:1.05,hl:0,det:[[[8,49],[26,33]],[[56,49],[38,33]]],dw:1.4});
+  b.sh([[7.6,17.6],[56.4,17.6],[32,38]],'#F6E4C8',{k:.04,hatch:0,hl:0,lw:.9});
+  b.sh(heartP(32,36,17),C.pinkD,{hl:0,lw:.75});b.ex('spark',56,9,4.4)}
+};
+function lvHabit(k){const b=lvMk('icon','lv:hb:'+k);LV_HB[k](b);
+  return b.svg('0 0 64 64',' aria-hidden="true"',k+' habit').replace(/^(<svg[^>]*?)viewBox="0 0 64 64"([^>]*>)((?:<defs>[\s\S]*?<\/defs>)?)/,'$1viewBox="0 0 32 32"$2$3<g transform="scale(.5)">').replace(/<\/svg>$/,'</g></svg>')}
+// the stickers: a white die-cut edge (a soft shadow under it), the crayon picture inside
+const lvEdge=(b,pts,k)=>{b.raw(`<path d="${cr(mv(pts,1.2,1.8),true,k??1/6).d}" fill="${SHADOW}" opacity=".9"/>`,'under');b.sh(pts,'#FFFFFF',{k:k??1/6,hatch:0,hl:0,lw:.42,ink:'#B5A496',base:'#FFFFFF',dr:0})};
+const LV_ST=[
+ b=>{lvEdge(b,lvStarPts(b,32,33,30,19,0),.28);b.sh(lvStarPts(b,32,33.6,24.6,13.4,.06),LV_STAR,{k:.14,hl:0,lw:.95,base:'#FFF1B8',sh:LV_STARD,
+    inner:b.st(b.jl(14,26,24,24.6)+b.jl(31,13,32.6,20)+b.jl(42,26.4,50,26)+b.jl(19,47,23,41)+b.jl(45,47,41,41),'#F7C64E',2.2,.85)});
+  paw(b,32,36,4.6,LV_ORA,{noline:1});b.ex('glint',18,26,3.6)},
+ b=>{lvEdge(b,boneP(32,32,57,27,-.5),.2);b.sh(boneP(32,32,47,18,-.5),C.cream,{k:.18,lw:1,sh:'#E3C08F',base:'#FFFBF3'});b.ex('spark',54,52,4,'#FFE59A')},
+ b=>{lvEdge(b,E(32,32,29,29,22));b.sh(E(32,32,23,23,22),'#DDEB7E',{marks:[{pts:E(40,40,20,18,16),fill:'#BFD25A',op:.55}]});
+  b.ln([[15,15],[25,27],[25,38],[16,50]],{w:3.2,col:'#fff'});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:3.2,col:'#fff'});
+  b.ln([[15,15],[25,27],[25,38],[16,50]],{w:1.2});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:1.2})},
+ b=>{lvEdge(b,heartP(32,33.6,64),.2);b.sh(heartP(32,34,50),C.pink,{k:.16,lw:1,sh:C.pinkD,base:'#FCE3EA'});paw(b,32,35,5.4,'#FFFBF3',{lw:.7})},
+ b=>{lvEdge(b,[[4,31],[32,4],[60,31],[57,59.6],[7,59.6]],.18);
+  b.sh([[12,32],[32,16],[52,32],[51,56],[13,56]],C.wood,{k:0,inner:b.st(b.jl(22,30,22,56)+b.jl(42,30,42,56),C.woodD,1.3,.8)});
+  b.sh(arch(24,40,56,38),C.door,{base:'#7A5E52',hl:0,hatch:0,lw:.9});
+  b.sh([[5,34],[32,9],[59,34],[53,39],[32,19],[11,39]],C.red,{k:0});b.sh(boneP(32,30,13,5.4),C.cream,{hatch:0,hl:0,lw:.55,dr:0})},
+ b=>{lvEdge(b,[[5,28],[32,3],[59,28],[58.6,59.4],[5.4,59.4]],.18);
+  b.sh(RR(43,7,7,14,1),'#E7A58C',{k:0,hatch:0,hl:0,lw:.8});
+  b.sh([[11,30],[53,30],[53,56],[11,56]],C.peach,{k:0});b.sh([[6,32],[32,9],[58,32]],'#8FB8E8',{k:.02});
+  b.sh(arch(27,38,56,41),C.door,{base:'#7A5E52',hl:0,hatch:0,lw:.8});
+  [[15,36],[42,36]].forEach(([x,y])=>b.sh(RR(x,y,8,8,1),'#FFE9A8',{k:0,hatch:0,hl:0,lw:.7,inner:b.st(`M${x+4} ${y}v8M${x} ${y+4}h8`,INK,.8,.6)}));
+  b.sh(heartP(32,23,8),C.pinkD,{hatch:0,hl:0,lw:.5})},
+ b=>{lvEdge(b,[[10,60.4],[9,46],[5.6,44],[5.6,28],[13,27],[16,14],[32,1.4],[48,14],[51,27],[59.4,27],[59.4,45],[54,46],[54,60.4]],.16);
+  b.sh(RR(14,52,36,6,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.8});
+  b.sh([[19,53],[19,25],[45,25],[45,53]],'#F08A86',{k:.05,sh:C.redD});
+  b.sh([[21,25],[21,16],[32,9],[43,16],[43,25]],'#F08A86',{k:.25,hatch:0,lw:.9});b.sh(RR(28,4,8,6,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.7});
+  b.sh(RR(12,31,8,10,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.8});b.sh(RR(44,31,10,10,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.8});
+  b.sh(RR(16,22,32,5,2),'#FFD56B',{k:0,hatch:0,hl:0,lw:.75});b.sh(E(32,38,4.4,4.4,10),'#FFD56B',{hatch:0,hl:0,lw:.7});b.ex('glint',25,33,3.6)},
+ b=>{lvEdge(b,cloudP(32,33,30,28,4,.12,44),.2);
+  b.sh(E(12,30,7,13,14,.35),'#C99A72',{hl:0,lw:.9});b.sh(E(52,30,7,13,14,-.35),'#C99A72',{hl:0,lw:.9});
+  b.sh(E(32,35,20,18,22),'#FFE3B0',{lw:.95,marks:[{pts:E(16,41,4.4,3,10),fill:PINK,op:.55},{pts:E(48,41,4.4,3,10),fill:PINK,op:.55},{pts:E(40,26,8,7,10),fill:'#E8C597',op:.8}]});
+  b.dot(24,32,2.3);b.dot(41,31,2.6);b.sh(E(32,38,3.4,2.4,10),INK,{hatch:0,hl:0,lw:.6,base:INK});
+  b.sh([[27,43],[37,43],[35,50],[32,52],[29,50]],'#F58EA2',{lw:.75,hl:0,hatch:0});b.ln([[23,42],[32,43.6],[41,42]],{w:1.8})}
+];
+function lvSticker(i){i=((i|0)%8+8)%8;const b=lvMk('item','lv:stk:'+i);LV_ST[i](b);// drawn edge to edge, handed out at 92 % so the edge and its shadow stay in the box
+  return b.svg('0 0 64 64','',LV_STK[i]+' sticker').replace(/^(<svg[^>]*>)((?:<defs>[\s\S]*?<\/defs>)?)/,'$1$2<g transform="matrix(.92 0 0 .92 2.56 2.56)">').replace(/<\/svg>$/,'</g></svg>')}
+const lvCat=c=>{const n=+c;if(n>=1&&n<=10&&n===Math.floor(n))return LV_CATS[n-1];return LV_CATS.includes(c)?c:'energy'};
+PA.LEVELS={star:(n,frac,o)=>{const q=Math.round(Math.max(0,Math.min(1,+frac||0))*40),t=!!(o&&o.top);return serve('lv:star:'+q+':'+(t?1:0),()=>lvStar(q/40,t))},
+  card:()=>serve('lv:card',lvCard),sheet:()=>serve('lv:sheet',lvSheet),
+  habit:c=>{const k=lvCat(c);return serve('lv:hb:'+k,()=>lvHabit(k))},
+  sticker:i=>{const k=((i|0)%8+8)%8;return serve('lv:stk:'+k,()=>lvSticker(k))},
+  cats:LV_CATS.slice(),stickers:LV_STK.slice(),numberAt:{cx:24,cy:26}};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};
