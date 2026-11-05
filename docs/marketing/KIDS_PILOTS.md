@@ -68,6 +68,8 @@ Noodle comes from Doodle Doggo, the free cozy dog game I draw like a pencil sket
 
 ## Instagram and TikTok (the 9:16 cuts)
 
+**Replaced (5 Nov 2026):** the captions for every channel, with new teen texts for Shorts, Instagram, TikTok and X, are in `KIDS_PILOTS_CAPTIONS.md`. The parent captions below are kept only for reference.
+
 **To do (4 Nov 2026):** the vertical cuts are now fast teen cuts (owner), so these parent captions need a rewrite for teenagers before posting (same checks: ig-caption READY, ig-human PASS). The owner may not post the verticals at all.
 
 Old parent captions (3 Nov 2026):
