@@ -365,7 +365,8 @@ function shelterCard(spec, kind) {
   const sg = STARTER_GENES[spec.key] || {}, coatName = c ? c.coatName : sg.coat ? tdata('starter_genes.' + spec.key + '.coat', sg.coat) : '', eyes = c ? c.eyes : tdata('starter_genes.' + spec.key + '.eyes', sg.eyes || 'brown');
   const sx = sr ? spec.sex : shelterSex[spec.key] || null;
   const blocked = adoptBlock();
-  const dogArt = sr && spec.months != null && spec.months < 6 ? dogSVG(Object.assign({}, tmp, { born: bornDaysAgo(spec.months) }), { pose: 'sit' }) : dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}));
+  const mo = sr ? spec.months : starterMonths(); // v2.19.3: a starter is a 3-month puppy
+  const dogArt = mo != null && mo < 6 ? dogSVG(Object.assign({}, tmp, { born: bornDaysAgo(mo) }), { pose: 'sit' }) : dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}));
   const stamp = kind === 'rescue' ? '<span class="stamp r2">' + tt('pack.rescue', 'Rescue') + '</span>' : kind === 'resident' ? '<span class="stamp r1">' + tt('pack.playroom', 'Playroom') + '</span>' : '<span class="stamp r0">' + tt('pack.starter', 'Starter') + '</span>';
   return `<div class="sitem shcard ${kind}">${stamp}<span class="art shdog">${dogArt}</span>
     <b>${esc(sr ? spec.name : info.name)} ${sr ? sexSym(spec.sex) : ''}</b>

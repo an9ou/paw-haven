@@ -59,6 +59,11 @@ function localISO(d = new Date()) { return `${d.getFullYear()}-${String(d.getMon
 function bornDaysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return localISO(d); }
 function ageMonths(dog) { dog = dog || S.dog; if (!dog || !dog.born) return 10; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - new Date(dog.born + 'T00:00:00')) / 864e5)); }
 const lifeStage = (m) => (m < 6 ? 'puppy' : m < 12 ? 'young' : m < 84 ? 'adult' : 'senior');
+/* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md): every starter from the shelter, the first dog and any later one, arrives as a 3-month puppy
+   (it was 10 months) and grows up day by day. Shelter residents and rescues keep their own ages. Under the test harness the older suites keep
+   the 10-month starter they were written for, unless a suite passes pupStart (prefs.pupTest); the old-save migration (pupStartFields) waits too. */
+const PUP_START = 3;
+function starterMonths() { return navigator.webdriver && !prefs.pupTest ? 10 : PUP_START; }
 function ageText(m) {
   const y = Math.floor(m / 12), mo = m % 12, ys = tt('genes.age_years', '{n, plural, one {# year} other {# years}}', { n: y }), ms = tt('genes.age_months', '{n, plural, one {# month} other {# months}}', { n: mo });
   return y ? (mo ? tt('genes.age_years_months', '{years} {months}', { years: ys, months: ms }) : ys) : ms;
@@ -80,7 +85,7 @@ function newDogFields(key, sex, born) {
 }
 function birthdayCheck() {
   if (!S || !S.dog.born) return; const m = ageMonths();
-  if (m > 0 && m % 12 === 0 && S.lastBday !== m) { S.lastBday = m; addStat('happy', 10); markDirty(); toast(tt('genes.happy_birthday_dog_years', '{sex, select, female {Happy birthday, {name}! She is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked her a tiny Pupcake. +10 Happiness.} other {Happy birthday, {name}! He is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked him a tiny Pupcake. +10 Happiness.}}', { sex: S.dog.sex, name: NAME(), years: m / 12 }), 'gold'); }
+  if (m > 0 && m % 12 === 0 && S.lastBday !== m && !((+S.dog.pupBday || 0) >= m)) { /* v2.19.3: pupBday, a birthday a dog had before its puppy months came back, is never had twice */ S.lastBday = m; addStat('happy', 10); markDirty(); toast(tt('genes.happy_birthday_dog_years', '{sex, select, female {Happy birthday, {name}! She is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked her a tiny Pupcake. +10 Happiness.} other {Happy birthday, {name}! He is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked him a tiny Pupcake. +10 Happiness.}}', { sex: S.dog.sex, name: NAME(), years: m / 12 }), 'gold'); }
 }
 function askSex() {
   if (!S || S.dog.sex) return;

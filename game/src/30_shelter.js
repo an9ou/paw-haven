@@ -70,10 +70,11 @@ function srStarters() {
   for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
   return keys.slice(0, 6);
 }
-function srStarterLook(key) { const g = STARTER_GENES[key] || STARTER_GENES.mutt; return { id: 'tmp_' + key, key, genes: { B: g.B, D: g.D, E: g.E, S: g.S, M: g.M, Bl: g.Bl }, born: bornDaysAgo(10), name: dogInfo(key).name }; }
+const srSayUp = () => (starterMonths() < 6 ? 150 : 200); // v2.19.3: the meet dog's speech bubble sits lower over a puppy starter
+function srStarterLook(key) { const g = STARTER_GENES[key] || STARTER_GENES.mutt; return { id: 'tmp_' + key, key, genes: { B: g.B, D: g.D, E: g.E, S: g.S, M: g.M, Bl: g.Bl }, born: bornDaysAgo(starterMonths()), name: dogInfo(key).name }; } // v2.19.3: a starter is a 3-month puppy
 // who lives in the room right now
 function srRoomList(mode) {
-  if (mode === 'adopt') return srStarters().map((k) => ({ id: 'st_' + k, key: k, name: dogInfo(k).name, kind: 'starter', months: 10, look: srStarterLook(k) }));
+  if (mode === 'adopt') return srStarters().map((k) => ({ id: 'st_' + k, key: k, name: dogInfo(k).name, kind: 'starter', months: starterMonths(), look: srStarterLook(k) }));
   return srRoster().map((x) => Object.assign({}, x, { look: srLook(x) }));
 }
 // what the board lists: shelter mode the roster, adopt mode the 14 starters
@@ -346,7 +347,7 @@ function srPetMeet() {
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
   m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190 * srK(key), belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200, 'meet'); }
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - srSayUp() * srK(key), 2200, 'meet'); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {
@@ -467,7 +468,7 @@ function srAdoptFlow(kind, id, back) {
   let spec;
   if (kind === 'rescue') spec = rescuesToday().find((r) => r.id === id);
   else if (kind === 'resident') spec = srRoster().find((r) => r.id === id && r.kind === 'resident');
-  else { if (!shelterSex[id]) { nope(tt('shelter.pick_sex', 'Pick Boy or Girl first. The siblings are waiting politely.')); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
+  else { if (!shelterSex[id]) { nope(tt('shelter.pick_sex', 'Pick Boy or Girl first. The siblings are waiting politely.')); return; } spec = { key: id, sex: shelterSex[id], months: starterMonths() }; }
   if (!spec || (spec.id && dogById(spec.id))) return;
   const def = kind === 'starter' ? dogInfo(spec.key).name : spec.name;
   const pp = openModal(`${esc(tt('shelter.name_new', '{sex, select, female {Name your new girl} other {Name your new boy}}', { sex: spec.sex }))} ${sexSym(spec.sex)}`, `<p>${tt('shelter.name_lead_html', '{k, select, starter {The tag says <b>{name}</b>. Keep it, or pick something just as silly.} other {The shelter calls this one <b>{name}</b>. Keep it, or pick something just as silly.}}', { k: kind === 'starter' ? 'starter' : 'other', name: def })}</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: `<button class="btn no" id="shNo">${esc(tt('shelter.back', 'Back'))}</button><button class="btn yes big" id="shOk">${esc(tt('shelter.bring_home', 'Bring home!'))}</button>` });
@@ -495,7 +496,7 @@ function srExpose() {
     count: () => (SR ? SR.dogs.filter((d) => !d.away || d.parked || d.leaving).length : 0), // room dogs, the back room included (not the meet dog)
     dogs: () => (SR ? SR.dogs.filter((d) => !d.away).map((d) => ({ id: d.id, key: d.key, pose: d.pose, x: Math.round(d.x), y: Math.round(d.y), walking: !!d.walking, busy: !!d.busy })) : []),
     get mode() { return SR ? SR.mode : null; }, get lastFetch() { return SR ? SR.lastFetch : null; }, get pets() { return SR ? SR.pets : 0; }, get bellies() { return SR ? SR.bellies : 0; },
-    get meetKey() { return SR && SR.meet ? SR.meet.key : null; }, cam: () => srCam()
+    get meetKey() { return SR && SR.meet ? SR.meet.key : null; }, cam: () => srCam(), stages: () => (SR ? SR.dogs.map((d) => d.stage) : []) // v2.19.3: in adopt mode every starter is a puppy
   };
 }
 on('game:ready', () => setTimeout(srExpose, 0));

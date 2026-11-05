@@ -813,7 +813,7 @@ function freshState(key, name, sex) {
   };
   st.inv.charms = []; st.outfit.charm = null;
   st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
-  Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
+  Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(starterMonths()))); st.kennel = []; st.pupStart = 1; // v2.19.3 Puppy start: a 3-month puppy, so the old-save migration never runs
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
   if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed && !f.fest)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed && !t.fest)).n; } // v2.8: festival and edition things are never a favourite
   st.dog.adoptedAt = localISO();
@@ -870,6 +870,7 @@ function loadSave() {
 function migrate(s) {
   if (!s || !s.inv) return s;
   linkDogs(s); // v1.5: S.dogs + live aliases (S.dog, S.stats, ...) of the active dog
+  pupStartFields(s); // v2.19.3 Puppy start (V2193.md 3): once, the starters get their puppy months back (before the no-birthday fix below, so a dog with no born is left as it is)
   s.inv.charms = s.inv.charms || []; s.found = s.found || {}; s.mapPieces = s.mapPieces || []; s.walks = s.walks || 0;
   if (s.glowUntil == null) s.glowUntil = -1; if (s.title == null) s.title = ''; if (s.outfit && !('charm' in s.outfit)) s.outfit.charm = null;
   const old = Object.values(s.collection || {}).reduce((a, b) => a + (+b || 0), 0);
@@ -902,6 +903,39 @@ function migrate(s) {
   rhythmFields(s); // Daily rhythm (docs/design/daily-rhythm.md): additive
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   return s;
+}
+/* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
+   has it from freshState). Every starter (no rescue record, no parents: adopted as a 10-month starter) gets the age it would have had if it had
+   come home as a 3-month puppy: 7 months younger (born 7 days later), but never a life stage back (young 6, adult 12, senior 84), and a dog
+   that is not fixed never back under a welfare age line it was past (no breeding from 96, no litters from 72 for a female, a giant grown at 18).
+   A dog that has had puppies (litters, expecting, nursing, the parent of any dog we know) keeps its age, so the welfare rules on age stay true.
+   d.pupBday: the last birthday a shifted dog had already reached, so birthdayCheck never throws the same party twice. */
+const PUP_STAGE_START = { puppy: 0, young: 6, adult: 12, senior: 84 };
+function pupStartFields(s) {
+  if (!s || s.pupStart || !Array.isArray(s.dogs)) return s;
+  if (starterMonths() !== PUP_START) return s; // the older test suites' world: starters are still 10 months there
+  const par = new Set(), arr = (a) => (Array.isArray(a) ? a : []);
+  const add = (p) => { if (!p || typeof p !== 'object') return; (Array.isArray(p) ? p : [p.dam, p.sire, p.mum, p.dad]).forEach((x) => { if (x) par.add(x); }); };
+  s.dogs.forEach((d) => { if (!d) return; add(d.parents); if (d.preg) { if (d.preg.sire) par.add(d.preg.sire); arr(d.preg.pups).forEach((pp) => pp && add(pp.parents)); } }); // a litter on the way: its sire too
+  arr(s.litters).forEach((L) => { if (!L) return; if (L.mum) par.add(L.mum); if (L.sire) par.add(L.sire); arr(L.pups).forEach((pp) => pp && add(pp.parents)); });
+  arr(s.npcLitters).forEach((x) => { if (!x) return; if (x.sire) par.add(x.sire); arr(x.pups).forEach((pp) => pp && add(pp.parents)); });
+  arr(s.rehomed).forEach((x) => x && add(x.parents));
+  if (s.tree && typeof s.tree === 'object') Object.values(s.tree).forEach((r) => r && add(r.parents));
+  const hasPar = (p) => !!p && typeof p === 'object' && (Array.isArray(p) ? p.some(Boolean) : !!(p.dam || p.sire || p.mum || p.dad));
+  s.dogs.forEach((d) => {
+    if (!d || typeof d.born !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.born) || d.rescue || hasPar(d.parents)) return; // no born, rescues, residents, born pups: as they are
+    if ((+d.litters || 0) > 0 || d.preg || d.lastLitter || par.has(d.id)) return; // has had puppies: the age stays
+    const m = ageMonths(d), st = lifeStage(m), R = BREEDING.RULES, gr = giantRules(d);
+    let m2 = Math.max(m - 7, PUP_STAGE_START[st]);
+    if (!d.fixed) [R.noBreedFromMonths, d.sex === 'female' ? R.female.noLittersFromMonths : 0, gr ? gr.adultMonths : 0].forEach((c) => { if (c && m >= c) m2 = Math.max(m2, c); }); // never back under a welfare age line it was past (retired at 96, no litters from 72, giants grown at 18)
+    const k = m - m2;
+    if (st === 'puppy' || !(k > 0)) return; // a puppy already is one
+    const b = new Date(d.born + 'T00:00:00'); b.setDate(b.getDate() + k); d.born = localISO(b);
+    if (d.sex === 'female') d.seasonSeed = ((((d.seasonSeed || 0) + k) % 6) + 6) % 6; // the same season phase
+    if (m >= 12) d.pupBday = Math.max(+d.pupBday || 0, Math.floor(m / 12) * 12);
+    if (s.tree && s.tree[d.id] && s.tree[d.id].born) s.tree[d.id].born = d.born;
+  });
+  s.pupStart = 1; return s;
 }
 /* Daily rhythm (owner, 3 Nov 2026; docs/design/daily-rhythm.md). Additive only: S.v stays 1.
    S.daily.day    is now the Japan date (jstISO) of the daily bonuses; an old save's game-day number simply starts a new day once.
