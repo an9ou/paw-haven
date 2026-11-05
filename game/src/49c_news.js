@@ -13,6 +13,14 @@ const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +
 const nwItemArt = (n) => art('item', n);
 const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
+  { // v2.19.3 Puppy start (V2193.md, owner 5 Nov 2026): before the Friends news of 7 Nov, so that one stays the newest when it goes live
+    id: '2.19.3', date: '2026-11-05', c: '#FBE3D6', d: 'paw', pic: 'dog',
+    title: () => tt('nw.v2193.title', 'Puppies at the shelter'),
+    items: [
+      { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2193.pup', 'New friends from the shelter now come home as 3-month-old puppies and grow up a little every day') },
+      { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2193.back', 'Your starter dogs got some puppy months back, so there is more growing up to watch') }
+    ]
+  },
   { // Daily rhythm (docs/design/daily-rhythm.md). The date is a placeholder until the release day is set (after v2.19, 7 Nov 2026)
     id: '2.19.2', date: '2026-11-04', c: '#E2F0D9', d: 'paw', pic: 'dog',
     title: () => tt('nw.v2192.title', 'A calmer day in town'),
@@ -141,7 +149,7 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)
