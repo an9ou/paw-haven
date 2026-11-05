@@ -30,7 +30,7 @@ function rollTreasure(area, o = {}) {
 function enterWalk(area) {
   const wb = walkBlock(D(), area); if (wb) { nope(wb); go('yard'); return; } // v2: puppies, expecting and nursing mums (16b)
   walkPackNote(area); pkWalkPlan(area); // v2.9 PACK: the ticked dogs that are allowed out walk along
-  if (typeof frWalkStart === 'function') { frWalkStart(); onCleanup(frWalkDrop); } // v2.19: the friend's dog picked on the route screen, cosmetic (50_friends.js)
+  if (typeof frWalkStart === 'function') { frWalkStart(area); onCleanup(frWalkDrop); } // v2.19: the friend's dog picked on the route screen, cosmetic (50_friends.js)
   if (isPhone()) toasts.innerHTML = ''; // a toast from the yard must not ride into the walk (it sat on the tutorial title)
   if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
 function enterWalkClassic(area) {

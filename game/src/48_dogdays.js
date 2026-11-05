@@ -27,7 +27,7 @@ const ddTokyo = () => !!(S && ((typeof TK_PLACES !== 'undefined' && TK_PLACES[S.
 // what the player can do for this dog today, at their Bond and place: [kind, options for its argument or null]
 function ddWishOpts(d) {
   const tokyo = ddTokyo(), o = [['ball', null], ['pet', null], ['bath', null], ['nap', null], ['trick', null], ['photo', null]];
-  const routes = Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond)); // v2.22: the walks, places, pool and garden read the town level with lvOn (51_levels.js), today's topBond() test off
+  const routes = Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond) && !(d && typeof walkBlock === 'function' && walkBlock(d, k))); // v2.22: the walks, places, pool and garden read the town level with lvOn (51_levels.js), today's topBond() test off; v2.19.3: only a walk this dog can do (a puppy: the Sunny Park)
   if (!tokyo && routes.length) o.push(['walk', routes]);
   const foods = Object.keys(S.inv.food || {}).filter((n) => S.inv.food[n] > 0 && n !== 'Fresh Water' && FOOD_ALL.some((f) => f.n === n));
   if (foods.length) o.push(['snack', foods]);
@@ -551,7 +551,7 @@ window.addEventListener('resize', () => { try { if (ddReady()) ddChipSync(); } c
 function ddExpose() {
   if (!window.__paw || window.__paw.dd) return;
   window.__paw.dd = {
-    on: () => ddOn(), state: () => S && S.dd, wish: (id) => ddWish(id ? dogById(id) : D()), opts: () => ddWishOpts(D()).map((o) => o[0]), text: (k, a) => ddWishText(k, a), make: (day) => ddWishMake(D(), day),
+    on: () => ddOn(), state: () => S && S.dd, wish: (id) => ddWish(id ? dogById(id) : D()), opts: () => ddWishOpts(D()).map((o) => o[0]), walkOpts: (id) => ((ddWishOpts(id ? dogById(id) : D()).find((o) => o[0] === 'walk') || [])[1] || []), text: (k, a) => ddWishText(k, a), make: (day) => ddWishMake(D(), day),
     track: (id) => ddTrackOpen(id), rows: (L) => ddTrackRows(L, D()).map((r) => r[1]), give: () => ddTrackGive(), diary: () => ddDiaryPages(), lines: (p) => ddPageLines(p), close: () => ddDiaryClose(),
     book: () => ddBookOpen(), defs: () => ddStickerDefs().map((s) => ({ id: s.id, pg: s.pg, label: s.label() })), stickers: () => ddStickers(false), reward: (pg) => ddPageReward(pg), pages: DD_PAGES.length,
     letters: () => ddLetters(), mail: () => openMailbox(), journal: (tab) => openJournal(tab), frames: () => ddFrameList(), postcard: (w, h, o) => ddPostcard(w, h, o), voice: (k) => ddVoice(k), chip: () => ddChipSync(), tick: () => ddTick(),

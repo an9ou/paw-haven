@@ -6,6 +6,8 @@
    v2.20 Missions v2 (V220.md): the little helps, the treat pouch, the tabs and the new save fields are in 24b_missions2.js; this file keeps the story
    mission, the clipboard, the stamp card and the sheet (msOpen(tab) now opens it on a tab, Today by default). */
 const MS_PAY = 40, MS_CARD = 7, MS_CARD_COINS = 150; // raw coins (no BOOST), as before: 40 a mission, 150 and a Pupcake from the third full card on
+// v2.19.3 Puppy start: a route mission only when some dog can walk that route today (a puppy under 6 months does the Sunny Park only, walkBlock in 16b)
+const msCanWalk = (k) => !!(S && ROUTES[k] && S.dogs.some((d) => !walkBlock(d, k)));
 const MS_V24FOOD = () => FOOD.filter((f) => f.v24).map((f) => f.n);
 const MS_V24TOYS = () => TOYS.filter((x) => x.v24).map((x) => x.n).concat('Squeaky Hedgehog');
 /* the pool. t: the card line, s: the short toast name, g: the gate (eligible today), m: does an act count. shop: the "shop" group (one a day at most) */
@@ -14,7 +16,7 @@ const MS_POOL = [
   { id: 'pet', n: 1, w: 0, t: 'Pet {dog} until the tail goes', s: 'Petting', m: (a) => a.kind === 'pet' },
   { id: 'toy', n: 1, t: 'Play with a toy', s: 'Play with a toy', m: (a) => a.kind === 'toy' || a.kind === 'fetch' },
   { id: 'walk', n: 1, t: 'Go for a walk', s: 'Go for a walk', m: (a) => a.kind === 'walk' },
-  { id: 'walk_river', n: 1, w: 3, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => wOpen('route', 'river', ROUTES.river.bond), m: (a) => a.kind === 'walk' && a.area === 'river' },
+  { id: 'walk_river', n: 1, w: 3, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => wOpen('route', 'river', ROUTES.river.bond) && msCanWalk('river'), m: (a) => a.kind === 'walk' && a.area === 'river' },
   { id: 'bath', n: 1, t: 'Give {dog} a bath', s: 'Bath time', m: (a) => a.kind === 'bath' },
   { id: 'nap', n: 1, w: 0, t: 'Tuck {dog} in for a nap', s: 'Nap time', m: (a) => a.kind === 'nap' },
   { id: 'wear', n: 1, t: 'Put on an outfit', s: 'Put on an outfit', g: () => S.inv.clothes.length > 0, m: (a) => a.kind === 'wear' },
@@ -58,7 +60,7 @@ const MS_POOL = [
   { id: 'pool_paddle', n: 1, w: 3, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'pool', (PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
   { id: 'pool_float', n: 1, w: 3, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'pool', (PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
   // v2.15 run tracks (V215.md 6.3, 46_tracks.js): a walk on one of the three new routes
-  { id: 'new_trail', n: 1, w: 3, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && wOpen('route', 'sunflower', (ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) },
+  { id: 'new_trail', n: 1, w: 3, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && ['sunflower', 'bamboo', 'cliffs'].some((k) => ROUTES[k] && wOpen('route', k, ROUTES[k].bond || 2) && msCanWalk(k)), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) },
   // Daily rhythm: small stories round town. The Fun Fair (49_funfair.js) fires act 'funfair' { game } for its games, jobs, the stall and the photo contest
   { id: 'funfair', n: 1, w: 3, t: 'Play a game at the Fun Fair', s: 'Fun Fair game', g: () => msFf(false), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !FF_GAMES[a.game].job },
   { id: 'ffjob', n: 1, w: 3, t: 'Help a neighbour with a town job', s: 'Town job', g: () => msFf(true), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job },

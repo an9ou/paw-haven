@@ -72,7 +72,7 @@ function ms2WalkSeen(area) {
   const w = S.missions.wkAreas, t = jstISO(); w[area] = t;
   Object.keys(w).forEach((k) => { if (typeof w[k] !== 'string' || ms2Days(w[k], t) >= 7) delete w[k]; });
 }
-const ms2FreshRoutes = () => Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond) && !ms2Walked7(k)); // v2.22: the town level with lvOn
+const ms2FreshRoutes = () => Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond) && !ms2Walked7(k) && msCanWalk(k)); // v2.22: the town level with lvOn; v2.19.3: a route some dog can walk
 const ms2Dressed = () => !!S.outfit && ['head', 'eyes', 'neck', 'body'].some((k) => !!S.outfit[k]);
 const ms2FriendsN = () => ((S && S.fr && S.fr.cache && Array.isArray(S.fr.cache.friends)) ? S.fr.cache.friends.length : 0);
 // the counters (always, under the harness too: they pay nothing)
