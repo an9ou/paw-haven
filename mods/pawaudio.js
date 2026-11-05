@@ -1105,12 +1105,12 @@
     bichon: [0.2, -3.3, 2.5, 2.9, 2.6, -0.2, 0.3, -2.9, 4.5, 4.6, -0.1, 3.5, 4.3, 3.6, 2.5, 0.8],
     maltese: [0.7, -2.5, 3, 3.1, 1.1, 0.4, 0.3, -3.8, 4.6, 4.5, -0.8, 2.2, 3.7, 2.7, 1.6, 0.5],
     shihtzu: [-1.3, -4, 1.4, 1.3, 1.5, -0.2, 0.3, -3.4, 1.9, 5.8, -0.2, 3.4, 5.6, 4.6, 3.3, 0.9],
-    // v2.21: each new voice shares its twin's bark plan (pitbull, corso, collie, bichon, westie), so the twin's measured trims carry over (re-measure in the numbers batch)
-    dalmatian: [0.1, -2.4, 0, -0.5, 0.2, -2.9, -1.1, -3.5, -4.4, 7, 1.4, -1.9, 6.4, 5.5, 4.3, 0.5],
-    bernese: [1.6, 3.3, 1.8, 1.9, 1.8, -1.5, 0.3, -3, -4.6, 7.2, 2.4, -1.4, 7.2, 7, 5.8, -1.4],
-    aussie: [0.6, -3.5, 0.3, 0.6, 1.9, 2.1, 2.3, -2.8, -4.1, 5.7, 1.4, -1.2, 8.5, 4.4, 3.2, 0.4],
-    cavalier: [0.2, -3.3, 2.5, 2.9, 2.6, -0.2, 0.3, -2.9, 4.5, 4.6, -0.1, 3.5, 4.3, 3.6, 2.5, 0.8],
-    jrt: [-1.1, -3.9, 1, 0.9, 1.5, -0.3, 0.3, -1.7, 3.3, 5.2, 0.1, 4.1, 4.3, 3.8, 2.6, 0.4]
+    // v2.21: each new voice shares its twin's bark plan (pitbull, corso, collie, bichon, westie); measured the same way in the numbers batch (4 offline renders of the 16 kinds, each kind brought to its twin's level where it was 0.5 dB or more off)
+    dalmatian: [0.1, -1.7, 0, -0.5, -0.6, -4, -2.6, -3.5, -3.8, 7, 1.4, -1.9, 6.4, 4.9, 4.3, -0.8],
+    bernese: [1.6, 3.3, 1.8, 1.9, 1.8, -3.2, -1.4, -3, -3.9, 7.2, 2.4, -1.4, 8.7, 7, 5.1, -3.2],
+    aussie: [0.6, -3.5, 0.3, 0.6, 1.9, 2.1, 2.3, -3.5, -4.1, 5.7, 2.2, -1.2, 8.5, 4.4, 3.2, -0.1],
+    cavalier: [0.2, -3.3, 2.5, 2.9, 2.6, -0.2, 0.3, -2.3, 4.5, 4.6, 0.7, 4.3, 4.3, 3.6, 2.5, 0.8],
+    jrt: [-1.1, -3.9, 1, 0.9, 1.5, -0.3, 0.3, -1.1, 3.9, 5.2, 0.1, 4.1, 4.3, 3.8, 2.6, 0.4]
   };
   function breedOf(voice) {
     var b = String((voice && voice.breed) || '').toLowerCase(), k;
@@ -1351,8 +1351,8 @@
     afghan: [2.7, 0.6, 0.1], dane: [0.9, 4.5, 3.2], mastiff: [1, 2.9, 4.1], gsd: [3.1, 1.6, 0.4],
     // v2.12: measured the same way (squeak, mew, whimper to -24 dB)
     dobie: [5.9, 2, 0.4], corso: [0.9, 5.8, 2.6], pitbull: [3, -0.4, -0.1], minpin: [-2.5, 2, 7.6], lab: [5.5, 1.9, 0.4], malamute: [4.9, 1.6, 0.3], chow: [1.9, 6.7, 1.9], stdpoodle: [-0.4, -0.7, 1.6], schnauzer: [-3.1, -1.1, 3.6], westie: [-4, -0.6, 5.2], yorkie: [-0.9, 3.6, 7.8], bichon: [-3.4, 0.6, 6.5], maltese: [-1.6, 2.6, 8], shihtzu: [-4.1, -1.1, 4.4],
-    // v2.21: the voice twins' values (the same plans)
-    dalmatian: [3, -0.4, -0.1], bernese: [0.9, 5.8, 2.6], aussie: [-1, -1, 1.5], cavalier: [-3.4, 0.6, 6.5], jrt: [-4, -0.6, 5.2]
+    // v2.21: measured the same way (4 offline renders, squeak, mew and whimper to -24 dB where 0.5 dB or more off)
+    dalmatian: [3.6, -0.4, -0.1], bernese: [0.9, 5.8, 2.6], aussie: [-1.6, -1, 2.2], cavalier: [-4.1, -0.1, 5.9], jrt: [-4, -0.6, 5.2]
     };   // v2.11: measured the same way, to -24 dB
   // newborn: tiny squeaks and mews. Only whine (mew), whimper and yip (squeak pair) are distinct; every other kind is one squeak.
   function newbornPlan(voice, kind) {
