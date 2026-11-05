@@ -54,7 +54,7 @@ Every dog is a boy or a girl, and every reproductive rule follows real dogs at a
 | --- | --- | --- | --- |
 | Time scale | — | 1 real day = 1 dog month; 12 real days = 1 dog year | Scaled |
 | Pair | A male and a female | One male + one female; same-sex friends can play but never have puppies | Real |
-| Life stages | Puppy, adolescent, adult, senior from about 7 years | Puppy 0–5 months, young 6–11, adult 12 months to 7 years, senior 7+ (84 real days); shelter dogs arrive at 10 months | Real proportions |
+| Life stages | Puppy, adolescent, adult, senior from about 7 years | Puppy 0–5 months, young 6–11, adult 12 months to 7 years, senior 7+ (84 real days); shelter dogs arrive at 10 months (v2.19.3: starters arrive at 3 months, `V2193.md`) | Real proportions |
 | Maturity | Mature at roughly 6 to 24 months by breed; breed clubs will not register litters from very young mothers | Both dogs 12 dog months or older | Real proportion, one age for all breeds |
 | Senior limit | Breeding is not advised for older dogs | No breeding at 8 dog years or older | Real proportion |
 | Heat cycle | A season about every 6 months (it varies by breed), lasting about 2 to 3 weeks | A season every 6 dog months (6 real days), seeded per female, lasting 3 real days | Cycle real; length extended so players don't miss it |
