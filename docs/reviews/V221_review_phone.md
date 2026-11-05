@@ -1,0 +1,11 @@
+# v2.21 Five New Friends: phone review (paw-reviewer, 5 Nov 2026, 57e1c6d6)
+
+360x740, 390x844 (touch, DSF 1), 1280x720; en, de, ja; gate on. Screenshots: scratchpad review_breeds_phone/. No v2.21 change breaks the phone layout.
+
+1. **Must-fix (also live on main 1a7c5edf).** Playdate Board at 360/390: `.pbgrid` has 4 columns of 174 px (735 px) inside `.panel-body` with `overflow-x:hidden`: the second card is cut in half and cards 3-4 can't be reached (a swipe does nothing). New breeds pinned at card 4 on some dates (Cavalier 2026-12-01, Aussie 2027-01-14) are hidden. Fix: `html[data-layout="phone"] .pbgrid{grid-template-columns:repeat(2,minmax(0,1fr))}` + `.pbdog svg{max-width:100%}`. board_R360_en_2026-12-01.png, board_R360_after_swipe.png, board_R390_after_swipe.png.
+2. Nice-to-have, stale tests (fail on base too): phone_v29_polish expects missions "/3" (now "0/1" since v2.19.2); phone_occl_home and phone_v25_fixes_a tap `#bar [data-act=feed]` / `[data-act=journal]` that sit in closed trays since v2.16 (call `t.dock()` first); phone_v25_fixes_a "tray top at 282 of 659".
+3. Nice-to-have, translation batch: coat names half-translated in de/ja ("Black und Weiß", "Blackと白", "Blue merle tricolour" all English): the batch must cover the five breeds' coat words in `coatShown`. journal_R360_de_coats_aussie.png, pd_R360_ja_bernese.png.
+4. Nice-to-have: adoption at 360: the Bernese, Cavalier and JRT cards are the tallest (455 px); Adopt about 1520 px down the dock scroll. Reachable. Optional shorter care note or a sticky Adopt.
+5. Nice-to-have: Dog Park at 360: a visiting Bernese pokes about 4 px past the right edge and overlaps the Aussie visitor. Keep big visitors' art inside the crop.
+
+Checked, fine: adoption carousel with 40 heads in all sizes and languages (text not cut, 44 px taps, no sideways scroll); Journal coat tabs (Aussie 18 coats), mixes strip; Puppy Predictor rows on one line; Dog Cards with the new breeds; yard/house/garden pack with Bernese; walk and runner; Gerald clear; Missions v2 sheet unaffected; the v2.21 news entry fits; shelter rescue cards; site /dogs with 40 profiles at 360/390 in en/ja/de. Suites phone_home, phone_town, phone_journal, phone_puppy, phone_v27_shelter, phone_v211_cards pass. No console errors.
