@@ -113,6 +113,11 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(!bad.length, 'same-breed pups keep to the breed catalogue ' + bad.slice(0, 5).join(' '));
   }
   ok(G.phenotype({ B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, 'aussie').coat.white === 0.25, 'an Aussie never draws more white than the trim (WHITE_TRIM)');
+  { // code review 3: a merle pup with a Dalmatian or Jack Russell body (an Aussie mix) keeps the breed's own word
+    const mg = (o) => Object.assign({ B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'E'], S: ['sp', 'sp'], M: ['M', 'm'], Bl: ['bl', 'bl'] }, o);
+    const got = [G.phenotype(mg({}), 'dalmatian').coatName, G.phenotype(mg({ B: ['b', 'b'] }), 'dalmatian').coatName, G.phenotype(mg({ E: ['E', 'e'] }), 'jrt').coatName, G.phenotype(mg({}), 'jrt').coatName];
+    ok(got.join() === 'Black spotted merle,Liver spotted merle,Tricolour merle,White and black merle', 'merle on a Dalmatian or Jack Russell body: ' + got.join(', '));
+  }
   ok(G.phenotype({ B: ['b', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, 'dalmatian').coat.dark === G.SHADES.dalmatian.liver[2], 'a liver Dalmatian: the spots (dark) are liver, the ground white');
   {
     const want = { 'dalmatian|lab': 'Dalmador', 'bernese|stdpoodle': 'Bernedoodle', 'golden|bernese': 'Golden Mountain Dog', 'aussie|stdpoodle': 'Aussiedoodle', 'corgi|aussie': 'Auggie',

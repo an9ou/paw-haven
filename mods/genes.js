@@ -661,6 +661,7 @@
       if (merle) {
         if (breed === 'dachs') { en = DAPPLE_WORDS[pig]; name = D('dapple_words.' + pig, en); }
         else if (MERLE_BY[breed]) { en = MERLE_BY[breed][pig]; name = D('merle_by.' + breed + '.' + pig, en); }
+        else if (WHITE_WORD[breed]) { const wk = WORDS[breed][sk] ? sk : pig; en = WORDS[breed][wk] + ' merle'; name = L('mod.genes.coat_merle', '{coat} merle', { coat: D('words.' + breed + '.' + wk, WORDS[breed][wk]) }); } // v2.21 code review 3: a merle Dalmatian or Jack Russell body (an Aussie mix) keeps its own word ("Black spotted merle")
         else { en = MERLE_WORDS[pig]; name = D('merle_words.' + pig, en); }
       } else {
         const wk = WORDS[breed][sk] ? sk : pig;
