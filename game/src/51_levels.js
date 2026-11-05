@@ -253,7 +253,7 @@ function lvExpose() {
     stars: () => (S && S.lv ? Object.assign({}, S.lv.st) : null), gain: (src, n, o) => lvGain(src, n, o), need: (kind, id, bond) => wNeed(kind, id, bond), open: (kind, id, bond) => wOpen(kind, id, bond),
     start: (save) => { const c = JSON.parse(JSON.stringify(save)); delete c.lv; lvStart(c); return c.lv; }, sync: () => { lvSync(S); return S && S.lv; }, ensure: () => lvEnsure(), day: () => lvDay(),
     unlocks: (n) => lvRowsAt(n), rows: () => lvLiveRows(), of: (x) => lvOf(x), bond: (id, l) => lvBond(id, l), mail: () => lvMailSend(), act: (k, d) => trackAct(k, d), queue: () => lvQueue.slice(),
-    test: (v) => { prefs.lvTest = !!v; return lvOn(); }, top: () => topBond(),
+    test: (v) => { prefs.lvTest = !!v; return lvOn(); }, pref: (k, v) => { prefs[k] = v; return lvOn(); }, top: () => topBond(), bondUp: (n) => addBond(n, { raw: true }),
     next: (L) => (typeof lvNextText === 'function' ? lvNextText(L) : null), sheet: () => (typeof lvOpen === 'function' ? lvOpen() : null), card: () => (typeof lvMaybeShow === 'function' ? lvMaybeShow() : null),
     AT: LV_AT.slice(), CAP: LV_CAP, STAR: LV_STAR, WALK: Object.assign({}, LV_WALK), FLOOR: LV_FLOOR.slice(), UNLOCK: Object.assign({}, LV_UNLOCK), SRC: JSON.parse(JSON.stringify(LV_SRC)), MILE: Object.assign({}, LV_MILE), TITLES: Object.assign({}, LV_TITLES),
     hb: {}
