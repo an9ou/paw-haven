@@ -646,7 +646,7 @@ const NECKFIX={
   collie:{howl:[-2,3]},
   westie:{howl:[0,0]},
   maltese:{scratch:[0,0],dance:[0,0],happy:[0,0],speak:[0,0],shake:[0,0]},
-  cavalier:{shake:[0,0],dance:[0,0],happy:[0,0],idle:[0,0],paw:[0,0],speak:[0,0]},// v2.21 ART B
+  cavalier:{shake:[0,0],dance:[0,0],dirty:[0,0],happy:[0,0],idle:[0,0],paw:[0,0],speak:[0,0]},// v2.21 ART B
   jrt:{idle:[0,0],happy:[0,0],pet:[0,0],walk:[0,0],dirty:[0,0],shake:[0,0],beg:[0,0],squat:[0,0],leglift:[0,0],paw:[0,0],speak:[0,0],dance:[0,0],scratch:[0,0],yawn:[0,0],howl:[0,0]}};
 Object.keys(NECKFIX).forEach(k=>{SP[k].nfix=NECKFIX[k]});
 
