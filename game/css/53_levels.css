@@ -15,8 +15,8 @@
 .lv-next::before{content:"";position:absolute;width:42px;height:13px;top:-9px;left:calc(50% - 21px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(4deg)}
 .lv-next[hidden]{display:none}
 #stage.slimhud .lv-next,#stage.ffmode .lv-next{display:none}
-/* the Bond Next tag hangs right of the Bond meter (under the coins); with the star there it ends at the meter's right edge instead, and the star's tag starts under the star */
-#hud.lvon .fw-next{right:0}
+/* the Bond Next tag (#fwNext) keeps its place right of the Bond meter, under the star; while it shows, the star's tag hangs one row lower (no overlap, and Gerald's card keeps the left) */
+#hud:has(#fwNext:not([hidden])) .lv-next{top:calc(100% + 58px)}
 /* narrow wide-screens (12_phone_v1.css orders the HUD): the star stays just before the coins */
 @media (max-aspect-ratio: 4/5){ html:not([data-layout="phone"]) #lvBtn{order:3} html:not([data-layout="phone"]) #lvBtn .lv-track{display:none} }
 /* XP arrives: a 400 ms wiggle; a new level: a pop. Nothing with Motion off */
