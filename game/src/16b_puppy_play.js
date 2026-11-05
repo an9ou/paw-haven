@@ -34,7 +34,7 @@ function fetchBlock(d) { d = d || D(); return isNursing(d) ? tt('pupplay.fetch_n
 const pickAreaBase = pickArea;
 pickArea = function (k) {
   const r = ROUTES[k];
-  if (r && !PLACES[k] && S && !S.sleeping && topBond() >= r.bond) { const wb = walkBlock(D(), k); if (wb) { SFX.click(); nope(wb); return; } }
+  if (r && !PLACES[k] && S && !S.sleeping && !lvRouteLocked(k)) { const wb = walkBlock(D(), k); if (wb) { SFX.click(); nope(wb); return; } }
   return pickAreaBase(k);
 };
 

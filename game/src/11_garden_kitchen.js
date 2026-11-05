@@ -115,8 +115,8 @@ function gkFields(s, existing) {
   s.dishLog = s.dishLog || { date: '', count: 0, bond: false }; s.safetySeen = s.safetySeen || []; s.cropBest = s.cropBest || {};
 }
 const patchState = () => { const pl = (S.garden && S.garden.plots) || []; return pl.some((p) => p.crop && p.g >= 1) ? 'ready' : pl.some((p) => p.crop) ? 'growing' : 'empty'; };
-const gardenUnlocked = () => !!(S.gkEarly || topBond() >= 2);
-const kitchenUnlocked = () => !!(S.gkEarly || topBond() >= 3);
+const gardenUnlocked = () => !!(S.gkEarly || wOpen('feat', 'garden', 2)); // v2.22: the town level with lvOn (51_levels.js), today's Bond 2 / 3 off
+const kitchenUnlocked = () => !!(S.gkEarly || wOpen('feat', 'kitchen', 3));
 const seedCounts = () => Object.assign({}, S.inv.seeds);
 function mergeHarvests(st) { const a = (S.garden && S.garden.harvests) || {}, b = st.harvests || {}; const out = {}; new Set(Object.keys(a).concat(Object.keys(b))).forEach((k) => { out[k] = Math.max(a[k] || 0, b[k] || 0); }); st.harvests = out; return st; }
 let gardenCtl = null, kitchenCtl = null, lastGardenTick = 0;
@@ -143,14 +143,14 @@ function weatherForKey(key) {
 function openGarden() {
   if (!gkOn()) { comingSoon('garden'); return; }
   if (S.place !== 'yard') { goHomeFor('garden'); return; }
-  if (!gardenUnlocked()) { nope(tt('garden.garden_bond', 'The garden opens at Bond 2.')); return; }
+  if (!gardenUnlocked()) { nope(lvOn() ? tt('lv.nope_garden', 'The veggie patch opens at town level {n}.', { n: wNeed('feat', 'garden', 2) }) : tt('garden.garden_bond', 'The garden opens at Bond 2.')); return; }
   if (!PG() || typeof PG().open !== 'function') { toast(tt('garden.garden_nap', 'The garden is having a nap. Try again later.')); return; }
   go('garden');
 }
 function openKitchen() {
   if (!kOn()) { comingSoon('kitchen'); return; }
   if (S.place !== 'house') { goHomeFor('kitchen'); return; }
-  if (!kitchenUnlocked()) { nope(tt('garden.kitchen_bond', 'The kitchen opens at Bond 3.')); return; }
+  if (!kitchenUnlocked()) { nope(lvOn() ? tt('lv.nope_kitchen', 'The kitchen opens at town level {n}.', { n: wNeed('feat', 'kitchen', 3) }) : tt('garden.kitchen_bond', 'The kitchen opens at Bond 3.')); return; }
   if (!PK() || typeof PK().open !== 'function') { toast(tt('garden.kitchen_nap', 'The kitchen is having a nap. Try again later.')); return; }
   go('kitchen');
 }

@@ -9,8 +9,8 @@ function enterRoutes(startKey) {
   const e = envNow(), envTxt = tt('route.env', '{time} · {weather}', { time: { dawn: tt('route.time_dawn', 'Dawn'), day: tt('route.time_day', 'Daytime'), dusk: tt('route.time_dusk', 'Dusk'), night: tt('route.time_night', 'Night') }[e.time], weather: wxLabel() });
   const paw = (on) => `<svg viewBox="-14 -14 28 28" class="rt-paw ${on ? 'on' : ''}">${doodle('paw', 0, 2, 0.85)}</svg>`;
   const card = (k, i) => {
-    const R = ROUTES[k], lock = topBond() < R.bond, hidden = TREASURES.filter((t) => t.routes.includes(k) && !S.found[t.n]).length;
-    return `<div class="rt-card ${lock ? 'locked' : ''}" data-i="${i}"><div class="rt-prev"><svg viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice">${place(art('walkStrip', k, e), 0, 0, 1200, 400)}</svg>${lock ? `<span class="stamp r1 rt-lock">${esc(tt('route.locked_stamp', 'Locked: Bond {n}', { n: R.bond }))}</span>` : ''}</div>
+    const R = ROUTES[k], lock = lvRouteLocked(k), hidden = TREASURES.filter((t) => t.routes.includes(k) && !S.found[t.n]).length;
+    return `<div class="rt-card ${lock ? 'locked' : ''}" data-i="${i}"><div class="rt-prev"><svg viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice">${place(art('walkStrip', k, e), 0, 0, 1200, 400)}</svg>${lock ? `<span class="stamp r1 rt-lock">${esc(lvOn() ? tt('lv.locked_stamp', 'Locked: level {n}', { n: lvRouteN(k) }) : tt('route.locked_stamp', 'Locked: Bond {n}', { n: R.bond }))}</span>` : ''}</div>
       <h3>${esc(townRouteName(k))}</h3><div class="rt-meta"><span>${esc(tt('route.secs_walk', '{n}s walk', { n: Math.round(R.secs * walkScale()) }))}</span><span class="rt-paws" aria-label="${esc(tt('route.difficulty', 'Difficulty {n} of 4', { n: ROUTE_DIFF[k] }))}">${[1, 2, 3, 4].map((n) => paw(n <= ROUTE_DIFF[k])).join('')}</span></div>
       <p class="small">${esc(tt('route.hidden_line', '{hidden, plural, =0 {Every treasure here found!} one {# treasure still hidden here} other {# treasures still hidden here}} · {map, select, yes {Map piece found} other {A map piece is buried here}}', { hidden, map: S.mapPieces.includes(k) ? 'yes' : 'no' }))}</p>
       <p class="rt-env"><span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(tt('route.runs_in', 'Runs in: {env}', { env: envTxt }))}</p></div>`;
@@ -36,15 +36,15 @@ function layoutRoutes() {
   const cards = [...tr.children], cw = cards[0].offsetWidth + 36;
   tr.style.transform = `translateX(${vp.clientWidth / 2 - cw / 2 - routeIdx * cw + 18}px)`;
   cards.forEach((c, i) => c.classList.toggle('cur', i === routeIdx));
-  const k = ROUTE_KEYS[routeIdx], lock = topBond() < ROUTES[k].bond;
+  const k = ROUTE_KEYS[routeIdx], lock = lvRouteLocked(k);
   $('#rtCount').textContent = tt('route.count', '{i} / {n} · {phone, select, yes {swipe, or tap the arrows} other {drag, or use the arrow keys}}', { i: routeIdx + 1, n: ROUTE_KEYS.length, phone: isPhone() ? 'yes' : 'no' });
   pkRoutesLine();
   if (typeof frWalkSync === 'function') frWalkSync(); // v2.19: a full pack on this route disables the friend's dog row
-  const blk = !lock && walkBlock(D(), k), st = $('#rtStart'); st.textContent = lock ? tt('route.locked_btn', 'Locked (Bond {n})', { n: ROUTES[k].bond }) : blk ? tt('route.not_yet', 'Not for {name} yet', { name: D().name }) : tt('route.start_route', 'Start walk: {route}', { route: townRouteName(k) }); st.setAttribute('aria-disabled', lock || blk ? 'true' : 'false');
+  const blk = !lock && walkBlock(D(), k), st = $('#rtStart'); st.textContent = lock ? (lvOn() ? tt('lv.locked_btn', 'Locked (level {n})', { n: lvRouteN(k) }) : tt('route.locked_btn', 'Locked (Bond {n})', { n: ROUTES[k].bond })) : blk ? tt('route.not_yet', 'Not for {name} yet', { name: D().name }) : tt('route.start_route', 'Start walk: {route}', { route: townRouteName(k) }); st.setAttribute('aria-disabled', lock || blk ? 'true' : 'false');
 }
 function startRoute(k) {
   const r = ROUTES[k]; if (!r) return;
-  if (topBond() < r.bond) { nope(tt('route.bouncer', 'Nope. {route} opens at Bond {n}. There is a bouncer. He is a goose.', { route: townRouteName(k), n: r.bond })); return; }
+  if (lvRouteLocked(k)) { nope(lvOn() ? tt('lv.nope_route_1', 'Nope. {place} opens at town level {n}. There is a bouncer. He is a goose.', { place: townRouteName(k), n: lvRouteN(k) }) : tt('route.bouncer', 'Nope. {route} opens at Bond {n}. There is a bouncer. He is a goose.', { route: townRouteName(k), n: r.bond })); return; }
   if (S.sleeping) { nope(tt('route.asleep', '{name} is asleep. Wake up first (Care menu).', { name: NAME() })); return; }
   if (S.stats.energy < 20) { nope(tt('route.sleepy', '{name} lies down at the gate. Too sleepy for a walk. Try a nap first.', { name: NAME() })); return; }
   const wb = walkBlock(D(), k); if (wb) { nope(wb); return; }

@@ -72,7 +72,7 @@ function ms2WalkSeen(area) {
   const w = S.missions.wkAreas, t = jstISO(); w[area] = t;
   Object.keys(w).forEach((k) => { if (typeof w[k] !== 'string' || ms2Days(w[k], t) >= 7) delete w[k]; });
 }
-const ms2FreshRoutes = () => Object.keys(ROUTES).filter((k) => (ROUTES[k].bond || 1) <= topBond() && !ms2Walked7(k));
+const ms2FreshRoutes = () => Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond) && !ms2Walked7(k)); // v2.22: the town level with lvOn
 const ms2Dressed = () => !!S.outfit && ['head', 'eyes', 'neck', 'body'].some((k) => !!S.outfit[k]);
 const ms2FriendsN = () => ((S && S.fr && S.fr.cache && Array.isArray(S.fr.cache.friends)) ? S.fr.cache.friends.length : 0);
 // the counters (always, under the harness too: they pay nothing)
@@ -132,7 +132,7 @@ const MS_HELPS = [
   { id: 'h_fav', n: 1, x: ['feed_new'], t: 'Feed {dog} the favourite food', s: 'Favourite food', g: () => (D().favFood || []).some((n) => (S.inv.food[n] || 0) > 0), m: (a) => a.kind === 'feed' && ms2FedDogs(a).some((d) => (d.favFood || []).includes(a.name)) },
   { id: 'h_pack', n: 1, t: 'Feed the whole pack at once', s: 'Pack dinner', g: () => typeof crPack === 'function' && crPack(), m: (a) => a.kind === 'feed' && Math.max(+a.dogs || 0, Array.isArray(a.ids) ? a.ids.length : 0) >= 2 },
   { id: 'h_photo', n: 1, x: ['photo'], t: 'Snap one photo', s: 'One photo', m: (a) => a.kind === 'photo' },
-  { id: 'h_paw', n: 1, t: 'Shake paws with a Dog Card dog', s: 'Paw shake', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'paw' }
+  { id: 'h_paw', n: 1, t: 'Shake paws with a Dog Card dog', s: 'Paw shake', g: () => tkOn() && wOpen('place', 'station', TK_STATION_BOND), m: (a) => a.kind === 'paw' }
 ];
 const ms2HelpDef = (id) => MS_HELPS.find((x) => x.id === id);
 // the story missions today's little helps stand for (their x lists): the mission swap never draws one of them, so one act never ticks two rows

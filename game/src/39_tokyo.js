@@ -41,6 +41,10 @@ const tkStationName = () => tt('tokyo.station_name', 'Tokyo Station');
 function tkPlaceName(k) { return k === 'station' ? tdata('tk_station.n', TK_STATION.n) : TK_PLACES[k] ? tdata('tk_places.' + k + '.n', TK_PLACES[k].n) : k; }
 const tkStampName = (k) => tdata('tk_stamp_n.' + k, TK_STAMP_N[k] || k);
 const tkBondTag = (bond) => tt('tokyo.bond_tag', 'Bond {bond}', { bond }); // the "Bond 4" badge on a locked pin
+// v2.22: the Tokyo gates read the town level with lvOn (51_levels.js wOpen / wNeed); off, each is today's topBond() test and text
+const tkOpenAt = (k, bond) => wOpen('place', k, bond), tkNeed = (k, bond) => wNeed('place', k, bond);
+const tkStationOpen = () => tkOpenAt('station', TK_STATION_BOND);
+const tkLockTag = (k, bond) => (lvOn() ? lvChip(tkNeed(k, bond)) : tkBondTag(bond));
 // the arrival line of a breed in a Tokyo place: its tdata path (the lines are merged into PLACE_LINES, which 03_yard.js reads), else null
 function tkLinePath(breed, place) { return TK_LINES[breed] && TK_LINES[breed][place] ? 'tk_lines.' + breed + '.' + place : null; }
 
@@ -149,22 +153,22 @@ Object.assign(RM_SCENERY, JSON.parse(JSON.stringify(TK_SCENERY))); // tkFeet add
 /* ---- the town map: the Station pin (Bond 3). mapArt passes { station: true } and the lock while PLACES.station exists (TOKYO ART D draws
    <g data-area="station"> and adds it to MAP_AREAS). Until it does, the game adds this doodle pin. big: the 2400 x 1500 art map, fb: the fallback map */
 const TK_MAP_PIN = { big: [1990, 1150], fb: [260, 1330] };
-function tkTownTip() { return topBond() < TK_STATION_BOND ? tt('tokyo.tip_locked', 'Station: Bond {bond}', { bond: TK_STATION_BOND }) : tt('tokyo.tip_open', 'Station: the Shinkansen to Tokyo'); } // the town map tooltip
+function tkTownTip() { return !tkStationOpen() ? (lvOn() ? tt('lv.tk_station_tip', 'Station: level {n}', { n: tkNeed('station', TK_STATION_BOND) }) : tt('tokyo.tip_locked', 'Station: Bond {bond}', { bond: TK_STATION_BOND })) : tt('tokyo.tip_open', 'Station: the Shinkansen to Tokyo'); } // the town map tooltip
 function tkMapOpts() { return PLACES.station ? { station: true } : {}; }
 function tkTrainDoodle() {
   return '<g stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"><path d="M-40 14 L-40 -8 Q-40 -20 -26 -20 L18 -20 Q42 -18 46 6 L46 14 Z" fill="#FFFBF3"/><path d="M-40 2 H44" stroke="#3E6FB0" stroke-width="5"/><rect x="-30" y="-14" width="14" height="10" rx="2" fill="#BFE6FA" stroke-width="2"/><rect x="-10" y="-14" width="14" height="10" rx="2" fill="#BFE6FA" stroke-width="2"/><path d="M14 -14 L30 -14 Q36 -12 38 -4 L14 -4 Z" fill="#BFE6FA" stroke-width="2"/><path d="M-46 22 H52" stroke-width="3"/></g>';
 }
 function tkMapPin(raw, at) {
   if (!PLACES.station || /data-area="station"/.test(raw || '')) return '';
-  const P = PLACES.station, lock = topBond() < P.bond, [x, y] = at;
-  return `<g data-area="station" class="fbpin tk-pin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(0 -18) scale(1.1)">${tkTrainDoodle()}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="30" fill="#5B3D32">${esc(tkPlaceName('station'))}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tkBondTag(P.bond))}</text></g>` : ''}</g>`;
+  const P = PLACES.station, lock = !tkOpenAt('station', P.bond), [x, y] = at;
+  return `<g data-area="station" class="fbpin tk-pin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(0 -18) scale(1.1)">${tkTrainDoodle()}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="30" fill="#5B3D32">${esc(tkPlaceName('station'))}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tkLockTag('station', P.bond))}</text></g>` : ''}</g>`;
 }
 
 /* ---- the Station: the ticket window ---- */
 function tkLeadHome() { const d = D(); return !!(d && typeof staysHome === 'function' && staysHome(d)); }
 function tkStation() {
   if (!S || !PLACES.station) return null; tkFields();
-  if (topBond() < TK_STATION_BOND) { nope(tt('tokyo.station_locked', 'Nope. The Station opens at Bond {bond}. The trains are very fast, so the friendship has to be too.', { bond: TK_STATION_BOND })); return null; }
+  if (!tkStationOpen()) { nope(lvOn() ? tt('lv.nope_station', 'Nope. The Station opens at town level {n}. The trains can wait. They are very patient trains.', { n: tkNeed('station', TK_STATION_BOND) }) : tt('tokyo.station_locked', 'Nope. The Station opens at Bond {bond}. The trains are very fast, so the friendship has to be too.', { bond: TK_STATION_BOND })); return null; }
   if (S.sleeping) { nope(tt('tokyo.station_asleep', '{name} is asleep. The trains will still be there later.', { name: NAME() })); return null; }
   if (tkLeadHome()) { nope(stayHomeLine(D())); return null; }
   const paid = tkTicket(), n = tkRideDogs().length;
@@ -240,7 +244,7 @@ window.addEventListener('keydown', (e) => {
    a Stamp book button. Pans and zooms like the town map (the same #mapPan / #mapInner and mapApply / mapZoomAt / mapCenter) ---- */
 const TK_JP_W = 1600, TK_JP_H = 1000;
 const TK_JP_PINS = { station: [900, 500], shibuya: [600, 610], yoyogi: [560, 390], asakusa: [1170, 330], ueno: [960, 250], tokyotower: [820, 730], odaiba: [1130, 830] };
-function tkLocked() { return Object.keys(TK_PLACES).filter((k) => topBond() < TK_PLACES[k].bond); }
+function tkLocked() { return Object.keys(TK_PLACES).filter((k) => !tkOpenAt(k, TK_PLACES[k].bond)); }
 // the short name on a Japan map pin ("Asakusa and Sensō-ji" -> "Asakusa", "Yoyogi Park Dog Run" -> "Yoyogi Park")
 function tkPinLabel(k) {
   switch (k) {
@@ -257,7 +261,7 @@ function tkPinLabel(k) {
 function tkJpPin(k, [x, y], lock, stamped) {
   const P = k === 'station' ? { n: 'Tokyo Station', bond: 1 } : TK_PLACES[k], label = tkPinLabel(k);
   const ic = k === 'station' ? `<g transform="translate(0 -20) scale(1.05)">${tkTrainDoodle()}</g>` : `<g transform="translate(0 -14)"><circle r="26" fill="${lock ? '#E3D2BA' : '#F28FA5'}" stroke="#5B3D32" stroke-width="3"/><circle r="9" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2"/></g>`;
-  return `<g data-area="${k}" class="fbpin tk-jpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/>${ic}<text y="${k === 'station' ? 40 : 46}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${label.length > 12 ? 27 : 30}" fill="#5B3D32">${esc(label)}</text>${k === 'station' ? '<text y="66" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#C8463D">' + esc(tt('tokyo.ride_home_pin', 'Ride home')) + '</text>' : ''}${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tkBondTag(P.bond))}</text></g>` : ''}${stamped ? '<g transform="translate(-56 -56) rotate(-12)"><circle r="20" fill="#FFFBF3" stroke="#C8463D" stroke-width="3"/><path d="M-9 0 l6 7 l12 -14" fill="none" stroke="#C8463D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>' : ''}</g>`;
+  return `<g data-area="${k}" class="fbpin tk-jpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/>${ic}<text y="${k === 'station' ? 40 : 46}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${label.length > 12 ? 27 : 30}" fill="#5B3D32">${esc(label)}</text>${k === 'station' ? '<text y="66" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#C8463D">' + esc(tt('tokyo.ride_home_pin', 'Ride home')) + '</text>' : ''}${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tkLockTag(k, P.bond))}</text></g>` : ''}${stamped ? '<g transform="translate(-56 -56) rotate(-12)"><circle r="20" fill="#FFFBF3" stroke="#C8463D" stroke-width="3"/><path d="M-9 0 l6 7 l12 -14" fill="none" stroke="#C8463D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>' : ''}</g>`;
 }
 function tkJapanDoodle(locked, stamps) {
   const W = TK_JP_W, H = TK_JP_H;
@@ -273,7 +277,7 @@ function tkJapanArt() {
   const locked = tkLocked(), bonds = {}, stamps = Object.assign({}, (S.tk && S.tk.stamps) || {});
   Object.keys(TK_PLACES).forEach((k) => { bonds[k] = TK_PLACES[k].bond; });
   if (tkArtReady()) {
-    const raw = art('scene', 'japanmap', Object.assign({ locked, bonds, stamps }, envNow()));
+    const raw = art('scene', 'japanmap', Object.assign({ locked, bonds, stamps }, lvOn() ? { tags: lvTags(locked) } : {}, envNow())); // v2.22: tags = the "Level {n}" lock tags
     const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(raw || ''), W = m ? +m[1] : TK_JP_W, H = m ? +m[2] : TK_JP_H;
     return { W, H, svg: `<g id="sceneG" data-scene="japanmap" data-noenv="1">${place(raw, 0, 0, W, H)}</g>`, areas: Array.isArray(PA().JAPAN_AREAS) ? PA().JAPAN_AREAS : null };
   }
@@ -283,13 +287,13 @@ function tkMapTip(k) {
   if (k === 'station') return tt('tokyo.tip_station', 'Tokyo Station: ride home');
   const P = TK_PLACES[k]; if (!P) return k;
   if (S.place === k) return tt('tokyo.tip_here', '{name}: you are here', { name: tkPlaceName(k) });
-  return topBond() < P.bond ? tt('tokyo.tip_bond', '{name}: Bond {bond}', { name: tkPlaceName(k), bond: P.bond }) : tt('tokyo.tip_go', '{name}: go and see', { name: tkPlaceName(k) });
+  return !tkOpenAt(k, P.bond) ? (lvOn() ? tt('lv.tk_tip', '{name}: level {n}', { name: tkPlaceName(k), n: tkNeed(k, P.bond) }) : tt('tokyo.tip_bond', '{name}: Bond {bond}', { name: tkPlaceName(k), bond: P.bond })) : tt('tokyo.tip_go', '{name}: go and see', { name: tkPlaceName(k) });
 }
 function tkPick(k) {
   SFX.click();
   if (k === 'station') { tkRide('home', () => { S.place = 'yard'; markDirty(); go('yard'); }); return true; }
   const P = TK_PLACES[k]; if (!P) return false;
-  if (topBond() < P.bond) { nope(tt('tokyo.place_locked', 'Nope. {name} opens at Bond {bond}. Tokyo is big, there is no rush.', { name: tkPlaceName(k), bond: P.bond })); return false; }
+  if (!tkOpenAt(k, P.bond)) { nope(lvOn() ? tt('lv.nope_tokyo', 'Nope. {name} opens at town level {n}. Tokyo is big, there is no rush.', { name: tkPlaceName(k), n: tkNeed(k, P.bond) }) : tt('tokyo.place_locked', 'Nope. {name} opens at Bond {bond}. Tokyo is big, there is no rush.', { name: tkPlaceName(k), bond: P.bond })); return false; }
   if (S.place === k) { go('yard'); return true; }
   travelTo(k); return true;
 }
@@ -297,9 +301,9 @@ function tkPick(k) {
 function tkMapPick(k) {
   const chip = $('#mapGo'); if (!chip) return tkPick(k);
   const g = $(`#mapPan [data-area="${k}"]`); if (g) mapHighlight(g);
-  const P = TK_PLACES[k], lock = P && topBond() < P.bond, here = S.place === k;
+  const P = TK_PLACES[k], lock = P && !tkOpenAt(k, P.bond), here = S.place === k;
   chip.hidden = false; chip.dataset.k = k;
-  chip.innerHTML = lock ? `<span>${esc(tt('tokyo.chip_locked', '{name}: opens at Bond {bond}', { name: tkPlaceName(k), bond: P.bond }))}</span>` : here ? `<span>${esc(tt('tokyo.chip_here', 'You are here: {name}', { name: tkPlaceName(k) }))}</span><button class="btn" id="mapStay">${esc(tt('tokyo.stay', 'Stay'))}</button>` : `<button class="btn go big" id="mapGoBtn">${esc(k === 'station' ? tt('tokyo.ride_home_pin', 'Ride home') : tt('tokyo.go_to', 'Go to {name}', { name: P ? tkPlaceName(k) : k }))}</button><button class="btn" id="mapNo" aria-label="${esc(tt('tokyo.cancel', 'Cancel'))}">x</button>`;
+  chip.innerHTML = lock ? `<span>${esc(lvOn() ? tt('lv.place_chip', '{place}: opens at level {n}', { place: tkPlaceName(k), n: tkNeed(k, P.bond) }) : tt('tokyo.chip_locked', '{name}: opens at Bond {bond}', { name: tkPlaceName(k), bond: P.bond }))}</span>` : here ? `<span>${esc(tt('tokyo.chip_here', 'You are here: {name}', { name: tkPlaceName(k) }))}</span><button class="btn" id="mapStay">${esc(tt('tokyo.stay', 'Stay'))}</button>` : `<button class="btn go big" id="mapGoBtn">${esc(k === 'station' ? tt('tokyo.ride_home_pin', 'Ride home') : tt('tokyo.go_to', 'Go to {name}', { name: P ? tkPlaceName(k) : k }))}</button><button class="btn" id="mapNo" aria-label="${esc(tt('tokyo.cancel', 'Cancel'))}">x</button>`;
   const gb = $('#mapGoBtn'); if (gb) gb.onclick = () => { chip.hidden = true; tkPick(k); };
   const st = $('#mapStay'); if (st) st.onclick = () => go('yard');
   const no = $('#mapNo'); if (no) no.onclick = () => { chip.hidden = true; const hi = $('#mapHi'); if (hi) hi.hidden = true; };
@@ -323,7 +327,7 @@ function enterJapan() {
   mapApply();
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
   measure(); mapCenter(here ? S.place : 'station', false); if (isPhone()) mapClearCtl();
-  hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? tkMapPick(k) : tkPick(k)), (k) => (k === 'station' ? tt('tokyo.hot_station', 'Ride home from Tokyo Station') : TK_PLACES[k] ? (topBond() < TK_PLACES[k].bond ? tt('tokyo.hot_go_locked', 'Go to {name} (locked, Bond {bond})', { name: tkPlaceName(k), bond: TK_PLACES[k].bond }) : tt('tokyo.go_to', 'Go to {name}', { name: tkPlaceName(k) })) : k));
+  hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? tkMapPick(k) : tkPick(k)), (k) => (k === 'station' ? tt('tokyo.hot_station', 'Ride home from Tokyo Station') : TK_PLACES[k] ? (!tkOpenAt(k, TK_PLACES[k].bond) ? (lvOn() ? tt('lv.tk_go_locked', 'Go to {name} (locked, level {n})', { name: tkPlaceName(k), n: tkNeed(k, TK_PLACES[k].bond) }) : tt('tokyo.hot_go_locked', 'Go to {name} (locked, Bond {bond})', { name: tkPlaceName(k), bond: TK_PLACES[k].bond })) : tt('tokyo.go_to', 'Go to {name}', { name: tkPlaceName(k) })) : k));
   tkMapDrag(pan);
   $('#mapZin').onclick = () => mapZoomAt(1.2, MAPV.vw / 2, MAPV.vh / 2); $('#mapZout').onclick = () => mapZoomAt(1 / 1.2, MAPV.vw / 2, MAPV.vh / 2);
   const onRs = () => { if (cur.mode !== 'japan') return; MAPV.vw = pan.clientWidth; MAPV.vh = pan.clientHeight; mapApply(); }; window.addEventListener('resize', onRs); onCleanup(() => window.removeEventListener('resize', onRs));
@@ -382,7 +386,7 @@ function tkStampArt(key, got, size = 120) {
   return `<svg viewBox="0 0 120 120" width="${size}" height="${size}"><circle cx="60" cy="60" r="50" fill="${got ? '#FDE3EA' : 'none'}" stroke="${got ? '#C8463D' : '#B7A79B'}" stroke-width="${got ? 5 : 3}" stroke-dasharray="${got ? 'none' : '8 7'}"/>${got ? `<circle cx="60" cy="60" r="40" fill="none" stroke="#C8463D" stroke-width="2"/>${lbl.map((w, i) => `<text x="60" y="${64 + (i - (lbl.length - 1) / 2) * 24}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${w.length > 7 ? 22 : 26}" fill="#C8463D">${esc(w)}</text>`).join('')}` : ''}</svg>`;
 }
 // a stamp not in the book yet whose place is open at today's Bond (the tokyo_stamp mission gate). Hachikō's stamp is in Shibuya
-function tkStampFree() { return !!S && TK_STAMPS.some((k) => !(S.tk && S.tk.stamps && S.tk.stamps[k]) && topBond() >= TK_PLACES[k === 'hachiko' ? 'shibuya' : k].bond); }
+function tkStampFree() { return !!S && TK_STAMPS.some((k) => !(S.tk && S.tk.stamps && S.tk.stamps[k]) && ((p) => tkOpenAt(p, TK_PLACES[p].bond))(k === 'hachiko' ? 'shibuya' : k)); }
 function tkStamp(key) {
   if (!S || !TK_STAMPS.includes(key)) return null; tkFields();
   if (S.tk.stamps[key]) { SFX.click(); toast(tt('tokyo.stamp_have', 'The {name} stamp is already in your book.', { name: tkStampName(key) })); return false; }

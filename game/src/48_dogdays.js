@@ -26,17 +26,17 @@ function ddBondSeen(n) { if (!S || !S.dog) return; DD.bond.push({ id: S.dog.id, 
 const ddTokyo = () => !!(S && ((typeof TK_PLACES !== 'undefined' && TK_PLACES[S.place]) || S.place === 'station'));
 // what the player can do for this dog today, at their Bond and place: [kind, options for its argument or null]
 function ddWishOpts(d) {
-  const tb = topBond(), tokyo = ddTokyo(), o = [['ball', null], ['pet', null], ['bath', null], ['nap', null], ['trick', null], ['photo', null]];
-  const routes = Object.keys(ROUTES).filter((k) => (ROUTES[k].bond || 1) <= tb);
+  const tokyo = ddTokyo(), o = [['ball', null], ['pet', null], ['bath', null], ['nap', null], ['trick', null], ['photo', null]];
+  const routes = Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond)); // v2.22: the walks, places, pool and garden read the town level with lvOn (51_levels.js), today's topBond() test off
   if (!tokyo && routes.length) o.push(['walk', routes]);
   const foods = Object.keys(S.inv.food || {}).filter((n) => S.inv.food[n] > 0 && n !== 'Fresh Water' && FOOD_ALL.some((f) => f.n === n));
   if (foods.length) o.push(['snack', foods]);
   const toys = ddArr(S.inv.toys).filter((n) => !FETCH_TOYS.includes(n) && typeof toySupported === 'function' && toySupported(n));
   if (toys.length) o.push(['toy', toys]);
-  const pl = DD_TOWN.filter((k) => PLACES[k] && !PLACES[k].tokyo && (PLACES[k].bond || 1) <= tb);
+  const pl = DD_TOWN.filter((k) => PLACES[k] && !PLACES[k].tokyo && wOpen('place', k, PLACES[k].bond));
   if (!tokyo && pl.length) o.push(['place', pl]);
-  if (PLACES.pool && tb >= (PLACES.pool.bond || 2)) o.push(['paddle', null]);
-  if (typeof gkOn === 'function' && gkOn() && tb >= 2) o.push(['garden', null]);
+  if (PLACES.pool && wOpen('place', 'pool', PLACES.pool.bond || 2)) o.push(['paddle', null]);
+  if (typeof gkOn === 'function' && gkOn() && wOpen('feat', 'garden', 2)) o.push(['garden', null]);
   if (ddArr(S.inv.clothes).length) o.push(['wear', null]);
   return o;
 }
@@ -164,19 +164,20 @@ function ddTrackGive() {
 // the real gates, read from the game's tables: [icon, text] rows for Bond level L
 function ddTrackRows(L, d) {
   const u = [], add = (ic, t) => u.push([ic, t]), notShop = (x) => !x.ed && !x.fest && !x.reward && !x.tokyo && !x.treasure;
+  const lv = lvOn(); // v2.22: with town levels the places, walks, Tokyo, shop rows, houses, home things and the garden are on the town level (51_levels.js), so the Bond track keeps the Bond list (V222.md 3.4)
   TRICKS.forEach((t) => { if (t.bond === L) add('star', t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(d.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
   if (L > 1) {
-    Object.keys(ROUTES).forEach((k) => { if (ROUTES[k].bond === L) add('walk', tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: ddRouteName(k) })); });
+    if (!lv) Object.keys(ROUTES).forEach((k) => { if (ROUTES[k].bond === L) add('walk', tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: ddRouteName(k) })); });
     const pl = Object.keys(PLACES).filter((k) => PLACES[k].bond === L && !ROUTES[k] && !PLACES[k].run && !PLACES[k].tokyo && k !== 'station');
-    if (pl.length) add('map', tt('dd.tr_places', 'Places: {list}', { list: tlist(pl.map(ddPlaceName)) }));
-    if (typeof TK_PLACES !== 'undefined' && typeof tkOn === 'function' && tkOn()) { const tk = Object.keys(TK_PLACES).filter((k) => TK_PLACES[k].bond === L).map(ddPlaceName); if (L === TK_STATION_BOND) tk.unshift(ddPlaceName('station')); if (tk.length) add('map', tt('dd.tr_tokyo', 'Tokyo: {list}', { list: tlist(tk) })); }
-    const shop = TOYS.concat(CLOTHES).filter((x) => x.bond === L && notShop(x)).map((x) => shNameAny(x.n)).concat(typeof twTools === 'function' ? twTools().filter((x) => x.bond === L).map((x) => tt('shop.gene_sniffer', 'Gene Sniffer')) : []);
+    if (pl.length && !lv) add('map', tt('dd.tr_places', 'Places: {list}', { list: tlist(pl.map(ddPlaceName)) }));
+    if (!lv && typeof TK_PLACES !== 'undefined' && typeof tkOn === 'function' && tkOn()) { const tk = Object.keys(TK_PLACES).filter((k) => TK_PLACES[k].bond === L).map(ddPlaceName); if (L === TK_STATION_BOND) tk.unshift(ddPlaceName('station')); if (tk.length) add('map', tt('dd.tr_tokyo', 'Tokyo: {list}', { list: tlist(tk) })); }
+    const shop = TOYS.concat(CLOTHES).filter((x) => x.bond === L && notShop(x) && !lv).map((x) => shNameAny(x.n)).concat(typeof twTools === 'function' ? twTools().filter((x) => x.bond === L).map((x) => tt('shop.gene_sniffer', 'Gene Sniffer')) : []);
     if (shop.length) add('shop', tt('dd.tr_shop', 'Shop: {list}', { list: tlist(shop) }));
-    HOUSES.forEach((h) => { if (h.bond === L && !h.reward && !h.fm) add('house', tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
+    HOUSES.forEach((h) => { if (h.bond === L && !h.reward && !h.fm && !lv) add('house', tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
     const home = BEDS.filter((b) => b.bond === L && !b.fm).map((b) => tdata('beds.' + tid(b.n) + '.n', b.n)).concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].bond === L && !HM_DECOR[n].fest && !HM_DECOR[n].ed).map((n) => tdata('hm_decor.' + tid(n) + '.n', n)));
-    if (home.length) add('decor', tt('dd.tr_home', 'For the home: {list}', { list: tlist(home) }));
+    if (home.length && !lv) add('decor', tt('dd.tr_home', 'For the home: {list}', { list: tlist(home) }));
     SPOT_RULES.forEach((r, i) => { if (r && r.bond === L) add('spots', tt('dd.tr_spot', 'Room for dog number {n} (with its other rules)', { n: i })); });
-    if (L === 2) { add('garden', tt('dd.tr_garden', 'The veggie patch')); if (typeof fwOn === 'function' && fwOn()) add('heart', tt('dd.tr_party', 'A Bond 2 party with a gift')); }
+    if (L === 2) { if (!lv) add('garden', tt('dd.tr_garden', 'The veggie patch')); if (typeof fwOn === 'function' && fwOn()) add('heart', tt('dd.tr_party', 'A Bond 2 party with a gift')); }
     if (BREEDING && BREEDING.RULES && BREEDING.RULES.welfare && BREEDING.RULES.welfare.minBond === L) add('playdate', tt('dd.tr_playdate', 'Playdates and puppy families'));
   }
   if (L === 10) add('bond', tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));

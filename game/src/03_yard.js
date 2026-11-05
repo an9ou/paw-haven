@@ -614,7 +614,7 @@ function beachDig() {
 function travelTo(id) {
   clearCurl();
   const P = PLACES[id]; if (!P || busy) return;
-  if (topBond() < P.bond) { nope(tt('yard.nope_opens_at_bond', 'Nope. {place} opens at Bond {bond}. {name} is not emotionally ready.', { place: placeName(id), bond: P.bond, name: NAME() })); return; }
+  if (lvPlaceLocked(id)) { nope(lvOn() ? tt('lv.nope_place', 'Nope. {place} opens at town level {n}. The town is still getting to know you.', { place: placeName(id), n: lvPlaceN(id) }) : tt('yard.nope_opens_at_bond', 'Nope. {place} opens at Bond {bond}. {name} is not emotionally ready.', { place: placeName(id), bond: P.bond, name: NAME() })); return; }
   if (S.sleeping) { nope(tt('yard.is_asleep_wake_up_first', '{name} is asleep. Wake up first (Care menu).', { name: NAME() })); return; }
   if (id === S.place && cur.mode === 'yard') return;
   if (id === S.place) { go('yard'); return; }

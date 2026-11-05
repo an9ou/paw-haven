@@ -33,7 +33,7 @@ function trSync() {
   try { tItemIx = null; } catch (e) { /* the core cache is not there yet */ }
   try { if (on) BL_TOYS[TR_RING] = TR_RING_TOY; else delete BL_TOYS[TR_RING]; } catch (e) { /* 38_ball.js is not loaded yet */ }
   try {
-    const keys = TR_BASE_KEYS.concat(on ? K : []).sort((a, b) => ROUTES[a].bond - ROUTES[b].bond); // stable: an old route stays ahead of a new one at the same Bond
+    const keys = TR_BASE_KEYS.concat(on ? K : []).sort((a, b) => lvRouteNeed(a) - lvRouteNeed(b)); // stable: an old route stays ahead of a new one at the same Bond. v2.22: by the town level with lvOn (Sunflower Lanes before Riverside), the Bond off
     ROUTE_KEYS.splice(0, ROUTE_KEYS.length, ...keys);
   } catch (e) { /* 17_walk_route_carousel.js is not loaded yet */ }
 }

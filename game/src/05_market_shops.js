@@ -110,27 +110,29 @@ function openShop(k) {
     items = t === 'decor' || t === 'furniture' ? hoShopItems(t) : t === 'beds' ? BEDS.filter((b) => !b.fm && !b.fest).map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: tt('shop.bed_desc', 'House nap +{pct}%. {note}', { pct: Math.round(b.bonus * 100), note: tdata('beds.' + tid(b.n) + '.note', b.note) }) })) : HOUSES.filter((h) => !h.reward && !h.fest).map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: tt('shop.house_desc', 'Nap Energy +{pct}%. {note}', { pct: Math.round(h.comfort * 100), note: tdata('houses.' + tid(h.n) + '.note', h.note) }) }));
   }
   const hoCat = (it) => it.cat === 'decor' || it.cat === 'furniture'; // v2.7: decorations and furniture, owned once (S.decor)
+  const lvRows = lvOn() ? lvItemRows() : null, lvTap = (it, lock) => (lock && lvRows && lvRows.has(it.n) ? ` data-lvlock="${esc(it.n)}"` : ''); // v2.22: the rows a town level gates (51_levels.js); off: null, every lock is today's
   const cards = items.map((it) => {
     if (it.head) return `<h4 class="ho-shh">${esc(it.head)}</h4>`;
     if (hoCat(it)) {
-      const lock = topBond() < it.bond, got = !!(S.decor && S.decor[it.n]);
-      const act = lock ? `<span class="chip lock">${tt('shop.bond_chip', 'Bond {bond}', { bond: it.bond })}</span>` : got ? (hmDecorOut(it.n) ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span>` : `<button class="btn" data-hoplace="${esc(it.n)}">${tt('shop.owned_place', 'Owned · Place')}</button>`) : `<button class="btn yes" data-buy="${esc(it.n)}">${tt('shop.buy', 'Buy')}</button>`;
-      return `<div class="sitem ${lock ? 'lockd' : ''}"><span class="art">${itemArt(it.n)}</span><b>${esc(shItemName(it.cat, it.n))}</b><span class="desc">${esc(it.desc)}</span>${priceHTML(it.price)}${act}</div>`;
+      const got = !!(S.decor && S.decor[it.n]), lock = lvShopLock(it.n, it.bond, got, lvRows);
+      const act = lock ? `<span class="chip lock">${lvShopChip(it.n, it.bond, lvRows)}</span>` : got ? (hmDecorOut(it.n) ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span>` : `<button class="btn" data-hoplace="${esc(it.n)}">${tt('shop.owned_place', 'Owned · Place')}</button>`) : `<button class="btn yes" data-buy="${esc(it.n)}">${tt('shop.buy', 'Buy')}</button>`;
+      return `<div class="sitem ${lock ? 'lockd' : ''}"${lvTap(it, lock)}><span class="art">${itemArt(it.n)}</span><b>${esc(shItemName(it.cat, it.n))}</b><span class="desc">${esc(it.desc)}</span>${priceHTML(it.price)}${act}</div>`;
     }
-    const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
+    const owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), lock = lvShopLock(it.n, it.bond, owned, lvRows), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
     const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${itemArt(it.n)}</span>`;
     let act;
-    if (lock) act = `<span class="chip lock">${tt('shop.bond_chip', 'Bond {bond}', { bond: it.bond })}</span>${it.cat === 'tools' ? `<span class="small">${esc(twToolLock(it))}</span>` : ''}`;
+    if (lock) act = `<span class="chip lock">${lvShopChip(it.n, it.bond, lvRows)}</span>${it.cat === 'tools' ? `<span class="small">${esc(twToolLock(it))}</span>` : ''}`;
     else if (owned && it.cat === 'beds') act = S.bed === it.n ? `<span class="chip own">${tt('shop.owned_in_use', 'Owned · in use')}</span>` : `<button class="btn" data-usebed="${esc(it.n)}">${tt('shop.owned_use_bed', 'Owned · Use this bed')}</button>`;
     else if (owned) act = it.cat === 'houses' ? (S.house === it.n ? `<span class="chip own">${tt('shop.owned_living', 'Owned · living here')}</span>` : `<button class="btn" data-use="${esc(it.n)}">${tt('shop.owned_move_in', 'Owned · Move in')}</button>`) : `<span class="chip own">${tt('shop.owned', 'Owned')}</span>`;
     else if (it.price === 0) act = `<span class="chip own">${tt('shop.free', 'Free')}</span>`;
     else act = `<button class="btn yes" data-buy="${esc(it.n)}">${it.cat === 'food' || it.cat === 'pantry' ? tt('shop.buy_more', 'Buy…') : tt('shop.buy', 'Buy')}</button>`;
-    return `<div class="sitem ${lock ? 'lockd' : ''}">${artH}<b>${esc(shItemName(it.cat, it.n, it.id))}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${it.price ? priceHTML(it.cat === 'food' ? tt('shop.price_each', '{price} each', { price: it.price }) : it.price) : ''}${have ? `<span class="small">${tt('shop.you_have_n', 'You have {n}', { n: have })}</span>` : ''}${act}</div>`;
+    return `<div class="sitem ${lock ? 'lockd' : ''}"${lvTap(it, lock)}>${artH}<b>${esc(shItemName(it.cat, it.n, it.id))}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${it.price ? priceHTML(it.cat === 'food' ? tt('shop.price_each', '{price} each', { price: it.price }) : it.price) : ''}${have ? `<span class="small">${tt('shop.you_have_n', 'You have {n}', { n: have })}</span>` : ''}${act}</div>`;
   }).join('');
   const greet = { kibble: tt('shop.greet_kibble', 'Snacks, toys, and a strong smell of kibble.'), boutique: tt('shop.greet_boutique', 'Fashion for dogs who do not care about fashion.'), builder: tt('shop.greet_builder', 'We build houses. Out of whatever. Mostly cardboard.') }[k];
   const p = openModal(title, `<p class="small">${esc(tt('shop.greet_coins', '{greet} {coins, plural, one {You have # Paw Coin.} other {You have # Paw Coins.}}', { greet, coins: S.coins }))}</p>${tabs}<div class="shopgrid">${cards}</div>`, { cls: 'shop' });
   p.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { shopTab.kibble = b.dataset.tab; openShop('kibble'); }; });
   p.querySelectorAll('[data-btab]').forEach((b) => { b.onclick = () => { SFX.click(); shopTab.builder = b.dataset.btab; openShop('builder'); }; });
+  p.querySelectorAll('[data-lvlock]').forEach((r) => { r.onclick = () => { const it = items.find((x) => x.n === r.dataset.lvlock); if (it) nope(tt('lv.nope_shop', 'Nope. {item} comes in at town level {n}. The shopkeeper is saving it for you.', { item: shItemName(it.cat, it.n, it.id), n: wNeed('item', it.n, it.bond) })); }; }); // v2.22: a tap on a level-locked row (only with lvOn)
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openShop(k); }; });
   p.querySelectorAll('[data-hoplace]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); hoPlaceStart(b.dataset.hoplace); }; });
   p.querySelectorAll('[data-use]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.use); openShop(k); }; });

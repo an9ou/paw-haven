@@ -40,11 +40,11 @@ function mswFestName(k) {
     default: return tt('ms2w.fa_fortune', 'draw a New Year fortune');
   }
 }
-const mswRoutesOpen = () => Object.keys(ROUTES).filter((k) => (ROUTES[k].bond || 1) <= topBond()).length;
-const mswPlacesOpen = () => (typeof msbPlaces === 'function' ? msbPlaces() : Object.keys(PLACES).filter((k) => k !== 'yard' && k !== 'house')).filter((k) => PLACES[k] && (PLACES[k].bond || 1) <= topBond()).length;
-const mswPool = () => typeof mpOn === 'function' && mpOn() && !!PLACES.pool && topBond() >= (PLACES.pool.bond || 2);
+const mswRoutesOpen = () => Object.keys(ROUTES).filter((k) => wOpen('route', k, ROUTES[k].bond)).length; // v2.22: wOpen (51_levels.js), today's Bond test off
+const mswPlacesOpen = () => (typeof msbPlaces === 'function' ? msbPlaces() : Object.keys(PLACES).filter((k) => k !== 'yard' && k !== 'house')).filter((k) => PLACES[k] && wOpen('place', k, PLACES[k].bond)).length;
+const mswPool = () => typeof mpOn === 'function' && mpOn() && !!PLACES.pool && wOpen('place', 'pool', PLACES.pool.bond || 2);
 // the weekly town event: the photo contest (any week it is still open) or the Saturday stall (Bond 2), like ffphoto / ffstall
-const mswEvent = () => typeof ffOn === 'function' && ffOn() && !!S.ff && (topBond() >= 2 || !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc));
+const mswEvent = () => typeof ffOn === 'function' && ffOn() && !!S.ff && (wOpen('feat', 'stall', 2) || !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc));
 const mswFairGame = (a, job) => a.kind === 'funfair' && typeof FF_GAMES === 'object' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job === job;
 /* the requests. who: the neighbour, n: how many, t: the note, s: the short name (toasts, the letter), g: the gate, m: does an act count,
    u: a distinct key (routes, places: the same one twice counts once), arg: a choice made when the note is drawn (the festival act) */
@@ -64,7 +64,7 @@ const MS_BOARD = [
   { id: 'w_event', who: 'fair', n: 1, t: 'Enter the weekly photo contest or set out your Saturday stall', s: 'The town event', g: () => mswEvent(), m: (a) => a.kind === 'funfair' && (a.game === 'photo' || a.game === 'stall') },
   { id: 'w_fest', who: 'fair', n: 1, t: 'Festival fun: {act}', s: 'Festival fun', arg: () => mswFestActs(), m: (a, it) => a.kind === it.arg && (a.kind !== 'snowdog' || !!a.done) },
   { id: 'w_photo', who: 'cafe', n: 3, t: 'Take 3 photos for the café wall', s: 'Three photos', m: (a) => a.kind === 'photo' },
-  { id: 'w_cafe', who: 'cafe', n: 2, t: 'Bring {dog} to the café twice', s: 'Two café visits', g: () => !!PLACES.cafe && topBond() >= (PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
+  { id: 'w_cafe', who: 'cafe', n: 2, t: 'Bring {dog} to the café twice', s: 'Two café visits', g: () => !!PLACES.cafe && wOpen('place', 'cafe', PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
   { id: 'w_trick', who: 'cafe', n: 8, t: 'Practise tricks 8 times', s: 'Trick practice', g: () => TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' }
 ];
 const mswDef = (id) => MS_BOARD.find((x) => x.id === id);

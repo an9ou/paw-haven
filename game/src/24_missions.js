@@ -14,7 +14,7 @@ const MS_POOL = [
   { id: 'pet', n: 1, w: 0, t: 'Pet {dog} until the tail goes', s: 'Petting', m: (a) => a.kind === 'pet' },
   { id: 'toy', n: 1, t: 'Play with a toy', s: 'Play with a toy', m: (a) => a.kind === 'toy' || a.kind === 'fetch' },
   { id: 'walk', n: 1, t: 'Go for a walk', s: 'Go for a walk', m: (a) => a.kind === 'walk' },
-  { id: 'walk_river', n: 1, w: 3, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => topBond() >= ROUTES.river.bond, m: (a) => a.kind === 'walk' && a.area === 'river' },
+  { id: 'walk_river', n: 1, w: 3, t: 'Walk the Riverside Trail', s: 'Riverside walk', g: () => wOpen('route', 'river', ROUTES.river.bond), m: (a) => a.kind === 'walk' && a.area === 'river' },
   { id: 'bath', n: 1, t: 'Give {dog} a bath', s: 'Bath time', m: (a) => a.kind === 'bath' },
   { id: 'nap', n: 1, w: 0, t: 'Tuck {dog} in for a nap', s: 'Nap time', m: (a) => a.kind === 'nap' },
   { id: 'wear', n: 1, t: 'Put on an outfit', s: 'Put on an outfit', g: () => S.inv.clothes.length > 0, m: (a) => a.kind === 'wear' },
@@ -35,7 +35,7 @@ const MS_POOL = [
   { id: 'leafpile', n: 1, w: 3, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
   { id: 'parade', n: 1, w: 3, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
   { id: 'photo', n: 1, w: 3, t: 'Take a photo of your pack', s: 'Take a photo', m: (a) => a.kind === 'photo' }, // v2.9 PHOTO lane: fired once per saved photo (35_photo.js)
-  { id: 'travel', n: 1, w: 3, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
+  { id: 'travel', n: 1, w: 3, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => wOpen('place', 'dogpark', (PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
   // v2.8 Winter & New Year (V28.md section 1): WINTER fires snowdrift / snowdog / sweater and buy shop:'stall', NEW YEAR fires fortune. Lane gates are guarded
   { id: 'snowdrift', n: 1, w: 3, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
   { id: 'snowdog', n: 1, w: 3, t: 'Build a snowdog', s: 'Snowdog', g: () => typeof wnSnowdogFree === 'function' && !!wnSnowdogFree(), m: (a) => a.kind === 'snowdog' && !!a.done },
@@ -48,21 +48,21 @@ const MS_POOL = [
   { id: 'hatsufuji', n: 1, w: 3, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
   { id: 'travel_fuji', n: 1, w: 3, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
   // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
-  { id: 'tokyo_ride', n: 1, w: 3, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
-  { id: 'tokyo_stamp', n: 1, w: 3, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' },
+  { id: 'tokyo_ride', n: 1, w: 3, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && wOpen('place', 'station', TK_STATION_BOND), m: (a) => a.kind === 'ride' && a.dir === 'out' },
+  { id: 'tokyo_stamp', n: 1, w: 3, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && wOpen('place', 'station', TK_STATION_BOND) && tkStampFree(), m: (a) => a.kind === 'stamp' },
   // v2.15 Training Ground (V215.md 6.1, 44_agility.js): agility fires act 'agility' { rosettes, low }
-  { id: 'agility', n: 1, w: 3, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
-  { id: 'agility_ros', n: 1, w: 3, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
-  { id: 'travel_training', n: 1, w: 3, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
+  { id: 'agility', n: 1, w: 3, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'training', (PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
+  { id: 'agility_ros', n: 1, w: 3, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'training', (PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
+  { id: 'travel_training', n: 1, w: 3, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'training', (PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
   // v2.15 Splash Pool (V215.md 6.2, 45_pool.js): the paddle fires act 'paddle' { name, step }, float fetch fires 'floatfetch' { name }
-  { id: 'pool_paddle', n: 1, w: 3, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
-  { id: 'pool_float', n: 1, w: 3, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
+  { id: 'pool_paddle', n: 1, w: 3, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'pool', (PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
+  { id: 'pool_float', n: 1, w: 3, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && wOpen('place', 'pool', (PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
   // v2.15 run tracks (V215.md 6.3, 46_tracks.js): a walk on one of the three new routes
-  { id: 'new_trail', n: 1, w: 3, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && topBond() >= ((ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) },
+  { id: 'new_trail', n: 1, w: 3, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && wOpen('route', 'sunflower', (ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) },
   // Daily rhythm: small stories round town. The Fun Fair (49_funfair.js) fires act 'funfair' { game } for its games, jobs, the stall and the photo contest
   { id: 'funfair', n: 1, w: 3, t: 'Play a game at the Fun Fair', s: 'Fun Fair game', g: () => msFf(false), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !FF_GAMES[a.game].job },
   { id: 'ffjob', n: 1, w: 3, t: 'Help a neighbour with a town job', s: 'Town job', g: () => msFf(true), m: (a) => a.kind === 'funfair' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job },
-  { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && msStallDay() && topBond() >= 2 && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
+  { id: 'ffstall', n: 1, w: 3, t: 'Set out your Saturday market stall', s: 'Saturday stall', g: () => typeof ffOn === 'function' && ffOn() && msStallDay() && wOpen('feat', 'stall', 2) && ffLeft('stall') > 0 && ffStallGoods().length > 0, m: (a) => a.kind === 'funfair' && a.game === 'stall' },
   { id: 'ffphoto', n: 1, w: 3, t: 'Enter a photo in the weekly photo contest', s: 'Photo contest', g: () => typeof ffOn === 'function' && ffOn() && !!S.ff && !((P) => P && P.wk === ffWeekOf(localISO()) && (P.judged || (P.e || []).length >= 3))(S.ff.pc), m: (a) => a.kind === 'funfair' && a.game === 'photo' },
   // v2.20 Missions v2 (V220.md section 2, design 3.1): nine more small stories (v2: only while ms2On(), so with MS2_LIVE off the draw is v2.19.2's). New act data: walk pack, trick place, cook discovered, the acts wish and frvisit
   { id: 'walk_fresh', n: 1, w: 3, v2: 1, t: 'Walk a route you have not walked this week', s: 'A fresh route', g: () => ms2FreshRoutes().length > 0, m: (a) => a.kind === 'walk' && !!a.area && !ms2Walked7(a.area) }, // wkAreas is written after this check (24b listens later)
@@ -70,8 +70,8 @@ const MS_POOL = [
   { id: 'pack_walk', n: 1, w: 3, v2: 1, t: 'Walk with two or more dogs', s: 'Pack walk', g: () => typeof crPack === 'function' && !!crPack(), m: (a) => a.kind === 'walk' && (+a.pack || 1) >= 2 },
   { id: 'cook_new', n: 1, w: 3, v2: 1, t: 'Cook a dish you have never cooked', s: 'A new dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' && !!a.discovered },
   { id: 'decorate', n: 1, w: 3, v2: 1, t: 'Move a decoration at home', s: 'Redecorate', g: () => !!S.decor && Object.keys(S.decor).length > 0, m: (a) => a.kind === 'decorate' },
-  { id: 'cafe', n: 1, w: 3, v2: 1, t: 'Take {dog} to the café', s: 'Café visit', g: () => !!PLACES.cafe && topBond() >= (PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
-  { id: 'trick_show', n: 1, w: 3, v2: 1, t: 'Show a trick in the Town Square', s: 'Square show', g: () => !!PLACES.square && topBond() >= (PLACES.square.bond || 1) && TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' && a.place === 'square' },
+  { id: 'cafe', n: 1, w: 3, v2: 1, t: 'Take {dog} to the café', s: 'Café visit', g: () => !!PLACES.cafe && wOpen('place', 'cafe', PLACES.cafe.bond || 1), m: (a) => a.kind === 'travel' && a.place === 'cafe' },
+  { id: 'trick_show', n: 1, w: 3, v2: 1, t: 'Show a trick in the Town Square', s: 'Square show', g: () => !!PLACES.square && wOpen('place', 'square', PLACES.square.bond || 1) && TRICKS.some((x) => x.bond <= topBond()), m: (a) => a.kind === 'trick' && a.place === 'square' },
   { id: 'wish', n: 1, w: 3, v2: 1, t: "Make {dog}'s wish come true", s: 'A wish come true', g: () => typeof ddReady === 'function' && ddReady() && !(ddWish(D()) || {}).done, m: (a) => a.kind === 'wish' },
   { id: 'friend_yard', n: 1, w: 3, v2: 1, t: "Visit a friend's yard", s: 'A friendly visit', g: () => FR_LIVE && frOn() && ms2FriendsN() > 0, m: (a) => a.kind === 'frvisit' } // only once Friends are live
 ];
@@ -79,7 +79,7 @@ const MS_POOL = [
 // (Japan, the Americas, a European Saturday morning), so the stall never closes under an open mission. A Dev / test override (prefs.ffSat) just opens it
 function msStallDay() { if (prefs.ffSat !== undefined && prefs.ffSat !== null) return !!prefs.ffSat; const n = new Date(Date.now()); return n.getDay() === 6 && msResetAt() <= new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); } // as ffSaturday, on the same clock as jstISO
 // a Fun Fair game (job: a town job) the player can play now: the switch, the Bond, a place that exists
-function msFf(job) { return typeof ffOn === 'function' && ffOn() && !!S.ff && FF_KEYS.some((k) => !!FF_GAMES[k].job === job && topBond() >= FF_GAMES[k].bond && ffPlaceOk(k)); }
+function msFf(job) { return typeof ffOn === 'function' && ffOn() && !!S.ff && FF_KEYS.some((k) => !!FF_GAMES[k].job === job && lvFfOpen(k) && ffPlaceOk(k)); }
 const msW = (d) => (d.w == null ? 1 : d.w);
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {

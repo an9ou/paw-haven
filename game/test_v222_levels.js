@@ -302,4 +302,102 @@ run('v222_levels', async (t) => {
     ok(!bad.length, `${name}: the level on each table day is within one of the contract (L20 on day ${first[20]})` + (bad.length ? ': off at ' + bad.map(([l, d, x]) => `day ${d}: L${x} for L${l}`).join(' ') : ''));
     if (name === 'regular') { const wk = past.slice(0, 7).reduce((a, b) => a + b, 0); ok(wk >= K.STAR * 0.8 && wk <= K.STAR * 1.6, `regular past level 20: ${Math.round(wk)} XP a week = about one star a week (${K.STAR} a star)`); }
   }
-}, { map215: true, prefs: ON, timeout: 420000 });
+
+  /* ================= part B: the call sites (V222.md 3.3, 7.1 B) ================= */
+  const BON = Object.assign({}, ON, { msTest: true }), BOFF = Object.assign({}, BON, { lvTest: false });
+  const fresh = async (prefs, patch) => { const was = t.ctx; await t.newGame({ sex: 'girl', prefs, map215: true }, Object.assign({ bond: { level: 1, pts: 0 }, coins: 1000 }, patch || {})); if (was) await was.close(); await t.until(() => !!(window.__paw && window.__paw.lv && window.__paw.mp && window.__paw.tr), null, 8000); };
+  const TODAY = require('./test_v222_b1_today.json'), { lockTexts } = require('./test_v222_probe');
+  const isTrick = (k) => /^(fw\.next|dd\.rows|route\.order)/.test(k);
+  const isTool = (k) => /^shop\.kibble\.tools\./.test(k) || /party gift/.test(TODAY[k] || ''); // the Gene Sniffer and the notebook's Bond 2 party gift step keep Bond
+
+  sec('B1. every lock text: off = today (the dev build snapshot), on = the town level');
+  await fresh(BOFF);
+  const off = await lockTexts(t);
+  const offDiff = Object.keys(TODAY).filter((k) => off[k] !== TODAY[k]).map((k) => `${k}: "${off[k]}" (today "${TODAY[k]}")`).concat(Object.keys(off).filter((k) => !(k in TODAY)).map((k) => k + ': new'));
+  ok(Object.keys(TODAY).length > 150 && !offDiff.length, `off: all ${Object.keys(TODAY).length} lock texts equal today's` + (offDiff.length ? ': ' + offDiff.slice(0, 8).join(' | ') : ''));
+  ok(TODAY.garden && TODAY.kitchen && Object.keys(TODAY).some((k) => /^nb\./.test(k)) && Object.keys(TODAY).some((k) => /^tk\./.test(k)) && Object.keys(TODAY).some((k) => /^ff\.nope\./.test(k)), 'the snapshot covers the garden, the kitchen, the notebook, Tokyo and the Fun Fair');
+  await fresh(BON);
+  ok(await ev(() => window.__paw.lv.on() && window.__paw.lv.level() === 1 && window.__paw.lv.top() === 1), 'on: a fresh save at Town level 1, Bond 1');
+  const on = await lockTexts(t);
+  const UL = K.UNLOCK, N = (kind, id) => UL[kind + ':' + id];
+  const BISC = 'shop.kibble.food.Bone-shaped Biscuit'; // the one row a fresh save meets later than today: Kibble Corner sells it at Bond 1, the town at level 2 (V222.md 3.2, As built A)
+  const keysOff = Object.keys(off).sort().join(), keysOn = Object.keys(on).filter((k) => k !== BISC).sort().join();
+  ok(!(BISC in off) && on[BISC] === 'Level 2', 'on: the Bone-shaped Biscuit comes in at level 2 for a fresh save: ' + on[BISC]);
+  ok(keysOn === keysOff, 'on: level 1 locks the same rows as Bond 1 (level 1 = every Bond 1 row)' + (keysOn === keysOff ? '' : ': ' + Object.keys(on).filter((k) => !(k in off)).concat(Object.keys(off).filter((k) => !(k in on)).map((k) => '-' + k)).slice(0, 8).join(', ')));
+  const bondLeft = Object.keys(on).filter((k) => !isTrick(k) && !isTool(k) && /Bond/.test(off[k]) && (/\bBond\b/.test(on[k]) || !/\blevel\b/i.test(on[k]))).map((k) => `${k}: "${on[k]}"`);
+  ok(!bondLeft.length, 'on: every lock text says the town level, none says Bond' + (bondLeft.length ? ': ' + bondLeft.slice(0, 8).join(' | ') : ''));
+  const same = Object.keys(on).filter((k) => k in off && !isTrick(k) && !/Bond/.test(off[k]) && on[k] !== off[k]).map((k) => `${k}: "${on[k]}" vs "${off[k]}"`);
+  ok(!same.length, 'on: the texts without a lock are unchanged (e.g. "Go to My Yard")' + (same.length ? ': ' + same.slice(0, 6).join(' | ') : ''));
+  const numBad = [];
+  Object.keys(on).forEach((k) => {
+    const m = /^(mp\.lock|nope\.place|route\.stamp|route\.btn|nope\.route|tk|ff\.btn|ff\.nope)\.(.+)$/.exec(k); let want = null;
+    if (m) { const id = m[2], pre = m[1]; want = pre === 'ff.btn' || pre === 'ff.nope' ? N('ff', id) : /route/.test(pre) ? N('route', id) : N('place', id); }
+    const s = /^shop\.[a-z]+\.[a-z]+\.(.+)$/.exec(k); if (s && !isTool(k)) want = N('item', s[1]);
+    if (k === 'garden') want = N('feat', 'garden'); if (k === 'kitchen') want = N('feat', 'kitchen');
+    if (want != null && !new RegExp('\\b(level|Level) ' + want + '\\b').test(on[k])) numBad.push(`${k}: "${on[k]}" (level ${want})`);
+  });
+  ok(!numBad.length, 'on: each lock names its row\'s level from LV_UNLOCK (map chips, Nopes, the carousel, shops, Fun Fair, Tokyo, garden, kitchen)' + (numBad.length ? ': ' + numBad.slice(0, 6).join(' | ') : ''));
+  ok(on['mp.lock.river'] === 'Level 8' && on['route.btn.sunflower'] === 'Locked (level 7)' && on['shop.boutique.all.Bow Tie'] === 'Level 2' && /town level 6/.test(on['tk.station']) && /town level 4/.test(on.kitchen) && on['mp.label.salon'] === 'Go to Grooming Salon (locked, level 5)', 'spot texts: Riverside chip "Level 8", Sunflower Lanes "Locked (level 7)", Bow Tie "Level 2", the Station level 6, the kitchen level 4, the Salon label');
+  ok(on['shop.kibble.tools.Gene Sniffer'] === off['shop.kibble.tools.Gene Sniffer'] && /Bond 6/.test(on['shop.kibble.tools.Gene Sniffer']), 'the Gene Sniffer keeps its Bond 6 lock: ' + on['shop.kibble.tools.Gene Sniffer']);
+  const nbOn = Object.keys(on).filter((k) => /^nb\./.test(k) && !isTool(k)).map((k) => on[k]);
+  ok(nbOn.length && nbOn.every((x) => / \| Opens at level \d+$/.test(x)) && nbOn.some((x) => /Riverside.*level 8$/.test(x)), 'the notebook\'s lock tags say "Opens at level N": ' + nbOn.join(' · '));
+  const fwOn = Object.keys(on).filter((k) => /^fw\.next\./.test(k)).map((k) => on[k]);
+  ok(fwOn.length === 9 && fwOn.every((x) => /^Bond \d+: (learns [A-Za-z ]+|a signature trick)( \+ a new habit)?$/.test(x)) && on['fw.next.2'] === 'Bond 3: learns Lie Down + a new habit', 'the Bond Next line lists only tricks and habits (' + on['fw.next.2'] + '); the town level\'s Next line is part C\'s');
+  const ddOn = Object.keys(on).filter((k) => /^dd\.rows\./.test(k)).map((k) => on[k]).join(' / ');
+  ok(!/Walk route|Places:|Tokyo:|House:|For the home|veggie patch/.test(ddOn) && /Shop: Gene Sniffer/.test(ddOn) && /Trick: Paw/.test(ddOn) && /Room for dog number 3/.test(ddOn), 'the Bond track keeps the Bond list (tricks, dog spots, gifts, the Gene Sniffer), no places, walks, houses or shop rows');
+  ok(TODAY['dd.rows.2'] === off['dd.rows.2'] && /Walk route/.test(off['dd.rows.2']), 'off: the Bond track is today\'s');
+
+  sec('B3. the carousel order');
+  const want3 = TODAY['route.order'].split(',').map((k, i) => [k, i]).sort((a, b) => (N('route', a[0]) || 1) - (N('route', b[0]) || 1) || a[1] - b[1]).map((x) => x[0]).join(',');
+  ok(off['route.order'] === TODAY['route.order'], 'off: today\'s order ' + off['route.order']);
+  ok(on['route.order'] === want3 && /sunflower,river/.test(on['route.order']) && TODAY['route.order'].replace('river,sunflower', 'sunflower,river') === on['route.order'], 'on: by the town level, stable; only Sunflower Lanes and Riverside swap: ' + on['route.order']);
+  const ord = await ev(() => { const L = window.__paw.lv, a = window.__paw.tr.keys().join(); L.test(false); const b = window.__paw.tr.keys().join(); L.test(true); return [a, b, window.__paw.tr.keys().join()]; });
+  ok(ord[1] === TODAY['route.order'] && ord[2] === ord[0], 'the order follows the switch at once (off, on again)');
+
+  sec('B2. the missions, little helps, the board, the notebook and the wish never offer a locked place or route');
+  const pick = () => ev(() => {
+    const P = window.__paw, w = P.lv.wish() || [], wa = (k) => ((w.find((o) => o[0] === k) || [])[1] || []);
+    return { ms: P.ms.eligible(), h: P.ms2.eligible(), wk: P.msw.pool.filter((id) => P.msw.gate(id)), kinds: w.map((o) => o[0]), walk: wa('walk'), place: wa('place'), nb: nbs(), lv: P.lv.level(), top: P.lv.top() };
+    function nbs() { const o = {}; if (!P.msn.nb()) return null; for (let n = 1; n <= P.msn.pages().length; n++) for (let i = 0; i < 6; i++) { let x = 0; try { x = P.msn.lock(n, i); } catch (e) { x = 0; } if (x && !(n === 2 && i === 2)) o[n + '.' + i] = x; } return o; } // 2.2: the Bond 2 party gift step (it stays on Bond, B1)
+  });
+  await fresh(BON, { bond: { level: 10, pts: K.TH[9] } }); // Bond 10 through the save (a level-up loop would give Bond XP): the two ladders apart
+  await ev(() => window.__paw.ff.setSat(true));
+  const b2lo = await pick();
+  const LOCKED_MS = ['walk_river', 'travel', 'tokyo_ride', 'tokyo_stamp', 'agility', 'agility_ros', 'travel_training', 'pool_paddle', 'pool_float', 'new_trail', 'ffstall', 'ffjob', 'gaze', 'travel_fuji', 'garden_plant', 'harvest', 'garden_water', 'cook', 'cook_new'];
+  ok(b2lo.lv === 1 && b2lo.top === 10, `Town level 1 with a Bond 10 dog (the two ladders apart): level ${b2lo.lv}, Bond ${b2lo.top}`);
+  ok(!b2lo.ms.filter((id) => LOCKED_MS.includes(id)).length && b2lo.ms.includes('trick'), 'MS_POOL: no locked place, route, Tokyo, garden, kitchen or Fun Fair job; tricks stay on Bond' + (b2lo.ms.filter((id) => LOCKED_MS.includes(id)).length ? ': ' + b2lo.ms.filter((id) => LOCKED_MS.includes(id)).join(', ') : ''));
+  ok(!b2lo.h.includes('h_paw') && !b2lo.h.includes('h_gwater'), 'MS_HELPS: no Dog Card paw shake (the Station) and no garden watering: ' + b2lo.h.join(','));
+  ok(!['w_harvest', 'w_water', 'w_cook', 'w_jobs', 'w_pool', 'w_routes'].some((id) => b2lo.wk.includes(id)), 'MS_BOARD: no garden, kitchen, town jobs, pool, or three routes with two open: ' + b2lo.wk.join(','));
+  ok(b2lo.walk.length && b2lo.walk.every((k) => ['park', 'town'].includes(k)) && !b2lo.kinds.includes('paddle') && !b2lo.kinds.includes('garden') && !b2lo.place.some((k) => N('place', k) > 1), 'the wish: walks only on the level 1 routes, no pool or garden, only level 1 places: ' + b2lo.walk.join(',') + ' | ' + b2lo.place.join(','));
+  const nbL = Object.values(b2lo.nb || {});
+  ok(nbL.length && nbL.every((x) => x >= 2) && nbL.includes(8), 'the notebook\'s locked steps name their levels (Riverside 8): ' + [...new Set(nbL)].join(','));
+  const b2off = await ev(() => { const P = window.__paw; P.lv.test(false); const r = { ms: P.ms.eligible(), h: P.ms2.eligible() }; P.lv.test(true); return r; });
+  ok(['walk_river', 'travel', 'agility', 'pool_paddle', 'tokyo_ride'].every((id) => b2off.ms.includes(id)) && b2off.h.includes('h_paw'), 'off (the same save): Bond 10 opens them as today');
+  await ev(() => window.__paw.lv.gain('board', 8570)); await t.lu();
+  const b2hi = await pick();
+  ok(b2hi.lv === 20 && ['walk_river', 'travel', 'agility', 'pool_paddle', 'tokyo_ride', 'new_trail', 'ffjob'].every((id) => b2hi.ms.includes(id)) && b2hi.h.includes('h_paw'), 'at Town level 20 they are offered again: ' + ['walk_river', 'travel', 'agility', 'pool_paddle', 'tokyo_ride', 'new_trail', 'ffjob'].filter((id) => !b2hi.ms.includes(id)).join(','));
+  ok(b2hi.walk.includes('beach') && b2hi.kinds.includes('paddle') && b2hi.nb && !Object.keys(b2hi.nb).length, 'level 20: the wish walks Seashell Beach, the pool is open, no notebook step is locked: ' + JSON.stringify({ walk: b2hi.walk, kinds: b2hi.kinds, nb: b2hi.nb }));
+  await ev(() => window.__paw.ff.setSat(null));
+
+  sec('B4. an owned item that is level-locked shows Owned and stays usable');
+  await fresh(BON, { bond: { level: 10, pts: 9000 } });
+  await ev(() => { const S = window.__paw.S; S.inv.clothes.push('Wizard Hat'); S.inv.houses.push('Snow Igloo'); S.inv.toys.push('Puzzle Feeder'); S.beds.push('Cloud Bed'); S.decor = S.decor || {}; S.decor['Sofa Ramp'] = { got: '2026-11-01', out: false }; });
+  const b4 = await ev(() => {
+    const P = window.__paw, B = {}, row = (n) => [...document.querySelectorAll('#modal .sitem')].find((r) => (r.querySelector('b') || {}).textContent === n);
+    const read = (shop, attr, tab, names) => { P.shop.shop(shop); if (attr) document.querySelector(`#modal [${attr}="${tab}"]`).click(); names.forEach((n) => { const r = row(n); B[n] = r ? { lockd: r.classList.contains('lockd'), act: (r.querySelector('.chip, button.btn') || {}).textContent || '' } : null; }); document.querySelector('#modal .panel .x').click(); };
+    read('boutique', null, null, ['Wizard Hat', 'Royal Castle Kennel', 'Bow Tie']); read('kibble', 'data-tab', 'toys', ['Puzzle Feeder', 'Agility Tunnel']); read('kibble', 'data-tab', 'tools', ['Gene Sniffer']);
+    read('builder', 'data-btab', 'houses', ['Snow Igloo', 'Royal Castle Kennel']); read('builder', 'data-btab', 'beds', ['Cloud Bed', 'Royal Canopy Bed']); read('builder', 'data-btab', 'furniture', ['Sofa Ramp', 'Ball Pit']);
+    P.shop.shop('boutique'); const t0 = document.getElementById('toasts'); t0.innerHTML = ''; const lr = row('Superhero Cape'); if (lr) lr.click(); B.tap = (t0.lastElementChild || {}).textContent || ''; document.querySelector('#modal .panel .x').click();
+    P.shop.equip('Wizard Hat'); B.worn = Object.values(P.S.outfit || {}).includes('Wizard Hat');
+    return B;
+  });
+  const own = ['Wizard Hat', 'Puzzle Feeder', 'Snow Igloo', 'Cloud Bed', 'Sofa Ramp'].filter((n) => !b4[n] || b4[n].lockd || !/Owned/.test(b4[n].act));
+  ok(!own.length, 'owned and above the level: Wizard Hat, Puzzle Feeder, Snow Igloo, Cloud Bed, Sofa Ramp show Owned, no lock' + (own.length ? ': ' + own.map((n) => n + ' ' + JSON.stringify(b4[n])).join(' | ') : ''));
+  ok(b4['Agility Tunnel'] && b4['Agility Tunnel'].lockd && b4['Agility Tunnel'].act === 'Level 13' && b4['Ball Pit'].act === 'Level 3' && b4['Royal Canopy Bed'].act === 'Level 19', 'not owned: the lock chip says the level (Agility Tunnel 13, Ball Pit 3, Royal Canopy Bed 19), even at Bond 10');
+  ok(b4['Gene Sniffer'] && !b4['Gene Sniffer'].lockd, 'the Gene Sniffer opens on Bond 6 as today (a Bond 10 dog)');
+  ok(/^Nope\. Superhero Cape comes in at town level 15\./.test(b4.tap), 'a tap on a level-locked row: ' + b4.tap);
+  ok(b4.worn, 'the owned Wizard Hat can still be worn');
+  const b4f = await ev(() => { const P = window.__paw, L = P.lv; L.test(false); const r = [L.lock('Agility Tunnel', 5, false), L.lock('Wizard Hat', 4, true)]; L.test(true); return r; });
+  ok(b4f[0] === false && b4f[1] === false, 'off: the Bond 10 dog opens every row, as today');
+  await t.closeX(); await t.lu();
+}, { map215: true, prefs: ON, timeout: 600000 });

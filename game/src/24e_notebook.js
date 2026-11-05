@@ -17,14 +17,14 @@ const NB_STICKERS = [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14]; // the 12 pages t
 const NB_TITLE = 'Town Regular', NB_FRAME = 'nbw';
 // the player's own day (the calendar's paws are local days). Through Date.now, so a clock stub moves it too
 const nbDay = () => localISO(new Date(Date.now()));
-// a Bond gate: 0 when it is open, else the Bond it opens at
-const nbAt = (n) => (topBond() >= n ? 0 : n);
-const nbRoute = (k) => nbAt((ROUTES[k] && ROUTES[k].bond) || 1);
-const nbPlace = (k, b) => nbAt((PLACES[k] && PLACES[k].bond) || b || 1); // b: its Bond when the place is not on this map yet
-const nbGarden = () => (gardenUnlocked() ? 0 : 2);
-const nbKitchen = () => (kitchenUnlocked() ? 0 : 3);
-const nbTokyo = () => nbAt(typeof TK_STATION_BOND === 'number' ? TK_STATION_BOND : 3);
-const nbJob = () => nbAt(typeof FF_GAMES === 'object' ? Math.min(...Object.keys(FF_GAMES).filter((k) => FF_GAMES[k].job).map((k) => FF_GAMES[k].bond || 1)) : 2);
+// a gate: 0 when it is open, else the Bond it opens at (v2.22, with lvOn: the town level, through wOpen / wNeed in 51_levels.js; off exactly today's)
+const nbAt = (n, kind, id) => (wOpen(kind, id, n) ? 0 : wNeed(kind, id, n));
+const nbRoute = (k) => nbAt((ROUTES[k] && ROUTES[k].bond) || 1, 'route', k);
+const nbPlace = (k, b) => nbAt((PLACES[k] && PLACES[k].bond) || b || 1, 'place', k); // b: its Bond when the place is not on this map yet
+const nbGarden = () => (gardenUnlocked() ? 0 : wNeed('feat', 'garden', 2));
+const nbKitchen = () => (kitchenUnlocked() ? 0 : wNeed('feat', 'kitchen', 3));
+const nbTokyo = () => nbAt(typeof TK_STATION_BOND === 'number' ? TK_STATION_BOND : 3, 'place', 'station');
+const nbJob = () => { const ks = typeof FF_GAMES === 'object' ? Object.keys(FF_GAMES).filter((k) => FF_GAMES[k].job) : []; if (!ks.length) return nbAt(2, 'ff', 'paper'); const a = ks.map((k) => nbAt(FF_GAMES[k].bond || 1, 'ff', k)); return a.includes(0) ? 0 : Math.min(...a); };
 const nbFfGame = (a, job) => a.kind === 'funfair' && typeof FF_GAMES === 'object' && !!FF_GAMES[a.game] && !!FF_GAMES[a.game].job === job;
 // page 1: a first-day step walked with Gerald (S.guide, 25_guide.js / FW_STEPS)
 const nbFw = (i) => { const g = S.guide; return !!(g && g.fw && ((g.done && !g.skipped) || (typeof g.step === 'number' && g.step > i))); };
@@ -42,7 +42,7 @@ const MS_NB = [
   { id: 'p2', t: 'Settling in', l: 'Puppies sleep up to 18 hours a day. A tired dog is a happy dog.', how: 'nap', st: 'i:zzz', steps: [
     { k: 'bath', t: 'Bath time', m: (a) => a.kind === 'bath' },
     { k: 'nap', t: 'Tuck {dog} in for a nap', m: (a) => a.kind === 'nap' },
-    { k: 'wear', t: 'Try on the Bond 2 party gift, or any outfit', m: (a) => a.kind === 'wear', lock: () => (S.inv.clothes.length ? 0 : 2) }] },
+    { k: 'wear', t: 'Try on the Bond 2 party gift, or any outfit', m: (a) => a.kind === 'wear', lock: () => (S.inv.clothes.length ? 0 : 2), bond: 1 }] }, // bond: this lock is the Bond 2 party gift, so it keeps its Bond text with town levels (v2.22)
   { id: 'p3', t: 'The veggie patch', l: 'Carrots are a crunchy snack that dogs can eat safely. Onions and garlic are never safe for dogs, so they never grow here.', how: 'garden', gift: 'seeds', steps: [
     { k: 'plant', t: 'Plant a seed', m: (a) => a.kind === 'garden' && a.what === 'plant', lock: nbGarden },
     { k: 'water', t: 'Water it', m: (a) => a.kind === 'garden' && a.what === 'water', lock: nbGarden },
@@ -227,7 +227,7 @@ function nbPageFB() {
 }
 function nbStepHTML(n, s, i) {
   const nb = nbNb(), done = nbStepsDone(n).includes(i), lock = done ? 0 : nbLockOf(s), cnt = (s.n || 1) > 1 && !done ? Math.min(s.n, nb.p[n + '.' + i] || 0) : -1;
-  const right = done ? `<span class="nb-ok">${esc(tt('ms2n.step_done', 'Done'))}</span>` : lock ? `<span class="nb-lock">${esc(tt('ms2n.opens_at', 'Opens at Bond {n}', { n: lock }))}</span>` : cnt >= 0 ? `<span class="nb-cnt">${tnum(cnt)} / ${tnum(s.n)}</span>` : '';
+  const right = done ? `<span class="nb-ok">${esc(tt('ms2n.step_done', 'Done'))}</span>` : lock ? `<span class="nb-lock">${esc(lvOn() && !s.bond ? tt('lv.nb_opens', 'Opens at level {n}', { n: lock }) : tt('ms2n.opens_at', 'Opens at Bond {n}', { n: lock }))}</span>` : cnt >= 0 ? `<span class="nb-cnt">${tnum(cnt)} / ${tnum(s.n)}</span>` : '';
   return `<li class="nb-step${done ? ' done' : ''}${lock ? ' locked' : ''}" data-step="${esc(s.k)}">${MS_TICK}<span class="nb-st">${esc(nbStepText(nbPage(n), s))}</span>${right}</li>`;
 }
 function nbGiftText(p) {

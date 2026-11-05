@@ -1,12 +1,12 @@
 /* ======================= MAP ======================= */
-function lockedAreas() { return [...new Set(Object.keys(ROUTES).filter((k) => topBond() < ROUTES[k].bond).concat(Object.keys(PLACES).filter((k) => topBond() < PLACES[k].bond)))]; }
+function lockedAreas() { return [...new Set(Object.keys(ROUTES).filter(lvRouteLocked).concat(Object.keys(PLACES).filter(lvPlaceLocked)))]; } // v2.22: wOpen (51_levels.js), today's topBond() test while lvOn() is off
 function pickArea(k) {
   SFX.click();
   if (k === 'shelter') return go('shelter');
   if (k === 'station') return tkStation(); // v2.11 Tokyo Trip: the ticket window (39_tokyo.js)
   if (PLACES[k]) return travelTo(k);
   const r = ROUTES[k]; if (!r) return;
-  if (topBond() < r.bond) { const rn = tdata('routes.' + k + '.n', r.n); nope(PICK([tt('map.locked_1', 'Nope. {place} opens at Bond {bond}. The trees need time to warm up to you.', { place: rn, bond: r.bond }), tt('map.locked_2', 'Nope. {place} is Bond {bond} only. There is a bouncer. He is a goose.', { place: rn, bond: r.bond }), tt('map.locked_3', 'Nope nope. Bond {bond} for {place}. Rules are rules (we made them up).', { place: rn, bond: r.bond })])); return; }
+  if (lvRouteLocked(k)) { const rn = tdata('routes.' + k + '.n', r.n); nope(lvOn() ? lvNopeRoute(rn, lvRouteN(k)) : PICK([tt('map.locked_1', 'Nope. {place} opens at Bond {bond}. The trees need time to warm up to you.', { place: rn, bond: r.bond }), tt('map.locked_2', 'Nope. {place} is Bond {bond} only. There is a bouncer. He is a goose.', { place: rn, bond: r.bond }), tt('map.locked_3', 'Nope nope. Bond {bond} for {place}. Rules are rules (we made them up).', { place: rn, bond: r.bond })])); return; }
   if (S.sleeping) { nope(tt('map.asleep', '{name} is asleep. Wake up first (Care menu).', { name: NAME() })); return; }
   if (S.stats.energy < 20) { nope(tt('map.too_sleepy', '{name} lies down at the gate. Too sleepy for a walk. Try a nap first.', { name: NAME() })); return; }
   go('walk', k);

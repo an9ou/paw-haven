@@ -102,7 +102,7 @@ function ffToyPay(want) {
 const ffSaturday = () => (prefs.ffSat === undefined || prefs.ffSat === null ? new Date().getDay() === 6 : !!prefs.ffSat);
 
 /* ---------------- unlocks (the level-up card and the Bond track) ---------------- */
-function ffUnlocks(L) { return ffReady() ? FF_KEYS.filter((k) => FF_GAMES[k].bond === L && L > 1).map((k) => tt('ff.unlock', 'Fun Fair: {game}', { game: ffName(k) })) : []; }
+function ffUnlocks(L) { return ffReady() && !lvOn() ? FF_KEYS.filter((k) => FF_GAMES[k].bond === L && L > 1).map((k) => tt('ff.unlock', 'Fun Fair: {game}', { game: ffName(k) })) : []; }
 
 /* ---------------- the place buttons and the game cards ---------------- */
 function ffHere(place) { const p = place || (S && S.place); return FF_KEYS.filter((k) => FF_GAMES[k].place === p && ffPlaceOk(k)).concat(p === 'market' ? ['stall'] : [], p === 'square' ? ['photo'] : []); }
@@ -124,13 +124,13 @@ on('yard:enter', () => { if (ffReady()) setTimeout(() => { try { ffPlaceBtn(); f
 on('scene:redraw', () => { if (ffReady() && !$('#placeBtns [data-ff]')) ffPlaceBtn(); });
 
 function ffCardHTML(k) {
-  const g = FF_GAMES[k], lock = g && topBond() < g.bond, who = ffWho(k);
+  const g = FF_GAMES[k], lock = g && !lvFfOpen(k), who = ffWho(k); // v2.22: the town level with lvOn (51_levels.js), today's Bond off
   const C = FF_CAPS[k], left = ffLeft(k);
   let line;
   if (k === 'stall') line = ffSaturday() ? tt('ff.stall_open', 'Open today. Up to {cap} coins this Saturday, {left} still to earn.', { cap: C.week, left }) : tt('ff.stall_closed', 'The stall opens on Saturdays.');
   else if (k === 'photo') line = ffContestLine();
   else line = left ? tt('ff.left', 'Coins today: {got} of {cap}', { got: C.day - left, cap: C.day }) : tt('ff.left_none', 'All {cap} coins earned today. Playing is still fun, and still gives Bond.', { cap: C.day });
-  const btn = lock ? `<button class="btn" data-ffgo="${k}" aria-disabled="true">${esc(tt('ff.locked', 'Opens at Bond {bond}', { bond: g.bond }))}</button>`
+  const btn = lock ? `<button class="btn" data-ffgo="${k}" aria-disabled="true">${esc(lvOn() ? tt('lv.ff_btn', 'Opens at level {n}', { n: wNeed('ff', k, g.bond) }) : tt('ff.locked', 'Opens at Bond {bond}', { bond: g.bond }))}</button>`
     : k === 'photo' ? `<button class="btn yes" data-ffgo="photo">${esc(tt('ff.photo_go', 'Take a photo'))}</button>`
     : `<button class="btn yes" data-ffgo="${k}">${esc(k === 'stall' ? tt('ff.stall_go', 'Open the stall') : g && g.job ? tt('ff.job_go', 'Start the job') : tt('ff.play', 'Play'))}</button>`;
   return `<li class="ff-card${lock ? ' locked' : ''}" data-k="${k}"><span class="ff-cic" aria-hidden="true">${art('item', FF_ICON[k])}</span><div class="ff-ctx"><b>${esc(ffName(k))}</b>${who ? `<span class="small ff-who">${esc(tt('ff.with', 'with {who}', { who }))}</span>` : ''}<span class="small">${esc(ffAbout(k))}</span><span class="small ff-cl">${esc(line)}</span></div>${btn}</li>`;
@@ -141,16 +141,18 @@ function ffCards() {
   const p = openModal(esc(ffBtnLabel(list)), `<ul class="ff-cards">${list.map(ffCardHTML).join('')}</ul>`, { cls: 'ff-pop' });
   p.querySelectorAll('[data-ffgo]').forEach((b) => { b.onclick = () => {
     const k = b.dataset.ffgo;
-    if (b.getAttribute('aria-disabled') === 'true') { nope(tt('ff.locked_line', '{game} opens at Bond {bond}.', { game: ffName(k), bond: FF_GAMES[k].bond })); return; }
+    if (b.getAttribute('aria-disabled') === 'true') { nope(ffLockLine(k)); return; }
     SFX.boop(840);
     if (k === 'stall') { closeModal(); ffStall(); return; }
     if (k === 'photo') { closeModal(); if (typeof phOpen === 'function' && !phOpen()) nope(tt('ff.photo_cant', 'Photo mode opens from the camera button in a place with your dog.')); return; }
     if (ffCan(k, true)) { closeModal(); ffStart(k); }
   }; });
 }
+// the locked game's line: the town level with lvOn, today's Bond line off
+function ffLockLine(k) { const g = FF_GAMES[k]; return lvOn() ? tt('lv.nope_ff', '{game} opens at town level {n}.', { game: ffName(k), n: wNeed('ff', k, g.bond) }) : tt('ff.locked_line', '{game} opens at Bond {bond}.', { game: ffName(k), bond: g.bond }); }
 // can game k start now? quiet = false shows why not
 function ffCan(k, loud) {
-  const g = FF_GAMES[k], d = D(), why = !g ? 'none' : topBond() < g.bond ? tt('ff.locked_line', '{game} opens at Bond {bond}.', { game: ffName(k), bond: g.bond })
+  const g = FF_GAMES[k], d = D(), why = !g ? 'none' : !lvFfOpen(k) ? ffLockLine(k)
     : S.sleeping || d.sleeping ? tt('ff.asleep', '{name} is asleep. The Fun Fair can wait.', { name: d.name })
     : ageMonths(d) < 3 ? tt('ff.young', '{name} is a bit little for this. Watching is fun too.', { name: d.name })
     : (S.stats.energy || 0) < FF_CAPS[k].en + 5 ? tt('ff.tired', '{name} is too tired to play. A nap would help.', { name: d.name })

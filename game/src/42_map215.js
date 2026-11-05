@@ -40,11 +40,12 @@ function mpName(k) {
   if (PLACES[k]) return townPlaceName(k);
   return (window.PawArt && PawArt.MAP215_NAMES && PawArt.MAP215_NAMES[k]) || k;
 }
-const mpLocked = (k) => !!(PLACES[k] && S && topBond() < PLACES[k].bond);
+const mpLocked = (k) => !!(PLACES[k] && S && lvPlaceLocked(k)); // v2.22: the town level with lvOn (51_levels.js), today's Bond off
 function mpAria(k) {
   if (k === 'shelter') return tt('town.visit_shelter', 'Visit the shelter');
   if (!PLACES[k]) return mpName(k);
-  return tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: mpLocked(k) ? 'yes' : 'no', place: mpName(k), bond: PLACES[k].bond });
+  if (!S) return tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: 'no', place: mpName(k), bond: PLACES[k].bond });
+  return lvGoTo(k, mpName(k));
 }
 const mpDay = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5 : NaN; };
 function mpSticker(k) {
@@ -65,7 +66,7 @@ function mpMapOpts() {
   if (!(jpOn() && PLACES.fujihill)) hide.push('fujihill'); // Japan off (or no Fuji art): no Lookout
   mpIds().forEach((k) => {
     if (hide.includes(k)) return; names[k] = mpName(k); labels[k] = mpAria(k);
-    if (mpLocked(k)) lock[k] = tt('map215.lock', 'Bond {bond}', { bond: PLACES[k].bond });
+    if (mpLocked(k)) lock[k] = lvOn() ? lvChip(lvPlaceN(k)) : tt('map215.lock', 'Bond {bond}', { bond: PLACES[k].bond });
     const st = mpSticker(k); if (st) stickers[k] = { kind: st, text: st === 'new' ? tt('map215.sticker_new', 'new') : tt('map215.sticker_moved', 'moved') };
   });
   const e = envNow();

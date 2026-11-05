@@ -96,6 +96,41 @@ function lvLiveRows() {
   if (typeof HM_DECOR === 'object') Object.keys(HM_DECOR).forEach((n) => { const d = HM_DECOR[n]; if (d.v27 && shop(d)) add('item', n, d.bond); });
   return R;
 }
+/* ---------------- part B: the call sites' helpers (V222.md 3.3) ----------------
+   Off, each is exactly today's topBond() test and the callers keep today's Bond text. Function declarations: the earlier files call them
+   at run time only (never at load). */
+function lvPlaceLocked(k) { return !!PLACES[k] && !wOpen('place', k, PLACES[k].bond); }
+function lvRouteLocked(k) { return !!ROUTES[k] && !wOpen('route', k, ROUTES[k].bond); }
+function lvPlaceN(k) { return wNeed('place', k, PLACES[k] ? PLACES[k].bond : 1); }
+function lvRouteN(k) { return wNeed('route', k, ROUTES[k] ? ROUTES[k].bond : 1); }
+function lvChip(n) { return tt('lv.chip', 'Level {n}', { n }); }
+// a locked walk route on the map (today's map.locked_1..3, the same three jokes in the same order)
+function lvNopeRoute(place, n) { return PICK([tt('lv.nope_route_3', 'Nope. {place} opens at town level {n}. The trees need time to warm up to you.', { place, n }), tt('lv.nope_route_1', 'Nope. {place} opens at town level {n}. There is a bouncer. He is a goose.', { place, n }), tt('lv.nope_route_2', 'Nope nope. Town level {n} for {place}. Rules are rules (we made them up).', { place, n })]); }
+// a town map place's label (14_town_places.js, 42_map215.js): today's town.go_to off
+function lvGoTo(k, place) {
+  const locked = lvPlaceLocked(k) ? 'yes' : 'no';
+  return lvOn() ? tt('lv.go_to', '{locked, select, yes {Go to {place} (locked, level {n})} other {Go to {place}}}', { locked, place, n: lvPlaceN(k) })
+    : tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked, place, bond: PLACES[k].bond });
+}
+// the lock tags the map art draws (o.tags: id -> "Level {n}"), only with lvOn; without them the art draws today's "Bond {n}"
+function lvTags(ids) { const o = {}; (ids || []).forEach((k) => { if (PLACES[k] || ROUTES[k]) o[k] = lvChip(PLACES[k] ? lvPlaceN(k) : lvRouteN(k)); }); return o; }
+// the item rows a level gates (a Set of names), for one shop render. Festival, edition, reward and Tokyo rows and the Gene Sniffer are not in it
+function lvItemRows() { return new Set(lvLiveRows().filter((r) => r.kind === 'item').map((r) => r.id)); }
+// a shop row's lock. Off: today's (topBond() < bond). On: a level row by its town level, never while owned; any other row keeps its Bond rule
+function lvShopLock(n, bond, owned, rows) {
+  if (!lvOn() || !(rows || lvItemRows()).has(n)) return topBond() < bond;
+  return !owned && !wOpen('item', n, bond);
+}
+// the lock chip of a shop row: "Level {n}" for a level row with lvOn, else today's "Bond {bond}"
+function lvShopChip(n, bond, rows) { return lvOn() && (rows || lvItemRows()).has(n) ? lvChip(wNeed('item', n, bond)) : tt('shop.bond_chip', 'Bond {bond}', { bond }); }
+// a Fun Fair game is open (FF_GAMES key)
+function lvFfOpen(k) { const g = FF_GAMES[k]; return !!g && wOpen('ff', k, g.bond); }
+// the route carousel order (46_tracks.js trSync): by the town level with lvOn (stable), by the Bond off (today's sort)
+function lvRouteNeed(k) { try { return wNeed('route', k, ROUTES[k].bond); } catch (e) { return ROUTES[k].bond; } } // at load the level tables are not there yet
+let lvSortedOn = null;
+function lvRouteSort() { const on = lvOn(); if (on === lvSortedOn) return; lvSortedOn = on; try { trSync(); } catch (e) { /* 46_tracks.js is not loaded */ } }
+// part C: the Town-level "Next" line (#lvNext) is built by lvNextSync(), called from fwNextSync (47_firstweek.js) when it exists
+
 // the rows a level opens, only those that exist now (part C turns them into the card's lines)
 function lvRowsAt(n) {
   const live = new Set(lvLiveRows().map((r) => r.kind + ':' + r.id));
@@ -242,8 +277,8 @@ function lvMailSend() {
   return true;
 }
 function lvTick() { if (!S || cur.mode === 'title' || !lvOn()) return; lvEnsure(); lvMailSend(); }
-on('yard:enter', () => { lvTick(); if (window.__paw && !window.__paw.lv) lvExpose(); });
-on('game:ready', () => setTimeout(() => { lvExpose(); lvTick(); }, 0));
+on('yard:enter', () => { lvRouteSort(); lvTick(); if (window.__paw && !window.__paw.lv) lvExpose(); });
+on('game:ready', () => setTimeout(() => { lvRouteSort(); lvExpose(); lvTick(); }, 0));
 
 /* ---------------- tests: window.__paw.lv (V222.md 7.1) ---------------- */
 function lvExpose() {
@@ -253,9 +288,10 @@ function lvExpose() {
     stars: () => (S && S.lv ? Object.assign({}, S.lv.st) : null), gain: (src, n, o) => lvGain(src, n, o), need: (kind, id, bond) => wNeed(kind, id, bond), open: (kind, id, bond) => wOpen(kind, id, bond),
     start: (save) => { const c = JSON.parse(JSON.stringify(save)); delete c.lv; lvStart(c); return c.lv; }, sync: () => { lvSync(S); return S && S.lv; }, ensure: () => lvEnsure(), day: () => lvDay(),
     unlocks: (n) => lvRowsAt(n), rows: () => lvLiveRows(), of: (x) => lvOf(x), bond: (id, l) => lvBond(id, l), mail: () => lvMailSend(), act: (k, d) => trackAct(k, d), queue: () => lvQueue.slice(),
-    test: (v) => { prefs.lvTest = !!v; return lvOn(); }, pref: (k, v) => { prefs[k] = v; return lvOn(); }, top: () => topBond(), bondUp: (n) => addBond(n, { raw: true }),
+    test: (v) => { prefs.lvTest = !!v; lvRouteSort(); return lvOn(); }, pref: (k, v) => { prefs[k] = v; lvRouteSort(); return lvOn(); }, top: () => topBond(), bondUp: (n) => addBond(n, { raw: true }),
     next: (L) => (typeof lvNextText === 'function' ? lvNextText(L) : null), sheet: () => (typeof lvOpen === 'function' ? lvOpen() : null), card: () => (typeof lvMaybeShow === 'function' ? lvMaybeShow() : null),
     AT: LV_AT.slice(), CAP: LV_CAP, STAR: LV_STAR, WALK: Object.assign({}, LV_WALK), FLOOR: LV_FLOOR.slice(), UNLOCK: Object.assign({}, LV_UNLOCK), SRC: JSON.parse(JSON.stringify(LV_SRC)), MILE: Object.assign({}, LV_MILE), TITLES: Object.assign({}, LV_TITLES),
+    wish: () => (typeof ddWishOpts === 'function' && S && S.dogs && S.dogs.length ? ddWishOpts(D()) : null), lock: (n, bond, owned) => lvShopLock(n, bond, !!owned), tags: (ids) => lvTags(ids),
     hb: {}
   };
 }

@@ -92,6 +92,11 @@ function fwHudTag() {
 function fwNextParts(n) {
   const out = [], tr = TRICKS.find((t) => t.bond === n);
   if (tr) out.push(tr.n === 'Signature' ? tt('fw.next_sig', 'a signature trick') : tt('fw.next_trick', 'learns {trick}', { trick: tTrick(tr.n) }));
+  if (typeof lvOn === 'function' && lvOn()) { // v2.22: Bond keeps tricks and habits; the outfits, walks, garden, houses and toys are on the town level (its Next line: part C, #lvNext)
+    if (n >= 2) out.push(tt('fw.next_habit', 'a new habit'));
+    if (n === 10) out.push(tt('fw.next_badge', 'the Best Friends badge'));
+    return out;
+  }
   const cl = CLOTHES.filter((c) => c.bond === n && !c.ed && !c.fest && !c.reward && !c.tokyo).length;
   if (cl) out.push(tt('fw.next_outfits', '{n, plural, one {a new outfit} other {# new outfits}}', { n: cl }));
   if (Object.keys(ROUTES).some((k) => ROUTES[k].bond === n)) out.push(tt('fw.next_walk', 'a new walk'));
@@ -103,6 +108,7 @@ function fwNextParts(n) {
 }
 function fwNextText(L, short) { if (L >= 10) return ''; const n = L + 1, p = fwNextParts(n).slice(0, short ? 1 : 2); return tt('fw.next_line', 'Bond {n}: {what}', { n, what: p.join(' + ') || tt('fw.next_love', 'even more love') }); }
 function fwNextSync() {
+  if (typeof lvNextSync === 'function') lvNextSync(); // v2.22 part C: the Town-level Next line (#lvNext, 51_levels.js) beside this Bond line
   const b = $('#hud .bond'); if (!b) return; let el = $('#fwNext');
   const txt = S && fwOn() && S.bond.level < 10 ? fwNextText(S.bond.level) : '';
   if (!txt) { if (el) el.hidden = true; FW.nextKey = ''; return; }

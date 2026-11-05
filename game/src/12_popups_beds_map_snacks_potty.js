@@ -201,7 +201,7 @@ function mapTipText(k) {
   const nm = (PLACES[k] && k !== 'yard' ? placeName(k) : names[k]) || k;
   if (here) return tt('popup.you_are_here', '{nm}: you are here', { nm });
   if (k === 'shelter') return tt('popup.visit_the_dogs', '{nm}: visit the dogs', { nm });
-  if (PLACES[k] && topBond() < PLACES[k].bond) return tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });
+  if (lvPlaceLocked(k)) return lvOn() ? tt('lv.place_need', '{nm}: level {n}', { nm, n: lvPlaceN(k) }) : tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });
   if (k === 'yard') return tt('popup.go_home', '{nm}: go home', { nm });
   if (k === 'market' || mpShopOf(k)) return tt('popup.go_shopping', '{nm}: go shopping', { nm });
   return tt('popup.go_hang_out', '{nm}: go hang out', { nm });

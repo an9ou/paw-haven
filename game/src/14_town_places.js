@@ -69,7 +69,7 @@ function jpPlaceSync() {
 }
 jpPlaceSync();
 // the hill is on the map and open (Bond 2): the gate of the Fuji missions and the letter
-function jpHillOpen() { return !!(S && PLACES.fujihill && topBond() >= PLACES.fujihill.bond); }
+function jpHillOpen() { return !!(S && PLACES.fujihill && wOpen('place', 'fujihill', PLACES.fujihill.bond)); } // v2.22: the town level with lvOn
 const PUBLIC_AUDIENCE = ['park', 'square', 'dogpark'];
 const isIndoor = () => !!(S && PLACES[S.place] && PLACES[S.place].out === false);
 
@@ -148,7 +148,8 @@ let MAPV = null;
 function mapArt(locked) {
   if (mpMapReady()) return mpMapArt(); // v2.15: the new town map (world F, 42_map215.js)
   const bonds = {}; Object.keys(PLACES).forEach((k) => { bonds[k] = PLACES[k].bond; });
-  const raw = art('scene', 'map', Object.assign({ locked, bonds }, jpOn() ? { jp: true } : {}, PLACES.fujihill ? { fujiPin: JP_MAP_PIN.big } : {}, tkMapOpts())); // v2.11: station = the Station pin (TOKYO ART D) // v2.8: jp = the Fuji landmark, fujiPin = where SCENE ART draws <g data-area="fujihill">
+  const tags = lvOn() ? lvTags(locked) : null; // v2.22: the lock tags say "Level {n}" (the art draws "Bond {n}" without them)
+  const raw = art('scene', 'map', Object.assign({ locked, bonds }, tags ? { tags } : {}, jpOn() ? { jp: true } : {}, PLACES.fujihill ? { fujiPin: JP_MAP_PIN.big } : {}, tkMapOpts())); // v2.11: station = the Station pin (TOKYO ART D) // v2.8: jp = the Fuji landmark, fujiPin = where SCENE ART draws <g data-area="fujihill">
   const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(raw || ''), W0 = m ? +m[1] : 1000, H0 = m ? +m[2] : 600;
   const big = W0 > 1500 && Array.isArray(PA().MAP_AREAS);
   if (big) return { W: W0, H: H0, svg: `<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, 0, 0, W0, H0)}</g>${jpMapPin(raw, JP_MAP_PIN.big)}${tkMapPin(raw, TK_MAP_PIN.big)}`, areas: PA().MAP_AREAS };
@@ -161,8 +162,8 @@ function mapArt(locked) {
 }
 // a plain doodle pin for a place the map art does not draw yet (the v1.6 town places, v2.8 Mt. Fuji Lookout). icon: the PawArt.icon name
 function fbPinSVG(k, [x, y], icon) {
-  const P = PLACES[k], lock = topBond() < P.bond, pn = townPlaceName(k);
-  return `<g data-area="${k}" class="fbpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(-44 -62)">${place(iconOr(icon, `<circle r="14" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>`), 0, 0, 88, 88)}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${pn.length > 13 ? 26 : 30}" fill="#5B3D32">${esc(pn)}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tt('town.bond_tag', 'Bond {bond}', { bond: P.bond }))}</text></g>` : ''}</g>`;
+  const P = PLACES[k], lock = lvPlaceLocked(k), pn = townPlaceName(k);
+  return `<g data-area="${k}" class="fbpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(-44 -62)">${place(iconOr(icon, `<circle r="14" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>`), 0, 0, 88, 88)}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${pn.length > 13 ? 26 : 30}" fill="#5B3D32">${esc(pn)}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(lvOn() ? lvChip(lvPlaceN(k)) : tt('town.bond_tag', 'Bond {bond}', { bond: P.bond }))}</text></g>` : ''}</g>`;
 }
 // UI/UX T7 (phones): the location chip floats over the top of the map, so the map can be pulled down past it and the top place names (Hilltop Meadow) come clear
 function mapTopPad() { if (!isPhone()) return 40; const st = $('#status'), pan = $('#mapPan'); if (!st || st.hidden || !st.offsetParent || !pan) return 40; return Math.max(40, Math.round(st.getBoundingClientRect().bottom - pan.getBoundingClientRect().top + 10)); }
@@ -204,7 +205,7 @@ function enterMap() {
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
   measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); if (isPhone()) { mapClearCtl(); if (A.v215) mapClearTitle(); } // v2.15: the house is its own building, the leader's dog stands at the pack's place
-  const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: topBond() < PLACES[k].bond ? 'yes' : 'no', place: townPlaceName(k), bond: PLACES[k].bond }) : k;
+  const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? lvGoTo(k, townPlaceName(k)) : k;
   if (A.v215) mpBindMap(svg); // v2.15: the buildings are buttons (lift, squash, shake; phones: tap travels, long-press names it), the travel walk
   else hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
   // drag pan, pinch + wheel zoom (pointer events: mouse and touch alike)

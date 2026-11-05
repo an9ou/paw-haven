@@ -930,7 +930,7 @@ function bigMap(k,o){
       if(!locked.has(id))cap();
       else{k.add(`<path d="${smooth(dense(hp,true,30),true)}" fill="#EFE9E0" fill-opacity=".55"/>`);k.hatch(hp,{gap:7,col:C.graph,op:.55,w:1.4});const cx=x-28,cy=y-10;
         k.add(`<path d="M${cx-14} ${cy}v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`);k.shape(RC(cx-22,cy-2,44,36),C.yellow,{w:2.4});k.add(`<circle cx="${cx}" cy="${cy+12}" r="4" fill="${C.ink}"/><path d="M${cx} ${cy+14}v9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`);
-        k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(`Bond ${bonds[id]||AREAS[id].bond}`,cx+71,cy+25,26,{col:'#fff'});cap()}});
+        k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(o.tags&&o.tags[id]!=null?String(o.tags[id]):`Bond ${bonds[id]||AREAS[id].bond}`,cx+71,cy+25,26,{col:'#fff'});cap()}});
     hot(k,'data-area',id,AREAS[id].label+(locked.has(id)?' (locked)':''),hp,g);
     if(locked.has(id))k.out[k.out.length-1]=k.out[k.out.length-1].replace(`data-area="${id}"`,`data-area="${id}" data-locked="1"`)}
   if(fp)k.jp(()=>mapFujiPin(k,fp[0],fp[1],locked.has('fujihill'),bonds.fujihill||2));// v2.8
@@ -1431,7 +1431,7 @@ const fresh=s=>{const suf='x'+(++_n);return s.replace(/pwa(\d+)/g,m=>m+suf)};
 PA.scene=function(name,o){
   if(o&&o.v215===true&&MINE_B[name])return renderB(name,o);// v2.15 B: the deep yard, house and Kibble Corner (block at the end)
   o=o||{};const s=SCENES[name]||SCENES.yard;name=SCENES[name]?name:'yard';const env=name==='map'?(o.jp===true?MAP_JP_ENV:DEF_ENV):mkEnv(o);// the map never shows time or weather (v2.8: only the Japan flag)
-  const lk=name==='map'?'|'+(Array.isArray(o.locked)?o.locked.slice().sort().join(','):'')+'|'+JSON.stringify(o.bonds||{}):'';
+  const lk=name==='map'?'|'+(Array.isArray(o.locked)?o.locked.slice().sort().join(','):'')+'|'+JSON.stringify(o.bonds||{})+(o.tags?'|'+JSON.stringify(o.tags):''):'';
   const pt=(name==='yard'&&(o.patch==='empty'||o.patch==='ready')?'|'+o.patch:'')+(name==='house'&&o.bed===false?'|nobed':'');
   if(name==='map'){const i=PA.MAP_AREAS.findIndex(a=>a.id==='station');if(o.station===true&&i<0)PA.MAP_AREAS.push({id:'station',x:MAP_STATION[0],y:MAP_STATION[1]});else if(o.station!==true&&i>=0)PA.MAP_AREAS.splice(i,1)}// v2.11: the Station pin is in MAP_AREAS only while it is drawn
   const fp=name==='map'&&env.jp&&Array.isArray(o.fujiPin)?'|fp'+o.fujiPin.join(','):'';// v2.8: the Mt. Fuji Lookout pin
