@@ -75,7 +75,7 @@ const SCAN = (sels) => {
       };
       // a feed / care / play tray never covers the dog or the bowl: the scene shrinks into the part above it
       const trayCheck = async (act, label) => {
-        await t.p.tap(`#bar [data-act=${act}]`); await t.until(() => !!document.querySelector('#dock > .tray'), null, 4000); await t.sleep(700);
+        await t.dock(act); await t.p.tap(`#bar [data-act=${act}]`); await t.until(() => !!document.querySelector('#dock > .tray'), null, 4000); await t.sleep(700); // v2.16: Feed and Play sit in the Care tray (dock opens it)
         await check(label, ['#dogHit', '#bowlG']); await fullyOn(label, ['#dogHit', '#bowlG']);
         await t.p.tap('#trayX'); await t.until(() => !document.querySelector('#dock > .tray'), null, 4000); await t.sleep(500);
       };
@@ -110,7 +110,7 @@ const SCAN = (sels) => {
       ok(strip.h <= 80, `${tag} nap: the strip is one line (${strip.h | 0}px tall)`);
       ok(strip.wh >= 43.5 && strip.ih >= 43.5 && strip.iw >= 43.5, `${tag} nap: Wake up and the info button are >= 44 px`);
       ok(strip.det, `${tag} nap: details are folded`);
-      await check('nap', ['#dogHit', '#houseG']);
+      await check('nap', ['#dogHit'], ['#houseG']); // v2.16.1: the phone camera keeps the dog in view; the kennel may sit at the right edge (the peek button looks), as in the yard check
       await t.p.tap('#napInfo'); await t.sleep(150);
       ok(await t.ev(() => !document.getElementById('napDet').hidden), `${tag} nap: a tap on ? opens the details`);
       await t.sleep(700); // the dog lifts while the details are open
