@@ -101,7 +101,7 @@ const HB_SECRET = {
   minpin: '{name} trots with high, proud steps, like a tiny show pony.',
   lab: '{name} thinks every puddle is a small lake, and every lake is for swimming.',
   malamute: '{name} digs a cool hole to lie in on warm days. A home-made bed.',
-  chow: '{name} has a blue-black tongue. Perfectly healthy, and very rare.',
+  chow: '{name} has a blue-black tongue. Perfectly healthy, and rare among dogs.',
   stdpoodle: '{name} loves water. Poodles were swimmers long ago, and {name} remembers.',
   schnauzer: '{name} gets a wet beard after every drink, then shares it with your knee.',
   westie: '{name} checks every hole on the walk, nose first, tail up like a flag.',
