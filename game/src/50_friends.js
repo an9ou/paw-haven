@@ -1389,6 +1389,7 @@ async function frGiftSend(fid, i, p, from) {
   FRV.busy = ''; btns.forEach((b) => { b.disabled = false; });
   if (r && r.ok) { // only now does the item leave the bag
     frDay(); frGiftTake(g); S.fr.gift = true; frMarkSent(fid, 'gift'); markDirty();
+    if (typeof lvGain === 'function') lvGain('fr', 5); // v2.22: town XP (the server said yes)
     frGiftAfter(from); try { SFX.pop(); } catch (e) { /* audio off */ } frWrapFx(i % 3);
     toast(tt('fr.gift_sent', 'Your gift is on its way!'), 'good');
     return true;

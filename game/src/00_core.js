@@ -833,6 +833,7 @@ function freshState(key, name, sex) {
   v2182Fields(st); st.newsSeen = nwLatest(); // v2.18.2 What's new: a brand-new save skips the news (the first-day guide shows what is there)
   v219Fields(st); // v2.19 Friends (V219.md 8)
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
+  v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
   return linkDogs(st);
 }
 let S = null;
@@ -901,6 +902,7 @@ function migrate(s) {
   v219Fields(s); // v2.19 Friends (V219.md section 8): additive
   rhythmFields(s); // Daily rhythm (docs/design/daily-rhythm.md): additive
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
+  v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
   return s;
 }
 /* Daily rhythm (owner, 3 Nov 2026; docs/design/daily-rhythm.md). Additive only: S.v stays 1.
@@ -1451,7 +1453,7 @@ let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
   const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
-  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; } // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
+  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; if (typeof lvBond === 'function') lvBond(S.dog.id, S.bond.level); } // v2.22: 20 town XP a Bond level, once per dog (off: only the level floor follows) // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 // Daily rhythm: the daily bonuses (care, Square goal, trick coins, beach dig, Pupcake, outfit, breakfast, dawn, first visits, walks) reset once a Japan day (00:00 JST), not every game day

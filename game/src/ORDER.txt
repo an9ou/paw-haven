@@ -68,4 +68,5 @@
 49_market.js
 49c_news.js
 50_friends.js
+51_levels.js
 23_boot.js

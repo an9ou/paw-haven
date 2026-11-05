@@ -144,6 +144,7 @@ on('act', msNbOnAct); // after msWeekOnAct (24d_week.js loads first), so the boa
 /* ---------------- gifts ---------------- */
 function nbFinish(n) {
   const nb = nbNb(); if (nbFinished(n)) return; nb.got.push(n); markDirty();
+  if (typeof lvGain === 'function') lvGain('nb', 10, { once: 'nb:' + n }); // v2.22: town XP a finished page
   const p = nbPage(n), page = nbTitle(p);
   if (p.gift === 'seeds') {
     if (!S.inv.seeds || typeof S.inv.seeds !== 'object') S.inv.seeds = {}; S.inv.seeds.carrot = (S.inv.seeds.carrot || 0) + 3;

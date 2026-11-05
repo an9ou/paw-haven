@@ -137,6 +137,7 @@ function msWeekFill() {
   if (wk.card >= MSW_CARD) { wk.card = 0; wk.cards = (wk.cards || 0) + 1; gift = msWeekCardGift(); wk.cg = { w: wk.w, n: gift.n }; if (wk.cards === 1 && typeof msCardSticker === 'function') msCardSticker(); }
   wk.lt = { w: wk.w, d: localISO(), ids: wk.list.filter((x) => x && x.done).map((x) => x.id), c: wk.card, g: gift ? gift.n : '' };
   ms2Life('boards'); markDirty(); msHudSync(true);
+  if (typeof lvGain === 'function') lvGain('board', 40, { once: 'w:' + wk.w }); // v2.22: town XP, once a week
   ms2Say(tt('ms2w.filled', "Gerald's board is filled! A stamp on your neighbour card, and a thank-you letter with {n} coins comes tomorrow morning.", { n: MSW_COINS }), 'gold', 'mswf');
   if (gift) ms2Say(gift.t === 'cloth' ? tt('ms2w.card_cloth', 'A full neighbour card! A gift for {name}: the {item}. It is in the Wardrobe.', { name: NAME(), item: shNameAny(gift.n) }) : tt('ms2w.card_food', 'A full neighbour card! A gift for {name}: a {item}. It is in the Feed tray.', { name: NAME(), item: shNameAny(gift.n) }), 'gold', 'mswc');
   ms2Sfx('kaching'); // waits for Gerald like the toasts

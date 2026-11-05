@@ -79,6 +79,7 @@ function msTierCheck(quiet) {
   if (msbGolds() >= MSB_GOLDS) msMedalGive(quiet);
   if (!got.length) return got;
   markDirty();
+  if (!quiet && typeof lvGain === 'function') got.forEach((g) => lvGain('badge', 15, { once: 'b:' + g.id + ':' + g.t })); // v2.22: town XP a tier (never on the quiet backfill)
   MSB.hush = []; // a full sticker page's gift joins the one badge toast (quiet: nothing is said, the gift is given all the same)
   try { if (typeof ddStickers === 'function') { msPagesSync(); ddStickers(true); } } catch (e) { /* no sticker book yet */ }
   const gifts = MSB.hush || []; MSB.hush = null;

@@ -200,7 +200,7 @@ function ms2OnAct(a) {
     let hit = false; try { hit = !!d.m(a, it); } catch (e) { hit = false; }
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
-    if (it.p >= it.n) { it.done = jstISO(); done++; ms2Life('help'); ms2Say(tt('ms2.help_done', 'Little help done: {help}.', { help: ms2HelpText(it, true) }), 'good', 'ms2h', (k) => tt('ms2.help_done_many', '{n} little helps done.', { n: k })); }
+    if (it.p >= it.n) { it.done = jstISO(); done++; ms2Life('help'); if (typeof lvGain === 'function') lvGain('help', 10); /* v2.22: town XP */ ms2Say(tt('ms2.help_done', 'Little help done: {help}.', { help: ms2HelpText(it, true) }), 'good', 'ms2h', (k) => tt('ms2.help_done_many', '{n} little helps done.', { n: k })); }
   });
   if (changed) { markDirty(); if (done) { MS2.dot = true; msHudSync(); } }
   const got = ms2PouchCheck();
