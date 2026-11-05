@@ -489,7 +489,7 @@ require('./test_lib').run('v220_missions', async (t) => {
     let day = ''; for (let i = 1; i < 200 && !day; i++) { const k = '2027-03-x' + i; if (G.wish(d.id, k)) day = k; }
     const mk = P.dd.make(day), gw = G.wish(d.id, day); out.make = mk.gm === gw.m && mk.k === gw.k;
     d.born = born; S.missions.grow[d.id] = {}; return out;
-  }, iso(2));
+  }, iso(3)); // v2.19.3: a 3-month puppy (under 3 months it can't walk yet, so its wish never asks for the first walk)
   ok(f2.n >= 8 && f2.n <= 35, 'a growing up moment is the wish on some days, not all (' + f2.n + ' of 60)');
   ok(f2.bad === 0 && Object.keys(f2.ks).length >= 2, 'only moments not done yet, that a wish can make come true: ' + Object.keys(f2.ks).join());
   ok(f2.make, 'the daily wish picker takes it (gm on the wish)');
