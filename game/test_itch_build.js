@@ -20,7 +20,9 @@ require('./test_lib').run('itch_build', async (t) => {
     ok(await p.evaluate(() => !!document.getElementById('itchNoDev') && !!document.getElementById('itchNoDevJs')), 'the itch.io hide rule and strip script are in the page');
     ok(await gone(), 'title screen: no #devBtn, no #devPanel');
     await t.adopt({ sex: 'girl' });
-    ok((await t.mode()) === 'yard' && await p.locator('#bar .act').count() === 7, 'the game starts: adopted, in the yard with 7 action buttons');
+    // today's bar (v2.16): phones show the option C bar Care / Walk / Map / More, the desktop all seven buttons
+    const acts = await p.evaluate(() => [...document.querySelectorAll('#bar > .act')].filter((b) => b.getClientRects().length).map((b) => b.dataset.act).join(','));
+    ok((await t.mode()) === 'yard' && (dev.o.device ? acts === 'caremenu,walk,map,more' : await p.locator('#bar .act').count() === 7), `the game starts: adopted, in the yard with today's bar (${dev.o.device ? 'Care, Walk, Map, More' : '7 action buttons'}: ${acts})`);
     await t.sleep(300);
     ok(await gone(), 'yard: no #devBtn, no #devPanel');
     // the dev button is drawn again by each scene, so go to a few: the map, then the park, then home
@@ -68,6 +70,7 @@ require('./test_lib').run('itch_build', async (t) => {
   // the GitHub Pages test copy's flags (tools/pages.js) never reach itch.io or /play/: Friends, Cantonese, v2.20 Missions v2 (MS2_LIVE), the password screen
   sec('no Pages-only test flags');
   const html = fs.readFileSync(path.join(ROOT, 'dist', 'itch', 'index.html'), 'utf8');
-  ok(!/window\.__ddFrTest=1|window\.__ddYueTest=1|window\.__ddMs2Test=1|dd_gate_v1/.test(html), 'dist/itch/index.html has no __ddFrTest, __ddYueTest or __ddMs2Test flag and no password screen');
-  ok(await p.evaluate(() => !window.__ddMs2Test && !!window.__paw.ms2 && window.__paw.ms2.on() === false), 'the itch.io copy runs with Missions v2 off (MS2_LIVE)');
+  // the same pattern as tools/itch.js: the real flags are a <script> tag of their own (tools/pages.js); the bare text also sits in the test hooks (__paw.ms2.pagesFlag, the Friends hook)
+  ok(!/<script>window\.__dd(Fr|Yue|Ms2)Test=1<\/script>|dd_gate_v1|id="ddGate"/.test(html), 'dist/itch/index.html has no __ddFrTest, __ddYueTest or __ddMs2Test flag tag and no password screen');
+  ok(await p.evaluate(() => !window.__ddMs2Test && !window.__ddFrTest && !window.__ddYueTest && !!window.__paw.ms2 && window.__paw.ms2.on() === false && !!window.__paw.lv && window.__paw.lv.on() === false), 'the itch.io copy runs with Missions v2 and Town levels off (MS2_LIVE), no test flag set');
 });

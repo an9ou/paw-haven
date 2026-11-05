@@ -102,6 +102,8 @@
 .rt-prev{position:relative;height:min(262px,max(90px,calc(100cqh - 165px)));border-radius:10px;overflow:hidden;border:2px solid #5B3D32}
 .rt-prev svg{width:100%;height:100%;display:block}
 .rt-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);font-size:24px;background:rgba(255,251,243,.9)}
+.rt-lock{white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis} /* v2.22 phone review: "Locked: level 7" stays one line inside the art */
+html[data-layout="phone"] .rt-lock{font-size:20px;letter-spacing:1px}
 .rt-card h3{margin:8px 0 2px;font-family:var(--font-hand);font-weight:700;font-size:34px;line-height:1}
 .rt-meta{display:flex;justify-content:space-between;align-items:center;font-size:18px}
 .rt-paws{display:flex;gap:2px}

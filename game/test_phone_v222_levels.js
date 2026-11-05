@@ -87,7 +87,14 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         ok(m.r[0] >= -1 && m.r[2] <= m.iw + 1 && m.r[1] >= 0 && m.r[3] <= m.ih + 1 && m.sw <= m.iw, `${tag}: the card fits the screen ${JSON.stringify(m.r.map(Math.round))}`);
         ok(m.ok && m.ok.w >= 44 && m.ok.h >= 44 && m.ok.on && (!m.overBar || m.ok.on), `${tag}: OK is a 44 px button on top, nothing under the bar ${JSON.stringify(m.ok)}`);
         ok(!m.small.length, `${tag}: every card text is 13 px or more ${m.small.slice(0, 4).join(', ')}`);
+        const nx = await ev(() => { const e = document.querySelector('#modal .lv-lunext'), b = document.querySelector('#modal .panel-body').getBoundingClientRect(); if (!e) return null; const rg = document.createRange(); rg.selectNodeContents(e); const r = rg.getBoundingClientRect(); return { l: r.left, r: r.right, bl: b.left, br: b.right, sw: e.scrollWidth, cw: e.clientWidth }; });
+        ok(nx && nx.r <= nx.br + 1 && nx.l >= nx.bl - 1 && nx.sw <= nx.cw + 1, `${tag}: the "Next:" line is whole inside the card (review: cut at 390) ${JSON.stringify(nx)}`);
+        // review must-fix 1: a toast that comes while the card is open waits, and comes in once it closes
+        await ev(() => window.__paw.toast('Toast while the card is open'));
+        const tq = await ev(() => { const ts = [...document.querySelectorAll('#toasts .toast')]; return { n: ts.length, live: ts.filter((e) => !e.classList.contains('tq')).length }; });
+        ok(tq.n >= 1 && tq.live === 0, `${tag}: a toast waits while the card is open (none on the card) ${JSON.stringify(tq)}`);
         await p.click('#lvOk'); await t.modalGone();
+        ok(await t.until(() => [...document.querySelectorAll('#toasts .toast:not(.tq)')].some((e) => /card is open/.test(e.textContent)) || !!document.querySelector('#modal .panel.celebrate'), null, 3000), `${tag}: it comes in once the card closes`);
       };
       // part D: the Profile habits card, scrolled into view, and the Bond card's habit box
       const habCheck = async (tag) => {
@@ -117,6 +124,24 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         ok(o.w >= 44 && o.h >= 44 && o.on && !m.small.length, `${tag}: Yay! is a 44 px button on top, every text 13 px or more ${m.small.slice(0, 3).join(', ')}`);
         await t.lu(); await t.luWait(800); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); }); await t.modalGone();
       };
+      sec(`${lang}: review fixes at level 1: stale "Nope" toasts, the route stamp`);
+      for (const [W, H] of SIZES.slice(0, 2)) {
+        await p.setViewportSize({ width: W, height: H }); await t.until((w) => innerWidth === w, W, 4000);
+        // a "Nope" from a sheet that closes goes with it (live or waiting)
+        await ev(() => { document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); window.__paw.lv.sheet(); window.__paw.toast('A plain toast'); window.__paw.lv.nope('Nope. A stale one from the sheet'); });
+        ok(await ev(() => [...document.querySelectorAll('#toasts .toast')].some((e) => /stale one/.test(e.textContent))), `${W}: the sheet's "Nope" is there while the sheet is open`);
+        await t.closeX(); await t.modalGone();
+        ok(await ev(() => ![...document.querySelectorAll('#toasts .toast')].some((e) => /stale one/.test(e.textContent)) && [...document.querySelectorAll('#toasts .toast')].some((e) => /plain toast/.test(e.textContent))), `${W}: closing the sheet drops its "Nope" (the plain toast stays)`);
+        await ev(() => { document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); window.__paw.go('map'); }); await t.untilMode('map');
+        await ev(() => window.__paw.lv.nope('Nope. A stale one from the map'));
+        await ev(() => window.__paw.go('routes')); await t.untilMode('routes'); await t.sleep(300);
+        ok(await ev(() => ![...document.querySelectorAll('#toasts .toast')].some((e) => /from the map/.test(e.textContent))), `${W}: a "Nope" from the map does not follow onto the walk carousel`);
+        // review must-fix 3: "Locked: level 7" is one line inside the card's art
+        const st = await ev(() => [...document.querySelectorAll('.rt-card .rt-lock')].map((e) => { const pr = e.closest('.rt-prev'), lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.35; return { t: e.textContent, one: e.offsetHeight < lh * 1.6, fit: e.scrollWidth <= e.clientWidth + 1 && e.offsetWidth <= pr.clientWidth - 16 }; }));
+        ok(st.length && st.every((x) => x.one && x.fit), `${W}: every route stamp is one whole line inside the art ${JSON.stringify(st.filter((x) => !x.one || !x.fit).slice(0, 3))} (${st.length} stamps)`);
+        if (W === 360) await t.SH(`${lang}_360_route_stamp`);
+        await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.sleep(200);
+      }
       // a level card at the narrowest size: levels 2-6 at once (the longest list of week 1)
       await p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 4000);
       await ev(() => window.__paw.lv.gain('board', 630)); await cardCheck(`${lang}_360`);
@@ -129,6 +154,13 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 5) P.addDog({ key: 'golden', sex: 'male', months: 20 }, 'Pal'); S.titles = S.titles || {}; S.titles['Town Know-it-all'] = '2026-11-01'; S.title = 'Town Know-it-all'; S.place = 'yard'; P.go('yard'); });
         await t.lu(); await t.calm(); await t.sleep(400);
         await hudCheck(`${tag} 5 dogs + title`); await t.SH(`${tag}_hud5`);
+        // review must-fix 4: the level-10 title "Friendly Neighbour" stays whole with a pack (it runs on under the pack chip)
+        await ev(() => { const S = window.__paw.S; S.titles['Friendly Neighbour'] = '2026-11-01'; S.title = 'Friendly Neighbour'; window.__paw.go('yard'); }); await t.calm(); await t.sleep(400);
+        await hudCheck(`${tag} 5 dogs + Friendly Neighbour`);
+        const fn = await ev(() => { const e = document.getElementById('hudTitle'), r = e.getBoundingClientRect(), b = document.getElementById('lvBtn').getBoundingClientRect(), c = document.querySelector('#hudPack .dchip:not([hidden])'), cr = c && c.getBoundingClientRect(), rg = document.createRange(); rg.selectNodeContents(e); const tr = rg.getBoundingClientRect(); return { t: e.textContent, whole: e.scrollWidth <= e.clientWidth + 1, end: Math.round(tr.right), star: Math.round(b.left), chip: cr ? [Math.round(cr.width), Math.round(cr.height)] : null }; });
+        ok(fn.t === 'Friendly Neighbour' && fn.whole && fn.end <= fn.star, `${tag}: "Friendly Neighbour" is whole with 5 dogs, before the star ${JSON.stringify(fn)}`);
+        ok(fn.chip && fn.chip[0] >= 44 && fn.chip[1] >= 44, `${tag}: the pack chip keeps its 44 px tap box ${JSON.stringify(fn.chip)}`);
+        await t.SH(`${tag}_hud5_friendly`);
         await sheetCheck(tag);
         await habCheck(tag);
       }

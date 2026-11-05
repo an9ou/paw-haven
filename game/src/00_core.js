@@ -1320,18 +1320,27 @@ const TOAST_MS = 2900;
 // its turn comes; o.now (an Undo toast) shows at once and the one it pushes aside waits again. Wider screens show up to three at once, as before.
 const toastLive = () => [...toasts.children].filter((e) => !e.classList.contains('tq'));
 function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = setTimeout(() => t.remove(), TOAST_MS); }
-function toastNext() { const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+// v2.22 phone review: while a celebration card (.panel.celebrate: a Bond card, the Bond 2 party, a town level or star card) is open on a phone,
+// toasts wait in the queue (and the live one steps back into it), so none lands on the card; they come in when it closes.
+const toastHold = () => isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate');
+// a "Nope" toast belongs to the screen it came from (o.scr: 's:<sheet number>' or 'v:<mode>'); phones drop it when that screen closes (toastDrop)
+let modalSeq = 0;
+const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
+function toastDrop(scr) { if (!toasts || !isPhone()) return; [...toasts.querySelectorAll('.toast[data-scr]')].forEach((e) => { if (e.dataset.scr === scr) { clearTimeout(e._tt); e.remove(); } }); }
+function toastPark() { toastLive().forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); }); }
+function toastNext() { const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
 if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
   if (o.group && isPhone()) { const same = [...toasts.children].find((e) => e.dataset.group === o.group); if (same) { n = (+same.dataset.n || 1) + 1; same.remove(); if (o.many) text = o.many(n); } }
   const t = document.createElement('div'); t.className = 'toast ' + kind + (n > 1 ? ' tmerge' : ''); t.textContent = text; // tmerge: a count update bumps, it does not fade in again
   if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
+  if (o.scr) t.dataset.scr = o.scr;
   if (isPhone()) {
-    const live = toastLive();
-    if (o.now) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
+    const live = toastLive(), hold = toastHold();
+    if (o.now && !hold) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
     toasts.appendChild(t);
-    if (live.length && !o.now) t.classList.add('tq'); else toastRun(t);
+    if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
     const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
   } else {
     toasts.appendChild(t); toastRun(t);
@@ -1475,7 +1484,7 @@ function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking d
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }
 function hideBubble() { bubble.hidden = true; clearTimeout(bubbleTimer); }
-function nope(text) { SFX.nope(); toast(text, 'bad'); }
+function nope(text) { SFX.nope(); toast(text, 'bad', { scr: toastScr() }); } // v2.22: tagged with its screen, so a phone drops it once that screen closes
 
 /* ---------------- stats ---------------- */
 function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty(); }
@@ -1571,15 +1580,16 @@ function doAct(a) {
 let modalClose = null;
 function openModal(title, bodyHTML, opts = {}) {
   if (cur.mode === 'yard' && popOpen()) S.sleeping ? sleepTray() : dockIdle();
+  if (!modal.hidden) toastDrop('s:' + modalSeq); modalSeq++; // v2.22: a sheet that is replaced takes its "Nope" toasts with it
   modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
-  if (isPhone()) toastWatchSheet(p); // toasts that came first (a walk's bonus) move off the new sheet
+  if (isPhone()) { if (toastHold()) toastPark(); toastWatchSheet(p); } // toasts that came first (a walk's bonus) move off the new sheet; a celebration card sends them back to wait
   return p;
 }
 function closeModal() {
-  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastWatchSheet(null); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
+  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastDrop('s:' + modalSeq); toastWatchSheet(null); toastNext(); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 function confirmIn(panel, html, yes = tt('core.yes', 'Yes'), no = tt('core.no', 'No')) {
@@ -1637,6 +1647,7 @@ function go(mode, arg) {
   cur.cleanup.splice(0).forEach((f) => { try { f(); } catch (e) { console.warn(e); } });
   hideBubble(); dock.innerHTML = ''; titleEl.hidden = true; view.className = '';
   if (mode !== 'title' && mode !== 'adopt') { if (modal.hidden === false && !arg?.keepModal) closeModal(); }
+  if (mode !== prevMode) toastDrop('v:' + prevMode); // v2.22: a "Nope" from the screen being left does not follow onto the next one (phones)
   cur.mode = mode; cur.arg = typeof arg === 'string' ? arg : null;
   if (mode === 'walk' && S && S.dogs && S.dogs.length > 1) greetFor = S.activeId;
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');

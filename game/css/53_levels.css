@@ -15,6 +15,7 @@
 .lv-next::before{content:"";position:absolute;width:42px;height:13px;top:-9px;left:calc(50% - 21px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(4deg)}
 .lv-next[hidden]{display:none}
 #stage.slimhud .lv-next,#stage.ffmode .lv-next{display:none}
+#stage.slimhud #lvBtn .lv-track{display:none} /* phone review 10: the slim HUD (map, walks) keeps the star without an empty track */
 /* the Bond Next tag (#fwNext) keeps its place right of the Bond meter, under the star; while it shows, the star's tag hangs one row lower (no overlap, and Gerald's card keeps the left) */
 #hud:has(#fwNext:not([hidden])) .lv-next{top:calc(100% + 58px)}
 /* narrow wide-screens (12_phone_v1.css orders the HUD): the star stays just before the coins */
@@ -37,6 +38,14 @@ html[data-layout="phone"] #hud.lvon .who{gap:4px}
 html[data-layout="phone"] #hud.lvon .namewrap{flex:0 1 auto;min-width:0}
 html[data-layout="phone"] #hud.lvon #hudName,html[data-layout="phone"] #hud.lvon #hudTitle{display:block;max-width:100%}
 html[data-layout="phone"] #hud.lvon #hudPack{flex-shrink:100} /* the chips still go first (down to the one 44 px chip), then the name and title */
+/* v2.22 phone review: with a title and a pack, the title (row 2) runs on under the pack chip, and the chip draws a smaller circle lifted above it
+   (its tap box stays 44 x 44), so "Friendly Neighbour" fits at 360 with 5 dogs */
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])):has(#hudPack > .dchip) #hudTitle{width:calc(100% + 48px);max-width:none}
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])) #hudPack{align-self:flex-start;margin-top:-9px}
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])) #hudPack .dchip{padding:3px 10px 17px}
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])) #hudPack .dchip::before{inset:1px 8px 15px}
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])) #hudPack .dchip .mood{right:6px;bottom:14px}
+html[data-layout="phone"] #hud.lvon .who:has(#hudTitle:not([hidden])) #hudPack .dmore{font-size:17px;padding:0 0 14px}
 html[data-layout="phone"] .lv-star{width:34px;height:34px}
 html[data-layout="phone"] .lv-n{font-size:15px}
 html[data-layout="phone"] #lvBtn .lv-track,html[data-layout="phone"] .lv-next{display:none}
@@ -61,11 +70,15 @@ html[data-layout="phone"] #lvBtn .lv-track,html[data-layout="phone"] .lv-next{di
 .lv-nextl,.lv-open ul{margin:0;padding-left:0;list-style:none;font-size:17px;line-height:1.4}
 .lv-nextl li::before{content:"\2726  ";color:var(--pink)}
 .lv-open summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:var(--font-hand);font-weight:700;font-size:22px}
+.lv-open summary::before{content:"";flex:none;width:0;height:0;margin-right:10px;border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent var(--ink);border-radius:2px;transform:rotate(-4deg);transition:transform .2s} /* phone review 6: a crayon-ish marker that turns open */
+.lv-open[open] summary::before{transform:rotate(86deg)}
+html[data-motion="off"] .lv-open summary::before{transition:none}
 .lv-open li{margin:0 0 4px}
 .lv-open li b{display:inline-block;margin-right:4px;padding:0 6px;border:1.5px solid var(--ink);border-radius:7px 9px 6px 8px;background:var(--w-yellow);font-size:15px}
 .lv-how{margin:2px 0 0;font-size:16px;color:var(--muted,#7A6255)}
 .lv-gerald{font-style:italic}
-.lv-lunext{font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.2}
+.lv-lunext{font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.2;padding-right:4px;overflow-wrap:anywhere} /* v2.22 review: the hand font's last stroke stays inside the card, a long line wraps */
+.lv-lu .lv-cardart{margin-bottom:8px} /* art review 8: the strip gets the Bond card's air above the text */
 html[data-layout="phone"] .lv-nextl,html[data-layout="phone"] .lv-open ul{font-size:16px}
 html[data-layout="phone"] .lv-togo,html[data-layout="phone"] .lv-today,html[data-layout="phone"] .lv-stcount,html[data-layout="phone"] .lv-how{font-size:15px}
 

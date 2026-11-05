@@ -9,6 +9,7 @@
 //   A9 the pace table 2.3 re-run on the built numbers is within one level.  S  the stars past level 20 count, never backfilled
 // Part B: B1-B4 (the call sites).  Part C: C1 off = no star, C2 the aria-label, the Next line and the sheet, C3 the Bond card first, then the level card,
 //   C4 a reload keeps an unshown card, C5 Gerald's line on a fresh save's first card only
+//   R  the review fixes: the level 3 card names no stall, the yard Garden button and lv:gain, a replaced card comes back, no visit XP for an early walk, the level 20 title, the careDays backfill
 // Part D: D1 40 breeds x 10 habit lines and table 4.3, the Profile card, the Bond card box, the diary; D2 a mix's secret is seeded and stable;
 //   D3 off the weights are today's, on the trait weight x1.5 (and the other "does it more" numbers); D4 the bath zoomies once per bath, never with Motion off;
 //   D5 one letter for a 3-dog save
@@ -64,7 +65,7 @@ run('v222_levels', async (t) => {
   ok(r.v === 1 && L0 && L0.from === 'fresh' && L0.xp === 0 && L0.lv === 1 && L0.shown === 1 && L0.floor === 0 && L0.mail === 1, 'fresh S.lv: xp 0, level 1, shown 1, floor 0, from fresh, S.v 1: ' + JSON.stringify(L0 && { xp: L0.xp, lv: L0.lv, floor: L0.floor, from: L0.from }));
   ok(L0 && L0.seen.yard === 1 && L0.seen.house === 1 && Object.keys(L0.seen).length === 2 && L0.bl[id0] === 1, 'seen = yard and house, bl = the starter at Bond 1');
   ok(L0 && L0.st && L0.st.n === 0 && L0.st.xp === 0 && L0.st.shown === 0 && r.mail === 0, 'the star counter starts at 0 and a fresh save gets no habits letter');
-  const K = await ev(() => { const L = window.__paw.lv; return { AT: L.AT, CAP: L.CAP, WALK: L.WALK, FLOOR: L.FLOOR, UNLOCK: L.UNLOCK, STAR: L.STAR, SRC: L.SRC, TH: window.__paw.fw.BOND_TH }; });
+  const K = await ev(() => { const L = window.__paw.lv; return { AT: L.AT, CAP: L.CAP, WALK: L.WALK, FLOOR: L.FLOOR, UNLOCK: L.UNLOCK, STAR: L.STAR, SRC: L.SRC, TH: window.__paw.fw.BOND_TH, TITLES: L.TITLES }; });
   ok(JSON.stringify(K.AT) === JSON.stringify(AT_C) && K.CAP === 150, 'LV_AT and LV_CAP are the contract\'s (2.2, the hard 150 cap)');
   ok(JSON.stringify(K.FLOOR) === JSON.stringify(FLOOR_C), 'LV_FLOOR by Bond 1-10 = 1, 8, 8, 11, 13, 15, 17, 19, 20, 20');
   ok(K.WALK.park === 8 && K.WALK.town === 8 && K.WALK.sunflower === 10 && K.WALK.river === 10 && K.WALK.hilltop === 11 && K.WALK.bamboo === 11 && K.WALK.woods === 12 && K.WALK.pier === 12 && K.WALK.cliffs === 13 && K.WALK.beach === 14, 'LV_WALK per route');
@@ -328,7 +329,9 @@ run('v222_levels', async (t) => {
   const on = await lockTexts(t);
   const UL = K.UNLOCK, N = (kind, id) => UL[kind + ':' + id];
   const BISC = 'shop.kibble.food.Bone-shaped Biscuit'; // the one row a fresh save meets later than today: Kibble Corner sells it at Bond 1, the town at level 2 (V222.md 3.2, As built A)
-  const keysOff = Object.keys(off).sort().join(), keysOn = Object.keys(on).filter((k) => k !== BISC).sort().join();
+  const NB_RIVER = 'nb.3.2'; // page 3's Riverside step: off it says "Opens at Bond 2"; on it keeps the short walk while the route is level-locked (code review 2), so it has no lock
+  const keysOff = Object.keys(off).filter((k) => k !== NB_RIVER).sort().join(), keysOn = Object.keys(on).filter((k) => k !== BISC).sort().join();
+  ok(NB_RIVER in off && !(NB_RIVER in on), 'on: page 3 offers the short walk instead of a Riverside step that is level-locked (off: ' + off[NB_RIVER] + ')');
   ok(!(BISC in off) && on[BISC] === 'Level 2', 'on: the Bone-shaped Biscuit comes in at level 2 for a fresh save: ' + on[BISC]);
   ok(keysOn === keysOff, 'on: level 1 locks the same rows as Bond 1 (level 1 = every Bond 1 row)' + (keysOn === keysOff ? '' : ': ' + Object.keys(on).filter((k) => !(k in off)).concat(Object.keys(off).filter((k) => !(k in on)).map((k) => '-' + k)).slice(0, 8).join(', ')));
   const bondLeft = Object.keys(on).filter((k) => !isTrick(k) && !isTool(k) && /Bond/.test(off[k]) && (/\bBond\b/.test(on[k]) || !/\blevel\b/i.test(on[k]))).map((k) => `${k}: "${on[k]}"`);
@@ -347,7 +350,7 @@ run('v222_levels', async (t) => {
   ok(on['mp.lock.river'] === 'Level 8' && on['route.btn.sunflower'] === 'Locked (level 7)' && on['shop.boutique.all.Bow Tie'] === 'Level 2' && /town level 6/.test(on['tk.station']) && /town level 4/.test(on.kitchen) && on['mp.label.salon'] === 'Go to Grooming Salon (locked, level 5)', 'spot texts: Riverside chip "Level 8", Sunflower Lanes "Locked (level 7)", Bow Tie "Level 2", the Station level 6, the kitchen level 4, the Salon label');
   ok(on['shop.kibble.tools.Gene Sniffer'] === off['shop.kibble.tools.Gene Sniffer'] && /Bond 6/.test(on['shop.kibble.tools.Gene Sniffer']), 'the Gene Sniffer keeps its Bond 6 lock: ' + on['shop.kibble.tools.Gene Sniffer']);
   const nbOn = Object.keys(on).filter((k) => /^nb\./.test(k) && !isTool(k)).map((k) => on[k]);
-  ok(nbOn.length && nbOn.every((x) => / \| Opens at level \d+$/.test(x)) && nbOn.some((x) => /Riverside.*level 8$/.test(x)), 'the notebook\'s lock tags say "Opens at level N": ' + nbOn.join(' · '));
+  ok(nbOn.length && nbOn.every((x) => / \| Opens at level \d+$/.test(x)) && !nbOn.some((x) => /Riverside/.test(x)), 'the notebook\'s lock tags say "Opens at level N": ' + nbOn.join(' · '));
   const fwOn = Object.keys(on).filter((k) => /^fw\.next\./.test(k)).map((k) => on[k]);
   ok(fwOn.length === 9 && fwOn.every((x) => /^Bond \d+: (learns [A-Za-z ]+|a signature trick)( \+ a new habit)?$/.test(x)) && on['fw.next.2'] === 'Bond 3: learns Lie Down + a new habit', 'the Bond Next line lists only tricks and habits (' + on['fw.next.2'] + '); the town level\'s Next line is part C\'s');
   const ddOn = Object.keys(on).filter((k) => /^dd\.rows\./.test(k)).map((k) => on[k]).join(' / ');
@@ -377,7 +380,7 @@ run('v222_levels', async (t) => {
   ok(!['w_harvest', 'w_water', 'w_cook', 'w_jobs', 'w_pool', 'w_routes'].some((id) => b2lo.wk.includes(id)), 'MS_BOARD: no garden, kitchen, town jobs, pool, or three routes with two open: ' + b2lo.wk.join(','));
   ok(b2lo.walk.length && b2lo.walk.every((k) => ['park', 'town'].includes(k)) && !b2lo.kinds.includes('paddle') && !b2lo.kinds.includes('garden') && !b2lo.place.some((k) => N('place', k) > 1), 'the wish: walks only on the level 1 routes, no pool or garden, only level 1 places: ' + b2lo.walk.join(',') + ' | ' + b2lo.place.join(','));
   const nbL = Object.values(b2lo.nb || {});
-  ok(nbL.length && nbL.every((x) => x >= 2) && nbL.includes(8), 'the notebook\'s locked steps name their levels (Riverside 8): ' + [...new Set(nbL)].join(','));
+  ok(nbL.length && nbL.every((x) => x >= 2) && !('3.2' in (b2lo.nb || {})), 'the notebook\'s locked steps name their levels; page 3 keeps the short walk while Riverside is level-locked (review): ' + JSON.stringify(b2lo.nb));
   const b2off = await ev(() => { const P = window.__paw; P.lv.test(false); const r = { ms: P.ms.eligible(), h: P.ms2.eligible() }; P.lv.test(true); return r; });
   ok(['walk_river', 'travel', 'agility', 'pool_paddle', 'tokyo_ride'].every((id) => b2off.ms.includes(id)) && b2off.h.includes('h_paw'), 'off (the same save): Bond 10 opens them as today');
   await ev(() => window.__paw.lv.gain('board', 8570)); await t.lu();
@@ -446,8 +449,9 @@ run('v222_levels', async (t) => {
   await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); });
   ok(await t.until(() => !!document.getElementById('lvStOk'), null, 4000), 'G: the star card follows the level 20 card');
   const g0 = await ev(() => ({ h2: document.querySelector('#modal h2').textContent, n: document.querySelectorAll('#modal .lv-stkcard .lv-sa svg').length, got: (document.querySelector('#modal .lv-stgot') || {}).textContent, many: /2 stars at once/.test(document.querySelector('#modal').textContent), shown: window.__paw.S.lv.st.shown }));
-  ok(g0.h2 === 'Star 2!' && g0.n === 2 && g0.got === 'A new sticker: Gold star and Bone.' && g0.many && g0.shown === 2, 'G: two stars at once = one card with both stickers ' + JSON.stringify(g0));
+  ok(g0.h2 === 'Star 2!' && g0.n === 2 && g0.got === 'New stickers: Gold star and Bone.' && g0.many && g0.shown === 0, 'G: two stars at once = one card with both stickers (st.shown moves on its close) ' + JSON.stringify(g0));
   await ev(() => document.getElementById('lvStOk').click()); await t.modalGone();
+  ok(await ev(() => window.__paw.S.lv.st.shown === 2), 'G: closed, st.shown is 2');
   c2 = await hudNow();
   ok(c2.n === '20' && c2.aria === 'Town level 20, star 2. Opens your town level.' && c2.next === '' && c2.title === 'Level 20 · star 2', 'level 20 with 2 stars: ' + JSON.stringify([c2.aria, c2.title, c2.next]));
   const c2t = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), r = { top: (p.querySelector('.lv-top') || {}).textContent, star: (p.querySelector('.lv-starline') || {}).textContent, togo: (p.querySelector('.lv-stars .lv-togo') || {}).textContent, n: (p.querySelector('.lv-stcount') || {}).textContent, next: p.querySelectorAll('.lv-nextl li').length, crown: !!p.querySelector('.lv-sic svg') }; document.querySelector('#modal .panel .x').click(); return r; });
@@ -469,8 +473,9 @@ run('v222_levels', async (t) => {
   const c3 = await ev(() => { const p = document.querySelector('#modal .panel.lv-lu'); return p ? { h2: p.querySelector('h2').textContent, gerald: (p.querySelector('.lv-gerald') || {}).textContent || '', list: [...p.querySelectorAll('.unlocks li')].map((l) => l.textContent), next: (p.querySelector('.lv-lunext') || {}).textContent, art: !!p.querySelector('.lv-cardart svg'), shown: window.__paw.lv.shown() } : null; });
   ok(c3 && c3.h2 === 'Town level 2!' && c3.art && c3.list.includes('Place: Dog Park') && /^Next: Level 3: Splash Pool \+ \S/.test(c3.next), 'the card: ' + JSON.stringify(c3));
   ok(c3 && c3.gerald === 'Gerald: That star is your town level. Each level opens a bit more of town.', 'C5: the first card of a fresh save has Gerald\'s line');
-  ok(c3 && c3.shown === 2, 'S.lv.shown follows the card');
+  ok(c3 && c3.shown === 1, 'S.lv.shown waits while the card is open (review: marked shown only once really shown)');
   await t.p.click('#lvOk'); await t.modalGone();
+  ok(await ev(() => window.__paw.lv.shown() === 2), 'S.lv.shown follows the card once it closes');
 
   sec('C4. a reload before the card keeps it; C5 no Gerald line on later cards');
   await ev(() => { window.__paw.lv.sheet(); window.__paw.lv.gain('board', 140 - window.__paw.lv.xp()); window.__paw.saveNow(); }); // level 3 while a sheet is open: no card yet
@@ -480,8 +485,8 @@ run('v222_levels', async (t) => {
   await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000);
   ok(await t.until(() => !!document.getElementById('lvOk'), null, 6000), 'after the reload the level 3 card shows on the calm yard');
   const c4 = await ev(() => { const p = document.querySelector('#modal .panel.lv-lu'); return p ? { h2: p.querySelector('h2').textContent, gerald: !!p.querySelector('.lv-gerald'), shown: window.__paw.lv.shown() } : null; });
-  ok(c4 && c4.h2 === 'Town level 3!' && !c4.gerald && c4.shown === 3, 'the level 3 card, without Gerald\'s line: ' + JSON.stringify(c4));
-  await t.p.click('#lvOk'); await t.modalGone();
+  ok(c4 && c4.h2 === 'Town level 3!' && !c4.gerald && c4.shown === 2, 'the level 3 card, without Gerald\'s line: ' + JSON.stringify(c4));
+  await t.p.click('#lvOk'); await t.modalGone(); ok(await ev(() => window.__paw.lv.shown() === 3), 'closed: shown 3');
   await t.sleep(1500); ok(await ev(() => !document.getElementById('lvOk')), 'a card shows once');
   await ev(() => window.__paw.lv.gain('board', 620 - window.__paw.lv.xp()));
   ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'levels 4-6 at once: one card');
@@ -498,6 +503,36 @@ run('v222_levels', async (t) => {
   ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'its next level shows a card');
   ok(await ev(() => !document.querySelector('#modal .lv-gerald')), 'the old save\'s first card has no Gerald line');
   await t.p.click('#lvOk'); await t.modalGone();
+
+  sec('R. the review fixes (docs/reviews/V222_review_*.md)');
+  await fresh(BON);
+  // code 3: the level 3 card and the Next line name nothing that is open already (the stall and the photo contest are open from level 1)
+  const r3 = await ev(() => { const L = window.__paw.lv; return { u3: L.unlocksText(3), n2: L.next(2), need: L.need('feat', 'stall', 2) }; });
+  ok(!r3.u3.some((x) => /stall|photo contest/i.test(x)) && !/stall/i.test(r3.n2) && r3.u3.length && r3.need === 3, 'level 3 lists no Saturday stall or photo contest (its mission gate stays at 3): ' + JSON.stringify(r3));
+  // phone 2: the yard's Garden button says the town level and opens with the level, without leaving the yard
+  await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard');
+  const gb0 = await ev(() => (document.querySelector('#placeBtns [data-pb=garden]') || {}).textContent);
+  ok(gb0 === 'Garden (level 2)', 'level 1: the yard button says "Garden (level 2)": ' + gb0);
+  await ev(() => { const L = window.__paw.lv; L.gain('board', L.AT[2] - L.xp()); });
+  ok(await t.until(() => (document.querySelector('#placeBtns [data-pb=garden]') || {}).textContent === 'Garden', null, 3000), 'level 2: it reads "Garden" at once (lv:gain), no yard re-entry');
+  await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); }); await t.modalGone();
+  const kb = await ev(() => { const P = window.__paw, k = P.lv.test(false); const off = P.lv.need('feat', 'kitchen', 3); P.lv.test(true); return off; });
+  ok(kb === 3, 'off, the kitchen still needs Bond 3 (its button keeps "Kitchen (Bond 3)")');
+  // code 5: a level card replaced by another sheet is not lost: shown moves only on its close
+  await ev(() => { const L = window.__paw.lv; L.gain('board', L.AT[3] - L.xp()); });
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'level 3: the card shows');
+  await ev(() => window.__paw.lv.sheet()); // another sheet replaces it (the card's close never ran)
+  ok(await ev(() => window.__paw.lv.shown() === 2), 'the replaced card is not marked shown');
+  await t.closeX(); await t.modalGone();
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 5000), 'it comes back on the next calm tick');
+  await t.p.click('#lvOk'); await t.modalGone(); ok(await ev(() => window.__paw.lv.shown() === 3), 'and is shown once closed');
+  // code 4: a walk that headed home at the start gives no first-visit XP
+  const r4 = await ev(() => { const P = window.__paw, S = P.S; delete S.lv.seen.woods; const x0 = P.lv.xp(); P.lv.act('walk', { area: 'woods', early: true, pack: 1 }); return { dx: P.lv.xp() - x0, seen: !!S.lv.seen.woods }; });
+  ok(r4.dx === 0 && !r4.seen, 'an early walk with no ground: no visit XP ' + JSON.stringify(r4));
+  // code 8 + 7: an old player who starts at 20 shows the level 20 title; a pre-v2.7 save (no careDays) gets spotsInit's backfill, not 0
+  const r8 = await ev(([b]) => { const L = window.__paw.lv, s = JSON.parse(JSON.stringify(b)); s.careDays = 90; s.missions = Object.assign({}, s.missions, { cards: 10 }); s.title = ''; s.titles = {}; const a = L.startSave(s); const s2 = JSON.parse(JSON.stringify(b)); delete s2.careDays; s2.title = ''; s2.dogs[0].born = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10); const c = L.startSave(s2); return { lv: a.lv.lv, title: a.title, xp2: c.lv.xp }; }, [base]);
+  ok(r8.lv === 20 && r8.title === K.TITLES[20], 'starts at 20 with the level 20 title: ' + JSON.stringify(r8));
+  ok(r8.xp2 >= 90 * 30, 'no careDays: the estimate counts the backfill (min(60, age - 10)) ' + r8.xp2);
 
   /* ================= part G: the star stickers past level 20 (V222.md Decided 4, As built G) ================= */
   sec('G1. a star fills: one sticker, its card once, kept over a reload; cosmetic only');
@@ -519,8 +554,8 @@ run('v222_levels', async (t) => {
   await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000);
   ok(await t.until(() => !!document.getElementById('lvStOk'), null, 6000), 'after the reload the star card shows on the calm yard');
   const g1c = await ev(() => { const p = document.querySelector('#modal .panel.lv-stc'); return p ? { h2: p.querySelector('h2').textContent, one: !!p.querySelector('.lv-stkcard.one .lv-sa svg'), n: p.querySelectorAll('.lv-stkcard .lv-sa').length, got: p.querySelector('.lv-stgot').textContent, shown: window.__paw.S.lv.st.shown, celebrate: p.classList.contains('celebrate') } : null; });
-  ok(g1c && g1c.h2 === 'Star 1!' && g1c.one && g1c.n === 1 && g1c.got === 'A new sticker: Gold star.' && g1c.shown === 1 && g1c.celebrate, 'the star card: ' + JSON.stringify(g1c));
-  await t.p.click('#lvStOk'); await t.modalGone(); await t.sleep(1800);
+  ok(g1c && g1c.h2 === 'Star 1!' && g1c.one && g1c.n === 1 && g1c.got === 'A new sticker: Gold star.' && g1c.shown === 0 && g1c.celebrate, 'the star card (st.shown moves on its close): ' + JSON.stringify(g1c));
+  await t.p.click('#lvStOk'); await t.modalGone(); ok(await ev(() => window.__paw.S.lv.st.shown === 1), 'closed, st.shown is 1'); await t.sleep(1800);
   ok(await ev(() => !document.getElementById('lvStOk')), 'the star card shows once');
   g1 = await sheetG();
   ok(g1.on.join() === '0' && g1.art === 1 && g1.n === '1 star sticker so far.', 'the sheet: the Gold star is on the page ' + JSON.stringify([g1.on, g1.n]));

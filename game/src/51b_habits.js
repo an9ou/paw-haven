@@ -115,7 +115,7 @@ const HB_SECRET = {
   cavalier: '{name} gazes at you like you are the best thing ever made. You might be.',
   jrt: '{name} can jump amazingly high for a small dog. Mostly to see over the fence.'
 };
-const HB = { bath: [], zooms: 0 }; // bath: dogs bathed and not yet back in the yard ({ id, t }); zooms: bath zoomies run (tests)
+const HB = { bath: [], zooms: 0, zg: {} }; // bath: dogs bathed and not yet back in the yard ({ id, t }); zooms: bath zoomies run (tests)
 
 /* ---------------- the switch and the bands ---------------- */
 const hbBond = (d) => Math.max(1, Math.min(10, Math.floor(+(d && d.bond && d.bond.level)) || 1));
@@ -262,7 +262,7 @@ function hbBathZoom(d) {
   const b = hbBand(d, 5), p = rmPers(d), f = grOn() ? grFloor() : null, mk = () => (f ? grZoomSteps(d, p, f, b === 'rare') : rmZoomSteps(d, p, b === 'rare'));
   let steps = mk(); if (!steps) return false;
   if (b === 'big') { const s2 = mk(); if (s2) steps = steps.concat(s2); }
-  packNext[d.id] = performance.now() + 60000;
+  packNext[d.id] = performance.now() + 20000; HB.zg[d.id] = packNext[d.id]; // a short guard (the loops take a few seconds); the next yard clears it if the queue was cut (V222 review)
   steps.push({ fn: () => { packNext[d.id] = performance.now() + RINT(3000, 7000) * IDLE.speed; } });
   rmQueue(d, steps); HB.zooms++; return true;
 }
@@ -272,6 +272,7 @@ on('act', (a) => {
   ids.forEach((id) => { if (!HB.bath.some((x) => x.id === id)) HB.bath.push({ id, t: now }); });
 });
 on('yard:enter', () => {
+  Object.keys(HB.zg).forEach((id) => { if (packNext[id] === HB.zg[id]) packNext[id] = 0; }); HB.zg = {};
   const now = performance.now(), l = HB.bath.filter((b) => now - b.t < 30000); HB.bath = []; // once per bath: a bath left for elsewhere is old news
   if (!l.length || !S || !lvOn() || hbMotionOff()) return;
   l.forEach((b, i) => { let n = 0;
