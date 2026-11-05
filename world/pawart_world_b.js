@@ -7377,7 +7377,7 @@ PA.MISSIONS={shelf:cups=>PA.prop('trophyshelf',{cups}),rosette:t=>serve('ms:rose
    sheet()           strip 600x80  the Level sheet header: the town on the left, a dotted path climbing a hill to a star flag, trees on the right. lv-strip.
    habit(cat)        icon 32x32  the habit rows, bold for 32 px: cat 1-10 or its key: 1 energy (paw with motion lines), 2 spot (a cushion with
                                  an X), 3 trait (a sparkle), 4 ask (a hand and a heart), 5 bath (bubbles), 6 ball (tennis ball), 7 pack (two paws),
-                                 8 face (a crayon smile), 9 sleep (a moon and zzz), 10 secret (a small envelope with a heart). Others draw 1.
+                                 8 face (a crude crayon dog's grin: floppy ears, a nose, a tongue), 9 sleep (a moon and zzz), 10 secret (a small envelope with a heart). Others draw 1.
    sticker(i)        icon 64x64  the star stickers past level 20, i 0-7 (others wrap): die-cut paper stickers with a white edge: 0 gold star,
                                  1 bone, 2 tennis ball, 3 paw heart, 4 kennel, 5 town house, 6 fire hydrant, 7 crayon dog face. */
 const LV_CATS=['energy','spot','trait','ask','bath','ball','pack','face','sleep','secret'];
@@ -7397,7 +7397,7 @@ function lvStar(frac,top){const f=Math.max(0,Math.min(1,+frac||0)),b=lvMk('icon'
   b.sh(E(24,DY,19.4,19.4,26),'#FFF8EA',{k:1/6,hatch:0,hl:0,lw:.36,base:PAPER,ink:'#B5A496',dr:0,under:1});
   const q0=rng(hashS('lv:track'));b.raw(b.st(lvArcD(24,DY,21.7,0,Math.PI*2,q0,.5)+'Z','#EADFCF',3.2,.95),'under');
   // the star: fat arms so the middle holds two digits, a soft orange side, crayon strokes only in the arms (the middle stays plain)
-  const S5=lvStarPts(b,cx,cy,18.9,12.9,.045);
+  const S5=lvStarPts(b,cx,cy,19.1,14.2,.04);
   const arms=b.st(b.jl(9,20.5,14.5,20)+b.jl(34.5,19.8,39.4,20.6)+b.jl(22.6,10.6,25.6,11)+b.jl(15,37.4,17.6,33.6)+b.jl(33,37.6,30.6,33.6),'#F7C64E',1.3,.85);
   b.sh(S5,LV_STAR,{k:.16,hatch:0,hl:0,lw:.56,base:'#FFF1B8',dr:.3,inner:arms,
     marks:[{pts:[[30,30],[48,22],[48,48],[24,48],[24,38]],fill:LV_STARD,op:.38,k:0}]});
@@ -7454,11 +7454,11 @@ function lvSheet(){const b=lvMk('prop','lv:sheet'),G=72;
   b.ln([[14,G+.6],[150,G],[300,G+1]],{w:1.3,col:GRAPH});b.ln([[300,G+1],[450,G+.4],[586,G+.8]],{w:1.3,col:GRAPH});
   // the hill (closed on the ground line), a dotted path climbing it, the star flag on top
   b.sh([[318,G],[346,G-14],[380,G-30],[414,G-38],[448,G-32],[482,G-16],[508,G]],C.green,{k:.2,hl:0,lw:.75,dr:.3,base:'#E6F4D9'});
-  b.raw(b.st(`M232 ${G-1}Q290 ${G-4} 330 ${G-6}Q372 ${G-8} 360 ${G-16}Q352 ${G-24} 390 ${G-28}Q410 ${G-31} 414 ${G-37}`,'#B89A7E',1.6,.85).replace('/>',' stroke-dasharray="2.6 3.4"/>'));
+  b.raw(b.st(`M232 ${G-1}Q290 ${G-4} 330 ${G-6}Q372 ${G-8} 360 ${G-16}Q352 ${G-24} 390 ${G-28}Q410 ${G-31} 414 ${G-37}`,'#A88566',2.4,.9).replace('/>',' stroke-dasharray="3.4 3.8"/>'));
   b.ln([[414,G-37],[415,G-68]],{w:1.7,col:C.woodD});
   b.sh([[415.4,G-68],[446,G-60],[415.6,G-51]],'#F08A86',{k:.08,hatch:0,hl:0,lw:.7,dr:.2,base:'#F9C3BE'});
   b.sh(lvStarPts(b,425.6,G-59.6,6,3,.04),LV_STAR,{k:.1,hatch:0,hl:0,lw:.45,base:'#FFF1B8',dr:0});
-  paw(b,270,G-5,3,'#E8C597',{lw:.3,a:.25});paw(b,304,G-8,3,'#E8C597',{lw:.3,a:.1});
+  paw(b,270,G-5,3,'#E8C597',{lw:.3,a:.25});paw(b,304,G-8,3,'#E8C597',{lw:.3,a:.1});paw(b,350,G-16,2.8,'#E8C597',{lw:.3,a:-.5});paw(b,380,G-34,2.8,'#E8C597',{lw:.3,a:.3});
   // the town on the left: houses and a little clock tower
   lvHouse(b,26,G,32,24,14,'#FDE6EC','#F28FA5',{win:[[.14,.26]],chim:1});
   lvHouse(b,68,G,22,38,13,'#FFF3D6','#E2B07E',{win:[[.2,.14],[.2,.5]],door:0});
@@ -7474,11 +7474,11 @@ function lvSheet(){const b=lvMk('prop','lv:sheet'),G=72;
   return lvCls(b.svg('0 0 600 80',' preserveAspectRatio="xMidYMid meet" aria-hidden="true"','Town level'),'lv-strip')}
 // the habit icons: drawn on the 64 icon grid (the icons' own weights), handed out as 32 x 32
 const LV_HB={
- energy(b){paw(b,39,35,10.2,C.wood,{a:.28,lw:1.05});b.ln([[2,24],[15,24]],{w:3});b.ln([[1,35],[13,35]],{w:3});b.ln([[4,46],[15,46]],{w:3})},
+ energy(b){paw(b,41,35,10.2,C.wood,{a:.28,lw:1.05});b.ln([[7,24],[18,24]],{w:3});b.ln([[6,35],[16,35]],{w:3});b.ln([[8,46],[18,46]],{w:3})},
  spot(b){b.sh([[8,40],[10,28],[20,22],[44,22],[54,28],[56,40],[50,49],[14,49]],C.lav,{k:.22,lw:1.05,hl:0,
     marks:[{pts:[[0,40],[64,40],[64,64],[0,64]],fill:C.lavD,op:.55,k:0}],det:[[[12,36],[32,39],[52,36]]],dw:1.3});
   [[8,30],[56,30],[9,46],[55,46]].forEach(([x,y])=>b.sh(E(x,y,3,3,8),'#F7B2C4',{hatch:0,hl:0,lw:.6}));
-  b.ln([[22,23],[42,9]],{w:4.6,col:C.redD});b.ln([[22,9],[42,23]],{w:4.6,col:C.redD})},
+  b.ln([[23,17],[41,4]],{w:4.4,col:C.redD});b.ln([[23,4],[41,17]],{w:4.4,col:C.redD})},
  trait(b){b.sh([[32,4],[37,25],[58,32],[37,39],[32,60],[27,39],[6,32],[27,25]],C.yel,{k:.18,lw:1.1,hl:0,marks:[{pts:[[32,32],[64,32],[64,64],[32,64]],fill:C.goldD,op:.45,k:0}]});
   b.ex('spark',52,11,6,'#F9C7D6');b.ex('spark',12,52,4.6,'#BFE6FA')},
  ask(b){ICONS.pet(b)},
@@ -7487,11 +7487,14 @@ const LV_HB={
  ball(b){b.shadow(32,58,17,3);b.sh(E(32,32,23,23,22),'#DDEB7E',{marks:[{pts:E(40,40,20,18,16),fill:'#BFD25A',op:.55}]});
   b.ln([[15,15],[25,27],[25,38],[16,50]],{w:3.4,col:'#fff'});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:3.4,col:'#fff'});
   b.ln([[15,15],[25,27],[25,38],[16,50]],{w:1.4});b.ln([[49,15],[39,27],[39,38],[48,50]],{w:1.4})},
- pack(b){paw(b,21,40,7.8,C.wood,{a:-.2,lw:1});paw(b,45,27,6.6,'#F6E4C8',{a:.22,lw:1});b.ex('heart',52,52,5,'#F7B2C4')},
- face(b){b.sh(E(32,33,24,23,24),'#FFE3B0',{hl:0,lw:1.05,marks:[{pts:E(16,40,4.6,3,10),fill:PINK,op:.55},{pts:E(48,40,4.6,3,10),fill:PINK,op:.55}]});
-  b.dot(23,27,2.6);b.dot(41,27,2.6);
-  b.sh([[18,37],[46,37],[42,46],[32,51],[22,46]],'#F58EA2',{k:.25,lw:.9,hl:0,marks:[{pts:[[14,30],[50,30],[50,41],[14,41]],fill:'#FFFFFF',k:0}]});
-  b.ln([[16,37],[32,40],[48,37]],{w:2.6})},
+ pack(b){paw(b,21,40,7.8,C.wood,{a:-.2,lw:1});paw(b,45,27,6.6,'#E8C597',{a:.22,lw:1});b.ex('heart',52,52,5,'#F7B2C4')},
+ face(b){// a crude crayon dog's grin: two floppy ears (not a pair), odd eyes, a big nose, a short open grin with a tongue
+  b.sh(E(12.6,30,6.4,13,14,.42),'#C99A72',{hl:0,lw:1,hatch:0});b.sh(E(52,33,5.8,11.4,14,-.62),'#C99A72',{hl:0,lw:1,hatch:0});
+  b.sh(E(32,34,20.4,19.4,24,.08),'#FFE3B0',{hl:0,lw:1.05,marks:[{pts:E(18,41,4,2.6,10),fill:PINK,op:.55},{pts:E(46.6,40,4,2.6,10),fill:PINK,op:.55},{pts:E(40,24,7,6,10),fill:'#E8C597',op:.8}]});
+  b.dot(24,28.6,2.3);b.dot(40.6,27,3);
+  b.sh(E(32.6,35.4,4.6,3.2,10),INK,{hatch:0,hl:0,lw:.6,base:INK});
+  b.sh([[29,42.2],[36.4,41.8],[36,47],[33,49.2],[29.8,47.2]],'#F58EA2',{k:.25,lw:.5,hl:0,hatch:0});
+  b.ln([[24,40.6],[28.4,43],[32.6,40.4],[36.8,42.8],[41.4,40]],{w:1.6});b.ln([[32.6,37.6],[32.6,40.6]],{w:1.3})},
  sleep(b){const cx=27,cy=37,p=[];
   for(let i=0;i<=16;i++){const a=(300-i*240/16)*Math.PI/180;p.push([cx+21*Math.cos(a),cy+21*Math.sin(a)])}
   for(let i=1;i<16;i++){const a=(96+i*168/16)*Math.PI/180;p.push([cx+12.5+18.2*Math.cos(a),cy+18.2*Math.sin(a)])}
@@ -7531,10 +7534,10 @@ const LV_ST=[
   b.sh(RR(12,31,8,10,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.8});b.sh(RR(44,31,10,10,2),'#E46F6B',{k:0,hatch:0,hl:0,lw:.8});
   b.sh(RR(16,22,32,5,2),'#FFD56B',{k:0,hatch:0,hl:0,lw:.75});b.sh(E(32,38,4.4,4.4,10),'#FFD56B',{hatch:0,hl:0,lw:.7});b.ex('glint',25,33,3.6)},
  b=>{lvEdge(b,cloudP(32,33,30,28,4,.12,44),.2);
-  b.sh(E(12,30,7,13,14,.35),'#C99A72',{hl:0,lw:.9});b.sh(E(52,30,7,13,14,-.35),'#C99A72',{hl:0,lw:.9});
-  b.sh(E(32,35,20,18,22),'#FFE3B0',{lw:.95,marks:[{pts:E(16,41,4.4,3,10),fill:PINK,op:.55},{pts:E(48,41,4.4,3,10),fill:PINK,op:.55},{pts:E(40,26,8,7,10),fill:'#E8C597',op:.8}]});
-  b.dot(24,32,2.3);b.dot(41,31,2.6);b.sh(E(32,38,3.4,2.4,10),INK,{hatch:0,hl:0,lw:.6,base:INK});
-  b.sh([[27,43],[37,43],[35,50],[32,52],[29,50]],'#F58EA2',{lw:.75,hl:0,hatch:0});b.ln([[23,42],[32,43.6],[41,42]],{w:1.8})}
+  b.sh(E(11.4,28.6,7.4,13.6,14,.5),'#C99A72',{hl:0,lw:.9});b.sh(E(53,34,6.2,11.6,14,-.72),'#B88A64',{hl:0,lw:.9});// odd ears: one up, one flopped
+  b.sh(E(32,35,20,18,22,.12),'#FFE3B0',{lw:.95,marks:[{pts:E(17,42,4.4,3,10),fill:PINK,op:.55},{pts:E(47,40,4,2.6,10),fill:PINK,op:.55},{pts:E(41,25.6,8.4,7,10),fill:'#E8C597',op:.8}]});
+  b.dot(23.4,33,2);b.dot(41.6,30.4,3.1);b.sh(E(33,38,3.8,2.6,10,.2),INK,{hatch:0,hl:0,lw:.6,base:INK});
+  b.sh([[28,43.6],[38,42.6],[37,49.6],[33.6,52],[30,49.6]],'#F58EA2',{lw:.75,hl:0,hatch:0});b.ln([[22.6,43.4],[33,44],[42,41]],{w:1.8})}
 ];
 function lvSticker(i){i=((i|0)%8+8)%8;const b=lvMk('item','lv:stk:'+i);LV_ST[i](b);// drawn edge to edge, handed out at 92 % so the edge and its shadow stay in the box
   return b.svg('0 0 64 64','',LV_STK[i]+' sticker').replace(/^(<svg[^>]*>)((?:<defs>[\s\S]*?<\/defs>)?)/,'$1$2<g transform="matrix(.92 0 0 .92 2.56 2.56)">').replace(/<\/svg>$/,'</g></svg>')}
