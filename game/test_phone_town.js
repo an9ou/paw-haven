@@ -183,6 +183,8 @@ async function suite(t, dev) {
   await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = 0; });
   await touchDrag(line([box2.x + box2.width / 2, box2.y + box2.height * 0.7], [box2.x + box2.width / 2, box2.y + box2.height * 0.3], 8), 20); await sleep(300);
   ok(await ev(() => !document.getElementById('modal').hidden), 'board: an upward swipe scrolls, it does not close the sheet');
+  // let the swipe's scroll settle first: a tap on a still-scrolling sheet only stops the scroll
+  { const st = () => ev(() => (document.querySelector('#modal .panel-body') || {}).scrollTop); let a = await st(); for (let i = 0; i < 20; i++) { await sleep(150); const b = await st(); if (b === a) break; a = b; } }
   await closeSheet(t);
   // visitors: a rehomed pup visits and is pet by touch
   await t.patch({ rehomed: [{ id: 'rh1', key: 'mutt', name: 'Pickle', sex: 'male', born: new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10), family: 'the Tanakas by the bakery', genes: null }] });
