@@ -29,5 +29,18 @@ function endCard(fmt, h, logo){ const wide=fmt!=='tall', AF='Andika', CF='Caveat
     rows.forEach((r)=>{ svg+=r.svg(x); }); }
   if(missing) svg+='<g data-safe><rect x="'+(cx-150)+'" y="'+(wide?SY+250:SY+470)+'" width="300" height="64" rx="14" fill="'+red+'"/><text x="'+cx+'" y="'+(wide?SY+293:SY+513)+'" font-family="'+AF+'" font-weight="700" font-size="36" fill="#fff" text-anchor="middle">PREVIEW</text></g>';
   return '<g class="endcard">'+svg+'</g>'; }
+// RedNote end card (owner, 5 Nov 2026: RedNote Reels of the kids' episodes): no link, no domain, no handles, no QR. The logo, a short line about
+// the game and the search line "浏览器搜 Doodle Doggo App 就能玩" (the bio's words; never "DoodleDoggo.app" with a dot, REDNOTE.md). Chinese in
+// LXGW WenKai (load 'lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css' from cdn.jsdelivr.net and await document.fonts.load('700 40px "LXGW WenKai"', words)).
+// endCardRN(fmt, logo[, words]) -> an SVG string; words = { tag, play } overrides the two lines.
+const RN_WORDS={ tag:'治愈系蜡笔狗狗游戏', play:'浏览器搜 Doodle Doggo App 就能玩' };
+function endCardRN(fmt, logo, words){ const wide=fmt!=='tall', ZF="'LXGW WenKai'", w=Object.assign({},RN_WORDS,words||{});
+  const cx=wide?960:475, LW=wide?820:700, LH=LW*280/900, LY=wide?250:470;
+  let svg='<svg x="'+(cx-LW/2).toFixed(1)+'" y="'+LY+'" width="'+LW+'" height="'+LH.toFixed(1)+'" viewBox="0 0 900 280">'+logo+'</svg>';
+  const TY=LY+LH+(wide?90:105);
+  svg+=centred([{s:w.tag,size:wide?62:56,fill:'#8A7468'}],cx,TY,ZF).svg;
+  svg+=pill(w.play,cx,TY+(wide?130:125),wide?60:44,ZF,{fill:'#FFE3A1',padX:wide?46:30}); // tall: 44 px keeps it inside SAFE
+  return '<g class="endcard">'+svg+'</g>'; }
 `;
-module.exports = { ENDCARD_JS, handles };
+const RN_FONT_CSS = 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css';
+module.exports = { ENDCARD_JS, handles, RN_FONT_CSS };
