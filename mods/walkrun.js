@@ -279,6 +279,7 @@ const CSS = `
 .pw-pt .pw-time{flex:1 1 100%;min-width:0}
 .pw-pt .pw-hud>*{order:2}.pw-pt .pw-hud>.pw-time{order:0}.pw-pt .pw-hud>.pw-pchip{order:1}.pw-pt .pw-hud.pw-haspw>.pw-time{flex-basis:calc(100% - 40px)} /* v2.19.1: on portrait phones the power chip sits at the end of the time row (the time bar gives it room), so the HUD never wraps to a third row */
 .pw-cp .pw-time{min-width:110px}
+.pw-pt .pw-tpop{right:46px;top:-8px;font-size:28px} /* layout audit: on portrait phones the -3s pops over the time bar, left of the seconds, not on the pause button or past the edge */
 .pw-pt .pw-hud b,.pw-cp .pw-hud b{font-size:22px}
 .pw-pt .pw-ic,.pw-cp .pw-ic{width:24px;height:24px}
 .pw-pt .pw-nose,.pw-cp .pw-nose{min-width:0;gap:4px}

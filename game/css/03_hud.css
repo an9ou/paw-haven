@@ -32,3 +32,12 @@
 .iconbtn{width:48px;height:48px;flex:none;padding:7px;display:grid;place-items:center;--wash:var(--w-cream)}
 .iconbtn svg{width:32px;height:32px}
 
+/* layout audit (5 Nov 2026): with a big pack the wide-screen HUD leaves the four meters too little room (their icons ran into the bars). When the
+   meter strip is narrower than four whole meters they sit two by two, a little smaller; very narrow, the numbers step out and the bars alone show the levels */
+html:not([data-layout="phone"]) #hud .meters{container:hudm/inline-size;flex-wrap:wrap;row-gap:2px;align-content:center;margin-block:-3px}
+@container hudm (max-width:430px){
+  #hud .meters .meter{flex:1 1 calc(50% - 7px);max-width:none;gap:4px}
+  #hud .meters .meter .ic{width:22px;height:22px}
+  #hud .meters .meter .num{font-size:15px;min-width:22px}
+}
+@container hudm (max-width:190px){ #hud .meters .meter .num{display:none} }

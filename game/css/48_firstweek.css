@@ -49,6 +49,7 @@ html[data-layout="phone"] #stage.tk-in #bar.optc{grid-template-columns:repeat(3,
 html[data-layout="phone"] #bar.optc > .act{min-height:80px;gap:4px;padding:6px 2px 4px}
 html[data-layout="phone"] #bar.optc .act .ic{width:38px;height:38px}
 html[data-layout="phone"] #bar.optc .act > span:not(.ic){font-size:19px;letter-spacing:0;transform:none;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+html[data-layout="phone"] #bar.optc .act > span:not(.ic):not(.fw-newtag){padding:0 3px 2px} /* layout audit: room inside the clip for Caveat's descenders and last stroke (de "Pflege", "Karte" lost their last letter) */
 #bar .act[data-act="caremenu"]{--wash:var(--w-blue)} #bar .act[data-act="more"]{--wash:var(--w-lilac)}
 #bar .act.pop{transform:translateY(-3px) rotate(-1deg)!important;box-shadow:inset 0 -5px 0 -1px rgba(242,143,165,.55)}
 .barpop{position:absolute;bottom:calc(100% + 10px);z-index:8;display:flex;gap:8px;padding:10px 10px 12px;max-width:calc(100% - 12px);box-sizing:border-box;

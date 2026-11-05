@@ -1280,26 +1280,48 @@ function phChipClear() { if (!isPhone()) return 0; const st = $('#status'), w = 
 // Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
 // or its title, never on them. Returns the toast element.
 const TOAST_MS = 2900;
+// Layout audit (5 Nov 2026): phones show one toast at a time. The others wait in #toasts, hidden (class tq), and each gets its full TOAST_MS when
+// its turn comes; o.now (an Undo toast) shows at once and the one it pushes aside waits again. Wider screens show up to three at once, as before.
+const toastLive = () => [...toasts.children].filter((e) => !e.classList.contains('tq'));
+function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = setTimeout(() => t.remove(), TOAST_MS); }
+function toastNext() { const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
   if (o.group && isPhone()) { const same = [...toasts.children].find((e) => e.dataset.group === o.group); if (same) { n = (+same.dataset.n || 1) + 1; same.remove(); if (o.many) text = o.many(n); } }
   const t = document.createElement('div'); t.className = 'toast ' + kind + (n > 1 ? ' tmerge' : ''); t.textContent = text; // tmerge: a count update bumps, it does not fade in again
   if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
-  toasts.appendChild(t);
-  while (toasts.children.length > 3) toasts.firstChild.remove();
+  if (isPhone()) {
+    const live = toastLive();
+    if (o.now) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
+    toasts.appendChild(t);
+    if (live.length && !o.now) t.classList.add('tq'); else toastRun(t);
+    const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
+  } else {
+    toasts.appendChild(t); toastRun(t);
+    while (toasts.children.length > 3) toasts.firstChild.remove();
+  }
   toastPlace();
-  setTimeout(() => t.remove(), TOAST_MS);
   return t;
 }
 function toastPlace() {
   const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
-  if (!ph) return;
+  if (!ph) { // layout audit: on wide screens the toasts start under the "Next" line that hangs below the HUD's Bond meter (47_firstweek.js), never on it
+    const nx = $('#fwNext'); if (!modScr && !hud.hidden && nx && nx.offsetParent && !nx.hidden) { const sr = stage.getBoundingClientRect(), k = sr.width / (stage.offsetWidth || sr.width) || 1, nb = (nx.getBoundingClientRect().bottom - sr.top) / k + 8; if (nb > parseFloat(toasts.style.top)) toasts.style.top = Math.round(nb) + 'px'; }
+    return;
+  }
+  // layout audit: over a walk's how-to or pause card the toast sits on the HUD row, clear of the card's title
+  if (modal.hidden && !modScr && !hud.hidden && $('#modHost:not([hidden]) .pw-ov:not([hidden])')) toasts.style.top = Math.max(6, (parseFloat(getComputedStyle(hud).paddingTop) || 4) + 2) + 'px';
   // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Doodle Doggo Shelter" sign or the Adopt me board
   const low = cur.mode === 'shelter' && modal.hidden && dock.firstElementChild;
   if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
   stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
   if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
+  // layout audit: a toast that would sit across the look-left / look-right buttons (39_roam.css) narrows to the space between them
+  toasts.classList.remove('tnarrow');
+  const tr = modal.hidden && toasts.offsetHeight ? toasts.getBoundingClientRect() : null;
+  if (tr && [...view.querySelectorAll('.rm-look')].some((b) => { if (!b.offsetParent) return false; const r = b.getBoundingClientRect(); return r.top < tr.bottom + 4 && r.bottom > tr.top - 4; })) toasts.classList.add('tnarrow');
 }
 // stage y for the toast column while a sheet is open. Layout boxes (offsetTop), so the sheet's slide-in transform doesn't move the answer.
 function toastSheetTop() {

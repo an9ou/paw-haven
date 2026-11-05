@@ -245,21 +245,24 @@ function msLines(t, fs, w, whole) { // whole: null when a word would have to be 
 }
 // returns { text } or, when the row was measured at 13 px, { text, fs: 13 }: the art then draws it at 13 px even as 2 lines (v2.14 fix: rows
 // measured at 13 px but drawn at 16 px ran into the "1/3" counter)
-function msRowText(t, max = 3) { // max: the lines a row may take (Daily rhythm: 6 on the one-mission card, which has the room of three rows)
-  if (!MS_WIDE.test(t)) return { text: esc(t) };
-  let L = msLines(t, 16, MS_ROW_W), fs = 16;
+function msRowText(t, max = 3, w = 0) { // max: the lines a row may take (Daily rhythm: 6 on the one-mission card, which has the room of three rows)
+  // w (layout audit, 5 Nov 2026): a Latin row on the one-mission card with no counter is measured to this width too; the art's own 14-letter wrap
+  // left it in a narrow column (4 lines in German) with the right half of the row empty
+  if (!MS_WIDE.test(t) && !w) return { text: esc(t) };
+  const W = MS_WIDE.test(t) ? MS_ROW_W : w;
+  let L = msLines(t, 16, W), fs = 16;
   if (!L) return { text: esc(t) };
   const r = (text) => (fs === 13 ? { text, fs } : { text });
-  if (L.length > 2 || !msLines(t, 16, MS_ROW_W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
-    fs = 13; L = msLines(t, 13, MS_ROW_W);
+  if (L.length > 2 || !msLines(t, 16, W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
+    fs = 13; L = msLines(t, 13, W);
     if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
-    if (L.length > max) { L = L.slice(0, max); msCtx.font = msFont(13); let l = L[max - 1]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[max - 1] = l + '…'; }
+    if (L.length > max) { L = L.slice(0, max); msCtx.font = msFont(13); let l = L[max - 1]; while (l.length > 1 && msCtx.measureText(l + '…').width > W) l = l.slice(0, -1); L[max - 1] = l + '…'; }
   }
   if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
   return r(L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' '));
 }
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it), list.length === 1 ? 6 : 3), { done: !!it.done, p: it.p || 0, n: it.n })), o = Object.assign({ items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') }, items.length === 1 ? { one: true } : {}); // Daily rhythm: one mission, one row (o.one) and a 0/1 badge
+  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it), list.length === 1 ? 6 : 3, list.length === 1 && !(it.n > 1) ? 96 : 0), { done: !!it.done, p: it.p || 0, n: it.n })), o = Object.assign({ items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') }, items.length === 1 ? { one: true } : {}); // Daily rhythm: one mission, one row (o.one) and a 0/1 badge
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }

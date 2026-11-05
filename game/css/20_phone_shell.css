@@ -64,7 +64,7 @@ html[data-layout="phone"]:lang(th) #hud:not(.hexp):not(:has(.buffchip:not([hidde
 html[data-layout="phone"] #hud.hexp .meters{grid-area:2/1/3/-1;justify-self:stretch;width:auto}
 html[data-layout="phone"] #hud.hexp .bond{grid-row:3;margin-left:0;max-width:none}
 html[data-layout="phone"] #hud.hexp .buffchip{grid-row:3;max-width:calc(100% - 150px)}
-html[data-layout="phone"] #hudTitle{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-layout="phone"] #hudTitle{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:4px} /* layout audit: the room for Caveat's last stroke, which the clip cut ("Know-it-al") */
 html[data-layout="phone"] #hud.hexp .meters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;align-items:center}
 html[data-layout="phone"] #hud.hexp .meter{min-height:36px;width:auto;gap:6px}
 html[data-layout="phone"] #hud.hexp .meter .num{font-size:15px;min-width:24px;text-align:right}
@@ -132,10 +132,12 @@ html[data-layout="phone"] .clset .btn{touch-action:manipulation}
 html[data-layout="phone"] #toasts{top:auto;bottom:calc(var(--barH) + 12px + env(safe-area-inset-bottom,0px))}
 html[data-layout="phone"] #stage.nobar #toasts{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:var(--toastTop,calc(env(safe-area-inset-top,0px) + 6px))!important;bottom:auto!important} /* v2.5: toast() sets --toastTop just under the sheet's title */
-html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
 /* UI/UX (13 Oct 2026): letters arriving together are one toast (toast() in 00_core.js); with the guide strip up only the newest toast shows;
    on the map they keep clear of the zoom column on the right (and stay centred, so the left gutter matches) */
-html[data-layout="phone"] #stage.gd-top #toasts .toast:not(:last-child){display:none}
+/* layout audit (5 Nov 2026): one toast at a time on phones; the next ones wait hidden (toast() in 00_core.js), so the old "only the newest" rules for
+   the guide strip and open sheets went. A toast level with the look-left / look-right buttons narrows to the room between them (toastPlace) */
+html[data-layout="phone"] #toasts .toast.tq{display:none}
+html[data-layout="phone"] #toasts.tnarrow{width:calc(100% - 148px)}
 html[data-layout="phone"] .toast.tmerge{animation:toastBump .25s ease-out}
 @keyframes toastBump{40%{transform:scale(1.04) rotate(-1deg)}}
 html[data-layout="phone"] #stage.toast-map #toasts{width:calc(100% - 136px)}
