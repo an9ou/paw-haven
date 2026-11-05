@@ -492,6 +492,12 @@ EARS_A.tri=function(pr,E){// v2.21 bernese: a broad, soft triangle set high on t
 EARS_A.dropD=function(pr,E){// v2.21 dalmatian: the v2.12 drop ear set high, its pivots inside the skull (a puppy's ear lying flat under the Astronaut Helmet stays on the head)
   E.push({pts:pr([[-.4,-.94],[-1.0,-.88],[-1.24,-.36],[-1.16,.32],[-.98,.42],[-.8,-.26]]),pivot:pr([[-.5,-.62]])[0],side:-1,flop:1,fold:[0,1]});
   E.push({pts:pr([[.04,-1.0],[.56,-1.02],[.8,-.72],[.74,-.4],[.58,-.42],[.3,-.74]]),pivot:pr([[.28,-.8]])[0],side:1,flop:1,fold:[0,1]})};
+EARS_A.roseA=function(pr,E){// v2.21 art fix, aussie: a high-set triangle ear lifted clear of the skull, the top third folded forward (half-folded rose), behind the head like the collie's
+  E.push({pts:pr([[-.82,-.46],[-.72,-1.12],[-.54,-1.36],[-.12,-1.2],[-.34,-1.1],[-.1,-.84]]),pivot:pr([[-.44,-.72]])[0],side:-1,fold:[1,4]});
+  E.push({pts:pr([[.04,-.9],[.16,-1.18],[.36,-1.4],[.82,-1.14],[.56,-1.1],[.74,-.42]]),pivot:pr([[.42,-.72]])[0],side:1,fold:[1,4]})};
+function aussieEar(h,s,e,p,HT){// the ear's own pale crayon rim just inside its outline (up the back edge, over the fold), so a dark ear reads on a dark head even at chip size
+  if(!e.fold)return;let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const c=s.ear||s.hcol,in_=q=>{const dx=cx-q[0],dy=cy-q[1],m=Math.hypot(dx,dy)||1,d=Math.min(2.6,m*.4);return[q[0]+dx/m*d,q[1]+dy/m*d]};
+  h.line([p[0],p[1],p[2],p[3]].map(in_).map(HT),1.9,mix(c,W,lum(c)<.32?.5:.4),.3)}
 const spotA=(h,M,x,y,r,col)=>h.shape(circ(x,y,r,r*.9,8,.16).map(M),col,{noline:1,ox:0,oy:0,famp:.5});// one round crayon spot, kept inside the open part
 // dalmatian spots: [x, y] of the body or head (x rx, y ry), r in rx. A puppy has the first few only, a newborn none (real: they are born white, the spots come in from two weeks)
 const DAL_B=[[-.62,-.42,.1],[-.2,-.12,.13],[.28,-.5,.1],[-.5,.3,.12],[.2,.36,.11],[.58,-.08,.08],[-.86,.1,.08],[.02,-.7,.08],[-.34,-.74,.07],[.5,.62,.07],[-.1,.68,.08],[.78,.3,.07],[-.72,.66,.06],[.66,-.56,.06],[.04,.14,.06],[-.94,-.36,.05]];
@@ -532,7 +538,8 @@ SP.bernese={name:'Fondue',breed:'Bernese Mountain Dog',personality:'A big, gentl
   marks:berneseMarks};
 // aussie: the coat pass. White trim (coat.white, capped at 0.25 by the genes): a white collar (neck tube and ruff), chest, blaze and feet; none = the coat colour.
 // Merle: the aussie draws its own marbling under the copper and white (the shared smudges would lie over them): torn patches in dark, a few half-dark and pale ones.
-function aussieCoat(s,coat,o){const R=o.R;s.wt=o.white>0?1:0;s.bib=s.wt?W:undefined;s.neckCol=s.wt?W:undefined;s.legs.toe=s.wt?W:undefined;s.tailTip=undefined;
+function aussieCoat(s,coat,o){const R=o.R;s.wt=o.white>0?1:0;if(!s.mixHead)s.ear=!o.merle&&lum(s.hcol)<.2?mix(s.hcol,W,.2):s.dark;// v2.21 art fix: a lighter ear on a black head (merle and red keep the dark ear)
+  s.bib=s.wt?W:undefined;s.neckCol=s.wt?W:undefined;s.legs.toe=s.wt?W:undefined;s.tailTip=undefined;
   if(!o.merle){s.mrl=null;if(s.pat)s.pat={body:()=>{},head:s.mixHead?s.pat.head:()=>{}};return}
   const P=[];for(let i=0;i<13;i++)P.push({b:i<9,x:(R()-.5)*(i<9?1.5:1.0),y:(R()-.5)*(i<9?1.2:.9),rx:.12+R()*.12,ry:.16+R()*.16,k:i%4===3?2:i%3===2?1:0,a:R()*180});
   s.mrl=P;if(s.pat)s.pat={body:()=>{},head:s.mixHead?s.pat.head:()=>{}}}
@@ -547,11 +554,11 @@ function aussieMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face
   if(s.wt)h.shape([[b.rx*.56,-b.ry*.72],[b.rx*.86,-b.ry*.6],[b.rx*1.02,b.ry*.05],[b.rx*.88,b.ry*.6],[b.rx*.7,b.ry*.5],[b.rx*.64,-b.ry*.1]].map(B),W,{noline:1,ox:0,oy:0});
   [e0,e1].forEach((e,i)=>h.dot(...Hd([hx*(e[0]+.04),hy*(e[1]-.4)]),3.2*(i?.9:1),2.3,K));// copper eyebrow dots and cheeks
   h.shape(circ(hx*.48,hy*.44,hx*.34,hy*.28,9).map(Hd),K,{noline:1,ox:0,oy:0});
-  if(s.wt)h.shape([[hx*.1,-hy*.98],[hx*.24,-hy*.98],[hx*.3,-hy*.24],[hx*.44,hy*.06],[hx*.06,hy*.06],[hx*.12,-hy*.28]].map(Hd),W,{noline:1,ox:0,oy:0})}
+  if(s.wt)h.shape([[hx*.12,-hy*.68],[hx*.22,-hy*.7],[hx*.25,-hy*.22],[hx*.34,hy*.04],[hx*.12,hy*.04],[hx*.14,-hy*.26]].map(Hd),W,{noline:1,ox:0,oy:0})}// a short, thin blaze (the bernese's runs wide to the crown)
 function aussieFace(h,s,L,HT){if(lum(s.hcol)<.32&&lum(s.light)<.32)ringA(h,s,L,HT,1.9)}// a dark head with no copper (Black, Black and white): pale eye creases, so the face reads
 SP.aussie={name:'Pavlova',breed:'Australian Shepherd',personality:'A clever, busy herder with a lot of ideas. Needs a job, any job.',joke:'I have herded the cushions. They are in a circle now. You are next.',
-  col:'#2B2430',hcol:'#2B2430',light:'#C8743A',dark:'#1D1A22',ear:'#1D1A22',wt:1,bib:W,neckCol:W,body:{x:110,y:143,rx:43,ry:23,lop:.04},head:{x:164,y:104,rx:29,ry:26},neck:1,
-  legs:{h:-27,f:24,w:9,sock:'#C8743A',toe:W},ears:'rose',earS:.84,earRound:1,tail:'brush',tsc:.86,ruff:.96,ruffK:'bib',coatFn:aussieCoat,faceFn:aussieFace,eyes:[6.2,5.8],
+  col:'#2B2430',hcol:'#2B2430',light:'#C8743A',dark:'#1D1A22',ear:'#55505A',wt:1,bib:W,neckCol:W,body:{x:110,y:143,rx:43,ry:23,lop:.04},head:{x:164,y:104,rx:29,ry:26},neck:1,
+  legs:{h:-27,f:24,w:9,sock:'#C8743A',toe:W},ears:'roseA',earS:.9,earRound:1,earFn:aussieEar,tail:'brush',tsc:.86,ruff:.96,ruffK:'bib',coatFn:aussieCoat,faceFn:aussieFace,eyes:[6.2,5.8],
   face:{eyes:'open',mouth:'smile',e0:[-.14,-.18],e1:[.38,-.22],nose:[1.38,.12],snout:1,snoutL:1.38,brow:'curious',browCol:'#CFC6C0'},
   marks:aussieMarks};
 /* end v2.21 ART A */
