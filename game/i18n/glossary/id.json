@@ -230,7 +230,11 @@
     "rosette": "roset",
     "Doggy Life Vest": "Rompi Pelampung Anjing",
     "Float fetch": "Lempar bola apung",
-    "Paddle": "Berendam"
+    "Paddle": "Berendam",
+    "Town level": "Level kota",
+    "Level (chip)": "Level",
+    "habit": "kebiasaan",
+    "star sticker": "stiker bintang"
   },
   "bans": [
     {
