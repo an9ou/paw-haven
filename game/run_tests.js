@@ -140,6 +140,7 @@ const SUITES = {
   phone_ground: { file: 'test_phone_ground.js', group: 'phone', est: 120, timeout: 600 }, // v2.14.1: the scene's ground runs on under the place buttons to the dock (no bare band), 6 sizes
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
   phone_v24_guide: { file: 'test_phone_v24_guide.js', group: 'phone', est: 40 },
+  phone_v222_levels: { file: 'test_phone_v222_levels.js', group: 'phone', est: 120, timeout: 400 }, // v2.22 Town levels on phones (V222.md 7.1): the HUD star's 44 px box on row 1, no wrap with 1 and 5 dogs and a title, the sheet and the card fit (en, de)
   phone_v25_festival: { file: 'test_phone_v25_festival.js', group: 'phone', est: 60 }, // v2.5
   phone_v25_fixes_a: { file: 'test_phone_v25_fixes_a.js', group: 'phone', est: 40 },
   phone_v25_fixes_b: { file: 'test_phone_v25_fixes_b.js', group: 'phone', est: 40 },
