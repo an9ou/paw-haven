@@ -502,8 +502,12 @@ function dalEar(h,s,e,p,HT){if(s.pup===2)return;// two spots inside each ear (a 
   let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const K=s.dark,hx=s.head.rx,lp=(a,t)=>[cx+(a[0]-cx)*t,cy+(a[1]-cy)*t];
   h.part(1);[[3,.42,.15],[1,.4,.11]].slice(0,s.pup?1:2).forEach(([i,t,r])=>{const c=lp(p[i],t);spotA(h,HT,c[0],c[1],hx*r,K)});h.part(0)}
 function dalTail(h,s,L,map,col){// dalmatian: a long tail, thick at the root and tapering to a fine point, curved a little up; a few spots
-  const C=dense([[0,0],[-11,-8],[-18,-21],[-20,-35],[-15,-48]],false,4);h.shape(map(taperB(C,5.6,1.7)),col,{step:30,amp:.6,w:3.4});
-  if(s.pup===2)return;h.part(1);[[.3,2.3],[.62,1.8]].slice(0,s.pup?1:2).forEach(([t,r])=>{const p=map([C[Math.round(t*(C.length-1))]])[0];h.shape(circ(p[0],p[1],r,r*.9,7),s.dark,{noline:1,ox:0,oy:0,famp:.3})});h.part(0)}
+  const C=dense([[0,0],[-11,-8],[-18,-21],[-20,-35],[-15,-48]],false,4),M=map(C),n=M.length,on=q=>q[1]>=GY-2.01;let P=M;
+  if(M.filter(on).length*3>=n){// the tail lies on the ground (sit, ...): map() flattens it onto the ground line, so lay it there with its own width, the lower edge on the ground
+   const r=map([[0,0],[4,0],[0,-4]]),k=Math.max(Math.hypot(r[1][0]-r[0][0],r[1][1]-r[0][1]),Math.hypot(r[2][0]-r[0][0],r[2][1]-r[0][1]))/4||1;
+   P=M.map((q,i)=>on(q)?[q[0],GY-2-(5.6+(1.7-5.6)*i/(n-1))*k]:q);h.shape(taperB(P,5.6*k,1.7*k).map(q=>[q[0],Math.min(q[1],GY-2)]),col,{step:30,amp:.6,w:3.4})}
+  else h.shape(map(taperB(C,5.6,1.7)),col,{step:30,amp:.6,w:3.4});
+  if(s.pup===2)return;h.part(1);[[.3,2.3],[.62,1.8]].slice(0,s.pup?1:2).forEach(([t,r])=>{const p=P[Math.round(t*(n-1))];h.shape(circ(p[0],p[1],r,r*.9,7),s.dark,{noline:1,ox:0,oy:0,famp:.3})});h.part(0)}
 function dalLeg(h,s,L,l){if(s.pup===2||!l.foot||l.raised&&!l.mid)return;// a spot or two down the leg (a puppy: one), small enough to sit inside the leg's own fill
   const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],at=t=>t<.5?[C[0][0]+(C[1][0]-C[0][0])*t*2,C[0][1]+(C[1][1]-C[0][1])*t*2]:[C[1][0]+(C[2][0]-C[1][0])*(t-.5)*2,C[1][1]+(C[2][1]-C[1][1])*(t-.5)*2],r=l.w*.3;
   [[.42,1],[.72,.8]].slice(0,s.pup?1:(l.i%2?1:2)).forEach(([t,k])=>{const p=at(t+(l.i%2)*.08);h.acc.push('<ellipse cx="'+R1(p[0]+h.J(.4))+'" cy="'+R1(p[1])+'" rx="'+R1(r*k)+'" ry="'+R1(r*k*1.15)+'" fill="'+(l.near?s.dark:mix(s.dark,PEN,.2))+'"/>')})}
