@@ -47,4 +47,24 @@ Predictor, What's new. The 360 px run got the automated check only (clean).
 
 ## Status
 
-(Filled in by the fix batch.)
+Fix batch on branch `claude/layout-fixes` (5 Nov 2026). After shots: `audit/after_<size>_<lang>_<name>.png` next to the originals.
+
+1. Fixed. On phones the dog's bubble no longer stops at the screen bottom: in the Garden it rises above the plot card (over the bottom of the plot board), in the Kitchen it sits over the pot room just above the pantry (both let taps through). "Empty" and "Cook!" are below the scroll fold on a 659 px screen, as before (the page scrolls to them; not a clip).
+2. Fixed. Phones show one toast at a time; the rest wait (at most three) and each gets its full time; the friends Undo toast shows at once. A toast level with the look-left / look-right buttons narrows to the room between them; over a walk's how-to / pause card it sits on the HUD row. No toast text changed. The old "only the newest" CSS rules for the guide strip and open sheets went (moot now).
+3. Fixed. The cut was Caveat's last stroke under the title's clip, not the chip: 4 px of room inside the clip ("Town Know-it-all" whole).
+4. Fixed. The phone bar labels get 3 px side and 2 px bottom room inside their clip (de and en).
+5. Fixed. When the desktop meter strip is narrower than four whole meters they sit two by two with smaller icons (numbers hide only below 190 px); toasts start under the "Next" line.
+6. Fixed. The phone tagline is centred (and balanced) on every cover, not only the account choice.
+7. Fixed. The phone results title has equal margins and is centred.
+8. Fixed. On portrait phones the -3s pops over the time bar, left of the seconds.
+9. Skipped (not in this batch).
+10. Fixed (partly). The one-mission card wraps a Latin row to the card's width (game-side measure, the art is untouched): the German walk mission is 3 even lines instead of 4.
+11. Fixed. The wish moves to the next line whole when it does not fit beside the label, so no kana sits alone (all languages).
+12. Fixed the empty line (centred). The sheet title per tab skipped: the Journal keeps one title for all its tabs, a per-tab title is not a CSS change.
+13. Fixed. Go home leads the row only on Market Street's scrolling row of shops; Kibble Corner keeps it last.
+14. Skipped (not in this batch).
+15. Skipped (not in this batch).
+16. Skipped (not in this batch).
+17. Fixed. The unread dots sit centred at the row's right end.
+18. Fixed. The kitchen header keeps 10 px more room for the X.
+19. Skipped (not in this batch; item 3 no longer depends on it).

@@ -255,7 +255,8 @@ function msRowText(t, max = 3, w = 0) { // max: the lines a row may take (Daily 
   const r = (text) => (fs === 13 ? { text, fs } : { text });
   if (L.length > 2 || !msLines(t, 16, W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
     fs = 13; L = msLines(t, 13, W);
-    if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
+    if (L.length < 3 && W === MS_ROW_W) { // the balanced 3-line try: CJK rows only (a Latin row keeps 2 lines when they fit)
+      msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
     if (L.length > max) { L = L.slice(0, max); msCtx.font = msFont(13); let l = L[max - 1]; while (l.length > 1 && msCtx.measureText(l + '…').width > W) l = l.slice(0, -1); L[max - 1] = l + '…'; }
   }
   if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
