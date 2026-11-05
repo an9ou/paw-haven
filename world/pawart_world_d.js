@@ -1277,7 +1277,7 @@ function tkJapanMap(k,o){const lk=o.locked,locked=new Set(Array.isArray(lk)?lk:[
       if(!isL)cap();
       else{k.add(`<path d="${smooth(dense(hp,true,30),true)}" fill="#EFE9E0" fill-opacity=".55"/>`);k.hatch(hp,{gap:7,col:C.graph,op:.55,w:1.4});const cx=x-28,cy=y-10;
         k.add(`<path d="M${cx-14} ${cy}v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`);k.shape(RC(cx-22,cy-2,44,36),C.yellow,{w:2.4});k.add(`<circle cx="${cx}" cy="${cy+12}" r="4" fill="${C.ink}"/><path d="M${cx} ${cy+14}v9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`);
-        k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(o.tags&&o.tags[id]!=null?String(o.tags[id]):`Bond ${Number.isFinite(+bonds[id])&&bonds[id]!==null?+bonds[id]:a.bond}`,cx+71,cy+25,26,{col:'#fff'});cap()}
+        k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(o.tags&&o.tags[id]!=null?String(o.tags[id]):`Bond ${Number.isFinite(+bonds[id])&&bonds[id]!==null?+bonds[id]:a.bond}`,cx+71,cy+25,o.tags&&o.tags[id]!=null?((s)=>{const w=[...s].reduce((a,c)=>a+(c.charCodeAt(0)>0x2e7f?26:7.4),0);return w>76?Math.max(14,Math.round(26*76/w)):26})(String(o.tags[id])):26,{col:'#fff'});cap()}
       // stamp ticks: a little red eki stamp for each stamp collected here
       let n=0;Object.keys(JM_STAMP).forEach(sk=>{if(JM_STAMP[sk]!==id||!got.has(sk))return;k.add(`<g data-stamp="${sk}">`);stampMark(k,x+94,y-60+n*36,16,'#D9473A',-10+n*14);k.add('</g>');n++})});
     hot(k,'data-area',id,a.label+(isL?' (locked)':''),hp,g);
