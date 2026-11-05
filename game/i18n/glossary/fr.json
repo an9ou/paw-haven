@@ -230,7 +230,11 @@
     "rosette": "cocarde",
     "Doggy Life Vest": "Gilet de sauvetage toutou",
     "Float fetch": "Balle flottante",
-    "Paddle": "Barboter"
+    "Paddle": "Barboter",
+    "Town level": "niveau de ville",
+    "Level (chip)": "Niveau",
+    "habit": "habitude",
+    "star sticker": "autocollant étoile"
   },
   "bans": [
     {
