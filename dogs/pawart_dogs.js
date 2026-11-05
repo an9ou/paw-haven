@@ -570,7 +570,7 @@ SP.aussie={name:'Pavlova',breed:'Australian Shepherd',personality:'A clever, bus
    held up). The cavalier's long feathered ears are the v2.11 curtain ear with the v2.12 earSwing: they swing out behind in jump and shake and stay
    on the skull (earOn) */
 const whB=s=>s.neckCol||(s.wet?wetC(W):W);// the parti white (a spec colour, so a wet coat lays it a shade darker too)
-const inEB=(b,P)=>dense(P,true,3).map(q=>{const r=Math.hypot(q[0]/b.rx,q[1]/b.ry);return r>.95?[q[0]*.95/r,q[1]*.95/r]:q});// a body mark kept inside the body even with no part open (the expecting belly closes it)
+const inEB=(b,P,k=.95)=>dense(P,true,3).map(q=>{const r=Math.hypot(q[0]/b.rx,q[1]/b.ry);return r>k?[q[0]*k/r,q[1]*k/r]:q});// a body mark kept inside the body even with no part open (the expecting belly closes it); k: the clamp
 const warmB=c=>{const v=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));return v[0]-v[2]>80&&v[0]>=v[1]&&v[1]>=v[2]};// a red or cream coat (no tan points)
 EARS_A.button=function(pr,E){// v2.21 jrt: a small V ear that lifts off the skull and folds forward at the crease, the tip pointing down toward the eye
   E.push({pts:pr([[-.66,-.8],[-.56,-1.06],[-.22,-1.1],[.02,-.78],[.0,-.44],[-.16,-.56],[-.42,-.76]]),pivot:pr([[-.38,-.92]])[0],side:-1,flop:1,fold:[1,3]});
@@ -584,13 +584,13 @@ function cavTail(h,s,L,map,col){// cavalier: carried happily, a little up, the l
   const K=lum(c)<.32?mix(c,W,.32):mix(c,PEN,.3);h.line(map([[-12,-1],[-17,5]]),1.8,K,.3);h.line(map([[-23,-4],[-28,3]]),1.8,K,.3)}
 function cavCoat(s,w){// cavalier: Blenheim and Tricolour are the parti coat (w 0.6: white with the colour in patches), Ruby and Black and tan the whole colours
   s.parti=w;s.tanPts=!warmB(s.col);s.face=Object.assign({},s.face);
-  if(w>=.6){s.neckCol=W;s.legs.col=W;delete s.legs.sock;s.face.snoutK='neckCol';s.bellyK='neckCol'}
-  else{delete s.neckCol;delete s.bellyK;delete s.legs.col;if(s.tanPts)s.legs.sock=s.light;else delete s.legs.sock;delete s.face.snoutK}}
+  if(w>=.6){s.neckCol=W;s.legs.col=W;delete s.legs.sock;s.face.snoutK='neckCol';s.bellyK='neckCol';s.bodyShut=1}// art fix (new spec field bodyShut): the body outline closed, so no crayon gap shows the chestnut ground under the white
+  else{delete s.bodyShut;delete s.neckCol;delete s.bellyK;delete s.legs.col;if(s.tanPts)s.legs.sock=s.light;else delete s.legs.sock;delete s.face.snoutK}}
 function cavMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,pw=s.parti||0,Wc=whB(s),tan=s.tanPts,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1];
   const K=curlCol(s.col),KW=mix('#E3D9C8',PEN,.3),o={noline:1,ox:0,oy:0};
-  if(pw>=.6){// white all over, the colour left as a saddle on the back and a patch over the rump
+  if(pw>=.6){// white all over, the colour left as a saddle on the back and a patch over the rump (art fix: with the body part open the white runs out to the ink, pinned inside it, so no chestnut seam along the belly; expecting, the part is closed: clamped at .95)
    h.shape(inEB(b,[[b.rx*1.1,-b.ry*1.1],[b.rx*.4,-b.ry*1.1],[b.rx*.44,-b.ry*.56],[b.rx*.3,-b.ry*.16],[-b.rx*.04,-b.ry*.04],[-b.rx*.22,-b.ry*.42],[-b.rx*.26,-b.ry*1.1],[-b.rx*.5,-b.ry*1.1],
-    [-b.rx*.46,-b.ry*.5],[-b.rx*.6,-b.ry*.02],[-b.rx*.86,b.ry*.2],[-b.rx*1.1,b.ry*.22],[-b.rx*1.1,b.ry*1.1],[b.rx*1.1,b.ry*1.1]]).map(B),Wc,o);
+    [-b.rx*.46,-b.ry*.5],[-b.rx*.6,-b.ry*.02],[-b.rx*.86,b.ry*.2],[-b.rx*1.1,b.ry*.22],[-b.rx*1.1,b.ry*1.1],[b.rx*1.1,b.ry*1.1]],s.expecting?.95:1.1).map(B),Wc,o);
    [[.6,.3],[.1,.5],[-.4,.55]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]-.03),b.ry*(q[1]+.26)]].map(B),1.8,KW,.3))}
   else if(pw>=.25)h.shape(circ(b.rx*.8,b.ry*.38,b.rx*.15,b.ry*.42,8).map(B),Wc,o);// a little white star on the chest
   if(tan){if(pw<.6)h.shape(inEB(b,[[b.rx*.6,-b.ry*.05],[b.rx*.94,-b.ry*.18],[b.rx*1.02,b.ry*.36],[b.rx*.84,b.ry*.9],[b.rx*.62,b.ry*.6]]).map(B),s.light,o);
@@ -602,7 +602,7 @@ function cavMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,pw
   if(tan){[e0,e1].forEach((e,i)=>h.shape(circ(hx*(e[0]+.03),hy*(e[1]-.42),hx*(i?.09:.1),hy*.07,7).map(Hd),s.light,o));
    h.shape(circ(-hx*.3,hy*.3,hx*.16,hy*.12,8).map(Hd),s.light,o)}}
 SP.cavalier={name:'Scone',breed:'Cavalier King Charles Spaniel',personality:'A sweet little lap dog with soft feathered ears. Friends with everyone.',joke:'My ears are not hair. They are a gentle hug for my face.',
-  col:'#C8642E',hcol:'#C8642E',light:'#E8A06A',dark:'#8A3E1C',neckCol:W,bellyK:'neckCol',parti:.6,ownWhite:cavCoat,body:{x:114,y:147,rx:37,ry:21,lop:.03},head:{x:160,y:109,rx:28,ry:26},
+  col:'#C8642E',hcol:'#C8642E',light:'#E8A06A',dark:'#8A3E1C',neckCol:W,bellyK:'neckCol',bodyShut:1,parti:.6,ownWhite:cavCoat,body:{x:114,y:147,rx:37,ry:21,lop:.03},head:{x:160,y:109,rx:28,ry:26},
   legs:{h:-25,f:23,w:6.8,col:W},ears:'curtain',earS:.8,earRound:1,earSwing:62,tail:'feather',tailFn:cavTail,eyes:[7.6,7.2],
   face:{eyes:'open',mouth:'smile',e0:[-.16,-.12],e1:[.38,-.16],nose:[1.2,.2],snout:1,snoutL:1.2,snoutD:.58,snoutK:'neckCol',pupil:.8,brow:'soft',browCol:'#D9A27A',sweet:1},
   marks:cavMarks};
@@ -2253,7 +2253,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
   {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck||L.neckT)h.tube([nb,nh],s.head.rx*.7,s.neckCol||s.col)}
-  h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.part(1);h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
+  h.shape(bp.map(B),s.col,{step:s.body.long?14:11,closed:s.bodyShut});h.part(1);h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
   if(s.expecting&&BELLY.test(pose)){h.part(0);drawBelly(h,s,L,B)}// the belly bulges past the body on purpose; the marks still keep to the body
   if(s.marks)s.marks(h,B,HT,s);
   if(s.pat)s.pat.body(h,B,L);
