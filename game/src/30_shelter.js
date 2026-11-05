@@ -70,6 +70,7 @@ function srStarters() {
   for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
   return keys.slice(0, 6);
 }
+const srSayUp = () => (starterMonths() < 6 ? 150 : 200); // v2.19.3: the meet dog's speech bubble sits lower over a puppy starter
 function srStarterLook(key) { const g = STARTER_GENES[key] || STARTER_GENES.mutt; return { id: 'tmp_' + key, key, genes: { B: g.B, D: g.D, E: g.E, S: g.S, M: g.M, Bl: g.Bl }, born: bornDaysAgo(starterMonths()), name: dogInfo(key).name }; } // v2.19.3: a starter is a 3-month puppy
 // who lives in the room right now
 function srRoomList(mode) {
@@ -346,7 +347,7 @@ function srPetMeet() {
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
   m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190 * srK(key), belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200, 'meet'); }
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - srSayUp() * srK(key), 2200, 'meet'); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {
