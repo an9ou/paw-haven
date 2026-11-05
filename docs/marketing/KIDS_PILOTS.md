@@ -54,7 +54,7 @@ We made this slow, quiet walk for the last few minutes before lights out. The su
 
 There's the game's own soft night music, Noodle's gentle voice and big read-along words, 1 short line at a time. We kept out ads, loud sounds and fast cuts. It gets darker and quieter as it goes, and it ends with Noodle fast asleep.
 
-For grown-ups: it's just under 2 minutes long. Noodle walks through Maple Woods, past the duck pond in Sunny Park, onto the pier as the lighthouse comes on and up Hilltop Meadow to count the stars, then home to his Cloud Bed. Turn the brightness down and let it play to the end.
+For grown-ups: it's about 1½ minutes long. Noodle walks through Maple Woods, past the duck pond in Sunny Park, onto the pier as the lighthouse comes on and up Hilltop Meadow to count the stars, then home to his Cloud Bed. Turn the brightness down and let it play to the end.
 
 Noodle comes from Doodle Doggo, the free cozy dog game I draw like a pencil sketchbook (it's for grown-ups and older kids): https://doodledoggo.app
 
@@ -64,7 +64,7 @@ Noodle comes from Doodle Doggo, the free cozy dog game I draw like a pencil sket
 
 **Shorts title (9:16 cut):** A sleepy goodnight walk with Noodle 🌙
 
-**Shorts description:** Say goodnight to the ducks, count five stars and tuck Noodle into bed. The full 2-minute bedtime walk is on our channel. #BedtimeStory #KidsVideos #DoodleDoggo
+**Shorts description:** Say goodnight to the ducks, count five stars and tuck Noodle into bed. The full bedtime walk is on our channel. #BedtimeStory #KidsVideos #DoodleDoggo
 
 ## Instagram and TikTok (the 9:16 cuts)
 
@@ -84,7 +84,7 @@ The full 1½-minute video for kids is on our YouTube 📺 Noodle lives in Doodle
 
 **Bedtime Walk**
 
-Save this for tonight: Noodle's 2-minute bedtime walk 🌙💤
+Save this for tonight: Noodle's 90-second bedtime walk 🌙💤
 
 He takes one last slow walk as the sun goes down 🌅 He says goodnight to the ducks 🦆, counts 5 stars with your little one ⭐ and curls up in his soft bed. We kept it quiet, with big read-along words, soft music and no loud sounds 🎶 The full walk is on our YouTube 📺
 
@@ -101,13 +101,13 @@ Checked 3 Nov 2026 with `.claude/skills/ig-human/detect.py` and `.claude/skills/
 
 ## Files (English)
 
-Owner, 5 Nov 2026: **the horizontal Dog manners episode is approved**; the horizontal Bedtime Walk was made faster to end in about 2 minutes (1:59, voice 1.0x, shorter shots; sent for approval); both episodes get RedNote Reels (below).
+Owner, 5 Nov 2026: **the horizontal Dog manners episode is approved**; the horizontal Bedtime Walk was made faster (1:59, voice 1.0x), then cut to 1:29 (owner: "shorten to 1:30, a bit boring as it doesn't have content when Noodle is walking": the walking stretches cut short, the woods 26 s to 11 s; sent for approval); both episodes get RedNote Reels (below).
 
 
 | Episode | 16:9 (YouTube) | 9:16 (Shorts, IG, TikTok) | Thumbnail / cover |
 |---|---|---|---|
 | Dog manners 1: How to say hello to a dog | `brand/kids/dog_manners/doodle-doggo-kids-dog-manners.mp4` (1:39, **approved**) | `-tall.mp4` (27 s, teen cut) | `dog-manners-thumb.jpg`, `dog-manners-cover-tall.jpg` |
-| Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (1:59) | `-tall.mp4` (29 s, teen cut) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
+| Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (1:29) | `-tall.mp4` (29 s, teen cut) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
 
 Remake or fix: `NODE_PATH=$(npm root -g) node brand/kids/<episode>/build_<name>.js <workdir> <vo dir>` with `FORMAT=tall`, `ONLY=stills`, `FRAMES=a-b` (see `KIDS_SERIES.md`, Build kit). Voices: `python3 brand/kids/<episode>/vo_<name>.py <kokoro model dir> <vo dir>`.
 

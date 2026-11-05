@@ -1,6 +1,6 @@
 // Kids' episode "Noodle's Bedtime Walk" (docs/marketing/KIDS_SERIES.md, Pilot 2; Build kit there): a wind-down walk through the sketchbook
-// town as day turns to night, told by Noodle. Faster since the owner's notes of 4 Nov 2026 (2:23 instead of 3:34) and again on 5 Nov 2026 (about
-// 1:59, "end in 2 mins"): voice Kokoro af_bella at 1.0x (vo_bedtime_walk.py, lines "kids"), pauses of about 0.5 s, shorter holds, quicker pans, 0.8 s cross-fades; still calm
+// town as day turns to night, told by Noodle. Faster since the owner's notes of 4 Nov 2026 (2:23 instead of 3:34) and again on 5 Nov 2026 (1:59,
+// then about 1:29: "shorten to 1:30", the walking stretches cut): voice Kokoro af_bella at 1.0x (vo_bedtime_walk.py, lines "kids"), pauses of about 0.5 s, shorter holds, quicker pans, 0.8 s cross-fades; still calm
 // (no flashing, no shake). The yard at dusk (the day render cross-fades into the dusk render), a walk through Maple Woods (walk pose, the
 // three-frame line boil), the ducks on the Sunny Park pond, the Lighthouse Pier from dusk to night (its light comes on), five stars over
 // the Hilltop Meadow counted one by one with big Caveat numbers, the moon, home: the yard at night with warm windows, a yawn, the Cloud Bed,
@@ -17,7 +17,7 @@
 //   ONLY=stills: key frames only (WORK/stills; STRIP=t1,t2,... picks the times). ONLY=frames: frames only, no cover, sound or encode.
 //   FRAMES=a-b: re-render only those frames over a copy of an earlier full workdir and encode again with the same sound (marketing rule:
 //   never re-render a whole video for a fix to one part). The end card is in the last frames: the run prints "end card frames a-b"
-//   (wide 3360-3574, tall 595-724 at 25 fps); to change the handles, set IG_HANDLE / X_HANDLE / YT_HANDLE and re-render just those.
+//   (the run prints the range; tall 595-724 at 25 fps); to change the handles, set IG_HANDLE / X_HANDLE / YT_HANDLE and re-render just those.
 //   PAR=n: render the frames in n child processes (each its own browser over a slice), then mix and encode as usual.
 //   The thumbnail (wide) and the tall cover are written only when missing or with COVER=1.
 // Read-along subtitles: Andika Bold, ink on a cream pill, one short line at a time, centreCheck() on every frame (and safeCheck() in tall).
@@ -79,46 +79,47 @@ let STARS = null, ZZZ = null, END = null, TITLE = null, e;
 // from round(END.paper[0] * FPS) to NF - 1: re-render only them with FRAMES=a-b (e.g. new handles) over a copy of the full workdir.
 
 if (!TALL) {
-  // owner, 5 Nov 2026: "increase the speed, end in 2 mins": voice 1.0x (was 0.95x), every shot shorter (147 s of shots -> 123 s), the same story
-  const s1 = shot({ id: 'yard', len: 19, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
-    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 5.5, 10.5)) }],
-    cam: [[0, 120, 135, 820], [19, 160, 148, 770]],
+  // owner, 5 Nov 2026: "increase the speed, end in 2 mins" (voice 1.0x), then "shorten to 1:30, a bit boring as it doesn't have content when
+  // Noodle is walking": the walking stretches cut short (the woods 26 -> 11 s), every hold tighter, the same lines and story (about 1:29)
+  const s1 = shot({ id: 'yard', len: 14, mus: { place: 'yard', time: 'dusk' }, fx: 'dusk',
+    bgs: [{ scene: 'yard', time: 'day' }, { scene: 'yard', time: 'dusk', op: (u) => sm(seg(u, 4.0, 8.0)) }],
+    cam: [[0, 120, 135, 820], [14, 160, 148, 770]],
     dogs: (u) => { const A = sit(620, 498, 1, 'right'), B = { pose: 'idle', x: 620, y: 498, D: 1, facing: 'right' };
-      if (u < 13.8) return dis(u, 12.8, 0.7, A, B); return [{ pose: 'walk', walk: 1, x: walkX(u, 13.8, 19.8, 620, 820), y: 498, D: 1, facing: 'right' }]; } });
-  TITLE = { a: at(s1, 0.6), b: at(s1, 4.4), lines: [{ s: "Noodle's Bedtime Walk", size: 100, maxW: 1300 }], cx: 960, cy: 150 };
-  e = say(s1, 'hello', 4.0); e = say(s1, 'sun', e + P); say(s1, 'walk', 10.4);
-  const s2 = shot({ id: 'woods', len: 20, mus: { place: 'woods', time: 'dusk' }, fx: 'leaves', bgs: [{ scene: 'woods', time: 'dusk' }],
-    cam: [[0, 0, 94, 900], [20, 600, 94, 900]], camLinear: true,
-    dogs: (u) => [{ pose: 'walk', walk: 1, x: 430 + 600 * u / 20, y: 478, D: 1, facing: 'right' }] });
-  e = say(s2, 'step', 2.0); say(s2, 'leaves', e + P); say(s2, 'step', 11.0);
-  const s3 = shot({ id: 'pond', len: 15, mus: { place: 'park', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'park', time: 'dusk' }],
-    cam: [[0, 160, 140, 800], [15, 110, 140, 800]],
-    dogs: (u) => { const A = { pose: 'walk', walk: 1, x: walkX(u, 0, 3.4, 900, 700), y: 480, D: 1, facing: 'left' }; return dis(u, 3.4, 0.7, A, sit(700, 480, 1, 'left', u > 4.2 && u < 9.5 ? 'curious' : undefined)); } });
-  e = say(s3, 'ducks0', 4.4); say(s3, 'ducks', e + P);
-  const s4 = shot({ id: 'pier', len: 16, mus: { place: 'pier', time: 'dusk' }, mus2: { u: 5, place: 'pier', time: 'night' }, fx: 'dusknight', nightAt: [2.0, 7.5],
-    bgs: [{ scene: 'pier', time: 'dusk' }, { scene: 'pier', time: 'night', op: (u) => sm(seg(u, 2.0, 7.5)) }],
-    cam: [[0, 0, 20, 960], [16, 70, 20, 960]],
-    dogs: (u) => [sit(600, 432, 1, 'left', u > 2.5 && u < 8 ? 'wow' : undefined)] });
-  say(s4, 'light', 2.5); say(s4, 'sea', 9.0);
-  const s5 = shot({ id: 'hill', len: 26, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
-    cam: [[0, 100, 0, 1000], [13, 100, 0, 1000], [18, 600, 0, 1000], [26, 600, 0, 1000]],
-    dogs: (u) => { const A = { pose: 'down', expr: u > 3 && u < 12.5 ? 'wow' : u > 20 ? 'sleepy' : undefined, x: 800, y: 455, D: 1, facing: 'right' };
-      return dis(u, 22.2, 0.7, A, { pose: 'idle', expr: 'sleepy', x: 800, y: 455, D: 1, facing: 'right' }); } });
-  say(s5, 'count', 1.6);
-  STARS = { s: s5, u0: 3.2, gap: 1.9, numsOut: [12.4, 13.4], size: 4.4,
+      if (u < 10.4) return dis(u, 9.8, 0.6, A, B); return [{ pose: 'walk', walk: 1, x: walkX(u, 10.4, 14.6, 620, 780), y: 498, D: 1, facing: 'right' }]; } });
+  TITLE = { a: at(s1, 0.5), b: at(s1, 4.0), lines: [{ s: "Noodle's Bedtime Walk", size: 100, maxW: 1300 }], cx: 960, cy: 150 };
+  e = say(s1, 'hello', 3.6); e = say(s1, 'sun', e + P); say(s1, 'walk', 7.6);
+  const s2 = shot({ id: 'woods', len: 11, mus: { place: 'woods', time: 'dusk' }, fx: 'leaves', bgs: [{ scene: 'woods', time: 'dusk' }],
+    cam: [[0, 0, 94, 900], [11, 400, 94, 900]], camLinear: true,
+    dogs: (u) => [{ pose: 'walk', walk: 1, x: 430 + 400 * u / 11, y: 478, D: 1, facing: 'right' }] });
+  e = say(s2, 'step', 1.2); say(s2, 'leaves', e + P); say(s2, 'step', 5.6);
+  const s3 = shot({ id: 'pond', len: 12, mus: { place: 'park', time: 'dusk' }, fx: 'dusk', bgs: [{ scene: 'park', time: 'dusk' }],
+    cam: [[0, 160, 140, 800], [12, 120, 140, 800]],
+    dogs: (u) => { const A = { pose: 'walk', walk: 1, x: walkX(u, 0, 2.6, 860, 700), y: 480, D: 1, facing: 'left' }; return dis(u, 2.6, 0.6, A, sit(700, 480, 1, 'left', u > 3.2 && u < 8.5 ? 'curious' : undefined)); } });
+  e = say(s3, 'ducks0', 3.2); say(s3, 'ducks', e + P);
+  const s4 = shot({ id: 'pier', len: 13, mus: { place: 'pier', time: 'dusk' }, mus2: { u: 4, place: 'pier', time: 'night' }, fx: 'dusknight', nightAt: [1.5, 6.0],
+    bgs: [{ scene: 'pier', time: 'dusk' }, { scene: 'pier', time: 'night', op: (u) => sm(seg(u, 1.5, 6.0)) }],
+    cam: [[0, 0, 20, 960], [13, 60, 20, 960]],
+    dogs: (u) => [sit(600, 432, 1, 'left', u > 2 && u < 7 ? 'wow' : undefined)] });
+  say(s4, 'light', 2.0); say(s4, 'sea', 7.2);
+  const s5 = shot({ id: 'hill', len: 21, mus: { place: 'hilltop', time: 'night' }, fx: 'night', bgs: [{ scene: 'hilltop', time: 'night' }],
+    cam: [[0, 100, 0, 1000], [11, 100, 0, 1000], [15, 600, 0, 1000], [21, 600, 0, 1000]],
+    dogs: (u) => { const A = { pose: 'down', expr: u > 2.5 && u < 10.8 ? 'wow' : u > 17 ? 'sleepy' : undefined, x: 800, y: 455, D: 1, facing: 'right' };
+      return dis(u, 18.6, 0.6, A, { pose: 'idle', expr: 'sleepy', x: 800, y: 455, D: 1, facing: 'right' }); } });
+  say(s5, 'count', 1.2);
+  STARS = { s: s5, u0: 2.7, gap: 1.7, numsOut: [10.8, 11.6], size: 4.4,
     at: [[255, 62], [405, 168], [600, 58], [800, 150], [960, 40]] }; // scene units (kept clear of the two kites and the moon)
   STARS.at.forEach((_, i) => say(s5, 'n' + (i + 1), STARS.u0 + i * STARS.gap + 0.3));
-  e = say(s5, 'moon', 18.6); say(s5, 'home0', e + P);
-  const s6 = shot({ id: 'home', len: 27, mus: { place: 'yard', time: 'night' }, mus2: { u: 8, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
+  e = say(s5, 'moon', 15.4); say(s5, 'home0', e + P);
+  const s6 = shot({ id: 'home', len: 22, mus: { place: 'yard', time: 'night' }, mus2: { u: 7, place: 'sleep', time: 'night' }, fx: 'night', bgs: [{ scene: 'yard', time: 'night' }],
     bed: { x: 700, y: 520, B: 0.9 },
-    cam: [[0, 150, 150, 800], [7.5, 150, 150, 800], [22, 420, 250, 560]],
+    cam: [[0, 150, 150, 800], [6.5, 150, 150, 800], [17, 420, 250, 560]],
     dogs: (u) => { const st = { pose: 'idle', x: 360, y: 520, D: 1, facing: 'right' }, sl = { ...st, expr: 'sleepy' }, yw = { pose: 'yawn', x: 360, y: 520, D: 1, facing: 'right' };
-      if (u < 4.2) return dis(u, 3.6, 0.6, { pose: 'walk', walk: 1, x: walkX(u, 0, 3.6, 170, 360), y: 520, D: 1, facing: 'right' }, st);
-      if (u < 6.0) return dis(u, 5.0, 0.6, st, sl);
-      if (u < 8.3) return dis(u, 6.0, 0.6, sl, yw);
-      return dis(u, 8.3, 1.2, yw, { pose: 'sleep', inBed: 1, facing: 'right' }); } });
-  say(s6, 'back', 4.0); say(s6, 'yawn', 6.4); say(s6, 'bed', 9.6); e = say(s6, 'night', 12.2); say(s6, 'dreams', e + P);
-  ZZZ = { s: s6, u0: 10.6 }; END = { paper: [at(s6, 19.0), at(s6, 21.4)], card: [at(s6, 21.6), at(s6, 22.6)], T: s6.b };
+      if (u < 3.6) return dis(u, 3.0, 0.6, { pose: 'walk', walk: 1, x: walkX(u, 0, 3.0, 200, 360), y: 520, D: 1, facing: 'right' }, st);
+      if (u < 5.2) return dis(u, 4.2, 0.6, st, sl);
+      if (u < 7.2) return dis(u, 5.2, 0.6, sl, yw);
+      return dis(u, 7.2, 1.2, yw, { pose: 'sleep', inBed: 1, facing: 'right' }); } });
+  say(s6, 'back', 3.2); say(s6, 'yawn', 5.4); say(s6, 'bed', 8.2); e = say(s6, 'night', 10.4); say(s6, 'dreams', e + P);
+  ZZZ = { s: s6, u0: 9.0 }; END = { paper: [at(s6, 15.0), at(s6, 17.2)], card: [at(s6, 17.4), at(s6, 18.4)], T: s6.b };
 } else {
   // the fast 9:16 cut for teenagers (about 30 s, Reel pace, vo set "teen" at 1.1x): a hook in the first second, dusk, ducks, stars 1-5, bed,
   // goodnight, the end card. Noodle's feet stay above y 1240 (the subtitles sit at y 1360) and the views stay inside each scene (a tall view
