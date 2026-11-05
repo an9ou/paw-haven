@@ -311,7 +311,7 @@ const lvFeatName = (k, cap) => (k === 'garden' ? (cap ? tt('lv.u_garden', 'The v
 function lvUnlocksFor(n) {
   const out = [];
   lvRowsSorted(n).forEach((r) => {
-    if (r.kind === 'route') out.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[r.id].dig ? 'yes' : 'no', route: tRoute(r.id) }));
+    if (r.kind === 'route') out.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[r.id].dig ? 'yes' : 'no', route: (typeof townRouteName === 'function' ? townRouteName(r.id) : tRoute(r.id)) }));
     else if (r.kind === 'place') out.push(lvTokyoId(r.id) ? tt('lv.u_tokyo', 'Tokyo: {place}', { place: lvPlaceName(r.id) }) : tt('lv.u_place', 'Place: {place}', { place: lvPlaceName(r.id) }));
     else if (r.kind === 'feat') out.push(lvFeatName(r.id, true));
     else if (r.kind === 'ff') out.push(tt('ff.unlock', 'Fun Fair: {game}', { game: typeof ffName === 'function' ? ffName(r.id) : r.id }));
@@ -328,7 +328,7 @@ function lvNextText(L, short) {
   const isHouse = (r) => r.kind === 'item' && HOUSES.some((h) => h.n === r.id);
   let tk = false;
   rows.forEach((r) => {
-    if (r.kind === 'route') add(tRoute(r.id));
+    if (r.kind === 'route') add((typeof townRouteName === 'function' ? townRouteName(r.id) : tRoute(r.id)));
     else if (r.kind === 'place' && !lvTokyoId(r.id)) add(lvPlaceName(r.id));
     else if (r.kind === 'place') { if (!tk) { tk = true; add(rows.some((x) => x.id === 'station') ? tt('lv.next_tokyo', 'Tokyo') : lvPlaceName(r.id)); } }
     else if (r.kind === 'feat') add(lvFeatName(r.id, false));
