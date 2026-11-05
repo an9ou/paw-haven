@@ -161,7 +161,7 @@ function hbSecretKey(d) {
 }
 
 /* ---------------- the lines ---------------- */
-// the habit line for Bond level n, with the dog's name (no new line for 4 and 8: the ask lines and the face words are translated already)
+// the habit line for Bond level n, with the dog's name (4 and 8 wrap tables that are translated already: the ask lines and the face words)
 function hbLine(d, n) {
   if (!d) return ''; const name = d.name || '', b = hbBand(d, n);
   switch (+n) {
@@ -173,7 +173,7 @@ function hbLine(d, n) {
     case 5: return tdata('hb_lines.bath.' + b, HB_LINES.bath[b], { name });
     case 6: return tdata('hb_lines.ball.' + b, HB_LINES.ball[b], { name });
     case 7: return tdata('hb_lines.pack.' + b, HB_LINES.pack[b], { name });
-    case 8: return tt('hb.face_lbl', 'Best face:') + ' ' + exWord(b);
+    case 8: return tt('hb.face_line', "{name}'s best face: {face}", { name, face: exWord(b) }); // the face word is translated already (ex_words)
     case 9: return tdata('hb_lines.sleep.' + b, HB_LINES.sleep[b], { name });
     default: { const s = tdata('hb_secret.' + b, HB_SECRET[b], { name });
       return b !== d.key && d.mix ? tt('hb.mix', 'From the {breed} side:', { breed: tbreed(b) }) + ' ' + s : s; }
