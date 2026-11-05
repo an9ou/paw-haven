@@ -21,6 +21,7 @@ const nbDay = () => localISO(new Date(Date.now()));
 const nbAt = (n) => (topBond() >= n ? 0 : n);
 const nbRoute = (k) => nbAt((ROUTES[k] && ROUTES[k].bond) || 1);
 const nbPlace = (k, b) => nbAt((PLACES[k] && PLACES[k].bond) || b || 1); // b: its Bond when the place is not on this map yet
+const nbRiverOk = () => typeof msCanWalk !== 'function' || msCanWalk('river') || !ROUTES.river; // v2.19.3 Puppy start: some dog in the pack can walk the Riverside Trail
 const nbGarden = () => (gardenUnlocked() ? 0 : 2);
 const nbKitchen = () => (kitchenUnlocked() ? 0 : 3);
 const nbTokyo = () => nbAt(typeof TK_STATION_BOND === 'number' ? TK_STATION_BOND : 3);
@@ -46,7 +47,7 @@ const MS_NB = [
   { id: 'p3', t: 'The veggie patch', l: 'Carrots are a crunchy snack that dogs can eat safely. Onions and garlic are never safe for dogs, so they never grow here.', how: 'garden', gift: 'seeds', steps: [
     { k: 'plant', t: 'Plant a seed', m: (a) => a.kind === 'garden' && a.what === 'plant', lock: nbGarden },
     { k: 'water', t: 'Water it', m: (a) => a.kind === 'garden' && a.what === 'water', lock: nbGarden },
-    { k: 'river', t: 'Walk the Riverside Trail', m: (a) => a.kind === 'walk' && a.area === 'river', lock: () => nbRoute('river') }] },
+    { k: 'river', t: 'Walk the Riverside Trail', m: (a) => a.kind === 'walk' && (a.area === 'river' || !nbRiverOk()), lock: () => (nbRiverOk() ? nbRoute('river') : 0), alt: () => (nbRiverOk() ? null : ['p1', 'walk', 'Go for a short walk']) }] }, // v2.19.3: while every dog is a puppy (Sunny Park only), a short walk does
   { id: 'p4', t: 'Around town', l: 'Dogs see the world through their noses. A good sniff is great exercise for the brain.', how: 'map', st: 'i:dogpark', steps: [
     { k: 'dogpark', t: 'Visit the Dog Park', m: (a) => a.kind === 'travel' && a.place === 'dogpark', lock: () => nbPlace('dogpark', 2) },
     { k: 'mail', t: 'Open the mailbox', m: (a) => a.kind === 'mail' || a.kind === 'collect' },
@@ -82,7 +83,7 @@ const MS_NB = [
 ];
 const nbPage = (n) => MS_NB[n - 1] || null;
 const nbTitle = (p) => tdata('ms_nb.' + p.id + '.t', p.t);
-const nbStepText = (p, s) => tdata('ms_nb.' + p.id + '.steps.' + s.k + '.t', s.t, { dog: NAME() });
+const nbStepText = (p, s) => { const a = s.alt ? s.alt() : null; return a ? tdata('ms_nb.' + a[0] + '.steps.' + a[1] + '.t', a[2], { dog: NAME() }) : tdata('ms_nb.' + p.id + '.steps.' + s.k + '.t', s.t, { dog: NAME() }); }; // alt: another page's step text, already translated
 const nbLesson = (p) => tdata('ms_nb.' + p.id + '.l', p.l, { dog: NAME() });
 
 /* ---------------- state ---------------- */

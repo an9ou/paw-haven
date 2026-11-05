@@ -1504,12 +1504,15 @@ function frWalkInit() {
   frLoad().then(() => frWalkSync()).catch(() => { /* the cached dogs stay */ });
 }
 // the walk starts (enterWalk): the picked guest, if the pack has room and the friend's dog is still in the list. Else none, and the pick is cleared
-function frWalkStart() {
+function frWalkStart(area) {
   FRW.g = null;
   const g = S && S.fr && S.fr.guest;
   if (!g || !frOn()) { frGuestClear(); return null; }
   const o = pkWalkers().length + 2 <= MAX_DOGS ? frWalkDogs().find((x) => x.fid === g.fid && x.dog === g.dog) : null;
   if (!o) { frGuestClear(); return null; }
+  if (area && typeof walkBlock === 'function' && walkBlock(o.d, area)) { // v2.19.3: a friend's puppy does the Sunny Park only, like a pack puppy (the pick stays for the next walk)
+    setTimeout(() => { if (S && cur.mode === 'walk') toast(tt('pupplay.stays_toy', '{name} stays home with a chew toy.', { name: o.d.name }), ''); }, 1200); return null;
+  }
   FRW.g = o; return o;
 }
 // the runner's look for the guest, as pkWalkLooks makes one for a walker (dogForMod's fields), plus friend: true and the ribbon. [] without a guest

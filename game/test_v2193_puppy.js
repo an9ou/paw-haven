@@ -81,24 +81,45 @@ run('v2193_puppy', async (t) => {
   ok((await ev(() => window.__paw.dd.walkOpts(window.__paw.S.dogs[1].id))).includes('river'), 'and the grown-up dog may wish for the river');
   await t.ctx.close();
 
+  sec('3b. Missions v2 notebook page 3 (behind MS2_LIVE): a puppy-only pack gets a short walk instead of the Riverside Trail');
+  await t.newGame({ pupStart: true, prefs: { msTest: true, ddTest: true, ms2Test: true } }, { bond: { level: 2, pts: 70 }, coins: 1000 });
+  await t.until(() => !!(window.__paw.msn && window.__paw.S.missions && window.__paw.S.missions.nb), null, 6000);
+  const nb3 = await ev((b5) => {
+    const P = window.__paw, N = P.msn, S = P.S, nb = S.missions.nb, out = {};
+    S.dog.born = b5; nb.pages = 3; nb.done = {}; nb.got = []; N.page(3);
+    out.age = P.pup.age(); out.lock = N.lock(3, 2); const h = N.html(); out.short = /Go for a short walk/.test(h); out.river = /Walk the Riverside Trail/.test(h);
+    P.ms.act('walk', { area: 'park', pack: 1 }); out.done = (nb.done[3] || []).includes(2);
+    P.addDog({ key: 'dachs', sex: 'male', months: 30 }, 'Otto'); nb.done[3] = (nb.done[3] || []).filter((x) => x !== 2); N.page(3); out.river2 = /Walk the Riverside Trail/.test(N.html());
+    P.ms.act('walk', { area: 'park', pack: 1 }); out.parkAdult = (nb.done[3] || []).includes(2);
+    return out;
+  }, iso(5));
+  ok(nb3.age === 5 && nb3.lock === 0 && nb3.short && !nb3.river && nb3.done, 'a 5-month puppy on day 3: the step says "Go for a short walk", is open, and a Sunny Park walk does it: ' + JSON.stringify(nb3));
+  ok(nb3.river2 && !nb3.parkAdult, 'with a grown-up dog in the pack it is the Riverside Trail again (a park walk does not count)');
+  ok(!errs().length, 'no page errors: ' + errs().slice(0, 3).join(' | '));
+  await t.ctx.close();
+
   sec('4. the migration table (pupStartFields on a prepared save)');
   await t.boot({ pupStart: true }); await t.adopt({ sex: 'boy' });
   const tab = await ev((B) => {
     const P = window.__paw, mk = (id, m, x) => Object.assign({ id, key: 'shiba', name: id, sex: 'female', born: B[m], parents: null, litters: 0, lastLitter: null, rescue: null, seasonSeed: 2 }, x || {});
-    const s = { dogs: [mk('y10', 10), mk('y11', 11), mk('a13', 13), mk('a30', 30), mk('s88', 88), mk('s100', 100), mk('lit', 30, { litters: 1 }), mk('sire', 30, { sex: 'male' }), mk('mum', 20),
-      mk('preg', 20, { preg: { since: B[1], due: B[0] } }), mk('res', 30, { rescue: { date: B[40] } }), mk('pup1', 4, { parents: { dam: 'lit', sire: 'x' } }), mk('p4', 4), mk('nob', 0, { born: undefined })],
-    litters: [{ mum: 'mum', pups: [] }], rehomed: [{ id: 'gone', parents: { dam: 'zz', sire: 'sire' } }], npcLitters: [], tree: { a30: { id: 'a30', born: B[30] } } };
+    const s = { dogs: [mk('y10', 10), mk('y11', 11), mk('a13', 13), mk('a30', 30), mk('s88', 88), mk('s100', 100, { fixed: true }), mk('lit', 30, { litters: 1 }), mk('sire', 30, { sex: 'male' }), mk('mum', 20),
+      mk('preg', 20, { preg: { since: B[1], due: B[0] } }), mk('res', 30, { rescue: { date: B[40] } }), mk('pup1', 4, { parents: { dam: 'lit', sire: 'x' } }), mk('p4', 4), mk('nob', 0, { born: undefined }),
+      mk('pd', 20, { preg: { sire: 'ps', since: B[1], due: B[0], pups: [{ parents: { dam: 'pd', sire: 'ps' } }] } }), mk('ps', 20, { sex: 'male' }), mk('ls', 20, { sex: 'male' }), mk('ns', 20, { sex: 'male' }),
+      mk('m98', 98, { sex: 'male' }), mk('f75', 75), mk('g20', 20, { key: 'dane' })],
+    litters: [{ mum: 'mum', sire: 'ls', pups: [] }], rehomed: [{ id: 'gone', parents: { dam: 'zz', sire: 'sire' } }], npcLitters: [{ npc: 'n1', sire: 'ns', pups: [] }], tree: { a30: { id: 'a30', born: B[30] } } };
     P.pup.fields(s);
     const t0 = new Date(); t0.setHours(0, 0, 0, 0); const m = (d) => (d.born ? Math.round((t0 - new Date(d.born + 'T00:00:00')) / 864e5) : null);
     const out = {}; s.dogs.forEach((d) => { out[d.id] = m(d); });
     const first = { flag: s.pupStart, tree: s.tree.a30.born === s.dogs[3].born, seed: s.dogs[3].seasonSeed, bday: [s.dogs[2].pupBday, s.dogs[4].pupBday, s.dogs[5].pupBday, s.dogs[0].pupBday] };
     s.dogs[3].born = B[30]; P.pup.fields(s); out.again = m(s.dogs[3]);
     return { out, first };
-  }, Object.fromEntries([0, 1, 4, 10, 11, 13, 20, 30, 40, 88, 100].map((n) => [n, iso(n)])));
+  }, Object.fromEntries([0, 1, 4, 10, 11, 13, 20, 30, 40, 75, 88, 98, 100].map((n) => [n, iso(n)])));
   const o = tab.out;
   ok(o.y10 === 6 && o.y11 === 6, `young 10 / 11 -> 6 (${o.y10}, ${o.y11})`);
   ok(o.a13 === 12 && o.a30 === 23, `adult 13 -> 12, adult 30 -> 23 (${o.a13}, ${o.a30})`);
-  ok(o.s88 === 84 && o.s100 === 93, `senior 88 -> 84, senior 100 -> 93 (${o.s88}, ${o.s100})`);
+  ok(o.s88 === 84 && o.s100 === 93, `senior 88 -> 84, senior 100 -> 93 (a fixed dog) (${o.s88}, ${o.s100})`);
+  ok(o.pd === 20 && o.ps === 20 && o.ls === 20 && o.ns === 20, `the father of a litter on the way, of a nursery litter and of a neighbour's litter keep their age (${o.pd}, ${o.ps}, ${o.ls}, ${o.ns})`);
+  ok(o.m98 === 96 && o.f75 === 72 && o.g20 === 18, `never back under a welfare age line: a male at 98 -> 96 (retired), a female at 75 -> 72 (no litters), a Great Dane at 20 -> 18 (grown) (${o.m98}, ${o.f75}, ${o.g20})`);
   ok(o.lit === 30 && o.sire === 30 && o.mum === 20 && o.preg === 20, `dogs that have had puppies keep their age: litters ${o.lit}, a sire of a rehomed pup ${o.sire}, a nursing mum ${o.mum}, expecting ${o.preg}`);
   ok(o.res === 30 && o.pup1 === 4 && o.p4 === 4 && o.nob === null, `a shelter resident (${o.res}), a born pup (${o.pup1}), a puppy (${o.p4}) and a dog with no birthday are left as they are`);
   ok(tab.first.flag === 1 && tab.first.tree && tab.first.seed === (2 + 7) % 6, 'S.pupStart = 1, the family tree follows the new birthday, the season phase stays (seasonSeed ' + tab.first.seed + ')');

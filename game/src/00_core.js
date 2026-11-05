@@ -906,7 +906,8 @@ function migrate(s) {
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
    has it from freshState). Every starter (no rescue record, no parents: adopted as a 10-month starter) gets the age it would have had if it had
-   come home as a 3-month puppy: 7 months younger (born 7 days later), but never a life stage back (young 6, adult 12, senior 84).
+   come home as a 3-month puppy: 7 months younger (born 7 days later), but never a life stage back (young 6, adult 12, senior 84), and a dog
+   that is not fixed never back under a welfare age line it was past (no breeding from 96, no litters from 72 for a female, a giant grown at 18).
    A dog that has had puppies (litters, expecting, nursing, the parent of any dog we know) keeps its age, so the welfare rules on age stay true.
    d.pupBday: the last birthday a shifted dog had already reached, so birthdayCheck never throws the same party twice. */
 const PUP_STAGE_START = { puppy: 0, young: 6, adult: 12, senior: 84 };
@@ -915,16 +916,19 @@ function pupStartFields(s) {
   if (starterMonths() !== PUP_START) return s; // the older test suites' world: starters are still 10 months there
   const par = new Set(), arr = (a) => (Array.isArray(a) ? a : []);
   const add = (p) => { if (!p || typeof p !== 'object') return; (Array.isArray(p) ? p : [p.dam, p.sire, p.mum, p.dad]).forEach((x) => { if (x) par.add(x); }); };
-  s.dogs.forEach((d) => d && add(d.parents));
-  arr(s.litters).forEach((L) => { if (!L) return; if (L.mum) par.add(L.mum); if (L.dad) par.add(L.dad); arr(L.pups).forEach((pp) => pp && add(pp.parents)); });
-  arr(s.npcLitters).forEach((x) => x && arr(x.pups).forEach((pp) => pp && add(pp.parents)));
+  s.dogs.forEach((d) => { if (!d) return; add(d.parents); if (d.preg) { if (d.preg.sire) par.add(d.preg.sire); arr(d.preg.pups).forEach((pp) => pp && add(pp.parents)); } }); // a litter on the way: its sire too
+  arr(s.litters).forEach((L) => { if (!L) return; if (L.mum) par.add(L.mum); if (L.sire) par.add(L.sire); arr(L.pups).forEach((pp) => pp && add(pp.parents)); });
+  arr(s.npcLitters).forEach((x) => { if (!x) return; if (x.sire) par.add(x.sire); arr(x.pups).forEach((pp) => pp && add(pp.parents)); });
   arr(s.rehomed).forEach((x) => x && add(x.parents));
   if (s.tree && typeof s.tree === 'object') Object.values(s.tree).forEach((r) => r && add(r.parents));
   const hasPar = (p) => !!p && typeof p === 'object' && (Array.isArray(p) ? p.some(Boolean) : !!(p.dam || p.sire || p.mum || p.dad));
   s.dogs.forEach((d) => {
     if (!d || typeof d.born !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.born) || d.rescue || hasPar(d.parents)) return; // no born, rescues, residents, born pups: as they are
     if ((+d.litters || 0) > 0 || d.preg || d.lastLitter || par.has(d.id)) return; // has had puppies: the age stays
-    const m = ageMonths(d), st = lifeStage(m), m2 = Math.max(m - 7, PUP_STAGE_START[st]), k = m - m2;
+    const m = ageMonths(d), st = lifeStage(m), R = BREEDING.RULES, gr = giantRules(d);
+    let m2 = Math.max(m - 7, PUP_STAGE_START[st]);
+    if (!d.fixed) [R.noBreedFromMonths, d.sex === 'female' ? R.female.noLittersFromMonths : 0, gr ? gr.adultMonths : 0].forEach((c) => { if (c && m >= c) m2 = Math.max(m2, c); }); // never back under a welfare age line it was past (retired at 96, no litters from 72, giants grown at 18)
+    const k = m - m2;
     if (st === 'puppy' || !(k > 0)) return; // a puppy already is one
     const b = new Date(d.born + 'T00:00:00'); b.setDate(b.getDate() + k); d.born = localISO(b);
     if (d.sex === 'female') d.seasonSeed = ((((d.seasonSeed || 0) + k) % 6) + 6) % 6; // the same season phase

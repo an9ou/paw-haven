@@ -17,8 +17,8 @@ const NEWS = [
     id: '2.19.3', date: '2026-11-05', c: '#FBE3D6', d: 'paw', pic: 'dog',
     title: () => tt('nw.v2193.title', 'Puppies at the shelter'),
     items: [
-      { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2193.pup', 'New friends from the shelter now come home as 3-month-old puppies and grow up a little every day') },
-      { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2193.back', 'Your starter dogs got some puppy months back, so there is more growing up to watch') }
+      { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2193.pup', 'Starter dogs from the shelter now come home as 3-month-old puppies and grow up a little every day') },
+      { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2193.back', 'Starter dogs that have not had puppies got some puppy months back, so there is more growing up to watch') }
     ]
   },
   { // Daily rhythm (docs/design/daily-rhythm.md). The date is a placeholder until the release day is set (after v2.19, 7 Nov 2026)

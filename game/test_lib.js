@@ -63,7 +63,7 @@ class T {
         // v2.15 (V215.md 13b): the new map and places (prefs.mpTest) and the v2.15 ground (prefs.grTest) are pinned off unless the suite passes
         // map215: true / ground: true (ground: true also turns the map on, since grOn needs mpOn), or sets the prefs itself
         // v2.19.3 Puppy start (V2193.md 5): starters are 3-month puppies, but the older suites keep the 10-month starter (and no old-save puppy-months
-        // migration) unless the suite passes pupStart: true (prefs.pupTest)
+        // migration) unless the suite passes pupStart: true (prefs.pupTest); PAW_PUPSTART=1 forces puppy starters on for any suite
         if (!('pupTest' in pr)) { pr.pupTest = !!cfg.pupStart; ch = true; }
         if (!('mpTest' in pr)) { pr.mpTest = !!(cfg.map215 || cfg.ground); ch = true; } if (!('grTest' in pr)) { pr.grTest = !!cfg.ground; ch = true; }
         if (ch) localStorage.setItem(PK, JSON.stringify(pr));
@@ -74,7 +74,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, pupStart: !!o.pupStart, map215: !!o.map215, ground: !!o.ground, yue: o.yue !== false });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, pupStart: !!(o.pupStart || process.env.PAW_PUPSTART), map215: !!o.map215, ground: !!o.ground, yue: o.yue !== false });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;
