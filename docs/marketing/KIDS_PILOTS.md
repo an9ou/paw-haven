@@ -114,7 +114,7 @@ Owner, 5 Nov 2026: "Dog manners ... can create reels version for rednote". Simpl
 
 ### Dog manners
 
-Video: `brand/kids/dog_manners/doodle-doggo-kids-dog-manners-rednote.mp4` (DURATION, the teen cut in Mandarin: Noodle speaks as 我, Kokoro v1.1-zh `zf_073` at 1.0x; Chinese cards, bubbles and subtitles in LXGW WenKai; the RedNote end card: logo, 治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩). Cover (upload as the video's custom cover): `brand/rednote/rednote-08-dog-manners.jpg` (1080 x 1440: "怎么和狗狗打招呼？", sticker "记住这4条", Bagel with heart eyes, the logo small).
+Video: `brand/kids/dog_manners/doodle-doggo-kids-dog-manners-rednote.mp4` (32 s, 4.6 MB, the teen cut in Mandarin: Noodle speaks as 我, Kokoro v1.1-zh `zf_073` at 1.0x; Chinese cards, bubbles and subtitles in LXGW WenKai; the RedNote end card: logo, 治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩). Cover (upload as the video's custom cover): `brand/rednote/rednote-08-dog-manners.jpg` (1080 x 1440: "怎么和狗狗打招呼？", sticker "记住这4条", Bagel with heart eyes, the logo small).
 
 标题 (title, 15 characters; 20 max):
 ```

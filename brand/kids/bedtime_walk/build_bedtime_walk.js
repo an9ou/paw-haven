@@ -304,8 +304,9 @@ window.frame=async function(frames,o){
     await q.screenshot({ path: f, clip: { x: 0, y: 0, width: sw, height: sh } }); await c.close(); console.log('bg', path.basename(f)); }
 
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  fs.writeFileSync(path.join(WORK, `page_${FORMAT}.html`), html);
-  await p.goto('file://' + path.join(WORK, `page_${FORMAT}.html`)); await p.waitForLoadState('networkidle');
+  const pageFile = path.join(WORK, `page_${FORMAT}_${process.pid}.html`); // one per process: PAR children must not rewrite each other's page while it loads
+  fs.writeFileSync(pageFile, html);
+  await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   await p.evaluate(() => Promise.all(['700 40px Andika', '700 40px Caveat'].map((f) => document.fonts.load(f, "Noodle's 12345. z"))));
   if (RN) await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), Object.values(SUBS_TX).flat().join('') + '狗狗的睡前散步治愈系蜡笔狗狗游戏浏览器搜 Doodle Doggo App 就能玩');
   await p.evaluate(() => document.fonts.ready);
