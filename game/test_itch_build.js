@@ -72,5 +72,5 @@ require('./test_lib').run('itch_build', async (t) => {
   const html = fs.readFileSync(path.join(ROOT, 'dist', 'itch', 'index.html'), 'utf8');
   // the same pattern as tools/itch.js: the real flags are a <script> tag of their own (tools/pages.js); the bare text also sits in the test hooks (__paw.ms2.pagesFlag, the Friends hook)
   ok(!/<script>window\.__dd(Fr|Yue|Ms2)Test=1<\/script>|dd_gate_v1|id="ddGate"/.test(html), 'dist/itch/index.html has no __ddFrTest, __ddYueTest or __ddMs2Test flag tag and no password screen');
-  ok(await p.evaluate(() => !window.__ddMs2Test && !window.__ddFrTest && !window.__ddYueTest && !!window.__paw.ms2 && window.__paw.ms2.on() === false && !!window.__paw.lv && window.__paw.lv.on() === false), 'the itch.io copy runs with Missions v2 and Town levels off (MS2_LIVE), no test flag set');
+  ok(await p.evaluate(() => !window.__ddMs2Test && !window.__ddFrTest && !!window.__paw.ms2 && window.__paw.ms2.on() === false && !!window.__paw.lv && window.__paw.lv.on() === false), 'the itch.io copy runs with Missions v2 and Town levels off (MS2_LIVE), no Missions v2 or Friends test flag set (the harness sets __ddYueTest itself)');
 });
