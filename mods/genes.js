@@ -489,13 +489,13 @@
       red:      ['#E9C27A', '#F6DFA8', '#C99A4E'], // yellow
       cream:    ['#F2E2C0', '#FFF4DE', '#D6C29A'],
       mblack:   ['#9AA6B6', '#B8C2CE', '#2B2430'], // blue merle
-      mblackcu: ['#9AA6B6', '#C8743A', '#2B2430'], // blue merle with copper
-      mliver:   ['#D9A07A', '#E8BC9C', '#9A4E2A'], // red merle
-      mlivercu: ['#D9A07A', '#E0A060', '#9A4E2A'],
+      mblackcu: ['#9AA6B6', '#D8742C', '#2B2430'], // blue merle with copper (v2.21 art fix: the copper more orange on the merle base)
+      mliver:   ['#D9A07A', '#E8BC9C', '#6A2E14'], // red merle (v2.21 art fix: darker liver patches)
+      mlivercu: ['#D9A07A', '#E2701E', '#6A2E14'],
       mblue:    ['#B3BCC8', '#D5DBE3', '#6E7F96'],
-      mbluecu:  ['#B3BCC8', '#D9A066', '#6E7F96'],
+      mbluecu:  ['#B3BCC8', '#DC843A', '#6E7F96'],
       mlilac:   ['#C9B8BC', '#E0D3D6', '#A8949A'],
-      mlilaccu: ['#C9B8BC', '#E0B48C', '#A8949A']
+      mlilaccu: ['#C9B8BC', '#E0945A', '#A8949A']
     },
     cavalier: {
       red:   ['#C8642E', '#E8A06A', '#8A3E1C'], // * Blenheim (chestnut on white) or Ruby
