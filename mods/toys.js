@@ -348,7 +348,13 @@
     yorkie: { d: [-11, 11], sit: [7, 20], jump: [-18, 3], eat: [35, 4], crouch: [7, 7], sleep: [-13, 14], sniff: [-23, 19] },
     bichon: { d: [-8, 6], sit: [5, 8], jump: [-14, 6], eat: [34, 2], crouch: [10, 9], sleep: [-10, 13], sniff: [-23, 17] },
     maltese: { d: [-4, 7], sit: [14, 14], jump: [-10, -2], eat: [34, 4], crouch: [14, 7], sleep: [-7, 13], sniff: [-17, 19] },
-    shihtzu: { d: [-14, 5], sit: [2, 11], jump: [-20, -2], eat: [34, -2], crouch: [4, 4], sleep: [-16, 11], sniff: [-26, 13] }
+    shihtzu: { d: [-14, 5], sit: [2, 11], jump: [-20, -2], eat: [34, -2], crouch: [4, 4], sleep: [-16, 11], sniff: [-26, 13] },
+    // v2.21 Five New Friends, measured on the final art the same way: the toy sits at the front of the drawn mouth in each pose (mods/toys/calib)
+    dalmatian: { d: [23, -22], sit: [38, -6], jump: [15, -36], eat: [34, 6], crouch: [41, 6], sleep: [18, 13], sniff: [9, 22] },
+    bernese: { d: [21, -8], sit: [35, -11], jump: [13, -15], eat: [34, 6], crouch: [39, 7], sleep: [24, 11], sniff: [6, 23] },
+    aussie: { d: [16, -4], sit: [31, 0], jump: [9, -17], eat: [34, 6], crouch: [34, 5], sleep: [11, 12], sniff: [2, 22] },
+    cavalier: { d: [6, 3], sit: [21, 9], jump: [-1, -8], eat: [34, 6], crouch: [24, 6], sleep: [2, 13], sniff: [-8, 21] },
+    jrt: { d: [5, 4], sit: [21, 10], jump: [-3, -8], eat: [34, 6], crouch: [23, 6], sleep: [2, 12], sniff: [-8, 22] }
 };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -377,7 +383,13 @@
     yorkie: { run: 0.95, fierce: true },
     bichon: { run: 1, fluff: true },
     maltese: { run: 0.85, fluff: true },
-    shihtzu: { run: 0.7, snort: true }
+    shihtzu: { run: 0.7, snort: true },
+    // v2.21 Five New Friends (V221.md 4)
+    dalmatian: { run: 1.3, carry: 1.05 },
+    bernese: { run: 0.8, fluff: true },
+    aussie: { run: 1.2, clever: true },
+    cavalier: { run: 0.9 },
+    jrt: { run: 1.2, fierce: true }
 };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -484,7 +496,13 @@
     yorkie: { fetchStart: ['throw it. gently. I am a lady.', 'ready. mind the bow.'], fetchDeliver: ['delivered. I want credit.', 'it was heavy. I did it anyway.'], tugStart: ['I am tiny. I am terrifying.'], tugGrowl: ['yap! grr! yap!', 'tiny but fierce'], howl: ['yap! yap!', 'a tiny, bossy yap'], tap: ['yes? you may speak.'] },
     bichon: { fetchStart: ['boing! throw it!', 'ready! springs on!'], fetchDeliver: ['boing boing boing! got it!', 'a cloud with a ball!'], tugGrowl: ['yip-grr! (soft)', 'mine! (bouncing)'], howl: ['a soft little yip', 'yip! (cotton ball)'], bubblePop: ['pop! boing! pop!'], poolIn: ['the puff is getting wet! ...fun!'], tap: ['boing! hello!'] },
     maltese: { fetchStart: ['a small throw, please. mind the fringe.', 'I will float after it.'], fetchDeliver: ['delivered, gracefully.', 'a silky little retrieve'], tugGrowl: ['a soft grr (silk)', 'mine. very gently.'], howl: ['a soft, high yip', 'yip. (elegant)'], bubblePop: ['the bubbles are as pretty as me'], tap: ['yes? I was floating.'] },
-    shihtzu: { fetchStart: ['throw it. a short one. I will think about it.', 'ok. but nap after.'], fetchDeliver: ['*snort* done. nap time.', 'it was a very long five steps'], tugGrowl: ['grrf *snort*', 'mine. lazily.'], howl: ['a small, snorty yip', 'yip *snort*'], coneLick: ['lick *snort* lick'], tap: ['*snort*? five more minutes.'] }
+    shihtzu: { fetchStart: ['throw it. a short one. I will think about it.', 'ok. but nap after.'], fetchDeliver: ['*snort* done. nap time.', 'it was a very long five steps'], tugGrowl: ['grrf *snort*', 'mine. lazily.'], howl: ['a small, snorty yip', 'yip *snort*'], coneLick: ['lick *snort* lick'], tap: ['*snort*? five more minutes.'] },
+    // v2.21 Five New Friends (V221.md 4)
+    dalmatian: { fetchStart: ['throw it far! I will run!', 'ready! spots set!'], fetchDeliver: ['got it! fast, right?', 'one more? one more!'], tugStart: ['pull! I am strong!'], tugGrowl: ['grr! (spotty)', 'mine! spot for spot!'], howl: ['woof! a clear one!', 'a proud spotty woof'], snuffleFind: ['found it! by the spot!'], tap: ['run now?'] },
+    bernese: { fetchStart: ['throw it. I will get it. slowly.', 'a short throw, please'], fetchDeliver: ['here you go. it is a bit wet.', 'got it. now a rest'], tugStart: ['a gentle tug. I am very strong.'], tugGrowl: ['grr (a soft one)', 'mine. but you can have it.'], howl: ['woof. a big soft woof.', 'a deep, gentle woof'], snuffleFind: ['found it. good nose.'], tap: ['lean on you?'] },
+    aussie: { fetchStart: ['throw it! I have a plan!', 'ready! eyes on the ball!'], fetchDeliver: ['brought it back! again?', 'herded it home!'], tugStart: ['a tug! a job!'], tugGrowl: ['grr! focused!', 'mine! organised!'], howl: ['woof woof! listen up!', 'a sharp herding bark'], snuffleFind: ['found it! all accounted for!'], tap: ['what is the job?'] },
+    cavalier: { fetchStart: ['throw it gently, please', 'a little throw for a little dog'], fetchDeliver: ['here it is! cuddle now?', 'got it. ears flying!'], tugStart: ['a soft tug. I am sweet.'], tugGrowl: ['grr (a sweet one)', 'mine, please'], howl: ['yip! a soft yip!', 'a sweet little yip'], snuffleFind: ['found it! lap time?'], tap: ['lap?'] },
+    jrt: { fetchStart: ['THROW IT! THROW IT NOW!', 'boing! ready!'], fetchDeliver: ['got it! again! again!', 'brought it back in record time'], tugStart: ['I never let go. Never.'], tugGrowl: ['grrr! tiny but mighty!', 'MINE. all mine.'], howl: ['yap! yap! yap!', 'a quick terrier yap'], snuffleFind: ['sniffed it out! too easy!'], tap: ['ball? hole? ball?'] }
 };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
 

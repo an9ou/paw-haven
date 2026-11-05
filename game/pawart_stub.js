@@ -58,7 +58,13 @@ window.PawArt = window.PawArt || {};
     { key: 'yorkie', name: 'Toffee', breed: 'Yorkshire Terrier', personality: 'A tiny terrier with silky hair and a giant attitude.', joke: 'I am in charge here. Please lift me onto the sofa.' },
     { key: 'bichon', name: 'Meringue', breed: 'Bichon Frise', personality: 'A happy cotton ball who bounces everywhere.', joke: 'Is this a haircut or a cloud? Yes.' },
     { key: 'maltese', name: 'Marshmallow', breed: 'Maltese', personality: 'A gentle little lap dog in a long white coat.', joke: 'I do not walk. I float, elegantly.' },
-    { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' }
+    { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' },
+    // v2.21 (V221.md 2)
+    { key: 'dalmatian', name: 'Sprinkles', breed: 'Dalmatian', personality: 'A spotty athlete who loves a long run and a crowd to show off to.', joke: 'Yes, I have counted my spots. I lost count. Twice.' },
+    { key: 'bernese', name: 'Fondue', breed: 'Bernese Mountain Dog', personality: 'A big, gentle, fluffy friend. Happiest leaning on the people it loves.', joke: 'I am not lying on your feet. I am keeping them warm.' },
+    { key: 'aussie', name: 'Pavlova', breed: 'Australian Shepherd', personality: 'A clever, busy herder with a lot of ideas. Needs a job, any job.', joke: 'I have herded the cushions. They are in a circle now. You are next.' },
+    { key: 'cavalier', name: 'Scone', breed: 'Cavalier King Charles Spaniel', personality: 'A sweet little lap dog with soft feathered ears. Friends with everyone.', joke: 'My ears are not hair. They are a gentle hug for my face.' },
+    { key: 'jrt', name: 'Pickle', breed: 'Jack Russell Terrier', personality: 'A small dog with an enormous amount of bounce. Digs, jumps and never stops.', joke: 'I am not hyper. I am just ready. For everything. Right now.' }
   ];
   const COAT = { shiba: ['#FF8A1E', '#FFE7B3'], corgi: ['#E9A35B', '#FFFFFF'], golden: ['#F6C445', '#FFE8A0'], dachs: ['#7A4A2A', '#B5774B'], husky: ['#8FA3B8', '#FFFFFF'], mutt: ['#FFFFFF', '#2a2420'],
     poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'],
@@ -66,7 +72,8 @@ window.PawArt = window.PawArt || {};
     afghan: ['#C9783E', '#E6A86E'], dane: ['#D9A562', '#2B2430'], mastiff: ['#D8AE72', '#2B2430'], gsd: ['#C98A4A', '#2B2430'],
     dobie: ['#2B2628', '#C8743A'], corso: ['#363133', '#57504F'], pitbull: ['#7E8898', '#F2EEE6'], minpin: ['#B5522C', '#DC8A56'], lab: ['#F0CC84', '#F9E6B6'],
     malamute: ['#9C9AA4', '#FFFFFF'], chow: ['#D2894A', '#EBB477'], stdpoodle: ['#2B2430', '#4A3F4E'], schnauzer: ['#9A9AA3', '#E6E4E0'], westie: ['#FBF8F1', '#E3D9C8'],
-    yorkie: ['#617389', '#D9A35C'], bichon: ['#FDFBF6', '#E4DCCD'], maltese: ['#FFFDF8', '#E6DDCE'], shihtzu: ['#E0A458', '#FFFFFF'] }; // v2.12: the starter shades (= the final art's SP colours)
+    yorkie: ['#617389', '#D9A35C'], bichon: ['#FDFBF6', '#E4DCCD'], maltese: ['#FFFDF8', '#E6DDCE'], shihtzu: ['#E0A458', '#FFFFFF'],
+    dalmatian: ['#FBF8F2', '#1D1A22'], bernese: ['#2B2628', '#C8743A'], aussie: ['#2B2430', '#C8743A'], cavalier: ['#C8642E', '#FFFFFF'], jrt: ['#FBF8F2', '#E0A050'] }; // v2.12: the starter shades (= the final art's SP colours)
 
   const ln = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const el = (cx, cy, rx, ry, f) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}" stroke="${INK}" stroke-width="5"/>`;

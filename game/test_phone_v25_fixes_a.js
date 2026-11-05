@@ -110,8 +110,9 @@ async function suite(t, dev) {
   await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(350);
   const fr = await trayReach(t, 'Feed tray', FOODS.length + 1);
   ok(fr && fr.out.filter((c) => c.n !== 'Fresh Water').length === FOODS.length, `all ${FOODS.length} owned foods have a card (the 8 v2.4 and 6 festival foods included)`);
-  const tb = await ev(() => { const t = document.querySelector('#dock > .tray').getBoundingClientRect(), d = document.querySelector('#dogHit'); const dr = d && d.getBoundingClientRect(); return { top: Math.round(t.top), dogBottom: dr ? Math.round(dr.bottom) : 0, ih: innerHeight }; });
-  ok(tb.top >= tb.ih * 0.45, `the tray stays short, the scene above it big (tray top at ${tb.top} of ${tb.ih})`);
+  const tb = await ev(() => { const t = document.querySelector('#dock > .tray').getBoundingClientRect(), d = document.querySelector('#dogHit'); const dr = d && d.getBoundingClientRect(); return { top: Math.round(t.top), dogBottom: dr ? Math.round(dr.bottom) : 0, ih: innerHeight, hud: Math.round(document.getElementById('hud').getBoundingClientRect().bottom), bar: Math.round(document.getElementById('bar').getBoundingClientRect().top) }; });
+  // v2.16 option C: the tray sits on the phone bar (Care / Walk / Map / More), so measure the scene between the HUD and the bar (the old check, top >= 45% of the screen, predates the bar)
+  ok(tb.top - tb.hud >= 0.35 * (tb.bar - tb.hud) && tb.dogBottom <= tb.top + 2, `the tray stays short, the scene above it big (scene ${tb.top - tb.hud} of ${tb.bar - tb.hud} px between the HUD and the bar, the dog above the tray: ${tb.dogBottom} <= ${tb.top})`);
   await t.SH('3_feed_' + tag);
   const sl0 = await ev(() => document.querySelector('#dock > .tray .row').scrollLeft); await swipe(t, '#dock > .tray .row', -220);
   const sl1 = await ev(() => document.querySelector('#dock > .tray .row').scrollLeft);
@@ -159,7 +160,7 @@ async function suite(t, dev) {
   await xFixed(t, '#trX', '#trainPanel', 'Training panel');
   await p.locator('#trX').tap(); await t.until(() => !document.querySelector('#trX'), null, 3000); await t.home();
   for (const [act, lab] of [['journal', 'Journal sheet'], ['wardrobe', 'Wardrobe sheet']]) {
-    await p.locator(`#bar [data-act=${act}]`).tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel .x'), null, 5000); await t.sleep(300);
+    await t.dock(act); await p.locator(`#bar [data-act=${act}]`).tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel .x'), null, 5000); await t.sleep(300); // v2.16: Journal and Wardrobe sit in the More tray
     await xFixed(t, '#modal .panel .x', '#modal .panel', lab); await p.locator('#modal .panel .x').tap(); await t.modalGone(); await t.home();
   }
 

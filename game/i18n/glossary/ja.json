@@ -35,7 +35,12 @@
     "yorkie": "ヨークシャー・テリア",
     "bichon": "ビションフリーゼ",
     "maltese": "マルチーズ",
-    "shihtzu": "シーズー"
+    "shihtzu": "シーズー",
+    "dalmatian": "ダルメシアン",
+    "bernese": "バーニーズ・マウンテン・ドッグ",
+    "aussie": "オーストラリアン・シェパード",
+    "cavalier": "キャバリア・キング・チャールズ・スパニエル",
+    "jrt": "ジャック・ラッセル・テリア"
   },
   "terms": {
     "Doodle Doggo": "Doodle Doggo",

@@ -85,6 +85,17 @@ const BREED_PERS = {
     ask: ['{name} floats over and sits by you.', '{name} looks up through {sex, select, female {her} other {his}} long white fringe.'] },
   shihtzu: { attention: 0.7, energy: 0.3, zoomies: 0.15, follows: 0.3, ball: 0.75, steal: 0.1, spots: ['bed', 'sun'], trait: 'lazy',
     ask: ['{name} rolls over. The top-knot stays perfect.', '{name} would like a lap. Yours will do.'] },
+  // v2.21 Five New Friends (V221.md 2): existing traits only, so 37_roam.js is unchanged
+  dalmatian: { attention: 0.6, energy: 0.9, zoomies: 0.6, follows: 0.6, ball: 1.25, steal: 0.15, spots: ['open', 'front'], trait: 'follow',
+    ask: ['{name} trots over and sits beside you, spots and all.', '{name} wants to know when the next run is. Pets first.'] },
+  bernese: { attention: 0.75, energy: 0.45, zoomies: 0.2, follows: 0.4, ball: 0.9, steal: 0.05, spots: ['shade', 'front'], trait: 'loyal',
+    ask: ['{name} leans on your legs. All of {sex, select, female {her} other {him}}. Gently.', '{name} rests {sex, select, female {her} other {his}} big fluffy head on your knee.'] },
+  aussie: { attention: 0.6, energy: 0.9, zoomies: 0.5, follows: 0.6, ball: 1.2, steal: 0.15, spots: ['open', 'edge'], trait: 'herd',
+    ask: ['{name} checked on everyone. Now {sex, select, female {she} other {he}} checks on you.', '{name} brings you a toy. The job is: throw it.'] },
+  cavalier: { attention: 0.9, energy: 0.45, zoomies: 0.25, follows: 0.5, ball: 0.85, steal: 0.05, spots: ['bed', 'sun'], trait: 'needy',
+    ask: ['{name} looks up at you with big soft eyes. A lap, please.', '{name} wags {sex, select, female {her} other {his}} whole feathery tail at you.', '{name} would like to sit on you. Right now, if possible.'] },
+  jrt: { attention: 0.55, energy: 0.95, zoomies: 0.75, follows: 0.2, ball: 1.15, steal: 0.35, spots: ['dig', 'open'], trait: 'sniff',
+    ask: ['{name} bounces over. Boing. Pet me. Boing.', '{name} stops digging for one quick pet. Just one.'] },
 };
 const PERS_DEF = { attention: 0.5, energy: 0.6, zoomies: 0.3, follows: 0.3, ball: 1.0, steal: 0.1, spots: ['open'], trait: '', ask: ['{name} comes over for a pet.'] };
 function persOf(d) { return Object.assign({}, PERS_DEF, (d && BREED_PERS[d.key]) || {}); }
@@ -107,6 +118,8 @@ const BREED_SIZE = {
   minpin: 'small', schnauzer: 'small', westie: 'small', bichon: 'small', maltese: 'small', shihtzu: 'small', yorkie: 'small',
   pitbull: 'medium', chow: 'medium',
   dobie: 'big', corso: 'big', lab: 'big', malamute: 'big', stdpoodle: 'big',
+  // v2.21 (V221.md 2)
+  cavalier: 'small', jrt: 'small', aussie: 'medium', dalmatian: 'big', bernese: 'big',
 };
 const SIZE_K = { small: 0.72, medium: 0.86, big: 1 }; // the classes, relative to a big dog
 const SIZE_GROW = 1.25; // every dog, on top of the v2.10 size

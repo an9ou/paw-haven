@@ -48,8 +48,8 @@ async function suite(t, W, H) {
   await t.home('yard'); await t.calm(); await t.freezeMotion(true);
   ok(await ev(() => !document.querySelector('#msCardG') && (!document.querySelector('#msBtn') || getComputedStyle(document.querySelector('#msBtn')).display === 'none')), `${tag}: no clipboard in the scene, no top-bar clipboard on a phone`);
   await p.locator('#moreBtn').tap(); ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 4000), `${tag}: the "..." menu lists the missions`);
-  const mm = await ev(() => { const b = document.getElementById('mmMs'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, txt: b.textContent.replace(/\s+/g, ' ').trim(), n: window.__paw.S.missions.list.filter((x) => x.done).length }; });
-  ok(mm.h >= 43.5 && mm.w >= 43.5 && mm.txt.includes(mm.n + '/3') && /Daily missions/.test(mm.txt), `${tag}: the Missions button, 44 px, with its count: ${mm.txt} (${Math.round(mm.w)}x${Math.round(mm.h)})`);
+  const mm = await ev(() => { const b = document.getElementById('mmMs'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, txt: b.textContent.replace(/\s+/g, ' ').trim(), n: window.__paw.S.missions.list.filter((x) => x.done).length, of: window.__paw.S.missions.list.length }; }); // v2.19.2: one mission a day (0/1)
+  ok(mm.h >= 43.5 && mm.w >= 43.5 && mm.of >= 1 && mm.txt.includes(mm.n + '/' + mm.of) && /Daily missions/.test(mm.txt), `${tag}: the Missions button, 44 px, with its count: ${mm.txt} (${Math.round(mm.w)}x${Math.round(mm.h)})`);
   await t.SH('missions_menu_' + tag);
   await p.locator('#mmMs').tap();
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), `${tag}: a tap opens the Missions sheet`);

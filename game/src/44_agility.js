@@ -75,7 +75,13 @@ const AG_LINES = {
   yorkie: 'I may be tiny, but I rule this arena and its bunting.',
   bichon: 'Boing, boing, tunnel, boing! A fluffy cloud on the course.',
   maltese: 'A silky run, a graceful hop and a very neat finish.',
-  shihtzu: 'I will stroll the whole course at a lovely pace. Slow clap for me.'
+  shihtzu: 'I will stroll the whole course at a lovely pace. Slow clap for me.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: 'Spots at full speed. Count them as I fly past.',
+  bernese: 'I will do the course slowly and with great dignity. Then a nap.',
+  aussie: 'A course! A job! I have been waiting my whole life for this.',
+  cavalier: 'I will try every jump. The low ones. With my ears flying.',
+  jrt: 'Jumps? I love jumps. I will jump the jumps and then the fence.'
 };
 // a getter, so the line follows the player's language (03_yard.js placeAmbient reads PLACE_LINES[breed].training at run time)
 Object.keys(AG_LINES).forEach((b) => { if (PLACE_LINES[b]) Object.defineProperty(PLACE_LINES[b], 'training', { get: () => tdata('ag_lines.' + b, AG_LINES[b]), enumerable: true, configurable: true }); });

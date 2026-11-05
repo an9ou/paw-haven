@@ -478,9 +478,159 @@ SP.shihtzu={name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a
    [[.18,.62,.12,1.2],[.42,.7,.4,1.32],[.66,.62,.7,1.12]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2-1,hy*(q[1]+q[3])/2],[hx*q[2],hy*q[3]]].map(Hd),1.8,KL,.3));
    [[-.42,-.62],[-.14,-.8]].forEach((q,i)=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]-.1),hy*(q[1]+.3)]].map(Hd),2,K,.3))}};
 /* end v2.12 ART D */
+/* v2.21 ART A: dalmatian, bernese, aussie */
+/* Natural ears and tails (no cropping, no docking: the Aussie gets its full tail). Their extras are new spec fields, so no older dog takes these
+   branches: coatFn (a breed's own coat pass at the end of coated(): the aussie's merle marbling and white trim), earFn (marks inside an ear: the
+   dalmatian's spots), legFn (marks on a leg: the dalmatian's spots), legs.toe (white feet: the bernese, the aussie's trim), bib (the white of the chest:
+   the bernese ruff and muzzle, through ART B's face.snoutK; the aussie's collar), EARS_A.tri and EARS_A.dropD (the bernese's broad triangle ear, the
+   dalmatian's high drop ear; their pivots sit inside the skull), faceFn (the aussie's pale eye creases on a dark head without copper), tail 'dal' (drawn by
+   its tailFn), headShut (art fix: the head outline drawn closed, no crayon gap; on the white dalmatian a gap left a loose stub over the muzzle). The dalmatian uses ART B's ownWhite (its white ground: coat.white lays no white patches over the spots). Every colour fill stays inside its own outline: the marks are laid while
+   the body, head, ear or tail part is open (h.part), so a spot or patch that reaches the edge is pinned inside the line */
+EARS_A.tri=function(pr,E){// v2.21 bernese: a broad, soft triangle set high on the skull, hanging flat by the cheek, the tip rounded
+  E.push({pts:pr([[-.3,-.98],[-.96,-.84],[-1.16,-.3],[-1.04,.16],[-.84,.12],[-.62,-.5]]),pivot:pr([[-.52,-.72]])[0],side:-1,flop:1});
+  E.push({pts:pr([[.1,-1.02],[.66,-.98],[.84,-.6],[.74,-.2],[.56,-.26],[.34,-.72]]),pivot:pr([[.32,-.8]])[0],side:1,flop:1})};// the pivots sit inside the skull, so a turned or shrunk ear (the Astronaut Helmet) keeps its root on the head
+EARS_A.dropD=function(pr,E){// v2.21 dalmatian: the v2.12 drop ear set high, its pivots inside the skull (a puppy's ear lying flat under the Astronaut Helmet stays on the head)
+  E.push({pts:pr([[-.4,-.94],[-1.0,-.88],[-1.24,-.36],[-1.16,.32],[-.98,.42],[-.8,-.26]]),pivot:pr([[-.5,-.62]])[0],side:-1,flop:1,fold:[0,1]});
+  E.push({pts:pr([[.04,-1.0],[.56,-1.02],[.8,-.72],[.74,-.4],[.58,-.42],[.3,-.74]]),pivot:pr([[.28,-.8]])[0],side:1,flop:1,fold:[0,1]})};
+EARS_A.roseA=function(pr,E){// v2.21 art fix, aussie: a high-set triangle ear lifted clear of the skull, the top third folded forward (half-folded rose), behind the head like the collie's
+  E.push({pts:pr([[-.82,-.46],[-.72,-1.12],[-.54,-1.36],[-.12,-1.2],[-.34,-1.1],[-.1,-.84]]),pivot:pr([[-.44,-.72]])[0],side:-1,fold:[1,4]});
+  E.push({pts:pr([[.04,-.9],[.16,-1.18],[.36,-1.4],[.82,-1.14],[.56,-1.1],[.74,-.42]]),pivot:pr([[.42,-.72]])[0],side:1,fold:[1,4]})};
+function aussieEar(h,s,e,p,HT){// the ear's own pale crayon rim just inside its outline (up the back edge, over the fold), so a dark ear reads on a dark head even at chip size
+  if(!e.fold)return;let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const c=s.ear||s.hcol,in_=q=>{const dx=cx-q[0],dy=cy-q[1],m=Math.hypot(dx,dy)||1,d=Math.min(2.6,m*.4);return[q[0]+dx/m*d,q[1]+dy/m*d]};
+  h.line([p[0],p[1],p[2],p[3]].map(in_).map(HT),1.9,mix(c,W,lum(c)<.32?.5:.4),.3)}
+const spotA=(h,M,x,y,r,col)=>h.shape(circ(x,y,r,r*.9,8,.16).map(M),col,{noline:1,ox:0,oy:0,famp:.5});// one round crayon spot, kept inside the open part
+// dalmatian spots: [x, y] of the body or head (x rx, y ry), r in rx. A puppy has the first few only, a newborn none (real: they are born white, the spots come in from two weeks)
+const DAL_B=[[-.62,-.42,.1],[-.2,-.12,.13],[.28,-.5,.1],[-.5,.3,.12],[.2,.36,.11],[.58,-.08,.08],[-.86,.1,.08],[.02,-.7,.08],[-.34,-.74,.07],[.5,.62,.07],[-.1,.68,.08],[.78,.3,.07],[-.72,.66,.06],[.66,-.56,.06],[.04,.14,.06],[-.94,-.36,.05]];
+const DAL_H=[[-.56,-.44,.13],[-.66,.24,.1],[.0,-.8,.08],[.1,.34,.085],[-.24,.6,.08],[.66,-.62,.07],[-.3,-.86,.06],[.18,-.6,.065]];// v2.21 art fix: a cheek spot (a puppy has it too) and a forehead spot, so the face is spotty, not only the back of the skull
+function dalMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,K=s.dark,n=s.pup===2?0:s.pup?6:DAL_B.length,m=s.pup===2?0:s.pup?4:DAL_H.length,z=s.pup?.86:1;
+  DAL_B.slice(0,n).forEach(q=>spotA(h,B,b.rx*q[0],b.ry*q[1],b.rx*q[2]*z,K));DAL_H.slice(0,m).forEach(q=>spotA(h,Hd,hx*q[0],hy*q[1],hx*q[2]*z,K))}
+function dalEar(h,s,e,p,HT){if(s.pup===2)return;// v2.21 art fix: a big dark spot over the tip of each ear and a small one by the crease (a puppy: the tip spot), pinned inside the ear's own outline,
+  // so the white ear reads on the white head even at chip size
+  let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const K=s.dark,hx=s.head.rx,lp=(a,t)=>[cx+(a[0]-cx)*t,cy+(a[1]-cy)*t],tip=[(p[3][0]+p[4][0])/2,(p[3][1]+p[4][1])/2];
+  h.part(1);{const c=lp(tip,1.05);spotA(h,HT,c[0],c[1],hx*(s.pup?.4:.46),K)}if(!s.pup){const c=lp(p[1],.42);spotA(h,HT,c[0],c[1],hx*.1,K)}h.part(0)}
+function dalTail(h,s,L,map,col){// dalmatian: a long tail, thick at the root and tapering to a fine point, curved a little up; a few spots
+  const C=dense([[0,0],[-11,-8],[-18,-21],[-20,-35],[-15,-48]],false,4),M=map(C),n=M.length,on=q=>q[1]>=GY-2.01;let P=M;
+  if(M.filter(on).length*3>=n){// the tail lies on the ground (sit, ...): map() flattens it onto the ground line, so lay it there with its own width, the lower edge on the ground
+   const r=map([[0,0],[4,0],[0,-4]]),k=Math.max(Math.hypot(r[1][0]-r[0][0],r[1][1]-r[0][1]),Math.hypot(r[2][0]-r[0][0],r[2][1]-r[0][1]))/4||1;
+   P=M.map((q,i)=>on(q)?[q[0],GY-2-(5.6+(1.7-5.6)*i/(n-1))*k]:q);h.shape(taperB(P,5.6*k,1.7*k).map(q=>[q[0],Math.min(q[1],GY-2)]),col,{step:30,amp:.6,w:3.4})}
+  else h.shape(map(taperB(C,5.6,1.7)),col,{step:30,amp:.6,w:3.4});
+  if(s.pup===2)return;h.part(1);[[.3,2.3],[.62,1.8]].slice(0,s.pup?1:2).forEach(([t,r])=>{const p=P[Math.round(t*(n-1))];h.shape(circ(p[0],p[1],r,r*.9,7),s.dark,{noline:1,ox:0,oy:0,famp:.3})});h.part(0)}
+function dalLeg(h,s,L,l){if(s.pup===2||!l.foot||l.raised&&!l.mid)return;// a spot or two down the leg (a puppy: one), small enough to sit inside the leg's own fill
+  const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],at=t=>t<.5?[C[0][0]+(C[1][0]-C[0][0])*t*2,C[0][1]+(C[1][1]-C[0][1])*t*2]:[C[1][0]+(C[2][0]-C[1][0])*(t-.5)*2,C[1][1]+(C[2][1]-C[1][1])*(t-.5)*2],r=l.w*.3;
+  [[.42,1],[.72,.8]].slice(0,s.pup?1:(l.i%2?1:2)).forEach(([t,k])=>{const p=at(t+(l.i%2)*.08);h.acc.push('<ellipse cx="'+R1(p[0]+h.J(.4))+'" cy="'+R1(p[1])+'" rx="'+R1(r*k)+'" ry="'+R1(r*k*1.15)+'" fill="'+(l.near?s.dark:mix(s.dark,PEN,.2))+'"/>')})}
+SP.dalmatian={name:'Sprinkles',breed:'Dalmatian',personality:'A spotty athlete who loves a long run and a crowd to show off to.',joke:'Yes, I have counted my spots. I lost count. Twice.',
+  col:'#FBF8F2',hcol:'#FBF8F2',light:'#FFFFFF',dark:'#1D1A22',ownWhite:()=>{},body:{x:108,y:127,rx:48,ry:24,lop:.05},head:{x:166,y:87,rx:28,ry:24},neck:1,
+  legs:{h:-31,f:29,w:8.4},legFn:dalLeg,headShut:1,ears:'dropD',earS:1,earRound:1,earFn:dalEar,tail:'dal',tailFn:dalTail,tsc:1.08,eyes:[5.8,5.4],
+  face:{eyes:'open',mouth:'tongue',e0:[-.12,-.22],e1:[.4,-.26],nose:[1.6,.12],snout:1,snoutL:1.6,brow:'soft'},
+  marks:dalMarks};
+function berneseMarks(h,B,Hd,s){// tricolour: rust (light) on the cheeks, over the eyes, the forelegs and under the tail; always white: the blaze, the chest cross (and the ruff, feet and tail tip)
+  const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],K=s.light,Wb=s.bib||W,F=mix(s.col,W,.3);
+  h.shape([[b.rx*.46,b.ry*.28],[b.rx*.72,b.ry*.36],[b.rx*.86,b.ry*.92],[b.rx*.44,b.ry*.95]].map(B),K,{noline:1,ox:0,oy:0});
+  h.shape(circ(-b.rx*.86,b.ry*.12,b.rx*.1,b.ry*.28,7).map(B),K,{noline:1,ox:0,oy:0});
+  h.shape([[b.rx*.62,-b.ry*.58],[b.rx*.88,-b.ry*.5],[b.rx*1.02,b.ry*.1],[b.rx*.9,b.ry*.7],[b.rx*.74,b.ry*.62],[b.rx*.7,b.ry*.12]].map(B),Wb,{noline:1,ox:0,oy:0});
+  [[-.62,-.5],[-.14,-.66],[.3,-.46],[-.66,.32],[-.08,.36]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-5,y-2],[x-2,y+3],[x+1,y-2],[x+4,y+3]].map(B),2.2,F,.4)});
+  [e0,e1].forEach((e,i)=>h.dot(...Hd([hx*(e[0]+.04),hy*(e[1]-.4)]),3.6*(i?.9:1),2.6,K));
+  h.shape(circ(hx*.5,hy*.46,hx*.36,hy*.3,9).map(Hd),K,{noline:1,ox:0,oy:0});h.shape(circ(-hx*.3,hy*.62,hx*.22,hy*.2,8).map(Hd),K,{noline:1,ox:0,oy:0});
+  h.shape([[hx*.06,-hy*.98],[hx*.24,-hy*.98],[hx*.3,-hy*.3],[hx*.5,hy*.06],[hx*.02,hy*.08],[hx*.1,-hy*.3]].map(Hd),Wb,{noline:1,ox:0,oy:0})}
+SP.bernese={name:'Fondue',breed:'Bernese Mountain Dog',personality:'A big, gentle, fluffy friend. Happiest leaning on the people it loves.',joke:'I am not lying on your feet. I am keeping them warm.',
+  col:'#2B2628',hcol:'#2B2628',light:'#C8743A',dark:'#1D1A1C',bib:W,fluff:1,bellyFl:1,hfluff:0,body:{x:104,y:134,rx:56,ry:31},head:{x:163,y:97,rx:35,ry:30},
+  legs:{h:-33,f:30,w:12.6,sock:'#C8743A',toe:W},ears:'tri',earS:.92,earRound:1,tail:'brush',tsc:1.06,tailTip:W,ruff:1.02,ruffK:'bib',eyes:[5.4,5],
+  face:{eyes:'open',mouth:'tongue',e0:[-.16,-.16],e1:[.36,-.2],nose:[1.3,.14],snout:1,snoutL:1.3,snoutK:'bib',brow:'soft',browCol:'#D9A27A',pupil:.7},
+  marks:berneseMarks};
+// aussie: the coat pass. White trim (coat.white, capped at 0.25 by the genes): a white collar (neck tube and ruff), chest, blaze and feet; none = the coat colour.
+// Merle: the aussie draws its own marbling under the copper and white (the shared smudges would lie over them): torn patches in dark, a few half-dark and pale ones.
+function aussieCoat(s,coat,o){const R=o.R;s.wt=o.white>0?1:0;if(!s.mixHead)s.ear=!o.merle&&lum(s.hcol)<.2?mix(s.hcol,W,.2):s.dark;// v2.21 art fix: a lighter ear on a black head (merle and red keep the dark ear)
+  s.bib=s.wt?W:undefined;s.neckCol=s.wt?W:undefined;s.legs.toe=s.wt?W:undefined;s.tailTip=undefined;
+  if(!o.merle){s.mrl=null;if(s.pat)s.pat={body:()=>{},head:s.mixHead?s.pat.head:()=>{}};return}
+  const P=[];for(let i=0;i<13;i++)P.push({b:i<9,x:(R()-.5)*(i<9?1.5:1.0),y:(R()-.5)*(i<9?1.2:.9),rx:.12+R()*.12,ry:.16+R()*.16,k:i%4===3?2:i%3===2?1:0,a:R()*180});
+  s.mrl=P;if(s.pat)s.pat={body:()=>{},head:s.mixHead?s.pat.head:()=>{}}}
+function aussieMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],K=s.light,dk=s.dark||INK;
+  if(s.mrl){const C=[dk,mix(s.col,dk,.5),mix(s.col,W,.42)];// merle: a pale base marbled with torn dark patches
+    s.mrl.forEach(q=>{const M=q.b?B:Hd,rx=q.b?b.rx:hx,ry=q.b?b.ry:hy,x=q.b?q.x:q.x*.8-.2,y=q.b?q.y:q.y*.8-.3;
+      h.shape(rotAbout(circ(rx*x,ry*y,rx*q.rx,ry*q.ry,9,.34),q.a,[rx*x,ry*y]).map(M),C[q.k],{noline:1,ox:0,oy:0});
+      if(!q.k)h.shape(circ(rx*(x+q.rx*.9),ry*(y-q.ry*.5),rx*q.rx*.45,ry*q.ry*.5,7,.3).map(M),C[0],{noline:1,ox:0,oy:0})});
+    h.crayon(b.rx,b.ry,B,mix(s.col,dk,.3),6)}
+  h.shape([[b.rx*.44,b.ry*.36],[b.rx*.72,b.ry*.42],[b.rx*.82,b.ry*.92],[b.rx*.42,b.ry*.95]].map(B),K,{noline:1,ox:0,oy:0});// copper behind the forelegs and under the tail
+  h.shape(circ(-b.rx*.86,b.ry*.14,b.rx*.1,b.ry*.26,7).map(B),K,{noline:1,ox:0,oy:0});
+  if(s.wt)h.shape([[b.rx*.56,-b.ry*.72],[b.rx*.86,-b.ry*.6],[b.rx*1.02,b.ry*.05],[b.rx*.88,b.ry*.6],[b.rx*.7,b.ry*.5],[b.rx*.64,-b.ry*.1]].map(B),W,{noline:1,ox:0,oy:0});
+  [e0,e1].forEach((e,i)=>h.dot(...Hd([hx*(e[0]+.04),hy*(e[1]-.4)]),3.2*(i?.9:1),2.3,K));// copper eyebrow dots and cheeks
+  h.shape(circ(hx*.48,hy*.44,hx*.34,hy*.28,9).map(Hd),K,{noline:1,ox:0,oy:0});
+  if(s.wt)h.shape([[hx*.12,-hy*.68],[hx*.22,-hy*.7],[hx*.25,-hy*.22],[hx*.34,hy*.04],[hx*.12,hy*.04],[hx*.14,-hy*.26]].map(Hd),W,{noline:1,ox:0,oy:0})}// a short, thin blaze (the bernese's runs wide to the crown)
+function aussieFace(h,s,L,HT){if(lum(s.hcol)<.32&&lum(s.light)<.32)ringA(h,s,L,HT,1.9)}// a dark head with no copper (Black, Black and white): pale eye creases, so the face reads
+SP.aussie={name:'Pavlova',breed:'Australian Shepherd',personality:'A clever, busy herder with a lot of ideas. Needs a job, any job.',joke:'I have herded the cushions. They are in a circle now. You are next.',
+  col:'#2B2430',hcol:'#2B2430',light:'#C8743A',dark:'#1D1A22',ear:'#55505A',wt:1,bib:W,neckCol:W,body:{x:110,y:143,rx:43,ry:23,lop:.04},head:{x:164,y:104,rx:29,ry:26},neck:1,
+  legs:{h:-27,f:24,w:9,sock:'#C8743A',toe:W},ears:'roseA',earS:.9,earRound:1,earFn:aussieEar,tail:'brush',tsc:.86,ruff:.96,ruffK:'bib',coatFn:aussieCoat,faceFn:aussieFace,eyes:[6.2,5.8],
+  face:{eyes:'open',mouth:'smile',e0:[-.14,-.18],e1:[.38,-.22],nose:[1.38,.12],snout:1,snoutL:1.38,brow:'curious',browCol:'#CFC6C0'},
+  marks:aussieMarks};
+/* end v2.21 ART A */
+/* v2.21 ART B: cavalier, jrt */
+/* Their extras are new spec fields, so no older dog takes these branches: ownWhite (coated() hands the coat's white to the breed's own function as
+   s.parti, with no white socks, dots or blaze), face.snoutK (the muzzle takes that spec colour: the Blenheim's white muzzle is its white neckCol),
+   ears 'button' (in EARS_A: the Jack Russell's small ears folded forward) and tailFn (the cavalier's feathered tail, the Jack Russell's natural tail
+   held up). The cavalier's long feathered ears are the v2.11 curtain ear with the v2.12 earSwing: they swing out behind in jump and shake and stay
+   on the skull (earOn) */
+const whB=s=>s.neckCol||(s.wet?wetC(W):W);// the parti white (a spec colour, so a wet coat lays it a shade darker too)
+const inEB=(b,P,k=.95)=>dense(P,true,3).map(q=>{const r=Math.hypot(q[0]/b.rx,q[1]/b.ry);return r>k?[q[0]*k/r,q[1]*k/r]:q});// a body mark kept inside the body even with no part open (the expecting belly closes it); k: the clamp
+const warmB=c=>{const v=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));return v[0]-v[2]>80&&v[0]>=v[1]&&v[1]>=v[2]};// a red or cream coat (no tan points)
+EARS_A.button=function(pr,E){// v2.21 jrt: a small V ear that lifts off the skull and folds forward at the crease, the tip pointing down toward the eye
+  E.push({pts:pr([[-.66,-.8],[-.56,-1.06],[-.22,-1.1],[.02,-.78],[.0,-.44],[-.16,-.56],[-.42,-.76]]),pivot:pr([[-.38,-.92]])[0],side:-1,flop:1,fold:[1,3]});
+  E.push({pts:pr([[.04,-.9],[.16,-1.1],[.52,-1.08],[.8,-.72],[.78,-.36],[.6,-.48],[.36,-.76]]),pivot:pr([[.3,-.94]])[0],side:1,flop:1,fold:[1,3]})};
+function cavTail(h,s,L,map,col){// cavalier: carried happily, a little up, the long silky feathering hanging under it
+  const c=(s.parti||0)>=.6?whB(s):col,wt=s.wet,C=dense([[0,0],[-10,-7],[-21,-11],[-32,-12],[-40,-9]],false,3.5),n=C.length,up=[],dn=[];
+  C.forEach((p,i)=>{const t=i/(n-1),a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1,u=[-dy/m,dx/m],
+   wu=4.6-t*2.4,wd=(wt?2.6+4.6*Math.sin(Math.PI*Math.min(1,t*1.08)):3+9.5*Math.sin(Math.PI*Math.min(1,t*1.08)))*(i%2?(wt?.8:1.1):(wt?1.2:.94));
+   up.push([p[0]+u[0]*wu,p[1]+u[1]*wu]);dn.push([p[0]-u[0]*wd,p[1]-u[1]*wd])});
+  h.shape(map(up.concat(dn.reverse())),c,{step:30,amp:.8,w:3.6});// the plume of silky feathering hanging under the tail
+  const K=lum(c)<.32?mix(c,W,.32):mix(c,PEN,.3);h.line(map([[-12,-1],[-17,5]]),1.8,K,.3);h.line(map([[-23,-4],[-28,3]]),1.8,K,.3)}
+function cavCoat(s,w){// cavalier: Blenheim and Tricolour are the parti coat (w 0.6: white with the colour in patches), Ruby and Black and tan the whole colours
+  s.parti=w;s.tanPts=!warmB(s.col);s.face=Object.assign({},s.face);
+  if(w>=.6){s.neckCol=W;s.legs.col=W;delete s.legs.sock;s.face.snoutK='neckCol';s.bellyK='neckCol';s.bodyShut=1}// art fix (new spec field bodyShut): the body outline closed, so no crayon gap shows the chestnut ground under the white
+  else{delete s.bodyShut;delete s.neckCol;delete s.bellyK;delete s.legs.col;if(s.tanPts)s.legs.sock=s.light;else delete s.legs.sock;delete s.face.snoutK}}
+function cavMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,pw=s.parti||0,Wc=whB(s),tan=s.tanPts,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1];
+  const K=curlCol(s.col),KW=mix('#E3D9C8',PEN,.3),o={noline:1,ox:0,oy:0};
+  if(pw>=.6){// white all over, the colour left as a saddle on the back and a patch over the rump (art fix: with the body part open the white runs out to the ink, pinned inside it, so no chestnut seam along the belly; expecting, the part is closed: clamped at .95)
+   h.shape(inEB(b,[[b.rx*1.1,-b.ry*1.1],[b.rx*.4,-b.ry*1.1],[b.rx*.44,-b.ry*.56],[b.rx*.3,-b.ry*.16],[-b.rx*.04,-b.ry*.04],[-b.rx*.22,-b.ry*.42],[-b.rx*.26,-b.ry*1.1],[-b.rx*.5,-b.ry*1.1],
+    [-b.rx*.46,-b.ry*.5],[-b.rx*.6,-b.ry*.02],[-b.rx*.86,b.ry*.2],[-b.rx*1.1,b.ry*.22],[-b.rx*1.1,b.ry*1.1],[b.rx*1.1,b.ry*1.1]],s.expecting?.95:1.1).map(B),Wc,o);
+   [[.6,.3],[.1,.5],[-.4,.55]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]-.03),b.ry*(q[1]+.26)]].map(B),1.8,KW,.3))}
+  else if(pw>=.25)h.shape(circ(b.rx*.8,b.ry*.38,b.rx*.15,b.ry*.42,8).map(B),Wc,o);// a little white star on the chest
+  if(tan){if(pw<.6)h.shape(inEB(b,[[b.rx*.6,-b.ry*.05],[b.rx*.94,-b.ry*.18],[b.rx*1.02,b.ry*.36],[b.rx*.84,b.ry*.9],[b.rx*.62,b.ry*.6]]).map(B),s.light,o);
+   h.shape(circ(-b.rx*.86,b.ry*.02,b.rx*.1,b.ry*.24,7).map(B),s.light,o)}
+  [[-.36,-.66],[.12,-.72]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]+.04),b.ry*(q[1]+.16)],[b.rx*(q[0]+.01),b.ry*(q[1]+.3)]].map(B),2,K,.3));// the silky wave on the back
+  // the head: the white blaze up between the eyes, the white muzzle, cheeks and chin, the chestnut "lozenge" on the crown
+  if(pw>=.6){h.shape([[hx*.06,-hy*1.08],[hx*.22,-hy*1.08],[hx*.24,-hy*.5],[hx*.3,-hy*.02],[hx*.64,hy*.04],[hx*1.08,hy*.02],[hx*1.08,hy*1.08],[-hx*.34,hy*1.08],[-hx*.46,hy*.56],[-hx*.16,hy*.22],[hx*.02,-hy*.46]].map(Hd),Wc,o);
+   h.shape(circ(hx*.14,-hy*.66,hx*.085,hy*.1,7).map(Hd),s.col,o)}
+  if(tan){[e0,e1].forEach((e,i)=>h.shape(circ(hx*(e[0]+.03),hy*(e[1]-.42),hx*(i?.09:.1),hy*.07,7).map(Hd),s.light,o));
+   h.shape(circ(-hx*.3,hy*.3,hx*.16,hy*.12,8).map(Hd),s.light,o)}}
+SP.cavalier={name:'Scone',breed:'Cavalier King Charles Spaniel',personality:'A sweet little lap dog with soft feathered ears. Friends with everyone.',joke:'My ears are not hair. They are a gentle hug for my face.',
+  col:'#C8642E',hcol:'#C8642E',light:'#E8A06A',dark:'#8A3E1C',neckCol:W,bellyK:'neckCol',bodyShut:1,parti:.6,ownWhite:cavCoat,body:{x:114,y:147,rx:37,ry:21,lop:.03},head:{x:160,y:109,rx:28,ry:26},
+  legs:{h:-25,f:23,w:6.8,col:W},ears:'curtain',earS:.8,earRound:1,earSwing:62,tail:'feather',tailFn:cavTail,eyes:[7.6,7.2],
+  face:{eyes:'open',mouth:'smile',e0:[-.16,-.12],e1:[.38,-.16],nose:[1.2,.2],snout:1,snoutL:1.2,snoutD:.58,snoutK:'neckCol',pupil:.8,brow:'soft',browCol:'#D9A27A',sweet:1},
+  marks:cavMarks};
+function jrtTail(h,s,L,map,col){// jack russell: a natural tail, carried straight up, thick at the root
+  const C=dense([[0,0],[-3,-10],[-3,-21],[1,-31]],false,4);h.shape(map(taperB(C,s.wet?4.8:5.6,2.4)),col,{step:30,amp:.7,w:3.6});h.line(map([[-1,-6],[-2,-16]]),1.8,mix('#E3D9C8',PEN,.3),.3)}
+function jrtFace(h,s,L,HT){// on black patches: a pale crayon crease round each open eye, so the face reads even at chip size
+  if(lum(s.dark||W)>=.32)return;const f=L.face;if(/^(happy|closed|x)$/.test(f.eyes))return;const hx=s.head.rx,hy=s.head.ry,c=mix(s.dark,W,.55);
+  [[f.e0||[-.1,-.04],s.eyes[0]],[f.e1||[.42,-.1],s.eyes[1]]].forEach(([e,r])=>{const [x,y]=HT([hx*e[0],hy*e[1]]),R=r+2.4,A=[];for(let i=0;i<=8;i++){const t=(15+i*18.75)*D2R;A.push([x+Math.cos(t)*R,y+Math.sin(t)*R*1.05])}h.line(A,1.9,c,.3)})}
+function jrtCoat(s,w){s.parti=w}// always white with patches (the patches grow a little on a mix with less white)
+function jrtMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,K=s.dark,pw=s.parti===undefined?.6:s.parti,big=pw<.6?1.3:1,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1];
+  const o={noline:1,ox:0,oy:0},tan=lum(s.light)<.9,KW=mix('#E3D9C8',PEN,.3);
+  // a patch over the back by the tail and a little one on the shoulder; short white coat ticks
+  h.shape(inEB(b,circ(-b.rx*.5,-b.ry*.5,b.rx*.36*big,b.ry*.6*big,10,.12)).map(B),K,o);h.shape(inEB(b,circ(b.rx*.3,-b.ry*.74,b.rx*.14*big,b.ry*.26*big,8)).map(B),K,o);
+  [[.55,.1],[.1,.35],[-.5,.45]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-3,y-1],[x-1,y+2],[x+1,y-1],[x+3,y+2]].map(B),1.8,KW,.3)});
+  // the head: the colour over the ears and both eyes, a white blaze up the middle, a white muzzle; tan eyebrow dots and cheeks on the tricolour
+  h.shape([[-hx*1.08,-hy*1.08],[hx*.04,-hy*1.08],[hx*.06,-hy*.46],[-hx*.02,hy*.12],[-hx*.36,hy*.34],[-hx*1.08,hy*.36]].map(Hd),K,o);
+  h.shape(circ(hx*(e1[0]+.06),hy*(e1[1]-.06),hx*.3,hy*.34,10).map(Hd),K,o);
+  if(tan){[e0,e1].forEach((e,i)=>h.shape(circ(hx*(e[0]+.03),hy*(e[1]-.42),hx*(i?.1:.11),hy*.085,7).map(Hd),s.light,o));h.shape(circ(-hx*.34,hy*.16,hx*.14,hy*.12,8).map(Hd),s.light,o)}}
+SP.jrt={name:'Pickle',breed:'Jack Russell Terrier',personality:'A small dog with an enormous amount of bounce. Digs, jumps and never stops.',joke:'I am not hyper. I am just ready. For everything. Right now.',
+  col:'#FBF8F2',hcol:'#FBF8F2',light:'#E0A050',dark:'#C97A32',ear:'#C97A32',ownWhite:jrtCoat,body:{x:114,y:148,rx:35,ry:20,lop:.03},head:{x:157,y:113,rx:26,ry:23},
+  legs:{h:-24,f:22,w:7},ears:'button',earRound:1,earSwing:40,tail:'jrt',tailFn:jrtTail,faceFn:jrtFace,eyes:[5.8,5.4],
+  face:{eyes:'open',mouth:'tongue',e0:[-.12,-.16],e1:[.36,-.2],nose:[1.38,.12],snout:2,snoutL:1.38,snoutD:.56,pupil:.74,brow:'eager'},
+  marks:jrtMarks};
+/* end v2.21 ART B */
 const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom','afghan','dane','mastiff','gsd',
-  'dobie','corso','pitbull','minpin','lab','malamute','chow','stdpoodle','schnauzer','westie','yorkie','bichon','maltese','shihtzu'];// v2.12: fourteen appended (V212.md 2)
-const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff|gsd|dobie|corso|pitbull|minpin|lab|malamute|chow|stdpoodle|schnauzer|westie|yorkie|bichon|maltese|shihtzu)$/;
+  'dobie','corso','pitbull','minpin','lab','malamute','chow','stdpoodle','schnauzer','westie','yorkie','bichon','maltese','shihtzu',
+  'dalmatian','bernese','aussie','cavalier','jrt'];// v2.12: fourteen appended (V212.md 2); v2.21 ART A and B: five more (V221.md 2)
+const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff|gsd|dobie|corso|pitbull|minpin|lab|malamute|chow|stdpoodle|schnauzer|westie|yorkie|bichon|maltese|shihtzu|dalmatian|bernese|aussie|cavalier|jrt)$/;
 /* v2.13 neck fix (owner: "Make sure the head is stick to the body"; V213.md 5): the old breeds whose head floated off the body in a few poses.
    Per breed, per pose: [dx, dy] moves the head (canvas px, before its tilt) and the pose draws the neck tube, as the neck:1 breeds do in every pose.
    Adults only (spec field nfix; puppies and newborns keep their big heads on the body as they were). Every other pose of these breeds is unchanged.
@@ -495,7 +645,9 @@ const NECKFIX={
   beagle:{shake:[0,0],happy:[0,0],speak:[0,0],howl:[0,0]},
   collie:{howl:[-2,3]},
   westie:{howl:[0,0]},
-  maltese:{scratch:[0,0],dance:[0,0],happy:[0,0],speak:[0,0],shake:[0,0]}};
+  maltese:{scratch:[0,0],dance:[0,0],happy:[0,0],speak:[0,0],shake:[0,0]},
+  cavalier:{shake:[0,0],dance:[0,0],dirty:[0,0],happy:[0,0],idle:[0,0],paw:[0,0],speak:[0,0]},// v2.21 ART B
+  jrt:{idle:[0,0],happy:[0,0],pet:[0,0],walk:[0,0],dirty:[0,0],shake:[0,0],beg:[0,0],squat:[0,0],leglift:[0,0],paw:[0,0],speak:[0,0],dance:[0,0],scratch:[0,0],yawn:[0,0],howl:[0,0]}};
 Object.keys(NECKFIX).forEach(k=>{SP[k].nfix=NECKFIX[k]});
 
 /* ---------- pose -> rig layout ---------- */
@@ -693,12 +845,13 @@ function drawTopknot(h,s,HT){// Poodle: a round pom of hair on top of the head, 
 // v2.18.1: under a market hood (L.hmHood) the ears tuck in, and the stream moves on as the plain dog's ears would leave it
 function drawEars(h,s,L,HT,front){if(!L.hmHood)return drawEars0(h,s,L,HT,front);hmPlain(h,g=>drawEars0(g,s,L,HT,front),g=>{L.hood=0;drawEars0(g,s,L,HT,front);L.hood=1})}
 function drawEars0(h,s,L,HT,front){
-  const mode=L.ears,col=s.ear||s.hcol;const HTg=q=>{const c=HT(q);return[c[0],Math.min(c[1],GY-1)]};// v2.11 curtain ears stop at the ground
+  const mode=L.ears,col=s.ear||s.hcol,ef=(s.mixHead?SP[s.mixHead]:s).earFn;const HTg=q=>{const c=HT(q);return[c[0],Math.min(c[1],GY-1)]};// v2.11 curtain ears stop at the ground
   earList(s).forEach(e=>{
     const isFront=!!e.flop;if(isFront!==front||L.hood)return;
     let p=earPose(s,L,e);
     if(s.curlEar&&e.flop){if(e.side>0){const c=e.pivot,hx=s.head.rx;p=p.map(q=>[c[0]+(q[0]-c[0])*.84-hx*.16,c[1]+(q[1]-c[1])*.9])}curlyEar(h,s,p,HT,mix(e.col||col,PEN,.16));return}
     h.shape((s.earRound?chaikin(p,s.earRound):p).map(e.hair?HTg:HT),e.col||col,{w:3.8});
+    if(ef)ef(h,s,e,p,HT);// v2.21 ART A: marks inside the ear just drawn (new spec field earFn: the dalmatian's spots)
     if(e.inner){const c=[(p[0][0]+p[2][0])/2,(p[0][1]+p[2][1])/2];const ip=p.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]);ip[1]=[c[0]+(p[1][0]-c[0])*.7,c[1]+(p[1][1]-c[1])*.7];h.shape((s.earRound?chaikin(ip,s.earRound):ip).map(HT),s.ears==='tall'?W:'#FFB8C4',{noline:1,ox:0,oy:0});}
     if(e.hair){const K=curlCol(e.col||col),lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];[.35,.7].forEach((t,i)=>{const a=lp(p[0],p[1],t),b=lp(p[6],p[4],t),m=lp(a,b,.5);h.line([a,[m[0]+(i?-2:2),m[1]],b].map(HTg),2,K,.4)})}
     if(e.fold){const a=p[e.fold[0]],b=p[e.fold[1]],c=e.col||col;h.line([a,[(a[0]+b[0])/2,(a[1]+b[1])/2+1.5],b].map(HT),2.4,lum(c)<.32?mix(c,W,.45):mix(c,PEN,.45),.4)}
@@ -745,18 +898,25 @@ function drawRuff(h,s,L,HT){// a big scalloped mane round the neck, behind the h
   const hx=s.head.rx,hy=s.head.ry,k=s.ruff,col=s.ruffK&&s[s.ruffK]?s[s.ruffK]:s.hcol,cl=q=>[q[0],Math.min(q[1],GY-1)];
   h.shape((s.wet?wetPts(-hx*.16,hy*.6,hx*.9*k,hy*.6*k,7,.36,.2):scallop(-hx*.16,hy*.6,hx*.98*k,hy*.66*k,9,.2)).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});
   const K=curlCol(col);[[-.7,.95],[-.2,1.12],[.3,1.02]].forEach(q=>{const x=hx*q[0]*k,y=hy*q[1]*k;h.line([[x-3,y-5],[x,y],[x+3,y-5]].map(HT).map(cl),2,K,.3)})}
+// v2.21 ART A: legs.toe, a white foot: the last 14% of the leg (as the sock, along the leg's bend), the far legs a shade darker; none = null (every older dog)
+const legTc=(s,l)=>s.legs.toe?(l.near?s.legs.toe:mix(s.legs.toe,PEN,.28)):null;
+function legToe(h,l,c){const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],d1=Math.hypot(C[1][0]-C[0][0],C[1][1]-C[0][1]),d2=Math.hypot(C[2][0]-C[1][0],C[2][1]-C[1][1]),g=(d1+d2)*.86,
+  sp=g<=d1?[C[0][0]+(C[1][0]-C[0][0])*g/(d1||1),C[0][1]+(C[1][1]-C[0][1])*g/(d1||1)]:[C[1][0]+(C[2][0]-C[1][0])*(g-d1)/(d2||1),C[1][1]+(C[2][1]-C[1][1])*(g-d1)/(d2||1)],P=g<d1?[sp,C[1],C[2]]:[sp,C[2]];
+  h.acc.push(`<path d="${P.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('')}" fill="none" stroke="${c}" stroke-width="${R1(l.w)}" stroke-linecap="round" stroke-linejoin="round"/>`)}
 function drawLegs(h,s,L){
   const one=l=>{
     const a=h.acc.length;
     if(l.sitfoot&&L.gfold){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]),y=GY-3.5;hock(h,s,L,l,hp,[hp[0]-s.body.ry*.2+8,y-7],[[hp[0]-s.body.ry*.2+8,y-7]]);h.tube([[hp[0]-s.body.ry*.2+8,y-7],[hp[0]+s.body.ry*1.9+8,y]],l.w*.95,l.col);h.shape(circ(hp[0]+s.body.ry*1.9+11,y,l.w*.8,l.w*.55,7),l.col,{w:2.6,ox:0,oy:0,sc:1,closed:1})}
-    else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);hock(h,s,L,l,hp,[hp[0]+s.body.ry*.9+7,GY-7],ovalTop(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4));h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
+    else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);hock(h,s,L,l,hp,[hp[0]+s.body.ry*.9+7,GY-7],ovalTop(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4));h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),legTc(s,l)||l.col,{w:3.4})}
     else{h.tube([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],l.w,l.col);
-      if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
+      if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),legTc(s,l)||l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
       if(l.sock&&!l.raised){// the sock: the last 38% of the leg, along the leg's own bend and down the middle of its ink (25 Oct 2026: it used to cut the knee corner and poke out)
         const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],d1=Math.hypot(C[1][0]-C[0][0],C[1][1]-C[0][1]),d2=Math.hypot(C[2][0]-C[1][0],C[2][1]-C[1][1]),g=(d1+d2)*.62,
           sp=g<=d1?[C[0][0]+(C[1][0]-C[0][0])*g/(d1||1),C[0][1]+(C[1][1]-C[0][1])*g/(d1||1)]:[C[1][0]+(C[2][0]-C[1][0])*(g-d1)/(d2||1),C[1][1]+(C[2][1]-C[1][1])*(g-d1)/(d2||1)],SP=g<d1?[sp,C[1],C[2]]:[sp,C[2]];
         h.acc.push(`<path d="${SP.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('')}" fill="none" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round" stroke-linejoin="round"/>`)}
-      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
+      if(s.legFn)s.legFn(h,s,L,l);// v2.21 ART A: marks on the leg (new spec field legFn: the dalmatian's spots)
+      if(s.legs.toe&&!l.raised)legToe(h,l,legTc(s,l));// v2.21 ART A: white feet (new spec field legs.toe: the bernese, the aussie's white trim)
+      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),legTc(s,l)||l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
       if(s.legs.pom){const m=l.mid||l.hip,t=.7,x=m[0]+(l.foot[0]-m[0])*t,y=m[1]+(l.foot[1]-m[1])*t;h.shape(furR(s.wet,x,y,l.w*1.05,l.w*.9,6,.25),l.sock||l.col,{step:30,amp:.6,w:3,ox:0,oy:0,sc:1})}
       if(s.legs.hair)legHair(h,l,s.wet)}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
@@ -786,7 +946,7 @@ function drawHaunch(h,s,L,B){
     }else{
     {const th=s.fluff?null:[c[0],c[1]+2,b.ry*.95,b.ry*.85];hock(h,s,L,l,c,[c[0]+b.ry*.75,GY-5],ovalTop(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5),th)}
     if(!s.fluff)h.shape(circ(c[0],c[1]+2,b.ry*.95,b.ry*.85,10),s.col);
-    h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),l.col,{w:3.6});}
+    h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),legTc(s,l)||l.col,{w:3.6});}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-NH">`);h.acc.push('</g>');
   });
 }
@@ -801,7 +961,7 @@ function drawFace(h,s,L,HT){
   if(s.face.snout){const sl=s.face.snoutL||1.5,sd=s.face.snoutD,sn=[[hx*.5,-hy*.02],[hx*sl,hy*.0],[hx*(sl+.05),hy*(sd||.5)],[hx*.6,hy*(sd?sd+.12:.62)]],mc=s.face.snout===3?maskCol(s):0;
     if(s.face.jowl){const jy=sd||.5;h.shape([[hx*(sl-.04),hy*(jy-.1)],[hx*(sl+.02),hy*(jy+.3)],[hx*(sl-.22),hy*(jy+.5)],[hx*(sl-.5),hy*(jy+.4)],[hx*.62,hy*(jy+.12)]].map(HT).map(q=>[q[0],Math.min(q[1],GY-1)]),mc||s.hcol,{w:3.8});// v2.11 mastiff: droopy jowls, a little drool
       if(/^(idle|happy|eat|walk|hot)$/.test(L.pose)){const p=HT([hx*(sl-.3),hy*(jy+.5)]);if(p[1]<GY-12)h.shape([[p[0],p[1]],[p[0]+2.6,p[1]+7],[p[0],p[1]+10],[p[0]-2.6,p[1]+7]],'#9EDCFF',{w:2,ox:0,oy:0,sc:1,closed:1})}}
-    h.shape(sn.map(HT),mc?s.hcol:s.face.snout===2?s.hcol:s.light,{w:4.4});
+    h.shape(sn.map(HT),mc?s.hcol:s.face.snout===2?s.hcol:(s.face.snoutK&&s[s.face.snoutK])||s.light,{w:4.4});
     if(mc){const a=.42,y1=sd||.5;h.shape([[hx*(.5+(sl-.5)*a),-hy*.01],[hx*sl,0],[hx*(sl+.05),hy*y1],[hx*(.6+(sl-.6)*a),hy*(y1+.12)]].map(HT),mc,{noline:1,ox:0,oy:0,sc:.93})}}// v2.11: the dark mask on the front of the muzzle
   const bc=f.browCol&&lum(s.hcol)<.32?f.browCol:undefined;// light lines on a dark head (v2.5 collie)
   eyes.forEach((e,i)=>{
@@ -1809,12 +1969,17 @@ function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
   if(L.pose==='sleep'){L.hT.x-=s.head.rx*.42;L.hT.y+=s.head.ry*.08;L.hT.a=16;L.tailA=-140}else{L.hT.y+=s.head.ry*.18;L.hT.a=8;L.tailA=-120}}
 const BELLY=/^(idle|happy|pet|eat|sleep|walk|sit|sad|dirty|crouch|shake|cold|hot|dig|beg|squat|leglift|paw|down|speak|bow|scratch|sniff|yawn|howl)$/;
 function drawBelly(h,s,L,B){// a rounder, lower belly: fill over the body's underline, then a new lower curve
-  const b=s.body,lie=/^(sleep|down|crouch)$/.test(L.pose),fl=!!s.fluff&&!b.long,cy=b.ry*(lie?.36:.5)+(fl?b.ry*(lie?.1:.07):0),rx=b.rx*(b.long?.36:.5)*(fl?1.12:1),ry=b.ry*(lie?.6:.68)*(fl?1.1:1),cl=q=>[q[0],Math.min(q[1],GY-1)],E=[],A=[];
+  const b=s.body,lie=/^(sleep|down|crouch)$/.test(L.pose),fl=!!s.fluff&&!b.long&&!s.bellyFl,cy=b.ry*(lie?.36:.5)+(fl?b.ry*(lie?.1:.07):0),rx=b.rx*(b.long?.36:.5)*(fl?1.12:1),ry=b.ry*(lie?.6:.68)*(fl?1.1:1),cl=q=>[q[0],Math.min(q[1],GY-1)],E=[],A=[];
   for(let i=0;i<16;i++){const t=i/16*Math.PI*2;E.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
   if(fl){// fluffy coat: the bulge hangs low behind the ground, so show it by a lighter tummy and a tufty dome line over it
     const n=15;for(let i=0;i<=n;i++){const f=i/n,t=(1.02+f*.96)*Math.PI,k=1+(i%2?.06:-.02);A.push([-b.rx*.04+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*k])}}
+  else if(s.bellyFl){// v2.21 art fix (new spec field bellyFl: the bernese): a dark fluffy coat shows the bulge as a coat-coloured tummy under the body with a tufty ink line;
+    // the fill is the tufty line closed over the top of the oval, so it never pokes past its line
+    const n=14;for(let i=0;i<=n;i++){const t=(.17+i/n*.66)*Math.PI,k=1+(i%2?.07:-.02);A.push([-b.rx*.04+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*k])}
+    E.length=0;A.forEach(q=>E.push(q));for(let i=1;i<10;i++){const t=(.83+i/10*1.34)*Math.PI;E.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}}
   else for(let i=0;i<=8;i++){const t=(.17+i/8*.66)*Math.PI;A.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
-  h.shape(E.map(B).map(cl),fl?mix(s.col,'#FFFFFF',.22):s.col,{noline:1,ox:0,oy:0,sc:1});h.line(A.map(B).map(cl),fl?h.LW*.75:h.LW,INK,fl?1.4:.9)}
+  h.shape(E.map(B).map(cl),fl?mix(s.col,'#FFFFFF',.22):(s.bellyK&&s[s.bellyK])||s.col,{noline:1,ox:0,oy:0,sc:1});h.line(A.map(B).map(cl),fl?h.LW*.75:h.LW,INK,fl?1.4:.9)
+  if(s.bellyFl)[.3,.5,.7].forEach((f,i)=>{const t=f*Math.PI,x=-b.rx*.04+Math.cos(t)*rx*.72,y=cy+Math.sin(t)*ry*.72;h.line([[x-4,y-2],[x-1.5,y+2],[x+1,y-2],[x+3.5,y+2]].map(B).map(cl),2.2,mix(s.col,W,.3),.4)})}
 function glitter(h,s,M,k,head){// glitter flecks on the coat: own rng, so nothing else moves
   const r=rng(hashS('glit'+(s.name||'')+head)+k*31),rx=head?s.head.rx:s.body.rx,ry=head?s.head.ry:s.body.ry,n=head?2:5;let d='',g='';
   for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=.25+r()*.5,p=M([Math.cos(a)*rx*rr,Math.sin(a)*ry*rr*(head?.6:1)-(head?ry*.35:0)]),z=2.2+r()*1.6;if(isNaN(p[0]))return;
@@ -1952,7 +2117,7 @@ EXPR.sneeze={ok:/^(idle|sit|sniff|walk|down|dig|dirty|paw|crouch)$/,
 // Helpers are xb-prefixed. Tongues use the pose palette (#FF6F9A / #C9406A), so the chow's faceFn still turns them blue-black. An eye hook that draws
 // the whole eye sets LX.face.eyes='x' in pre: drawFace skips its brow, and the chow lids and the dark-coat eye rings (faceFn) stay off that eye.
 const XB_PK='#FF6F9A',XB_PKD='#C9406A',XB_MO='#7A1F2E',XB_DROP='#9EDCFF',XB_LIP='#F2849F',XB_YEL='#FFE14D';
-function xbSurf(s){const f=s.face,c=f.snout===1?s.light:f.snout===3?maskCol(s):s.hcol;return c||s.hcol}// the colour under the mouth
+function xbSurf(s){const f=s.face,c=f.snout===1?(f.snoutK&&s[f.snoutK])||s.light:f.snout===3?maskCol(s):s.hcol;return c||s.hcol}// the colour under the mouth
 function xbLine(s){const c=xbSurf(s);return lum(c)<.3?mix(c,W,.62):INK}// the mouth line: ink, or a pale line on a dark muzzle
 function xbEyeO(h,s,x,y,r,i,o){// an open eye drawn the way drawFace draws it, with its own size (k), pupil size (p) and look (lx, ly)
   const R=r*(o.k||1),pk=o.p||1,px=x+(o.lx||0)*R*.4,py=y+(o.ly||0)*R*.4,ir=s.irises?s.irises[i]:s.iris,pr=(s.face.pupil||.57)*pk;
@@ -2048,8 +2213,8 @@ const wetC=c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c)?mix(c,lum(c)<.3?'
 // a kit that lays every colour a shade darker (white spotting and merle patches: their colours were fixed when the coat was made)
 const wetH=h=>Object.assign({},h,{shape:(p,f,o)=>h.shape(p,f&&wetC(f),o),crayon:(rx,ry,M,c,n)=>h.crayon(rx,ry,M,wetC(c),n),line:(p,w,c,a)=>h.line(p,w,c&&c!==INK?wetC(c):c,a),dot:(x,y,rx,ry,f)=>h.dot(x,y,rx,ry,f&&wetC(f))});
 function wetSpec(S0){const s=Object.assign({},S0),d=wetC;
-  ['col','hcol','light','dark','ear','neckCol','tailTip','harl'].forEach(k=>{if(s[k])s[k]=d(s[k])});
-  s.legs=Object.assign({},S0.legs);['col','sock'].forEach(k=>{if(s.legs[k])s.legs[k]=d(s.legs[k])});
+  ['col','hcol','light','dark','ear','neckCol','tailTip','harl','bib'].forEach(k=>{if(s[k])s[k]=d(s[k])});
+  s.legs=Object.assign({},S0.legs);['col','sock','toe'].forEach(k=>{if(s.legs[k])s.legs[k]=d(s.legs[k])});
   if(S0.legs.cols){s.legs.cols={};Object.keys(S0.legs.cols).forEach(k=>{s.legs.cols[k]=d(S0.legs.cols[k])})}
   if(S0.pat)s.pat={body:(h,B,L)=>S0.pat.body(wetH(h),B,L),head:(h,HT,L)=>S0.pat.head(wetH(h),HT,L)};
   s.wet=1;return s}
@@ -2088,7 +2253,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
   {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck||L.neckT)h.tube([nb,nh],s.head.rx*.7,s.neckCol||s.col)}
-  h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.part(1);h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
+  h.shape(bp.map(B),s.col,{step:s.body.long?14:11,closed:s.bodyShut});h.part(1);h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
   if(s.expecting&&BELLY.test(pose)){h.part(0);drawBelly(h,s,L,B)}// the belly bulges past the body on purpose; the marks still keep to the body
   if(s.marks)s.marks(h,B,HT,s);
   if(s.pat)s.pat.body(h,B,L);
@@ -2109,7 +2274,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
   else if(hmk&&s.topknot)hmPlain(h,()=>0,g=>drawTopknot(g,s,HT));// v2.18.1: the topknot stays under a market hat; the stream moves on as if it were drawn
-  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
+  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2,closed:(s.mixHead?SP[s.mixHead]:s).headShut})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
@@ -2142,6 +2307,7 @@ Object.keys(SP).forEach(k=>{const s=SP[k],m=s.marks;if(!m)return;s.marks=(h,B,HT
 const HEX=/^#[0-9a-fA-F]{6}$/,EYE={blue:'#3FA9F5',amber:'#E2A23A',brown:null};
 function coated(key,coat,seed,S0){
   S0=S0||SP[key];if(!coat||typeof coat!=='object')return S0;
+  if(S0.ownWhite&&!coat._own){const s1=coated(key,Object.assign({},coat,{white:0,_own:1}),seed,S0);S0.ownWhite(s1,+coat.white||0);return s1}// v2.21 ART B: the breed draws its own white (cavalier, jrt)
   const c=k=>HEX.test(coat[k]||'')?coat[k]:null,base=c('base'),light=c('light'),dark=c('dark'),white=+coat.white||0,merle=!!coat.merle;
   const s=Object.assign({},S0);s.legs=Object.assign({},S0.legs);
   if(key==='mutt'){// Pepper: white dog with base-coloured patches when piebald; otherwise a solid base dog
@@ -2180,6 +2346,7 @@ function coated(key,coat,seed,S0){
     };
     if(white>=.25)s.tailTip=Wt;
   }
+  if(S0.coatFn)S0.coatFn(s,coat,{white:+coat.white||0,merle,R:R0});// v2.21 ART A: a breed's own coat pass (new spec field coatFn: the aussie's merle and white trim)
   return s;
 }
 /* ---------- v2 looks: mixes, puppies, newborns (each returns a NEW spec; SP is never touched) ---------- */
@@ -2265,7 +2432,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});h.part(1);if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);h.part(0);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11,closed:(s.mixHead?SP[s.mixHead]:s).headShut});h.part(1);if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);h.part(0);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const HL=typeof o.aria==='string'&&o.aria?o.aria.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):`${s.name} the ${s.breed}`;// v2.14: o.aria from the game

@@ -15,7 +15,7 @@ const LIST = ['sleepy', 'surprised', 'curious', 'hearts', 'proud', 'guilty', 'sn
 ok(JSON.stringify(PA.EXPR_LIST) === JSON.stringify(LIST), 'PawArt.EXPR_LIST is the fourteen of V213.md 3.1, in order');
 const ONLY = (process.env.ONLY || '').split(',').filter(Boolean), EX = ONLY.length ? LIST.filter((n) => ONLY.includes(n)) : LIST;
 const KO = (process.env.KEYS || '').split(',').filter(Boolean), KEYS = PA.DOGS.map((d) => d.key).filter((k) => !KO.length || KO.includes(k));
-ok(PA.DOGS.length === 35, '35 breeds');
+ok(PA.DOGS.length >= 35 && PA.DOGS.length <= 40, '35 breeds, then the v2.21 ones (V221.md 2: 40 at most)');
 const good = (svg, lab) => {
   ok(typeof svg === 'string' && svg.startsWith('<svg') && svg.endsWith('</svg>'), lab + ': an SVG');
   ok(!/NaN|undefined|Infinity/.test(svg), lab + ': no NaN, undefined or Infinity');

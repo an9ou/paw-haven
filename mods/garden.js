@@ -36,7 +36,7 @@
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
-  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard', dobie: 'guard', corso: 'guard', pitbull: 'tend', minpin: 'inspect', lab: 'fetch', malamute: 'dig', chow: 'tend', stdpoodle: 'inspect', schnauzer: 'guard', westie: 'dig', yorkie: 'inspect', bichon: 'inspect', maltese: 'tend', shihtzu: 'tend' };
+  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard', dobie: 'guard', corso: 'guard', pitbull: 'tend', minpin: 'inspect', lab: 'fetch', malamute: 'dig', chow: 'tend', stdpoodle: 'inspect', schnauzer: 'guard', westie: 'dig', yorkie: 'inspect', bichon: 'inspect', maltese: 'tend', shihtzu: 'tend', dalmatian: 'fetch', bernese: 'snow', aussie: 'guard', cavalier: 'tend', jrt: 'dig' };
   // v1.7: breed-flavoured opening lines (other breeds use the perk line)
   var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.',
     poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
@@ -57,7 +57,13 @@
     yorkie: '{n} supervises the garden from a sunny spot and gives orders in a tiny voice.',
     bichon: '{n} bounces through the garden like a cotton ball and the bees follow. Boing.',
     maltese: '{n} floats along the path, careful not to touch the soil. The plants admire the fringe.',
-    shihtzu: '{n} naps on the warm path between the beds. The plants are in good company.'
+    shihtzu: '{n} naps on the warm path between the beds. The plants are in good company.',
+    // v2.21 Five New Friends (V221.md 4)
+    dalmatian: '{n} trots neat laps round the beds. Not one plant is touched. Very good.',
+    bernese: '{n} lies in the cool shade by the beds and keeps the plants company.',
+    aussie: '{n} keeps an eye on every bed. The birds have been asked to leave politely.',
+    cavalier: '{n} sits by the roses looking sweet. The roses look a little happier.',
+    jrt: '{n} digs one tiny hole by the path, then remembers the beds are for plants.'
 };
   // quality points (0-3) -> [1 star, 2 stars, 3 stars] odds
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];

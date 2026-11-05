@@ -60,7 +60,13 @@ const jpPlaceLines = {
   yorkie: 'That mountain is bigger than everything. I am still in charge here.',
   bichon: 'Fuji wears a white puff on top! We match! Boing!',
   maltese: 'A graceful mountain with a white veil. I understand it completely.',
-  shihtzu: 'A nice mountain. A nice bench. I will look at one while sitting on the other.'
+  shihtzu: 'A nice mountain. A nice bench. I will look at one while sitting on the other.',
+  // v2.21 Five New Friends (V221.md 4)
+  dalmatian: 'A tall white mountain with a few dark spots. It looks a bit like me.',
+  bernese: 'A real mountain! Snow on top! I feel right at home here.',
+  aussie: 'A big mountain. I would like to herd the clouds around it.',
+  cavalier: 'What a lovely view. Lovelier from your lap. Just saying.',
+  jrt: 'That is a very big hill. I could run up it. Can I run up it?'
 };
 // jpLinePath(breed, place): the tdata path of a Fuji Hill line (HOME's placeAmbient in 03_yard.js uses it like tkLinePath), else null
 function jpLinePath(breed, place) { return place === 'fujihill' && jpPlaceLines[breed] ? 'jp_place_lines.' + breed : null; }

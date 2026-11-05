@@ -35,15 +35,21 @@ const STARTER_GENES = {
   yorkie: { B: ['B', 'B'], D: ['d', 'd'], E: ['E', 'E'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blue and tan', eyes: 'brown' },
   bichon: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
   maltese: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
-  shihtzu: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Gold and white', eyes: 'brown' }
+  shihtzu: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Gold and white', eyes: 'brown' },
+  // v2.21 (V221.md 3, the same as mods/genes.js)
+  dalmatian: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black spotted', eyes: 'brown' },
+  bernese: { B: ['B', 'B'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Tricolour', eyes: 'brown' },
+  aussie: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], A: ['at', 'a'], coat: 'Black tricolour', eyes: 'brown' },
+  cavalier: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blenheim', eyes: 'brown' },
+  jrt: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White and tan', eyes: 'brown' }
 };
 // Breeding rules, stored now and switched on in v2 (1 real day = 1 dog month)
 const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   enabled: false, pair: 'male+female', adultMonths: 12, seniorMonths: 84, noBreedFromMonths: 96,
   heat: { firstMonths: 12, everyDays: 6, lastsDays: 3 }, maleRestDays: 2, pregnancyDays: 2, puppyStayDays: 2,
   female: { skipSeasons: 1, maxLitters: 4, noLittersFromMonths: 72 },
-  giant: { breeds: ['dane', 'mastiff'], adultMonths: 18, restDays: 12, maxLitters: 3 }, // v2.11: giant dogs wait until 18 months, rest two seasons between litters and have at most 3 litters
-  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie', 'pom', 'minpin', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie', 'spitz', 'pitbull', 'schnauzer'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed', 'akita', 'afghan', 'gsd', 'dobie', 'corso', 'lab', 'malamute', 'chow', 'stdpoodle'], sizes: [2, 3], weights: [60, 40] }, giant: { breeds: ['dane', 'mastiff'], sizes: [2, 3], weights: [35, 65] } },
+  giant: { breeds: ['dane', 'mastiff', 'bernese'], adultMonths: 18, restDays: 12, maxLitters: 3 }, // v2.11: giant dogs wait until 18 months, rest two seasons between litters and have at most 3 litters (v2.21: the Bernese too, a slow-growing big dog)
+  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie', 'pom', 'minpin', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu', 'cavalier', 'jrt'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie', 'spitz', 'pitbull', 'schnauzer', 'aussie'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed', 'akita', 'afghan', 'gsd', 'dobie', 'corso', 'lab', 'malamute', 'chow', 'stdpoodle', 'dalmatian'], sizes: [2, 3], weights: [60, 40] }, giant: { breeds: ['dane', 'mastiff', 'bernese'], sizes: [2, 3], weights: [35, 65] } },
   puppySex: 0.5, inheritance: 'mendelian', welfare: { noMerleXMerle: true, minMeters: 50, minBond: 6, noRelatives: ['parent', 'child', 'sibling', 'half-sibling', 'grandparent', 'grandchild', 'aunt', 'uncle', 'niece', 'nephew', 'first-cousin'] },
   expecting: { hungerDecay: 1.2, walkCap: 'park', noPlaydates: true }, fixedNeverBreeds: true
 } };

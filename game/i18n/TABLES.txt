@@ -141,6 +141,7 @@ MERLE_WORDS *
 DAPPLE_WORDS *
 MERLE_BY *
 TRI_SOLID *
+PARTI_BY *   # v2.21 the Cavalier parti names (data.parti_by.cavalier.<pigment>)
 GRAND_RECIPES name
 CROPS name seeditem item
 PERK *

@@ -14,6 +14,14 @@
 # Never print or commit the token.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# v2.21 (code review 4): the site's five new dog profiles ("Forty dogs") launch with the game. While MS2_LIVE is false (game/src/24b_missions2.js)
+# a site that has them would show 40 dogs before the launch, so refuse. Deploy the site from main (35 profiles) until the owner's launch date.
+if grep -qE "key: '(dalmatian|bernese|aussie|cavalier|jrt)'" tools/site_dogs.js && ! grep -q "const MS2_LIVE = true" game/src/24b_missions2.js; then
+  echo "cf_pages_deploy: refused. The site has the five v2.21 dog profiles (tools/site_dogs.js), but MS2_LIVE is still false in game/src/24b_missions2.js." >&2
+  echo "  They launch on the owner's date: deploy the Worker first (bash tools/cf_api_deploy.sh), then MS2_LIVE = true, then this site." >&2
+  echo "  For a site change before the launch, deploy from main (35 profiles)." >&2
+  exit 1
+fi
 : "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}"
 API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
 AUTH=(); if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ "$CLOUDFLARE_API_TOKEN" != "proxy-injected" ]; then AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"); fi

@@ -12,8 +12,8 @@ const NAMED = G.BREEDS.filter((k) => k !== 'mutt');
 const BANNED = /nintendo|nintendogs|pok[eé]mon|animal crossing/i;
 
 /* 1. MIXES: all 595 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds, 45 with the first three v2.11 breeds, 74 with the owner's four more, 385 with the v2.12 fourteen) */
-ok(G.BREEDS.length === 35, '35 breeds');
-ok(Object.keys(G.MIXES).length === 595, `595 MIXES entries (got ${Object.keys(G.MIXES).length})`);
+ok(G.BREEDS.length === 40, '40 breeds (v2.21: five appended)');
+ok(Object.keys(G.MIXES).length === 780, `780 MIXES entries (595, then 185 with the v2.21 five: got ${Object.keys(G.MIXES).length})`);
 const names = new Set();
 let pairs = 0;
 for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.length; j++) {
@@ -42,8 +42,8 @@ for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.lengt
     }
   }
 }
-ok(pairs === 595, '595 pairs walked');
-ok(names.size === 561, `561 unique named mixes (got ${names.size})`);
+ok(pairs === 780, '780 pairs walked');
+ok(names.size === 741, `741 unique named mixes (561, then the 180 v2.21 names: got ${names.size})`);
 // examples from the brief
 const want = { 'beagle|pug': 'Puggle', 'chihuahua|dachs': 'Chiweenie', 'golden|husky': 'Goberian', 'corgi|husky': 'Horgi', 'chihuahua|pug': 'Chug', 'corgi|dachs': 'Dorgi', 'shiba|corgi': 'Shorgi', 'golden|beagle': 'Beago', 'greyhound|beagle': 'Greagle' };
 for (const k of Object.keys(want)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want[k], `${k} = ${want[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
@@ -279,6 +279,7 @@ ok(G.predict(S.shiba, S.mutt, 'shiba', 'mutt').every((r) => !/urajiro/.test(r.co
 function independentNames(k) { // brute force every allele pair allowed by FREQ (written separately from the module)
   const f = G.FREQ[k], opts = (rec, dom, p) => (p <= 0 ? [[dom, dom]] : p >= 1 ? [[rec, rec]] : [[dom, dom], [dom, rec], [rec, rec]]);
   const L = [['B', opts('b', 'B', f.b)], ['D', opts('d', 'D', f.d)], ['E', opts('e', 'E', f.e)], ['S', opts('sp', 'S', f.sp)], ['M', f.M > 0 ? [['m', 'm'], ['M', 'm']] : [['m', 'm']]], ['Bl', opts('bl', 'Bl', 1 - f.Bl)]];
+  if (f.a > 0) L.push(['A', opts('a', 'at', f.a)]); // v2.21: the tan-point locus (PawGenes TAN), only for a breed that has it (the Aussie)
   const out = new Set();
   (function rec(i, g) { if (i === L.length) { out.add(G.phenotype(g, k).coatName); return; } for (const p of L[i][1]) { g[L[i][0]] = p; rec(i + 1, g); } })(0, {});
   return out;

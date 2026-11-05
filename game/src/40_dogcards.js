@@ -18,7 +18,8 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
   'Lola', 'Nala', 'Stella', 'Zoe', 'Willow', 'Honey', 'Peanut', 'Waffles', 'Pancake', 'Muffin', 'Cookie', 'Tofu', 'Kuma', 'Hana', 'Sora', 'Yuki', 'Momo', 'Kiki', 'Taro', 'Pip',
   'Bean', 'Button', 'Sunny', 'Lucky', 'Bingo', 'Rufus', 'Benji', 'Archie', 'Frankie', 'Louie', 'Marley', 'Maggie', 'Poppy', 'Sasha', 'Tilly', 'Sammy', 'Bruno', 'Otis', 'Juno', 'Chip'];
 const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd',
-  'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu']; // v2.12: the fourteen (V212.md 2)
+  'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu', // v2.12: the fourteen (V212.md 2)
+  'Dalmatian', 'Berner', 'Aussie', 'Cavalier', 'Jack Russell']; // v2.21: the five (V221.md 2), used only while v221On() (dcNameN)
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
 // v2.14 (V214.md 4.3): Dog Cards stay language-neutral. The Worker, the saves and the lists keep only indices; each viewer sees the word at an index in
 // their own language. DC_PET_NAMES are names and never change. The lists stay append only, in every language
@@ -34,6 +35,7 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'];
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
+const DC_TAN = ['at', 'a']; // v2.21: the tan-point locus (PawGenes TAN, the Aussie's copper). Sent only with MS2_LIVE (dcWireLive): the Worker of today refuses it
 const DC_PLACES = ['dogpark', 'yoyogi'];
 const DC_MAX_DOGS = 4, DC_VIS_CARDS = 2, DC_VIS_DOGS = 3;
 
@@ -65,7 +67,10 @@ function dcMode() {
 }
 const dcAcct = () => dcMode() === 'on' && !CL.anon && !!CL.email; // only email accounts share a card
 const dcOptIn = () => !!S && S.dc.on && !!CL.uid && S.dc.uid === CL.uid; // switched on by this account (a save that stays on a device after a log out never shares for the next account)
-const dcBreeds = () => { const G = PGN(); return (G && G.BREEDS) || []; };
+const dcBreedsAll = () => { const G = PGN(); return (G && G.BREEDS) || []; };
+const dcBreeds = () => dcBreedsAll().filter(brLive); // v2.21: the breeds a card may carry now (the five new ones only while v221On(); they sit at the end, so no index moves)
+const dcNameN = () => DC_PET_NAMES.length + Math.min(DC_BREED_WORDS.length, dcBreeds().length); // the dog names a card may use now (115 while the five are off)
+const dcNameOk = (i) => Number.isInteger(i) && i >= 0 && i < dcNameN() && DC_DOG_NAMES[i] != null;
 const dcDay = () => jstISO(); // one day for the paws on both sides: the Worker counts them by the Japan day too (dcDay in worker.js)
 const dcCardName = (c) => tt('cards.name_pattern', '{a} {b}', { a: dcWordA(c.name[0]), b: dcWordB(c.name[1]) }); // the card name order is the translator's (fr, es, pt may write {b} {a})
 const dcGiven = (c) => S && S.dc.given[c.id] === dcDay();
@@ -78,34 +83,53 @@ function dcDog(c, i) {
   const genes = x.c && typeof x.c === 'object' ? Object.assign({}, base || {}, x.c) : base;
   const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null };
   if (wear) outfit[wear.slot] = wear.n;
-  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: DC_DOG_NAMES[x.n] ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
+  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: dcNameOk(x.n) ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
   if (x.a === 'pup') d.born = localISO(new Date(Date.now() - 3 * 864e5)); // a puppy: about 3 dog months old
   return d;
 }
 // a card this copy can show: name words and at least one dog it knows
 function dcShowable(c) {
   if (!c || typeof c.id !== 'string' || !Array.isArray(c.name) || !Array.isArray(c.dogs) || DC_WORDS_A[c.name[0]] == null || DC_WORDS_B[c.name[1]] == null) return false;
-  return c.dogs.some((x, i) => x && DC_DOG_NAMES[x.n] != null && !!dcDog(c, i));
+  return c.dogs.some((x, i) => x && dcNameOk(x.n) && !!dcDog(c, i));
 }
 async function dcApi(method, path, body) { const r = await clApi(method, path, body); return r; }
 
 /* ---------------- my card (the payload) ---------------- */
-function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return i; }
+function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return dcNameOk(i) ? i : -1; }
 function dcDefaultNm(d) { const own = dcOwnNameIdx(d); if (own >= 0) return own; const b = dcBreeds().indexOf(d.key); return b >= 0 && b < DC_BREED_WORDS.length ? DC_PET_NAMES.length + b : 0; }
 function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0) return i; } return -1; }
 function dcCoat(d) {
   const g = d.genes; if (!g || typeof g !== 'object') return null;
   const out = {}; Object.keys(DC_LOCI).forEach((k) => { const v = g[k]; if (Array.isArray(v) && v.length === 2 && v.every((a) => DC_LOCI[k].includes(a))) out[k] = [v[0], v[1]]; });
+  if (dcWireLive() && Array.isArray(g.A) && g.A.length === 2 && g.A.every((a) => DC_TAN.includes(a))) out.A = [g.A[0], g.A[1]]; // v2.21
   return Object.keys(out).length ? out : null;
 }
 function dcDogOf(d, nm) {
-  const own = dcOwnNameIdx(d), n = own >= 0 ? own : (typeof nm === 'number' && DC_DOG_NAMES[nm] != null ? nm : dcDefaultNm(d)); // its own name when the list has it
+  const own = dcOwnNameIdx(d), n = own >= 0 ? own : (dcNameOk(nm) ? nm : dcDefaultNm(d)); // its own name when the list has it
   return { b: dcBreeds().indexOf(d.key), c: dcCoat(d), o: dcOutfitIdx(d), a: ageMonths(d) < 6 ? 'pup' : 'adult', s: d.sex === 'female' ? 'f' : 'm', sp: d.sparkle ? 1 : 0, n };
 }
 const dcCanShow = (d) => !!d && dcBreeds().indexOf(d.key) >= 0;
+/* v2.21 (V221.md 9): what the Worker gets. The live Worker knows 35 breeds and 115 dog names until the launch, when it is deployed FIRST and then
+   MS2_LIVE turns on. So until MS2_LIVE is true the five new breeds never leave the device, also on the GitHub Pages test copy whose flags show them:
+   no card dog, yard snapshot dog or walk-letter dog of the five, and no card name from 115 on (a Worker of today refuses the whole card or yard for one
+   such dog). Nothing changes on the device: the new dog is simply not on the card or the yard yet, and the next dogs go instead. */
+let dcWireForce = false; // tests only (__paw.v221.wire): send as if MS2_LIVE were true
+function dcWireLive() { if (dcWireForce) return true; try { return !!MS2_LIVE; } catch (e) { return false; } }
+const dcWireOk = (d) => dcCanShow(d) && (dcWireLive() || !V221_KEYS.includes(d.key)); // a dog the Worker may get now
+const dcWireN = () => (dcWireLive() ? dcNameN() : Math.min(dcNameN(), DC_DOG_NAMES.length - V221_KEYS.length)); // 115 dog names until MS2_LIVE
+// a dog for the Worker { b, c, o, a, s, sp, n }, or null (a breed it may not get yet). A card name it does not know yet becomes the breed word
+function dcWireDog(d, nm) {
+  if (!dcWireOk(d)) return null;
+  const x = dcDogOf(d, nm), N = dcWireN();
+  if (!(x.n < N)) x.n = x.b >= 0 && DC_PET_NAMES.length + x.b < N ? DC_PET_NAMES.length + x.b : 0;
+  return x;
+}
 function dcPayload(dc) {
   dc = dc || S.dc;
-  const dogs = (dc.dogs || []).map((x) => ({ x, d: dogById(x.id) })).filter((o) => dcCanShow(o.d)).slice(0, DC_MAX_DOGS).map((o) => dcDogOf(o.d, o.x.nm));
+  const picked = (dc.dogs || []).map((x) => ({ x, d: dogById(x.id) })).filter((o) => dcCanShow(o.d)), sendable = picked.filter((o) => dcWireOk(o.d));
+  // v2.21: when every picked dog is held back (a new breed before MS2_LIVE), the card goes with the next dogs of the pack instead
+  const use = sendable.length || !picked.length ? sendable : S.dogs.filter(dcWireOk).map((d) => ({ x: { nm: dcDefaultNm(d) }, d }));
+  const dogs = use.slice(0, DC_MAX_DOGS).map((o) => dcWireDog(o.d, o.x.nm));
   const nm = Array.isArray(dc.name) && DC_WORDS_A[dc.name[0]] != null && DC_WORDS_B[dc.name[1]] != null ? dc.name.slice(0, 2) : [0, 0];
   return { name: nm, dogs };
 }
@@ -178,6 +202,7 @@ async function dcPickCards() {
 /* ---------------- visitors: placing and roaming (inside rmZone, at rmScale x the size class (dcK), held by the roam holds) ---------------- */
 const dcTapHeld = () => (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN; // ball play, photo mode, training own the taps
 const dcHeld = () => !rmOn() || !modal.hidden || (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN;
+const DC_ART_HW = 124; // half the width a dog's art can reach from its feet at scale 1 (the 264-wide dog box, DW, less its margin)
 const dcK = (v, y) => rmScale(y) * (v ? sizeK(v.dog) : 1); // v2.11.1: a visitor's drawn scale (depth times its size class)
 function dcCrop() { if (!isPhone()) { if (grWide()) { const c = grCam(); return [c.x, c.x + c.w]; } return [0, 1000]; } const w = rmCropW(), c = phCamHome; return [c - w / 2, c + w / 2]; } // phones: the home crop
 // the box a spot must stay clear of: every tappable thing (rmScan's boxes; feet only for big scenery), every player dog's tap rect where it is and
@@ -186,6 +211,7 @@ function dcOk(v, x, y) {
   const z = rmZoneOf(S.place); if (x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) return false; if (z.poly && !grIn(z.poly, x, y)) return false; // v2.15: the floor polygon
   const k = dcK(v, y), T = rmTapBox(x, y, k), cr = dcCrop();
   if (T[0] < cr[0] + 4 || T[0] + T[2] > cr[1] - 4 || T[1] < 0) return false;
+  if (isPhone() && (x - DC_ART_HW * k < cr[0] + 2 || x + DC_ART_HW * k > cr[1] - 2)) return false; // v2.21 phone review 5: the drawn dog too (a big dog's tail reaches past its tap rect)
   if (rmHard(x, y)) return false;
   if (rmBoxes().some((b) => b[4] !== 'scene' && b[4] !== 'dctag' && rmOver(T, b) > 0)) return false; // (the visitors' own tags are drawn under the visitors: not a box for them)
   // #dcVis is drawn behind #pack, so a player dog's tap rect always stays on top. A visitor may stand partly behind a player dog (further back,
@@ -356,7 +382,7 @@ function dcSettings(force) {
   if (!ed.dogs.length) ed.dogs = S.dogs.filter(dcCanShow).slice(0, DC_MAX_DOGS).map((d) => ({ id: d.id, nm: dcDefaultNm(d) }));
   const rows = S.dogs.filter(dcCanShow).map((d) => {
     const own = dcOwnNameIdx(d), sel = ed.dogs.find((x) => x.id === d.id), nm = sel && typeof sel.nm === 'number' ? sel.nm : dcDefaultNm(d);
-    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">${esc(tt('cards.card_name_is', 'Card name: {name}', { name: dcNameShown(own) }))}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES, nm, tt('cards.card_name', 'Card name'), (i, w) => dcNameShown(i))}</div>`;
+    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">${esc(tt('cards.card_name_is', 'Card name: {name}', { name: dcNameShown(own) }))}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES.slice(0, dcNameN()), nm, tt('cards.card_name', 'Card name'), (i, w) => dcNameShown(i))}</div>`;
   }).join('');
   const p = openModal(tt('cards.my_title', 'My Dog Card'), `<div class="dc-set"><label class="tog dc-share"><input type="checkbox" id="dcOn" ${ed.on ? 'checked' : ''}> ${esc(tt('cards.share', 'Share my Dog Card'))}</label>
     <p class="small">${esc(tt('cards.privacy', "Other players see your card name, your dogs' drawings, breeds, coats, outfits, card names and paws. Never your email. Turning it off deletes the card."))}</p>
@@ -437,7 +463,7 @@ window.addEventListener('focus', () => { if (DC.uid && Date.now() - DC.syncAt > 
 function dcExpose() {
   if (!window.__paw) return;
   window.__paw.dc = {
-    mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreeds() },
+    mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreedsAll(), get live() { return dcBreeds(); }, get nameN() { return dcNameN(); } }, // v2.21: breeds = every PawGenes breed (the Worker's DC_LIM), live = the ones a card may carry now
     visitors: () => DC.vis.map((v) => ({ card: v.card.id, i: v.i, key: v.dog.key, size: sizeOf(v.dog), name: v.dog.name, x: v.x, y: v.y, k: v.k, hidden: v.hidden, moving: !!v.tw, tap: rmTapBox(v.x, v.y, v.k) })),
     cards: () => (DC.cards || []).map((c) => c.id), visit: (ids) => { DC.pick = ids || null; DC.place = ''; DC.cards = null; return dcVisit(); },
     card: (id) => dcCard((DC.cards || []).concat(DC_FAKE).find((c) => c.id === id)), give: (id) => { const c = (DC.cards || []).concat(DC_FAKE).find((x) => x.id === id); return c ? dcGive(c, document.querySelector('#modal .panel')) : false; },
@@ -445,3 +471,10 @@ function dcExpose() {
   };
 }
 on('game:ready', () => setTimeout(dcExpose, 0)); setTimeout(dcExpose, 0);
+/* v2.21 "Five New Friends" (V221.md 7): the gate's test hook (the switch is v221On() in 00_core.js; ms2.test(v) flips it at run time) */
+function v221Expose() {
+  if (!window.__paw) return;
+  window.__paw.v221 = { keys: V221_KEYS.slice(), on: () => v221On(), live: () => liveBreedKeys().slice(), dogs: () => dogsList().map((d) => d.key), coatBreeds: () => coatBreeds(),
+    cardBreeds: () => dcBreeds().slice(), wire: (v) => { if (v != null) dcWireForce = !!v; return dcWireLive(); }, ownArt: () => V221_KEYS.filter((k) => artKey(k) === k) }; // ownArt: the new keys PawArt draws itself (the rest fall back to the mutt)
+}
+on('game:ready', () => setTimeout(v221Expose, 0)); setTimeout(v221Expose, 0);

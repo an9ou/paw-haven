@@ -59,10 +59,10 @@ require('./test_lib').run('v211_breeds', async (t) => {
   await t.dev(async () => { await p.selectOption('#dvWeather', 'cloudy'); });
 
   sec('the litter rules and the tables list the new keys once');
-  const rules = await ev(() => { const L = window.PawBreeding.RULES.litters; const all = [].concat(L.small.breeds, L.medium.breeds, L.large.breeds, L.giant.breeds); return { akita: L.large.breeds.includes('akita'), spitz: L.medium.breeds.includes('spitz'), pom: L.small.breeds.includes('pom'), big: L.large.breeds.includes('afghan') && L.large.breeds.includes('gsd'), giant: L.giant.breeds.join() === 'dane,mastiff' && L.giant.sizes.join() === '2,3', dupes: all.length - new Set(all).size, n: all.length }; });
-  ok(rules.akita && rules.spitz && rules.pom && rules.big && rules.giant && rules.dupes === 0 && rules.n === 35, 'akita is large, spitz medium, pom small, each listed once (' + JSON.stringify(rules) + ')');
+  const rules = await ev(() => { const L = window.PawBreeding.RULES.litters; const all = [].concat(L.small.breeds, L.medium.breeds, L.large.breeds, L.giant.breeds); return { akita: L.large.breeds.includes('akita'), spitz: L.medium.breeds.includes('spitz'), pom: L.small.breeds.includes('pom'), big: L.large.breeds.includes('afghan') && L.large.breeds.includes('gsd'), giant: L.giant.breeds.join() === 'dane,mastiff,bernese' && L.giant.sizes.join() === '2,3', dupes: all.length - new Set(all).size, n: all.length }; });
+  ok(rules.akita && rules.spitz && rules.pom && rules.big && rules.giant && rules.dupes === 0 && rules.n === 40, 'akita is large, spitz medium, pom small, each listed once (' + JSON.stringify(rules) + ')');
   const tabs = await ev(() => window.PawGenes.BREEDS.length + ':' + window.PawGenes.BREEDS.slice(14, 21).join());
-  ok(tabs === '35:akita,spitz,pom,afghan,dane,mastiff,gsd', 'PawGenes.BREEDS has akita, spitz, pom, afghan, dane, mastiff, gsd at 14 to 20, before the v2.12 fourteen (' + tabs + ')');
+  ok(tabs === '40:akita,spitz,pom,afghan,dane,mastiff,gsd', 'PawGenes.BREEDS has akita, spitz, pom, afghan, dane, mastiff, gsd at 14 to 20, before the v2.12 fourteen (' + tabs + ')');
 
   sec('Wardrobe mannequin: every outfit on every new breed, no console errors');
   const core = require('fs').readFileSync(require('path').join(__dirname, 'src', '00_core.js'), 'utf8');

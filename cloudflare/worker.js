@@ -190,7 +190,7 @@ async function sendMail(env, to, m) {
 /* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
-const DC_LIM = { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits
+const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch
 // v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
 //   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
@@ -198,7 +198,7 @@ const DC_LIM = { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }; // v2.12: 35 bre
 //   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
 //   houses 14: every HOUSES row
 const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 };
-const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
+const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const dcKeys = (o, keys) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).every((k) => keys.includes(k)) && keys.every((k) => k in o);

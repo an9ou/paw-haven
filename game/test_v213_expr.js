@@ -25,7 +25,7 @@ require('./test_lib').run('v213_expr', async (t) => {
   await X(() => window.__paw.ex.roam(false));
   ok(await X(() => window.__paw.ex.on() === true), 'exOn() with prefs.exTest');
   const tab = await X(() => { const x = window.__paw.ex, B = (window.PawGenes && window.PawGenes.BREEDS) || [], keys = (Array.isArray(B) ? B : Object.keys(B)).concat(window.PawArt.DOGS.map((d) => d.key)); return { keys: [...new Set(keys)], faces: x.faces, list: x.list, words: x.words, art: window.PawArt.EXPR_LIST }; });
-  ok(tab.keys.length === 35 && tab.keys.every((k) => Array.isArray(tab.faces[k])) && Object.keys(tab.faces).length === 35, `BREED_FACES has a row for all 35 breeds (${Object.keys(tab.faces).length})`);
+  ok(tab.keys.length === 40 && tab.keys.every((k) => Array.isArray(tab.faces[k])) && Object.keys(tab.faces).length === 40, `BREED_FACES has a row for all 40 breeds (${Object.keys(tab.faces).length})`);
   ok(Object.values(tab.faces).every((l) => l.length >= 2 && l.length <= 4 && l.every((n) => tab.list.includes(n)) && new Set(l).size === l.length), 'each row: 2 to 4 different faces from the fourteen');
   ok(JSON.stringify(tab.list) === JSON.stringify(tab.art), 'the fourteen faces are PawArt.EXPR_LIST, in its order');
   ok(tab.list.every((n) => typeof tab.words[n] === 'string' && tab.words[n].length && !/[;]/.test(tab.words[n])), 'every face has a player word (V213.md 3.1): ' + tab.list.map((n) => tab.words[n]).join(', '));

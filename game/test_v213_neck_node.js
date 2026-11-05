@@ -112,7 +112,8 @@ for (let i = 0; i < n; i++) {
 }
 function finish() {
   const pairsN = counts.base * FR.length; ok(pass > 0, 'checks ran');
-  if (!process.env.KEYS) { ok(seen.length === 35, `all 35 breeds measured (${seen.length})`); ok(counts.mixKey === 35 * 34 * (MIX_KEY_A.length + MIX_KEY_P.length), `every body x head pair in the key poses (${counts.mixKey})`);
+  if (!process.env.KEYS) { const nB = seen.length;// 35, plus the v2.21 breeds as their ART lanes land (40 at most)
+    ok(nB >= 35 && nB <= 40, `every breed measured (${nB}: the 35 and the v2.21 ones)`); ok(counts.mixKey === nB * (nB - 1) * (MIX_KEY_A.length + MIX_KEY_P.length), `every body x head pair in the key poses (${counts.mixKey})`);
     ok(pairs.length === MIX_N + MIX_HARD.length, `the mix sample: ${MIX_N} rotating pairs and ${MIX_HARD.length} hard ones (${pairs.length})`); }
   ok(fails.filter((f) => /floats|giraffe/.test(f)).length === 0, 'no frame of any breed, mix, pose or age floats');
   console.log(`   ${counts.base} breed x pose x age (${pairsN} frames)`);
