@@ -9,6 +9,7 @@
 .dd-wish .dd-wh{flex:none;width:38px;height:38px;border-radius:50%;background:var(--w-cream);border:2px solid var(--ink);overflow:hidden;display:block}
 .dd-wish .dd-wh svg{width:100%;height:100%;display:block}
 .dd-wish .dd-wt{min-width:0}
+.dd-wish .dd-ww{display:inline-block} /* layout audit: a wish too long for the label's line moves to the next one whole, so no kana sits alone ("…おひる / ね") */
 .dd-wish .dd-wt b{color:#C9475E;margin-right:2px}
 .dd-wish .dd-ww{font-weight:700}
 .dd-wish .dd-wok{flex:none;width:24px;height:24px}
@@ -50,7 +51,7 @@ html[data-layout="phone"] .dd-wish .dd-wh{width:34px;height:34px}
 
 /* ---- the diary: a lined notebook page ---- */
 .dd-book{display:flex;flex-direction:column;gap:10px}
-.dd-empty p{margin:8px 0;font-family:var(--font-hand);font-size:20px}
+.dd-empty p{margin:8px 0;font-family:var(--font-hand);font-size:20px;text-align:center;text-wrap:balance}
 .dd-page{position:relative;padding:12px 16px 14px 44px;border:2.5px solid var(--ink);border-radius:6px 14px 12px 8px;box-shadow:3px 4px 0 rgba(91,61,50,.14);
   background:linear-gradient(90deg,transparent 30px,rgba(232,71,61,.45) 30px,rgba(232,71,61,.45) 32px,transparent 32px),repeating-linear-gradient(180deg,#FFFDF7 0 29px,rgba(120,150,190,.28) 29px 30px);transform:rotate(-.4deg)}
 .dd-phead{display:flex;gap:10px;align-items:center;margin-bottom:4px}

@@ -658,7 +658,7 @@ function frRemove(fid) {
   const at = list.indexOf(f), name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
   FR.menu = ''; S.fr.cache.friends = list.filter((x) => x !== f); markDirty(); frSheet();
   let undone = false;
-  const t = toast(tt('fr.removed', '{name} is off your list.', { name }), 'good');
+  const t = toast(tt('fr.removed', '{name} is off your list.', { name }), 'good', { now: true }); // phones: the Undo shows at once, never waits its turn
   if (t) {
     t.classList.add('fr-undo'); t.insertAdjacentHTML('beforeend', ` <button class="btn" type="button">${esc(tt('fr.undo', 'Undo'))}</button>`);
     frUndoPlace();

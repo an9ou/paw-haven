@@ -530,7 +530,7 @@
     '.pk-portrait .pk-btn{min-height:52px;min-width:52px}',
     /* v2.3 phone occlusion: header in two rows (title, fridge, close / touch hint, recipe book), nothing truncated; taps >= 44 px at 360 wide */
     '.pk-portrait .pk-chip{margin-left:auto}.pk-portrait .pk-x{order:1;width:52px;height:52px}',
-    '.pk-portrait > .pk-xstick{position:sticky;top:8px;z-index:9;display:flex;margin:8px 8px -60px auto}.pk-portrait .pk-top{padding-right:66px}.pk-portrait:has(.pk-ov:not(.pk-clear)) > .pk-xstick{visibility:hidden}',
+    '.pk-portrait > .pk-xstick{position:sticky;top:8px;z-index:9;display:flex;margin:8px 8px -60px auto}.pk-portrait .pk-top{padding-right:76px}.pk-portrait:has(.pk-ov:not(.pk-clear)) > .pk-xstick{visibility:hidden}',
     '.pk-portrait .pk-sub{order:2;flex:1 1 150px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15}.pk-portrait .pk-top .pk-gold{order:3}',
     /* v2.3: the lesson grows instead of clipping, and the slots move down under it */
     '.pk-portrait .pk-msg{height:auto;min-height:42px;overflow:visible}',
@@ -659,8 +659,11 @@
     var PHONE = PORT && document.documentElement.getAttribute('data-layout') === 'phone';
     function bubFit() {
       if (!PHONE || typeof bub === 'undefined' || !bub || !dogEl) return;
-      var dogTop = parseFloat(dogEl.style.top) || 0, vb = (root.scrollTop + root.clientHeight) / scale;
-      bub.style.top = Math.max(0, Math.min(dogTop + 12, vb - bub.offsetHeight - 12)) + 'px';
+      var dogTop = parseFloat(dogEl.style.top) || 0, vb = (root.scrollTop + root.clientHeight) / scale, h = bub.offsetHeight, y = dogTop + 12;
+      // layout audit (5 Nov 2026): rising only as far as the screen's bottom put it on the tray's slots and its Empty button; it goes over the pot
+      // room instead, just above the pantry (it lets taps and drops through)
+      if (y + h + 12 > vb) y = Math.min(vb - h - 12, (typeof shelf !== 'undefined' && shelf ? parseFloat(shelf.style.top) || 330 : 330) - h - 8);
+      bub.style.top = Math.max(0, y) + 'px';
     }
     if (PHONE) root.addEventListener('scroll', function () { if (bub && bub.classList.contains('pk-show')) bubFit(); }, { passive: true });
     var ro = null;

@@ -773,10 +773,12 @@
     }
     // phone (UI/UX H4): on a short screen the dog sits at the bottom edge, so its bubble rises until its bottom is inside the visible part of the page
     function bubFit() {
-      if (!PORT || closed) return; var b = q('.pg-bubble'), dw = q('.pg-dogw'); if (!b || !dw) return; b.style.top = '';
+      if (!PORT || closed) return; var b = q('.pg-bubble'), dw = q('.pg-dogw'), inf = q('.pg-info'); if (!b || !dw) return; b.style.top = '';
       var s = (el.clientWidth || SW) / SW, vb = Math.min(root.getBoundingClientRect().bottom, window.innerHeight) - 10;
       var bot = dw.getBoundingClientRect().top + (b.offsetTop + b.offsetHeight) * s; // layout numbers: the bubble's pop transform is not counted
-      if (bot > vb) b.style.top = Math.round(b.offsetTop - (bot - vb) / s) + 'px';
+      // layout audit (5 Nov 2026): rising only as far as the screen's bottom put it on the plot card's Plant / Water buttons; it rises above the card,
+      // over the bottom of the plot board (it lets taps through, so the plots under it still work)
+      if (bot > vb) b.style.top = Math.round(Math.min(b.offsetTop - (bot - vb) / s, inf ? inf.offsetTop - dw.offsetTop - b.offsetHeight - 10 : Infinity)) + 'px';
     }
     // v2.14: the chips and the card start under a header that grew (desktop). Phone: the pinned header wraps to more rows in some languages, so the
     // scene, plots, card, chips and dog move down by --pg-dy (stage px) until the first plots clear it; the stage grows with it (only grows while the
