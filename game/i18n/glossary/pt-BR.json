@@ -230,7 +230,11 @@
     "rosette": "roseta",
     "Doggy Life Vest": "Colete Salva-Vidas Canino",
     "Float fetch": "Bola na água",
-    "Paddle": "Nadar"
+    "Paddle": "Nadar",
+    "Town level": "nível da cidade",
+    "Level (chip)": "Nível",
+    "habit": "mania",
+    "star sticker": "figurinha de estrela"
   },
   "bans": [
     {
