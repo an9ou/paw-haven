@@ -107,3 +107,39 @@ Checked 3 Nov 2026 with `.claude/skills/ig-human/detect.py` and `.claude/skills/
 | Noodle's Bedtime Walk | `brand/kids/bedtime_walk/doodle-doggo-kids-bedtime-walk.mp4` (2:23) | `-tall.mp4` (29 s, teen cut) | `bedtime-walk-thumb.jpg`, `bedtime-walk-cover-tall.jpg` |
 
 Remake or fix: `NODE_PATH=$(npm root -g) node brand/kids/<episode>/build_<name>.js <workdir> <vo dir>` with `FORMAT=tall`, `ONLY=stills`, `FRAMES=a-b` (see `KIDS_SERIES.md`, Build kit). Voices: `python3 brand/kids/<episode>/vo_<name>.py <kokoro model dir> <vo dir>`.
+
+## RedNote / 小红书 (9:16 Reels, 5 Nov 2026)
+
+Owner, 5 Nov 2026: "Dog manners ... can create reels version for rednote". Simplified Chinese, no link, no domain, no handles, no QR (`REDNOTE.md`). The English under each part says what the Chinese says.
+
+### Dog manners
+
+Video: `brand/kids/dog_manners/doodle-doggo-kids-dog-manners-rednote.mp4` (DURATION, the teen cut in Mandarin: Noodle speaks as 我, Kokoro v1.1-zh `zf_073` at 1.0x; Chinese cards, bubbles and subtitles in LXGW WenKai; the RedNote end card: logo, 治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩). Cover (upload as the video's custom cover): `brand/rednote/rednote-08-dog-manners.jpg` (1080 x 1440: "怎么和狗狗打招呼？", sticker "记住这4条", Bagel with heart eyes, the logo small).
+
+标题 (title, 15 characters; 20 max):
+```
+怎么和狗狗打招呼？记住这4条🐾
+```
+
+> How do you say hello to a dog? Remember these 4.
+
+正文 (text):
+```
+路上遇到可爱的狗狗，好想摸一摸？先记住这4条 🐶
+
+1️⃣ 先问问狗狗的主人
+2️⃣ 站着别动，手放低，让狗狗自己过来闻一闻
+3️⃣ 轻轻地摸肩膀或身体侧面，摸三下就停
+4️⃣ 狗狗走开了，就让它走吧
+
+狗狗舒服，你也安心 💛 收藏起来，下次见到狗狗就用得上！
+
+视频里的蜡笔狗狗来自 Doodle Doggo，一款治愈系蜡笔狗狗游戏
+浏览器搜 Doodle Doggo App 就能玩
+
+#狗狗 #养狗知识 #萌宠 #治愈系游戏
+```
+
+> Met a cute dog and want to pet it? Remember these 4 first. 1. Ask the dog's owner first. 2. Stand still, hands low, let the dog come and sniff. 3. Pet the shoulder or side softly, three strokes, then stop. 4. If the dog walks away, let it go. The dog is comfortable and you can relax. Save this for the next dog you meet! The crayon dogs come from Doodle Doggo, a cozy crayon dog game. Search "Doodle Doggo App" in your browser to play.
+
+Remake: `python3 brand/kids/dog_manners/vo_dog_manners_zh.py <kokoro dir> <vo zh dir>` (misaki 0.9.4, jieba on PYTHONPATH; see the file's head), then `REDNOTE=1 FORMAT=tall NODE_PATH=$(npm root -g) node brand/kids/dog_manners/build_dog_manners.js <workdir> <vo zh dir>`; `ONLY=covers` makes the cover, `FRAMES=a-b` re-renders a part.

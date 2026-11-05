@@ -20,19 +20,35 @@
 //   ONLY=stills: key frames only (STRIP=t1,t2,.. picks the times); ONLY=covers: the thumbnail (wide) or the tall cover only (a full render leaves them)
 //   FRAMES=a-b: re-render only those frames over a workdir copied from an earlier full render, then encode again (marketing rule)
 //   PAR=n: frames rendered on n pages at once (default 3)
+//   REDNOTE=1 (FORMAT=tall only; owner, 5 Nov 2026: "Dog manners ... can create reels version for rednote"): the RedNote Reel in Mandarin. The vo dir
+//   comes from vo_dog_manners_zh.py (set teen, lang zh, Kokoro v1.1-zh zf_073); every word on screen and the subtitles in Simplified Chinese, in
+//   LXGW WenKai (RN_FONT_CSS); the subtitles in short chunks timed by their share of the line (characters x2); the RedNote end card endCardRN (logo,
+//   治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩: no link, no domain, no handles); every line checked to end before the next one starts.
+//   python3 brand/kids/dog_manners/vo_dog_manners_zh.py <kokoro dir> <vo zh dir>
+//   REDNOTE=1 FORMAT=tall NODE_PATH=$(npm root -g) node brand/kids/dog_manners/build_dog_manners.js <workdir> <vo zh dir>
+//   Writes doodle-doggo-kids-dog-manners-rednote.mp4; ONLY=covers writes the 3:4 RedNote cover brand/rednote/rednote-08-dog-manners.jpg (1080 x 1440).
 // Outputs next to this file: doodle-doggo-kids-dog-manners.mp4, doodle-doggo-kids-dog-manners-tall.mp4, dog-manners-thumb.jpg, dog-manners-cover-tall.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../instagram/launch/centre_text.js');
-const { ENDCARD_JS, handles } = require('../endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..'), OUT = __dirname;
-const TALL = (process.env.FORMAT || 'wide') === 'tall';
-const WORK = path.resolve(process.argv[2] || '/tmp/dog_manners') + (TALL ? '/tall' : '/wide'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
+const TALL = (process.env.FORMAT || 'wide') === 'tall', RN = !!process.env.REDNOTE;
+if (RN && !TALL) throw new Error('REDNOTE=1 needs FORMAT=tall');
+const WORK = path.resolve(process.argv[2] || '/tmp/dog_manners') + (TALL ? (RN ? '/rednote' : '/tall') : '/wide'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const VO = path.resolve(process.argv[3] || 'vo');
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), D = VOJ.dur;
+if (RN !== (VOJ.lang === 'zh')) throw new Error(RN ? 'REDNOTE=1 needs the Mandarin vo dir (vo_dog_manners_zh.py)' : 'a Mandarin vo dir needs REDNOTE=1');
 const W = TALL ? 1080 : 1920, H = TALL ? 1920 : 1080, FPS = 25;
 const INK = '#5B3D32', MUTED = '#8A7468', PAPER = '#FFF8EC', CREAM = '#FFFDF7', PINK = '#F28FA5';
-const AND = 'Andika', CAV = 'Caveat';
+const ZF = "'LXGW WenKai'"; // RedNote: every word in LXGW WenKai (the game's Chinese face)
+const AND = RN ? ZF : 'Andika', CAV = RN ? ZF : 'Caveat';
+// the words on screen (RedNote: Simplified Chinese, each keeping the English card's meaning)
+const WORDS = RN ? {
+  title: [{ s: '狗狗礼仪', size: 54, fill: MUTED, pitch: 100 }, { s: '怎么和狗狗', size: 104, pitch: 120 }, { s: '打招呼', size: 104 }],
+  labels: ['先问主人', '站着别动', '轻轻地摸', '让它走吧'], child: '可以打个招呼吗？', yes: '可以呀！',
+  cover: [{ s: '怎么和狗狗', size: 132, pitch: 150 }, { s: '打招呼？', size: 132 }], sticker: '记住这4条',
+} : { title: null, labels: ['Ask first.', 'Stand still.', 'Pet softly.', 'Let it go.'], child: 'May I say hello?', yes: 'Yes!' };
 
 // ---- the game's art ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -104,19 +120,22 @@ if (!TALL) {
   beat('still', 'yard'); hold(0.15); mark('lab2'); hold(0.3); mark('handIn'); { const a0 = at; say('tStill', 0); M.walk0 = a0 + D.tStill * 0.32; }
   M.sniff = Math.max(at, M.walk0 + 2.1); at = M.sniff; hold(1.6);
   beat('pet', 'yard'); hold(0.15); mark('lab3'); hold(0.25); mark('reach0'); say('tPet', 0.2);
-  SP = 1.05; mark('s0'); { const s0 = at; at = s0 + 0.3; say('one', 0); at = s0 + SP + 0.3; say('two', 0); at = s0 + 2 * SP + 0.3; say('three', 0); at = s0 + 3 * SP + 0.1; }
+  SP = RN ? Math.max(1.05, D.one + 0.2, D.two + 0.2) : 1.05; /* RedNote: the Mandarin counts are a little longer */ mark('s0'); { const s0 = at; at = s0 + 0.3; say('one', 0); at = s0 + SP + 0.3; say('two', 0); at = s0 + 2 * SP + 0.3; say('three', 0); at = s0 + 3 * SP + 0.1; }
   mark('s1'); say('stop', 0.2); mark('ask2b'); M.lean = M.s1 + 0.9; at = Math.max(at, M.lean + 1.8); mark('petEnd');
   beat('go', 'yard'); hold(0.15); mark('lab4'); hold(0.3); mark('go0'); say('tGo', 0.3); hold(1.3);
   mark('soft'); hold(0.5); mark('card'); hold(3.3);
 }
 const T = at, N = Math.round(T * FPS);
+if (RN) { const ks = Object.keys(AT).sort((a, b) => AT[a] - AT[b]); // RedNote: the Mandarin lines are longer; no line may run into the next one or the end card
+  ks.forEach((k, i) => { const end = AT[k] + D[k], lim = i + 1 < ks.length ? AT[ks[i + 1]] : M.soft;
+    if (end > lim + 0.001) throw new Error('line ' + k + ' (' + D[k].toFixed(2) + ' s) runs ' + (end - lim).toFixed(2) + ' s past ' + (ks[i + 1] || 'the end card') + ': lengthen its beat'); }); }
 BEATS.forEach((b, i) => { b.b = i + 1 < BEATS.length ? BEATS[i + 1].a : T; });
 console.log(TALL ? 'tall' : 'wide', 'T =', T.toFixed(2), 's,', N, 'frames;', BEATS.map((b) => b.id + ' ' + b.a.toFixed(1)).join(', '));
 const ENDF = [Math.floor(M.soft * FPS), N]; // the end card alone: FRAMES=a-b re-renders it (e.g. new handles) over an earlier full render
 console.log('end card: paper from', M.soft.toFixed(2), 's, card from', M.card.toFixed(2), 's; FRAMES=' + ENDF.join('-'));
 
 // ---- read-along subtitles: one short line at a time, each timed by its share of its clip (letters, plus a breath at a stop) ----
-const SUBS_TX = {
+const SUBS_EN = {
   hi1: ['Hi, friends!', "I'm Noodle."], hi2: ["Today I'll show you", 'how to say hello to a dog.'], hi3: ['Gently!'],
   ask1: ['Before you pet a dog,', "ask the dog's grown-up:", 'may I say hello?'], ask2: ['If they say no,', "that's okay."], ask3: ['We can wave instead!'],
   still1: ['Stand still,', 'with your hands down.'], still2: ['Let the dog come to you', 'and sniff.'], still3: ['Sniffing is how', 'dogs say hello!'],
@@ -131,13 +150,22 @@ const SUBS_TX = {
   tAsk: ["Ask the dog's grown-up first."], tStill: ['Stand still.', 'Let the dog come and sniff.'], tPet: ['Pet softly,', 'on the shoulder or side.'],
   tGo: ['If the dog walks away,', 'let it go.'],
 };
+// RedNote (vo_dog_manners_zh.py, line by line): short chunks of about 14 characters at most; the counts build up as in English
+const SUBS_ZH = {
+  tAsk: ['先问问狗狗的主人。'], tStill: ['站着别动，手放低，', '让狗狗自己过来闻一闻。'], tPet: ['轻轻地摸，', '摸它的肩膀或身体侧面。'],
+  one: ['一，'], two: ['一，二，'], three: ['一，二，三。'], stop: ['然后就停下来。'], tGo: ['如果狗狗走开了，', '就让它走吧。'],
+};
+const SUBS_TX = RN ? SUBS_ZH : SUBS_EN;
 const NOSUB = new Set(['tHook']);
-// the subtitles say exactly what Noodle says (the script's words): checked against the voice text
-for (const k of Object.keys(VOJ.text)) { if (NOSUB.has(k)) continue; const parts = SUBS_TX[k]; if (!parts) throw new Error('no subtitle for ' + k); const said = VOJ.text[k].replace(/\s+/g, ' ').trim(), shown = (['two', 'three'].includes(k) ? [parts[0].split(', ').pop()] : parts).join(' ');
+// the subtitles say exactly what Noodle says (the script's words): checked against the voice text (Chinese: with the punctuation stripped)
+const zhBare = (s) => s.replace(/[\s，。！？：、…“”,.!?:]/g, '');
+for (const k of Object.keys(VOJ.text)) { if (NOSUB.has(k)) continue; const parts = SUBS_TX[k]; if (!parts) throw new Error('no subtitle for ' + k);
+  const said = RN ? zhBare(VOJ.text[k]) : VOJ.text[k].replace(/\s+/g, ' ').trim();
+  const shown = RN ? (['two', 'three'].includes(k) ? zhBare(parts[0]).slice(-1) : zhBare(parts.join(''))) : (['two', 'three'].includes(k) ? [parts[0].split(', ').pop()] : parts).join(' ');
   if (said !== shown) throw new Error('subtitle for ' + k + ' is not the line: "' + shown + '" vs "' + said + '"'); }
 const SUBS = [];
 Object.keys(AT).filter((k) => !NOSUB.has(k)).sort((a, b) => AT[a] - AT[b]).forEach((k) => { const parts = SUBS_TX[k];
-  const wt = parts.map((x) => x.length + (/[.!?:,]$/.test(x) ? 5 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = AT[k];
+  const wt = parts.map((x) => (RN ? zhBare(x).length * 2 : x.length) + (/[.!?:,。！？：，…]$/.test(x) ? 5 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = AT[k];
   parts.forEach((x, i) => { const d = D[k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x, k, i }); t0 += d; }); });
 SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.45) : Math.min(M.soft, u.b + 0.8); });
 const subAt = (k, i) => (SUBS.find((u) => u.k === k && u.i === i) || {}).a;
@@ -201,6 +229,7 @@ const motes = (t, dd) => { let g = ''; for (const m of MOTES) if (m.d === dd) { 
   return g ? `<g filter="url(#dof${dd})">${g}</g>` : ''; };
 
 // ---- the beats: each returns { place, z (camera zoom), focus, mid (the art), front (near layer), text (spec for the page) } at time t ----
+if (RN) LY.adult.tail = [500, 340]; // RedNote: the wider Chinese rule card; the grown-up's bubble points past it, up the lead
 const L = LY, fr3 = (t) => Math.floor(t * 3) % 3;
 const breath = (t) => Math.sin(t * 2 * Math.PI * 0.5) * 1.5;
 const bagelBase = (o) => Object.assign({ key: BAGEL, pose: 'idle', expr: null, facing: 'left', x: L.BX, g: L.G, k: L.K, outfit: COLLAR }, o);
@@ -233,9 +262,9 @@ function vis(id, t) {
     const d = bagelBase({ bob: 0 }); const cb = TALL ? AT.tAsk + D.tAsk * 0.45 : subAt('ask1', 2);
     if (t > cb) d.expr = 'curious';
     if (t > M.yes + 0.3) { d.pose = 'happy'; d.expr = null; }
-    V.text.label = label(1, 'Ask first.', t, M.lab);
-    if (t > cb - 0.1) V.text.child = { s: 'May I say hello?', op: ss(seg(t, cb - 0.1, cb + 0.25)), sc: 0.85 + 0.15 * pop(seg(t, cb - 0.1, cb + 0.45)) };
-    if (t > M.yes + 0.1) V.text.adult = { s: 'Yes!', op: ss(seg(t, M.yes + 0.1, M.yes + 0.45)), sc: 0.85 + 0.15 * pop(seg(t, M.yes + 0.1, M.yes + 0.6)) };
+    V.text.label = label(1, WORDS.labels[0], t, M.lab);
+    if (t > cb - 0.1) V.text.child = { s: WORDS.child, op: ss(seg(t, cb - 0.1, cb + 0.25)), sc: 0.85 + 0.15 * pop(seg(t, cb - 0.1, cb + 0.45)) };
+    if (t > M.yes + 0.1) V.text.adult = { s: WORDS.yes, op: ss(seg(t, M.yes + 0.1, M.yes + 0.45)), sc: 0.85 + 0.15 * pop(seg(t, M.yes + 0.1, M.yes + 0.6)) };
     // the wave: the open hand comes up from the bottom and waves, slowly
     const w0 = has('ask3') ? M.wave0 - 0.4 : 1e9, rest = TALL ? { kind: 'open', x: 250, y: 1150, r: -8, lean: 0.1 } : { kind: 'open', x: 560, y: 820, r: -8, lean: 0.12 };
     let h = null; if (t > w0) { const qi = eo3(seg(t, w0, w0 + 1.2)), qo = ss(seg(t, M.askEnd - 0.2, M.askEnd + 0.6)); h = handMix(HAND_OFF(rest), rest, qi * (1 - qo)); h.r += Math.sin((t - w0) * Math.PI * 2 * 0.75) * 11 * qi; }
@@ -249,7 +278,7 @@ function vis(id, t) {
     const d = bagelBase({ x: lerp(far.x, near.x, q), g: lerp(far.g, near.g, q), k: lerp(far.k, near.k, q), pose: t < w0 ? 'sit' : t < w1 ? 'walk' : 'sniff' });
     if (d.pose === 'walk') d.bob = Math.abs(Math.sin((t - w0) * Math.PI * 2.4)) * 6;
     if (d.pose === 'sniff') { if (M.sitDown && t > M.sitDown - 0.4 && has('still4')) { d.pose = 'sit'; d.expr = null; } else if (t > M.sniff + 1.6) d.expr = null; }
-    V.text.label = label(2, 'Stand still.', t, M.lab2);
+    V.text.label = label(2, WORDS.labels[1], t, M.lab2);
     const hi = M.handIn - 0.2, h = handMix(HAND_OFF(HAND_LOW), HAND_LOW, eo3(seg(t, hi, hi + 1.6)));
     let puffs = ''; if (d.pose === 'sniff' && t < M.sniff + 2.6) { const mm = MEAS[mkey(BAGEL, 'sniff', 'left', COLLAR)]; const nose = onDog(d, mm.nose);
       for (let j = 0; j < 3; j++) { const ph = ((t - M.sniff) * 1.6 + j / 3) % 1, o = Math.sin(Math.PI * ph) * (1 - seg(t, M.sniff + 2.0, M.sniff + 2.6));
@@ -259,7 +288,7 @@ function vis(id, t) {
   }
   if (id === 'pet') {
     const d = bagelBase({});
-    V.text.label = label(3, 'Pet softly.', t, M.lab3);
+    V.text.label = label(3, WORDS.labels[2], t, M.lab3);
     // the flat hand rests on Bagel's side, behind the shoulder (never the head or the face), and strokes back along the side, three times, slowly
     const mm = MEAS[mkey(BAGEL, 'idle', 'left', COLLAR)];
     const s0 = M.s0, s1 = M.s1;
@@ -286,7 +315,7 @@ function vis(id, t) {
     return V;
   }
   if (id === 'go') {
-    V.text.label = label(4, 'Let it go.', t, M.lab4);
+    V.text.label = label(4, WORDS.labels[3], t, M.lab4);
     // Bagel turns and trots off happily, back across the grass, and sniffs about over there; the hand stays low and still
     const w0 = M.go0 + 0.4, w1 = w0 + (TALL ? 2.0 : 3.2), q = ss(seg(t, w0, w1));
     const far = TALL ? { x: L.BX + 140, g: L.G - 110, k: L.K * 0.72 } : { x: L.BX + 360, g: L.G - 90, k: L.K * 0.72 };
@@ -332,7 +361,7 @@ function frameState(t) {
 }
 
 // ---- the page ----
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}.hide{display:none}.bedfront svg *{visibility:hidden}.bedfront svg .pa-bed-front,.bedfront svg .pa-bed-front *{visibility:visible}</style>
 <svg id="root" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs><filter id="shadow" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="10"/></filter>
 <filter id="handsoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>${[1.6, 3.5, 9].map((s, d) => `<filter id="dof${d}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${s}"/></filter>`).join('')}</defs>
@@ -342,7 +371,7 @@ ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
 const HANDLES=${JSON.stringify(handles())}; let END=null;
-const LOGO=${JSON.stringify(LOGO_SVG)}, W=${W},H=${H},TALL=${TALL},LY=${JSON.stringify(LY)},INK='${INK}',MUTED='${MUTED}',CREAM='${CREAM}',AND='${AND}',CAV='${CAV}';
+const LOGO=${JSON.stringify(LOGO_SVG)}, W=${W},H=${H},TALL=${TALL},LY=${JSON.stringify(LY)},INK='${INK}',MUTED='${MUTED}',CREAM='${CREAM}',AND=${JSON.stringify(AND)},CAV=${JSON.stringify(CAV)},RN=${RN},WORDS=${JSON.stringify(WORDS)};
 const $=(i)=>document.getElementById(i), sc=(x,y,s,g)=>'<g transform="translate('+x+' '+y+') scale('+s+') translate('+(-x)+' '+(-y)+')">'+g+'</g>';
 const BG={};
 const card=(x,y,w,h,lines,fam,o)=>{o=o||{};return '<g data-box><rect x="'+(x-w/2)+'" y="'+(y-h/2)+'" width="'+w+'" height="'+h+'" rx="'+(o.rx||34)+'" fill="'+(o.fill||CREAM)+'" stroke="'+INK+'" stroke-width="'+(o.sw||5)+'"/>'+centred(lines,x,y,fam).svg+'</g>';};
@@ -354,7 +383,7 @@ function bubble(s,x,y,size,tail,o){ const k=inkOf(s,size,AND), w=k.L+k.R+2*34, h
   const seam='<path d="M'+(tx-21)+' '+(ey+(up?2:-2))+' L'+(tx+21)+' '+(ey+(up?2:-2))+'" stroke="'+(o.fill||CREAM)+'" stroke-width="7"/>';
   return tl+box+seam; }
 function textSVG(T){ let g='';
-  if(T.title){ const c=LY.title; const lines=[{s:'Dog manners',size:TALL?54:58,fill:MUTED,pitch:TALL?96:100},{s:'How to say hello',size:TALL?100:118,pitch:TALL?108:124},{s:'to a dog',size:TALL?100:118}];
+  if(T.title){ const c=LY.title; const lines=WORDS.title||[{s:'Dog manners',size:TALL?54:58,fill:MUTED,pitch:TALL?96:100},{s:'How to say hello',size:TALL?100:118,pitch:TALL?108:124},{s:'to a dog',size:TALL?100:118}];
     g+='<g opacity="'+T.title.op+'">'+sc(c.x,c.y,T.title.sc,'<g transform="rotate(-1.5 '+c.x+' '+c.y+')">'+card(c.x,c.y,TALL?780:960,TALL?390:420,lines,CAV,{sw:6,rx:44})+'</g>')+'</g>'; }
   if(T.label){ const l=T.label; const k=inkOf(l.s,LY.label.size,CAV), w=k.L+k.R+70, h=Math.round(LY.label.size*1.5);
     g+='<g opacity="'+l.op+'">'+sc(l.x,l.y,l.sc,'<g transform="rotate(-2 '+l.x+' '+l.y+')">'+card(l.x,l.y,w,h,[{s:l.s,size:LY.label.size}],CAV,{fill:'#FFE3A1',rx:h/2})+'</g>')+'</g>'; }
@@ -375,7 +404,7 @@ window.frame=async function(S){
   $('fade').setAttribute('opacity',S.soft);
   let tx=''; for(const l of S.layers){ const g=textSVG(l.text); if(g) tx+='<g opacity="'+(l.op*(1-S.soft)).toFixed(3)+'">'+g+'</g>'; } $('tx').innerHTML=tx;
   // the shared end card (brand/kids/endcard.js), over the paper: fades in as a whole with a small settle, no bounce
-  if(S.end>0){ if(!END) END=endCard(TALL?'tall':'wide',HANDLES,LOGO); const cx=TALL?475:W/2, cy=TALL?855:H/2;
+  if(S.end>0){ if(!END) END=RN?endCardRN('tall',LOGO):endCard(TALL?'tall':'wide',HANDLES,LOGO); const cx=TALL?475:W/2, cy=TALL?855:H/2;
     $('end').innerHTML='<g opacity="'+S.end+'">'+sc(cx,cy,S.endS,END)+'</g>'; } else $('end').innerHTML='';
   let sub=''; if(S.sub){ let size=LY.subSize; const k=inkOf(S.sub.s,size,AND); if(k.L+k.R+60>LY.subMax) size=Math.floor(size*(LY.subMax-60)/(k.L+k.R));
     sub=pill(S.sub.s,LY.subCX,LY.subY,size,AND,{op:(S.sub.op*(1-S.soft)).toFixed(3),padX:32}); } $('sub').innerHTML=sub;
@@ -394,6 +423,9 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
   const mkPage = async () => { const p = await br.newPage({ viewport: { width: W, height: H } }); fs.writeFileSync(path.join(WORK, 'page.html'), html);
     await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle');
     await p.evaluate(() => Promise.all(['700 40px Andika', '700 40px Caveat'].map((f) => document.fonts.load(f, 'aA1.?'))));
+    // RedNote: LXGW WenKai comes in unicode-range parts, so load it with every word drawn (inkOf throws on a face not loaded)
+    if (RN) await p.evaluate(async (s) => { await document.fonts.load('700 40px "LXGW WenKai"', s); await document.fonts.ready; },
+      JSON.stringify([WORDS, SUBS_ZH]) + '1234567890.治愈系蜡笔狗狗游戏浏览器搜 Doodle Doggo App 就能玩');
     return p; };
   const p = await mkPage();
   for (const [key, pose, facing] of NEED) { const outfit = key === BAGEL ? COLLAR : undefined;
@@ -443,6 +475,16 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
     // the cover's own framing: Bagel and the hand a little bigger, clear of the title (no camera zoom)
     const [cx, cy, k] = TALL ? [560, 1265, 1.22] : [1480, 905, 1.3], wrap = (g) => `<g transform="translate(${cx} ${cy}) scale(${k}) translate(${-L.BX} ${-L.G})">${g}</g>`;
     S.layers = [v]; v.op = 1; v.z = 1; v.mid = wrap(v.mid); v.front = wrap(v.front);
+    if (RN) { // RedNote: its own 3:4 cover (1080 x 1440 = this frame's y 240..1680): the Chinese title big at the top, a sticker, the logo small at the foot
+      v.front += logoSVG(745, 1560, 330, 1);
+      await p.evaluate(async (S) => { await window.frame(S); const x = 540, y = 505;
+        const tc = card(x, y, 840, 370, WORDS.cover, CAV, { sw: 7, rx: 46, fill: '#FFFDF7' }), st = pill(WORDS.sticker, 0, 0, 58, CAV, { fill: '#FFE3A1', padX: 34 });
+        document.getElementById('tx').innerHTML = '<g transform="rotate(-2 ' + x + ' ' + y + ')">' + tc + '</g><g transform="translate(800 712) rotate(5)">' + st + '</g>';
+        document.getElementById('end').innerHTML = ''; document.getElementById('sub').innerHTML = '';
+        const bad = centreCheck(document.getElementById('root')); if (bad.length) throw new Error('cover: ' + bad.join('; ')); }, S);
+      const png = path.join(WORK, 'cover_rn.png'); await p.screenshot({ path: png, clip: { x: 0, y: 0, width: W, height: H } });
+      const jpg = path.join(ROOT, 'brand', 'rednote', 'rednote-08-dog-manners.jpg');
+      cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, '-vf', 'crop=1080:1440:0:240', '-q:v', '2', jpg]); console.log('wrote', jpg); return; }
     v.front += logoSVG(TALL ? 690 : 300, TALL ? 1400 : 960, TALL ? 320 : 400, 1);
     await p.evaluate(async ([S, ti]) => { await window.frame(S); // the title: big and short, readable on a phone
       const lines = TALL ? [{ s: 'Saying hello', size: 124, pitch: 128 }, { s: 'to a dog', size: 124 }] : [{ s: 'Saying hello', size: 150, pitch: 154 }, { s: 'to a dog', size: 150 }];
@@ -480,7 +522,7 @@ const NEED = [['beagle', 'idle', 'left'], ['beagle', 'sit', 'left'], ['beagle', 
   // the voice's loudness while it speaks (the silences left out), and the music's: the music sits 14 dB under
   const vI = lufs(voice) + 10 * Math.log10(T / keys.reduce((s, k) => s + D[k], 0)), mI = lufs(path.join(WORK, 'music.wav')), gain = (vI - 14) - mI;
   console.log('voice', vI.toFixed(1), 'LUFS (speech), music', mI.toFixed(1), 'LUFS: music gain', gain.toFixed(1), 'dB');
-  const mp4 = path.join(OUT, TALL ? 'doodle-doggo-kids-dog-manners-tall.mp4' : 'doodle-doggo-kids-dog-manners.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-kids-dog-manners-rednote.mp4' : TALL ? 'doodle-doggo-kids-dog-manners-tall.mp4' : 'doodle-doggo-kids-dog-manners.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.jpg'), '-i', path.join(WORK, 'music.wav'), '-i', voice,
     '-filter_complex', `[1:a]atrim=0:${T.toFixed(3)},volume=${gain.toFixed(2)}dB,afade=t=in:d=2,afade=t=out:st=${M.soft.toFixed(2)}:d=${(T - M.soft).toFixed(2)},aresample=44100[m];[2:a]aresample=44100,pan=stereo|c0=c0|c1=c0[v];[m][v]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-18:TP=-2:LRA=11,aresample=44100,alimiter=limit=0.76:level=false:attack=2:release=60[a]`,
     '-map', '0:v', '-map', '[a]', '-t', T.toFixed(3), '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '22', '-pix_fmt', 'yuv420p', '-r', String(FPS),
