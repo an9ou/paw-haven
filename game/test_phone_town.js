@@ -172,6 +172,11 @@ async function suite(t, dev) {
   await atPlace(t, 'dogpark'); await audit(t, 'dog park');
   await tapSel(t, '#placeBtns [data-pb2=playboard]', 400); ok(await openModalUp(t) && await p.locator('.pbcard').count() === 4, 'playdate board opens with 4 dogs');
   await sheetFits(t, 'playboard'); await audit(t, 'playboard');
+  { // v2.21 phone review 1: two columns on phones, every card inside the sheet (four columns of 174 px cut card 2 and hid cards 3 and 4)
+    const g = await ev(() => { const b = document.querySelector('#modal .panel-body') || document.querySelector('#modal .panel'), pb = b.getBoundingClientRect(), cols = getComputedStyle(document.querySelector('.pbgrid')).gridTemplateColumns.split(' ').length;
+      return { cols, out: [...document.querySelectorAll('.pbcard')].map((c, i) => { const r = c.getBoundingClientRect(), s = c.querySelector('.pbdog svg').getBoundingClientRect(); return r.left < pb.left - 2 || r.right > pb.right + 2 || s.right > r.right + 1 ? i : -1; }).filter((i) => i >= 0) }; });
+    ok(g.cols === 2 && !g.out.length, `Playdate Board fits on phones: two columns, all 4 cards inside (${g.cols} columns${g.out.length ? ', out: ' + g.out.join(' ') : ''})`);
+  }
   const sn = await p.locator('[data-sniff]').count(); ok(sn === 4, 'board: Sniff buttons');
   await tapSel(t, '[data-sniff]', 300); ok(await p.locator('.pbsniff').count() === 1, 'board: sniffed a dog by tap'); await audit(t, 'playboard (sniffed)');
   const box2 = await p.locator('#modal .panel-body, #modal .panel').first().boundingBox();
