@@ -374,9 +374,9 @@ require('./test_lib').run('v220_missions', async (t) => {
   sec('E3. a locked step reads "Opens at Bond N"; page 1 comes from the first-day guide');
   const e3 = await ev(() => {
     const P = window.__paw, N = P.msn, S = P.S, keep = S.dogs.map((d) => d.bond.level), out = {}, nb = S.missions.nb, kept = JSON.stringify([nb.done, nb.got]);
-    S.dogs.forEach((d) => { d.bond.level = 1; }); const g = S.gkEarly; S.gkEarly = false; nb.done[3] = []; nb.got = nb.got.filter((n) => n !== 3);
+    const born = S.dogs.map((d) => d.born); S.dogs.forEach((d) => { d.bond.level = 1; d.born = '2020-01-01'; }); /* v2.19.3: grown-up dogs (a puppy-only pack gets a short walk on page 3, v2193_puppy) */ const g = S.gkEarly; S.gkEarly = false; nb.done[3] = []; nb.got = nb.got.filter((n) => n !== 3);
     try { out.river = N.lock(3, 2); out.cook = N.lock(6, 1); out.tokyo = N.lock(11, 0); out.pool = N.lock(8, 0); N.page(3); out.html = N.html().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '); }
-    finally { S.dogs.forEach((d, i) => { d.bond.level = keep[i]; }); S.gkEarly = g; const k = JSON.parse(kept); nb.done = k[0]; nb.got = k[1]; }
+    finally { S.dogs.forEach((d, i) => { d.bond.level = keep[i]; d.born = born[i]; }); S.gkEarly = g; const k = JSON.parse(kept); nb.done = k[0]; nb.got = k[1]; }
     out.open = N.lock(3, 2);
     const gd = S.guide; S.guide = { step: 5, fw: 1, done: '2026-11-01' }; N.tick(); out.p1 = S.missions.nb.got.includes(1); S.guide = gd;
     return out;
