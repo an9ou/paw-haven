@@ -119,7 +119,7 @@ function exWeights(d, ev, pose) {
   const tr = EX_TRAIT[persOf(d).trait] || {}, fav = BREED_FACES[d.key] || [];
   let l = EX_LIST.map((n) => { const f = fav.includes(n), b = E.w[n] || (!E.only && f ? (E.fav || EX_FAV_BASE) : 0); return [n, b * (tr[n] || 1) * (f ? EX_FAV : 1)]; }).filter((x) => x[1] > 0);
   if (pose) { const ok = l.filter((x) => exOk(x[0], pose)); if (ok.length) l = ok; } // the faces that go on that pose, when the art has any
-  return l;
+  return hbFace(d, l); // v2.22: Bond 8 with lvOn, the best face once more (51b_habits.js), off the same list
 }
 // the likeliest face first, so a roll of 0 picks it
 function exPick(d, ev, pose) { const l = exWeights(d, ev, pose).sort((a, b) => b[1] - a[1]); if (!l.length) return null; let s = exRand() * l.reduce((a, x) => a + x[1], 0); for (const x of l) { s -= x[1]; if (s <= 0) return x[0]; } return l[l.length - 1][0]; }

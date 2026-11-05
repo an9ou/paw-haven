@@ -265,13 +265,14 @@ function lvOnAct(a) {
 }
 on('act', lvOnAct);
 
-/* ---------------- the habits letter for an old save (V222.md 5.2 step 7; part D may dress it) ---------------- */
+/* ---------------- the habits letter for an old save (V222.md 5.2 step 7; part D adds each dog's newest habit) ---------------- */
 function lvMailSend() {
   if (!S || !lvOn() || !lvObj(S.lv) || S.lv.mail !== 0 || typeof mailPush !== 'function' || !Array.isArray(S.dogs) || !S.dogs.length) return false;
   const names = typeof tlist === 'function' ? tlist(S.dogs.map((d) => d.name)) : S.dogs.map((d) => d.name).join(', ');
   const title = S.dogs.length === 1 ? tt('hb.mail_one', "{name}'s habits", { name: S.dogs[0].name }) : tt('hb.mail_many', "Your pack's habits");
+  const hbs = typeof hbMailLines === 'function' ? hbMailLines(S.dogs) : []; // part D: each dog's newest habit so far (51b_habits.js)
   const text = tt('hb.mail_text', 'Gerald has been watching {names} closely, in a friendly way. Every habit so far is written down in Journal > Profile.', { names })
-    + ' ' + tt('lv.mail_ps', 'PS. You have a town level now: {n}. Everything you had open stays open.', { n: S.lv.lv });
+    + (hbs.length ? ' ' + hbs.join(' ') : '') + ' ' + tt('lv.mail_ps', 'PS. You have a town level now: {n}. Everything you had open stays open.', { n: S.lv.lv });
   mailPush({ id: 'lv_habits', kind: 'news', from: tt('dd.news_from', 'Gerald'), title, text });
   S.lv.mail = 1; markDirty();
   return true;
@@ -471,6 +472,6 @@ function lvExpose() {
     wish: () => (typeof ddWishOpts === 'function' && S && S.dogs && S.dogs.length ? ddWishOpts(D()) : null), lock: (n, bond, owned) => lvShopLock(n, bond, !!owned), tags: (ids) => lvTags(ids),
     hud: () => { const b = lvHudSync(); return b ? { aria: b.getAttribute('aria-label'), title: b.title, n: b.querySelector('.lv-n').textContent, next: (b.querySelector('#lvNext') || {}).textContent || '' } : null; },
     unlocksText: (n) => lvUnlocksFor(n), lesson: () => lvLesson(), shown: () => (S && S.lv ? S.lv.shown : 0), calm: () => lvCalm(),
-    hb: {}
+    hb: typeof hbHook === 'function' ? hbHook() : {}
   };
 }

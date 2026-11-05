@@ -177,3 +177,7 @@ TOYS_LINES@toys *
 AG_LINES *   # v2.15 Training Ground arrival lines (data.ag_lines.<breed>)
 PL_LINES *   # v2.15 Splash Pool arrival lines (data.pl_lines.<breed>)
 FR_NOTES *   # v2.19 Friends paw-print notes (data.fr_notes.<i>; the Worker stores only the index)
+
+# ---- game/src/51b_habits.js (v2.22 part D)
+HB_LINES *   # the habit lines (data.hb_lines.<cat>.<band>, V222.md 4.2)
+HB_SECRET *   # the Bond 10 secrets (data.hb_secret.<breed>, V222.md 4.4)

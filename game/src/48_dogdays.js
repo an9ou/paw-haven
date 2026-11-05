@@ -220,7 +220,7 @@ const DD_XC = { fetch: 'l', floatfetch: 's', toy: 'y', bath: 'b', nap: 'z', padd
 const DD_XORDER = 'nlasyrjebzpgchvmq'; // v2.20: q, Gerald's treat pouch (24b_missions2.js), drawn as a pink paw first
 const DD_XIC = { n: 'family', l: 'ball', a: 't:Agility Tunnel', s: 'water-spray', y: 't:Squeaky Duck', r: 't:Train Ticket', j: 'w-dawn', e: 'leaf', b: 'tub', z: 'zzz', p: 'pet', g: 'garden', c: 'kitchen', h: 'camera', v: 'dogpark', m: 'mail' }; // the diary doodle: the game's own icons
 function ddPageNew() { const d = D(); return { g: day(), j: jstISO(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
-const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi || ddArr(p.gu).length)); // v2.20: gu, growing up moments (24f_grow.js)
+const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi || ddArr(p.gu).length || ddArr(p.hb).length)); // v2.20: gu, growing up moments (24f_grow.js). v2.22: hb, habits found out (51b_habits.js)
 function ddDiaryClose() {
   const t = S.dd.today; if (!t || (t.j || '') === jstISO()) return; // Daily rhythm: a page a Japan day (was a game day; a page from before has no j and closes once)
   if (ddPageHas(t)) { S.dd.diary.push(t); if (S.dd.diary.length > DD_DIARY_MAX) S.dd.diary.splice(0, S.dd.diary.length - DD_DIARY_MAX); }
@@ -296,6 +296,7 @@ const ddTrickName = (n, key) => (n === 'Signature' ? tSig(key) : tTrick(n));
 function ddPageLines(p) {
   const v = ddVoice(p.k), r = seeded(hashId('dd|' + p.g + '|' + p.id)), L = [ddOpener(v, Math.floor(r() * 2) % 2)], ev = [];
   if (ddArr(p.gu).length && typeof msGrowLines === 'function') ev.push(...msGrowLines(p)); // v2.20: growing up moments, first (24f_grow.js)
+  if (ddArr(p.hb).length) ev.push(...hbDiaryLines(p)); // v2.22: a habit found out at a new Bond level, the Bond 10 secret as the line (51b_habits.js)
   if (p.wi) ev.push(tt('dd.d_wish', 'My wish came true: {wish}!', { wish: ddWishText(p.wi, null) }));
   if (ddArr(p.w).length) ev.push(tt('dd.d_walk', 'Walks today: {list}. I sniffed every single thing.', { list: tlist(p.w.map(ddRouteName)) }));
   if (ddArr(p.p).length) ev.push(tt('dd.d_place', "Today's outings: {list}.", { list: tlist(p.p.map(ddPlaceName)) }));

@@ -9,6 +9,9 @@
 //   A9 the pace table 2.3 re-run on the built numbers is within one level.  S  the stars past level 20 count, never backfilled
 // Part B: B1-B4 (the call sites).  Part C: C1 off = no star, C2 the aria-label, the Next line and the sheet, C3 the Bond card first, then the level card,
 //   C4 a reload keeps an unshown card, C5 Gerald's line on a fresh save's first card only
+// Part D: D1 40 breeds x 10 habit lines and table 4.3, the Profile card, the Bond card box, the diary; D2 a mix's secret is seeded and stable;
+//   D3 off the weights are today's, on the trait weight x1.5 (and the other "does it more" numbers); D4 the bath zoomies once per bath, never with Motion off;
+//   D5 one letter for a 3-dog save
 // The switch: MS2_LIVE is off until the launch, so this suite turns it on with prefs.ms2Test and the harness pref prefs.lvTest.
 // node game/run_tests.js v222_levels
 const { run, URL } = require('./test_lib');
@@ -489,4 +492,148 @@ run('v222_levels', async (t) => {
   ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'its next level shows a card');
   ok(await ev(() => !document.querySelector('#modal .lv-gerald')), 'the old save\'s first card has no Gerald line');
   await t.p.click('#lvOk'); await t.modalGone();
+
+  /* ================= part D: the habits (V222.md 4, 7.1 D) ================= */
+  // the contract's own table 4.3 (B1, B2, B3, B5, B6, B7, B8, B9) and the categories (3.3)
+  const BANDS_C = `shiba mid edge aloof some keep own pout side|corgi mid bowl beg some steady near yum curl|golden busy open ball some ball near hearts sprawl|dachs mid dig needy rare slow near hearts curl|husky busy open chatty big keep near surprised side|mutt mid front follow some steady tag hearts side|chihuahua mid gate guard some keep own surprised curl|pug calm bed lazy rare slow near sleepy belly|greyhound calm bed burst big fast near zoomies belly|beagle mid dig sniff some keep near curious side|poodle mid front polite rare steady near proud side|collie busy open herd some fast herd curious side|samoyed mid shade smile some steady tag hearts sprawl|frenchie calm bed cheeky some keep near blep curl|akita mid gate loyal rare steady near proud sprawl|spitz mid front show some steady near proud side|pom busy front spin big keep near zoomies curl|afghan mid open aloof big fast own proud sprawl|dane mid bed follow rare steady near hearts sprawl|mastiff calm bed lazy rare slow near sleepy belly|gsd busy gate herd some fast herd curious sprawl|dobie busy gate guard some fast near hearts sprawl|corso mid gate loyal rare steady near proud sprawl|pitbull busy sun needy big steady near hearts side|minpin busy front burst big keep near zoomies belly|lab busy bowl beg some fast near yum sprawl|malamute busy shade chatty some keep near surprised sprawl|chow calm shade aloof rare slow own pout side|stdpoodle mid open polite some fast near proud sprawl|schnauzer mid gate guard some steady near curious curl|westie mid dig sniff some keep near curious curl|yorkie mid front cheeky some keep near pout curl|bichon mid front spin big steady tag zoomies curl|maltese mid bed follow some slow tag dreamy curl|shihtzu calm bed lazy rare slow near sleepy belly|dalmatian busy open follow big fast tag zoomies sprawl|bernese mid shade loyal rare steady near dreamy sprawl|aussie busy open herd some fast herd curious side|cavalier mid bed needy rare steady tag hearts curl|jrt busy dig sniff big keep near zoomies curl`.split('|').map((r) => r.split(' '));
+  const CATS_C = ['Energy', 'Favourite spot', 'Special habit', 'Asking for pets', 'Bath zoomies', 'Ball style', 'With other dogs', 'Best face', 'Sleeping style', 'A secret'];
+  const hashIdC = (s) => { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+
+  sec('D1. all 40 breeds x 10 habit lines: English, no raw keys or ICU; the bands are table 4.3');
+  await fresh(BON);
+  const d1 = await ev((keys) => {
+    const P = window.__paw, H = P.lv.hb, base = JSON.parse(JSON.stringify(P.S.dogs[0])), out = {};
+    keys.forEach((k) => { const d = Object.assign({}, base, { id: 'hbt_' + k, key: k, name: 'Mochi', bond: { level: 10, pts: 0 }, mix: null }); out[k] = { lines: Array.from({ length: 10 }, (_, i) => H.line(d, i + 1)), bands: H.bands(d) }; });
+    const u = Object.assign({}, base, { id: 'hbt_x', key: 'nosuchdog', name: 'Mochi', bond: { level: 10, pts: 0 }, mix: null });
+    return { out, v221: typeof v221On === 'undefined' ? null : null, cats: Array.from({ length: 10 }, (_, i) => H.cat(i + 1)), unk: Array.from({ length: 10 }, (_, i) => H.line(u, i + 1)), secrets: H.SECRETS };
+  }, BANDS_C.map((r) => r[0]));
+  ok(BANDS_C.length === 40 && d1.secrets.length === 40, '40 breeds in the table, 40 Bond 10 secrets in the code');
+  ok(JSON.stringify(d1.cats) === JSON.stringify(CATS_C), 'the ten categories are hb.cat.1-10: ' + d1.cats.join(', '));
+  const raw = (s) => !s || /[{}]|undefined|null|NaN|\bdata\.|\bhb_|\bhb\.|breed_pers\./.test(s);
+  const badL = []; BANDS_C.forEach(([k]) => d1.out[k].lines.forEach((s, i) => { if (raw(s) || ([1, 2, 3, 4, 5, 6, 7, 9, 10].includes(i + 1) && !s.includes('Mochi'))) badL.push(`${k} ${i + 1}: ${s}`); }));
+  ok(!badL.length, '400 lines are readable English with the dog\'s name' + (badL.length ? ': ' + badL.slice(0, 4).join(' | ') : ''));
+  const badB = []; BANDS_C.forEach((r) => { const b = d1.out[r[0]].bands, got = [b[0], b[1], b[2], b[4], b[5], b[6], b[7], b[8]]; if (got.join(' ') !== r.slice(1).join(' ')) badB.push(`${r[0]}: ${got.join(' ')} (table ${r.slice(1).join(' ')})`); });
+  ok(!badB.length, 'every breed\'s bands match table 4.3' + (badB.length ? ': ' + badB.slice(0, 4).join(' | ') : ''));
+  ok(/^Mochi asks for pets like this: /.test(d1.out.dachs.lines[3]) && d1.out.dachs.lines[3].endsWith('Pet me eyes, full power.') && /^Best face: /.test(d1.out.shiba.lines[7]), 'Bond 4 reuses the ask line, Bond 8 the face word: ' + JSON.stringify([d1.out.dachs.lines[3], d1.out.shiba.lines[7]]));
+  ok(d1.unk.every((s) => !raw(s)) && d1.unk[2] === 'Mochi does things in a very Mochi way.' && d1.unk[9] === d1.out.mutt.lines[9], 'an unknown key reads the default personality and the mutt secret');
+  // the Profile card and the Bond card box, on and off
+  const pf = async () => { await ev(() => window.__paw.dd.journal('profile')); await t.until(() => !!document.querySelector('#modal .profile'), null, 4000); const r = await ev(() => { const c = document.querySelector('#modal .pf-habits'); return c ? { title: c.querySelector('b').textContent, rows: [...c.querySelectorAll('li.hb-row')].map((l) => ({ n: +l.dataset.hb, off: l.classList.contains('off'), cat: l.querySelector('.hb-tx b').textContent, line: (l.querySelector('.hb-line') || {}).textContent || '', lock: (l.querySelector('.hb-lock') || {}).textContent || '', ic: !!l.querySelector('.hb-ic svg'), btn: !!l.querySelector('button') })), after: !!c.previousElementSibling } : null; }); await t.closeX(); await t.modalGone(); return r; };
+  await ev(() => { const P = window.__paw; P.S.dogs[0].bond.level = 3; P.S.dogs[0].bond.pts = P.fw.BOND_TH[2]; });
+  let c = await pf(), nm = await ev(() => window.__paw.S.dogs[0].name);
+  ok(c && c.title === nm + "'s habits" && c.rows.length === 10 && c.rows.every((r, i) => r.n === i + 1 && r.ic && !r.btn), 'Journal > Profile has "' + (c && c.title) + '" with 10 rows, an icon each, no buttons');
+  ok(c && c.rows.slice(0, 3).every((r) => !r.off && r.line.length > 10) && c.rows.slice(3).every((r) => r.off && r.lock === 'at Bond ' + r.n && !r.line), 'Bond 3: rows 1-3 show the line, 4-10 are muted "at Bond n"');
+  await ev(() => window.__paw.lv.test(false)); c = await pf(); await ev(() => window.__paw.lv.test(true));
+  ok(c === null, 'off: no habits card in the Profile');
+  await ev(() => { const P = window.__paw; P.lv.bondUp(P.fw.BOND_TH[3] - P.S.bond.pts); });
+  ok(await t.until(() => !!document.getElementById('luOk'), null, 4000), 'Bond 4: the Bond card shows');
+  let bx = await ev(() => { const p = document.querySelector('#modal .panel'), u = p.querySelector('ul.unlocks'), b = p.querySelectorAll('.hb-new'); return { list: [...u.querySelectorAll('li')].map((l) => l.textContent), box: [...b].map((e) => ({ n: e.dataset.hb, cat: e.querySelector('b').textContent, line: e.querySelector('.hb-line').textContent, ic: !!e.querySelector('svg') })), under: !!u.nextElementSibling && u.nextElementSibling.classList.contains('hb-news') }; });
+  const ask4 = await ev(() => window.__paw.lv.hb.line(window.__paw.S.dogs[0], 4));
+  ok(bx.list.includes('New habit: Asking for pets') && bx.box.length === 1 && bx.box[0].n === '4' && bx.box[0].cat === 'Asking for pets' && bx.box[0].line === ask4 && bx.box[0].ic && bx.under, 'the Bond card lists "New habit: Asking for pets" and its box (icon and line) sits under the list ' + JSON.stringify(bx.box));
+  await t.lu(); await t.luWait(800);
+  await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); }); await t.modalGone();
+  const dpg = await ev(() => { const P = window.__paw, p = P.S.dd.today; return { hb: p && p.hb, lines: p ? P.dd.lines(p) : [] }; });
+  ok(dpg.hb && dpg.hb.includes(await ev(() => window.__paw.S.dogs[0].id) + ':4') && dpg.lines.includes(`Found out something new about ${nm}: Asking for pets.`), 'the diary page says "Found out something new about ' + nm + ': Asking for pets."');
+  const d10 = await ev(() => { const P = window.__paw, d = P.S.dogs[0]; return { lines: P.lv.hb.diary({ hb: [d.id + ':10'], n: d.name }), sec: P.lv.hb.line(d, 10) }; });
+  ok(d10.lines.length === 1 && d10.lines[0] === d10.sec, 'Bond 10 in the diary: the secret is the line itself');
+  // the Bond 2 party (fwTest): the box sits under the gift; off: no box and no habit line
+  await fresh(Object.assign({}, BON, { fwTest: true }));
+  await ev(() => { const P = window.__paw; P.lv.bondUp(P.fw.BOND_TH[1] - P.S.bond.pts); });
+  ok(await t.until(() => !!document.getElementById('luOk'), null, 4000), 'Bond 2: the party card shows');
+  bx = await ev(() => { const p = document.querySelector('#modal .panel'), u = p.querySelector('ul.unlocks'), b = p.querySelector('.hb-new'); return { party: p.classList.contains('fw-party'), box: b ? b.dataset.hb : null, after: !!(b && u && (u.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)), list: [...u.querySelectorAll('li')].map((l) => l.textContent) }; });
+  ok(bx.party && bx.box === '2' && bx.after && bx.list.includes('New habit: Favourite spot'), 'the Bond 2 party: "New habit: Favourite spot", the box under the gift ' + JSON.stringify(bx));
+  await t.lu(); await t.luWait(800); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); }); await t.modalGone();
+  await fresh(BOFF);
+  await ev(() => { const P = window.__paw; P.lv.bondUp(P.fw.BOND_TH[1] - P.S.bond.pts); });
+  ok(await t.until(() => !!document.getElementById('luOk'), null, 4000), 'off, Bond 2: the party card shows');
+  bx = await ev(() => { const p = document.querySelector('#modal .panel'); return { box: !!p.querySelector('.hb-new'), hab: /New habit/.test(p.textContent), page: (window.__paw.S.dd.today || {}).hb || null }; });
+  ok(!bx.box && !bx.hab && !bx.page, 'off: no habit box, no "New habit" line, nothing in the diary ' + JSON.stringify(bx));
+  await t.lu();
+
+  sec('D2. a mix\'s Bond 10 secret comes from a seeded parent and is stable across reloads');
+  await fresh(BON);
+  const d2a = await ev(() => {
+    const P = window.__paw, H = P.lv.hb, base = JSON.parse(JSON.stringify(P.S.dogs[0])), r = [];
+    for (let i = 0; i < 8; i++) { const d = Object.assign({}, base, { id: 'mx' + i, key: 'shiba', name: 'Kiki', bond: { level: 10, pts: 0 }, mix: { a: 'corgi', b: 'shiba', body: 'shiba', head: 'shiba', name: 'Corgi × Shiba mix' } }); r.push({ id: d.id, s: H.secret(d), l: H.line(d, 10), l3: H.line(d, 3) }); }
+    return r;
+  });
+  ok(d2a.every((x) => x.s === ['corgi', 'shiba'][hashIdC(x.id) % 2]), 'the parent is [a, b][hashId(id) % 2]: ' + d2a.map((x) => x.s).join(' '));
+  ok(d2a.some((x) => x.s === 'corgi') && d2a.filter((x) => x.s === 'corgi').every((x) => /^From the Corgi side: Kiki sploots/.test(x.l)) && d2a.filter((x) => x.s === 'shiba').every((x) => /^Kiki has one toy hidden/.test(x.l)), 'the other parent\'s secret starts "From the Corgi side:", its own has no prefix');
+  ok(d2a.every((x) => x.l3 === 'Kiki loves you from a little distance. Sitting near you is a big hug.'), 'Bond 1-9 read the body breed (persOf): the shiba trait');
+  await ev(() => { const P = window.__paw, d = P.S.dogs[0]; d.mix = { a: 'golden', b: 'poodle', body: d.key, head: d.key, name: 'Golden × Poodle mix' }; d.bond.level = 10; d.bond.pts = P.fw.BOND_TH[9]; P.saveNow(); });
+  const d2b = await ev(() => { const P = window.__paw; return { id: P.S.dogs[0].id, key: P.S.dogs[0].key, s: P.lv.hb.secret(P.S.dogs[0]), l: P.lv.hb.line(P.S.dogs[0], 10) }; });
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+  await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000); await t.calm(); await t.lu();
+  const d2c = await ev(() => { const P = window.__paw; return { s: P.lv.hb.secret(P.S.dogs[0]), l: P.lv.hb.line(P.S.dogs[0], 10) }; });
+  ok(d2b.s === ['golden', 'poodle'][hashIdC(d2b.id) % 2] && d2c.s === d2b.s && d2c.l === d2b.l && (d2b.s === d2b.key) !== /^From the .+ side: /.test(d2b.l), 'the same secret after a reload: ' + d2b.l);
+
+  sec('D3. "does it more": off the weights are today\'s, with lvOn the trait weight is x1.5');
+  // today's weights (37_roam.js rmPackAct, 43_ground.js grAct before v2.22), from the same personality
+  const todayW = (p, out, n, place) => ({
+    rm: { wander: 2, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: p.follows * 1.6, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, herd: p.trait === 'herd' && n > 2 ? 2 : 0, guard: p.trait === 'guard' ? 2 : 0, beg: p.trait === 'beg' ? 1.6 : 0, dig: p.trait === 'needy' && place.grassy ? 1.2 : 0, doze: (1 - p.energy) * 1.4, front: p.trait === 'follow' || p.trait === 'polite' ? 1 : 0, loyal: p.trait === 'loyal' ? 2 : 0, show: p.trait === 'show' ? 1.8 : 0, spin: p.trait === 'spin' ? 2.2 : 0 },
+    gr: { wander: 2, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, dig: p.trait === 'needy' && place.grassy ? 1.2 : 0, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: n - 1 ? p.follows * 1.6 : 0, play: 0, patrol: p.trait === 'guard' ? 2 : p.trait === 'aloof' ? 1.2 : p.trait === 'loyal' ? 1 : 0, herd: p.trait === 'herd' && n - 1 >= 2 ? 2 : 0, rest: (1 - p.energy) * 1.4 + (p.trait === 'lazy' ? 1 : 0), spot: 1, front: p.trait === 'follow' || p.trait === 'polite' ? 1 : p.trait === 'show' ? 1.8 : 0.3 * p.attention, spin: p.trait === 'spin' ? 2.2 : 0, beg: p.trait === 'beg' ? 1.2 : 0 } });
+  const TR = ['beagle', 'collie', 'chihuahua', 'corgi', 'dachs', 'mutt', 'poodle', 'akita', 'spitz', 'pom', 'shiba', 'pug', 'golden', 'husky'];
+  const d3 = await ev((TR) => {
+    const P = window.__paw, H = P.lv.hb, S = P.S, base = JSON.parse(JSON.stringify(S.dogs[0])), keep = S.dogs.slice(); delete base.mix;
+    S.dogs = [S.dogs[0]].concat(TR.map((k) => Object.assign(JSON.parse(JSON.stringify(base)), { id: 'w_' + k, key: k, name: k, bond: { level: 1, pts: 0 } })));
+    const grassy = typeof GRASSY !== 'undefined' ? null : null;
+    const at = (on, b) => { P.lv.test(on); const r = {}; TR.forEach((k) => { const d = S.dogs.find((x) => x.id === 'w_' + k); d.bond.level = b; const w = H.weights(d); r[k] = { rm: w.rm, gr: w.gr, p: w.p, chat: H.chat(d), ball: H.ball(d) }; }); return r; };
+    const off10 = at(false, 10), on1 = at(true, 1), on2 = at(true, 2), on3 = at(true, 3), on9 = at(true, 9);
+    // the seeded random: a pick off and at Bond 1-2 draws exactly the same numbers; hbLike draws none off
+    const R = Math.random; let calls = 0, a = 7; Math.random = () => { calls++; a = (a * 16807) % 2147483647; return a / 2147483647; };
+    const dk = S.dogs.find((x) => x.id === 'w_corgi'); P.lv.test(false); dk.bond.level = 10; const likeOff = H.like(dk), cOff = calls; P.lv.test(true); dk.bond.level = 1; const like1 = H.like(dk), c1 = calls - cOff; dk.bond.level = 2; let hits = 0; for (let i = 0; i < 400; i++) if (H.like(dk)) hits++; const c2 = calls - cOff - c1;
+    Math.random = R;
+    const pool0 = ['idle', 'sit'], gd = S.dogs.find((x) => x.id === 'w_golden'); gd.stats.energy = 40; P.lv.test(false); gd.bond.level = 10; const pOff = H.pool(gd, pool0.slice()); P.lv.test(true); gd.bond.level = 3; const p3 = H.pool(gd, pool0.slice()); gd.bond.level = 9; const p9 = H.pool(gd, pool0.slice());
+    const face = (on, b) => { P.lv.test(on); gd.bond.level = b; return H.face(gd, [['hearts', 2], ['yum', 1]]).length; };
+    const fc = [face(false, 10), face(true, 7), face(true, 8)];
+    P.lv.test(true); const n = S.dogs.length; S.dogs = keep;
+    return { off10, on1, on2, on3, on9, out: typeof outdoorsNow === 'function' ? null : null, likeOff: likeOff === undefined, cOff, like1: like1 === undefined, c1, c2, hits, pOff, p3, p9, fc, place: P.S.place, n };
+  }, TR);
+  const placeInfo = await ev(() => ({ out: !!(window.__paw.S && ['yard', 'park'].includes(window.__paw.S.place)) }));
+  const near = (a, b) => Object.keys(b).every((k) => Math.abs((a[k] || 0) - b[k]) < 1e-9) && Object.keys(a).length === Object.keys(b).length;
+  // the today formula needs outdoors and grassy as the page sees them: read them back from a weight that only they set
+  const bad3 = [];
+  TR.forEach((k) => {
+    const o = d1 && d3.off10[k], p = o.p, out = Math.abs(o.rm.zoomies - p.zoomies * 2.2) < 1e-9, grassy = p.trait === 'needy' ? o.rm.dig > 0 : false, T = todayW(p, out, d3.n, { grassy });
+    if (!near(o.rm, T.rm) || !near(o.gr, T.gr)) bad3.push(k + ' off');
+    if (!near(d3.on1[k].rm, T.rm) || !near(d3.on2[k].gr, todayW(d3.on2[k].p, out, d3.n, { grassy }).gr)) bad3.push(k + ' on, Bond 1-2');
+    if (o.chat !== 0.35 || o.ball !== 0.5 || d3.on2[k].chat !== 0.35) bad3.push(k + ' chat/ball');
+  });
+  ok(!bad3.length, 'off (Bond 10) and on at Bond 1-2: rmPackAct and grAct weights are exactly today\'s for ' + TR.length + ' breeds' + (bad3.length ? ': ' + bad3.join(', ') : ''));
+  const x15 = { beagle: [['rm', 'sniff'], ['gr', 'sniff']], collie: [['rm', 'herd'], ['gr', 'herd']], chihuahua: [['rm', 'guard'], ['gr', 'patrol']], corgi: [['rm', 'beg'], ['gr', 'beg']], poodle: [['rm', 'front'], ['gr', 'front']], akita: [['rm', 'loyal'], ['gr', 'patrol']], spitz: [['rm', 'show'], ['gr', 'front']], pom: [['rm', 'spin'], ['gr', 'spin']], shiba: [['gr', 'patrol']], mutt: [['rm', 'front'], ['gr', 'front']] };
+  const bad15 = []; Object.entries(x15).forEach(([k, L]) => L.forEach(([w, f]) => { const a = d3.on2[k][w][f], b = d3.on3[k][w][f]; if (!(a > 0) || Math.abs(b - a * 1.5) > 1e-9) bad15.push(`${k} ${w}.${f} ${a} -> ${b}`); }));
+  ok(!bad15.length, 'Bond 3 with lvOn: the trait weight x1.5 (sniff, herd, guard, beg, front, loyal, show, spin, patrol)' + (bad15.length ? ': ' + bad15.join(', ') : ''));
+  ok(Math.abs(d3.on3.pug.gr.rest - d3.on2.pug.gr.rest - 0.5) < 1e-9 && d3.on3.husky.chat === 0.5 && d3.on9.golden.ball === 0.7 && d3.on3.golden.ball === 0.5, 'lazy rest +1 becomes +1.5, the chatty bark 0.35 becomes 0.5, the ball line 0.5 becomes 0.7 at Bond 6');
+  const pK = (k, a, b, f) => Math.abs(d3[b][k].p[f] - Math.min(1, d3[a][k].p[f] * (f === 'zoomies' ? 1.2 : 1.25))) < 1e-9;
+  ok(pK('dachs', 'on3', 'on9', 'attention') && pK('husky', 'on3', 'on9', 'zoomies') && pK('mutt', 'on3', 'on9', 'follows') && JSON.stringify(d3.on3.dachs.p) === JSON.stringify(d3.off10.dachs.p), 'rmPers: attention x1.25 (Bond 4), zoomies x1.2 (Bond 5), follows x1.25 (Bond 7), capped at 1; off and Bond 3 the same as today');
+  ok(d3.likeOff && d3.cOff === 0 && d3.like1 && d3.c1 === 0 && d3.c2 === 400 && d3.hits > 100 && d3.hits < 180, `the favourite spot: off and Bond 1 draw no random number, Bond 2 picks it ${d3.hits} of 400 (35 %)`);
+  ok(d3.pOff.length === 2 && d3.p3.join() === 'idle,sit,happy' && d3.p9.join() === 'idle,sit,happy,sleep' && d3.fc.join() === '2,2,3', 'the idle pool (+happy at Bond 3 for ball, +sleep at Bond 9 under 60 Energy) and the best face (one more entry at Bond 8); off unchanged ' + JSON.stringify([d3.p3, d3.p9, d3.fc]));
+
+  sec('D4. the bath zoomies run once per bath, never with Motion off');
+  await fresh(Object.assign({}, BON, { rmTest: true }));
+  const pid = await ev(() => { const P = window.__paw; P.addDog({ key: 'husky', sex: 'male', months: 24 }, 'Zoom'); const d = P.S.dogs[1]; d.bond = { level: 5, pts: P.fw.BOND_TH[4] }; d.stats.energy = 90; P.S.place = 'yard'; P.go('yard'); return d.id; });
+  await t.lu(); await t.calm();
+  const bath = () => ev((id) => { const P = window.__paw; P.lv.act('bath', { dogs: 1, ids: [id] }); P.go('yard'); }, pid);
+  const z0 = await ev(() => window.__paw.lv.hb.zooms());
+  await bath();
+  ok(await t.until((z) => window.__paw.lv.hb.zooms() === z + 1, z0, 9000), 'a bathed Bond 5 pack dog runs its zoomies back in the yard');
+  const zb = await ev((id) => window.__paw.lv.hb.band(id, 5), pid);
+  await ev(() => window.__paw.go('yard')); await t.sleep(2500);
+  ok(await ev((z) => window.__paw.lv.hb.zooms() === z + 1 && !window.__paw.lv.hb.pending().length, z0), 'once per bath: back in the yard again, no second run (band ' + zb + ')');
+  await t.freezeMotion(true);
+  await bath(); await t.sleep(3000);
+  ok(await ev((z) => window.__paw.lv.hb.zooms() === z + 1, z0) && await ev((id) => window.__paw.lv.hb.bath(id) === false, pid), 'Motion off: no bath zoomies (and hbBathZoom says no)');
+  await t.freezeMotion(false);
+  await ev(() => window.__paw.lv.test(false)); await bath(); await t.sleep(3000);
+  ok(await ev((z) => window.__paw.lv.hb.zooms() === z + 1 && !window.__paw.lv.hb.pending().length, z0), 'off: no bath zoomies');
+  await ev(() => window.__paw.lv.test(true));
+
+  sec('D5. one habits letter for a 3-dog old save');
+  await load(fix({ bonds: [3, 2, 1], cd: 4, pv: 3 }), ON);
+  await t.until(() => { const S = window.__paw.S; return !!(S.lv && S.lv.mail === 1); }, null, 5000);
+  const d5 = await ev(() => { const P = window.__paw, S = P.S, m = (S.mail || []).filter((x) => x.id === 'lv_habits'); return { n: m.length, title: m[0] && m[0].title, text: m[0] && m[0].text, names: S.dogs.map((d) => d.name), lines: S.dogs.map((d) => P.lv.hb.line(d, Math.min(9, d.bond.level))), lv: S.lv.lv }; });
+  ok(d5.n === 1 && d5.title === "Your pack's habits", 'one letter, "Your pack\'s habits", for ' + d5.names.length + ' dogs');
+  ok(d5.text && d5.names.every((n) => d5.text.includes(n)) && d5.lines.every((l) => d5.text.includes(l)) && d5.text.includes('Journal > Profile') && d5.text.endsWith(`PS. You have a town level now: ${d5.lv}. Everything you had open stays open.`), 'it names every dog, gives each dog\'s newest habit and the PS: ' + (d5.text || '').slice(0, 160) + '...');
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+  await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000); await t.sleep(1500);
+  ok(await ev(() => (window.__paw.S.mail || []).filter((x) => x.id === 'lv_habits').length === 1), 'a reload sends no second letter');
 }, { map215: true, prefs: ON, timeout: 600000 });

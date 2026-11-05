@@ -169,7 +169,7 @@ function idleSteps(name) {
       if (kind === 'together') return [{ move: [tx, -30, 0.92, 0.9 * IDLE.speed], pose: 'walk', facing: spot[0] < 430 ? 'left' : 'right', ms: 950 * IDLE.speed }, { pose: 'down', fx: 'tk-lie', ms: R2(6000, 12000), other: [o, 'down'] }, home];
       return [{ move: [tx, -30, 0.92, 0.9 * IDLE.speed], pose: 'walk', facing: spot[0] < 430 ? 'left' : 'right', ms: 950 * IDLE.speed }, { pose: 'sniff', fx: 'tk-sniff', fb: 'eat', facing: spot[0] < 430 ? 'left' : 'right', ms: 1600 * IDLE.speed, other: [o, 'sit'] }, home];
     }
-    case 'roam': { const to = rmPick(d); if (!to) return [{ pose: 'look', fb: 'idle', ms: 2000 }]; const p = rmPers(d); return [{ roam: to, pose: 'walk', ms: 1e9 }, { pose: p.trait === 'polite' ? 'sit' : PICK(['idle', 'sit', 'sit', 'down']), fb: 'sit', facing: to[0] > 500 ? 'left' : 'right', ms: R2(3000, 7000) }]; } // v2.10 ROAM: walk to a spot it likes and stay there
+    case 'roam': { const to = rmPick(d, hbLike(d)); if (!to) return [{ pose: 'look', fb: 'idle', ms: 2000 }]; const p = rmPers(d); return [{ roam: to, pose: 'walk', ms: 1e9 }, { pose: p.trait === 'polite' ? 'sit' : PICK(['idle', 'sit', 'sit', 'down']), fb: 'sit', facing: to[0] > 500 ? 'left' : 'right', ms: R2(3000, 7000) }]; } // v2.10 ROAM: walk to a spot it likes and stay there
     case 'ask': { const a = IDLE.ask || { to: rmFrontSpot(d), pose: 'sit', line: persLine(d) }; IDLE.ask = null; if (!a.to) return [{ pose: 'sit', ms: 2000 }]; const f = a.to[0] < (isPhone() ? camCx : 500) ? 'right' : 'left'; return [{ roam: a.to, pose: 'walk', ms: 1e9 }, { pose: a.pose, fb: 'sit', facing: f, ms: 600 * IDLE.speed }, { pose: a.pose, fb: 'sit', facing: f, ms: 4200 * IDLE.speed, say: a.line, sound: Math.random() < 0.4 ? 'whine' : null }]; }
     case 'bringtoy': return [{ pose: 'happy', ms: 900 * IDLE.speed, toy: true }, { pose: 'bow', fx: 'tk-bow', ms: 1500 * IDLE.speed, sound: 'play' }];
   }
@@ -239,6 +239,7 @@ function packIdleTick() {
     const pup = typeof pupPackPool === 'function' ? pupPackPool(d) : null;
     const pool = pup || ['idle', 'idle', 'sit', 'sit', 'down', 'scratch', 'yawn', 'sniff', d.stats.energy < 40 ? 'sleep' : 'idle'].concat(outdoorsNow() && d.stats.happy > 60 ? ['rollover'] : []);
     const pt = persOf(d).trait; if (pt === 'polite') pool.push('sit', 'sit'); if (pt === 'sniff') pool.push('sniff', 'sniff'); if (pt === 'lazy' || pt === 'burst') pool.push('down', d.stats.energy < 70 ? 'sleep' : 'down'); // v2.10: the breed's habit
+    hbPool(d, pool); // v2.22: Bond 3 and 9 with lvOn (51b_habits.js), off the same pool
     let p = PICK(pool); if (!poseReal(d.key, p)) p = { down: 'sit', scratch: 'sit', yawn: 'sit', sniff: 'eat', rollover: 'happy' }[p] || p;
     packPose[d.id] = p; redrawPackDog(d); if (p === 'yawn' || (p === 'sit' && Math.random() < 0.1)) barkDog(d, 'yawn', { ambient: true, volume: 0.6 });
   });

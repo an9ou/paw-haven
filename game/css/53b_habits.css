@@ -1,0 +1,29 @@
+/* v2.22 "Dog habits" (tag hb, 51b_habits.js): the Journal > Profile habits card (.pf-habits), the habit box on the Bond level-up card (.hb-new).
+   Both exist only while lvOn(), so off means none of this shows. The rows are not buttons. Phone rules under html[data-layout="phone"]. */
+
+/* ---- Journal > Profile: one card under the head, ten rows (icon, category, line); a row not reached yet is muted with its Bond ---- */
+.profile .pf-habits{margin-top:12px;align-items:stretch;text-align:left;gap:6px}
+.pf-habits > b{text-align:center}
+.hb-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px}
+.hb-row{display:flex;align-items:flex-start;gap:8px;min-width:0;padding:4px 2px}
+.hb-ic{flex:none;width:32px;height:32px;display:block}
+.hb-ic svg{display:block;width:100%;height:100%;overflow:visible}
+.hb-tx{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;line-height:1.3}
+.hb-tx b{font-size:15px}
+.hb-line{font-size:15px;overflow-wrap:anywhere}
+.hb-lock{font-size:14px;color:var(--muted)}
+.hb-row.off .hb-tx b{color:var(--muted);font-weight:600}
+.hb-row.off .hb-ic{opacity:.45;filter:grayscale(1)}
+.hb-face{flex:none;width:40px;height:40px;display:block;margin-left:auto}
+.hb-face svg{display:block;width:100%;height:100%}
+
+/* ---- the Bond level-up card: one box per new habit, under the Unlocked list (and under the Bond 2 party gift) ---- */
+.hb-news{display:flex;flex-direction:column;gap:6px;margin:8px 0 2px}
+.hb-new{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:8px 10px;background:var(--paper);border:2px dashed rgba(91,61,50,.35);border-radius:12px 9px 13px 8px}
+.hb-new .hb-tx b{font-size:16px}
+
+/* ---- phones: one column, 15 px text, the box fits the card ---- */
+html[data-layout="phone"] .hb-list{grid-template-columns:minmax(0,1fr);gap:4px}
+html[data-layout="phone"] .profile .pf-habits{padding:10px 8px}
+html[data-layout="phone"] .hb-new{padding:6px 8px;gap:8px}
+html[data-layout="phone"] .hb-new .hb-tx b{font-size:15px}

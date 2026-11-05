@@ -297,24 +297,35 @@ function grMate(d) { return rmDogs().find((o) => o !== d && o !== D() && !o.slee
 // points on a loop round cx, cy (free ones only), starting at angle a0
 function grLoop(cx, cy, rx, ry, n, a0, eight) { const out = []; for (let i = 0; i <= n; i++) { const a = a0 + (i / n) * Math.PI * 2, x = cx + Math.sin(a) * rx, y = cy + (eight ? Math.sin(2 * a) : Math.cos(a)) * ry; if (grFree(x, y)) out.push([x, y]); } return out; }
 function grBehind(d, o) { const ro = rmSt(o), [ox, oy] = rmDest(o), k = grScale(S.place, oy) || 1, sx = (ro.face === 'left' ? 1 : -1) * 120 * k; return grSnap(ox + sx, oy + RINT(-14, 14)); }
+// the weights of a grOn dog's next move (v2.22: moved out of grAct unchanged, so the habits suite can read them; 51b_habits.js hbTraitW adds Bond 3)
+function grActW(d, p, out, os, mate, spW) {
+  const w = { wander: 2, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, dig: p.trait === 'needy' && GRASSY.includes(S.place) ? 1.2 : 0, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: os.length ? p.follows * 1.6 : 0,
+    play: mate && p.energy > 0.45 ? 1.3 * p.energy : 0, patrol: p.trait === 'guard' ? 2 : p.trait === 'aloof' ? 1.2 : p.trait === 'loyal' ? 1 : 0, herd: p.trait === 'herd' && os.length >= 2 ? 2 : 0,
+    rest: (1 - p.energy) * 1.4 + (p.trait === 'lazy' ? 1 : 0), spot: Math.min(4, spW), front: p.trait === 'follow' || p.trait === 'polite' ? 1 : p.trait === 'show' ? 1.8 : 0.3 * p.attention, spin: p.trait === 'spin' ? 2.2 : 0, beg: p.trait === 'beg' ? 1.2 : 0 };
+  if (p.trait === 'burst' && packPose[d.id] === 'sleep') w.zoomies += 3; // the greyhound: a nap, then a burst
+  return w;
+}
+// a figure eight of zoomies (v2.22: moved out of grAct unchanged; the habits' bath zoomies reuse it). slow: a slow lap. null when there is no room
+function grZoomSteps(d, p, f, slow) {
+  const r = rmSt(d), zc = (f.back + f.front) / 2, span = f.x1 - f.x0; let steps = null;
+  const rx = Math.min(380, span * 0.28), ry = (f.front - f.back) * 0.3, cx = clamp(r.x, f.x0 + rx + 30, f.x1 - rx - 30), pts = grLoop(cx, zc + 6, rx, ry, 24, Math.random() * Math.PI * 2, true);
+  if (pts.length >= 10) { const back = grFree(r.x, r.y) ? [r.x, r.y] : grSnap(r.x, r.y); steps = [{ fn: () => { if (exOn()) exShow(d, 'zoomies', 2600, { prio: 2, ev: 'zoomies' }); }, say: grSayMaybe('zoomies'), ms: 0 }, { to: pts[pts.length - 1], via: pts.slice(0, -1), run: !slow }, { pose: 'happy', ms: 900 }]; if (back) steps.push({ to: back }); steps.push({ pose: p.trait === 'burst' ? 'down' : 'idle', ms: RINT(2000, 4000) }); }
+  return steps;
+}
 // a pack dog's next thing to do in a grOn place (rmPackAct; the sim also drives the leader): true when it set off
 function grAct(d) {
   const f = grFloor(); if (!f || !d || d.sleeping) return false; const r = rmSt(d); if (r.fix || r.tw || r.q) return false;
   const p = rmPers(d), now = performance.now(), out = outdoorsNow(), os = rmDogs().filter((o) => o !== d), lead = d === D();
   if (Math.random() > 0.3 + 0.55 * p.energy) return false; // lazy dogs mostly change pose where they are
   const sp = f.spots.map((s) => [s, grSpotW(d, s, p)]).filter((x) => x[1] > 0), spW = sp.reduce((a, x) => a + x[1], 0), mate = lead ? null : grMate(d);
-  const w = { wander: 2, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, dig: p.trait === 'needy' && GRASSY.includes(S.place) ? 1.2 : 0, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: os.length ? p.follows * 1.6 : 0,
-    play: mate && p.energy > 0.45 ? 1.3 * p.energy : 0, patrol: p.trait === 'guard' ? 2 : p.trait === 'aloof' ? 1.2 : p.trait === 'loyal' ? 1 : 0, herd: p.trait === 'herd' && os.length >= 2 ? 2 : 0,
-    rest: (1 - p.energy) * 1.4 + (p.trait === 'lazy' ? 1 : 0), spot: Math.min(4, spW), front: p.trait === 'follow' || p.trait === 'polite' ? 1 : p.trait === 'show' ? 1.8 : 0.3 * p.attention, spin: p.trait === 'spin' ? 2.2 : 0, beg: p.trait === 'beg' ? 1.2 : 0 };
-  if (p.trait === 'burst' && packPose[d.id] === 'sleep') w.zoomies += 3; // the greyhound: a nap, then a burst
+  const w = hbTraitW(d, grActW(d, p, out, os, mate, spW), p); // v2.22: with lvOn and Bond 3 the trait's own weight x1.5 (51b_habits.js), off exactly today's
   let t = Math.random() * Object.values(w).reduce((a, b) => a + b, 0), kind = 'wander'; for (const k in w) { t -= w[k]; if (t <= 0) { kind = k; break; } }
   const sec = (a, b) => RINT(a, b), go = (o) => rmPick(d, o || {}), zc = (f.back + f.front) / 2, span = f.x1 - f.x0;
   let steps = null, to = null;
   if (kind === 'spot' && sp.length) {
     let q = Math.random() * spW, s = sp[0][0]; for (const x of sp) { q -= x[1]; if (q <= 0) { s = x[0]; break; } } steps = grSpotSteps(d, s);
   } else if (kind === 'zoomies') { // a figure eight over open ground at a run, with the zoomies face
-    const rx = Math.min(380, span * 0.28), ry = (f.front - f.back) * 0.3, cx = clamp(r.x, f.x0 + rx + 30, f.x1 - rx - 30), pts = grLoop(cx, zc + 6, rx, ry, 24, Math.random() * Math.PI * 2, true);
-    if (pts.length >= 10) { const back = grFree(r.x, r.y) ? [r.x, r.y] : grSnap(r.x, r.y); steps = [{ fn: () => { if (exOn()) exShow(d, 'zoomies', 2600, { prio: 2, ev: 'zoomies' }); }, say: grSayMaybe('zoomies'), ms: 0 }, { to: pts[pts.length - 1], via: pts.slice(0, -1), run: true }, { pose: 'happy', ms: 900 }]; if (back) steps.push({ to: back }); steps.push({ pose: p.trait === 'burst' ? 'down' : 'idle', ms: sec(2000, 4000) }); }
+    steps = grZoomSteps(d, p, f);
   } else if (kind === 'follow') { // trots behind another dog for a few seconds
     const o = os.find((x) => rmSt(x).tw) || PICK(os); if (o) { steps = []; for (let i = 0; i < 3; i++) steps.push({ fn: () => { const q = grBehind(d, o); if (q && r.q) r.q.unshift({ to: q, gait: 'trot' }); }, ms: 0 }); steps.push({ fn: () => { r.face = rmSt(o).x < r.x ? 'left' : 'right'; }, pose: 'sit', ms: sec(1800, 3600) }); }
   } else if (kind === 'play' && mate) { // two dogs chase round a circle, a play bow, happy
@@ -350,8 +361,8 @@ function grAct(d) {
   } else if (kind === 'beg') {
     const b = f.spots.find((s) => (s.tags || []).includes('bowl')); to = b ? (grFree(b.x, b.y) ? [b.x, b.y] : grSnap(b.x, b.y)) : go({ like: ['bowl'] }); if (to) steps = [{ to }, { pose: 'sit', ms: sec(4000, 8000) }];
   }
-  if (!steps) { to = go(); if (!to) return false; steps = [{ to, via: grVia([r.x, r.y], to, Math.random() < 0.5 ? 1 : 2) }, { pose: PICK(['idle', 'sit', 'sit', 'down']), fb: 'sit', ms: sec(2500, 6000) }]; } // wander
-  if (p.trait === 'chatty' && Math.random() < 0.35) steps.splice(1, 0, { bark: 'talk', ms: 0 });
+  if (!steps) { to = go(hbLike(d)); if (!to) return false; steps = [{ to, via: grVia([r.x, r.y], to, Math.random() < 0.5 ? 1 : 2) }, { pose: PICK(['idle', 'sit', 'sit', 'down']), fb: 'sit', ms: sec(2500, 6000) }]; } // wander
+  if (p.trait === 'chatty' && Math.random() < hbChatP(d)) steps.splice(1, 0, { bark: 'talk', ms: 0 });
   packNext[d.id] = now + 60000; r.grKind = kind;
   steps.push({ fn: () => { packNext[d.id] = performance.now() + RINT(3000, 7000) * IDLE.speed; } });
   rmQueue(d, steps); return true;
