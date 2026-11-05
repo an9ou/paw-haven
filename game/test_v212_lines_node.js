@@ -125,7 +125,7 @@ full('kitchen FAV', table('mods/kitchen.js', 'var FAV = '));
 // the site
 const prof = require('../tools/site_dogs.js');
 ok(NEW.every((k) => prof.some((p) => p.key === k)), 'tools/site_dogs.js has a profile for each new breed');
-ok(prof.length === 35 && prof.map((p) => p.key).join() === ALL.join(), 'tools/site_dogs.js: 35 profiles in breed order');
+ok(prof.length === 40 && prof.map((p) => p.key).join() === REAL.join(), 'tools/site_dogs.js: 40 profiles in breed order (v2.21: the five appended)');
 ok(rd('tools/site_art.js').includes("'Japanese Chin and Kai Ken are on their way.'"), 'site SOON_LINE is Japanese Chin and Kai Ken');
 
 // the voices pick the right breed from a key or from the name (Standard Poodle must not become the Miniature one, Labrador Retriever not the Golden)
