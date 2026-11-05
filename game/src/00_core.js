@@ -924,8 +924,8 @@ function pupStartFields(s) {
   s.dogs.forEach((d) => {
     if (!d || typeof d.born !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.born) || d.rescue || hasPar(d.parents)) return; // no born, rescues, residents, born pups: as they are
     if ((+d.litters || 0) > 0 || d.preg || d.lastLitter || par.has(d.id)) return; // has had puppies: the age stays
-    const m = ageMonths(d), m2 = Math.max(m - 7, PUP_STAGE_START[lifeStage(m)]), k = m - m2;
-    if (!(k > 0)) return;
+    const m = ageMonths(d), st = lifeStage(m), m2 = Math.max(m - 7, PUP_STAGE_START[st]), k = m - m2;
+    if (st === 'puppy' || !(k > 0)) return; // a puppy already is one
     const b = new Date(d.born + 'T00:00:00'); b.setDate(b.getDate() + k); d.born = localISO(b);
     if (d.sex === 'female') d.seasonSeed = ((((d.seasonSeed || 0) + k) % 6) + 6) % 6; // the same season phase
     if (m >= 12) d.pupBday = Math.max(+d.pupBday || 0, Math.floor(m / 12) * 12);
