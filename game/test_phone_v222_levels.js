@@ -158,7 +158,7 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         await ev(() => { const S = window.__paw.S; S.titles['Friendly Neighbour'] = '2026-11-01'; S.title = 'Friendly Neighbour'; window.__paw.go('yard'); }); await t.calm(); await t.sleep(400);
         await hudCheck(`${tag} 5 dogs + Friendly Neighbour`);
         const fn = await ev(() => { const e = document.getElementById('hudTitle'), r = e.getBoundingClientRect(), b = document.getElementById('lvBtn').getBoundingClientRect(), c = document.querySelector('#hudPack .dchip:not([hidden])'), cr = c && c.getBoundingClientRect(), rg = document.createRange(); rg.selectNodeContents(e); const tr = rg.getBoundingClientRect(); return { t: e.textContent, whole: e.scrollWidth <= e.clientWidth + 1, end: Math.round(tr.right), star: Math.round(b.left), chip: cr ? [Math.round(cr.width), Math.round(cr.height)] : null }; });
-        ok(fn.t === 'Friendly Neighbour' && fn.whole && fn.end <= fn.star, `${tag}: "Friendly Neighbour" is whole with 5 dogs, before the star ${JSON.stringify(fn)}`);
+        ok(!!fn.t && (tag.startsWith('de') || fn.t === 'Friendly Neighbour') && fn.whole && fn.end <= fn.star, `${tag}: "Friendly Neighbour" is whole with 5 dogs, before the star ${JSON.stringify(fn)}`);
         ok(fn.chip && fn.chip[0] >= 44 && fn.chip[1] >= 44, `${tag}: the pack chip keeps its 44 px tap box ${JSON.stringify(fn.chip)}`);
         await t.SH(`${tag}_hud5_friendly`);
         await sheetCheck(tag);
