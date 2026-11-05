@@ -40,7 +40,7 @@ class T {
     // o.device: a Playwright device profile name ('iPhone 15', 'Pixel 7') for the v2.2 phone suites; default is the desktop 1280x720
     // v2.14 (V214.md 5): o.lang pins the language through prefs.lang (default 'en': every older suite stays English); null = no pin (S.lang, then the
     // browser's languages: pass o.locale, e.g. 'zh-TW'). The pseudo-locales 'xx' and 'xx-cjk' work here too.
-    const ctx = await this.b.newContext(Object.assign(o.device ? Object.assign({}, devices[o.device], { defaultBrowserType: undefined }) : { viewport: { width: 1280, height: 720 } }, o.locale ? { locale: o.locale } : {})); this.ctx = ctx;
+    const ctx = await this.b.newContext(Object.assign(o.device ? Object.assign({}, devices[o.device], { defaultBrowserType: undefined }, o.dsf ? { deviceScaleFactor: o.dsf } : {}) : { viewport: { width: 1280, height: 720 } }, o.locale ? { locale: o.locale } : {})); this.ctx = ctx;
     ctx.setDefaultTimeout(20000);
     // v2.20: o.yue (default true) sets window.__ddYueTest, so Cantonese is in the picker and pickLang for every suite while YUE_LIVE
     // (game/i18n/msg.js) is off; yue: false tests the hidden state (test_i18n_smoke.js)
@@ -62,6 +62,9 @@ class T {
         for (const k in cfg.prefs || {}) if (!(k in pr)) { pr[k] = cfg.prefs[k]; ch = true; }
         // v2.15 (V215.md 13b): the new map and places (prefs.mpTest) and the v2.15 ground (prefs.grTest) are pinned off unless the suite passes
         // map215: true / ground: true (ground: true also turns the map on, since grOn needs mpOn), or sets the prefs itself
+        // v2.19.3 Puppy start (V2193.md 5): starters are 3-month puppies, but the older suites keep the 10-month starter (and no old-save puppy-months
+        // migration) unless the suite passes pupStart: true (prefs.pupTest)
+        if (!('pupTest' in pr)) { pr.pupTest = !!cfg.pupStart; ch = true; }
         if (!('mpTest' in pr)) { pr.mpTest = !!(cfg.map215 || cfg.ground); ch = true; } if (!('grTest' in pr)) { pr.grTest = !!cfg.ground; ch = true; }
         if (ch) localStorage.setItem(PK, JSON.stringify(pr));
         // 3) one-time storage seeding (old-save tests)
@@ -71,7 +74,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, map215: !!o.map215, ground: !!o.ground, yue: o.yue !== false });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, pupStart: !!o.pupStart, map215: !!o.map215, ground: !!o.ground, yue: o.yue !== false });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;

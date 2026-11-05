@@ -1,5 +1,6 @@
 /* ======================= v2: 16b_puppy_play.js (PLAY lane): life-stage rules, puppy idles, test helpers ======================= */
-/* Dogs bought at 10 months are 'young': every rule below only touches puppies (< 6 months), expecting mums and nursing mums. */
+/* v2.19.3: starters come home from the shelter as 3-month puppies (starterMonths, 10_sex_age_genes.js) and grow up a month a day. Every rule below
+   only touches puppies (< 6 months), expecting mums and nursing mums: a new puppy walks the Sunny Park only, at 0.7 length, for its first 3 days. */
 const dogMonths = (d) => ageMonths(d || S.dog);
 const isPup = (d) => lifeStage(dogMonths(d)) === 'puppy';
 // isNursing(d) is defined in 14b_vet_playboard.js (same scope)
@@ -133,6 +134,8 @@ function pawPlayHelpers() {
   Object.defineProperty(P.idle, 'pinned', { get: () => idlePin, configurable: true });
   if (!Object.getOwnPropertyDescriptor(P, 'busy')) Object.defineProperty(P, 'busy', { get: () => busy, configurable: true });
   Object.assign(P, { play: { walkBlock, trainBlock, walkScale, fetchBlock, isPup, isNursing, trainCost, dogMonths } });
+  // v2.19.3 Puppy start (V2193.md): the starter's age, the old-save migration on a copy, a dog's age in months
+  P.pup = { months: () => starterMonths(), START: PUP_START, fields: (s) => pupStartFields(s), age: (id) => dogMonths(id ? dogById(id) : D()), stage: (m) => lifeStage(m) };
   return true;
 }
 on('game:ready', () => { pawPlayHelpers(); });
