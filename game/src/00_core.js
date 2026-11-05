@@ -1310,7 +1310,7 @@ function toastPlace() {
   const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
   if (!ph) { // layout audit: on wide screens the toasts start under the "Next" line that hangs below the HUD's Bond meter (47_firstweek.js), never on it
-    const nx = $('#fwNext'); if (!modScr && !hud.hidden && nx && nx.offsetParent && !nx.hidden) { const sr = stage.getBoundingClientRect(), k = sr.width / (stage.offsetWidth || sr.width) || 1, nb = (nx.getBoundingClientRect().bottom - sr.top) / k + 8; if (nb > parseFloat(toasts.style.top)) toasts.style.top = Math.round(nb) + 'px'; }
+    ['#fwNext', '#lvNext'].forEach((q) => { const nx = $(q); if (!modScr && !hud.hidden && nx && nx.offsetParent && !nx.hidden) { const sr = stage.getBoundingClientRect(), k = sr.width / (stage.offsetWidth || sr.width) || 1, nb = (nx.getBoundingClientRect().bottom - sr.top) / k + 8; if (nb > parseFloat(toasts.style.top)) toasts.style.top = Math.round(nb) + 'px'; } }); // v2.22: and under the town level's Next tag (51_levels.js)
     return;
   }
   // layout audit: over a walk's how-to or pause card the toast sits on the HUD row, clear of the card's title
@@ -1587,7 +1587,7 @@ function maybeLevelUp() {
   const lines = [tt('core.lu_units_html', '<b>{name}</b> now loves you {l} units. Units are made up.', { name: who, l: L }), tt('core.lu_spin_html', '<b>{name}</b> did a little spin about it.', { name: who }), tt('core.lu_raise_html', '<b>{name}</b> would like a raise. In treats.', { name: who }), tt('core.lu_dirt_html', '<b>{name}</b> is writing your name in the dirt. Badly.', { name: who })];
   openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: L }))}</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p>${PICK(lines)}</p><p>${levels.length > 1 ? esc(tt('core.lu_many', "{n, plural, one {(That's # level at once. Show-off.)} other {(That's # levels at once. Show-off.)}}", { n: levels.length })) + '</p><p>' : ''}${esc(tt('core.lu_unlocked', 'Unlocked:'))}</p><ul class="unlocks">${party ? party.html : ''}${all.map((u) => `<li>${esc(u)}</li>`).join('') || `<li>${esc(tt('core.lu_nothing', 'Pure friendship. No refunds.'))}</li>`}</ul>`, { cls: 'celebrate' + (party ? ' fw-party' : ''), foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>`, onClose: party ? party.after : null });
   if (party) party.open($('#modal .panel'));
-  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); }; // another dog levelled up too
+  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); else if (typeof lvMaybeShow === 'function') setTimeout(lvMaybeShow, 400); }; // another dog levelled up too. v2.22: then the town level card (51_levels.js)
 }
 
 /* ---------------- modes ---------------- */

@@ -7,6 +7,8 @@
 //   A5 milestones count once (first visit, Bond per dog, badge tiers but not the quiet backfill, a notebook page, the board)
 //   A6 XP never drops, no coins from a level-up.  A7 JSON + migrate keeps S.lv.  A8 on, off (Bond grows), on: nothing locks
 //   A9 the pace table 2.3 re-run on the built numbers is within one level.  S  the stars past level 20 count, never backfilled
+// Part B: B1-B4 (the call sites).  Part C: C1 off = no star, C2 the aria-label, the Next line and the sheet, C3 the Bond card first, then the level card,
+//   C4 a reload keeps an unshown card, C5 Gerald's line on a fresh save's first card only
 // The switch: MS2_LIVE is off until the launch, so this suite turns it on with prefs.ms2Test and the harness pref prefs.lvTest.
 // node game/run_tests.js v222_levels
 const { run, URL } = require('./test_lib');
@@ -400,4 +402,91 @@ run('v222_levels', async (t) => {
   const b4f = await ev(() => { const P = window.__paw, L = P.lv; L.test(false); const r = [L.lock('Agility Tunnel', 5, false), L.lock('Wizard Hat', 4, true)]; L.test(true); return r; });
   ok(b4f[0] === false && b4f[1] === false, 'off: the Bond 10 dog opens every row, as today');
   await t.closeX(); await t.lu();
+
+  /* ================= part C: the HUD star, the Next line, the sheet, the level-up card, the lesson (V222.md 1.3-1.5, 7.1 C) ================= */
+  const hudNow = () => ev(() => { const b = document.getElementById('lvBtn'), n = document.getElementById('lvNext'); return { btn: !!b, lvon: document.getElementById('hud').classList.contains('lvon'), aria: b && b.getAttribute('aria-label'), title: b && b.title, n: b && b.querySelector('.lv-n').textContent, next: n && !n.hidden ? n.textContent.replace(/\s+/g, ' ').trim() : '', lesson: /data-lesson="levels"/.test(window.__paw.ms2.howto()) }; });
+  sec('C1. off: no #lvBtn, no sheet, no card, no lesson');
+  await fresh(BOFF);
+  let c1 = await hudNow();
+  ok(!c1.btn && !c1.lvon && !c1.lesson, 'lvTest off: no #lvBtn, no lvon class, no How to play lesson ' + JSON.stringify(c1));
+  ok(await ev(() => { const L = window.__paw.lv; return L.sheet() === null && L.card() === null && L.lesson() === null && !document.querySelector('.lv-pop, .lv-lu'); }), 'off: lvOpen and lvMaybeShow do nothing, lvLesson is null');
+  await ev(() => window.__paw.lv.test(true)); await t.until(() => !!document.getElementById('lvBtn'), null, 3000);
+  c1 = await hudNow();
+  ok(c1.btn && c1.lvon && c1.lesson, 'switched on: the star and the lesson come');
+  await ev(() => window.__paw.lv.test(false)); await t.until(() => !document.getElementById('lvBtn'), null, 3000);
+  c1 = await hudNow(); ok(!c1.btn && !c1.lvon, 'switched off again: the star goes');
+
+  sec('C2. the aria-label, the title and the Next line');
+  await fresh(BON);
+  let c2 = await hudNow();
+  ok(c2.btn && c2.n === '1' && c2.aria === 'Town level 1. 60 to go for level 2. Opens your town level.', 'level 1: ' + c2.aria);
+  ok(c2.next === 'Next Level 2: Dog Park + the veggie patch' && c2.title === 'Level 2: Dog Park + the veggie patch', 'the Next tag and the title: ' + JSON.stringify([c2.next, c2.title]));
+  const c2n = await ev(() => { const L = window.__paw.lv; return [1, 5, 6, 9, 12, 16, 19, 20].map((n) => L.next(n)); });
+  ok(c2n[1] === 'Level 6: Tokyo + a new outfit' && c2n[2] === 'Level 7: Sunflower Lanes + 2 new outfits' && c2n[7] === '', 'lvNextText: ' + JSON.stringify(c2n));
+  ok(c2n.slice(0, 7).every((s) => /^Level \d+: \S/.test(s) && !/[{}]|undefined/.test(s)), 'every level 2-20 has a readable next line');
+  const c2u = await ev(() => { const L = window.__paw.lv; return { u2: L.unlocksText(2), u10: L.unlocksText(10), u7: L.unlocksText(7), all: Array.from({ length: 19 }, (_, i) => L.unlocksText(i + 2)) }; });
+  ok(c2u.u2.includes('Place: Dog Park') && c2u.u2.includes('The veggie patch') && c2u.u2.includes('Fun Fair: Sniff & Seek') && c2u.u2.includes('Shop: Bow Tie'), 'the level 2 card list: ' + c2u.u2.join(' | '));
+  ok(c2u.u7.filter((s) => /Sunflower/.test(s)).length === 1 && c2u.u10.includes('Title: Friendly Neighbour'), 'a place and its walk are one line; level 10 lists the title: ' + c2u.u7.join(' | '));
+  ok(c2u.all.every((a) => a.length && a.every((s) => !/[{}]|undefined/.test(s))), 'every level 2-20 lists something, no raw ICU');
+  await ev(() => window.__paw.lv.gain('board', 620 - window.__paw.lv.xp() + 10)); // level 6 and 10 XP
+  await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); });
+  c2 = await hudNow();
+  ok(c2.n === '6' && c2.aria === 'Town level 6. 230 to go for level 7. Opens your town level.' && c2.next === 'Next Level 7: Sunflower Lanes + 2 new outfits', 'level 6: ' + JSON.stringify([c2.aria, c2.next]));
+  const c2s = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'); const r = p ? { h2: p.querySelector('h2').textContent, togo: (p.querySelector('.lv-togo') || {}).textContent, today: (p.querySelector('.lv-today') || {}).textContent, next: [...p.querySelectorAll('.lv-nextl li')].map((l) => l.textContent), open: p.querySelectorAll('.lv-open li').length, how: !!p.querySelector('.lv-how') } : null; document.querySelector('#modal .panel .x').click(); return r; });
+  ok(c2s && c2s.h2 === 'Town level 6' && c2s.togo === '230 to go for level 7' && c2s.today === 'Today: 0 of 150' && c2s.next.length === 3 && c2s.next[0] === 'Level 7: Sunflower Lanes + 2 new outfits' && c2s.open === 6 && c2s.how, 'the sheet: ' + JSON.stringify(c2s));
+  await ev(() => { const L = window.__paw.lv; for (let i = 0; i < 20; i++) L.gain('care', 2); L.gain('walk', 99); L.gain('ms', 99); }); // 150 today
+  const c2f = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), r = (p.querySelector('.lv-today') || {}).textContent; document.querySelector('#modal .panel .x').click(); return [r, window.__paw.lv.today()]; });
+  ok(c2f[0] === 'That is all the growing for today. More tomorrow.', 'at the cap the sheet says more tomorrow: ' + JSON.stringify(c2f));
+  await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); // level 20 and 2 stars + 400
+  await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); });
+  c2 = await hudNow();
+  ok(c2.n === '20' && c2.aria === 'Town level 20, star 2. Opens your town level.' && c2.next === '' && c2.title === 'Level 20 · star 2', 'level 20 with 2 stars: ' + JSON.stringify([c2.aria, c2.title, c2.next]));
+  const c2t = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), r = { top: (p.querySelector('.lv-top') || {}).textContent, star: (p.querySelector('.lv-starline') || {}).textContent, togo: (p.querySelector('.lv-stars .lv-togo') || {}).textContent, n: (p.querySelector('.lv-stcount') || {}).textContent, next: p.querySelectorAll('.lv-nextl li').length, crown: !!p.querySelector('.lv-sic svg') }; document.querySelector('#modal .panel .x').click(); return r; });
+  ok(c2t.top === 'Top of the town. Every place is open.' && c2t.star === 'Level 20 · star 2' && c2t.togo === '600 to go for the next star' && /^2 star stickers so far\./.test(c2t.n) && !c2t.next, 'the sheet past 20: ' + JSON.stringify(c2t));
+  ok(await ev(() => window.__paw.S.titles['Friendly Neighbour'] && window.__paw.S.titles['Town Favourite']), 'the level 10 and 20 titles are kept');
+
+  sec('C3 + C5. a Bond card first, then the town level card, with Gerald\'s line on a fresh save\'s first card');
+  await fresh(BON);
+  await ev(() => window.__paw.lv.gain('board', 50));
+  ok(await ev(() => window.__paw.lv.level() === 1), '50 XP: still level 1');
+  await ev(() => { const P = window.__paw; P.lv.bondUp(P.fw.BOND_TH[1] - P.S.bond.pts); }); // Bond 2: +20 XP, town level 2 in the same moment
+  ok(await t.until(() => !!document.getElementById('luOk'), null, 4000), 'the Bond card shows');
+  const c3a = await ev(() => ({ lv: window.__paw.lv.level(), shown: window.__paw.lv.shown(), card: !!document.getElementById('lvOk'), h2: document.querySelector('#modal h2').textContent }));
+  ok(c3a.lv === 2 && c3a.shown === 1 && !c3a.card && /^Bond level 2/.test(c3a.h2), 'town level 2 is reached, its card waits under the Bond card: ' + JSON.stringify(c3a));
+  await t.sleep(1500);
+  ok(await ev(() => !document.getElementById('lvOk') && !!document.getElementById('luOk')), 'the level card never opens over the Bond card');
+  const tOk = Date.now(); await t.p.click('#luOk');
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'the town level card follows the Bond card (' + (Date.now() - tOk) + ' ms)');
+  const c3 = await ev(() => { const p = document.querySelector('#modal .panel.lv-lu'); return p ? { h2: p.querySelector('h2').textContent, gerald: (p.querySelector('.lv-gerald') || {}).textContent || '', list: [...p.querySelectorAll('.unlocks li')].map((l) => l.textContent), next: (p.querySelector('.lv-lunext') || {}).textContent, art: !!p.querySelector('.lv-cardart svg'), shown: window.__paw.lv.shown() } : null; });
+  ok(c3 && c3.h2 === 'Town level 2!' && c3.art && c3.list.includes('Place: Dog Park') && /^Next: Level 3: Splash Pool \+ \S/.test(c3.next), 'the card: ' + JSON.stringify(c3));
+  ok(c3 && c3.gerald === 'Gerald: That star is your town level. Each level opens a bit more of town.', 'C5: the first card of a fresh save has Gerald\'s line');
+  ok(c3 && c3.shown === 2, 'S.lv.shown follows the card');
+  await t.p.click('#lvOk'); await t.modalGone();
+
+  sec('C4. a reload before the card keeps it; C5 no Gerald line on later cards');
+  await ev(() => { window.__paw.lv.sheet(); window.__paw.lv.gain('board', 140 - window.__paw.lv.xp()); window.__paw.saveNow(); }); // level 3 while a sheet is open: no card yet
+  const c4a = await ev(() => ({ lv: window.__paw.lv.level(), shown: window.__paw.lv.shown(), card: !!document.getElementById('lvOk') }));
+  ok(c4a.lv === 3 && c4a.shown === 2 && !c4a.card, 'level 3 behind an open sheet: no card yet ' + JSON.stringify(c4a));
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+  await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.lv, null, 10000);
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 6000), 'after the reload the level 3 card shows on the calm yard');
+  const c4 = await ev(() => { const p = document.querySelector('#modal .panel.lv-lu'); return p ? { h2: p.querySelector('h2').textContent, gerald: !!p.querySelector('.lv-gerald'), shown: window.__paw.lv.shown() } : null; });
+  ok(c4 && c4.h2 === 'Town level 3!' && !c4.gerald && c4.shown === 3, 'the level 3 card, without Gerald\'s line: ' + JSON.stringify(c4));
+  await t.p.click('#lvOk'); await t.modalGone();
+  await t.sleep(1500); ok(await ev(() => !document.getElementById('lvOk')), 'a card shows once');
+  await ev(() => window.__paw.lv.gain('board', 620 - window.__paw.lv.xp()));
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'levels 4-6 at once: one card');
+  const c4m = await ev(() => { const p = document.querySelector('#modal .panel.lv-lu'); return { h2: p.querySelector('h2').textContent, many: /3 levels at once/.test(p.textContent), gerald: !!p.querySelector('.lv-gerald') }; });
+  ok(c4m.h2 === 'Town level 6!' && c4m.many && !c4m.gerald, 'one card for several levels, core.lu_many: ' + JSON.stringify(c4m));
+  await t.p.click('#lvOk'); await t.modalGone();
+
+  sec('C5. an old save: no card at the switch and no Gerald line on its first card');
+  await load(base, BON);
+  await t.sleep(1800);
+  const c5a = await ev(() => ({ from: window.__paw.S.lv.from, lv: window.__paw.lv.level(), shown: window.__paw.lv.shown(), card: !!document.getElementById('lvOk') }));
+  ok(c5a.from === 'old' && c5a.shown === c5a.lv && !c5a.card, 'the switch on an old save shows no card ' + JSON.stringify(c5a));
+  await ev(() => { const L = window.__paw.lv; L.gain('board', L.AT[L.level() + 1] - L.xp()); });
+  ok(await t.until(() => !!document.getElementById('lvOk'), null, 4000), 'its next level shows a card');
+  ok(await ev(() => !document.querySelector('#modal .lv-gerald')), 'the old save\'s first card has no Gerald line');
+  await t.p.click('#lvOk'); await t.modalGone();
 }, { map215: true, prefs: ON, timeout: 600000 });

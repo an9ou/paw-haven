@@ -1,0 +1,70 @@
+/* v2.22 "Town levels" (tag lv, 51_levels.js): the HUD star #lvBtn and its Next tag #lvNext, the Level sheet (.lv-pop), the level-up card (.lv-lu).
+   #lvBtn exists only while lvOn(), so off means none of this shows. Phone rules under html[data-layout="phone"]. */
+
+/* ---- the HUD star: wide screens = the 36 px star with the number over it, a 56 px crayon track and the taped Next tag under it ---- */
+#lvBtn{position:relative;flex:none;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:2px 4px;border:0;background:none;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#lvBtn:focus-visible{outline:2.5px dashed var(--ink);outline-offset:2px;border-radius:12px}
+.lv-star{position:relative;display:block;flex:none;width:36px;height:36px}
+.lv-art,.lv-art svg{display:block;width:100%;height:100%}
+.lv-art svg{overflow:visible}
+.lv-n{position:absolute;inset:0;display:grid;place-items:center;padding-top:3px;font-family:var(--font-read);font-weight:700;font-size:17px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;pointer-events:none}
+#lvBtn .lv-track{width:56px;flex:none;height:16px}
+#lvBtn .lv-track .fill{--m:#F4A262}
+.lv-next{position:absolute;top:calc(100% + 13px);left:-2px;z-index:6;white-space:nowrap;font-family:var(--font-hand);font-weight:700;font-size:19px;line-height:1.1;color:var(--ink);
+  padding:4px 12px 5px;background:var(--paper);border:2px solid var(--ink);border-radius:12px 9px 13px 8px;box-shadow:2px 3px 0 rgba(91,61,50,.15);transform:rotate(1.2deg);pointer-events:auto}
+.lv-next::before{content:"";position:absolute;width:42px;height:13px;top:-9px;left:calc(50% - 21px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(4deg)}
+.lv-next[hidden]{display:none}
+#stage.slimhud .lv-next,#stage.ffmode .lv-next{display:none}
+/* the Bond Next tag hangs right of the Bond meter (under the coins); with the star there it ends at the meter's right edge instead, and the star's tag starts under the star */
+#hud.lvon .fw-next{right:0}
+/* narrow wide-screens (12_phone_v1.css orders the HUD): the star stays just before the coins */
+@media (max-aspect-ratio: 4/5){ html:not([data-layout="phone"]) #lvBtn{order:3} html:not([data-layout="phone"]) #lvBtn .lv-track{display:none} }
+/* XP arrives: a 400 ms wiggle; a new level: a pop. Nothing with Motion off */
+#lvBtn.lv-wig .lv-star{animation:lvWig .4s ease-in-out}
+#lvBtn.lv-pop .lv-star{animation:lvPop .7s ease-out}
+@keyframes lvWig{25%{transform:rotate(-12deg)}60%{transform:rotate(9deg)}}
+@keyframes lvPop{30%{transform:scale(1.35) rotate(-10deg)}65%{transform:scale(.95) rotate(4deg)}}
+html[data-motion="off"] #lvBtn .lv-star{animation:none}
+
+/* ---- phones: only the star (34 px art in a 44 x 44 tap box), row 1 directly left of the coins; no track, no tag (the sheet and the aria-label say it) ---- */
+html[data-layout="phone"] #hud.lvon{grid-template-columns:minmax(0,1fr) auto auto auto}
+html[data-layout="phone"] #hud.lvon #lvBtn{grid-area:1/2}
+html[data-layout="phone"] #hud.lvon .coins{grid-area:1/3}
+html[data-layout="phone"] #hud.lvon #moreBtn{grid-area:1/4}
+html[data-layout="phone"] #lvBtn{width:44px;height:44px;min-height:44px;padding:5px;margin:0 -7px;justify-content:center} /* the tap box reaches 7 px into the 8 px gaps: the column takes 30 px */
+html[data-layout="phone"] #hud.lvon .who{gap:4px}
+/* row 1 has 32 px less for the dog: the name and title shrink (ellipsis) before the pack chip, which keeps its 44 px tap box (no overlap at 360 with 5 dogs) */
+html[data-layout="phone"] #hud.lvon .namewrap{flex:0 1 auto;min-width:0}
+html[data-layout="phone"] #hud.lvon #hudName,html[data-layout="phone"] #hud.lvon #hudTitle{display:block;max-width:100%}
+html[data-layout="phone"] #hud.lvon #hudPack{flex-shrink:100} /* the chips still go first (down to the one 44 px chip), then the name and title */
+html[data-layout="phone"] .lv-star{width:34px;height:34px}
+html[data-layout="phone"] .lv-n{font-size:15px}
+html[data-layout="phone"] #lvBtn .lv-track,html[data-layout="phone"] .lv-next{display:none}
+
+/* ---- the Level sheet ---- */
+.lv-pop .panel-body{display:flex;flex-direction:column;gap:8px}
+.lv-pop .panel-body > p,.lv-pop .lv-prog p,.lv-pop .lv-stars p{margin:0}
+.lv-head .lv-strip{display:block;width:100%;height:auto;max-height:80px;margin:-6px 0 0}
+.lv-cardart .lv-strip{display:block;width:100%;height:auto;max-height:60px;margin:-4px 0 2px}
+.lv-prog,.lv-stars{display:flex;flex-direction:column;gap:3px}
+.lv-bar{position:relative;display:block;height:20px;width:100%;max-width:420px}
+.lv-bar::after{content:"";position:absolute;inset:0;background:var(--fr-tube) 0 0/100% 100% no-repeat;pointer-events:none}
+.lv-bar .fill{--m:#F4A262;min-width:0}
+.lv-togo,.lv-today,.lv-stcount{margin:0;font-size:16px;font-variant-numeric:tabular-nums}
+.lv-today{color:var(--muted,#7A6255)}
+.lv-today.full{color:var(--ink)}
+.lv-top{margin:0;font-family:var(--font-hand);font-weight:700;font-size:24px;line-height:1.15}
+.lv-starline{margin:0;display:flex;align-items:center;gap:8px;font-size:18px}
+.lv-sic{display:block;width:34px;height:34px;flex:none}
+.lv-sic svg{display:block;width:100%;height:100%;overflow:visible}
+.lv-h3{margin:4px 0 0;font-family:var(--font-hand);font-weight:700;font-size:23px;line-height:1.1}
+.lv-nextl,.lv-open ul{margin:0;padding-left:0;list-style:none;font-size:17px;line-height:1.4}
+.lv-nextl li::before{content:"\2726  ";color:var(--pink)}
+.lv-open summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:var(--font-hand);font-weight:700;font-size:22px}
+.lv-open li{margin:0 0 4px}
+.lv-open li b{display:inline-block;margin-right:4px;padding:0 6px;border:1.5px solid var(--ink);border-radius:7px 9px 6px 8px;background:var(--w-yellow);font-size:15px}
+.lv-how{margin:2px 0 0;font-size:16px;color:var(--muted,#7A6255)}
+.lv-gerald{font-style:italic}
+.lv-lunext{font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.2}
+html[data-layout="phone"] .lv-nextl,html[data-layout="phone"] .lv-open ul{font-size:16px}
+html[data-layout="phone"] .lv-togo,html[data-layout="phone"] .lv-today,html[data-layout="phone"] .lv-stcount,html[data-layout="phone"] .lv-how{font-size:15px}

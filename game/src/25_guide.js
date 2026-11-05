@@ -104,7 +104,7 @@ function gdTarget(i, tray) {
 }
 // spots for the card: above the dock (bottom of the scene) first, then under the HUD. Hard rules: never on #dogHit, the ringed target or the place buttons.
 // Soft: stay off the location chip, the bowl, the mailbox and the missions clipboard. Re-measured every tick, moved only when its spot stops being clear.
-const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msBtn', '#ddWish:not([hidden])']; // v2.17: the wish chip (48_dogdays.js)
+const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext', '#lvNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msBtn', '#ddWish:not([hidden])']; // v2.17: the wish chip (48_dogdays.js)
 function gdPlace(force) {
   const c = $('.gd-card', gd.layer); const v = gdR(view), dh = $('#dogHit'), dog = dh ? gdR(dh) : null, tg = gdTarget(S.guide.step), tr = tg && tg.sel !== '#dogHit' && !tg.sel.startsWith('#gdLayer') ? tg.r : null; // v2.16: a ring on the card's own button is not a spot to avoid
   const cw = c.offsetWidth, ch = c.offsetHeight, ph = isPhone();
@@ -206,7 +206,8 @@ function gdTabHTML() {
   let al = null; try { al = typeof agLesson === 'function' ? agLesson() : null; } catch (e) { al = null; } // v2.15: the Training Ground card (44_agility.js), only while mpOn()
   let fl = null; try { fl = typeof ffLesson === 'function' ? ffLesson() : null; } catch (e) { fl = null; } // v2.18: the Fun Fair card (49_funfair.js), only while ffOn()
   let pl = null; try { pl = typeof plLesson === 'function' ? plLesson() : null; } catch (e) { pl = null; } // v2.15: the Splash Pool card (45_pool.js), only while mpOn()
-  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '') + (Array.isArray(pl) && pl.length === 4 ? card(pl, GD_LESSONS.length + 2) : '') + (Array.isArray(fl) && fl.length === 4 ? card(fl, GD_LESSONS.length + 3) : '');
+  let vl = null; try { vl = typeof lvLesson === 'function' ? lvLesson() : null; } catch (e) { vl = null; } // v2.22: the town level card (51_levels.js), only while lvOn()
+  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '') + (Array.isArray(pl) && pl.length === 4 ? card(pl, GD_LESSONS.length + 2) : '') + (Array.isArray(fl) && fl.length === 4 ? card(fl, GD_LESSONS.length + 3) : '') + (Array.isArray(vl) && vl.length === 4 ? card(vl, GD_LESSONS.length + 4) : '');
   return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p>${tt('guide.notes_html', "<b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.")}</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
     <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">${esc(tt('guide.replay', 'Replay the guide'))}</button></p></div>`;
