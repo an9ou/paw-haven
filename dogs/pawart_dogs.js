@@ -484,7 +484,7 @@ SP.shihtzu={name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a
    dalmatian's spots), legFn (marks on a leg: the dalmatian's spots), legs.toe (white feet: the bernese, the aussie's trim), bib (the white of the chest:
    the bernese ruff and muzzle, through ART B's face.snoutK; the aussie's collar), EARS_A.tri and EARS_A.dropD (the bernese's broad triangle ear, the
    dalmatian's high drop ear; their pivots sit inside the skull), faceFn (the aussie's pale eye creases on a dark head without copper), tail 'dal' (drawn by
-   its tailFn). The dalmatian uses ART B's ownWhite (its white ground: coat.white lays no white patches over the spots). Every colour fill stays inside its own outline: the marks are laid while
+   its tailFn), headShut (art fix: the head outline drawn closed, no crayon gap; on the white dalmatian a gap left a loose stub over the muzzle). The dalmatian uses ART B's ownWhite (its white ground: coat.white lays no white patches over the spots). Every colour fill stays inside its own outline: the marks are laid while
    the body, head, ear or tail part is open (h.part), so a spot or patch that reaches the edge is pinned inside the line */
 EARS_A.tri=function(pr,E){// v2.21 bernese: a broad, soft triangle set high on the skull, hanging flat by the cheek, the tip rounded
   E.push({pts:pr([[-.3,-.98],[-.96,-.84],[-1.16,-.3],[-1.04,.16],[-.84,.12],[-.62,-.5]]),pivot:pr([[-.52,-.72]])[0],side:-1,flop:1});
@@ -501,12 +501,13 @@ function aussieEar(h,s,e,p,HT){// the ear's own pale crayon rim just inside its 
 const spotA=(h,M,x,y,r,col)=>h.shape(circ(x,y,r,r*.9,8,.16).map(M),col,{noline:1,ox:0,oy:0,famp:.5});// one round crayon spot, kept inside the open part
 // dalmatian spots: [x, y] of the body or head (x rx, y ry), r in rx. A puppy has the first few only, a newborn none (real: they are born white, the spots come in from two weeks)
 const DAL_B=[[-.62,-.42,.1],[-.2,-.12,.13],[.28,-.5,.1],[-.5,.3,.12],[.2,.36,.11],[.58,-.08,.08],[-.86,.1,.08],[.02,-.7,.08],[-.34,-.74,.07],[.5,.62,.07],[-.1,.68,.08],[.78,.3,.07],[-.72,.66,.06],[.66,-.56,.06],[.04,.14,.06],[-.94,-.36,.05]];
-const DAL_H=[[-.56,-.44,.13],[-.66,.24,.1],[.0,-.8,.08],[-.24,.6,.08],[.66,-.62,.07],[-.3,-.86,.06]];
-function dalMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,K=s.dark,n=s.pup===2?0:s.pup?6:DAL_B.length,m=s.pup===2?0:s.pup?3:DAL_H.length,z=s.pup?.86:1;
+const DAL_H=[[-.56,-.44,.13],[-.66,.24,.1],[.0,-.8,.08],[.1,.34,.085],[-.24,.6,.08],[.66,-.62,.07],[-.3,-.86,.06],[.18,-.6,.065]];// v2.21 art fix: a cheek spot (a puppy has it too) and a forehead spot, so the face is spotty, not only the back of the skull
+function dalMarks(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,K=s.dark,n=s.pup===2?0:s.pup?6:DAL_B.length,m=s.pup===2?0:s.pup?4:DAL_H.length,z=s.pup?.86:1;
   DAL_B.slice(0,n).forEach(q=>spotA(h,B,b.rx*q[0],b.ry*q[1],b.rx*q[2]*z,K));DAL_H.slice(0,m).forEach(q=>spotA(h,Hd,hx*q[0],hy*q[1],hx*q[2]*z,K))}
-function dalEar(h,s,e,p,HT){if(s.pup===2)return;// two spots inside each ear (a puppy: one), laid on the ear's own outline
-  let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const K=s.dark,hx=s.head.rx,lp=(a,t)=>[cx+(a[0]-cx)*t,cy+(a[1]-cy)*t];
-  h.part(1);[[3,.42,.15],[1,.4,.11]].slice(0,s.pup?1:2).forEach(([i,t,r])=>{const c=lp(p[i],t);spotA(h,HT,c[0],c[1],hx*r,K)});h.part(0)}
+function dalEar(h,s,e,p,HT){if(s.pup===2)return;// v2.21 art fix: a big dark spot over the tip of each ear and a small one by the crease (a puppy: the tip spot), pinned inside the ear's own outline,
+  // so the white ear reads on the white head even at chip size
+  let cx=0,cy=0;p.forEach(q=>{cx+=q[0]/p.length;cy+=q[1]/p.length});const K=s.dark,hx=s.head.rx,lp=(a,t)=>[cx+(a[0]-cx)*t,cy+(a[1]-cy)*t],tip=[(p[3][0]+p[4][0])/2,(p[3][1]+p[4][1])/2];
+  h.part(1);{const c=lp(tip,1.05);spotA(h,HT,c[0],c[1],hx*(s.pup?.4:.46),K)}if(!s.pup){const c=lp(p[1],.42);spotA(h,HT,c[0],c[1],hx*.1,K)}h.part(0)}
 function dalTail(h,s,L,map,col){// dalmatian: a long tail, thick at the root and tapering to a fine point, curved a little up; a few spots
   const C=dense([[0,0],[-11,-8],[-18,-21],[-20,-35],[-15,-48]],false,4),M=map(C),n=M.length,on=q=>q[1]>=GY-2.01;let P=M;
   if(M.filter(on).length*3>=n){// the tail lies on the ground (sit, ...): map() flattens it onto the ground line, so lay it there with its own width, the lower edge on the ground
@@ -519,7 +520,7 @@ function dalLeg(h,s,L,l){if(s.pup===2||!l.foot||l.raised&&!l.mid)return;// a spo
   [[.42,1],[.72,.8]].slice(0,s.pup?1:(l.i%2?1:2)).forEach(([t,k])=>{const p=at(t+(l.i%2)*.08);h.acc.push('<ellipse cx="'+R1(p[0]+h.J(.4))+'" cy="'+R1(p[1])+'" rx="'+R1(r*k)+'" ry="'+R1(r*k*1.15)+'" fill="'+(l.near?s.dark:mix(s.dark,PEN,.2))+'"/>')})}
 SP.dalmatian={name:'Sprinkles',breed:'Dalmatian',personality:'A spotty athlete who loves a long run and a crowd to show off to.',joke:'Yes, I have counted my spots. I lost count. Twice.',
   col:'#FBF8F2',hcol:'#FBF8F2',light:'#FFFFFF',dark:'#1D1A22',ownWhite:()=>{},body:{x:108,y:127,rx:48,ry:24,lop:.05},head:{x:166,y:87,rx:28,ry:24},neck:1,
-  legs:{h:-31,f:29,w:8.4},legFn:dalLeg,ears:'dropD',earS:.86,earRound:1,earFn:dalEar,tail:'dal',tailFn:dalTail,tsc:1.08,eyes:[5.8,5.4],
+  legs:{h:-31,f:29,w:8.4},legFn:dalLeg,headShut:1,ears:'dropD',earS:1,earRound:1,earFn:dalEar,tail:'dal',tailFn:dalTail,tsc:1.08,eyes:[5.8,5.4],
   face:{eyes:'open',mouth:'tongue',e0:[-.12,-.22],e1:[.4,-.26],nose:[1.6,.12],snout:1,snoutL:1.6,brow:'soft'},
   marks:dalMarks};
 function berneseMarks(h,B,Hd,s){// tricolour: rust (light) on the cheeks, over the eyes, the forelegs and under the tail; always white: the blaze, the chest cross (and the ruff, feet and tail tip)
@@ -2273,7 +2274,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
   else if(hmk&&s.topknot)hmPlain(h,()=>0,g=>drawTopknot(g,s,HT));// v2.18.1: the topknot stays under a market hat; the stream moves on as if it were drawn
-  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
+  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2,closed:(s.mixHead?SP[s.mixHead]:s).headShut})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
@@ -2431,7 +2432,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});h.part(1);if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);h.part(0);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11,closed:(s.mixHead?SP[s.mixHead]:s).headShut});h.part(1);if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);h.part(0);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const HL=typeof o.aria==='string'&&o.aria?o.aria.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):`${s.name} the ${s.breed}`;// v2.14: o.aria from the game
