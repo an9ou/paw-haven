@@ -229,6 +229,23 @@ require('./test_lib').run('v221_breeds', async (t) => {
     if (on.art.length < 5) console.log('  note: own art so far: ' + (on.art.join(', ') || 'none') + ' (the rest draw as the mutt placeholder)');
     const dogs = await ev((NEW) => { const P = window.__paw; return NEW.filter((k) => k !== 'dalmatian').map((k, i) => { const d = P.addDog({ key: k, sex: i % 2 ? 'male' : 'female', months: 24 }, 'N' + k); return { k, id: d.id, coat: P.coat(d).coatName, M: d.genes.M.join('') }; }); }, NEW);
     ok(dogs.every((d) => COATS[d.k].includes(d.coat)), 'the other four join the pack with a catalogue coat: ' + dogs.map((d) => d.k + ' ' + d.coat).join(', '));
+    // Code 1 (V221.md 9): the live Worker knows 35 breeds and 115 names until the launch, so until MS2_LIVE nothing the Worker gets carries the five,
+    // even with the test flags on: the Dog Card, the Friends yard snapshot and a walk letter's `mine` skip to the next dogs. With MS2_LIVE (forced) they go.
+    const wire = await ev(() => { const P = window.__paw, S = P.S;
+      P.addDog({ key: 'lab', sex: 'male', months: 24 }, 'Aussie'); P.addDog({ key: 'pug', sex: 'female', months: 24 }, 'Wire Pug');
+      const look = () => { const y = P.fr.yard(); return { card: P.dc.payload().dogs, yard: y ? y.dogs : null, mine: P.fr.walkMine() }; };
+      const all = (o) => o.card.concat(o.yard || [], o.mine ? [o.mine] : []);
+      S.dc.dogs = S.dogs.slice(0, 4).map((d) => ({ id: d.id, nm: 117 })); // four of the five picked, the card name "Aussie" (117)
+      const onlyNew = look(); S.dc.dogs = [S.dogs[0], S.dogs[5]].map((d) => ({ id: d.id, nm: 117 })); const mixed = look();
+      const was = P.v221.wire(); P.v221.wire(true); const live = look(); P.v221.wire(false);
+      const bad = (x) => x.b >= 35 || x.n >= 115;
+      return { was, lead: S.dog.key, onlyNew, mixed, live, offBad: all(onlyNew).concat(all(mixed)).filter(bad).length, liveBad: all(live).filter(bad).length, after: P.v221.wire() }; });
+    ok(!wire.was && !wire.after && wire.lead === 'dalmatian', 'the wire gate follows MS2_LIVE (off now, the leader is the Dalmatian)');
+    ok(wire.offBad === 0 && wire.onlyNew.card.length === 2 && wire.mixed.card.length === 1 && wire.onlyNew.yard && wire.onlyNew.yard.length === 2 && wire.onlyNew.mine && wire.onlyNew.mine.b < 35,
+      `MS2_LIVE off, gate on: no breed 35-39 or name 115+ in the card, yard or walk letter; the next dogs go instead (${JSON.stringify(wire.onlyNew)})`);
+    ok(wire.mixed.card[0].n < 115 && wire.mixed.card[0].n >= 80, 'a card name of the five ("Aussie" on a Lab) goes as the dog\'s own breed word until MS2_LIVE (' + wire.mixed.card[0].n + ')');
+    ok(wire.liveBad > 0 && wire.live.card.some((x) => x.b >= 35) && wire.live.yard.some((x) => x.b === 35) && wire.live.mine.b === 35 && wire.live.card.some((x) => x.n >= 115),
+      `MS2_LIVE forced on: the five go to the Worker normally (${JSON.stringify(wire.live.yard.map((x) => x.b))}, mine ${wire.live.mine.b})`);
     await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
     ok(await p.locator('.cbreed').count() === 40, 'on: 40 breed tabs on the Coats page');
     for (const k of NEW) { await p.click(`[data-cbreed="${k}"]`); await p.waitForSelector(`.cbreed.on[data-cbreed="${k}"]`); const n = await ev(() => document.querySelectorAll('.cgrid .coat').length); ok(n >= COATS[k].length, `${k}: the coat page lists its ${COATS[k].length} coats (${n} cells)`); }

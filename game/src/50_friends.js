@@ -112,10 +112,10 @@ async function frApi(method, path, body) {
 function frErr(r) { return (r && r.data && r.data.error) || (r && r.error && r.error.message) || ''; }
 
 /* ---------- the yard snapshot (V219.md section 2). Indices only. Never a typed dog name. ---------- */
-// a dog as a Dog Card dog { b, c, o, a, s, sp, n }, or null (a breed the cards do not know, or double merle)
+// a dog as a Dog Card dog { b, c, o, a, s, sp, n }, or null (a breed the cards do not know, or double merle, or v2.21: one of the five before MS2_LIVE, dcWireDog)
 function frCardOf(d) {
-  if (!d || typeof dcDogOf !== 'function') return null;
-  const x = dcDogOf(d);
+  if (!d || typeof dcWireDog !== 'function') return null;
+  const x = dcWireDog(d);
   if (!x || !Number.isInteger(x.b) || x.b < 0) return null;
   if (x.c && x.c.M && x.c.M[0] === 'M' && x.c.M[1] === 'M') return null;
   return { b: x.b, c: x.c, o: x.o, a: x.a, s: x.s, sp: x.sp ? 1 : 0, n: x.n };
@@ -1533,8 +1533,9 @@ function frWalkEnd(tName) {
   }
   return `<p class="small fr-walked">${esc(n ? tt('fr.walk_paid', 'Walked with {who}: +{n}', { who, n: tnum(n) }) : tt('fr.walk_with', 'Walked with {who}.', { who }))}</p>`;
 }
+const frWalkMine = () => frCardOf(S.dog) || ((frYardDogs()[0] || {}).x) || null; // the walk letter's `mine`: my leader, or the snapshot's first dog (v2.21: a new breed waits for MS2_LIVE)
 async function frWalkSend(o, tName) {
-  const mine = frCardOf(S.dog) || ((frYardDogs()[0] || {}).x) || null; if (!mine) return false; // no dog the cards can show: nothing to send
+  const mine = frWalkMine(); if (!mine) return false; // no dog the cards can show: nothing to send
   const data = { dog: o.dog, mine };
   const t = tName ? FR_GIFTS.indexOf(tName) : -1; if (t >= 0 && !FR_GIFT_OFF.includes(t)) data.t = t;
   let r = null;
@@ -1604,7 +1605,7 @@ function frExpose() {
       return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
-    yard: () => frYard(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
+    yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
     note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,
     visit: (fid) => frVisit(fid), home: () => frHome(), sent: (fid, kind) => frSentToday(fid, kind),

@@ -107,9 +107,27 @@ function dcDogOf(d, nm) {
   return { b: dcBreeds().indexOf(d.key), c: dcCoat(d), o: dcOutfitIdx(d), a: ageMonths(d) < 6 ? 'pup' : 'adult', s: d.sex === 'female' ? 'f' : 'm', sp: d.sparkle ? 1 : 0, n };
 }
 const dcCanShow = (d) => !!d && dcBreeds().indexOf(d.key) >= 0;
+/* v2.21 (V221.md 9): what the Worker gets. The live Worker knows 35 breeds and 115 dog names until the launch, when it is deployed FIRST and then
+   MS2_LIVE turns on. So until MS2_LIVE is true the five new breeds never leave the device, also on the GitHub Pages test copy whose flags show them:
+   no card dog, yard snapshot dog or walk-letter dog of the five, and no card name from 115 on (a Worker of today refuses the whole card or yard for one
+   such dog). Nothing changes on the device: the new dog is simply not on the card or the yard yet, and the next dogs go instead. */
+let dcWireForce = false; // tests only (__paw.v221.wire): send as if MS2_LIVE were true
+function dcWireLive() { if (dcWireForce) return true; try { return !!MS2_LIVE; } catch (e) { return false; } }
+const dcWireOk = (d) => dcCanShow(d) && (dcWireLive() || !V221_KEYS.includes(d.key)); // a dog the Worker may get now
+const dcWireN = () => (dcWireLive() ? dcNameN() : Math.min(dcNameN(), DC_DOG_NAMES.length - V221_KEYS.length)); // 115 dog names until MS2_LIVE
+// a dog for the Worker { b, c, o, a, s, sp, n }, or null (a breed it may not get yet). A card name it does not know yet becomes the breed word
+function dcWireDog(d, nm) {
+  if (!dcWireOk(d)) return null;
+  const x = dcDogOf(d, nm), N = dcWireN();
+  if (!(x.n < N)) x.n = x.b >= 0 && DC_PET_NAMES.length + x.b < N ? DC_PET_NAMES.length + x.b : 0;
+  return x;
+}
 function dcPayload(dc) {
   dc = dc || S.dc;
-  const dogs = (dc.dogs || []).map((x) => ({ x, d: dogById(x.id) })).filter((o) => dcCanShow(o.d)).slice(0, DC_MAX_DOGS).map((o) => dcDogOf(o.d, o.x.nm));
+  const picked = (dc.dogs || []).map((x) => ({ x, d: dogById(x.id) })).filter((o) => dcCanShow(o.d)), sendable = picked.filter((o) => dcWireOk(o.d));
+  // v2.21: when every picked dog is held back (a new breed before MS2_LIVE), the card goes with the next dogs of the pack instead
+  const use = sendable.length || !picked.length ? sendable : S.dogs.filter(dcWireOk).map((d) => ({ x: { nm: dcDefaultNm(d) }, d }));
+  const dogs = use.slice(0, DC_MAX_DOGS).map((o) => dcWireDog(o.d, o.x.nm));
   const nm = Array.isArray(dc.name) && DC_WORDS_A[dc.name[0]] != null && DC_WORDS_B[dc.name[1]] != null ? dc.name.slice(0, 2) : [0, 0];
   return { name: nm, dogs };
 }
@@ -453,6 +471,6 @@ on('game:ready', () => setTimeout(dcExpose, 0)); setTimeout(dcExpose, 0);
 function v221Expose() {
   if (!window.__paw) return;
   window.__paw.v221 = { keys: V221_KEYS.slice(), on: () => v221On(), live: () => liveBreedKeys().slice(), dogs: () => dogsList().map((d) => d.key), coatBreeds: () => coatBreeds(),
-    cardBreeds: () => dcBreeds().slice(), ownArt: () => V221_KEYS.filter((k) => artKey(k) === k) }; // ownArt: the new keys PawArt draws itself (the rest fall back to the mutt)
+    cardBreeds: () => dcBreeds().slice(), wire: (v) => { if (v != null) dcWireForce = !!v; return dcWireLive(); }, ownArt: () => V221_KEYS.filter((k) => artKey(k) === k) }; // ownArt: the new keys PawArt draws itself (the rest fall back to the mutt)
 }
 on('game:ready', () => setTimeout(v221Expose, 0)); setTimeout(v221Expose, 0);
