@@ -3,6 +3,8 @@
 //   the star is a 44 px tap target on row 1 directly left of the coins; row 1 never wraps and nothing overlaps with 1 dog and with 5 dogs plus a
 //   long title; the HUD keeps its height; no sideways scroll; the sheet (level 6 and level 20 with stars) and the card fit on screen, their OK / X
 //   and the "Opened so far" toggle are 44 px and on top, and every text is 13 px or more.
+// Part D: the Journal > Profile habits card fits each size (one column, 15 px lines, nothing past the card, the last row above the phone bar), and
+//   the Bond card with its habit box fits at 360 (OK on top, text 13 px or more).
 // node game/run_tests.js phone_v222_levels   (--shots writes every size to game/shots_phone_v222_levels/)
 const { run } = require('./test_lib');
 const ON = { ms2Test: true, lvTest: true, tkTest: true, jpTest: true, ffTest: true };
@@ -63,9 +65,38 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         ok(!m.small.length, `${tag}: every card text is 13 px or more ${m.small.slice(0, 4).join(', ')}`);
         await p.click('#lvOk'); await t.modalGone();
       };
+      // part D: the Profile habits card, scrolled into view, and the Bond card's habit box
+      const habCheck = async (tag) => {
+        await ev(() => window.__paw.dd.journal('profile'));
+        ok(await t.until(() => !!document.querySelector('#modal .pf-habits'), null, 4000), `${tag}: Journal > Profile has the habits card`);
+        await ev(() => document.querySelector('#modal .pf-habits').scrollIntoView({ block: 'start' })); await t.sleep(250); await t.SH(`${tag}_habits`);
+        const m = await ev(() => {
+          const c = document.querySelector('#modal .pf-habits'), r = c.getBoundingClientRect(), rows = [...c.querySelectorAll('li.hb-row')], bar = document.getElementById('bar').getBoundingClientRect(), small = [];
+          c.querySelectorAll('*').forEach((e) => { if ([...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && e.getClientRects().length && !e.closest('svg')) { const fs = parseFloat(getComputedStyle(e).fontSize); if (fs < 13) small.push(e.tagName + '.' + e.className + ' ' + fs); } });
+          const on = rows.filter((l) => !l.classList.contains('off')).map((l) => parseFloat(getComputedStyle(l.querySelector('.hb-line')).fontSize));
+          const lefts = new Set(rows.map((l) => Math.round(l.getBoundingClientRect().left))), wide = rows.filter((l) => { const b = l.getBoundingClientRect(); return b.left < r.left - 1 || b.right > r.right + 1; }).length;
+          const last = rows[rows.length - 1]; last.scrollIntoView({ block: 'end' }); const lb = last.getBoundingClientRect(), hit = document.elementFromPoint(lb.left + 20, (lb.top + lb.bottom) / 2);
+          return { n: rows.length, r: [r.left, r.right], iw: innerWidth, sw: document.documentElement.scrollWidth, cols: lefts.size, wide, small, fs: Math.min(...on), lastOn: !!hit && last.contains(hit), lastB: lb.bottom, barTop: bar.top };
+        });
+        await t.sleep(200); await t.SH(`${tag}_habits_end`);
+        ok(m.n === 10 && m.r[0] >= -1 && m.r[1] <= m.iw + 1 && m.sw <= m.iw && !m.wide, `${tag}: the habits card fits the width, no row past it, no sideways scroll ${JSON.stringify(m.r.map(Math.round))} (${m.iw})`);
+        ok(m.cols === 1 && m.fs >= 15 && !m.small.length, `${tag}: one column, ${m.fs} px lines, every text 13 px or more ${m.small.slice(0, 3).join(', ')}`);
+        ok(m.lastOn && m.lastB <= m.barTop + 1, `${tag}: the last row is on top, above the phone bar (${Math.round(m.lastB)} <= ${Math.round(m.barTop)})`);
+        await t.closeX(); await t.modalGone();
+      };
+      const luBoxCheck = async (tag) => {
+        await ev(() => { const P = window.__paw; P.lv.bondUp(P.fw.BOND_TH[3] - P.S.bond.pts); }); // Bond 3 -> 4: a new habit
+        ok(await t.until(() => !!document.querySelector('#modal .hb-new'), null, 5000), `${tag}: the Bond card has the habit box`);
+        await t.sleep(300); await t.SH(`${tag}_bondcard`);
+        const m = await textCheck('#modal .panel.celebrate'), o = await ev(() => { const b = document.getElementById('luOk'), r = b.getBoundingClientRect(), c = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2), x = document.querySelector('#modal .hb-new').getBoundingClientRect(), P = document.querySelector('#modal .panel').getBoundingClientRect(); return { w: r.width, h: r.height, on: !!c && b.contains(c), box: x.left >= P.left - 1 && x.right <= P.right + 1 }; });
+        ok(m.r[0] >= -1 && m.r[2] <= m.iw + 1 && m.r[1] >= 0 && m.r[3] <= m.ih + 1 && m.sw <= m.iw && o.box, `${tag}: the Bond card and its habit box fit the screen ${JSON.stringify(m.r.map(Math.round))}`);
+        ok(o.w >= 44 && o.h >= 44 && o.on && !m.small.length, `${tag}: Yay! is a 44 px button on top, every text 13 px or more ${m.small.slice(0, 3).join(', ')}`);
+        await t.lu(); await t.luWait(800); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); }); await t.modalGone();
+      };
       // a level card at the narrowest size: levels 2-6 at once (the longest list of week 1)
       await p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 4000);
       await ev(() => window.__paw.lv.gain('board', 630)); await cardCheck(`${lang}_360`);
+      await luBoxCheck(`${lang}_360`);
       for (const [W, H] of SIZES) {
         const tag = `${lang}_${W}x${H}`; sec(tag);
         await p.setViewportSize({ width: W, height: H }); await t.until((w) => innerWidth === w, W, 4000);
@@ -75,6 +106,7 @@ const SIZES = [[360, 740], [390, 844], [393, 659]];
         await t.lu(); await t.calm(); await t.sleep(400);
         await hudCheck(`${tag} 5 dogs + title`); await t.SH(`${tag}_hud5`);
         await sheetCheck(tag);
+        await habCheck(tag);
       }
       sec(`${lang}: level 20 with stars`);
       await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); await cardCheck(`${lang}_393 level 20`);
