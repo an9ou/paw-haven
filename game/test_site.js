@@ -339,7 +339,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         full: [...document.querySelectorAll('article.prof[id]')].every((a) => a.querySelector('h2').textContent.trim() && a.querySelector('.bubble').textContent.length > 4 && a.querySelectorAll('.traits li').length === 4 && a.querySelectorAll('.loves li').length === 3 && a.querySelector('.pup') && a.querySelector('.playline') && /[゠-ヿ一-鿿]/.test(a.querySelector('.jpline').textContent)),
         play: [...document.querySelectorAll('a')].some((x) => x.href === 'https://an9ou.itch.io/doodle-doggo') }));
       ok(dg.ids.length === BREEDS.length && dg.ids.join() === BREEDS.join(), `a profile for every dog (${dg.ids.length} = BREEDS.length) in BREEDS order, with the dog's key as its anchor (/dogs#shiba ...)`);
-      ok(await page.evaluate(() => { const x = document.querySelector('section.soonprof#soon'); return !!x && x.previousElementSibling.id === 'shihtzu' && /More dogs are coming!/.test(x.textContent) && /Japanese Chin and Kai Ken are on their way/.test(x.textContent) && x.querySelectorAll('.sil').length === 2 && document.querySelector('footer #contact').getAttribute('href') === 'mailto:contact@doodledoggo.app'; }), '/dogs ends with More dogs are coming! and has CONTACT US in the footer');
+      ok(await page.evaluate(() => { const x = document.querySelector('section.soonprof#soon'); return !!x && x.previousElementSibling.id === 'jrt' && /More dogs are coming!/.test(x.textContent) && /Japanese Chin and Kai Ken are on their way/.test(x.textContent) && x.querySelectorAll('.sil').length === 2 && document.querySelector('footer #contact').getAttribute('href') === 'mailto:contact@doodledoggo.app'; }), '/dogs ends with More dogs are coming! and has CONTACT US in the footer');
       ok(dg.full, 'every profile: name, line, 4 traits, 3 favourites, a puppy drawing, the playroom habit and the Japanese name');
       ok(dg.nav.join() === BREEDS.map((k) => '#' + k).join(), 'the picture menu (.dognav) links every profile');
       ok(dg.pop && dg.pop.open && /Mochi/.test(dg.pop.name) && dg.pop.xw >= 44 && dg.pop.xh >= 44 && dg.pop.label, `/dogs#shiba opens Mochi's profile in the pop-up (v3.1), with a 44 px ✕ that has a label (${dg.pop && dg.pop.name}, ✕ ${dg.pop && dg.pop.xw}x${dg.pop && dg.pop.xh})`);
@@ -505,7 +505,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const en = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'i18n', 'en.json'), 'utf8')), keys = Object.keys(en).filter((k) => !k.startsWith('_'));
       let bad = []; keys.forEach((k) => { try { I18N.parse(en[k]); } catch (e) { bad.push(k); } });
       ok(!bad.length && keys.length > 600, `en.json: ${keys.length} keys, every one a valid message ${bad.join(' ')}`);
-      ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) , 'en.json has every dog profile (35)');
+      ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) , 'en.json has every dog profile (' + BREEDS.length + ')');
       ok(PLACES.every((id) => en[`map.place.${id}.name`] && en[`map.place.${id}.text`]) && ['nav.home', 'nav.dogs', 'nav.map', 'nav.about', 'about.h1', 'about.p1', 'about.p2', 'about.p3'].every((k) => en[k]), 'en.json has the nav, the 25 places and About Us');
       ok(Object.keys(en._notes).every((k) => k in en) && ['home.dogs.lead', 'profile.jpline', 'card.alt', 'common.play'].every((k) => en._notes[k]), 'translator notes (_notes) for the tricky keys, each naming a real key');
       const built = I18N.build({});
@@ -516,10 +516,10 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         const { rep, own } = I18N.table(L);
         if (L.code !== 'en' && !L.pseudo) console.log(`  .. ${L.code}: ${rep.translated}/${rep.total} keys translated${rep.complete ? ', marked complete' : ''}`);
         ok(!rep.broken.length && !rep.unknown.length, `${L.code}: no broken messages or unknown keys ${rep.broken.concat(rep.unknown).slice(0, 3).join(' | ')}`);
-        if (rep.complete) { const miss = rep.missing.filter((k) => !/^(invite\.|privacy\.friends\.)/.test(k)); ok(!miss.length, `${L.code} is marked complete: no missing keys ${miss.slice(0, 5).join(' ')}`); } // v2.19 invite and Friends: English until Claude translates
+        if (rep.complete) { const miss = rep.missing.filter((k) => !/^(invite\.|privacy\.friends\.|dog\.(?:dalmatian|bernese|aussie|cavalier|jrt)\.)/.test(k)); ok(!miss.length, `${L.code} is marked complete: no missing keys ${miss.slice(0, 5).join(' ')}`); } // v2.19 invite and Friends: English until Claude translates; v2.21 the five new profiles: English until the release's one translation batch
         // the dog count rule in every language: the number always comes from {count}, so it follows the breed list
         const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count[,}]/.test(own[k]));
-        ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Thirty-five')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);
+        ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Forty')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);
       }
     }
 

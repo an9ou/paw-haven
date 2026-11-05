@@ -43,7 +43,13 @@ const DOGS = [
   { key: 'yorkie', sex: 'f', jp: 'ヨークシャー・テリア', jpRead: 'yōkushā teria', nameJp: 'トフィー', pose: 'sit', loves: ['Salmon Pâté', 'Plush Bone', 'icon:pet'] },
   { key: 'bichon', sex: 'f', jp: 'ビションフリーゼ', jpRead: 'bishon furīze', nameJp: 'メレンゲ', pose: 'happy', loves: ['Pupcake', 'Squeaky Duck', 'icon:star'] },
   { key: 'maltese', sex: 'f', jp: 'マルチーズ', jpRead: 'maruchīzu', nameJp: 'マシュマロ', pose: 'sit', loves: ['Salmon Pâté', 'Plush Bone', 'icon:pet'] },
-  { key: 'shihtzu', sex: 'm', jp: 'シーズー', jpRead: 'shīzū', nameJp: 'ワンタン', pose: 'down', loves: ['Pupcake', 'Plush Bone', 'icon:feed'] }
+  { key: 'shihtzu', sex: 'm', jp: 'シーズー', jpRead: 'shīzū', nameJp: 'ワンタン', pose: 'down', loves: ['Pupcake', 'Plush Bone', 'icon:feed'] },
+  // v2.21 Five New Friends (V221.md 8)
+  { key: 'dalmatian', sex: 'f', jp: 'ダルメシアン', jpRead: 'darumeshian', nameJp: 'スプリンクルズ', pose: 'happy', loves: ['Chicken & Rice Bowl', 'Frisbee', 'icon:walk'] },
+  { key: 'bernese', sex: 'm', jp: 'バーニーズ・マウンテン・ドッグ', jpRead: 'bānīzu maunten doggu', nameJp: 'フォンデュ', pose: 'sit', loves: ['Basic Kibble', 'Plush Bone', 'icon:pet'] },
+  { key: 'aussie', sex: 'f', jp: 'オーストラリアン・シェパード', jpRead: 'ōsutorarian shepādo', nameJp: 'パブロバ', pose: 'happy', loves: ['Bone-shaped Biscuit', 'Frisbee', 'icon:star'] },
+  { key: 'cavalier', sex: 'm', jp: 'キャバリア・キング・チャールズ・スパニエル', jpRead: 'kyabaria kingu chāruzu supanieru', nameJp: 'スコーン', pose: 'sit', loves: ['Salmon Pâté', 'Plush Bone', 'icon:pet'] },
+  { key: 'jrt', sex: 'f', jp: 'ジャック・ラッセル・テリア', jpRead: 'jakku rasseru teria', nameJp: 'ピクルス', pose: 'happy', loves: ['Bone-shaped Biscuit', 'Tennis Ball', 'dig'] }
 ];
 module.exports = DOGS.map((d) => { const t = (k) => EN[`dog.${d.key}.${k}`]; return Object.assign({}, d, {
   quote: t('quote'), play: t('play'), fun: t('fun'), loves: d.loves.map((n, i) => [n, t('love' + (i + 1))]),
