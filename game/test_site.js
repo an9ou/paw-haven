@@ -235,7 +235,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const priv = await (await get(SITE + '/privacy')).text();
       const six = (t) => /two words from a list/.test(t) && /preset kind lines/.test(t) && /only by a code or an invite link/.test(t) && /30 days/.test(t) && /quiet/.test(t) && /Leave Friends/.test(t);
       ok(/<h2>Friends<\/h2>/.test(priv) && /7 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the launch date (7 Nov, b5f5767)');
-      ok(/## Friends/.test(itchPriv) && /1 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
+      ok(/## Friends/.test(itchPriv) && /7 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
     }
     r = await get(SITE + '/reset'); ok(r.headers.get('referrer-policy') === 'no-referrer', '/reset sends no referrer'); await r.text();
     r = await get(SITE + '/map'); ok(r.headers.get('referrer-policy') !== 'no-referrer' && /frame-ancestors 'none'/.test(r.headers.get('content-security-policy') || ''), '/map: the usual headers'); await r.text();
