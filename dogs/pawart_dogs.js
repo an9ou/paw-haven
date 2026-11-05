@@ -526,7 +526,7 @@ function berneseMarks(h,B,Hd,s){// tricolour: rust (light) on the cheeks, over t
   h.shape(circ(hx*.5,hy*.46,hx*.36,hy*.3,9).map(Hd),K,{noline:1,ox:0,oy:0});h.shape(circ(-hx*.3,hy*.62,hx*.22,hy*.2,8).map(Hd),K,{noline:1,ox:0,oy:0});
   h.shape([[hx*.06,-hy*.98],[hx*.24,-hy*.98],[hx*.3,-hy*.3],[hx*.5,hy*.06],[hx*.02,hy*.08],[hx*.1,-hy*.3]].map(Hd),Wb,{noline:1,ox:0,oy:0})}
 SP.bernese={name:'Fondue',breed:'Bernese Mountain Dog',personality:'A big, gentle, fluffy friend. Happiest leaning on the people it loves.',joke:'I am not lying on your feet. I am keeping them warm.',
-  col:'#2B2628',hcol:'#2B2628',light:'#C8743A',dark:'#1D1A1C',bib:W,fluff:1,hfluff:0,body:{x:104,y:134,rx:56,ry:31},head:{x:163,y:97,rx:35,ry:30},
+  col:'#2B2628',hcol:'#2B2628',light:'#C8743A',dark:'#1D1A1C',bib:W,fluff:1,bellyFl:1,hfluff:0,body:{x:104,y:134,rx:56,ry:31},head:{x:163,y:97,rx:35,ry:30},
   legs:{h:-33,f:30,w:12.6,sock:'#C8743A',toe:W},ears:'tri',earS:.92,earRound:1,tail:'brush',tsc:1.06,tailTip:W,ruff:1.02,ruffK:'bib',eyes:[5.4,5],
   face:{eyes:'open',mouth:'tongue',e0:[-.16,-.16],e1:[.36,-.2],nose:[1.3,.14],snout:1,snoutL:1.3,snoutK:'bib',brow:'soft',browCol:'#D9A27A',pupil:.7},
   marks:berneseMarks};
@@ -1961,12 +1961,17 @@ function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
   if(L.pose==='sleep'){L.hT.x-=s.head.rx*.42;L.hT.y+=s.head.ry*.08;L.hT.a=16;L.tailA=-140}else{L.hT.y+=s.head.ry*.18;L.hT.a=8;L.tailA=-120}}
 const BELLY=/^(idle|happy|pet|eat|sleep|walk|sit|sad|dirty|crouch|shake|cold|hot|dig|beg|squat|leglift|paw|down|speak|bow|scratch|sniff|yawn|howl)$/;
 function drawBelly(h,s,L,B){// a rounder, lower belly: fill over the body's underline, then a new lower curve
-  const b=s.body,lie=/^(sleep|down|crouch)$/.test(L.pose),fl=!!s.fluff&&!b.long,cy=b.ry*(lie?.36:.5)+(fl?b.ry*(lie?.1:.07):0),rx=b.rx*(b.long?.36:.5)*(fl?1.12:1),ry=b.ry*(lie?.6:.68)*(fl?1.1:1),cl=q=>[q[0],Math.min(q[1],GY-1)],E=[],A=[];
+  const b=s.body,lie=/^(sleep|down|crouch)$/.test(L.pose),fl=!!s.fluff&&!b.long&&!s.bellyFl,cy=b.ry*(lie?.36:.5)+(fl?b.ry*(lie?.1:.07):0),rx=b.rx*(b.long?.36:.5)*(fl?1.12:1),ry=b.ry*(lie?.6:.68)*(fl?1.1:1),cl=q=>[q[0],Math.min(q[1],GY-1)],E=[],A=[];
   for(let i=0;i<16;i++){const t=i/16*Math.PI*2;E.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
   if(fl){// fluffy coat: the bulge hangs low behind the ground, so show it by a lighter tummy and a tufty dome line over it
     const n=15;for(let i=0;i<=n;i++){const f=i/n,t=(1.02+f*.96)*Math.PI,k=1+(i%2?.06:-.02);A.push([-b.rx*.04+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*k])}}
+  else if(s.bellyFl){// v2.21 art fix (new spec field bellyFl: the bernese): a dark fluffy coat shows the bulge as a coat-coloured tummy under the body with a tufty ink line;
+    // the fill is the tufty line closed over the top of the oval, so it never pokes past its line
+    const n=14;for(let i=0;i<=n;i++){const t=(.17+i/n*.66)*Math.PI,k=1+(i%2?.07:-.02);A.push([-b.rx*.04+Math.cos(t)*rx*k,cy+Math.sin(t)*ry*k])}
+    E.length=0;A.forEach(q=>E.push(q));for(let i=1;i<10;i++){const t=(.83+i/10*1.34)*Math.PI;E.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}}
   else for(let i=0;i<=8;i++){const t=(.17+i/8*.66)*Math.PI;A.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
-  h.shape(E.map(B).map(cl),fl?mix(s.col,'#FFFFFF',.22):(s.bellyK&&s[s.bellyK])||s.col,{noline:1,ox:0,oy:0,sc:1});h.line(A.map(B).map(cl),fl?h.LW*.75:h.LW,INK,fl?1.4:.9)}
+  h.shape(E.map(B).map(cl),fl?mix(s.col,'#FFFFFF',.22):(s.bellyK&&s[s.bellyK])||s.col,{noline:1,ox:0,oy:0,sc:1});h.line(A.map(B).map(cl),fl?h.LW*.75:h.LW,INK,fl?1.4:.9)
+  if(s.bellyFl)[.3,.5,.7].forEach((f,i)=>{const t=f*Math.PI,x=-b.rx*.04+Math.cos(t)*rx*.72,y=cy+Math.sin(t)*ry*.72;h.line([[x-4,y-2],[x-1.5,y+2],[x+1,y-2],[x+3.5,y+2]].map(B).map(cl),2.2,mix(s.col,W,.3),.4)})}
 function glitter(h,s,M,k,head){// glitter flecks on the coat: own rng, so nothing else moves
   const r=rng(hashS('glit'+(s.name||'')+head)+k*31),rx=head?s.head.rx:s.body.rx,ry=head?s.head.ry:s.body.ry,n=head?2:5;let d='',g='';
   for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=.25+r()*.5,p=M([Math.cos(a)*rx*rr,Math.sin(a)*ry*rr*(head?.6:1)-(head?ry*.35:0)]),z=2.2+r()*1.6;if(isNaN(p[0]))return;
