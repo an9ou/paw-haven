@@ -33,6 +33,17 @@ require('./test_lib').run('i18n_smoke', async (t) => {
     ok((await t.mode()) === 'yard', `${lang}: adopted, in the yard`);
     if (lang === 'xx') ok(await ev(() => /^\[/.test(document.querySelector('#bar .act span:last-child').textContent)), 'xx: the action bar shows the pseudo-locale');
     await t.patch({ bond: { level: 4, pts: 500 }, coins: 500 });
+    if (hasTable(lang) && lang !== 'en') { // QA 6 Nov 2026: eight place names stayed English (the places table has only 7 of the town's places): HUD chip, "arrived at" toast
+      const tab = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', lang + '.json'), 'utf8')), PL8 = ['square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'fujihill'];
+      const got = await ev((ks) => ks.map((k) => [window.__paw.placeName(k), window.__paw.tPlace(k)]), PL8);
+      const on = PL8.filter((k, i) => got[i][0] !== k); // Mt. Fuji Lookout is a town place only in the Japan season (jpPlaceSync): off, its id comes back
+      const bad = on.filter((k) => { const g = got[PL8.indexOf(k)]; return !tab['town.place_' + k] || g[0] !== tab['town.place_' + k] || g[1] !== tab['town.place_' + k]; }).map((k) => k + '=' + JSON.stringify(got[PL8.indexOf(k)]));
+      ok(on.length >= 7 && !bad.length, `${lang}: the town places show their ${lang} names (${on.length} of the eight on today)` + (bad.length ? ' -> ' + bad.join(' ') : ''));
+      await t.home('square'); await t.until(() => !!document.getElementById('status'), null, 3000);
+      const chip = await ev(() => document.getElementById('status').textContent);
+      ok(chip.includes(tab['town.place_square']), `${lang}: the place chip in the Square says "${tab['town.place_square']}" ("${chip.trim().slice(0, 40)}")`);
+      await t.home('yard');
+    }
 
     sec(lang + ': popups, settings, map');
     for (const [a, sel] of [['feed', '[data-food]'], ['play', '[data-play]'], ['care', '[data-care=bed]']]) {

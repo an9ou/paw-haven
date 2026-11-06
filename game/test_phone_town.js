@@ -194,6 +194,32 @@ async function suite(t, dev) {
   await sheetFits(t, 'visitor'); await audit(t, 'visitor card');
   await tapSel(t, '#vzPet', 400); ok(await t.until(() => window.__paw.S.rehomed[0].petDay, null, 3000), 'visitor petted by tap'); await t.modalGone();
   await audit(t, 'dog park (end)');
+
+  // ---------- toasts (QA 6 Nov 2026) ----------
+  t.sec(dev + ': toasts');
+  await atPlace(t, 'square'); await sleep(400);
+  { // a long toast narrows past the "Look right" button (#phPeek) instead of covering it
+    ok(await ev(() => { const b = document.getElementById('phPeek'); return !!b && !!b.offsetParent; }), 'square: the Look right button is there');
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__paw.toast('Peppermintie arrived at the Town Square. First visit today: +5 Happiness. Butterscotch and Marshmallows say hello to everyone at the fountain.', 'good'); });
+    await sleep(500);
+    const hit = await ev(() => { const a = document.getElementById('phPeek').getBoundingClientRect(); return [...document.querySelectorAll('#toasts .toast:not(.tq)')].some((e) => { const r = e.getBoundingClientRect(); return r.width && r.left < a.right && r.right > a.left && r.top < a.bottom && r.bottom > a.top; }); });
+    ok(!hit, 'a long toast never covers the Look right button');
+  }
+  { // a queued "arrived at" toast is dropped once the dog is somewhere else; a mini-game opens with an empty queue
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; const P = window.__paw; P.toast('one'); P.toast('two'); P.toast('Mochi arrived at Town Square.', 'good', { arr: 'square' }); });
+    ok(await ev(() => !!document.querySelector('#toasts .toast.tq[data-arr="square"]')), 'the arrival toast waits in the queue');
+    await ev(() => window.__paw.go('shelter')); await t.untilMode('shelter');
+    ok(await ev(() => !document.querySelector('#toasts .toast[data-arr]')), 'at the shelter: the queued "arrived at Town Square" toast is gone');
+    await t.closeX().catch(() => {}); await atPlace(t, 'cafe');
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; const P = window.__paw; P.toast('A Bond gift!', 'gold'); P.toast('Another gift', 'gold'); P.toast('And one more', 'gold'); });
+    ok(await ev(() => document.querySelectorAll('#toasts .toast.tq').length >= 1), 'toasts wait in the queue');
+    await ev(() => window.__paw.go('fair', 'bakery'));
+    if (await t.until(() => window.__paw.mode === 'fair', null, 4000)) {
+      ok(await ev(() => !document.querySelector('#toasts .toast.tq')), 'a mini-game opens with an empty toast queue (no old toasts on its header or Done button)');
+      await ev(() => { if (window.__paw.ff.g) window.__paw.ff.quit(); }); await sleep(600); await t.lu();
+    } else ok(false, 'the Bakery mini-game opens');
+    await t.home('yard');
+  }
 }
 
 (async () => {

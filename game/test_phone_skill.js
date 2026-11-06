@@ -63,6 +63,12 @@ require('./test_lib').run('phone_skill', async (t) => {
     // chips never overlap each other or the Start button
     const ov = await ev(() => { const a = document.querySelector('#trainPanel .trchips').getBoundingClientRect(), b = document.getElementById('trStart').getBoundingClientRect(); return a.bottom <= b.top + 1; });
     ok(ov, tag + 'the trick chips sit above Start without overlap');
+    // QA 6 Nov 2026: a sideways row must not swallow a vertical swipe that starts on it (touch-action pan-x alone did): every row the phone QA listed is
+    // pan-x pan-y, and no style rule for a sideways row is left at pan-x alone (the kitchen's ingredient tiles keep pan-x: a vertical drag carries one to the pot)
+    { const R = await ev(() => { const out = [], walk = (L) => { for (const x of L) { if (x.cssRules) walk(x.cssRules); if (x.selectorText && x.style && x.style.touchAction === 'pan-x') out.push(x.selectorText); } }; for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (er) { /* none */ } } return out; });
+      const rows = /\.(ft-pan|cbreeds|lt-card|trchips|fs-row|cr-chips|pk-pick|pk-shelf)\b/, bad = R.filter((q) => rows.test(q));
+      ok(!bad.length, `${tag}no sideways row is touch-action pan-x alone${bad.length ? ' -> ' + bad.join(' | ') : ''}`);
+      ok(await ev(() => getComputedStyle(document.querySelector('#trainPanel .trchips')).touchAction === 'pan-x pan-y'), tag + 'the trick row lets a vertical swipe through (pan-x pan-y)'); }
     await refill(); await p.locator('[data-tr="Sit"]').tap(); await t.until(() => window.__paw.train.trick === 'Sit', null, 3000);
     await ev(() => { window.__paw.S.dog.tricks.Sit = { p: 0.1, shows: 0 }; }); await p.locator('[data-tr="Paw"]').tap(); await p.locator('[data-tr="Sit"]').tap();
     await p.locator('#trStart').tap(); ok(await t.until(() => !!document.querySelector('#trTrack .tg-dots'), null, 4000), tag + 'Start draws the dotted lure track');
@@ -142,6 +148,7 @@ require('./test_lib').run('phone_skill', async (t) => {
     await audit('kitchen'); await shot('09_kitchen');
     const pr = await ev(() => { const sh = document.querySelector('.pk-shelf'), pot = document.querySelector('.pk-pot').getBoundingClientRect(), s = sh.getBoundingClientRect(); return { below: s.top >= pot.bottom - 20, scrolls: sh.scrollWidth >= sh.clientWidth }; });
     ok(pr.below && pr.scrolls, tag + 'the pantry strip sits under the pot and scrolls sideways');
+    ok(await ev(() => getComputedStyle(document.querySelector('.pk-shelf')).touchAction === 'pan-x pan-y' && getComputedStyle(document.querySelector('.pk-tile')).touchAction === 'pan-x'), tag + 'the pantry shelf passes a vertical swipe on, its tiles keep pan-x for the drag to the pot (QA 6 Nov 2026)');
     await p.locator('[data-ing="oats"]').tap(); ok(await t.until(() => document.querySelectorAll('.pk-slot .pk-it, .pk-slot svg, .pk-slots .pk-full').length > 0 || document.querySelectorAll('.pk-inpot > *').length > 0, null, 3000), tag + 'tap-to-add: a tap on a pantry item puts it in the pot');
     await p.locator('[data-ing="carrot"]').tap(); await t.sleep(300); await shot('10_pot');
     // finger drag from the shelf to the pot

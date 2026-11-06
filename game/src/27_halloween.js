@@ -97,7 +97,10 @@ function hwSquareDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   const old = $('#hwPopG', svg); if (old) old.remove();
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-hw]').forEach((b) => b.remove());
-  if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) st.insertAdjacentHTML('beforeend', hwChip(tt('hw.harvest_stall', 'Harvest Stall'), +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y'))); } }
+  // QA 6 Nov 2026: the stall's name chip is drawn over the dogs (a label layer under #fx, no taps), so a pack dog in front of the stall never hides it
+  // (German and Chinese phones); where #fx is not beside the stall it stays inside the stall's group as before
+  { const oc = $('#hwStallChip', svg); if (oc) oc.remove(); }
+  if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg), fx = $('#fx', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) { const chip = hwChip(tt('hw.harvest_stall', 'Harvest Stall'), +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y')); if (fx && fx.parentNode === st.parentNode) fx.insertAdjacentHTML('beforebegin', `<g id="hwStallChip" pointer-events="none">${chip}</g>`); else st.insertAdjacentHTML('beforeend', chip); } } }
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
   const at = grAt('bowlG', svg) || $('#pack', svg); if (!at) return; // v2.15: grAt (43_ground.js)
   const [x, y, w, h] = hwPopBox(), lit = isNight();
