@@ -111,5 +111,17 @@ require('./test_lib').run('v171_tricks', async (t) => {
   await ev(() => { const d = window.__paw.S.dog; d.tricks.Bow = 2; d.tricks['Roll Over'] = { p: 0.5, shows: 1 }; });
   await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await settle(t);
   ok(Math.abs((await prog('Bow')) - 2 / 3) < 0.001 && (await prog('Roll Over')) === 0.5, 'old numeric progress (2 of 3) converts to 67%, stage data kept');
+  // desktop (owner's friend, 6 Nov 2026): the trick row scrolls with a mouse wheel and a mouse drag, keeps its place, and shows a scrollbar
+  { const R = '#trainPanel .trchips', sl = () => ev((r) => document.querySelector(r).scrollLeft, R);
+    await ev((r) => { document.querySelector(r).scrollLeft = 0; }, R);
+    ok(await ev((r) => { const e = document.querySelector(r); return e.scrollWidth > e.clientWidth + 20; }, R), 'desktop: the 10 tricks are wider than the panel (the row scrolls)');
+    const b = await p.locator(R).boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await p.mouse.wheel(0, 240); await t.sleep(250);
+    const w = await sl(); ok(w > 100, `desktop: a mouse wheel scrolls the trick row sideways (scrollLeft ${Math.round(w)})`);
+    await p.locator(R + ' .trchip').nth(4).click(); await settle(t);
+    const k = await sl(); ok(k > 100, `desktop: picking a trick keeps the row where it was (scrollLeft ${Math.round(k)})`);
+    await ev((r) => { document.querySelector(r).scrollLeft = 0; }, R); const pick = await ev(() => document.querySelector('#trainPanel .trchip.on').dataset.tr);
+    await p.mouse.move(b.x + b.width - 30, b.y + b.height / 2); await p.mouse.down(); await p.mouse.move(b.x + 40, b.y + b.height / 2, { steps: 8 }); await p.mouse.up(); await t.sleep(150);
+    ok(await sl() > 100 && (await ev(() => document.querySelector('#trainPanel .trchip.on').dataset.tr)) === pick, 'desktop: a mouse drag scrolls the row and does not pick the trick it started on');
+    ok(await ev((r) => getComputedStyle(document.querySelector(r)).scrollbarWidth === 'thin', R), 'desktop: the row shows a thin scrollbar'); }
   await p.click('#trX'); ok(await t.until(() => !window.__paw.train && !document.getElementById('trTrack'), null, 3000), 'closing the panel removes everything');
 });
