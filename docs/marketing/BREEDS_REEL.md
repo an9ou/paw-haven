@@ -70,7 +70,7 @@ the Pug was harder than it looks. the Greyhound's mostly legs. didn't see your d
 
 ## RedNote / 小红书
 
-Video: `brand/instagram/launch/breeds_reel/doodle-doggo-35-breeds-rednote.mp4` (the Mandarin cut: zf_073 at 1.1x, the game's zh-Hans breed names, Chinese cards and subtitles, the RedNote end card with no link). Cover (upload as the video's custom cover): `brand/rednote/rednote-10-breeds.jpg` (3:4).
+Video: `brand/instagram/launch/breeds_reel/doodle-doggo-35-breeds-rednote.mp4` (20 s, the Mandarin cut: zf_073 at 1.1x, the game's zh-Hans breed names, Chinese cards and subtitles, the RedNote end card with no link). Cover (upload as the video's custom cover): `brand/rednote/rednote-10-breeds.jpg` (3:4).
 
 标题 (title, 16 characters with the emoji; 20 max):
 ```

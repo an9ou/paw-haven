@@ -20,23 +20,30 @@
 //   never re-render a whole video for a fix to one part). The run prints the frame ranges of the parade, the ask and the end card.
 //   PAR=n: render the frames in n child processes (each its own browser over a slice), then mix and encode as usual.
 //   COVER=1 re-makes the cover when it exists (it is written when missing).
+//   REDNOTE=1 (owner approved the English, 6 Nov 2026: "make rednote version"): the RedNote cut in Mandarin. The voice from vo_breeds_zh.py
+//   (zf_073 at 1.1x, the same keys), the hook and ask cards, the breed names (game/i18n/zh-Hans.json data.breed_names.<key>) and short subtitles
+//   (at most 14 characters) in LXGW WenKai, the Pug and the Greyhound held a little longer (the Mandarin lines are longer), and the RedNote end card
+//   endCardRN() (no link, no domain, no handles, no QR). Writes doodle-doggo-35-breeds-rednote.mp4 and the 3:4 cover brand/rednote/rednote-10-breeds.jpg
+//   (the English cover's design in Chinese, cut to its middle 1080 x 1440). The English output is untouched.
 // Output next to this file: doodle-doggo-35-breeds.mp4 and breeds-cover.jpg (its own design, never a frame of the Reel).
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const WORK = path.resolve(process.argv[2] || 'breeds_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 25, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', YEL = '#FFE3A1', PINK = '#F28FA5';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
+const RN = !!process.env.REDNOTE, ZHF = "'LXGW WenKai'";
+if (RN !== (VOJ.lang === 'zh')) throw new Error(RN ? 'REDNOTE=1 needs the Mandarin vo dir (vo_breeds_zh.py)' : 'a Mandarin vo dir needs REDNOTE=1');
 
 // ---- the game's art, loaded as the game loads it ----
 const win = {}, ctx = { window: win, console, Intl }; vm.createContext(ctx);
 for (const f of ['dogs/pawart_dogs.js', ...'abcdefg'.split('').map((c) => `world/pawart_world_${c}.js`)]) { const p = path.join(ROOT, f); if (fs.existsSync(p)) vm.runInContext(fs.readFileSync(p, 'utf8'), ctx); }
 const PA = win.PawArt, inner = (s) => s.trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
-const EN = JSON.parse(fs.readFileSync(path.join(ROOT, 'game', 'i18n', 'en.json'), 'utf8'));
-const NAME = (k) => { const v = EN['data.breed_names.' + k]; if (!v) throw new Error('no English name for ' + k); return v; };
+const EN = JSON.parse(fs.readFileSync(path.join(ROOT, 'game', 'i18n', RN ? 'zh-Hans.json' : 'en.json'), 'utf8')); // RedNote: the game's own Chinese names
+const NAME = (k) => { const v = EN['data.breed_names.' + k]; if (!v) throw new Error('no ' + (RN ? 'Chinese' : 'English') + ' name for ' + k); return v; };
 
 // ---- the parade: a fixed shuffle of the game's 35 dogs. Corgi first (not the Dachshund), the Pug and the Greyhound where Noodle's jokes land,
 // colours mixed so no two white or two black dogs meet, the Golden last (not black, not white) ----
@@ -47,7 +54,7 @@ const KEYS = PA.DOGS.map((d) => d.key);
 if (ORDER.length !== KEYS.length || new Set(ORDER).size !== ORDER.length || ORDER.some((k) => !KEYS.includes(k))) throw new Error('the game\'s dogs changed: ' + KEYS.join());
 const BW = /^(samoyed|maltese|westie|bichon|spitz|dobie|corso|stdpoodle|mutt|collie)$/; // white, black, or black-and-white in their default coat
 if (ORDER[0] === 'dachs' || BW.test(ORDER[ORDER.length - 1])) throw new Error('order rule');
-const STEP = 0.26, HOLD = { pug: 1.55, greyhound: 1.0 }; // a held dog stays up while Noodle's joke about it is said
+const STEP = 0.26, HOLD = RN ? { pug: 2.65, greyhound: 1.75 } : { pug: 1.55, greyhound: 1.0 }; // a held dog stays up while Noodle's joke about it is said
 const SLOTS = []; { let a = 0; ORDER.forEach((k, i) => { const d = HOLD[k] || STEP; SLOTS.push({ k, i, a, b: a + d, name: NAME(k), facing: i % 2 ? 'left' : 'right', hold: !!HOLD[k] }); a += d; }); }
 const PARADE = SLOTS[SLOTS.length - 1].b;
 // a soft colour wash per dog (paper tint and the big blob behind it), cycling, never the same twice in a row
@@ -61,10 +68,15 @@ const ASK = PARADE; VOAT.push({ k: 'ask', at: ASK + 0.3 });
 const ENDC = ASK + 0.3 + VOD.ask + 0.35, T = ENDC + 2.4, NF = Math.round(T * FPS);
 VOAT.forEach((v, i) => { const nx = VOAT[i + 1]; if (nx && v.at + VOD[v.k] > nx.at - 0.15) throw new Error('voice lines overlap: ' + v.k); });
 // subtitles: Noodle's words in short chunks, each timed by its share of the line (letters, plus a breath at each full stop)
-const SUBS_TX = { hook: ['I drew all 35 dog breeds badly.', 'Find yours before it ends!'], pug: ['The Pug was harder', 'than it looks.'],
+const SUBS_TX = RN ? { hook: ['我把35种狗狗都画歪了。', '快找找你家的狗狗！'], pug: ['巴哥犬比看起来难画多了。'], legs: ['基本全是腿。'],
+  ask: ['没看到你家的狗狗？', '评论区告诉我，', '我们帮你画一只！'] } // vo_breeds_zh.py, line by line (35 is said 三十五)
+  : { hook: ['I drew all 35 dog breeds badly.', 'Find yours before it ends!'], pug: ['The Pug was harder', 'than it looks.'],
   legs: ['Mostly legs.'], ask: ["Didn't see yours?", 'Tell me in the comments,', "and we'll draw it for you!"] };
+const zhSaid = (x) => x.replace(/35/g, '三十五').replace(/[^\u4e00-\u9fff]/g, '');
+if (RN) for (const [k, parts] of Object.entries(SUBS_TX)) { if (zhSaid(parts.join('')) !== zhSaid(VOJ.text[k])) throw new Error('subtitles differ from the voice: ' + k);
+  for (const x of parts) if ([...x].length > 14) throw new Error('subtitle too long: ' + x); }
 const SUBS = [];
-VOAT.forEach((v) => { const parts = SUBS_TX[v.k], wt = parts.map((x) => x.length + (/[.!?]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
+VOAT.forEach((v) => { const parts = SUBS_TX[v.k], wt = parts.map((x) => (RN ? zhSaid(x).length * 2 : x.length) + (/[.!?。！？]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x }); t0 += d; }); });
 SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.12) : Math.min(ENDC - 0.1, u.b + 0.4); });
 
@@ -80,8 +92,11 @@ for (const [id, s] of Object.entries(ART)) if (!s.includes('pa-d-f2')) throw new
 const LOGO_SVG = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, ''));
 const LOGO_INNER = LOGO_SVG.replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
-const TX = { hook: ['I drew all 35 dogs badly', 'find yours 👀'], askA: "didn't see yours?", askB: 'comment your dog 👇', askC: "we'll draw it for you ✏️" }; // askC: owner, 6 Nov 2026
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const TX = RN ? { hook: ['35种狗狗，我全画歪了', '快找找你家的 👀'], askA: '没看到你家的？', askB: '评论区告诉我 👇', askC: '我们帮你画一只 ✏️',
+    cover: '找找你家的狗狗', coverSub: '35种狗狗，全画歪了' }
+  : { hook: ['I drew all 35 dogs badly', 'find yours 👀'], askA: "didn't see yours?", askB: 'comment your dog 👇', askC: "we'll draw it for you ✏️", // askC: owner, 6 Nov 2026
+    cover: 'FIND YOUR DOG', coverSub: '35 dogs, all drawn badly' };
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
 <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><path d="M0 7H14" stroke="#5B3D32" stroke-width="2.2" stroke-linecap="round" opacity=".12"/></pattern>
@@ -93,7 +108,7 @@ ${SAFE_JS}
 ${ENDCARD_JS}
 const $=(i)=>document.getElementById(i), ART=${JSON.stringify(ART)}, SLOTS=${JSON.stringify(SLOTS)}, SUBS=${JSON.stringify(SUBS)}, WASH=${JSON.stringify(WASH)}, TX=${JSON.stringify(TX)};
 const LOGO=${JSON.stringify(LOGO_SVG)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
-const PARADE=${PARADE}, ASK=${ASK}, ENDC=${ENDC}, CX=SAFE_CX, F='Caveat';
+const PARADE=${PARADE}, ASK=${ASK}, ENDC=${ENDC}, CX=SAFE_CX, RN=${RN}, F=${JSON.stringify(RN ? ZHF : 'Caveat')};
 const clamp=(x,a,b)=>Math.max(a==null?0:a,Math.min(b==null?1:b,x)), sm=(x)=>{ x=clamp(x); return x*x*(3-2*x); }, eo=(x)=>1-Math.pow(1-clamp(x),3);
 const f2=(n)=>Math.round(n*100)/100;
 let BOX=null; // each drawing's drawn box (frame 0) on its 240 x 200 canvas
@@ -122,19 +137,19 @@ window.frame=function(t){
     const z=(0.85+0.15*eo(lt/0.11))*(s.hold?1+0.05*sm(lt/(s.b-s.a)):1), dy=-16*Math.sin(Math.PI*clamp(lt/0.2));
     art=place('p'+s.i,CX,1105,700,500,4.8,z,dy,k,true);
     // the hook card, all parade long, and the counter sticker on its corner
-    ov+='<g transform="rotate(-2 '+CX+' 395)">'+card(CX-405,286,810,226,[{s:TX.hook[0],size:82,pitch:100},{s:TX.hook[1],size:94}])+'</g>';
-    ov+='<g transform="rotate(6 778 540)">'+pill((s.i+1)+'/35',778,540,52,F,{fill:'${YEL}',padX:24})+'</g>';
+    ov+='<g transform="rotate(-2 '+CX+' 395)">'+card(CX-405,286,810,226,RN?[{s:TX.hook[0],size:fitS(TX.hook[0],76,700),pitch:100},{s:TX.hook[1],size:fitS(TX.hook[1],86,700)}]:[{s:TX.hook[0],size:82,pitch:100},{s:TX.hook[1],size:94}])+'</g>';
+    ov+='<g transform="rotate(6 778 540)">'+pill((s.i+1)+'/35',778,540,52,'Caveat',{fill:'${YEL}',padX:24})+'</g>';
     // the breed's name, popping with the dog
     const ns=0.9+0.1*eo(lt/0.1); ov+='<g transform="translate('+CX+' 1190) scale('+ns.toFixed(3)+') translate('+(-CX)+' -1190)">'+pill(s.name,CX,1190,76,F,{fill:'${CREAM}',padX:38})+'</g>';
     ov+=sub(t,1352);
   } else if(t<ENDC){ const lt=t-ASK, o=sm(lt/0.2);
     bg='<rect width="${W}" height="${H}" fill="${PAPER}"/><rect width="${W}" height="${H}" fill="#FFF0B8" opacity="'+(0.55*o).toFixed(3)+'"/>'+blob(CX,880,(0.9+0.1*eo(lt/0.25))*390,'#F1CF62',77,(0.45*o).toFixed(3));
     const cs=0.9+0.1*eo(lt/0.22);
-    ov+='<g opacity="'+o.toFixed(3)+'" transform="translate('+CX+' 430) scale('+cs.toFixed(3)+') rotate(-2) translate('+(-CX)+' -430)">'+card(CX-390,290,780,350,[{s:TX.askA,size:96,pitch:104},{s:TX.askB,size:78,pitch:92},{s:TX.askC,size:78,fill:'#C2567A'}])+'</g>';
+    ov+='<g opacity="'+o.toFixed(3)+'" transform="translate('+CX+' 430) scale('+cs.toFixed(3)+') rotate(-2) translate('+(-CX)+' -430)">'+card(CX-390,290,780,350,RN?[{s:TX.askA,size:fitS(TX.askA,84,690),pitch:104},{s:TX.askB,size:fitS(TX.askB,72,690),pitch:92},{s:TX.askC,size:fitS(TX.askC,72,690),fill:'#C2567A'}]:[{s:TX.askA,size:96,pitch:104},{s:TX.askB,size:78,pitch:92},{s:TX.askC,size:78,fill:'#C2567A'}])+'</g>';
     [195,475,755].forEach((x,i)=>{ const q=eo((lt-0.15-i*0.1)/0.15); if(q<=0) return; art+=place('a'+i,x,1130,222,300,3.2,0.85+0.15*q,-14*Math.sin(Math.PI*clamp((lt-0.15-i*0.1)/0.22)),(k+i)%3,true,true); }); // owner, 6 Nov 2026: the three dogs well apart (apartCheck)
     ov+=sub(t,1352);
   } else { const lt=t-ENDC;
-    if(!CARD) CARD=endCard('tall',HANDLES,LOGO_INNER);
+    if(!CARD) CARD=RN?endCardRN('tall',LOGO_INNER):endCard('tall',HANDLES,LOGO_INNER); // RedNote: no link, no domain, no handles, no QR
     bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov+='<g opacity="'+sm(lt/0.3).toFixed(3)+'">'+CARD+'</g>'; }
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov;
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
@@ -149,8 +164,8 @@ window.cover=function(){
   cells.forEach(([x,y],i)=>{ bg+=blob(x,y-100,132,WASH[i%WASH.length][1],i+11,0.6); art+=place('c'+i,x,y-18,240,205,2.2,1,0,(i)%3,false); });
   // a crayon magnifying glass over the middle dog
   ov+='<g transform="rotate(-42 540 1050)"><circle cx="540" cy="1050" r="140" fill="#D5E8F8" opacity=".22"/><circle cx="540" cy="1050" r="140" fill="none" stroke="${PEN}" stroke-width="15"/><path d="M540 1190 L540 1262" stroke="${PEN}" stroke-width="30" stroke-linecap="round"/><path d="M470 975 q28 -28 66 -32" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".8"/></g>';
-  ov+='<g transform="rotate(-3 '+C+' 390)">'+card(C-440,290,880,200,[{s:'FIND YOUR DOG',size:fitS('FIND YOUR DOG',150,780)}],{sw:8})+'</g>';
-  ov+='<g transform="rotate(2 '+C+' 575)">'+pill('35 dogs, all drawn badly',C,575,66,F,{fill:'${YEL}',padX:36})+'</g>';
+  ov+='<g transform="rotate(-3 '+C+' 390)">'+card(C-440,290,880,200,[{s:TX.cover,size:fitS(TX.cover,RN?118:150,780)}],{sw:8})+'</g>';
+  ov+='<g transform="rotate(2 '+C+' 575)">'+pill(TX.coverSub,C,575,66,F,{fill:'${YEL}',padX:36})+'</g>';
   const lw=520, lh=lw*280/900; ov+='<svg x="'+(C-lw/2)+'" y="1470" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>';
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov;
   const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
@@ -166,8 +181,9 @@ window.cover=function(){
   const pageFile = path.join(WORK, `page_${process.pid}.html`); // one per process: PAR children must not rewrite each other's page while it loads
   fs.writeFileSync(pageFile, html);
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
-  const allText = [TX.hook, TX.askA, TX.askB, TX.askC, SLOTS.map((s) => s.name), Object.values(SUBS_TX), 'FIND YOUR DOG 35 dogs, all drawn badly 0123456789/'].flat(3).join(' ');
-  await p.evaluate((txt) => Promise.all(['700 40px Andika', '700 40px Caveat'].map((f) => document.fonts.load(f, txt))), allText);
+  const allText = [Object.values(TX), SLOTS.map((s) => s.name), Object.values(SUBS_TX), '0123456789/', RN ? '治愈系蜡笔狗狗游戏浏览器搜 Doodle Doggo App 就能玩' : ''].flat(3).join(' ');
+  await p.evaluate(([txt, fams]) => Promise.all(fams.map((f) => document.fonts.load(f, txt))), [allText, ['700 40px Andika', '700 40px Caveat', ...(RN ? ['700 40px "LXGW WenKai"'] : [])]]);
+  if (RN && !(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load');
   await p.evaluate(() => document.fonts.ready);
   await p.evaluate(() => measure());
   fs.unlinkSync(pageFile);
@@ -178,10 +194,11 @@ window.cover=function(){
     + '; 25 dogs by ' + SLOTS[24].a.toFixed(2) + ' s, all 35 by ' + SLOTS[34].a.toFixed(2) + ' s; voice at ' + VOAT.map((v) => v.k + ' ' + v.at.toFixed(2)).join(', '));
 
   // the cover (written when missing, or with COVER=1)
-  const coverFile = path.join(OUT, 'breeds-cover.jpg');
+  const coverFile = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-10-breeds.jpg') : path.join(OUT, 'breeds-cover.jpg');
   if (process.env.ONLY !== 'frames' && !process.env.FRAMES && (process.env.COVER === '1' || !fs.existsSync(coverFile))) {
     const err = await p.evaluate(() => window.cover()); if (err) throw new Error(err);
-    await p.screenshot({ path: coverFile, type: 'jpeg', quality: 92 }); console.log('wrote', coverFile); }
+    // RedNote: the 3:4 cover is the design's middle 1080 x 1440 (everything that matters is already inside y 240..1680)
+    await p.screenshot({ path: coverFile, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', coverFile); }
 
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0, 0.5, 2.0, 4.0, 5.0, 5.5, 7.0, 8.2, 9.0, 10.0, SLOTS[34].a + 0.1, ASK + 0.1, ASK + 0.6, ASK + 1.6, ENDC + 0.1, T - 0.1];
@@ -230,7 +247,7 @@ window.cover=function(){
     const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, m = JSON.parse(r.slice(r.lastIndexOf('{')));
     cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true,aresample=44100`, mixWav]);
   }
-  const mp4 = path.join(OUT, 'doodle-doggo-35-breeds.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-35-breeds-rednote.mp4' : 'doodle-doggo-35-breeds.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(2), mp4], { stdio: 'inherit' });
