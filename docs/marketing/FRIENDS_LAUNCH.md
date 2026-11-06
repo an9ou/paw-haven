@@ -2,36 +2,52 @@
 
 Owner's go-ahead (2 Nov 2026, via the Game Manager): the launch Reel and the carousel, English first, ready before **Sat 7 Nov 2026 00:00 JST**. **Nothing is posted before then.** Plan: `V219_FRIENDS_FIRST.md`. The RedNote cut and its 3:4 cover come after the owner approves the English.
 
-## Status: preview, waiting for two things
+## Status: FINAL cuts made 7 Nov 2026 (JST) with our real friend name and code
 
-1. **The owner's approval** of the English Reel and carousel (the preview files below).
-2. **Our real friend name and code** from the live game on 7 Nov (the Game Manager sends them). The previews use a placeholder name (Waggy Clover) and the placeholder code `DOG-XXXXX`, and every frame or slide that shows our card carries a red "placeholder: our real code on 7 Nov" patch over the QR and the code. **Never post the preview files.**
+v2.19 is live (7 Nov 2026 00:00 JST). The Game Manager sent the game's own Friends account: friend name **Sunny Biscuit** (Dog Card words A[0] + B[0], `OUR_NAME=0,0`; on RedNote 阳光饼干, the zh-Hans words), code **DOG-K3APZ**, invite link https://doodledoggo.app/f/DOG-K3APZ. The final Reel, cover, carousel and RedNote cut below carry them; the captions too. Posting is the owner's: nothing is posted by Marketing. (The owner had not yet said yes to the English previews when the finals were made: the finals are the approved-for-launch design with the real code, nothing new added.) The `preview/` files stay as they were (placeholder code, red patch): **never post a PREVIEW**.
 
-On 7 Nov, with the code, re-shoot and rebuild (about 15 minutes; also picks up any layout tweaks from the Friends fit pass):
+How the finals were made (re-run the same way if anything changes; about 40 minutes with both Reels):
 ```
-git fetch origin <main or the v2.19 dev branch>; git worktree add <dir> FETCH_HEAD     # the v2.19 build (art, Friends screens)
+git fetch origin main; git worktree add --detach <dir> FETCH_HEAD     # the v2.19 build, main 940ed5e (FR_LIVE on)
 cd <dir> && node game/build.js && node game/harness.js merged && cd -
-OUR_NAME=<word A index>,<word B index> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean>        # Reel footage (clean)
-OUR_CODE=DOG-XXXXX OUR_NAME=<a>,<b> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/capture_friends.js <dir> <footage>   # carousel screens
-python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro model dir> <vo>                                                  # Noodle's voice (see the top of the file)
-OUR_CODE=DOG-XXXXX OUR_NAME=<a>,<b> NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_friends.js <dir> <clean> <work> <vo>   # the Reel
-NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/make_friends_cover.js <dir> <out>         # its cover
-NODE_PATH=$(npm root -g) node brand/instagram/launch/friends_reel/build_carousel.js <dir> <footage> <out>  # 8 slides
+export NODE_PATH=$(npm root -g) OUR_CODE=DOG-K3APZ OUR_NAME=0,0
+node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean>                         # Reel footage (clean), English game
+PAW_LANG=zh-Hans node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean_zh>     # the same in the zh-Hans game (can run at the same time: each capture writes its own page copy)
+node brand/instagram/launch/friends_reel/capture_friends.js <dir> <footage>                     # carousel screens
+python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo>                     # Noodle's voice, af_bella 1.1x
+PYTHONPATH=<jieba-0.42.1 sdist> python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh>   # zf_073 1.0x; needs <kokoro dir>/config-v1.1-zh.json
+node brand/instagram/launch/friends_reel/build_friends.js <dir> <clean> <work> <vo>                       # the Reel
+REDNOTE=1 node brand/instagram/launch/friends_reel/build_friends.js <dir> <clean_zh> <work_zh> <vo_zh>   # the RedNote cut
+node brand/instagram/launch/friends_reel/make_friends_cover.js <dir> <out>; REDNOTE=1 node brand/instagram/launch/friends_reel/make_friends_cover.js <dir> <out>
+node brand/instagram/launch/friends_reel/build_carousel.js <dir> <footage> <out>                # 8 slides
 ```
-`OUR_NAME` is the pair of Dog Card word indices (`DC_WORDS_A`, `DC_WORDS_B` in `game/src/40_dogcards.js`; Waggy Clover is `25,6`). With `OUR_CODE` set, no placeholder patch is drawn and the QR on our card is the real invite link (`doodledoggo.app/f/<code>`), scannable.
+`OUR_NAME` is the pair of Dog Card word indices (`DC_WORDS_A`, `DC_WORDS_B` in `game/src/40_dogcards.js`). Without `OUR_CODE` the builds draw the old red placeholder patch (preview mode).
+
+### What changed from the previews (7 Nov 2026)
+
+- **Our real card** on the Reel's code page and end page and on carousel slides 4 and 8: Sunny Biscuit / DOG-K3APZ, the QR of https://doodledoggo.app/f/DOG-K3APZ (the game's QR module; the game's own card on slide 4 shows the same QR), no placeholder patch. The card is drawn the way the 7 Nov game draws it (`friends_card.js`): the code in **DD Code** (the game's Atkinson Hyperlegible Bold subset, GM briefing 2 Nov 2026), the name in Caveat; RedNote: 阳光饼干 and a pink paw in the QR tile (no QR, no link).
+- **The made-up friend is renamed "Cozy Maple"** (was "Sunny Biscuit": that turned out to be our own account's real name, so the friend list, the visit and the mailbox would have shown our own name as the friend's). `FRIEND_NAME` in the captures (default `2,14`); only the carousel's screens show it.
+- **Dogs never touch (owner, 6 Nov 2026):** every Reel frame, every carousel slide and both covers now run `apartCheck()` (28 px). The captures save each dog's drawn box on every frame (`boxes.json`; shadows left out) and the builds mark them `data-apart`. To pass it: the game's greeting pair stands 16 world units apart instead of nose to nose (`PAIR_GAP`, set in the capture's own copy of the page; they still sniff toward each other with the game's hearts); on the carousel's visit the third dog (Honey) holds a free spot, the pair steps forward on the lawn, and the visit buttons are hidden for those shots; on the carousel's walk Waffles follows 14 px further back, as in the Reel. Covers: Noodle and Waffles face each other with clear space under the heart (no longer nose to nose), all three dogs a little smaller.
+- **Carousel step 2** (GM briefing): "Share invite, Share poster, Copy code, or let them scan your QR.", and the window now shows the game's three buttons (Share invite, Share poster, Copy code) under the card. No "New code" button anywhere. Carousel slide 2 uses the visit clip at 2.4 s as before; slide 1 and the "pet their dogs" tile are cropped a little differently to keep all three dogs.
+- **RedNote voice** re-made with the v1.1-zh vocab passed as `vocab_config` (`vo_friends_zh.py` now does this, as `vo_bedtime_walk_zh.py`): same lines, same voice zf_073 at 1.0x. The RedNote end page is unchanged in wording (owner: no re-render for the site wording).
+- Captions: the real code and name where the previews had placeholders; carousel step 2 adds Share poster; RedNote: "浏览器搜 Doodle Doggo App 就能玩" (no domain with a dot, no 免费/无广告, REDNOTE.md 4 Nov 2026).
 
 ## Files (`brand/instagram/launch/friends_reel/`)
 
 | File | What |
 |---|---|
-| `preview/doodle-doggo-friends-PREVIEW.mp4` | The Reel: **one cut for every platform** (Instagram Reels, YouTube Shorts, TikTok, X). 1080 x 1920, 30 fps, 32 s, Noodle's voice over the game's own cozy music (the yard by day), a soft tick as each numbered way pops in and the "discover" sting on the end page. |
-| `preview/friends-cover-PREVIEW.jpg` | The cover, its own design (owner, 2 Nov 2026: not a frame of the Reel): the autumn yard, Noodle the dachshund (the Reel's narrator) and Waffles the Corgi nose to nose under a pink heart, Honey the Golden puppy in her party hat, the hook card "4 ways your dog can make friends", a "(no chat)" sticker and "new: Friends in Doodle Doggo". All of it inside the grid's 3:4 crop. `make_friends_cover.js` (no code on it, so nothing to redo on 7 Nov). |
-| `preview/friends-carousel-PREVIEW-1.jpg` … `-8.jpg` | The carousel, 1080 x 1350. |
+| **`doodle-doggo-friends.mp4`** (FINAL) | The Reel: **one cut for every platform** (Instagram Reels, YouTube Shorts, TikTok, X). 1080 x 1920, 30 fps, 32.0 s, 15.4 MB, Noodle's voice over the game's own cozy music (the yard by day), a soft tick as each numbered way pops in and the "discover" sting on the end page; our real card (Sunny Biscuit, DOG-K3APZ, scannable QR). |
+| **`friends-cover.jpg`** (FINAL) | The cover, its own design (owner, 2 Nov 2026: not a frame of the Reel): the autumn yard, Noodle the dachshund (the Reel's narrator) and Waffles the Corgi facing each other under a pink heart (clear space between them, owner 6 Nov 2026), Honey the Golden puppy in her party hat, the hook card "4 ways your dog can make friends", a "(no chat)" sticker and "new: Friends in Doodle Doggo". All of it inside the grid's 3:4 crop. `make_friends_cover.js`. |
+| **`friends-carousel-1.jpg` … `-8.jpg`** (FINAL) | The carousel, 1080 x 1350, with our real card on slides 4 and 8. |
+| **`doodle-doggo-friends-rednote.mp4`** (FINAL) | The RedNote cut: 1080 x 1920, 42.2 s, 18.3 MB, Mandarin voice zf_073, Chinese subtitles, our card as 阳光饼干 / DOG-K3APZ with a pink paw in the QR tile. No QR, no link. |
+| **`friends-cover-rednote.jpg`** (FINAL) = `brand/rednote/rednote-06-friends.jpg` | The RedNote 3:4 cover (1080 x 1440). |
+| `preview/…-PREVIEW.*`, `preview/friends-cover-rednote.jpg` | The previews of 2 Nov (placeholder name and code): kept for reference, never posted. |
+| `friends_card.js` | Our card as the 7 Nov game draws it (card art, QR or pink paw, name, code in DD Code), and the `data-apart` rects from the captures' dog boxes. |
 | `capture_clean.js` | The Reel's footage: the same build and mock with every game bar, button, sheet, toast and speech bubble hidden, so only the scenes are filmed. |
 | `capture_friends.js` | The carousel's screens: records the real v2.19 Friends screens (iPhone 15 profile, DPR 3) with Friends turned on and the Worker mocked as `game/test_v219_friends.js` does. The clips are shot at full resolution with the page clock slowed (each frame stamped with its game time), so the motion plays at 30 fps. |
 | `build_friends.js`, `build_carousel.js`, `make_friends_cover.js` | The Reel and the carousel. Every text in a box is ink-centred with `centre_text.js` and checked by `centreCheck()` on every frame and slide (the build stops if anything is more than 1.5 px off). Our card on the last frame / slide is drawn from the game's own card art and QR module (`PawArt.FRIENDS.card`, `mods/qr.js`). |
 
-**The footage:** in the Reel our dog is Noodle the dachshund (the narrator, brown); in the carousel's screens it is Mochi the Shiba (orange). The friend is a made-up player, "Sunny Biscuit" (two Dog Card words), with Waffles the Corgi and Honey the Golden puppy in a party hat, in an autumn yard. No black or white dog is the subject. The friend's code is never shown: it is typed off camera.
+**The footage:** in the Reel our dog is Noodle the dachshund (the narrator, brown); in the carousel's screens it is Mochi the Shiba (orange; also the dog of the game's real Friends account). The friend is a made-up player, "Cozy Maple" (two Dog Card words; "Sunny Biscuit" in the previews), with Waffles the Corgi and Honey the Golden puppy in a party hat, in an autumn yard. No black or white dog is the subject. The friend's code is never shown: it is typed off camera.
 
 ## The Reel
 
@@ -43,7 +59,7 @@ Hook (`ig-reel` hookscore 80.1 STRONG, the best of 18): **"4 ways your dog can m
 |---|---|---|
 | Noodle at home in the autumn yard, drinking from his water bowl (head straight down to the bowl, side-on: the eat/drink fix d488723) | "Big news! Our dogs can make friends now!" | "4 ways your dog can make friends (no chat)", sticker "new update · 7 Nov" |
 | Our friend card on the paper (the game's card art) | "Pick a friend name, share your code, and your dog can visit theirs!" | "share your code" |
-| Sunny Biscuit's yard, the game's own greeting: Noodle walks in, he and Waffles sniff noses with hearts; Honey (back row) gets petted; nobody overlapping | "Visit their yard! Pet their dogs! This is Waffles. Waffles likes me." | "1. visit & pet" |
+| The friend's yard, the game's own greeting: Noodle walks in, he and Waffles sniff toward each other with hearts (a clear gap between them); Honey (back row) gets petted; nobody overlapping | "Visit their yard! Pet their dogs! This is Waffles. Waffles likes me." | "1. visit & pet" |
 | The pink paw stamp lands on their path (Noodle sits this shot out: his tail covers the stamp's spot on a phone) | "Leave a paw-print note! Mine says: your dog is so fluffy!" | "2. paw-print note" |
 | The wrapped gift flies off | "Send a gift, once a day! I sent a biscuit. I did not eat it first." | "3. send a gift" |
 | The walk: Noodle hops a sprinkler and Waffles hops right after him, Noodle ducks a kite (a window on the paper) | "And take their dog on your walk! Waffles is faster than me." *(beat)* "I let her win." | "4. walk together" |
@@ -56,9 +72,9 @@ Facts checked against `V219.md` and the game: the name is two Dog Card words on 
 
 ### Instagram
 ```
-comment your friend code below 👇 we're swapping codes all week 🐾 (ours is at the end of the Reel 🎴)
+comment your friend code below 👇 we're swapping codes all week 🐾 ours is DOG-K3APZ, add us! 🎴
 
-Friends just landed in Doodle Doggo 🎉 you pick a name from 2 Dog Card words, like Waggy Clover, and get 1 code to share 🎴 then your dog can visit theirs 🏡 pet their dogs for +1 Bond on both sides 🐶 leave 1 of 12 paw-print notes 💌 send 1 gift a day 🎁 or take their Corgi along on your walk 🦮
+Friends just landed in Doodle Doggo 🎉 you pick a name from 2 Dog Card words, like ours, Sunny Biscuit, and get 1 code to share 🎴 then your dog can visit theirs 🏡 pet their dogs for +1 Bond on both sides 🐶 leave 1 of 12 paw-print notes 💌 send 1 gift a day 🎁 or take their Corgi along on your walk 🦮
 
 no chat and no messages, ever 🤐 notes come from a list of 12, you only add someone by their code or link, and you can remove or block any time 🔒 a cozy dog game to play with friends, and safe for kids too 💛
 
@@ -66,9 +82,7 @@ free, in 11 languages, on phone and computer ✏️
 
 #DoodleDoggo #CozyGames #DogGames #IndieGame #GamesWithFriends
 ```
-Job A (the Reel carries the hook) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 15 emoji (2.1 per 100 characters), none as bullets · linter READY · human score 77.0 PASS.
-
-"Waggy Clover" in the caption is an example name. If our real name differs, it can stay as the example.
+Job A (the Reel carries the hook) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 15 emoji (2.1 per 100 characters), none as bullets · linter READY · human score 79.1 PASS (7 Nov 2026, with our real code and name).
 
 ### YouTube Shorts
 
@@ -80,7 +94,7 @@ Friends just landed in Doodle Doggo, our free cozy dog game. You pick a friend n
 
 Once a day you can pet their dogs (+1 Bond for both of you), leave one of 12 paw-print notes, send a gift that lands in their mailbox, or take one of their dogs along on your walk. You don't need to be online at the same time.
 
-There's no chat and no messages, ever: the notes come from a list. You can only add someone by their code or link, and you can remove or block a friend any time. Drop your friend code in the comments and swap with other players!
+There's no chat and no messages, ever: the notes come from a list. You can only add someone by their code or link, and you can remove or block a friend any time. We're Sunny Biscuit, code DOG-K3APZ. Add us! Then drop your friend code in the comments and swap with other players.
 
 🎮 Play free: https://doodledoggo.app
 🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
@@ -89,21 +103,21 @@ There's no chat and no messages, ever: the notes come from a list. You can only 
 
 #DoodleDoggo #Shorts #CozyGames #DogGames #IndieGame
 ```
-Title off the hook (80.1 STRONG). Human score 78.3 PASS on the text (the link list is the same fixed block as the other Shorts).
+Title off the hook (80.1 STRONG). Human score 88.3 PASS on the text (7 Nov 2026, with our name and code) (the link list is the same fixed block as the other Shorts).
 
 ### X (under 280 characters)
 ```
-4 ways your dog can make friends in a cozy game (no chat) 🐾 we added Friends to Doodle Doggo: visit a yard, pet their pup, leave 1 of 12 paw-print notes, send a gift, walk their dog. no messages, just dogs. drop your code below! https://doodledoggo.app #DoodleDoggo #CozyGames
+4 ways your dog can make friends in a cozy game (no chat) 🐾 new in Doodle Doggo: visit a yard, pet their pup, leave a paw-print note, send a gift, walk their dog. no messages, just dogs. we're DOG-K3APZ, drop yours below! https://doodledoggo.app/f/DOG-K3APZ #DoodleDoggo #CozyGames
 ```
-277 of 280 (the link counts as 23, each emoji as 2) · human score 77.2 PASS. (3 Nov 2026: "no messages to type" became "no messages, just dogs", the owner's no-chat-no-messages rule.)
+270 of 280 (the link, now our invite link, counts as 23, each emoji as 2) · human score 81.5 PASS (7 Nov 2026, with our code). (3 Nov 2026: "no messages to type" became "no messages, just dogs", the owner's no-chat-no-messages rule.)
 
-**Alt text:** `Noodle, a crayon dachshund, tells the story in a sketchbook autumn yard, under the words "4 ways your dog can make friends (no chat)" and a sticker "new update, 7 Nov". His friend card appears, then four numbered scenes from the game: he visits a friend's yard, where he and a Corgi named Waffles sniff noses and a Golden puppy gets petted, a pink paw print stamps onto their path, a wrapped gift flies off, and Waffles hops over a sprinkler behind him on a walk. Noodle and Waffles play-bow and jump: "No chat. No messages." Subtitles show every line. It ends on "add us!", our friend card and "drop your code below".`
+**Alt text:** `Noodle, a crayon dachshund, tells the story in a sketchbook autumn yard, under the words "4 ways your dog can make friends (no chat)" and a sticker "new update, 7 Nov". His friend card appears, then four numbered scenes from the game: he visits a friend's yard, where he and a Corgi named Waffles sniff toward each other and a Golden puppy gets petted, a pink paw print stamps onto their path, a wrapped gift flies off, and Waffles hops over a sprinkler behind him on a walk. Noodle and Waffles play-bow and jump: "No chat. No messages." Subtitles show every line. It ends on "add us!", our friend card (Sunny Biscuit, code DOG-K3APZ) and "drop your code below".`
 
 ## The carousel ("add a friend in 3 steps", 8 slides)
 
-1. **Cover:** "add a friend in 3 steps" over the visit screen (Mochi, Waffles and Honey in Sunny Biscuit's yard), "your dog visits theirs. no chat, no messages.", pill "new in Doodle Doggo". (Not the Friends badge: one of its two dogs is white.)
+1. **Cover:** "add a friend in 3 steps" over the visit screen (Mochi, Waffles and Honey in Cozy Maple's yard), "your dog visits theirs. no chat, no messages.", pill "new in Doodle Doggo". (Not the Friends badge: one of its two dogs is white.)
 2. **The stake:** "visit a friend's yard", "pet their dogs, leave a paw print.", the visit with Waffles saying her line after a pet.
-3. **Step 1:** "pick your friend name", "tap More, then Friends. turn the two wheels, like Waggy Clover." The More tray with Friends, an arrow to the name wheels.
+3. **Step 1:** "pick your friend name", "tap More, then Friends. turn the two wheels, like Sunny Biscuit." (our own name on the wheels) The More tray with Friends, an arrow to the name wheels.
 4. **Step 2:** "share your code", "Share invite, Copy code, or let them scan your QR." Our card (placeholder patch in the preview).
 5. **Step 3:** "add theirs", "type their DOG- code, or open their invite link." The Add a friend boxes and the friend on the list with Visit and Gift.
 6. **"then, once a day:"** four screens: pet their dogs, leave a paw print, send a gift, walk their dog.
@@ -114,11 +128,11 @@ Step bubbles read "1.", "2.", "3.". Handle on every slide, numbered 1/8 … 8/8.
 
 ### Instagram (carousel)
 ```
-comment your friend code below 👇 then grab a few from other players 🐾 adding a friend takes 3 steps and about 1 minute ⏱️
+comment your friend code below 👇 ours is DOG-K3APZ 🎴 adding a friend takes 3 steps and about 1 minute ⏱️
 
-step 1: tap More 👉 then Friends 🐶 and turn the 2 wheels 🎡 to pick your friend name, like Waggy Clover 🍀
-step 2: share your friend code with Share invite or Copy code, or let them scan the QR on your card 🎴
-step 3: add theirs. type their DOG- code or open their invite link 🔗 that's it!
+step 1: tap More 👉 then Friends 🐶 and turn the 2 wheels 🎡 to pick your friend name, like ours, Sunny Biscuit ☀️
+step 2: share your friend code with Share invite, Share poster or Copy code, or let them scan the QR on your card 🎴
+step 3: add theirs. type their DOG- code or open their invite link 🔗 that's it, you're friends! we'd love to add yours too 🐾
 
 then, once a day, your dog can visit their yard 🏡 pet their dogs for +1 Bond each 💕 leave a paw-print note 💌 send a gift 🎁 and take one of their dogs along on your walk 🦮
 
@@ -126,15 +140,15 @@ no chat, no messages 🤐 and you can remove or block a friend any time 🔒 a c
 
 #DoodleDoggo #CozyGames #DogGames #IndieGame #GamesWithFriends
 ```
-Job B (the caption carries the steps) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 19 emoji (2.4 per 100 characters), none as bullets (the steps start with "step 1:") · linter READY · human score 73.9 PASS (re-checked 3 Nov 2026 after "you never type a message" became "no chat, no messages").
+Job B (the caption carries the steps) · one ask: comment (your friend code) · 5 hashtags · search: "cozy dog game", "friend code", "play with friends" · no link · 19 emoji (2.4 per 100 characters), none as bullets (the steps start with "step 1:") · linter READY · human score 85.4 PASS (7 Nov 2026: our code in line 1, our name in step 1, Share poster in step 2).
 
-**Alt text (cover):** `A sketchbook page titled "add a friend in 3 steps" over a game screen of a friend's autumn yard, where a crayon Shiba, a Corgi and a Golden puppy in a party hat stand together, and the line "your dog visits theirs. no chat, no messages."`
+**Alt text (cover):** `A sketchbook page titled "add a friend in 3 steps" over a game screen of a friend's autumn yard, where a crayon Shiba, a Corgi and a Golden puppy in a party hat stand apart on the lawn, and the line "your dog visits theirs. no chat, no messages."`
 
 ## RedNote / 小红书 (Simplified Chinese, no link)
 
-Owner asked for it (2 Nov 2026, "make the rednote version") and chose a Mandarin voice (choice window: "Chinese voice (Kokoro)"). Post `brand/instagram/launch/friends_reel/preview/doodle-doggo-friends-rednote-PREVIEW.mp4`'s final cut (made on 7 Nov with our real code, like the English one) with the 3:4 cover `brand/rednote/rednote-06-friends.jpg` as the video's custom cover. **Never post the PREVIEW**: placeholder name and code with a red 占位 patch.
+Owner asked for it (2 Nov 2026, "make the rednote version") and chose a Mandarin voice (choice window: "Chinese voice (Kokoro)"). Post the FINAL `brand/instagram/launch/friends_reel/doodle-doggo-friends-rednote.mp4` (made on 7 Nov with our real code, 42.2 s) with the 3:4 cover `brand/rednote/rednote-06-friends.jpg` as the video's custom cover. **Never post the PREVIEW**: placeholder name and code with a red 占位 patch.
 
-- **Voice:** Noodle in Mandarin, Kokoro v1.1-zh with misaki's Chinese G2P. First `zf_001` at 1.1x; the owner found it robotic (2 Nov 2026; its pitch is one of the flattest of the 55 female voices), so five softer voices with livelier pitch were sampled (`preview/voices/voices-A-to-E.mp4`, a video because phones won't play the mp3s) and the owner picked **D, `zf_073` at 1.0x**. Made by `vo_friends_zh.py` (setup at the top of the file; jieba may need its sdist on PYTHONPATH). Checked by speech-to-text (faster-whisper small): every line reads back as written (爪印 comes back as the homophone 找印). Waffles is said and written 华夫. About 42 s.
+- **Voice:** Noodle in Mandarin, Kokoro v1.1-zh with misaki's Chinese G2P. First `zf_001` at 1.1x; the owner found it robotic (2 Nov 2026; its pitch is one of the flattest of the 55 female voices), so five softer voices with livelier pitch were sampled (`preview/voices/voices-A-to-E.mp4`, a video because phones won't play the mp3s) and the owner picked **D, `zf_073` at 1.0x**. Made by `vo_friends_zh.py` (setup at the top of the file; jieba may need its sdist on PYTHONPATH). Checked by speech-to-text (faster-whisper small): every line reads back as written (爪印 comes back as the homophone 找印). Waffles is said and written 华夫. About 42 s. (7 Nov final: re-made with `config-v1.1-zh.json` passed as `vocab_config`; not re-checked by speech-to-text, faster-whisper is not installed in this session.)
 - **Footage:** the same clean scenes shot in the zh-Hans game (`PAW_LANG=zh-Hans capture_clean.js`); the yard's "veggies!" and "garden" signs are English in the Chinese game too (scene art).
 - **Words:** the game's zh-Hans Friends words (fr.*, nw.v219.*): hook "狗狗交朋友的 / 4种方式 / （不用聊天）", sticker "新版本 · 11月7日", "分享你的好友码", "1. 去院子做客", "2. 留个爪印", "3. 送一份礼物", "4. 一起散步", "没有聊天，没有私信。", end page "加我们好友！", our card with its Chinese friend name (the game's zh Dog Card words), "在评论区留下你的好友码", the logo. Subtitles of every line. Owner's rule: 没有聊天，没有私信, never 不用打字. **No QR on RedNote** (a QR is a link): a pink paw sits in the card's QR tile on the 7 Nov cut.
 - **Cover:** `make_friends_cover.js` with `REDNOTE=1`: the English cover's design in Chinese, cut to 1080 x 1440: "狗狗交朋友的 / 4种方式", "（不用聊天）", "Doodle Doggo 好友功能来啦！".
@@ -159,9 +173,9 @@ Doodle Doggo 好友功能来啦！🎉 11月7日上线
 
 没有聊天，没有私信🤐 小纸条都是选好的，只有用好友码或邀请链接才能加好友，随时可以删除或屏蔽🔒 小朋友玩也放心💛
 
-我们的好友码在视频最后👀 评论区交换好友码吧～👇
+我们是「阳光饼干」，好友码 DOG-K3APZ 👀 评论区交换好友码吧～👇
 
-免费，没有广告，在浏览器搜索 DoodleDoggo.app 就能玩
+浏览器搜 Doodle Doggo App 就能玩
 
 #DoodleDoggo #交换好友码 #治愈系游戏 #独立游戏 #我在小红书做游戏 #狗狗 #萌宠 #柯基 #腊肠犬 #蜡笔画
 ```
@@ -169,10 +183,10 @@ Doodle Doggo 好友功能来啦！🎉 11月7日上线
 > Doodle Doggo's Friends is here! Out on 7 Nov.
 > Pick a friend name (two words, the same as on Dog Cards), share your friend code, and then your dog can: visit a friend's yard and pet their dogs (+1 Bond for both); leave a paw print, one of 12 notes; send a gift once a day (a snack, seeds or something from the garden); take a friend's dog on your walk, and they get a letter.
 > No chat, no messages. The notes are ready-made, you can only add a friend by friend code or invite link, and you can remove or block any time. Safe for kids too.
-> Our friend code is at the end of the video. Swap friend codes in the comments!
-> Free, no ads; search DoodleDoggo.app in your browser to play.
+> We're Sunny Biscuit (阳光饼干), friend code DOG-K3APZ. Swap friend codes in the comments!
+> Search Doodle Doggo App in your browser to play.
 
-Checked by hand (RedNote rules): no clickable link and no QR (the site only as text to search in the browser, owner 3 Nov 2026), title 15 characters with the emoji (20 max), the game's own zh-Hans words (好友名, 好友码, 做客, 摸摸, 亲密度, 留个爪印, 小纸条, 送一份礼物, 一起散步, 删除, 屏蔽), one ask (评论区交换好友码). On 7 Nov the post goes up after 00:00 JST, when Friends is live. The "carousel" as a RedNote 图文 ("3步加好友") comes next.
+Checked by hand (RedNote rules, 7 Nov 2026): no link, no domain with a dot and no QR ("浏览器搜 Doodle Doggo App 就能玩", REDNOTE.md 4 Nov 2026; the code DOG-K3APZ is not a link), title 15 characters with the emoji (20 max), the game's own zh-Hans words (好友名, 好友码, 做客, 摸摸, 亲密度, 留个爪印, 小纸条, 送一份礼物, 一起散步, 删除, 屏蔽), one ask (评论区交换好友码). On 7 Nov the post goes up after 00:00 JST, when Friends is live. The "carousel" as a RedNote 图文 ("3步加好友") comes next.
 
 ## Fixes after the owner's first look (2 Nov 2026)
 

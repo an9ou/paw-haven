@@ -7,7 +7,10 @@
 //   OUR_CODE=DOG-XXXXX OUR_NAME=a,b (Dog Card word indices): the Doodle Doggo account's real friend code and name, from the live game on 7 Nov 2026.
 //   Without OUR_CODE the card shows the placeholder DOG-XXXXX, and the Reel and carousel builds cover it with a "placeholder" tag: never post that.
 //
-// The friend in the footage, "Sunny Biscuit", is a made-up player (two Dog Card words). Their code is never shown on screen.
+// The friend in the footage, "Cozy Maple" (FRIEND_NAME, Dog Card word indices, default 2,14), is a made-up player. Their code is never shown on screen.
+// (Until 7 Nov 2026 it was "Sunny Biscuit"; that turned out to be our own account's real friend name, so the made-up friend was renamed.)
+// Owner's rule (6 Nov 2026): dogs that share a shot never overlap or touch. The greeting pair stands PAIR_GAP world units apart (the game's 4 is
+// nose to nose), and every still and clip frame saves each dog's drawn box (boxes.json) for the builds' apartCheck().
 // Their dogs: Waffles the Corgi and Honey the Golden puppy. Ours: Mochi the Shiba. No black or white dog is the subject (owner, 1 Nov 2026).
 const path = require('path'), fs = require('fs');
 const MAIN = require.main === module; // capture_clean.js borrows the mock and the slow clock from this file
@@ -16,18 +19,21 @@ const OUT = path.resolve(process.argv[3] || 'friends_footage'); if (MAIN) fs.mkd
 const { run, URL } = MAIN ? require(path.join(DEV, 'game', 'test_lib')) : {};
 const OUR_CODE = process.env.OUR_CODE || 'DOG-XXXXX';
 const OUR_NAME = (process.env.OUR_NAME || '25,6').split(',').map(Number); // placeholder: Waggy Clover
+const FRIEND = (process.env.FRIEND_NAME || '2,14').split(',').map(Number); // the made-up friend: Cozy Maple
+const PAIR_GAP = +(process.env.PAIR_GAP || 16);
 
 function mockInit(cfg) {
   const fid = (s) => (s + 'xxxxxxxxxxxxxxxxxxxxxx').slice(0, 22);
   const SUNNY = fid('sunnybiscuit');
+  const FN = cfg.friend || [2, 14];
   const sunnyDogs = [{ b: 1, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 47 }, { b: 2, c: null, o: 1, a: 'pup', s: 'm', sp: 0, n: 45 }]; // Waffles the Corgi, Honey the Golden pup (party hat)
   const srv = {
     me: null, friends: [], sent: [],
-    book: { 'DOG-4K7PM': { fid: SUNNY, name: [0, 0] } },
-    yardOf: { [SUNNY]: { v: 1, name: [0, 0], house: 2, season: 'autumn', dogs: sunnyDogs, decor: [{ i: 19, x: 40, y: 300 }, { i: 20, x: 110, y: 318 }] } },
+    book: { 'DOG-4K7PM': { fid: SUNNY, name: FN } },
+    yardOf: { [SUNNY]: { v: 1, name: FN, house: 2, season: 'autumn', dogs: sunnyDogs, decor: [{ i: 19, x: 40, y: 300 }, { i: 20, x: 110, y: 318 }] } },
     events: [
-      { id: 3, from: { fid: SUNNY, name: [0, 0] }, kind: 'gift', data: { i: 0, n: 1 }, day: cfg.day, claimed: false },
-      { id: 1, from: { fid: SUNNY, name: [0, 0] }, kind: 'note', data: { i: 0 }, day: cfg.day, claimed: false }
+      { id: 3, from: { fid: SUNNY, name: FN }, kind: 'gift', data: { i: 0, n: 1 }, day: cfg.day, claimed: false },
+      { id: 1, from: { fid: SUNNY, name: FN }, kind: 'note', data: { i: 0 }, day: cfg.day, claimed: false }
     ]
   };
   window.__frSrv = srv; window.__frHoldInbox = true;
@@ -62,6 +68,33 @@ function mockInit(cfg) {
 // Slow motion for the clips: Chrome's screencast only gives 393 px frames, and a full DPR-3 screenshot takes ~110 ms. So while a clip records,
 // the page's clock runs at RATE (performance.now, Date, requestAnimationFrame, timers here; CSS animations through CDP Animation.setPlaybackRate),
 // and each frame is stamped with its game time. 9 shots a second at a quarter speed = 36 frames per game second, full resolution.
+// each dog's drawn box on screen (CSS px), shadows left out (the dogs' kit draws them at opacity .1 / .4): the friend yard's dogs by name ('me' for ours),
+// the run's leader and follower; for the builds' apartCheck() (owner, 6 Nov 2026: dogs never overlap or touch)
+function boxesInit() {
+  const box = (root) => { let l = 1e9, r = -1e9, t = 1e9, b = -1e9;
+    root.querySelectorAll('path,ellipse,circle,polygon,polyline,line,rect').forEach((e) => {
+      if (e.classList.contains('fr-hit')) return; const op = e.getAttribute('opacity'); if (op != null && +op <= 0.4) return;
+      const q = e.getBoundingClientRect(); if (!q.width && !q.height) return; l = Math.min(l, q.left); r = Math.max(r, q.right); t = Math.min(t, q.top); b = Math.max(b, q.bottom); });
+    return l < r ? [+l.toFixed(1), +t.toFixed(1), +r.toFixed(1), +b.toFixed(1)] : null; };
+  window.__dogBoxes = () => {
+    const out = [], X = window.__frx;
+    document.querySelectorAll('#frDogs .frdog').forEach((g) => { const a = g.querySelector('.fr-art'); if (!a || getComputedStyle(g).display === 'none') return; const bx = box(a); if (!bx) return;
+      const v = X && X.FRV.dogs[+g.dataset.frd]; out.push({ n: g.classList.contains('fr-mine') ? 'me' : (v ? v.dog.name : 'dog' + g.dataset.frd), b: bx }); });
+    document.querySelectorAll('.pw-dog').forEach((d, i) => { if (getComputedStyle(d).display === 'none') return; const bx = box(d); if (bx) out.push({ n: d.classList.contains('pw-fol') ? 'follower' + i : 'leader', b: bx }); });
+    return out;
+  };
+}
+// a copy of the merged test page for one capture (each its own file: two captures at once must never share one): the friend yard's state for the
+// staging helpers, and the greeting pair PAIR_GAP world units apart instead of nose to nose
+function reelPage(dev, tag, gap) {
+  const SRC = path.join(dev, 'game', 'test_merged.html'), OUTP = path.join(dev, 'game', `test_merged_reel_${tag}.html`);
+  let html = fs.readFileSync(SRC, 'utf8');
+  const A = '\nfrReadInvite();\n', G = 'kb * fb[0] + 4; // the feet apart';
+  if (html.split(A).length !== 2) throw new Error('art changed: the frReadInvite() anchor in 50_friends.js');
+  if (html.split(G).length !== 2) throw new Error('art changed: the greeting pair anchor (frPairAt) in 50_friends.js');
+  html = html.replace(A, '\nfrReadInvite(); window.__frx = { FRV, FRC, frPaint, frK, frOrder, frPetDog, fxText, frScan, frSpotOk };\n').replace(G, `kb * fb[0] + ${gap}; // the feet apart (Marketing: ${gap}, dogs never touch)`);
+  fs.writeFileSync(OUTP, html); return OUTP;
+}
 function slowInit() {
   const P = performance, pnow = P.now.bind(P), D = window.Date, R = Object.getPrototypeOf(D) && Object.getPrototypeOf(D).now ? Object.getPrototypeOf(D) : D, rnow = R.now.bind(R);
   const off = rnow() - pnow(); let r0 = pnow(), v0 = r0, rate = 1;
@@ -73,17 +106,19 @@ function slowInit() {
   const st = window.setTimeout.bind(window), si = window.setInterval.bind(window);
   window.setTimeout = (fn, d, ...a) => st(fn, (d || 0) / rate, ...a); window.setInterval = (fn, d, ...a) => si(fn, (d || 0) / rate, ...a);
 }
-const GAP = +(process.env.GAP || 110); // the visit: the smallest gap between two dogs, in yard units (the phone shows about 400 of the 1000)
+const GAP = +(process.env.GAP || 18); // the visit: the smallest gap between two dogs' drawn boxes, in CSS px (the carousel's smallest window shows the
+// phone at 1.6x or more, so 18 px keeps apartCheck's 28 px; on a phone there is no room for more with three dogs on screen)
 const RATE = 0.2; // a clip over a sheet (backdrop blur) shoots slower, so it passes its own lower rate
 
-module.exports = { mockInit, slowInit };
+module.exports = { mockInit, slowInit, boxesInit, reelPage };
 if (MAIN) run('friends_footage', async (t) => {
   const { ev } = t, p = () => t.p;
   const day = new Date(t.pageNow()).toISOString().slice(0, 10);
   await t.mk({ device: 'iPhone 15', prefs: { frTest: true } });
-  await t.ctx.addInitScript(mockInit, { code: OUR_CODE, day });
+  await t.ctx.addInitScript(mockInit, { code: OUR_CODE, day, friend: FRIEND });
   await t.ctx.addInitScript(slowInit);
-  await p().goto(URL);
+  await t.ctx.addInitScript(boxesInit);
+  await p().goto('file://' + reelPage(DEV, 'carousel', PAIR_GAP));
   await p().waitForSelector('#tNew, #tContinue, #tGuest');
   if (await p().locator('#tGuest').count()) { await p().click('#tGuest'); await p().waitForSelector('#tNew'); }
   await t.adopt({});
@@ -93,21 +128,21 @@ if (MAIN) run('friends_footage', async (t) => {
   // the footage is about Friends: no toasts, no tutorial hints, no dev button
   await p().addStyleTag({ content: '#toasts,#devBtn,.hint,.coach{opacity:0!important;pointer-events:none}' });
   const SUNNY = 'sunnybiscuitxxxxxxxxxx';
-  async function still(name) { await p().waitForTimeout(700); await p().screenshot({ path: path.join(OUT, name + '.png') }); console.log('still', name); }
+  async function still(name) { await p().waitForTimeout(700); fs.writeFileSync(path.join(OUT, name + '.boxes.json'), JSON.stringify(await ev(() => window.__dogBoxes()))); await p().screenshot({ path: path.join(OUT, name + '.png') }); console.log('still', name); }
   let cdp = null, rate = 1;
   const wait = (ms) => p().waitForTimeout(ms / rate); // game milliseconds
   async function setRate(x) { if (!cdp) { cdp = await t.ctx.newCDPSession(p()); await cdp.send('Animation.enable'); } await ev((x) => window.__setRate(x), x); await cdp.send('Animation.setPlaybackRate', { playbackRate: x }); rate = x; }
   async function clip(name, secs, act, r) {
     const dir = path.join(OUT, name); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-    await setRate(r || RATE); const ts = []; let n = 0, done = false;
+    await setRate(r || RATE); const ts = [], bxs = []; let n = 0, done = false;
     const v0 = await ev(() => window.__vt());
     const shoot = (async () => { const vp = p().viewportSize();
-      while (!done) { const v = await ev(() => window.__vt()); if (v - v0 > secs * 1000) break;
+      while (!done) { const [v, bx] = await ev(() => [window.__vt(), window.__dogBoxes()]); if (v - v0 > secs * 1000) break;
         const r = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: vp.width, height: vp.height, scale: 3 } });
-        fs.writeFileSync(path.join(dir, String(n++).padStart(5, '0') + '.jpg'), Buffer.from(r.data, 'base64')); ts.push((v - v0) / 1000); } })();
+        fs.writeFileSync(path.join(dir, String(n++).padStart(5, '0') + '.jpg'), Buffer.from(r.data, 'base64')); ts.push((v - v0) / 1000); bxs.push(bx); } })();
     if (act) await act();
     await shoot; done = true; await setRate(1);
-    fs.writeFileSync(path.join(dir, 'ts.json'), JSON.stringify(ts)); console.log('clip', name, n, 'frames', ts[n - 1].toFixed(2) + 's');
+    fs.writeFileSync(path.join(dir, 'ts.json'), JSON.stringify(ts)); fs.writeFileSync(path.join(dir, 'boxes.json'), JSON.stringify(bxs)); console.log('clip', name, n, 'frames', ts[n - 1].toFixed(2) + 's');
   }
   const tapAt = async (sel) => { const b = await p().locator(sel).first().boundingBox(); await p().mouse.click(b.x + b.width / 2, b.y + b.height / 2); };
 
@@ -147,17 +182,44 @@ if (MAIN) run('friends_footage', async (t) => {
   // 4. the visit: Sunny Biscuit's yard, pet Waffles and Honey
   await p().click(`.fr-row[data-fid="${SUNNY}"] [data-fr="visit"]`);
   await t.until(() => window.__paw.mode === 'fryard' && document.getElementById('modal').hidden, null, 6000);
-  await wait(1200);
-  // the dogs take random spots: visit again (up to 12 times) until all three stand apart, so no friend's dog hides behind Mochi
-  for (let k = 0; k < 12; k++) {
-    const gap = await ev(() => { const d = window.__paw.fr.scene().dogs; let m = 1e9; for (let i = 0; i < d.length; i++) for (let j = i + 1; j < d.length; j++) m = Math.min(m, Math.hypot(d[i].x - d[j].x, (d[i].y - d[j].y) * 1.5)); return m; });
-    console.log('visit spots, smallest gap', Math.round(gap)); if (gap >= GAP) break;
-    await p().click('#frHomeBtn'); await t.untilMode('yard'); await ev((fid) => window.__paw.fr.visit(fid), SUNNY);
-    await t.until(() => window.__paw.mode === 'fryard', null, 6000); await wait(1200);
-  }
+  // the game's greeting plays first (Mochi walks in to Waffles, they sniff and play): the stills and the clip come after it. Then the dogs hold still
+  // where they are, except that a dog too close to another (on a phone the game puts the third dog in a back row, its box over the front dogs' heads)
+  // is moved to the nearest free spot of the yard (the game's frSpotOk) inside the carousel's windows (CSS px x 24..354, y 290..560)
+  //, the greeting pair a step forward first if it must, every two boxes GAP px apart
+  // (owner, 6 Nov 2026: dogs never overlap or touch)
+  await wait(1200); await t.until(() => !window.__paw.fr.greeting(), null, 20000); await wait(600);
+  const staged = await ev(([GAP]) => {
+    const X = window.__frx, F = X.FRV, hold = (v) => { v.tw = null; v.wait = 1e15; v.home = [v.x, v.y]; };
+    F.dogs.forEach((v) => { hold(v); v.pose = v.pose === 'walk' ? 'idle' : v.pose; X.frPaint(v); });
+    const gapOf = () => { const d = window.__dogBoxes(); let m = 1e9; for (let i = 0; i < d.length; i++) for (let j = i + 1; j < d.length; j++) { const a = d[i].b, b = d[j].b; m = Math.min(m, Math.max(b[0] - a[2], a[0] - b[2], b[1] - a[3], a[1] - b[3])); } return m; };
+    const before = gapOf(); if (before >= GAP) return { before, moved: null };
+    // the third dog to a free spot; if there is none, the greeting pair a step forward first (on a phone the kennel and the edges leave little room)
+    const v = F.dogs.find((d) => !d.mine && !d.play) || F.dogs.find((d) => !d.mine && d.dog.name !== 'Waffles'), x0 = v.x, y0 = v.y;
+    v.pose = 'sit'; X.frPaint(v); // a sitting puppy is shorter: more room above the pair
+    const pair = F.dogs.filter((d) => d !== v), py = pair.map((d) => d.y);
+    const put = (d, x, y) => { d.x = x; d.y = y; d.k = X.frK(d, y); hold(d); X.frPaint(d); X.frOrder(); };
+    const inWin = () => window.__dogBoxes().every((q) => q.b[0] >= 24 && q.b[2] <= 354 && q.b[1] >= 290 && q.b[3] <= 560);
+    const why = { start: window.__dogBoxes(), xy: F.dogs.map((d) => [d.dog.name, Math.round(d.x), Math.round(d.y)]) };
+    for (const dy of [0, 10, 20, 30, 40, 50, 60]) {
+      // (the pair is not re-tested with frSpotOk: it rejects the greeting's own spots, which frPairAt chose with its own reservations; a step forward
+      // on the open lawn in front of them, at most 60 units, stays on the lawn)
+      pair.forEach((d, i) => put(d, d.x, py[i] + dy)); let best = null; const n = why['dy' + dy] = [0, 0, 0];
+      for (let y = 380; y <= 620; y += 4) for (let x = 40; x <= 960; x += 8) {
+        const dd = Math.hypot(x - x0, (y - y0) * 2); if (best && dd >= best.d) continue;
+        if (!X.frSpotOk(v, x, y, { face: v.face, any: true })) continue; // the game's own test (on the lawn, clear of the house, the decorations and the buttons; the other dogs: our gap test)
+        n[0]++; put(v, x, y); if (!inWin()) continue; n[1]++; const g = gapOf(); if (!why.top || g > why.top[0]) why.top = [Math.round(g), x, y, dy]; if (g >= GAP) { n[2]++; best = { x, y, d: dd }; }
+      }
+      if (best) { put(v, best.x, best.y); return { before, moved: [v.dog.name, Math.round(x0), Math.round(y0), best.x, best.y], pairForward: dy, after: gapOf() }; }
+    }
+    pair.forEach((d, i) => put(d, d.x, py[i])); put(v, x0, y0); return { before, moved: false, why };
+  }, [GAP]);
+  console.log('visit staging', JSON.stringify(staged)); if (staged.moved === false) throw new Error('no free spot for the third dog: dogs would touch');
+  // the visit's buttons (Leave a paw print, Send a gift, Go home) hidden for the visit shots: the pair stepped forward, their feet would be under them
+  const noBtns = await p().addStyleTag({ content: '#placeBtns{visibility:hidden!important}' });
   await still('visit');
   const petDog = (i) => ev((i) => { const el = document.querySelectorAll('#frDogs .frdog:not(.fr-mine)')[i]; if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }, i);
   await clip('visit', 4.2, async () => { await wait(600); await petDog(0); await wait(1500); await petDog(1); }, 0.14);
+  await ev((el) => el.remove(), noBtns);
 
   // 5. the paw-print note: the 12 preset lines, then the stamp on their path
   await p().click('#frNoteBtn');
@@ -193,6 +255,8 @@ if (MAIN) run('friends_footage', async (t) => {
   await still('walk_pick');
   await p().click('#rtStart');
   await t.walkGate(true);
+  // owner, 2 and 6 Nov 2026 ("the dogs were overlapping"; dogs never touch): the friend's dog follows a little further back, as in capture_clean.js
+  await p().addStyleTag({ content: '.pw-fol.pw-friend{translate:-14px 0}' });
   await wait(800);
   await clip('walk', 5.5, null, 0.17);
   await still('walk');

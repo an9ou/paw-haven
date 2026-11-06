@@ -8,11 +8,11 @@
 // (1080 x 1440, the middle of the 1920 frame); writes friends-cover-rednote.jpg in <outdir> and brand/rednote/rednote-06-friends.jpg. No link.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
-const { CENTRE_JS } = require('../centre_text.js');
+const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // SAFE_JS: apartCheck() (owner, 6 Nov 2026: dogs never overlap or touch)
 const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || '.'); fs.mkdirSync(OUT, { recursive: true });
 const W = 1080, H = 1920, PEN = '#5B3D32', PINK = '#F28FA5', YEL = '#FFE3A1';
 const RN = !!process.env.REDNOTE, FAM = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
-const TX = RN ? { hook: [{ s: '狗狗交朋友的', size: 104, pitch: 132 }, { s: '4种方式', size: 112 }], sticker: '（不用聊天）', stickerSize: 64, pill: 'Doodle Doggo 好友功能来啦！', pillSize: 56, pillY: 1590 }
+const TX = RN ? { hook: [{ s: '狗狗交朋友的', size: 104, pitch: 132 }, { s: '4种方式', size: 112 }], sticker: '（不用聊天）', stickerSize: 64, pill: 'Doodle Doggo 好友功能来啦！', pillSize: 50, pillY: 1590 }
   : { hook: [{ s: '4 ways your dog', size: 112, pitch: 132 }, { s: 'can make friends', size: 112 }], sticker: '(no chat)', stickerSize: 78, pill: 'new: Friends in Doodle Doggo', pillSize: 62, pillY: 1630 };
 
 const win = {}, ctx = { window: win, console, Intl }; vm.createContext(ctx);
@@ -35,21 +35,23 @@ ${Object.keys(DOGS).map((k) => `<symbol id="${k}" overflow="visible">${DOGS[k]}<
 <use href="#sc" width="${W}" height="${H}"/><rect width="${W}" height="${H}" fill="#FFF8EC" opacity=".18"/><g id="dogs"></g><g id="top"></g></svg>
 <script>
 ${CENTRE_JS}
+${SAFE_JS}
 const NS='http://www.w3.org/2000/svg', FAM=${JSON.stringify(FAM)}, TX=${JSON.stringify(TX)}, C=(l,x,y)=>centred(l,x,y,FAM);
 function box(id){ const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id); document.getElementById('dogs').appendChild(u); const b=u.getBBox(); u.remove(); return b; }
 // a dog by its drawn box: centre x, feet y, height on screen; a soft shadow under the feet
 function dog(id,cx,feet,hh){ const b=box(id), s=hh/b.height, w=b.width*s;
-  return '<ellipse cx="'+cx+'" cy="'+(feet-4)+'" rx="'+(w*0.36)+'" ry="18" fill="${PEN}" opacity=".16"/><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b.x)+' '+(-b.y)+')"><use href="#'+id+'"/></g>'; }
+  return '<ellipse cx="'+cx+'" cy="'+(feet-4)+'" rx="'+(w*0.36)+'" ry="18" fill="${PEN}" opacity=".16"/><g data-apart="'+id+'" transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b.x)+' '+(-b.y)+')"><use href="#'+id+'"/></g>'; }
 window.draw=function(){
-  document.getElementById('dogs').innerHTML = dog('noodle',330,1450,250) + dog('waffles',740,1450,370) + dog('honey',975,1600,225)
-    + '${heart(545, 1150, 2.2, -4)}${heart(440, 1065, 1.0, -18, 0.85)}${heart(650, 1060, 0.85, 16, 0.85)}${heart(160, 1060, 0.8, -10, 0.7)}${heart(950, 1210, 0.8, 12, 0.7)}';
+  // owner, 6 Nov 2026: dogs never overlap or touch (apartCheck, 28 px): Noodle and Waffles face each other with clear space between them, under the heart
+  document.getElementById('dogs').innerHTML = dog('noodle',262,1450,220) + dog('waffles',676,1450,330) + dog('honey',956,1600,200)
+    + '${heart(494, 1150, 2.2, -4)}${heart(400, 1070, 1.0, -18, 0.85)}${heart(596, 1062, 0.85, 16, 0.85)}${heart(150, 1080, 0.8, -10, 0.7)}${heart(955, 1250, 0.8, 12, 0.7)}';
   document.getElementById('top').innerHTML =
     '<g transform="rotate(-2 540 470)"><rect x="66" y="278" width="948" height="384" rx="40" fill="${PEN}" opacity=".14" transform="translate(10 14)"/>'
     + '<g data-box><rect x="66" y="278" width="948" height="384" rx="40" fill="#FFFDF7" stroke="${PEN}" stroke-width="8"/>'+C(TX.hook,540,470).svg+'</g>'
     + '<path d="M230 600 Q540 580 850 600" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".55"/></g>'
     + '<g transform="rotate(6 800 720)">'+pill(TX.sticker,800,720,TX.stickerSize,FAM,{fill:'${YEL}',padX:34})+'</g>'
     + '<g transform="rotate(-1.5 470 '+TX.pillY+')">'+pill(TX.pill,470,TX.pillY,TX.pillSize,FAM,{fill:'#FFFDF7',padX:38})+'</g>';
-  return centreCheck(document.getElementById('sv'));
+  const sv=document.getElementById('sv'); return centreCheck(sv).concat(apartCheck(sv).map((x)=>'dogs too close: '+x));
 };
 </script>`;
 
@@ -58,7 +60,7 @@ window.draw=function(){
   const p = await b.newPage({ viewport: { width: W, height: H } });
   const page = path.join(OUT, 'cover_page.html'); fs.writeFileSync(page, html); await p.goto('file://' + page); await p.waitForLoadState('networkidle');
   await p.evaluate((t) => Promise.all(['600 40px Caveat', '700 40px Caveat'].concat(t ? ['700 40px "LXGW WenKai"'] : []).map((f) => document.fonts.load(f, t || 'a'))), RN ? JSON.stringify(TX) : '');
-  const off = await p.evaluate(() => window.draw()); if (off.length) throw new Error('text not centred: ' + off.join('; '));
+  const off = await p.evaluate(() => window.draw()); if (off.length) throw new Error(off.join('; '));
   const png = path.join(OUT, 'friends-cover.png'); await p.screenshot({ path: png }); await b.close(); fs.rmSync(page);
   const jpg = path.join(OUT, RN ? 'friends-cover-rednote.jpg' : 'friends-cover.jpg');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, ...(RN ? ['-vf', 'crop=1080:1440:0:250'] : []), '-q:v', '2', jpg]); fs.rmSync(png);

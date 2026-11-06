@@ -11,8 +11,10 @@ const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.');
 const OUT = path.resolve(process.argv[3] || 'friends_clean'); fs.mkdirSync(OUT, { recursive: true });
 const { run, URL } = require(path.join(DEV, 'game', 'test_lib'));
-const { mockInit, slowInit } = require('./capture_friends.js');
+const { mockInit, slowInit, boxesInit, reelPage } = require('./capture_friends.js');
 const OUR_NAME = (process.env.OUR_NAME || '25,6').split(',').map(Number);
+const FRIEND = (process.env.FRIEND_NAME || '2,14').split(',').map(Number); // the made-up friend, Cozy Maple (never on screen in the clean footage)
+const PAIR_GAP = +(process.env.PAIR_GAP || 16); // owner, 6 Nov 2026: dogs never overlap or touch, so the greeting pair stands apart (the game's 4 is nose to nose)
 // the game's own interface, hidden for the clean look (the view then fills the screen; a resize lets the game lay it out again)
 const CLEAN_CSS = '#hud,#bar,#dock,#toasts,#devBtn,#placeBtns,#status,#phPeek,#ddWish,#msBtn,#bubble,.hint,.coach,'
   + '.pw-hud,.pw-ctrls,.pw-tut,.pw-panel,.pw-legend,.pw-btn,.pw-card,.pw-notes,.pw-badge,.pw-nl,.pw-mini,.pw-hint{display:none!important}';
@@ -62,13 +64,13 @@ run('friends_clean', async (t) => {
   const { ev } = t, p = () => t.p;
   const day = new Date(t.pageNow()).toISOString().slice(0, 10);
   await t.mk({ device: 'iPhone 15', prefs: { frTest: true } });
-  await t.ctx.addInitScript(mockInit, { code: 'DOG-XXXXX', day });
+  await t.ctx.addInitScript(mockInit, { code: process.env.OUR_CODE || 'DOG-XXXXX', day, friend: FRIEND });
   await t.ctx.addInitScript(slowInit);
+  await t.ctx.addInitScript(boxesInit);
   // the visit is staged (owner, 2 Nov 2026: "more interaction", "the dogs were overlapping"): the build's own friend-yard state is reached through one
   // line added to a copy of the test page, so the dogs can be placed apart and act out a greeting with the game's own poses (sniff, play bow, jump)
-  const SRC = path.join(DEV, 'game', 'test_merged.html'), REEL = path.join(DEV, 'game', 'test_merged_reel.html'), A = '\nfrReadInvite();\n';
-  const html = fs.readFileSync(SRC, 'utf8'); if (html.split(A).length !== 2) throw new Error('art changed: the frReadInvite() anchor in 50_friends.js');
-  fs.writeFileSync(REEL, html.replace(A, '\nfrReadInvite(); window.__frx = { FRV, FRC, frPaint, frK, frOrder, frPetDog, fxText, frScan };\n'));
+  // (reelPage in capture_friends.js; each capture its own copy of the page, so an English and a Chinese capture can run at once)
+  const REEL = reelPage(DEV, 'clean_' + (process.env.PAW_LANG || 'en'), PAIR_GAP);
   await t.ctx.addInitScript(stageInit);
   await p().goto('file://' + REEL);
   await p().waitForSelector('#tNew, #tContinue, #tGuest');
@@ -91,18 +93,18 @@ run('friends_clean', async (t) => {
   let cdp = null, rate = 1, modalHid = null;
   const wait = (ms) => p().waitForTimeout(ms / rate);
   async function setRate(x) { if (!cdp) { cdp = await t.ctx.newCDPSession(p()); await cdp.send('Animation.enable'); } await ev((x) => window.__setRate(x), x); await cdp.send('Animation.setPlaybackRate', { playbackRate: x }); rate = x; }
-  async function still(name) { await p().waitForTimeout(600); await p().screenshot({ path: path.join(OUT, name + '.png') }); console.log('still', name); }
+  async function still(name) { await p().waitForTimeout(600); fs.writeFileSync(path.join(OUT, name + '.boxes.json'), JSON.stringify(await ev(() => window.__dogBoxes()))); await p().screenshot({ path: path.join(OUT, name + '.png') }); console.log('still', name); }
   async function clip(name, secs, act, r) {
     const dir = path.join(OUT, name); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-    await setRate(r || 0.2); const ts = []; let n = 0, done = false;
+    await setRate(r || 0.2); const ts = [], bxs = []; let n = 0, done = false;
     const v0 = await ev(() => window.__vt());
     const shoot = (async () => { const vp = p().viewportSize();
-      while (!done) { const v = await ev(() => window.__vt()); if (v - v0 > secs * 1000) break;
+      while (!done) { const [v, bx] = await ev(() => [window.__vt(), window.__dogBoxes()]); if (v - v0 > secs * 1000) break;
         const s = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, clip: { x: 0, y: 0, width: vp.width, height: vp.height, scale: 3 } });
-        fs.writeFileSync(path.join(dir, String(n++).padStart(5, '0') + '.jpg'), Buffer.from(s.data, 'base64')); ts.push((v - v0) / 1000); } })();
+        fs.writeFileSync(path.join(dir, String(n++).padStart(5, '0') + '.jpg'), Buffer.from(s.data, 'base64')); ts.push((v - v0) / 1000); bxs.push(bx); } })();
     if (act) await act();
     await shoot; done = true; await setRate(1);
-    fs.writeFileSync(path.join(dir, 'ts.json'), JSON.stringify(ts)); console.log('clip', name, n, 'frames', ts[n - 1].toFixed(2) + 's');
+    fs.writeFileSync(path.join(dir, 'ts.json'), JSON.stringify(ts)); fs.writeFileSync(path.join(dir, 'boxes.json'), JSON.stringify(bxs)); console.log('clip', name, n, 'frames', ts[n - 1].toFixed(2) + 's');
   }
   const press = (sel) => ev((s) => { const e = document.querySelector(s); if (!e) throw new Error('no ' + s); e.click(); }, sel);
 

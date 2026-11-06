@@ -5,15 +5,19 @@
 # Waffles is said 华夫 (spoken Latin names come out badly in the Mandarin model); the subtitles say 华夫 too.
 #   pip install kokoro-onnx soundfile misaki pypinyin cn2an proces addict pypinyin_dict ; jieba 0.42.1 from its sdist (PYTHONPATH) if it will not build
 #   model files: github.com/thewh1teagle/kokoro-onnx/releases (model-files-v1.1: kokoro-v1.1-zh.onnx, voices-v1.1-zh.bin)
+#   vocab: huggingface.co/hexgrad/Kokoro-82M-v1.1-zh config.json, saved as <modelDir>/config-v1.1-zh.json (kokoro-onnx's built-in vocab is v1.0's,
+#   which has no bopomofo tokens, so without it the Mandarin sounds are dropped; as brand/kids/bedtime_walk/vo_bedtime_walk_zh.py)
 #   python3 vo_friends_zh.py <modelDir> <outDir> [voice zf_073] [speed 1.0]
-import soundfile as sf, numpy as np, json, sys
+import soundfile as sf, numpy as np, json, sys, os
 from kokoro_onnx import Kokoro
 from misaki import zh
-k = Kokoro(sys.argv[1] + "/kokoro-v1.1-zh.onnx", sys.argv[1] + "/voices-v1.1-zh.bin")
+VOCAB = sys.argv[1] + "/config-v1.1-zh.json"
+if not os.path.exists(VOCAB): sys.exit("missing " + VOCAB + " (the v1.1-zh vocab, see above)")
+k = Kokoro(sys.argv[1] + "/kokoro-v1.1-zh.onnx", sys.argv[1] + "/voices-v1.1-zh.bin", vocab_config=VOCAB)
 g2p = zh.ZHG2P(version="1.1")
 # owner, 2 Nov 2026: zf_001 at 1.1x sounded robotic (its pitch is one of the flattest of the 55 female voices); the owner picked zf_073 at 1.0x from
 # five softer samples (preview/voices/voices-A-to-E.mp4, voice D)
-OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "zf_073"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
+OUT = sys.argv[2]; os.makedirs(OUT, exist_ok=True); V = sys.argv[3] if len(sys.argv) > 3 else "zf_073"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
 L = {
  "hook":  "好消息！我们的狗狗可以交朋友啦！",
  "code":  "选一个好友名，分享你的好友码，你的狗狗就能去好友家做客啦！",

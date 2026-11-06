@@ -12,7 +12,8 @@
 // the end page's card carries a red "placeholder" patch over the code and the QR: a preview for the owner, never posted.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
-const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre
+const { CENTRE_JS, SAFE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre; SAFE_JS has apartCheck() too
+const { loadArt, cardSVG, FIT_JS, apartRects } = require('./friends_card.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const DEV = path.resolve(process.argv[2] || '.'), FOOT = path.resolve(process.argv[3] || 'friends_footage');
 const WORK = path.resolve(process.argv[4] || 'friends_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
@@ -24,31 +25,14 @@ const FPS = 30, W = 1080, H = 1920;
 const LAY = { code: process.env.OUR_CODE || '', name: (process.env.OUR_NAME || '25,6').split(',').map(Number) };
 const PLACEHOLDER = !LAY.code;
 
-// ---- our card, from the game's own art (the v2.19 build's world art and QR module) ----
-const win = {}, ctx = { window: win, console, Intl }; vm.createContext(ctx);
-for (const f of fs.readdirSync(path.join(DEV, 'world')).filter((f) => /^pawart_world_[a-z]\.js$/.test(f)).sort()) vm.runInContext(fs.readFileSync(path.join(DEV, 'world', f), 'utf8'), ctx);
-vm.runInContext(fs.readFileSync(path.join(DEV, 'mods', 'qr.js'), 'utf8'), ctx);
-const PA = win.PawArt; if (!PA.FRIENDS || !PA.FRIENDS.card) throw new Error('no PawArt.FRIENDS in ' + DEV + ': use the v2.19 build');
+// ---- our card, drawn as the v2.19 game draws it (friends_card.js: the card art, the QR or, on RedNote, a pink paw, the name, the code in DD Code) ----
+const ART = loadArt(DEV);
 const dcSrc = fs.readFileSync(path.join(DEV, 'game', 'src', '40_dogcards.js'), 'utf8');
 const words = (k) => JSON.parse(dcSrc.match(new RegExp('const ' + k + ' = (\\[[\\s\\S]*?\\]);'))[1].replace(/'/g, '"'));
 // RedNote: the name as the zh-Hans game shows it (its Dog Card words, fr.name "{a}{b}" with no space)
 const ZH = RN ? JSON.parse(fs.readFileSync(path.join(DEV, 'game', 'i18n', 'zh-Hans.json'), 'utf8')) : null; // flat keys: data.dc_words_a.<i>
 const OUR_NAME = RN ? ZH['data.dc_words_a.' + LAY.name[0]] + ZH['data.dc_words_b.' + LAY.name[1]] : words('DC_WORDS_A')[LAY.name[0]] + ' ' + words('DC_WORDS_B')[LAY.name[1]];
-const FR_LINK = (fs.readFileSync(path.join(DEV, 'game', 'src', '50_friends.js'), 'utf8').match(/const FR_LINK = '([^']+)'/) || [])[1];
-if (!FR_LINK) throw new Error('FR_LINK changed');
-function cardSVG() { // as the game's frCardSVG: the card art, the QR of the invite link in its white tile, the friend name above the code line
-  const code = PLACEHOLDER ? '' : LAY.code, box = PA.FRIENDS.cardQR;
-  let svg = PA.FRIENDS.card(code), qr = '';
-  // RedNote never shows a link, and a QR is one: a pink paw sits in the QR tile instead
-  if (code && RN) { const cx = box.x + box.w / 2, cy = box.y + box.w / 2, u = box.w / 10;
-    qr = [[0, 1.2, 2.2], [-2.2, -1.2, 1.1], [-0.8, -2.6, 1.1], [0.8, -2.6, 1.1], [2.2, -1.2, 1.1]].map(([x, y, r]) => `<circle cx="${(cx + x * u).toFixed(2)}" cy="${(cy + y * u).toFixed(2)}" r="${(r * u).toFixed(2)}" fill="#F28FA5"/>`).join(''); }
-  else if (code) { const M = win.PawQR.matrix(FR_LINK + code), n = M.length, s = box.w / (n + 4);
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (M[r][c]) qr += `<rect x="${(box.x + (c + 2) * s).toFixed(2)}" y="${(box.y + (r + 2) * s).toFixed(2)}" width="${(s + 0.15).toFixed(2)}" height="${(s + 0.15).toFixed(2)}" fill="#5B3D32"/>`; }
-  const size = OUR_NAME.length > 16 ? 15 : OUR_NAME.length > 12 ? 18 : 22;
-  const nm = `<text x="222" y="104" text-anchor="middle" font-family="${RN ? "LXGW WenKai" : "Caveat"}" font-weight="700" font-size="${size}" fill="#5B3D32">${OUR_NAME}</text>`;
-  return svg.replace(/<\/svg>\s*$/, qr + nm + '</svg>');
-}
-const CARD = cardSVG().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const CARD = cardSVG(ART, { code: PLACEHOLDER ? '' : LAY.code, name: OUR_NAME, nameFont: RN ? 'LXGW WenKai' : 'Caveat', rn: RN });
 
 // ---- the words ----
 const TX = RN ? {
@@ -114,17 +98,29 @@ SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b +
 const CLIPS = {};
 for (const s of SEG) { if (s.src === 'end' || s.src === 'code' || CLIPS[s.src]) continue;
   const dir = path.join(FOOT, s.src);
-  if (fs.existsSync(path.join(dir, 'ts.json'))) { const ts = JSON.parse(fs.readFileSync(path.join(dir, 'ts.json'), 'utf8')); CLIPS[s.src] = { ts, files: ts.map((_, i) => path.join(dir, String(i).padStart(5, '0') + '.jpg')) }; }
-  else CLIPS[s.src] = { ts: [0], files: [path.join(FOOT, s.src + '.png')] }; }
-const frameAt = (s, t) => { const c = CLIPS[s.src], g = s.from + (t - s.a); let i = 0; while (i + 1 < c.ts.length && c.ts[i + 1] <= g) i++; return 'file://' + c.files[i]; };
+  // boxes.json: each dog's drawn box on every frame (CSS px), for apartCheck(); the build stops if the footage has none (re-capture it)
+  if (fs.existsSync(path.join(dir, 'ts.json'))) { const ts = JSON.parse(fs.readFileSync(path.join(dir, 'ts.json'), 'utf8')); CLIPS[s.src] = { ts, files: ts.map((_, i) => path.join(dir, String(i).padStart(5, '0') + '.jpg')), boxes: JSON.parse(fs.readFileSync(path.join(dir, 'boxes.json'), 'utf8')) }; }
+  else CLIPS[s.src] = { ts: [0], files: [path.join(FOOT, s.src + '.png')], boxes: [JSON.parse(fs.readFileSync(path.join(FOOT, s.src + '.boxes.json'), 'utf8'))] }; }
+const idxAt = (s, t) => { const c = CLIPS[s.src], g = s.from + (t - s.a); let i = 0; while (i + 1 < c.ts.length && c.ts[i + 1] <= g) i++; return i; };
+const frameAt = (s, t) => 'file://' + CLIPS[s.src].files[idxAt(s, t)];
+// the dogs of this frame as data-apart rects in the frame's units: the same mapping as view() and the walk's window in the page
+function dogRects(s, t) {
+  const bx = CLIPS[s.src].boxes[idxAt(s, t)], B = s.cap && s.cap.band, SX = 60, SX1 = 890; // SAFE.x0 .. SAFE.x1
+  if (B) { const k = (SX1 - SX) / B.w, dy = 860 - B.h * k / 2; return apartRects(bx, (x, y) => [SX + (x * 3 - B.x0) * k, dy + (y * 3 - B.y0) * k], [B.x0 / 3, B.y0 / 3, (B.x0 + B.w) / 3, (B.y0 + B.h) / 3]); }
+  if (!s.view) return '';
+  const u = Math.max(0, Math.min(1, (t - s.a) / (s.b - s.a))), e = u * u * (3 - 2 * u), z = s.view.z0 + (s.view.z1 - s.view.z0) * e, fy = s.view.fy0 + (s.view.fy1 - s.view.fy0) * e;
+  const k = H / 1977 * z, w = 1179 * k, h = 1977 * k, l = Math.min(0, Math.max(W - w, W / 2 - s.view.fx * w)), tp = Math.min(0, Math.max(H - h, H / 2 - fy * h)) - (s.view.lift || 0);
+  return apartRects(bx, (x, y) => [l + x * 3 * k, tp + y * 3 * k], [-l / (3 * k), -tp / (3 * k), (W - l) / (3 * k), (H - tp) / (3 * k)]);
+}
 
 const PEN = '#5B3D32', GREEN = '#4E9A54', PINK = '#F28FA5', PAPER = '#FFF8EC';
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? '<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css" rel="stylesheet">' : ''}
-<style>html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}#scr{position:absolute;left:0;top:0;transform-origin:0 0}#ov{position:absolute;left:0;top:0}</style>
-<div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g><g id="sub"></g></svg></div>
+<style>${ART.css}html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}#scr{position:absolute;left:0;top:0;transform-origin:0 0}#ov{position:absolute;left:0;top:0}</style>
+<div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="dim"></g><g id="ph"></g><g id="cap"></g><g id="end"></g><g id="sub"></g><g id="apart"></g></svg></div>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
+${FIT_JS}
 const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(fam)}, TX=${JSON.stringify(TX)}, PH=${JSON.stringify(PLACEHOLDER)}, SUBS=${JSON.stringify(SUBS)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM);
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -143,7 +139,7 @@ function fit(lines,maxW){ const wd=Math.max(...lines.map((l)=>{ const k=inkOf(l.
 function view(src, z, fx, fy, lift){ const img=$('scr'), k=${H}/1977*z, w=1179*k, h=1977*k;
   const l=Math.min(0,Math.max(${W}-w, ${W}/2-fx*w)), t=Math.min(0,Math.max(${H}-h, ${H}/2-fy*h))-(lift||0);
   img.style.transform='translate('+l+'px,'+t+'px) scale('+k+')'; return {l,t,k,bot:t+h}; }
-window.frame=async function(t, S, src){
+window.frame=async function(t, S, src, apart){ $('apart').innerHTML=apart||'';
   const img=$('scr'); if(src){ if(img.getAttribute('src')!==src){ img.src=src; await img.decode(); } img.style.display=''; } else img.style.display='none';
   img.style.clipPath=''; let band='';
   const B=S.cap&&S.cap.band; if(B&&src){ // a window on the paper: the strip's source rect (x0, y0, w, h of the 1179 x 1977 shot) shown at x 60..890, centred on y 860
@@ -180,17 +176,19 @@ window.frame=async function(t, S, src){
   if(u){ const y=cp.end?1395:cp.hook?800:cp.card?1200:480, o=Math.min(ease((t-u.a)/0.08),ease((u.b-t)/0.08));
     let size=58; const k=inkOf(u.s,size,FAM); if(k.L+k.R>740) size=Math.floor(size*740/(k.L+k.R));
     sub=pill(u.s,CX,y,size,FAM,{fill:'${PEN}',stroke:'${PEN}',color:'#FFF8EC',padX:30,op:(0.94*o).toFixed(3)}); }
-  $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end; $('sub').innerHTML=sub;
+  $('dim').innerHTML=dim; $('ph').innerHTML=ph; $('cap').innerHTML=cap; $('end').innerHTML=end; $('sub').innerHTML=sub; frFit($('ov'));
 };
 </script>`;
 
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate((rn) => Promise.all(['600 40px Caveat', '700 40px Caveat'].concat(rn ? ['700 40px "LXGW WenKai"'] : []).map((f) => document.fonts.load(f, rn || 'a'))), RN ? JSON.stringify([TX, SUBS_TX, OUR_NAME]) : ''); await p.evaluate(() => document.fonts.ready);
+  fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate((rn) => Promise.all(['600 40px Caveat', '700 40px Caveat', '700 40px "DD Code"'].concat(rn ? ['700 40px "LXGW WenKai"'] : []).map((f) => document.fonts.load(f, rn || 'a'))), RN ? JSON.stringify([TX, SUBS_TX, OUR_NAME]) : ''); await p.evaluate(() => document.fonts.ready);
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
-  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' || s.src === 'code' ? null : frameAt(s, t);
-    await p.evaluate(async ([t, S, src]) => window.frame(t, S, src), [t, s, src]);
+  if (!(await p.evaluate(() => document.fonts.check('700 19px "DD Code"', 'DOG-K3APZ')))) throw new Error('DD Code (the game\'s code face) did not load');
+  const render = async (t, file) => { const s = segAt(t), src = s.src === 'end' || s.src === 'code' ? null : frameAt(s, t), ap = src ? dogRects(s, t) : '';
+    await p.evaluate(async ([t, S, src, ap]) => window.frame(t, S, src, ap), [t, s, src, ap]);
+    const near = await p.evaluate(() => apartCheck(document.querySelector('#ov'))); if (near.length) throw new Error('dogs too close at ' + t.toFixed(2) + ': ' + near.join('; '));
     const off = await p.evaluate(() => centreCheck(document.querySelector('#ov'))); if (off.length) throw new Error('text not centred at ' + t.toFixed(2) + ': ' + off.join('; '));
     const out = await p.evaluate(() => safeCheck(document.querySelector('#ov'))); if (out.length) throw new Error('text outside the all-platform safe area at ' + t.toFixed(2) + ': ' + out.join('; '));
     await p.screenshot({ path: file, type: file.endsWith('.jpg') ? 'jpeg' : 'png', quality: file.endsWith('.jpg') ? 95 : undefined }); };
