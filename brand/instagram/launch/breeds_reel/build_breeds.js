@@ -62,7 +62,7 @@ const ENDC = ASK + 0.3 + VOD.ask + 0.35, T = ENDC + 2.4, NF = Math.round(T * FPS
 VOAT.forEach((v, i) => { const nx = VOAT[i + 1]; if (nx && v.at + VOD[v.k] > nx.at - 0.15) throw new Error('voice lines overlap: ' + v.k); });
 // subtitles: Noodle's words in short chunks, each timed by its share of the line (letters, plus a breath at each full stop)
 const SUBS_TX = { hook: ['I drew all 35 dog breeds badly.', 'Find yours before it ends!'], pug: ['The Pug was harder', 'than it looks.'],
-  legs: ['Mostly legs.'], ask: ["Didn't see yours?", 'Tell me in the comments!'] };
+  legs: ['Mostly legs.'], ask: ["Didn't see yours?", 'Tell me in the comments,', "and we'll draw it for you!"] };
 const SUBS = [];
 VOAT.forEach((v) => { const parts = SUBS_TX[v.k], wt = parts.map((x) => x.length + (/[.!?]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x }); t0 += d; }); });
@@ -80,7 +80,7 @@ for (const [id, s] of Object.entries(ART)) if (!s.includes('pa-d-f2')) throw new
 const LOGO_SVG = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, ''));
 const LOGO_INNER = LOGO_SVG.replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
-const TX = { hook: ['I drew all 35 dogs badly', 'find yours 👀'], askA: "didn't see yours?", askB: 'comment your dog 👇' };
+const TX = { hook: ['I drew all 35 dogs badly', 'find yours 👀'], askA: "didn't see yours?", askB: 'comment your dog 👇', askC: "we'll draw it for you ✏️" }; // askC: owner, 6 Nov 2026
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
@@ -99,8 +99,8 @@ const f2=(n)=>Math.round(n*100)/100;
 let BOX=null; // each drawing's drawn box (frame 0) on its 240 x 200 canvas
 function measure(){ BOX={}; const g=$('art'); for(const [id,s] of Object.entries(ART)){ g.innerHTML='<g class="k0">'+s+'</g>'; const b=g.firstChild.getBBox(); BOX[id]=[b.x,b.y,b.width,b.height]; } g.innerHTML=''; return BOX; }
 // a drawing placed by its drawn box: centre x, bottom y, fitted into maxW x maxH (never above the cap), then scaled by z around its feet
-function place(id,cx,bot,maxW,maxH,cap,z,dy,k,safe){ const b=BOX[id], s0=Math.min(maxW/b[2],maxH/b[3],cap)*z;
-  return '<g'+(safe?' data-safe':'')+' class="k'+k+'" transform="translate('+f2(cx)+' '+f2(bot+(dy||0))+') scale('+s0.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]))+')">'+ART[id]+'</g>'; }
+function place(id,cx,bot,maxW,maxH,cap,z,dy,k,safe,apart){ const b=BOX[id], s0=Math.min(maxW/b[2],maxH/b[3],cap)*z;
+  return '<g'+(safe?' data-safe':'')+(apart?' data-apart="'+id+'"':'')+' class="k'+k+'" transform="translate('+f2(cx)+' '+f2(bot+(dy||0))+') scale('+s0.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]))+')">'+ART[id]+'</g>'; }
 // a rough crayon blob (seeded), filled and hatched
 function blob(cx,cy,r,col,seed,op){ let p='', n=26; const rnd=(i)=>{ const x=Math.sin(seed*91.7+i*12.9898)*43758.5453; return x-Math.floor(x); };
   for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=r*(0.93+rnd(i)*0.1); p+=(i?'L':'M')+f2(cx+Math.cos(a)*rr)+' '+f2(cy+Math.sin(a)*rr*0.96); }
@@ -130,8 +130,8 @@ window.frame=function(t){
   } else if(t<ENDC){ const lt=t-ASK, o=sm(lt/0.2);
     bg='<rect width="${W}" height="${H}" fill="${PAPER}"/><rect width="${W}" height="${H}" fill="#FFF0B8" opacity="'+(0.55*o).toFixed(3)+'"/>'+blob(CX,880,(0.9+0.1*eo(lt/0.25))*390,'#F1CF62',77,(0.45*o).toFixed(3));
     const cs=0.9+0.1*eo(lt/0.22);
-    ov+='<g opacity="'+o.toFixed(3)+'" transform="translate('+CX+' 430) scale('+cs.toFixed(3)+') rotate(-2) translate('+(-CX)+' -430)">'+card(CX-390,300,780,260,[{s:TX.askA,size:100,pitch:112},{s:TX.askB,size:80}])+'</g>';
-    [215,475,735].forEach((x,i)=>{ const q=eo((lt-0.15-i*0.1)/0.15); if(q<=0) return; art+=place('a'+i,x,1110,262,340,3.2,0.85+0.15*q,-14*Math.sin(Math.PI*clamp((lt-0.15-i*0.1)/0.22)),(k+i)%3,true); });
+    ov+='<g opacity="'+o.toFixed(3)+'" transform="translate('+CX+' 430) scale('+cs.toFixed(3)+') rotate(-2) translate('+(-CX)+' -430)">'+card(CX-390,290,780,350,[{s:TX.askA,size:96,pitch:104},{s:TX.askB,size:78,pitch:92},{s:TX.askC,size:78,fill:'#C2567A'}])+'</g>';
+    [195,475,755].forEach((x,i)=>{ const q=eo((lt-0.15-i*0.1)/0.15); if(q<=0) return; art+=place('a'+i,x,1130,222,300,3.2,0.85+0.15*q,-14*Math.sin(Math.PI*clamp((lt-0.15-i*0.1)/0.22)),(k+i)%3,true,true); }); // owner, 6 Nov 2026: the three dogs well apart (apartCheck)
     ov+=sub(t,1352);
   } else { const lt=t-ENDC;
     if(!CARD) CARD=endCard('tall',HANDLES,LOGO_INNER);
@@ -139,6 +139,7 @@ window.frame=function(t){
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov;
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const out=safeCheck($('st')); if(out.length) return 'outside SAFE: '+out.join('; ');
+  const near=apartCheck($('st')); if(near.length) return 'dogs too close: '+near.join('; ');
   return '';
 };
 // the cover: its own design (never a frame of the Reel). Everything that matters inside the middle 1080 x 1440 (y 240..1680).
@@ -165,7 +166,7 @@ window.cover=function(){
   const pageFile = path.join(WORK, `page_${process.pid}.html`); // one per process: PAR children must not rewrite each other's page while it loads
   fs.writeFileSync(pageFile, html);
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
-  const allText = [TX.hook, TX.askA, TX.askB, SLOTS.map((s) => s.name), Object.values(SUBS_TX), 'FIND YOUR DOG 35 dogs, all drawn badly 0123456789/'].flat(3).join(' ');
+  const allText = [TX.hook, TX.askA, TX.askB, TX.askC, SLOTS.map((s) => s.name), Object.values(SUBS_TX), 'FIND YOUR DOG 35 dogs, all drawn badly 0123456789/'].flat(3).join(' ');
   await p.evaluate((txt) => Promise.all(['700 40px Andika', '700 40px Caveat'].map((f) => document.fonts.load(f, txt))), allText);
   await p.evaluate(() => document.fonts.ready);
   await p.evaluate(() => measure());

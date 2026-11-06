@@ -53,5 +53,15 @@ function safeCheck(root){ root=root||document; const bad=[];
   root.querySelectorAll('text').forEach((e)=>out(e,22,'text'));
   root.querySelectorAll('g[data-box],[data-safe]').forEach((e)=>out(e,4,'box'));
   return bad; }
+// Owner's rule (6 Nov 2026, the 35-breeds Reel's end page: "they are too close together, make sure it won't happen next time"): dogs that
+// share a shot never overlap or touch. Mark every dog's group with data-apart and call apartCheck() on every frame next to safeCheck():
+// any two visible data-apart elements whose drawn boxes (strokes included) come closer than gap px (default 28) are reported.
+function apartCheck(root,gap){ root=root||document; gap=gap==null?28:gap; const bad=[];
+  const vis=(e)=>{ let o=1; for(let p=e;p&&p!==root;p=p.parentNode) if(p.getAttribute&&p.getAttribute('opacity')!=null) o*=parseFloat(p.getAttribute('opacity')); return o>=0.3; };
+  const rs=[...root.querySelectorAll('[data-apart]')].filter(vis).map((e)=>({e,r:e.getBoundingClientRect()})).filter((x)=>x.r.width&&x.r.height);
+  for(let i=0;i<rs.length;i++) for(let j=i+1;j<rs.length;j++){ const a=rs[i].r, b=rs[j].r;
+    const dx=Math.max(b.left-a.right,a.left-b.right), dy=Math.max(b.top-a.bottom,a.top-b.bottom);
+    if(Math.max(dx,dy)<gap) bad.push('dogs '+(rs[i].e.getAttribute('data-apart')||i)+' and '+(rs[j].e.getAttribute('data-apart')||j)+' only '+Math.round(Math.max(dx,dy))+' px apart'); }
+  return bad; }
 `;
 module.exports = { CENTRE_JS, SAFE_JS };

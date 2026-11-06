@@ -11,7 +11,7 @@ L = {
  "hook": "I drew all thirty-five dog breeds badly. Find yours before it ends!",
  "pug":  "The Pug was harder than it looks.",
  "legs": "Mostly legs.",
- "ask":  "Didn't see yours? Tell me in the comments!",
+ "ask":  "Didn't see yours? Tell me in the comments, and we'll draw it for you!",   # owner, 6 Nov 2026: "we will make it for you"
 }
 out = {}
 for key, text in L.items():

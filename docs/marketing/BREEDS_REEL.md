@@ -1,6 +1,6 @@
 # "I drew all 35 dog breeds badly" Reel: what to post on each channel
 
-Reel #4 of the viral list (`VIRAL_REEL_IDEAS.md`, hook score 80.8), the owner's pick on 6 Nov 2026. Goal: hold people in the first 10 seconds. The hook card is up at frame 1 with the first dog already moving; all 35 of the game's dogs flash by (about 0.26 s each, the game's own default coats and English breed names, a "12/35" counter), 25 dogs have shown by 7.5 s and all 35 by 10.9 s; Noodle tells it (Kokoro af_bella 1.1x) with two kind deadpan jokes (the Pug, the Greyhound); then "didn't see yours? comment your dog 👇" and the shared end card. English only for now: the RedNote cut comes after the owner approves. **Waiting for the owner's approval.**
+Reel #4 of the viral list (`VIRAL_REEL_IDEAS.md`, hook score 80.8), the owner's pick on 6 Nov 2026. Goal: hold people in the first 10 seconds. The hook card is up at frame 1 with the first dog already moving; all 35 of the game's dogs flash by (about 0.26 s each, the game's own default coats and English breed names, a "12/35" counter), 25 dogs have shown by 7.5 s and all 35 by 10.9 s; Noodle tells it (Kokoro af_bella 1.1x) with two kind deadpan jokes (the Pug, the Greyhound); then "didn't see yours? comment your dog 👇 / we'll draw it for you ✏️" (owner, 6 Nov 2026, with the three dogs spaced apart: `apartCheck()` now stops the build if dogs in one shot come within 28 px) and the shared end card; 17.5 s. English only for now: the RedNote cut comes after the owner approves. **Waiting for the owner's approval.**
 
 | Channel | Video | Cover |
 |---|---|---|
@@ -16,7 +16,7 @@ Hook for Shorts and X: **"I drew all 35 dog breeds badly. Find yours before it e
 ## Instagram (and TikTok: the same text)
 
 ```
-comment your dog below 👇 is it in here, or did I draw it too badly to spot? 🙈
+comment your dog below 👇 not in here? we'll draw it for you ✏️
 
 I drew all 35 dog breeds from our game in crayon 🖍️ and I'm sorry 😅 the Pug was harder than it looks 🐶 the Greyhound? mostly legs 🦵 our Corgi somehow ended up with bunny ears 🐰 but my favourite is still the Beagle with the big floppy ears 🤎
 
@@ -26,11 +26,11 @@ we put these dog drawings in Doodle Doggo, our free cozy dog game 🎮 you can p
 
 #DoodleDoggo #DogBreeds #CozyGames #DogDrawing #DogLovers
 ```
-One ask (comment your dog) · 5 hashtags · search: "dog breeds", "cozy dog game", "dog drawing" · no link (it's in the bio) · 15 emoji (2.0 per 100 characters) · `caption.py` READY · `detect.py` human score 87.7 PASS.
+One ask (comment your dog) · 5 hashtags · search: "dog breeds", "cozy dog game", "dog drawing" · no link (it's in the bio) · 15 emoji (2.0 per 100 characters) · `caption.py` READY · `detect.py` human score 92.9 PASS (re-checked 6 Nov with the draw-it line).
 
 Alt text:
 ```
-A fast parade of 35 crayon-drawn dogs, one after another on soft coloured paper, each with its breed name in a pill and a counter from 1/35 to 35/35, under a card that says "I drew all 35 dogs badly, find yours". It ends with a Beagle, a Corgi and a Pomeranian sitting under "didn't see yours? comment your dog", then the Doodle Doggo logo.
+A fast parade of 35 crayon-drawn dogs, one after another on soft coloured paper, each with its breed name in a pill and a counter from 1/35 to 35/35, under a card that says "I drew all 35 dogs badly, find yours". It ends with a Beagle, a Corgi and a Pomeranian sitting well apart under "didn't see yours? comment your dog, we'll draw it for you", then the Doodle Doggo logo.
 ```
 
 ## YouTube Shorts
@@ -46,7 +46,7 @@ All 35 dog breeds, drawn badly in crayon. Can you find yours?
 
 I drew every dog in our game, and not one of them came out right. The Pug took the longest. The Greyhound is mostly legs. They flash by fast, so keep your eyes open, and pause if you need to.
 
-Didn't see your dog? Tell us in the comments which one you have, and we'll tell you where it was hiding.
+Didn't see your dog? Tell us in the comments which one you have, and we'll draw it for you.
 
 Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You can adopt one of 35 crayon dogs, walk the town with your dog, grow carrots in the garden and hand out as many belly rubs as you like. There's no timer and nothing to win, and nothing bad ever happens. If you like dog drawing, this whole game is one.
 
@@ -57,13 +57,13 @@ Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You can ad
 
 #DoodleDoggo #Shorts #DogBreeds #CozyGames #DogDrawing
 ```
-Text above the link block: `caption.py` READY · `detect.py` human score 74.9 PASS (the link list is the same fixed block as the other Shorts). The title is the scored hook itself (80.8); on its own it is too short for the human panel (62.0), so it is checked with the description.
+Text above the link block: `caption.py` READY · `detect.py` human score 75.4 PASS (the link list is the same fixed block as the other Shorts). The title is the scored hook itself (80.8); on its own it is too short for the human panel (62.0), so it is checked with the description.
 
-## X (259 of 280; the link counts as 23, each emoji as 2)
+## X (273 of 280; the link counts as 23, each emoji as 2)
 
 ```
 I drew all 35 dog breeds badly. find yours before it ends 👀
 
-the Pug was harder than it looks. the Greyhound's mostly legs. didn't see your dog? tell me 🐶 every dog drawing here is from our free cozy dog game: https://doodledoggo.app #DoodleDoggo #DogBreeds
+the Pug was harder than it looks. the Greyhound's mostly legs. didn't see your dog? tell me, I'll draw it 🐶 every dog drawing here is from our free cozy dog game: https://doodledoggo.app #DoodleDoggo #DogBreeds
 ```
-`detect.py` human score 85.8 PASS. `caption.py` REVIEW only for its Instagram rule "no links in captions" (on X the link is clickable and wanted); every other check passes.
+`detect.py` human score 97.2 PASS. `caption.py` REVIEW only for its Instagram rule "no links in captions" (on X the link is clickable and wanted); every other check passes.
