@@ -5,7 +5,7 @@
    Save field S.fr (v219Fields in 00_core.js). Test hook: window.__paw.fr.
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
-const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
+const FR_LIVE = true; // the Game Manager turns this on at the v2.19 release
 if (FR_LIVE) NEWS.unshift(NEWS_V219); // the v2.19 news entry (49c_news.js) appears with the release, never before
 function frOn() {
   if (typeof clArtifact === 'function' && clArtifact()) return false;

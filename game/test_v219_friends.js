@@ -440,7 +440,7 @@ run('v219_friends', async (t) => {
   sec('7. off by default, and hidden on the artifact');
   await start(t, { mock: false, fr: false, query: '?friend=DOG-4K7PM' });
   ok(await t.until(() => !!(window.__paw && window.__paw.fr && window.__paw.mode === 'yard'), null, 8000), 'a normal boot reaches the yard');
-  ok(await ev(() => window.__paw.fr.live() === false && window.__paw.fr.on() === false), 'off by default: FR_LIVE is false, so Friends is off without a test flag');
+  ok(await ev(() => window.__paw.fr.on() === false), 'off under the test harness without a test flag (FR_LIVE ' + (await ev(() => window.__paw.fr.live())) + '; live players get Friends since v2.19)');
   ok(await ev(() => { const b = document.getElementById('frBtn'); return (!b || b.hidden || getComputedStyle(b).display === 'none') && !document.getElementById('mmFr') && !document.getElementById('frLeave') && !document.getElementById('frPrev') && !document.getElementById('frCh0'); }), 'off by default: no Friends button, no Leave Friends row, and the invite card stays hidden');
   await t.ctx.close();
   await start(t, { mock: false, fr: false, host: 'claude.ai' });
