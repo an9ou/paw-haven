@@ -67,3 +67,33 @@ I drew all 35 dog breeds badly. find yours before it ends 👀
 the Pug was harder than it looks. the Greyhound's mostly legs. didn't see your dog? tell me, I'll draw it 🐶 every dog drawing here is from our free cozy dog game: https://doodledoggo.app #DoodleDoggo #DogBreeds
 ```
 `detect.py` human score 97.2 PASS. `caption.py` REVIEW only for its Instagram rule "no links in captions" (on X the link is clickable and wanted); every other check passes.
+
+## RedNote / 小红书
+
+Video: `brand/instagram/launch/breeds_reel/doodle-doggo-35-breeds-rednote.mp4` (the Mandarin cut: zf_073 at 1.1x, the game's zh-Hans breed names, Chinese cards and subtitles, the RedNote end card with no link). Cover (upload as the video's custom cover): `brand/rednote/rednote-10-breeds.jpg` (3:4).
+
+标题 (title, 16 characters with the emoji; 20 max):
+```
+35种狗狗全画歪了，找找你家的🐶
+```
+
+> I drew all 35 dogs crooked, find yours.
+
+正文 (text):
+```
+我把游戏里的35种狗狗，全用蜡笔画了一遍 🖍️ 结果一只都没画对 😅
+
+巴哥犬比看起来难画多了，灵缇犬基本全是腿 🦵
+你家的狗狗在里面吗？太快的话可以暂停 👀
+
+没找到的话，评论区告诉我你家狗狗是什么品种，我们帮你画一只 ✏️
+
+视频里的蜡笔狗狗来自 Doodle Doggo，一款治愈系蜡笔狗狗游戏
+浏览器搜 Doodle Doggo App 就能玩
+
+#狗狗 #萌宠 #简笔画 #治愈系游戏 #我在小红书做游戏
+```
+
+> I drew all 35 dogs in our game in crayon, and not one came out right. The Pug was much harder than it looks; the Greyhound is basically all legs. Is your dog in here? Pause if it's too fast. Didn't find it? Tell me your dog's breed in the comments and we'll draw one for you. The crayon dogs come from Doodle Doggo, a cozy crayon dog game. Search "Doodle Doggo App" in your browser to play.
+
+Checked by hand (RedNote rules): no link, no domain with a dot, no QR, no 免费 / 无广告 / 下载, the game's own zh-Hans names (巴哥犬, 灵缇犬), one ask (comment your breed, with what we give back), title within 20 characters. #我在小红书做游戏 is RedNote's 18.5-billion-view game-maker topic (REDNOTE_TRENDS.md).
