@@ -27,7 +27,7 @@ function homeFam(s) { return s && typeof townFamily === 'function' ? townFamily(
 // v2.14: a shop's name (shopTitle from 05_market_shops when present)
 function shopName(k) { return typeof shopTitle === 'function' ? shopTitle(k) : tdata('shop_name.' + k, SHOP_NAME[k]); }
 // v2.14: a place's name as shown (Tokyo places and the station come from 39_tokyo.js tkPlaceName)
-function placeName(k) { const mp = mpPlaceName(k); if (mp) return mp; return typeof tkPlaceName === 'function' && (k === 'station' || (typeof TK_PLACES !== 'undefined' && TK_PLACES[k])) ? tkPlaceName(k) : PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : k; }
+function placeName(k) { const mp = mpPlaceName(k); if (mp) return mp; return typeof tkPlaceName === 'function' && (k === 'station' || (typeof TK_PLACES !== 'undefined' && TK_PLACES[k])) ? tkPlaceName(k) : PLACES[k] ? townPlaceName(k) : k; } // QA 6 Nov 2026: townPlaceName has the eight places the places table lacks
 function enterAdopt() {
   setChrome(false, false);
   view.innerHTML = srRoomSVG('adopt'); // v2.7: the Shelter Playroom (30_shelter.js). No S is read or written here

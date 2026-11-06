@@ -633,7 +633,7 @@ function travelTo(id) {
     markDirty(); go(id === 'market' ? 'market' : 'yard'); mpArrive(id); // v2.15: the sticker is cleared, a storefront opens its shop window (42_map215.js)
     let msg = tt('yard.arrived_at', '{first, select, yes {{name} arrived at {place}. First visit today: +5 Happiness.} other {{name} arrived at {place}.}}', { first: first ? 'yes' : 'no', name: NAME(), place: placeName(id) });
     if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' ' + tt('yard.splashed_through_a_puddle_on', 'Splashed through a puddle on the way (-3 Cleanliness).'); }
-    toast(msg, 'good');
+    toast(msg, 'good', { arr: id }); // QA 6 Nov 2026: a queued arrival toast is dropped once the dog has moved on (toastStale)
   }, 1200);
 }
 function dogHeadWorld() { return rmHead(D()); } // v2.10 ROAM: wherever the leader stands
@@ -696,7 +696,10 @@ function moodLine() {
 function closeTray() { SFX.click(); if (cur.mode === 'yard') { S.sleeping ? sleepTray() : dockIdle(); } else dock.innerHTML = ''; }
 function trayHTML(title, body) { return `<div class="tray"><div class="tray-h"><h3>${title}</h3><button class="xbtn" id="trayX" aria-label="${esc(tt('yard.label_close', 'Close'))}">x</button></div><div class="tray-body">${body}</div></div>`; }
 function setTray(title, body, opt = {}) { if (typeof blOn === 'function' && blOn()) return; // ball play keeps its own dock (38_ball.js): a scene tap (dog house, bowl, decoration) must not swap it
-  if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
+  if (!opt.mini && !modal.hidden) closeModal();
+  const draw = () => { dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); };
+  if (dock._trayT === title && dock.querySelector(':scope > .tray')) hsKeep(dock, draw); else draw(); // QA 6 Nov 2026: the same tray drawn again keeps its sideways rows where they were scrolled
+  dock._trayT = title; $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
 
 /* ---------------- FEED ---------------- */
 function openFeedTray() {

@@ -94,7 +94,13 @@ html[data-layout="phone"] .dd-ptext p{font-size:19px;line-height:28px}
 .dd-sdots i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--ink);background:var(--paper)}
 .dd-sdots i.full{background:var(--w-pink)}
 .dd-sdots i.on{background:var(--ink)}
-html[data-layout="phone"] .dd-sa{width:64px;height:64px}
+html[data-layout="phone"] .dd-sa{width:58px;height:58px}
+/* QA 6 Nov 2026: on an iPhone 15 the page-flip buttons sat under the sheet's bottom edge (a 31 px scroll reached them): a tighter page fits them */
+html[data-layout="phone"] .dd-sbook{gap:6px}
+html[data-layout="phone"] .dd-spage{padding:8px 10px 10px}
+html[data-layout="phone"] .dd-spage h3{margin:0 0 4px}
+html[data-layout="phone"] .dd-sgrid{gap:6px 8px}
+html[data-layout="phone"] .dd-sgift{margin:6px 0 0}
 @media (max-width:380px){.dd-sgrid{gap:6px}.dd-sa{width:58px!important;height:58px!important}}
 .dd-bic{width:100%;height:100%;display:block}
 #bar .act[data-act="stickers"]{--wash:var(--w-pink)} /* the phone More tray: pastel like Wardrobe and Journal */

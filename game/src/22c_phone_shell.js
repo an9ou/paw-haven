@@ -4,7 +4,9 @@
 
 /* ---------- mode switch (called at load from 13_more_dogs.js through applyLayout, so no top-level const is read here) ---------- */
 function psMQ(q) { return !!(window.matchMedia && matchMedia(q).matches); }
-function psLayoutWanted() { return psMQ('(max-width: 820px)') || (psMQ('(orientation: portrait)') && window.innerWidth < 1024); }
+// QA 6 Nov 2026: a wide phone (over 820 px sideways) keeps the phone layout while the "turn your phone" card shows (psLockWanted), so turning it
+// does not switch to the desktop layout under the card and close the open sheet or tray
+function psLayoutWanted() { return psMQ('(max-width: 820px)') || (psMQ('(orientation: portrait)') && window.innerWidth < 1024) || psLockWanted(); }
 function psApplyLayout(rerender) {
   const ph = psLayoutWanted(), was = isPhone();
   if (ph) document.documentElement.dataset.layout = 'phone'; else delete document.documentElement.dataset.layout;

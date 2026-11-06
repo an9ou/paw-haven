@@ -212,13 +212,17 @@ require('./test_lib').run('phone_shell', async (t) => {
     await p.locator('#fOk').tap(); await t.modalGone(); await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.lu();
 
     sec(dev + ': portrait lock');
+    await p.locator('#bar [data-act=care]').tap(); ok(await t.waitPop(true), `${dev}: the Care tray is open before turning`);
     await p.setViewportSize({ width: dev === 'Pixel 7' ? 915 : 852, height: dev === 'Pixel 7' ? 412 : 393 });
+    // QA 6 Nov 2026: a wide phone (915 px sideways) used to switch to the desktop layout under the card, which closed the open tray or sheet
+    ok(await t.until(() => document.documentElement.hasAttribute('data-pslock')) && await ev(() => document.documentElement.dataset.layout === 'phone') && await t.popVisible(), `${dev}: sideways under the card: still the phone layout, the tray stays open`);
     ok(await t.until(() => document.documentElement.hasAttribute('data-pslock') && !document.getElementById('psTurn').hidden && getComputedStyle(document.getElementById('psTurn')).display === 'flex'), `${dev}: sideways shows the "Turn your phone upright" card`);
     ok(/Turn your phone upright/.test(await p.textContent('#psTurn')), `${dev}: the card says "Turn your phone upright"`);
     ok(await ev(() => { const el = document.querySelector('#stage .act') || document.getElementById('stage'); return getComputedStyle(el).animationPlayState.split(',').every((s) => s.trim() === 'paused'); }), `${dev}: CSS animations are paused behind the card`);
     await t.SH(dev + '_lock');
     await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 393, height: dev === 'Pixel 7' ? 915 : 852 });
     ok(await t.until(() => !document.documentElement.hasAttribute('data-pslock') && document.getElementById('psTurn').hidden && document.documentElement.dataset.layout === 'phone'), `${dev}: upright again: the card goes, phone layout is back`);
+    ok(await t.popVisible(), `${dev}: upright again: the Care tray is still open`); await p.locator('#bar [data-act=care]').tap(); await t.waitPop(false);
     await noHScroll('after rotate');
     await t.ctx.close();
   }

@@ -119,6 +119,21 @@ html:is([data-layout="phone"],:not([lang="en"])) .rt-card > *{flex:none}
 html:is([data-layout="phone"],:not([lang="en"])) .rt-card > .rt-prev{flex:0 1 auto;min-height:64px}
 html[data-layout="phone"] .rt-card h3{font-size:30px}
 .rt-nav{display:flex;align-items:center;gap:16px;margin:6px 0}
+/* QA 6 Nov 2026: a short desktop window (1024x768: a 165 px carousel) cut the bottom 86 px off the card. Under 600 px of stage the screen's lines sit
+   tighter, and in a carousel under 300 px the card is a flex column whose preview gives up height (down to 40 px), so its text always shows */
+.routes{container:rts / size}
+@container rts (max-height: 600px){
+  html:not([data-layout="phone"]) .rt-title{font-size:32px;margin:0 0 2px}
+  html:not([data-layout="phone"]) .rt-nav{margin:2px 0}
+  html:not([data-layout="phone"]) .rt-nav .arrow{width:44px;height:44px;font-size:26px}
+}
+@container (max-height: 300px){
+  html:not([data-layout="phone"]) .rt-card{display:flex;flex-direction:column;max-height:calc(100cqh - 12px);padding:8px 14px 8px}
+  html:not([data-layout="phone"]) .rt-card > *{flex:none}
+  html:not([data-layout="phone"]) .rt-card > .rt-prev{flex:0 1 auto;min-height:40px}
+  html:not([data-layout="phone"]) .rt-card h3{margin:4px 0 0;font-size:28px}
+  html:not([data-layout="phone"]) .rt-card p{margin:2px 0}
+}
 .rt-foot{display:flex;gap:16px;align-items:center}
 .wxic{display:inline-block;width:22px;height:22px;vertical-align:-5px;margin-right:5px}
 .wxic svg{width:100%;height:100%}

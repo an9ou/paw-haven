@@ -1,7 +1,7 @@
 /* v2.9 PACK lane (tag pk, classes .pk-): pack play and walks. V29.md sections 1 and 5. The PACK lane owns this file. */
 /* the one-dog picker (Wardrobe, Tricks): heads of every dog present, the picked one is outlined. It reuses the v2.7 chip look (.cr-chip) */
 .pk-pickwrap{margin:0 0 6px;min-width:0}
-.pk-pick{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x}
+.pk-pick{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .cr-chip.pk-pickb{--wash:var(--paper)}
 .cr-chip.pk-pickb[aria-pressed="true"]{--wash:var(--w-yellow);outline:3px solid var(--ink);outline-offset:-1px}
 .pk-cap{margin:2px 4px 0}
@@ -41,5 +41,5 @@ html[data-layout="phone"] .pk-who.pk-one{white-space:nowrap;overflow:hidden;text
 html[data-layout="phone"] .routes.rt-pk{overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
 html[data-layout="phone"] .routes.rt-pk > *{flex-shrink:0}
 html[data-layout="phone"] .routes.rt-pk .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,340px)}
-html[data-layout="phone"] .routes.rt-pk .rt-prev{height:min(200px,max(90px,calc(100cqh - var(--pk-rest,165px) - 13px)))}
+html[data-layout="phone"] .routes.rt-pk .rt-prev{height:min(200px,max(72px,calc(100cqh - var(--pk-rest,165px) - 13px)))} /* QA 6 Nov 2026: 72 px at least (was 90), so Start walk fits on an iPhone 15 in German and Chinese */
 html[data-layout="phone"] .routes.rt-pk .rt-nav{margin:2px 0}

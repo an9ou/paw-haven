@@ -23,3 +23,43 @@ window.addEventListener('resize', () => { const p = portrait(); if (wasPortrait 
 let hiddenAt = 0;
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); saveNow(); } else if (S) { gardenAdvance(); birthdayCheck(); if (hiddenAt && Date.now() - hiddenAt > 120000 && cur.mode === 'yard') setTimeout(() => greetBark(), 600); } });
 
+
+/* ---------- sideways rows on desktop (QA 6 Nov 2026) ---------- */
+// One helper for every sideways chip row: the trick row, the pack chip rows (.cr-chips, also the friend's-dog row), the one-dog picker (.pk-pick),
+// the home put-away row, the photo face row and the dock trays' .row. On a mouse: the wheel moves the row (a trackpad's own sideways swipe works
+// as is; at an end the page scrolls on), a drag past 6 px scrolls it (the row holds the pointer, so leaving it does not stop the drag) and swallows
+// the click the drag would fire. The listeners sit on the window, so a row that is drawn again needs no new binding; hsKeep keeps its scroll.
+// Touch never comes here: phones scroll these rows natively (touch-action pan-x pan-y).
+const HS_ROWS = '.trchips, .cr-chips, .pk-pick, .ho-put, .ex-frow, #dock .row';
+function hsRow(t) { const r = t && t.closest ? t.closest(HS_ROWS) : null; return r && r.scrollWidth > r.clientWidth + 1 ? r : null; }
+// run fn (a redraw) under root and put every row back where it was scrolled to (the rows are matched by their order)
+function hsKeep(root, fn) {
+  const rows = () => (root ? [...root.querySelectorAll(HS_ROWS)] : []), xs = rows().map((r) => r.scrollLeft);
+  const out = fn(); if (xs.some((x) => x > 0)) rows().forEach((r, i) => { if (xs[i]) r.scrollLeft = xs[i]; });
+  return out;
+}
+let hsDrag = null;
+window.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; const row = hsRow(e.target); if (!row) return;
+  const max = row.scrollWidth - row.clientWidth, to = Math.max(0, Math.min(max, row.scrollLeft + e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? row.clientWidth : 1)));
+  if (Math.abs(to - row.scrollLeft) < 0.5) return; // at an end: let the page (or the sheet) scroll on
+  e.preventDefault(); row.scrollLeft = to;
+}, { passive: false, capture: true });
+window.addEventListener('pointerdown', (e) => {
+  hsDrag = null; if (e.pointerType !== 'mouse' || e.button !== 0) return; const row = hsRow(e.target); if (!row) return;
+  hsDrag = { row, id: e.pointerId, x: e.clientX, sl: row.scrollLeft, moved: false };
+}, true);
+window.addEventListener('pointermove', (e) => {
+  const d = hsDrag; if (!d || e.pointerId !== d.id) return;
+  if (!(e.buttons & 1)) { hsDrag = null; d.row.classList.remove('hs-drag'); return; } // the button came up outside the window
+  const dx = e.clientX - d.x;
+  if (!d.moved) { if (Math.abs(dx) < 6) return; d.moved = true; d.row.classList.add('hs-drag'); try { d.row.setPointerCapture(e.pointerId); } catch (er) { /* no capture */ } }
+  d.row.scrollLeft = d.sl - dx;
+}, true);
+function hsEnd(e) {
+  const d = hsDrag; if (!d || e.pointerId !== d.id) return; hsDrag = null; d.row.classList.remove('hs-drag');
+  if (!d.moved || e.type !== 'pointerup') return;
+  const swallow = (ev) => { ev.stopImmediatePropagation(); ev.preventDefault(); }; // the click a drag would fire on the chip under the pointer
+  window.addEventListener('click', swallow, { capture: true, once: true }); setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+}
+window.addEventListener('pointerup', hsEnd, true); window.addEventListener('pointercancel', hsEnd, true);

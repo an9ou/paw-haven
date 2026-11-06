@@ -1,6 +1,6 @@
 /* v2.7 PACK CARE lane (tag cr): the dog chips row in the Feed and Care trays, pack baths and naps. V27.md section 6. The PACK CARE lane owns this file. */
 .cr-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;margin:0 0 4px}
-.cr-chips{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x}
+.cr-chips{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .cr-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:46px;padding:3px 10px 3px 5px;cursor:pointer;color:var(--ink);--wash:var(--paper)}
 .cr-chip.on{--wash:var(--w-mint)}
 .cr-chip:nth-child(2n){transform:rotate(.8deg)}

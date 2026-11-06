@@ -52,22 +52,13 @@ function drawAudience(on) {
 function trainLine(t, cls = '') { if (TRN) TRN.msg = [t, cls]; const l = $('#trLine'); if (l) { l.textContent = t; l.className = 'trline ' + cls; } }
 /* the trick row scrolls sideways: a mouse wheel or a mouse drag moves it on desktop (only a trackpad or shift+wheel did before, and
    macOS hides the scrollbar), it keeps its place across re-renders, and the chosen trick is kept in view */
-function trChipsScroll(row, keep, n) {
+// the trick row keeps where the player scrolled it, else the picked trick is brought into view. The wheel and the mouse drag are the shared
+// sideways-row helper's (22_input.js HS_ROWS, QA 6 Nov 2026)
+function trChipsScroll(row, keep) {
   if (!row) return;
   if (keep != null) row.scrollLeft = keep;
   const on = row.querySelector('.trchip.on');
   if (on && keep == null) { const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth; if (l < row.scrollLeft || r > row.scrollLeft + row.clientWidth) row.scrollLeft = Math.max(0, l - 8); }
-  row.addEventListener('wheel', (e) => {
-    if (row.scrollWidth <= row.clientWidth + 1 || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; // a trackpad's own sideways swipe works as is
-    const max = row.scrollWidth - row.clientWidth, to = Math.max(0, Math.min(max, row.scrollLeft + e.deltaY * (e.deltaMode === 1 ? 32 : 1)));
-    if (to === row.scrollLeft) return; // at an end: let the page scroll on
-    e.preventDefault(); row.scrollLeft = to;
-  }, { passive: false });
-  let drag = null;
-  row.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse' || e.button !== 0) return; drag = { x: e.clientX, sl: row.scrollLeft, moved: false }; });
-  row.addEventListener('pointermove', (e) => { if (!drag) return; const dx = e.clientX - drag.x; if (!drag.moved && Math.abs(dx) < 6) return; drag.moved = true; row.scrollLeft = drag.sl - dx; });
-  const end = () => { if (drag && drag.moved) { const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); }; row.addEventListener('click', swallow, { capture: true, once: true }); setTimeout(() => row.removeEventListener('click', swallow, { capture: true }), 0); } drag = null; };
-  row.addEventListener('pointerup', end); row.addEventListener('pointerleave', () => { drag = null; });
 }
 function renderTraining() {
   const tp = $('#trainPanel'); if (!tp || !TRN) return; const d = D(), n = TRN.trick, st = trickSt(n), f = Math.round(focusNow());
@@ -89,7 +80,7 @@ function renderTraining() {
   const trSx = tp.querySelector('.trchips'), trKeep = trSx ? trSx.scrollLeft : null; // keep the trick row where the player scrolled it (a re-render used to snap it back to Sit)
   tp.innerHTML = `<div class="trhead"><div class="tabs" role="tablist"><button class="btn" role="tab" data-trtab="train" aria-selected="${TRN.tab === 'train'}">${esc(tt('train.tab_train', 'Train'))}</button><button class="btn" role="tab" data-trtab="show" aria-selected="${TRN.tab === 'show'}">${esc(tt('train.tab_show', 'Show off'))}</button></div><button class="xbtn" id="trX" aria-label="${esc(tt('train.close', 'Close training'))}">x</button></div><div class="trbody">${body}</div>`;
   tp.querySelector('#trX').onclick = () => { SFX.click(); closeTraining(); };
-  trChipsScroll(tp.querySelector('.trchips'), trKeep, n);
+  trChipsScroll(tp.querySelector('.trchips'), trKeep);
   tp.querySelectorAll('[data-trtab]').forEach((b) => { b.onclick = () => { if (TRN.game) return; SFX.click(); TRN.tab = b.dataset.trtab; TRN.msg = null; renderTraining(); }; });
   tp.querySelectorAll('[data-tr]').forEach((b) => { b.onclick = () => { if (TRN.game) return; const t = TRICKS.find((x) => x.n === b.dataset.tr); if (S.bond.level < t.bond) { nope(tt('train.unlocks', '{trick} unlocks at Bond {n}.', { trick: playTrick(t.n), n: t.bond })); return; } SFX.click(); TRN.trick = t.n; if (t.n === 'Speak' && PERS[S.dog.key] === 'chatty' && trickSt('Speak').p < 0.6) { trickSt('Speak').p = 0.6; toast(tt('train.loves_talk', '{name} already loves to talk: Speak starts at 60%!', { name: NAME() }), 'good'); } renderTraining(); }; });
   const go1 = tp.querySelector('#trStart'); if (go1) go1.onclick = () => tgBegin(TRN.trick);

@@ -33,7 +33,7 @@ html[data-layout="phone"] .ptitle{min-height:44px;font-size:20px;padding:2px 14p
 /* family tree: pannable frame (JS wraps the tree on phones), nodes stay 44 px or larger */
 html[data-layout="phone"] .famwrap{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;max-width:100%}
 html[data-layout="phone"] .ft-wrap{display:flex;flex-direction:column;gap:6px;min-width:0;width:100%;max-width:100%}
-html[data-layout="phone"] .ft-pan{position:relative;overflow-x:auto;overflow-y:hidden;max-width:100%;border-radius:14px;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+html[data-layout="phone"] .ft-pan{position:relative;overflow-x:auto;overflow-y:hidden;max-width:100%;border-radius:14px;touch-action:pan-x pan-y;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
 html[data-layout="phone"] .ft-pan .ft{width:660px;flex:none}
 html[data-layout="phone"] .ft-pan .fnode{width:120px;min-height:64px}
 html[data-layout="phone"] .ft-pan .fnode .fhead{width:56px;height:56px}
@@ -56,7 +56,7 @@ html[data-layout="phone"] .csparkle{align-items:flex-start;max-width:100%}
 html[data-layout="phone"] .cstars{flex-wrap:wrap;max-width:100%;font-size:22px}
 html[data-layout="phone"] .cmiles{gap:6px}
 html[data-layout="phone"] .cmile{font-size:15px}
-html[data-layout="phone"] .cbreeds{flex-wrap:nowrap;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;touch-action:pan-x}
+html[data-layout="phone"] .cbreeds{flex-wrap:nowrap;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;touch-action:pan-x pan-y}
 html[data-layout="phone"] .cbreeds::-webkit-scrollbar{display:none}
 html[data-layout="phone"] .cbreed{flex:none;min-height:44px;min-width:44px;font-size:19px}
 html[data-layout="phone"] .cgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}

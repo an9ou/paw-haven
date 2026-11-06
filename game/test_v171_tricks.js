@@ -122,6 +122,12 @@ require('./test_lib').run('v171_tricks', async (t) => {
     await ev((r) => { document.querySelector(r).scrollLeft = 0; }, R); const pick = await ev(() => document.querySelector('#trainPanel .trchip.on').dataset.tr);
     await p.mouse.move(b.x + b.width - 30, b.y + b.height / 2); await p.mouse.down(); await p.mouse.move(b.x + 40, b.y + b.height / 2, { steps: 8 }); await p.mouse.up(); await t.sleep(150);
     ok(await sl() > 100 && (await ev(() => document.querySelector('#trainPanel .trchip.on').dataset.tr)) === pick, 'desktop: a mouse drag scrolls the row and does not pick the trick it started on');
-    ok(await ev((r) => getComputedStyle(document.querySelector(r)).scrollbarWidth === 'thin', R), 'desktop: the row shows a thin scrollbar'); }
+    // QA 6 Nov 2026: the drag holds the pointer (setPointerCapture past 6 px), so a drag that leaves the row keeps scrolling it
+    await ev((r) => { document.querySelector(r).scrollLeft = 0; }, R); const mx = await ev((r) => { const e = document.querySelector(r); return e.scrollWidth - e.clientWidth; }, R);
+    await p.mouse.move(b.x + b.width - 30, b.y + b.height / 2); await p.mouse.down(); for (let i = 1; i <= 12; i++) await p.mouse.move(b.x + b.width - 30 - i * 60, b.y + b.height / 2 + i * 12); await p.mouse.up(); await t.sleep(150);
+    const out = await sl(); ok(out >= Math.min(mx, 720) - 2, `desktop: a drag that leaves the row (down and past its left end) keeps scrolling it (scrollLeft ${Math.round(out)} of ${mx})`);
+    // the bar: ::-webkit-scrollbar (Chrome, Safari) with scrollbar-width / -color left at auto, since in Chrome 121+ either one switches the webkit styling off
+    ok(await ev((r) => { const e = document.querySelector(r), cs = getComputedStyle(e); const rules = []; const walk = (L) => { for (const x of L) { if (x.cssRules) walk(x.cssRules); if (x.selectorText) rules.push(x.selectorText); } }; for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (er) { /* none */ } }
+      return cs.scrollbarWidth === 'auto' && cs.scrollbarColor === 'auto' && rules.some((s) => /\.trchips/.test(s) && /::-webkit-scrollbar-thumb/.test(s)); }, R), 'desktop: the row shows a crayon scrollbar (::-webkit-scrollbar, scrollbar-width / -color auto)'); }
   await p.click('#trX'); ok(await t.until(() => !window.__paw.train && !document.getElementById('trTrack'), null, 3000), 'closing the panel removes everything');
 });

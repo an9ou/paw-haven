@@ -40,7 +40,7 @@ html[data-motion="off"] #fsParadeG .fs-pd{animation:none}
 /* ---- phones: 15 px text, 44 px buttons, the dog row scrolls sideways inside the sheet ---- */
 html[data-layout="phone"] .fs-bea p{font-size:16px}
 html[data-layout="phone"] .fs-drift{display:none}
-html[data-layout="phone"] .fs-row{display:flex;grid-template-columns:none;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;touch-action:pan-x;padding:6px 4px 10px;gap:10px;-webkit-overflow-scrolling:touch}
+html[data-layout="phone"] .fs-row{display:flex;grid-template-columns:none;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;touch-action:pan-x pan-y;padding:6px 4px 10px;gap:10px;-webkit-overflow-scrolling:touch}
 html[data-layout="phone"] .fs-npc{flex:none;width:128px;scroll-snap-align:start}
 html[data-layout="phone"] .fs-npc .small{font-size:15px}
 html[data-layout="phone"] .fs-pdog{width:112px;height:92px}

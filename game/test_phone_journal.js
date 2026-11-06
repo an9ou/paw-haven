@@ -100,6 +100,21 @@ async function suite(t, device) {
     const bb = await nb.boundingBox(); ok(bb.width >= 44 && bb.height >= 44, `${device}: pan button is ${Math.round(bb.width)}x${Math.round(bb.height)}`);
     await pb.tap(); await sleep(450); const [l2] = await sc(); ok(l2 < l1, `${device}: Left button pans back (${l1} -> ${l2})`);
     await nb.tap(); await sleep(450); const [l3] = await sc(); ok(l3 > l2, `${device}: Right button pans on (${l2} -> ${l3})`);
+    // QA 6 Nov 2026: the tree is touch-action pan-x pan-y (it was pan-x), so an up-swipe that starts on it scrolls the sheet, and the sheet stays open
+    ok(await ev(() => getComputedStyle(document.querySelector('.ft-pan')).touchAction === 'pan-x pan-y'), `${device}: the tree lets a vertical swipe through (touch-action pan-x pan-y)`);
+    const body = () => ev(() => { const b = document.querySelector('#modal .panel-body'); return b ? [Math.round(b.scrollTop), b.scrollHeight - b.clientHeight] : [0, 0]; });
+    await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = 0; }); await sleep(100);
+    const [, room] = await body();
+    if (room > 30) {
+      const fb = await p().locator('.ft-pan').boundingBox(), vh = p().viewportSize().height, xm = fb.x + fb.width / 2, ys = Math.min(fb.y + fb.height - 12, vh - 120);
+      ok(ys > fb.y + 20, `${device}: the swipe starts on the tree (y ${Math.round(ys)} in ${Math.round(fb.y)}..${Math.round(fb.y + fb.height)})`);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(xm, ys) });
+      for (let i = 1; i <= 8; i++) { await sleep(25); await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(xm, ys - i * 22) }); }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(500);
+      const [st] = await body(); ok(st > 30, `${device}: an up-swipe that starts on the family tree scrolls the sheet (${st} of ${room})`);
+      ok(await ev(() => !document.getElementById('modal').hidden && !!document.querySelector('.ft-pan')), `${device}: the Family sheet stays open`);
+      await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = 0; }); await sleep(150);
+    } else ok(true, `${device}: the Family sheet does not scroll here (${room} px), nothing to swipe`);
     await cdp.detach();
   }
   // tap a grandparent: the tree re-roots on that dog (a tap that follows a drag must not be eaten, a plain tap must work)

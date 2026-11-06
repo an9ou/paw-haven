@@ -304,12 +304,12 @@ function pkRoutesLine() {
   if (isPhone()) { pkWhoFit($('.pk-who', el), full, l, bDogs.concat(skip.map((x) => x.d))); pkRoutesFit(); }
 }
 // phones with a pack: the chip row and the who line take room from the card's viewport. The text under the preview is measured, the preview takes what is left
-// (at least 90 px tall, as before) and the screen scrolls when that does not fit, so the card's last line and its border are never cut off
+// (at least 72 px tall; 90 before QA 6 Nov 2026) and the screen scrolls when that does not fit, so the card's last line and its border are never cut off
 function pkRoutesFit() {
   const rt = $('.routes', view), cards = rt ? [...rt.querySelectorAll('.rt-card')] : []; if (!cards.length) return;
   const rest = Math.max(...cards.map((c) => { const pv = $('.rt-prev', c); return c.offsetHeight - (pv ? pv.offsetHeight : 0); }));
   if (!(rest > 0)) return;
-  rt.style.setProperty('--pk-rest', Math.ceil(rest) + 'px'); rt.style.setProperty('--pk-rth', Math.ceil(rest + 90 + 13) + 'px');
+  rt.style.setProperty('--pk-rest', Math.ceil(rest) + 'px'); rt.style.setProperty('--pk-rth', Math.ceil(rest + 72 + 13) + 'px'); // QA 6 Nov 2026: the preview's least height is 72 px (37_pack_play.css)
 }
 // phones: the who line stays on one line, so the route card above keeps its room. The longest summary that fits wins (the full lines come as toasts when the walk starts)
 function pkWhoFit(p, full, l, stay) {

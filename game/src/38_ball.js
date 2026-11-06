@@ -110,10 +110,13 @@ function blDraw() {
   const ball = $('#blBall', L), spin = $('#blSpin', L), ring = $('#blRing', L);
   ball.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(sy - BL_R * sc * 0.4).toFixed(1)}) scale(${sc.toFixed(3)})`);
   spin.setAttribute('transform', `rotate(${b.rot.toFixed(1)})`);
-  ring.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(sy - BL_R * sc * 0.4).toFixed(1)}) scale(${sc.toFixed(3)})`); ring.style.display = rest ? '' : 'none';
+  // QA 6 Nov 2026: the grab ring is never drawn smaller than 48 px across on screen (it was 37 px on a phone); the hit area (blHitR) was already bigger
+  let rs = sc; if (rest) { const svg = L.ownerSVGElement || L.closest('svg'), ppu = svg ? blPpu(svg) : 1; rs = Math.max(sc, 24 / ppu / 50); }
+  ring.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(sy - BL_R * sc * 0.4).toFixed(1)}) scale(${rs.toFixed(3)})`); ring.style.display = rest ? '' : 'none';
 }
+function blPpu(svg) { const r = svg.getBoundingClientRect(), vb = svg.viewBox && svg.viewBox.baseVal, w = vb && vb.width ? vb.width : 1000; return r.width / w || 1; } // screen px per scene unit
 function blHitR(svg) { // 32 px at least, whatever the zoom
-  const r = svg.getBoundingClientRect(), vb = svg.viewBox && svg.viewBox.baseVal, w = vb && vb.width ? vb.width : 1000, ppu = r.width / w || 1;
+  const ppu = blPpu(svg);
   return Math.max(70, 32 / ppu);
 }
 function blBind(svg) {

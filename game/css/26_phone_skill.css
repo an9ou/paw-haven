@@ -6,7 +6,7 @@ html[data-layout="phone"] #trainPanel .trbody > *{flex:none}
 html[data-layout="phone"] #trainPanel button,html[data-layout="phone"] #trainPanel .btn{touch-action:manipulation}
 html[data-layout="phone"] #trainPanel .trhead .xbtn{width:48px;height:48px;min-height:48px}
 html[data-layout="phone"] #trainPanel .trhead .tabs .btn{min-height:48px;font-size:18px}
-html[data-layout="phone"] #trainPanel .trchips{touch-action:pan-x;-webkit-overflow-scrolling:touch}
+html[data-layout="phone"] #trainPanel .trchips{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
 html[data-layout="phone"] #trainPanel .trchip{width:76px;min-height:68px;font-size:15px}
 html[data-layout="phone"] #trainPanel .trchip b{font-size:18px}
 html[data-layout="phone"] #trainPanel .trrow{font-size:16px}

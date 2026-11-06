@@ -538,7 +538,7 @@
     '.pk-portrait .pk-pot,.pk-portrait .pk-drop,.pk-portrait .pk-inpot{translate:0 var(--pk-potdy,0px)}',
     '.pk-portrait .pk-drop{left:110px;top:122px}',
     '.pk-portrait .pk-inpot{left:150px;top:128px}',
-    '.pk-portrait .pk-shelf{left:8px;top:330px;width:404px;height:auto;padding:8px 10px 10px;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;column-gap:16px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;align-content:start}',
+    '.pk-portrait .pk-shelf{left:8px;top:330px;width:404px;height:auto;padding:8px 10px 10px;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;column-gap:16px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;align-content:start}',
     '.pk-portrait .pk-sh{white-space:nowrap}',
     '.pk-portrait .pk-row{flex-wrap:nowrap;border-bottom:none;margin-bottom:0;padding:8px 14px 4px 4px;border-right:2px dashed rgba(91,61,50,.28)}',
     '.pk-portrait .pk-row.pk-last{border-right:none}',

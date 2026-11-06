@@ -11,3 +11,13 @@
 .dock-idle{display:none}
 .xbtn{width:46px;height:46px;font-family:var(--font-hand);font-weight:700;font-size:26px;line-height:1;flex:none;--wash:var(--w-pink)}
 
+/* QA 6 Nov 2026: the sideways rows (22_input.js HS_ROWS) show a scrollbar on desktop, and the wheel and a mouse drag move them. One approach for
+   every browser: ::-webkit-scrollbar for Chrome and Safari (it draws a bar that stays, even with macOS overlay scrollbars). scrollbar-width /
+   scrollbar-color stay auto there, because in Chrome 121+ either one set switches the ::-webkit-scrollbar styling off; Firefox (no ::-webkit-scrollbar)
+   gets them on its own. Phones keep their thin or hidden bars. */
+html:not([data-layout="phone"]) :is(.trchips,.cr-chips,.pk-pick,.ho-put,.ex-frow,#dock .row){scrollbar-width:auto;scrollbar-color:auto;cursor:grab}
+html:not([data-layout="phone"]) :is(.trchips,.cr-chips,.pk-pick,.ho-put,.ex-frow,#dock .row)::-webkit-scrollbar{height:8px}
+html:not([data-layout="phone"]) :is(.trchips,.cr-chips,.pk-pick,.ho-put,.ex-frow,#dock .row)::-webkit-scrollbar-thumb{background:var(--ink);border-radius:6px}
+html:not([data-layout="phone"]) :is(.trchips,.cr-chips,.pk-pick,.ho-put,.ex-frow,#dock .row)::-webkit-scrollbar-track{background:rgba(0,0,0,.06);border-radius:6px}
+@supports (-moz-appearance:none){html:not([data-layout="phone"]) :is(.trchips,.cr-chips,.pk-pick,.ho-put,.ex-frow,#dock .row){scrollbar-width:thin;scrollbar-color:var(--ink) rgba(0,0,0,.06)}}
+html:not([data-layout="phone"]) .hs-drag,html:not([data-layout="phone"]) .hs-drag *{cursor:grabbing}

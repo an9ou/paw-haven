@@ -63,8 +63,4 @@ html[data-layout="phone"] #stage.training #placeBtns{display:none}
    action bar covered the dogs. Hide them; the panel's Stop / x is the way out, and #view (flex:1) takes the bar's room. Desktop is unchanged:
    there the chip and the bar never reach the dog. */
 html[data-layout="phone"] #stage.training :is(#status,#phPeek,#rmLookL,#rmLookR,#bar,#gdLayer){display:none!important}
-/* desktop: the trick row shows a thin crayon scrollbar (macOS hides overlay scrollbars, so players didn't know the row scrolls) */
-html:not([data-layout="phone"]) #trainPanel .trchips{scrollbar-width:thin;scrollbar-color:var(--ink) transparent;cursor:grab}
-html:not([data-layout="phone"]) #trainPanel .trchips::-webkit-scrollbar{height:8px}
-html:not([data-layout="phone"]) #trainPanel .trchips::-webkit-scrollbar-thumb{background:var(--ink);border-radius:6px}
-html:not([data-layout="phone"]) #trainPanel .trchips::-webkit-scrollbar-track{background:rgba(0,0,0,.06);border-radius:6px}
+/* desktop: the trick row shows a crayon scrollbar (macOS hides overlay scrollbars, so players did not know the row scrolls): 05_dock.css, with every sideways row */

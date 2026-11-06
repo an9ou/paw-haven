@@ -306,4 +306,44 @@ require('./test_lib').run('v29_pack', async (t) => {
   await t.freezeMotion(false);
   await p().click('[data-act=wardrobe]'); await modalUp();
   ok(await p().locator('#modal .pk-pickb').count() === 0, 'the wardrobe has no picker');
+
+  sec('15. desktop, a mouse, 1024x768, five long-named dogs: the sideways rows and the route carousel (QA 6 Nov 2026)');
+  await t.ctx.close(); await t.newGame({ packCare: true }, { coins: 2000 }); await p().setViewportSize({ width: 1024, height: 768 });
+  await ev(() => { const P = window.__paw; P.S.dog.name = 'Peppermintie'; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Butterscotch'); P.addDog({ key: 'dalmatian', sex: 'female', months: 30 }, 'Marshmallows'); P.addDog({ key: 'golden', sex: 'male', months: 20 }, 'Cinnamonbuns'); P.addDog({ key: 'bernese', sex: 'female', months: 24 }, 'Gingersnapsy'); P.S.careOff = {}; P.S.dogs.forEach((d) => { d.stats.energy = 90; d.sleeping = false; }); });
+  await t.calm(); await t.home('yard'); await quiet();
+  const rowAt = (q) => ev((q) => { const e = document.querySelector(q); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, sl: e.scrollLeft, max: e.scrollWidth - e.clientWidth }; }, q);
+  const zero = (q) => ev((q) => { document.querySelector(q).scrollLeft = 0; }, q);
+  const mouseRow = async (q, label, state) => { // wheel, drag (no click on the chip it started on), a drag that leaves the row, the bar
+    let r = await rowAt(q); ok(!!r && r.max > 20, `${label}: five long names overflow the row (${r ? r.max : 'none'} px to scroll)`); if (!r || r.max <= 20) return;
+    await zero(q); await p().mouse.move(r.x + r.w / 2, r.y + r.h / 2); await p().mouse.wheel(0, 240); await p().waitForTimeout(200);
+    ok((await rowAt(q)).sl > Math.min(50, r.max - 2), `${label}: the mouse wheel moves the row (${Math.round((await rowAt(q)).sl)})`);
+    await zero(q); const s0 = await state(); const y = r.y + r.h / 2 - 4; // a drag of 240 px
+    await p().mouse.move(r.x + r.w - 40, y); await p().mouse.down(); for (let i = 1; i <= 8; i++) await p().mouse.move(r.x + r.w - 40 - i * 30, y); await p().mouse.up(); await p().waitForTimeout(250);
+    ok((await rowAt(q)).sl >= Math.min(r.max, 200) - 2 && JSON.stringify(await state()) === JSON.stringify(s0), `${label}: a mouse drag scrolls the row (${Math.round((await rowAt(q)).sl)}) and does not press the chip it started on`);
+    await zero(q); await p().mouse.move(r.x + r.w - 40, y); await p().mouse.down(); for (let i = 1; i <= 10; i++) await p().mouse.move(r.x + r.w - 40 - i * 90, y + i * 10); await p().mouse.up(); await p().waitForTimeout(250);
+    r = await rowAt(q); ok(r.sl >= r.max - 2 && JSON.stringify(await state()) === JSON.stringify(s0), `${label}: a drag that leaves the row keeps scrolling it to its end (${Math.round(r.sl)} of ${r.max})`);
+    ok(await ev((q) => { const cs = getComputedStyle(document.querySelector(q)); return cs.scrollbarWidth === 'auto' && cs.scrollbarColor === 'auto'; }, q), `${label}: scrollbar-width / -color stay auto (the crayon ::-webkit-scrollbar shows in Chrome 121+)`);
+  };
+  const off = async () => JSON.stringify((await S()).careOff || {});
+  await p().click('[data-act=feed]'); await t.waitPop(true);
+  await mouseRow('#dock .cr-chips', 'Feed tray chips', off);
+  { // the last dog can be unticked after scrolling, and the redraw keeps the row where it was
+    await ev(() => { const e = document.querySelector('#dock .cr-chips'); e.scrollLeft = e.scrollWidth; }); const sl0 = (await rowAt('#dock .cr-chips')).sl;
+    const last = p().locator('#dock .cr-chips [data-crdog]').last(); const id = await last.getAttribute('data-crdog'); await last.click(); await p().waitForTimeout(250);
+    ok((await S()).careOff[id] === true && (await rowAt('#dock .cr-chips')).sl >= sl0 - 2, `Feed tray: the last dog is unticked by a click and the row stays scrolled (${Math.round((await rowAt('#dock .cr-chips')).sl)})`);
+    await last.click(); await p().waitForTimeout(200); }
+  await p().click('[data-act=feed]'); await t.waitPop(false);
+  await p().click('[data-act=wardrobe]'); await modalUp(); await p().waitForTimeout(300);
+  await mouseRow('#modal .pk-pick', 'Wardrobe dog picker', () => ev(() => document.querySelector('#modal .pk-pickb[aria-pressed="true"]').dataset.pkdog));
+  await t.closeX(); await t.modalGone(); await t.home('yard'); await quiet();
+  await p().click('[data-act=walk]'); await p().waitForSelector('#rtStart'); await p().waitForTimeout(500);
+  await mouseRow('#pkWalkRow .cr-chips', 'Pick a walk chips', off);
+  { // the centred card shows whole at 1024x768 (it lost its bottom 86 px), and a mouse drag on it moves to the next route instead of snapping back
+    const g = await ev(() => { const c = document.querySelector('.rt-card.cur'), v = document.getElementById('rtView'), cr = c.getBoundingClientRect(), vr = v.getBoundingClientRect(), last = [...c.children].pop().getBoundingClientRect(); return { cut: cr.bottom > vr.bottom + 0.5 || last.bottom > cr.bottom + 0.5, card: Math.round(cr.height), vp: Math.round(vr.height) }; });
+    ok(!g.cut, `1024x768: the Pick-a-walk card shows whole (card ${g.card} px in a ${g.vp} px carousel)`);
+    const idx = () => ev(() => +document.querySelector('.rt-card.cur').dataset.i), i0 = await idx(), b = await p().locator('.rt-card.cur').boundingBox();
+    await p().mouse.move(b.x + b.width * 0.7, b.y + b.height / 2); await p().mouse.down(); for (let i = 1; i <= 8; i++) await p().mouse.move(b.x + b.width * 0.7 - i * 30, b.y + b.height / 2); await p().mouse.up(); await p().waitForTimeout(600);
+    ok(await idx() === i0 + 1, `a mouse drag on the centred route card moves on to the next route (${i0} -> ${await idx()})`);
+    await p().mouse.move(b.x + b.width * 0.3, b.y + b.height / 2); await p().mouse.down(); for (let i = 1; i <= 8; i++) await p().mouse.move(b.x + b.width * 0.3 + i * 30, b.y + b.height / 2); await p().mouse.up(); await p().waitForTimeout(600);
+    ok(await idx() === i0, `a drag the other way goes back (${await idx()})`); }
 }, { packCare: true });

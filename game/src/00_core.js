@@ -1294,7 +1294,7 @@ function tItem(n, field = 'n') {
 }
 // a wearable's or charm's perk line: the clothes `perk`, or a treasure's "Ability: what it does"
 function tPerk(n) { const hit = tItemRow(n); if (hit && hit[0] === 'treasures') return tt('core.treasure_perk', '{ability}: {text}', { ability: tItem(n, 'ab'), text: tItem(n, 'txt') }); return tItem(n, 'perk'); }
-const tPlace = (k) => mpPlaceName(k) || (PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : String(k));
+const tPlace = (k) => mpPlaceName(k) || (PLACES[k] ? townPlaceName(k) : String(k)); // QA 6 Nov 2026: townPlaceName (14_town_places.js) also has the eight places the places table lacks (town.place_*)
 const tRoute = (k) => (ROUTES[k] ? tdata('routes.' + k + '.n', ROUTES[k].n) : String(k));
 const tTrick = (n) => tdata('tricks.' + tid(n) + '.n', n);
 const tSig = (key, field = 'n') => (SIG[key] ? tdata('sig.' + key + '.' + field, SIG[key][field]) : tdata('sig_fb.' + field, SIG_FB[field])); // the dog's signature trick name or line
@@ -1328,7 +1328,11 @@ let modalSeq = 0;
 const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
 function toastDrop(scr) { if (!toasts || !isPhone()) return; [...toasts.querySelectorAll('.toast[data-scr]')].forEach((e) => { if (e.dataset.scr === scr) { clearTimeout(e._tt); e.remove(); } }); }
 function toastPark() { toastLive().forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); }); }
-function toastNext() { const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+// QA 6 Nov 2026: a queued "arrived at" toast (o.arr: the place) is dropped once the dog is somewhere else (another place, the shelter, a game), and a
+// mini-game clears the whole queue as it opens (toastClearQ, from go()), so old Bond-gift toasts never land on its header or its Done button
+function toastStale() { if (!toasts) return; [...toasts.querySelectorAll('.toast.tq[data-arr]')].forEach((e) => { if (!S || e.dataset.arr !== S.place || !['yard', 'market'].includes(cur.mode)) e.remove(); }); }
+function toastClearQ() { if (toasts) toasts.querySelectorAll('.toast.tq').forEach((e) => e.remove()); }
+function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
 if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
@@ -1336,6 +1340,7 @@ function toast(text, kind = '', o = {}) {
   const t = document.createElement('div'); t.className = 'toast ' + kind + (n > 1 ? ' tmerge' : ''); t.textContent = text; // tmerge: a count update bumps, it does not fade in again
   if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
   if (o.scr) t.dataset.scr = o.scr;
+  if (o.arr) t.dataset.arr = o.arr;
   if (isPhone()) {
     const live = toastLive(), hold = toastHold();
     if (o.now && !hold) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
@@ -1363,10 +1368,11 @@ function toastPlace() {
   if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
   stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
   if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
-  // layout audit: a toast that would sit across the look-left / look-right buttons (39_roam.css) narrows to the space between them
+  // layout audit: a toast that would sit across the look-left / look-right buttons (39_roam.css) narrows to the space between them; QA 6 Nov 2026: so does
+  // one across the yard / place "Look right" button (#phPeek)
   toasts.classList.remove('tnarrow');
   const tr = modal.hidden && toasts.offsetHeight ? toasts.getBoundingClientRect() : null;
-  if (tr && [...view.querySelectorAll('.rm-look')].some((b) => { if (!b.offsetParent) return false; const r = b.getBoundingClientRect(); return r.top < tr.bottom + 4 && r.bottom > tr.top - 4; })) toasts.classList.add('tnarrow');
+  if (tr && [...view.querySelectorAll('.rm-look, #phPeek')].some((b) => { if (!b.offsetParent) return false; const r = b.getBoundingClientRect(); return r.top < tr.bottom + 4 && r.bottom > tr.top - 4; })) toasts.classList.add('tnarrow');
 }
 // stage y for the toast column while a sheet is open. Layout boxes (offsetTop), so the sheet's slide-in transform doesn't move the answer.
 function toastSheetTop() {
@@ -1649,6 +1655,7 @@ function go(mode, arg) {
   if (mode !== 'title' && mode !== 'adopt') { if (modal.hidden === false && !arg?.keepModal) closeModal(); }
   if (mode !== prevMode) toastDrop('v:' + prevMode); // v2.22: a "Nope" from the screen being left does not follow onto the next one (phones)
   cur.mode = mode; cur.arg = typeof arg === 'string' ? arg : null;
+  if (mode === 'fair' || mode === 'toy') toastClearQ(); else if (mode !== prevMode) toastStale(); // QA 6 Nov 2026: no stale queued toasts on a mini-game or a new place
   if (mode === 'walk' && S && S.dogs && S.dogs.length > 1) greetFor = S.activeId;
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');

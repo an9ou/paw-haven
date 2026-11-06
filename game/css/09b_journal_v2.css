@@ -207,7 +207,7 @@ html[data-motion="off"] #mailboxG.mb-new > svg{animation:none}
 .mbt-ic{display:inline-block;width:24px;height:24px;vertical-align:middle;margin-right:4px}
 .mbt-ic svg{width:100%;height:100%}
 .album{position:relative;min-height:300px}
-.al-art{position:absolute;inset:0;opacity:.18;pointer-events:none}
+.al-art{position:absolute;inset:0;opacity:.18;pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0 52px,#000 92px);mask-image:linear-gradient(to bottom,transparent 0 52px,#000 92px)} /* QA 6 Nov 2026: the ghost art fades out behind the intro line (its "Postcard Album" tape sat under the words) */
 .al-art svg{width:100%;height:100%}
 .al-head{position:relative;margin:2px 0 8px}
 .al-head b{font-family:var(--font-hand);font-size:30px;margin-right:6px}

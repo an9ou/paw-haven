@@ -23,8 +23,17 @@ function enterRoutes(startKey) {
   $('#rtPrev').onclick = () => shift(-1); $('#rtNext').onclick = () => shift(1);
   $('#rtBack').onclick = () => go('yard'); $('#rtStart').onclick = () => startRoute(ROUTE_KEYS[routeIdx]);
   view.querySelectorAll('.rt-card').forEach((c) => { c.onclick = () => { const i = +c.dataset.i; if (i !== routeIdx) { routeIdx = i; layoutRoutes(); } }; });
-  let x0 = null; const vp = $('#rtView');
-  vp.addEventListener('pointerdown', (ev) => { x0 = ev.clientX; }); vp.addEventListener('pointerup', (ev) => { if (x0 === null) return; const dx = ev.clientX - x0; x0 = null; if (Math.abs(dx) > 60) shift(dx < 0 ? 1 : -1); });
+  // a drag or swipe moves one card. QA 6 Nov 2026: past 6 px the viewport holds the pointer (a drag that leaves it still counts) and the click the
+  // drag would fire is swallowed: on the centred card that click used to set routeIdx back, so a mouse drag snapped back
+  let x0 = null, pid = null; const vp = $('#rtView');
+  vp.addEventListener('pointerdown', (ev) => { x0 = ev.clientX; pid = ev.pointerId; });
+  vp.addEventListener('pointermove', (ev) => { if (x0 === null || ev.pointerId !== pid || Math.abs(ev.clientX - x0) < 6 || vp.hasPointerCapture(pid)) return; try { vp.setPointerCapture(pid); } catch (er) { /* no capture */ } });
+  vp.addEventListener('pointerup', (ev) => {
+    if (x0 === null) return; const dx = ev.clientX - x0; x0 = null;
+    if (Math.abs(dx) > 6) { const swallow = (e) => { e.stopPropagation(); e.preventDefault(); }; vp.addEventListener('click', swallow, { capture: true, once: true }); setTimeout(() => vp.removeEventListener('click', swallow, { capture: true }), 0); }
+    if (Math.abs(dx) > 60) shift(dx < 0 ? 1 : -1);
+  });
+  vp.addEventListener('pointercancel', () => { x0 = null; });
   cur.key = (ev) => { if (ev.key === 'ArrowLeft') { ev.preventDefault(); shift(-1); } if (ev.key === 'ArrowRight') { ev.preventDefault(); shift(1); } };
   onCleanup(() => { cur.key = null; });
   pkRoutesBind(); // v2.9 PACK: the chip row on the route screen

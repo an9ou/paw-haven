@@ -251,7 +251,7 @@ function msRowText(t, max = 3, w = 0) { // max: the lines a row may take (Daily 
   // w (layout audit, 5 Nov 2026): a Latin row on the one-mission card with no counter is measured to this width too; the art's own 14-letter wrap
   // left it in a narrow column (4 lines in German) with the right half of the row empty
   if (!MS_WIDE.test(t) && !w) return { text: esc(t) };
-  const W = MS_WIDE.test(t) ? MS_ROW_W : w;
+  const W = MS_WIDE.test(t) ? w || MS_ROW_W : w; // QA 6 Nov 2026: a CJK row on the one-mission card gets the same wider row as a Latin one (it wrapped in a 50 px column)
   let L = msLines(t, 16, W), fs = 16;
   if (!L) return { text: esc(t) };
   const r = (text) => (fs === 13 ? { text, fs } : { text });
