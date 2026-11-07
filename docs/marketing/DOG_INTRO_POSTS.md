@@ -956,7 +956,7 @@ New captions follow the current rules: English only (no Japanese line), 4 hashta
 
 ---
 
-### Sprinkles the Dalmatian ✨ (white with black spots: owner to OK before posting)
+### Sprinkles the Dalmatian ✨ (white with black spots: owner OK'd posting, 7 Nov 2026)
 File: `dogs/dog-36-sprinkles.jpg`
 
 **Caption**
