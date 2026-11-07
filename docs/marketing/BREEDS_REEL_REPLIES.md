@@ -129,3 +129,4 @@ RedNote:
 |---|---|---|---|
 | 7 Nov 2026 | Wirehaired Vizsla, English Setter | 35-breeds Reel comment | "we'll draw them" (kept the promise; nothing promised for the game) |
 | 7 Nov 2026 | Whippet (with a Jack Russell, which is in the game since v2.21) | 35-breeds Reel comment | "we'll draw your Whippet" |
+| 7 Nov 2026 | Cockapoo (black) | 35-breeds Reel comment | half of it (Miniature Poodle #30) is in; "we'll draw yours" |
