@@ -9,8 +9,10 @@ const SHOTS = path.resolve(process.argv[2] || 'shots'), WHAT = process.argv[3] |
 const INK = '#5B3D32', PINK = '#F28FA5', PAPER = '#FFF8EC', DOT = '#E3D2BA', MUTED = '#8A7468', ORANGE = '#E8863A', PLUM = '#7A5C9E';
 
 // ---------- the real art ----------
+// ART_ROOT: load the art from another checkout (e.g. a scratch worktree of main when a new dog is not merged into this branch yet)
+const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : root;
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
-for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
+for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js']) vm.runInContext(fs.readFileSync(path.join(ART_ROOT, f), 'utf8'), ctx);
 const PA = win.PawArt;
 const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 const f1 = (n) => Math.round(n * 10) / 10;

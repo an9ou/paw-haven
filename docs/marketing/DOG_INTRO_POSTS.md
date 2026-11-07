@@ -1,6 +1,6 @@
-# Dog introduction posts (35)
+# Dog introduction posts (40)
 
-One post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: `brand/instagram/launch/dogs/`. Remake: `node brand/instagram/launch/make.js <shots> dogs [key]` (`DOG_DOC=1` rewrites this file).
+One post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: `brand/instagram/launch/dogs/` (dog-36 to dog-40, the v2.21 dogs: see the last section). Remake: `node brand/instagram/launch/make.js <shots> dogs [key]` (`DOG_DOC=1` rewrites this file).
 
 **Facts from the game:** the dog type, personality, the speech bubble and the favourite food, toy and activity. **Creative:** the four trait boxes (the same as the dog profiles on doodledoggo.app, `tools/site_dogs.js`).
 
@@ -944,3 +944,132 @@ Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 #cozygames #doggame #rescuedog #doodledoggo #indiegame #保護犬 #doglovers
 ```
 **Alt text:** `Pepper the Shelter Mutt with a puppy, favourite things and four traits.` (71 characters)
+
+
+---
+
+## v2.21 "Five new breeds" (7 Nov 2026): dog-36 to dog-40
+
+Five more profiles in the same style, for the dogs that came with v2.21 (40 dogs in all). Name, dog type and speech bubble: the game's own `FALLBACK_DOGS` (`game/src/00_core.js`, `data.fallback_dogs.<key>` in `game/i18n/en.json`); loves: the game's `FAV`; the four traits: the doodledoggo.app profiles (`site/i18n/en.json` `dog.<key>.*`). Remake (the art is on `main`): `ART_ROOT=<a checkout of main> NODE_PATH=$(npm root -g) node brand/instagram/launch/make.js <shots> dogs dalmatian,bernese,aussie,cavalier,jrt`.
+
+New captions follow the current rules: English only (no Japanese line), 4 hashtags, one ask (link in bio), play free on itch.io or right on doodledoggo.app. Days are not set yet. **Sprinkles the Dalmatian is a white dog with black spots (her real game coat): ask the owner before posting her** (rule of 1 Nov 2026: no black or white dog as the subject of a post).
+
+---
+
+### Sprinkles the Dalmatian ✨ (white with black spots: owner to OK before posting)
+File: `dogs/dog-36-sprinkles.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: Sprinkles the Dalmatian 🐶
+"Yes, I have counted my spots. I lost count. Twice."
+
+She's sporty and runs beside you all the way. Spotty, of course: born white, the spots came later. A bit showy too (she loves a crowd), and so loyal she follows you everywhere.
+
+Her favourite things: chicken & rice, a frisbee and a long walk.
+
+Fun fact: sprinkles are the tiny sweets on top of a cake. And Dalmatian puppies really are born pure white, their spots come in over the first weeks. We drew hers in crayon, all of them, we think.
+
+She's one of 5 new dogs in our cozy dog game, 40 in all now 🐾 Play free on itch.io or right on doodledoggo.app (link in bio).
+
+#cozygames #doggame #dalmatian #doodledoggo
+```
+**Alt text:** `Sprinkles the Dalmatian with a puppy, favourite things and four traits.` (71 characters)
+
+713 characters · one ask (link in bio) · 4 hashtags · search: "cozy dog game" · no link in the text · `caption.py` READY · `detect.py` human score 76.7 PASS (7 Nov 2026).
+
+---
+
+### Fondue the Bernese Mountain Dog ✨
+File: `dogs/dog-37-fondue.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: Fondue the Bernese Mountain Dog 🐶
+"I am not lying on your feet. I am keeping them warm."
+
+He's gentle, a big soft giant in a coat made for the mountains. He's calm and never in a hurry, and he leans on the ones he loves (that's you now).
+
+His favourite things: kibble, his plush bone and lots of petting.
+
+Fun fact: fondue is the Swiss pot of melted cheese. Bernese Mountain Dogs come from the farms around Bern, where they pulled little milk carts. We think ours would rather nap in the cart.
+
+He's one of 5 new dogs in our cozy dog game, 40 in all now 🐾 Play free on itch.io or right on doodledoggo.app (link in bio).
+
+#cozygames #doggame #bernesemountaindog #doodledoggo
+```
+**Alt text:** `Fondue the Bernese Mountain Dog with a puppy, favourite things and four traits.` (79 characters)
+
+694 characters · one ask (link in bio) · 4 hashtags · search: "cozy dog game" · no link in the text · `caption.py` READY · `detect.py` human score 76.4 PASS (7 Nov 2026).
+
+---
+
+### Pavlova the Australian Shepherd ✨
+File: `dogs/dog-38-pavlova.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: Pavlova the Australian Shepherd 🐶
+"I have herded the cushions. They are in a circle now. You are next."
+
+She's clever and learns a trick in a day. She's busy and needs a job, any job. She's a herder who keeps the pack together, and she's watchful: she sees everything, including you eating that biscuit.
+
+Her favourite things: a bone biscuit, her frisbee and showing off her tricks.
+
+Fun fact: pavlova is the meringue pudding with fruit on top. And Australian Shepherds were made famous on American ranches, not in Australia. We didn't know that either.
+
+She's one of 5 new dogs in our cozy dog game, 40 in all now 🐾 Play free on itch.io or right on doodledoggo.app (link in bio).
+
+#cozygames #doggame #australianshepherd #doodledoggo
+```
+**Alt text:** `Pavlova the Australian Shepherd with a puppy, favourite things and four traits.` (79 characters)
+
+755 characters · one ask (link in bio) · 4 hashtags · search: "cozy dog game" · no link in the text · `caption.py` READY · `detect.py` human score 84.3 PASS (7 Nov 2026).
+
+---
+
+### Scone the Cavalier King Charles Spaniel ✨
+File: `dogs/dog-39-scone.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: Scone the Cavalier King Charles Spaniel 🐶
+"My ears are not hair. They are a gentle hug for my face."
+
+He's sweet and friends with everyone. He's cuddly, because every lap is a good lap. A gentle, soft little walker, and a bit royal: the cushion is his throne and you're allowed to sit next to it.
+
+His favourite things: salmon pâté, his plush bone and petting, lots of it.
+
+Fun fact: a scone is the little teatime bun. Cavaliers are named after King Charles II, who loved little spaniels. We think he'd have loved ours.
+
+He's one of 5 new dogs in our cozy dog game, 40 in all now 🐾 Play free on itch.io or right on doodledoggo.app (link in bio).
+
+#cozygames #doggame #cavalierkingcharlesspaniel #doodledoggo
+```
+**Alt text:** `Scone the Cavalier King Charles Spaniel with a puppy, favourite things and four traits.` (87 characters)
+
+728 characters · one ask (link in bio) · 4 hashtags · search: "cozy dog game" · no link in the text · `caption.py` READY · `detect.py` human score 83.5 PASS (7 Nov 2026).
+
+---
+
+### Pickle the Jack Russell Terrier ✨
+File: `dogs/dog-40-pickle.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: Pickle the Jack Russell Terrier 🐶
+"I am not hyper. I am just ready. For everything. Right now."
+
+She's bouncy and jumps higher than the fence. She's a digger, and every hole is a project. She's fast (she zooms from nap to ball in a second) and brave: small dog, big plans.
+
+Her favourite things: a bone biscuit, her tennis ball and digging, obviously.
+
+Fun fact: a pickle is a crunchy little gherkin. Jack Russells were named after a parson in Devon who loved small, brave terriers. We think he'd have liked ours.
+
+She's one of 5 new dogs in our cozy dog game, 40 in all now 🐾 Play free on itch.io or right on doodledoggo.app (link in bio).
+
+#cozygames #doggame #jackrussellterrier #doodledoggo
+```
+**Alt text:** `Pickle the Jack Russell Terrier with a puppy, favourite things and four traits.` (79 characters)
+
+715 characters · one ask (link in bio) · 4 hashtags · search: "cozy dog game" · no link in the text · `caption.py` READY · `detect.py` human score 81.1 PASS (7 Nov 2026).

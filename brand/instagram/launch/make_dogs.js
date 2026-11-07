@@ -156,6 +156,24 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
     { key: 'shihtzu', num: 35, name: 'Wonton', nameSize: 150, title: 'the Shih Tzu', pose: 'down', quote: ['Top-knot up.', 'Nap time down.'],
       loves: [['Pupcake', 'pupcake'], ['Plush Bone', 'plush bone'], ['icon:feed', 'feeding']],
       traits: [['sleepy', 'big opinions about naps'], ['top-knot', 'stays perfect, always'], ['lap lover', 'yours will do'], ['shade seeker', 'short nose, warm days']] },
+    // v2.21 Five new breeds (7 Nov 2026). Name, dog type and line: game/src/00_core.js FALLBACK_DOGS (data.fallback_dogs.<key>.joke in game/i18n/en.json);
+    // loves: FAV (data.fav.<key>); traits and pose: the doodledoggo.app profiles (site/i18n/en.json dog.<key>.*, tools/site_dogs.js). Art only on main
+    // until it is merged here: ART_ROOT=<a checkout of main> node brand/instagram/launch/make.js <shots> dogs dalmatian,bernese,aussie,cavalier,jrt
+    { key: 'dalmatian', num: 36, name: 'Sprinkles', title: 'the Dalmatian', pose: 'happy', quote: ['Yes, I have counted', 'my spots. I lost', 'count. Twice.'],
+      loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Frisbee', 'frisbee'], ['icon:walk', 'walks']],
+      traits: [['sporty', 'runs beside you all the way'], ['spotty', 'born white, spots came later'], ['showy', 'loves a crowd'], ['loyal', 'follows you everywhere']] },
+    { key: 'bernese', num: 37, name: 'Fondue', title: 'the Bernese Mountain Dog', pose: 'sit', quote: ['I am not lying on', 'your feet. I am', 'keeping them warm.'],
+      loves: [['Basic Kibble', 'kibble'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
+      traits: [['gentle', 'a big soft giant'], ['fluffy', 'a coat for the mountains'], ['calm', 'never in a hurry'], ['loyal', 'leans on the ones it loves']] },
+    { key: 'aussie', num: 38, name: 'Pavlova', title: 'the Australian Shepherd', pose: 'happy', quote: ['I have herded the', 'cushions. They are', 'in a circle now.', 'You are next.'],
+      loves: [['Bone-shaped Biscuit', 'bone biscuit'], ['Frisbee', 'frisbee'], ['icon:star', 'tricks']],
+      traits: [['clever', 'learns a trick in a day'], ['busy', 'needs a job, any job'], ['herder', 'keeps the pack together'], ['watchful', 'sees everything']] },
+    { key: 'cavalier', num: 39, name: 'Scone', title: 'the Cavalier King Charles Spaniel', pose: 'sit', quote: ['My ears are not hair.', 'They are a gentle', 'hug for my face.'],
+      loves: [['Salmon Pâté', 'salmon pâté'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
+      traits: [['sweet', 'friends with everyone'], ['cuddly', 'every lap is a good lap'], ['gentle', 'a soft little walker'], ['royal', 'the cushion is a throne']] },
+    { key: 'jrt', num: 40, name: 'Pickle', title: 'the Jack Russell Terrier', pose: 'happy', quote: ['I am not hyper.', 'I am just ready.', 'For everything.', 'Right now.'],
+      loves: [['Bone-shaped Biscuit', 'bone biscuit'], ['Tennis Ball', 'tennis ball'], ['dig', 'digging']],
+      traits: [['bouncy', 'jumps higher than the fence'], ['digger', 'every hole is a project'], ['fast', 'zooms from nap to ball'], ['brave', 'small dog, big plans']] },
   ];
   if (process.env.DOG_DOC) {
     const JP = { shiba: '柴犬', corgi: 'コーギー', golden: 'ゴールデンレトリバー', dachs: 'ダックスフンド', husky: 'ハスキー', mutt: '保護犬のミックス', chihuahua: 'チワワ', pug: 'パグ', greyhound: 'グレイハウンド', beagle: 'ビーグル', poodle: 'ミニチュア・プードル', collie: 'ボーダーコリー', samoyed: 'サモエド', frenchie: 'フレンチブルドッグ',
@@ -185,7 +203,7 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
     const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const days = order.map((_, i) => { const t = new Date(Date.UTC(2026, 10, 1 + Math.floor(i / 2) * 7 + (i % 2) * 3)); return `${i % 2 ? 'Wed' : 'Sun'} ${t.getUTCDate()} ${MON[t.getUTCMonth()]}`; });
     const NEW = ['akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
-    if (order.length !== DOGS.length || DOGS.some((d) => !order.includes(d.key) || !JP[d.key] || !TAG[d.key] || !JTAG[d.key])) throw new Error('DOG_DOC: order or tables miss a dog');
+    if (order.length !== DOGS.length || DOGS.some((d) => !order.includes(d.key) || !JP[d.key] || !TAG[d.key] || !JTAG[d.key])) throw new Error('DOG_DOC: order or tables miss a dog (the five v2.21 captions in DOG_INTRO_POSTS.md were added by hand, English only; DOG_DOC would drop them)');
     let md = `# Dog introduction posts (${DOGS.length})\n\nOne post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: \`brand/instagram/launch/dogs/\`. Remake: \`node brand/instagram/launch/make.js <shots> dogs [key]\` (\`DOG_DOC=1\` rewrites this file).\n\n**Facts from the game:** the dog type, personality, the speech bubble and the favourite food, toy and activity. **Creative:** the four trait boxes (the same as the dog profiles on doodledoggo.app, \`tools/site_dogs.js\`).\n\n**The game is live:** every post and caption says "play free on itch.io" (https://an9ou.itch.io/doodle-doggo, the link is in the bio).\n\n## Order and days (2 posts a week, 20:30 JST)\n\nNoodle first (the main character), Pepper last (the shelter mutt: "Can I come home with you?" is a nice closer). The 21 newer dogs (marked ✨: 7 from v2.11 "Tokyo Trip", 14 from v2.12 "Fourteen New Friends") are mixed in with the first 14, because they are the news; Kuma the Akita goes second (Hachikō, the Tokyo Trip), and the two poodles go back to back. ${DOGS.length} posts run from ${days[0]} 2026 to ${days[days.length - 1]} 2027, alongside the winter posts in December and the New Year posts in January. The first five days are the same as in the 21-dog plan. To finish sooner, add a Friday post (three a week ends in late January).\n\n| Day | Dog | File |\n|---|---|---|\n`;
     order.forEach((k, i) => { const d = DOGS.find((x) => x.key === k); md += `| ${days[i]} | ${d.name} the ${d.title.replace(/^the /, '')}${NEW.includes(k) ? ' ✨' : ''} | \`dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg\` |\n`; });
     md += `\nEach post below has a caption (English first, one short Japanese line), alt text under 100 characters and seven hashtags (five English, two Japanese).\n`;
@@ -197,6 +215,7 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
     }
     fs.writeFileSync(path.join(h.OUT, '..', '..', '..', 'docs', 'marketing', 'DOG_INTRO_POSTS.md'), md.replace(/\\n/g, '\n'));
   }
-  for (const d of DOGS) if (!only || only === d.key) await render(await post(d), W, H, `dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg`);
+  const ONLY = only ? only.split(',') : null; // one key or a comma list
+  for (const d of DOGS) if (!ONLY || ONLY.includes(d.key)) await render(await post(d), W, H, `dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg`);
   await mp.close();
 };
