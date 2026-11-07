@@ -296,8 +296,8 @@ async function checks(label, call, sql, mail) {
     const cg2 = (await call('POST', '/guest', {}, null, ipC(8))).json;
     const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token, ipC(40))).status);
     ok(codesP[0] === 200 && codesP[99] === 200 && codesP[100] === 429, 'paws are rate-limited per account (100 an hour)');
-    const codesU = []; for (let i = 0; i < 19; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 2 PUTs above: the 21st is refused
-    ok(codesU[17] === 200 && codesU[18] === 429, 'publishing is rate-limited (20 an hour)');
+    const codesU = []; for (let i = 0; i < 17; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 4 PUTs above (v2.23 added two for e and p): the 21st is refused
+    ok(codesU[15] === 200 && codesU[16] === 429, 'publishing is rate-limited (20 an hour)');
     // stop sharing: the card and its paws go
     r = await call('DELETE', '/card', null, cb.token); ok(r.status === 200 && r.json.ok, 'DELETE /card');
     ok(!(await sql('select * from cards where id = ?', cbCard.id)) && !(await sql('select * from paws where card_id = ?', cbCard.id)), 'the card and its paws are deleted');

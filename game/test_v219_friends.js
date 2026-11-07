@@ -1207,6 +1207,7 @@ async function greetPart(t) {
   ok(await ev(() => window.__paw.fr.greet() === true), 'window.__paw.fr.greet() starts it again');
   await watch(t);
   ok(await t.until(() => { const g = window.__paw.fr.greeting(); return !!g && g.step === 0; }, null, 8000), 'greet(): they sniff again');
+  await t.until(() => !!window.__grOut && window.__grOut.s.some((x) => x.g && x.g.step === 0 && x.d.filter((d) => d.pose === 'sniff').length >= 2), null, 2000); // the sampler has seen the sniff before the pet turns their leader happy (was a race: the tap came ~15 ms into the sniff)
   const b0 = await ev(() => window.__paw.S.bond.pts);
   const hit = await ev(() => { const d = window.__paw.fr.scene().dogs, i = d.findIndex((x) => !x.mine), r = document.querySelector(`#frDogs [data-frd="${i}"] .fr-hit`).getBoundingClientRect(); return { i, x: r.left + r.width / 2, y: r.top + r.height * 0.6 }; });
   await t.p.mouse.click(hit.x, hit.y);
