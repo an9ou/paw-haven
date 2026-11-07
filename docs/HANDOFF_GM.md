@@ -116,3 +116,7 @@ The owner moved the coding of parts 3–5 from Cursor back to Claude. The Game M
 ## v2.22.4 "Puppy legs" (7 Nov 2026)
 Owner-approved patch: `dogs/pawart_dogs.js` only (`PUPLEG`; puppies 3 months+ get stubby legs, adults/newborns/mixes byte-identical). Merged from `claude/puppy-legs` into main (2e075cc0). Tests: smoke, v2193_puppy, v2183_connect all PASS, no expectations changed.
 itch.io pushed as 2.22.4 (build #2322869); doodledoggo.app site deployed with the itch build. No Worker deploy, no NEWS entry.
+
+## v2.23 "Coat colours" (7 Nov 2026)
+Owner-approved launch. Starter coat and eye colour choice on the adoption card and Shelter starter cards (`STARTER_COATS`, `V223.md`, suite `v223_coats`), with the review fixes: Dog Card / Friends dogs keep their eyes and coat pattern (optional wire fields `e` and `p`), b/b amber stand-ins, Corgi black and white and Collie tricolour dropped (130 options), every Border Collie coat has eyes, sitting-dog swatches; lab fox red left out (no shade that leaves existing dogs alone).
+Worker `pawhaven-api` deployed first (accepts `e`/`p`, live smoke OK), then main 20a24004 (Pages workflow green), itch.io 2.23 build #2324707, doodledoggo.app with the itch build (/play/ md5 matches). Test fixes: worker rate-limit count, v211_cards (v2.21 live), v219_friends greet sampling race.
