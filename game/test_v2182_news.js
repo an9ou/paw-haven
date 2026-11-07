@@ -18,7 +18,7 @@ run('v2182_news', async (t) => {
   await t.newGame({ prefs: { nwTest: true } });
   ok(await t.until(() => !!(window.__paw && window.__paw.nw), null, 5000), 'the hook is there');
   const latest = await ev(() => window.__paw.nw.latest());
-  ok(latest === '2.19.3' && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (Daily rhythm): ' + latest);
+  ok(latest === ((await ev(() => window.__paw.v221.on())) ? '2.23' : '2.19.3') && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.23 once the v2.20-v2.23 launch is live, else Daily rhythm 2.19.3): ' + latest);
   await t.home('yard'); ok(await noNews(5000), 'no news sheet on a new save');
 
   sec('2. an old save: S.newsSeen added by migrate(), the sheet shows once, not again after a reload');

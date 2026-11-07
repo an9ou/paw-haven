@@ -29,7 +29,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 ## Project
 - [ ] Stale tests from the 5 Nov whole-game run (pre-existing, not from v2.21: phone_occl_play, v25_fixes_b and v215_ground checked red on a456f618 too; the game is right, the tests are old):
   art "byte-identical to vNN-base" checks after later deliberate art changes (v24_art..v28_art, v211_dogs, v211_art_d/e, v215_items/env/gart-a/gart-b, v25_seasons, v26_scenes, v27_scenes, v28_scenes, v28_japan; the real proof is `dogs/check_identical.js v2184-base`);
-  phone layout since v2.16 (v211_breeds, v25_breeds click `[data-act=journal]`, now in More; phone_legacy and itch_build expect 7 action buttons; i18n_phone clicks Feed, now in the Care tray);
+  phone layout since v2.16 (itch_build expects 7 action buttons; i18n_phone clicks Feed, now in the Care tray; v211_breeds, v25_breeds and phone_legacy fixed in v2.23);
   mission +15 coins (v25_festival, v28_winter; 40 since v2.19.2); v215_ground looks for the Square's Pumpkin Patch pop-up (moved to the market place in v2.17.1);
   v25_fixes_b "Care > Nap on the Old Blanket" in the yard (the yard nap uses the Cardboard Box). Flaky: v219_friends greet, phone_v27_shelter room tap, phone_occl_play 360 px hint check. The local `vNN-base` branches must exist (`git branch -f v215-base origin/v215-base`).
   - Flaky/red on 96eae646 too (6 Nov QA batch): phone_v29_pack "Tug: both crouch ... off the veggie bed" misses by 1 scene unit; i18n_smoke "Settings: after the reload the game is in ja".

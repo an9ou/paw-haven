@@ -3,9 +3,10 @@
 // feed, pet, walk each; the Wardrobe mannequin draws every outfit on each new breed with no console errors; an Akita x Pomeranian playdate
 // names the pups Pomkita and the family tree shows it; the roam traits loyal / show / spin; the litter rules list the new keys;
 // the Journal coat tab shows 17 breeds; the carousel on phones.
-const COAT_CAP = 35; // v2.12: the coat book shows all 35 breeds
+let COAT_CAP = 35; // v2.12: the coat book shows every breed (set from nb() where the coat tab opens)
 require('./test_lib').run('v211_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
+  const nb = async () => ((await ev(() => window.__paw.v221.on())) ? 40 : 35); // 40 breeds are live since the v2.21 launch (MS2_LIVE), 35 before it
   const NEW = [['akita', 'Akita', 'Red'], ['spitz', 'Japanese Spitz', 'White'], ['pom', 'Pomeranian', 'Orange'], ['afghan', 'Afghan Hound', 'Red'], ['dane', 'Great Dane', 'Fawn'], ['mastiff', 'English Mastiff', 'Fawn'], ['gsd', 'German Shepherd', 'Black and tan']];
   const TIPS = {
     akita: 'Akitas are calm and proud and like their own space. Let them meet new dogs slowly.',
@@ -22,7 +23,7 @@ require('./test_lib').run('v211_breeds', async (t) => {
   for (const [k, br, coat] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
-    ok(await p.locator('.heads button').count() === 35, `${br}: 35 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === await nb(), `${br}: ${await nb()} dogs in the adoption carousel`);
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
@@ -86,13 +87,14 @@ require('./test_lib').run('v211_breeds', async (t) => {
   await ev(() => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; });
   await t.closeX(); await t.modalGone();
 
-  sec('Journal: the coat tab shows 35 breeds');
+  sec('Journal: the coat tab shows every breed (40 live, 35 before the v2.21 launch)');
+  COAT_CAP = await nb();
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
   ok(await p.locator('.cbreed').count() === COAT_CAP, `${COAT_CAP} breed tabs on the Coats page (35 once 07 coatBreeds lifts its cap)`);
   ok(await ev(() => ['akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the seven new breeds have tabs');
   await t.sleep(700);
   const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
-  ok(rows <= (COAT_CAP > 21 ? 3 : 1), `the breed tabs fit (one row up to 21, at most three small rows at 35) at 1280x720 (${rows} rows)`);
+  ok(rows <= (COAT_CAP > 21 ? 3 : 1), `the breed tabs fit (one row up to 21, at most three small rows at 35 or 40) at 1280x720 (${rows} rows)`);
   await p.setViewportSize({ width: 1024, height: 720 }); await t.sleep(700);
   const r1024 = await ev(() => ({ rows: new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size, over: document.querySelector('.cbreeds').scrollWidth > document.querySelector('.cbreeds').clientWidth + 1, docW: document.documentElement.scrollWidth }));
   ok(r1024.rows <= (COAT_CAP > 21 ? 4 : 1) && !r1024.over && r1024.docW <= 1024, `at 1024x720 too: no more rows than that, nothing cut off (${JSON.stringify(r1024)})`);
@@ -200,7 +202,7 @@ require('./test_lib').run('v211_breeds', async (t) => {
   ok((await ev(() => window.__paw.S.dogs.length)) === 3, 'three dogs roam together');
   ok(t.errors.length === 0, 'no console errors so far');
 
-  sec('phones: all 35 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
+  sec('phones: every head (40 live, 35 before the v2.21 launch) in the adoption sheet are tappable (iPhone 15, Pixel 7)');
   for (const dev of ['iPhone 15', 'Pixel 7']) {
     await t.ctx.close();
     const z = await t.boot({ device: dev }); await z.click('#tNew'); await z.waitForSelector('.heads button'); await t.sleep(500);
@@ -208,7 +210,7 @@ require('./test_lib').run('v211_breeds', async (t) => {
     // v2.12: 35 heads are taller than one phone screen, so each head is scrolled into view (as a thumb would) before the tap check
     const hit = await ev(() => [...document.querySelectorAll('.heads button')].map((b) => { b.scrollIntoView({ block: 'nearest' }); const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e) && r.width >= 44 && r.height >= 44 && r.top >= 0 && r.bottom <= innerHeight; }));
     if (!hit.every(Boolean)) console.log('   heads not tappable: ' + hit.map((h, i) => (h ? '' : i)).filter((x) => x !== '').join(','));
-    ok(hit.length === 35 && hit.every(Boolean), `${dev}: 35 heads, each 44 px or more and tappable with the sheet scrolled down`);
+    ok(hit.length === (await nb()) && hit.every(Boolean), `${dev}: every head, each 44 px or more and tappable with the sheet scrolled down`);
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
     await z.locator('.heads button[aria-label$=" the German Shepherd"]').click(); // the last v2.11 head (the v2.12 heads follow it)
     ok(await t.until(() => /the German Shepherd/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the German Shepherd head picks it`);
@@ -218,6 +220,8 @@ require('./test_lib').run('v211_breeds', async (t) => {
 
   sec('phones: the Journal coat tabs keep the chosen breed in view');
   await t.ctx.close(); await t.newGame({ device: 'iPhone 15' }); const r = t.p;
+  // v2.16 option C phone bar: Journal lives in the More tray, so open it first
+  await r.evaluate(() => { const b = document.querySelector('#bar [data-act="journal"]'), pp = b && b.closest('.barpop'); if (pp && pp.hidden) document.querySelector(`#bar .act[data-act="${pp.dataset.pop}"]`).click(); }); await r.waitForSelector('#bar [data-act=journal]', { state: 'visible' });
   await r.click('[data-act=journal]'); await r.waitForSelector('.panel.journal'); await r.click('[data-jt=coats]'); await r.waitForSelector('.cbreeds');
   const vis = () => ev(() => { const c = document.querySelector('.cbreeds'), on = document.querySelector('.cbreed.on'), a = c.getBoundingClientRect(), b = on.getBoundingClientRect(); return { key: on.dataset.cbreed, inView: b.left >= a.left - 1 && b.right <= a.right + 1 }; });
   for (const k of ['pom', 'akita', 'shiba']) {

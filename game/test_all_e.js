@@ -16,7 +16,7 @@ require('./test_lib').run('all_e', async (t) => {
   sec('v1.7: adopt each new breed and check it renders');
   for (const [k, br, nm] of [['chihuahua', 'Chihuahua', 'Peanut'], ['pug', 'Pug', 'Dumpling'], ['greyhound', 'Greyhound', 'Rocket'], ['beagle', 'Beagle', 'Bagel']]) {
     p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
-    ok(await p.locator('.heads button').count() === 35, `${br}: 35 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === (await ev(() => window.__paw.v221.on()) ? 40 : 35), `${br}: every dog in the adoption carousel (40 live, 35 before the v2.21 launch)`);
     await p.click(`.heads button[aria-label$="the ${br}"]`); await t.until((br) => /the Chihuahua|the Pug|the Greyhound|the Beagle/.test(document.querySelector('.adopt-card h3').textContent) && document.querySelector('.adopt-card h3').textContent.includes(br), br);
     ok(/the Chihuahua|the Pug|the Greyhound|the Beagle/.test(await p.textContent('.adopt-card h3')) && (await p.getAttribute('#adoptDog svg.pa-dog', 'aria-label') || '').includes(br), `${br}: shelter card + art`);
     await p.click('#aBoy'); await p.click('#aAdopt'); await p.waitForSelector('#nOk'); await p.click('#nOk'); await t.intro(); await t.calm();

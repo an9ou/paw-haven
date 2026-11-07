@@ -62,7 +62,8 @@ async function run(b, devName, full) {
   const vb = await ev(() => document.querySelector('#view > svg.world').getAttribute('viewBox'));
   ok(vb !== '0 0 1000 600', 'scene cropped around the dog: viewBox ' + vb);
   const bar = await ev(() => [...document.querySelectorAll('#bar .act')].map((b) => Math.round(b.getBoundingClientRect().height)));
-  ok(bar.length === 7 && bar.every((h) => h >= 48), '7-button icon bar, each >= 48 px tall: ' + bar.join(','));
+  const barVis = bar.filter((h) => h > 0); // v2.16 option C: Care / Walk / Map / More are on the bar, the other buttons wait in the Care and More trays (height 0 until a tray opens)
+  ok(barVis.length === 4 && barVis.every((h) => h >= 48), 'Care / Walk / Map / More bar, each >= 48 px tall: ' + bar.join(','));
 
   // pet by touch: a tap is a pat, a rub (touch drag) pets more
   await ev(() => { window.__paw.S.stats.happy = 50; });

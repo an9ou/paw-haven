@@ -110,9 +110,18 @@ const NEWS_V222 = { // v2.22 Town levels and dog habits (V222.md), launches with
   ]
 };
 const nwV222Due = () => MS2_LIVE && jstISO() >= NEWS_V222.date;
+const NEWS_V223 = { // v2.23 Coat colours (V223.md): the starter's coat and eye colour on the adoption card
+  id: '2.23', date: '2026-11-07', c: '#FDE7D3', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v223.title', 'Pick your dog\'s coat colour'),
+  items: [
+    { ic: () => nwHead('lab'), tx: () => tt('nw.v223.coat', 'When you adopt a starter dog, you can pick its coat colour. Every breed has its own real colours') },
+    { ic: () => nwHead('husky'), tx: () => tt('nw.v223.eyes', 'Huskies, Aussies and merle dogs can have blue, brown or odd eyes too') }
+  ]
+};
+const nwV223Due = () => MS2_LIVE && jstISO() >= NEWS_V223.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

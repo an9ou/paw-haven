@@ -47,7 +47,7 @@ require('./test_lib').run('v212_breeds', async (t) => {
   sec('adopt each new breed through the UI, then feed, pet and walk');
   for (const [k, br, coat] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
-    if (k === 'dobie') ok(await p.locator('.heads button').count() === 35 && await ev(() => window.PawGenes.BREEDS.length) === 40, '35 dogs in the adoption carousel (the v2.21 five are off), 40 PawGenes breeds');
+    if (k === 'dobie') { const on = await ev(() => window.__paw.v221.on()); ok(await p.locator('.heads button').count() === (on ? 40 : 35) && await ev(() => window.PawGenes.BREEDS.length) === 40, `${on ? 40 : 35} dogs in the adoption carousel (the v2.21 five are ${on ? 'live' : 'off'}), 40 PawGenes breeds`); }
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
@@ -94,11 +94,11 @@ require('./test_lib').run('v212_breeds', async (t) => {
   ok(Object.keys(want).every((g) => want[g].every((k) => rules.L[g].breeds.includes(k))) && rules.dupes === 0 && rules.n === 40, 'each new key in its litter group, every breed once (' + rules.n + ')');
   ok(rules.giant === 'dane,mastiff,bernese' && rules.L.giant.breeds.join() === 'dane,mastiff,bernese', 'the giant rules are the Great Dane and the English Mastiff (v2.21: and the Bernese Mountain Dog)');
 
-  sec('Journal: the coat tab lists 35 breeds, each new page its catalogue');
+  sec('Journal: the coat tab lists every breed (40 live, 35 before the v2.21 launch), each new page its catalogue');
   await t.ctx.close(); await t.newGame({}, { coins: 1000 }); const p = t.p;
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
   const nTabs = await p.locator('.cbreed').count();
-  ok(nTabs === 35, `${nTabs} breed tabs on the Coats page`);
+  ok(nTabs === (await ev(() => window.__paw.v221.on()) ? 40 : 35), `${nTabs} breed tabs on the Coats page`);
   ok(await ev(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the coat page does not scroll sideways');
   if (!capped) {
     for (const k of KEYS) {
