@@ -1,7 +1,11 @@
 # YouTube lofi loop: "rainy evening" (owner, 7 Nov 2026)
 
 Owner's ask: "a looped lofi music video for posting on YouTube. You can choose the dog/dogs, place, movements, in around 30 s first."
-This is the first 30 s loop for the owner's review. **Not approved yet**: no long version or upload until the owner says so (content approval is never assumed).
+Owner, 7 Nov 2026: "we can now loop it to around 30 mins". **30-minute version made and sent** (not in the repo: 244 MB): the 30 s loop re-encoded once at CRF 24 (`-tune animation`, so 60 copies fit under the 500 MB send limit), then
+```
+ffmpeg -stream_loop 59 -i loop_crf24.mp4 -stream_loop 59 -i <workdir>/cozy_loop.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -movflags +faststart -t 1800 rainy-evening-30min.mp4
+```
+1800.0 s, -16.1 LUFS, joins checked at 30 s, 15 min and 29.5 min (no click). Title for it: `rainy evening lofi 🌧️ 30 minutes of cozy beats with two sleepy crayon dogs` (the 1-hour title below, with the length changed).
 
 ## Files (`brand/youtube/lofi/`)
 
