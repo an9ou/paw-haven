@@ -93,5 +93,5 @@ NODE_PATH=$(npm root -g) node mods/audio/check_v2.js       # voices, stings, nur
 NODE_PATH=$(npm root -g) PAW_ARGS=--ignore-certificate-errors node game/run_tests.js smoke --jobs 1
 ```
 
-`test_audio.js` takes several minutes (it ends with every breed's barks) and writes demo WAVs into `mods/audio/` (gitignored);
+`test_audio.js` takes about 15 minutes (it ends with every breed's barks; run it in the background) and writes demo WAVs into `mods/audio/` (gitignored);
 don't wrap it in a short `timeout`. Plus the clip numbers above, and the owner's go-ahead on the clips.
