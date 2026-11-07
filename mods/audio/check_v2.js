@@ -6,7 +6,7 @@ const MOD = path.join(__dirname, '..', 'pawaudio.js');
 let fails = 0; const log = (...a) => console.log('[audio-v2]', ...a);
 const ok = (c, m) => { if (!c) { fails++; console.log('[audio-v2] FAIL', m); } else console.log('[audio-v2] ok  ', m); };
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
+  const b = await chromium.launch({ executablePath: require('fs').existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined, args: ['--autoplay-policy=no-user-gesture-required'] });
   const errors = [];
   const p = await b.newPage();
   p.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); });
