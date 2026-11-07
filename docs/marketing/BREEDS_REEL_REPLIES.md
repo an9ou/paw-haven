@@ -11,11 +11,13 @@ Owner, 7 Nov 2026: "what should I reply after audience commented their loved dog
   - "how old is yours?"
   - "does yours do this?" (with the game line)
 - **Mixed breed / rescue / "just a good boy":** they're the Mutt (#31). "Mutts are the best, yours is #31 at 0:09 🐾 what's the mix?"
-- **Breed not in the 35:** keep the promise from the Reel: "not in there yet, so we'll draw yours ✏️ send a photo if you like!" Never hint that new breeds are coming (unannounced).
+- **Dalmatian, Bernese, Aussie (Australian Shepherd), Cavalier, Jack Russell:** not in the Reel, but they joined the game on 7 Nov 2026 (v2.21, 40 dogs now; GM briefing). Best reply of all: tell them theirs just arrived (ready lines below).
+- **Any other breed:** keep the promise from the Reel: "not in there yet, so we'll draw yours ✏️ send a photo if you like!" Don't promise it will be added to the game.
 - **"Drawn badly" jokes / "mine looks better than that 😂":** agree and laugh: "honestly fair. the crayon did its best 😅"
 - **Someone asks where to play:** "it's free in your browser: link in our bio 🎮" (Instagram/TikTok; links in comments aren't clickable there). On YouTube and X you can give https://doodledoggo.app.
 - **A few to pin:** the funniest comment, or one where you promised a drawing (it shows the promise is real).
 - **Never** argue about breeds, say "ugliest", or promise a breed will be added.
+- **Still unannounced:** Cantonese and the paid/kind shop (don't mention).
 
 ## English replies (Instagram, TikTok, Shorts, X)
 
@@ -100,3 +102,23 @@ Times are for the RedNote cut (20 s); names are the game's zh-Hans names. Ending
 | 33. | 迷你雪纳瑞 | 0:12 | 你家的迷你雪纳瑞是第33只！暂停在0:12就能看到 👀 游戏里的迷你雪纳瑞：“你家迷你雪纳瑞报告一切正常。请挠挠胡子。” 🐾 |
 | 34. | 大丹犬 | 0:12 | 你家的大丹犬是第34只！暂停在0:12就能看到 👀 游戏里的大丹犬：“你家大丹犬整只靠在你身上。这可是好大一只狗。” 🐾 |
 | 35. | 金毛寻回犬 | 0:12 | 你家的金毛寻回犬是第35只！暂停在0:12就能看到 👀 游戏里的金毛寻回犬：“你家金毛寻回犬整只靠在你腿上。” 🐾 |
+
+## The five new breeds (in the game since 7 Nov 2026, not in the Reel)
+
+| Breed | Reply |
+|---|---|
+| Dalmatian | Your Dalmatian isn't in the video, because it only joined the game today! 🎉 In our game: "Your Dalmatian trots over and sits beside you, spots and all." 🐾 |
+| Bernese Mountain Dog | Your Bernese missed the video, but it just arrived in the game today! 🎉 In our game: "Your Bernese leans on your legs. All of it. Gently." 🐾 |
+| Australian Shepherd | Your Aussie isn't in the video, because it joined the game today! 🎉 In our game: "Your Aussie checked on everyone. Now it checks on you." 🐾 |
+| Cavalier King Charles Spaniel | Your Cavalier missed the video, but it's in the game as of today! 🎉 In our game: "Your Cavalier looks up at you with big soft eyes. A lap, please." 🐾 |
+| Jack Russell Terrier | Your Jack Russell is too new for the video: it joined the game today! 🎉 In our game: "Your Jack Russell bounces over. Boing. Pet me. Boing." 🐾 |
+
+RedNote:
+
+| 品种 | 回复 |
+|---|---|
+| 斑点狗 | 你家的斑点狗不在视频里，因为它今天才刚来到游戏里！🎉 游戏里的斑点狗：“你家斑点狗小跑过来，坐在你身边，连同一身斑点。” 🐾 |
+| 伯恩山犬 | 你家的伯恩山犬没赶上这个视频，不过今天刚刚加入游戏啦！🎉 游戏里的伯恩山犬：“你家伯恩山犬靠在你的腿上。整只狗都靠上来了。轻轻地。” 🐾 |
+| 澳大利亚牧羊犬 | 你家的澳大利亚牧羊犬今天才加入游戏，所以视频里还没有！🎉 游戏里的澳大利亚牧羊犬：“你家澳大利亚牧羊犬把大家都检查了一遍。现在轮到检查你了。” 🐾 |
+| 骑士查理王小猎犬 | 你家的骑士查理王小猎犬没赶上这个视频，不过今天已经在游戏里啦！🎉 游戏里的骑士查理王小猎犬：“你家骑士查理王小猎犬用水汪汪的大眼睛望着你。请给我一个腿上的位置。” 🐾 |
+| 杰克罗素梗 | 你家的杰克罗素梗太新了，视频里还没有：它今天才加入游戏！🎉 游戏里的杰克罗素梗：“你家杰克罗素梗蹦过来了。嘣。摸摸我。嘣。” 🐾 |
