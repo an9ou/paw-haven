@@ -1,6 +1,6 @@
 # v2.19 Friends launch Reel: what to post on each channel
 
-## How-to version (PREVIEW, 7 Nov 2026, waiting for the owner's approval)
+## How-to version (APPROVED by the owner, 7 Nov 2026)
 
 The owner's changes of 7 Nov 2026 ("put some in-game content, teach players how to use the function, how they can share the code through WhatsApp, IG, other social media platforms with the poster"): the launch Reel is rebuilt as a how-to, and the carousel shows the same steps. **Nothing here is approved yet: do not post it, and make no final or RedNote cut until the owner says yes** (content approval is never assumed, owner 7 Nov 2026). English only.
 
@@ -8,9 +8,9 @@ The owner's changes of 7 Nov 2026 ("put some in-game content, teach players how 
 
 | Piece | File (`brand/instagram/launch/friends_reel/howto/`) |
 |---|---|
-| Reel (Instagram Reels, YouTube Shorts, X: one cut) | `doodle-doggo-friends-howto-PREVIEW.mp4` (1080 x 1920, 35.3 s, 6.0 MB, Noodle's voice, subtitles) |
-| Reel cover (its own design) | `friends-howto-cover-PREVIEW.jpg` |
-| Carousel, 8 slides | `friends-howto-carousel-1-PREVIEW.jpg` … `-8-PREVIEW.jpg` (1080 x 1350) |
+| Reel (Instagram Reels, YouTube Shorts, X: one cut) | `doodle-doggo-friends-howto.mp4` (1080 x 1920, 35.3 s, 6.0 MB, Noodle's voice, subtitles) |
+| Reel cover (its own design) | `friends-howto-cover.jpg` |
+| Carousel, 8 slides | `friends-howto-carousel-1.jpg` … `-8.jpg` (1080 x 1350) |
 
 The steps (the game's own button names): 1. tap More, then Friends · 2. pick a name, get your code · 3. tap Share poster, send it anywhere (a crayon share menu with the app names as text only, then the poster as a chat message and as a story, all in crayon phones, no real app logos or screens) · 4. your friend opens the link, or types your code in Add a friend, and taps Add · 5. you're friends: visit, pet, gift, walk together. End: "drop your friend code below / and add each other!" over comment bubbles with blank code boxes (DOG- and five empty boxes), then the shared end card. The one ask everywhere: comment your friend code below and add each other.
 

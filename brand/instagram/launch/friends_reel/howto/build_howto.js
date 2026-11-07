@@ -1,5 +1,5 @@
 // The Friends how-to Reel (owner, 7 Nov 2026: "put some in-game content, teach players how to use the function, how they can share the code through
-// WhatsApp, IG, other social media platforms with the poster"). PREVIEW for the owner's approval: never posted before the owner says yes.
+// WhatsApp, IG, other social media platforms with the poster"). Approved by the owner (7 Nov 2026).
 // A ~35 s how-to in Noodle's voice (Kokoro af_bella 1.1x, ../vo_friends.py with VO_LINES=howto/vo_howto.json) with burned-in subtitles:
 //   hook   "How to add friends in Doodle Doggo" / "share your code in 3 taps" over Mochi at home (clean footage)
 //   1.     tap More, then Friends                  (the REAL game screens, a crayon finger and ripple on each tap)
@@ -14,7 +14,7 @@
 //
 //   NODE_PATH=$(npm root -g) OUR_CODE=DOG-K3APZ OUR_NAME=0,0 node brand/instagram/launch/friends_reel/howto/build_howto.js <game checkout> <ui footage> <clean footage> <workdir> <vo dir>
 //   <ui footage>: capture_howto.js; <clean footage>: ../capture_clean.js with DOG_HEAD= DOG_NAME=Mochi; <vo dir>: ../vo_friends.py with VO_LINES=howto/vo_howto.json
-//   ONLY=stills   key frames only (workdir/stills/*.png)     ONLY=cover   the cover only (its own design, friends-howto-cover-PREVIEW.jpg)
+//   ONLY=stills   key frames only (workdir/stills/*.png)     ONLY=cover   the cover only (its own design, friends-howto-cover.jpg)
 //   CHECK=1       run every frame's checks without writing it (fast)
 //   FRAMES=a-b    re-render only frames a..b (the rest of workdir/f stays), then encode again      PAR=n   n pages render at once
 const path = require('path'), fs = require('fs'), cp = require('child_process');
@@ -254,7 +254,7 @@ async function openPage(b, src) {
     const p = await openPage(b, coverHTML);
     const bad = await p.evaluate(() => window.cover()); if (bad.length) throw new Error('cover: ' + bad.join('; '));
     await p.waitForTimeout(300);
-    const f = path.join(OUTDIR, 'friends-howto-cover-PREVIEW.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f);
+    const f = path.join(OUTDIR, 'friends-howto-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f);
   }
   await b.close();
   if (only) return;
@@ -273,7 +273,7 @@ async function openPage(b, src) {
   VOAT.forEach((v, i) => { inputs.push('-i', path.join(VO, v.k + '.wav')); const d = Math.round(v.at * 1000); chains.push(`[${inputs.length / 2 + 1}:a]aresample=44100,volume=1.5,adelay=${d}|${d}[v${i}]`); labels.push(`[v${i}]`); });
   TAPS.forEach((tt, i) => { inputs.push('-i', tap); const d = Math.round(tt * 1000); chains.push(`[${inputs.length / 2 + 1}:a]adelay=${d}|${d}[t${i}]`); labels.push(`[t${i}]`); });
   const mix = `[1:a]atrim=0:${T},volume=0.3,afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${labels.join('')}amix=inputs=${labels.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
-  const out = path.join(OUTDIR, 'doodle-doggo-friends-howto-PREVIEW.mp4');
+  const out = path.join(OUTDIR, 'doodle-doggo-friends-howto.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', String(T), out]);

@@ -1,4 +1,4 @@
-// The Friends how-to carousel (owner, 7 Nov 2026: the same steps as the how-to Reel). PREVIEW for the owner's approval. 8 slides, 1080 x 1350:
+// The Friends how-to carousel (owner, 7 Nov 2026: the same steps as the how-to Reel). Approved by the owner (7 Nov 2026). 8 slides, 1080 x 1350:
 //   1 cover "How to add friends in Doodle Doggo" (share your code in 3 taps)   2 "1. tap More, then Friends"   3 "2. pick a name, get your code"
 //   4 "3. tap Share poster"   5 "send it anywhere" (the crayon share menu, app names as text only, and the poster as a chat message: no real app UI)
 //   6 "4. your friend adds you"   7 "5. you're friends!" (visit & pet, paw-print note, a gift a day, walk together; no chat, no messages)
@@ -8,7 +8,7 @@
 // Reel frame: the right margin carries the sketchbook's binding, the top band the game's yard) and apartCheck() wherever dogs share a slide.
 //
 //   NODE_PATH=$(npm root -g) OUR_CODE=DOG-K3APZ OUR_NAME=0,0 node brand/instagram/launch/friends_reel/howto/build_howto_carousel.js <game checkout> <ui footage> <clean footage>
-//   writes friends-howto-carousel-1..8-PREVIEW.jpg next to this script
+//   writes friends-howto-carousel-1..8.jpg next to this script
 const path = require('path'), fs = require('fs'), vm = require('vm');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../centre_text.js');
@@ -124,7 +124,7 @@ S.push(`\${page(7)}\${'<g transform="rotate(-1.5 475 395)">'+box(80,290,790,210,
     if (bad.length) throw new Error('slide ' + (i + 1) + ': ' + bad.join('; '));
     await p.evaluate(() => Promise.all([...document.querySelectorAll('image')].map((im) => new Promise((r) => { const x = new Image(); x.onload = r; x.onerror = r; x.src = im.getAttribute('href'); }))));
     await p.waitForTimeout(200);
-    const f = path.join(OUT, `friends-howto-carousel-${i + 1}-PREVIEW.jpg`); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f);
+    const f = path.join(OUT, `friends-howto-carousel-${i + 1}.jpg`); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f);
   }
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
