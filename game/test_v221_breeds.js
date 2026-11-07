@@ -278,10 +278,11 @@ require('./test_lib').run('v221_breeds', async (t) => {
       const was = P.v221.wire(); P.v221.wire(true); const live = look(); P.v221.wire(false);
       const bad = (x) => x.b >= 35 || x.n >= 115;
       return { was, lead: S.dog.key, onlyNew, mixed, live, offBad: all(onlyNew).concat(all(mixed)).filter(bad).length, liveBad: all(live).filter(bad).length, after: P.v221.wire() }; });
-    ok(!wire.was && !wire.after && wire.lead === 'dalmatian', 'the wire gate follows MS2_LIVE (off now, the leader is the Dalmatian)');
-    ok(wire.offBad === 0 && wire.onlyNew.card.length === 2 && wire.mixed.card.length === 1 && wire.onlyNew.yard && wire.onlyNew.yard.length === 2 && wire.onlyNew.mine && wire.onlyNew.mine.b < 35,
+    const wLive = /const MS2_LIVE = true/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '24b_missions2.js'), 'utf8'));
+    ok(wire.was === wLive && wire.after === wLive && wire.lead === 'dalmatian', 'the wire gate follows MS2_LIVE (' + (wLive ? 'on since the 7 Nov 2026 launch' : 'off') + ', the leader is the Dalmatian)');
+    if (!wLive) ok(wire.offBad === 0 && wire.onlyNew.card.length === 2 && wire.mixed.card.length === 1 && wire.onlyNew.yard && wire.onlyNew.yard.length === 2 && wire.onlyNew.mine && wire.onlyNew.mine.b < 35,
       `MS2_LIVE off, gate on: no breed 35-39 or name 115+ in the card, yard or walk letter; the next dogs go instead (${JSON.stringify(wire.onlyNew)})`);
-    ok(wire.mixed.card[0].n < 115 && wire.mixed.card[0].n >= 80, 'a card name of the five ("Aussie" on a Lab) goes as the dog\'s own breed word until MS2_LIVE (' + wire.mixed.card[0].n + ')');
+    if (!wLive) ok(wire.mixed.card[0].n < 115 && wire.mixed.card[0].n >= 80, 'a card name of the five ("Aussie" on a Lab) goes as the dog\'s own breed word until MS2_LIVE (' + wire.mixed.card[0].n + ')');
     ok(wire.liveBad > 0 && wire.live.card.some((x) => x.b >= 35) && wire.live.yard.some((x) => x.b === 35) && wire.live.mine.b === 35 && wire.live.card.some((x) => x.n >= 115),
       `MS2_LIVE forced on: the five go to the Worker normally (${JSON.stringify(wire.live.yard.map((x) => x.b))}, mine ${wire.live.mine.b})`);
     await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
@@ -303,7 +304,8 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(w.yes && w.ok && w.pups.length >= 2 && w.pups.every((x) => x.key === 'aussie' && x.M !== 'MM' && COATS.aussie.includes(x.coat)), 'a merle and a plain Aussie: pups never M/M, all catalogue coats ' + JSON.stringify(w.pups));
     ok(/bernese/.test(w.giant), 'the giant rules include the Bernese (' + w.giant + ')');
     const flip = await ev(() => { const P = window.__paw, a = P.v221.dogs().length; P.ms2.test(false); const b = P.v221.dogs().length, c = P.v221.live().length; P.ms2.test(true); return [a, b, c, P.v221.dogs().length]; });
-    ok(flip.join() === '40,35,35,40', 'the switch flips at run time (on 40, off 35, on 40): ' + flip.join());
+    if (/const MS2_LIVE = true/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '24b_missions2.js'), 'utf8'))) ok(flip.every((n) => n === 40), 'since the 7 Nov 2026 launch the test switch cannot hide the five: always 40 (' + flip.join() + ')');
+    else ok(flip.join() === '40,35,35,40', 'the switch flips at run time (on 40, off 35, on 40): ' + flip.join());
     await t.SH('01_v221_on_yard');
   }
   ok(t.errors.length === 0, 'no console errors');
