@@ -1,7 +1,8 @@
 // The Friends how-to carousel (owner, 7 Nov 2026: the same steps as the how-to Reel). PREVIEW for the owner's approval. 8 slides, 1080 x 1350:
 //   1 cover "How to add friends in Doodle Doggo" (share your code in 3 taps)   2 "1. tap More, then Friends"   3 "2. pick a name, get your code"
 //   4 "3. tap Share poster"   5 "send it anywhere" (the crayon share menu, app names as text only, and the poster as a chat message: no real app UI)
-//   6 "4. your friend adds you"   7 "5. you're friends!" (visit & pet, paw-print note, a gift a day, walk together; no chat, no messages)   8 "add us!" DOG-K3APZ
+//   6 "4. your friend adds you"   7 "5. you're friends!" (visit & pet, paw-print note, a gift a day, walk together; no chat, no messages)
+//   8 the code swap "drop your friend code below / and add each other!" (owner, 7 Nov 2026: our account holds 50 friends, so never "add us")
 // The REAL game screens (capture_howto.js, capture_clean.js with Mochi), our card from the game's own card art and QR (../friends_card.js), the crayon
 // drawings from howto_art.js. Every slide: centreCheck(), safeCheck() (all our words, cards and pills inside x 60..890, y 270..1440, as on every
 // Reel frame: the right margin carries the sketchbook's binding, the top band the game's yard) and apartCheck() wherever dogs share a slide.
@@ -11,7 +12,7 @@
 const path = require('path'), fs = require('fs'), vm = require('vm');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../centre_text.js');
-const { loadArt, cardSVG, FIT_JS, apartRects } = require('../friends_card.js');
+const { loadArt, FIT_JS, apartRects } = require('../friends_card.js');
 const { HOWTO_JS } = require('./howto_art.js');
 const [DEV, UI, CLEAN] = process.argv.slice(2, 5).map((x) => path.resolve(x));
 if (!CLEAN) throw new Error('usage: build_howto_carousel.js <game checkout> <ui footage> <clean footage>');
@@ -19,7 +20,6 @@ const OUT = __dirname, W = 1080, H = 1350, N = 8;
 const LAY = JSON.parse(fs.readFileSync(path.join(UI, 'layout.json'), 'utf8'));
 const CODE = process.env.OUR_CODE; if (!CODE || CODE !== LAY.code) throw new Error('OUR_CODE must be our real code (' + LAY.code + ')');
 const ART = loadArt(DEV);
-const CARD = cardSVG(ART, { code: CODE, name: 'Sunny Biscuit', nameFont: 'Caveat' });
 const LINK = ART.link.replace(/^https?:\/\//, '') + CODE;
 const POSTER = 'file://' + path.join(UI, 'poster.png');
 const PEN = '#5B3D32', PINK = '#F28FA5', PAPER = '#FFF8EC', SOFT = '#8A7468', YEL = '#FFE3A1', GREEN = '#4E9A54';
@@ -109,10 +109,10 @@ S.push(`\${page(4)}\${head(3,'send it anywhere',290)}
 ${t(clipOf(CLEAN, 'visit', 2.4), { x: 0, y: 345, w: 393, h: 300 }, 66, 440, 'visit & pet')}${t(stillOf(CLEAN, 'note_left'), { x: 0, y: 260, w: 393, h: 300 }, 490, 440, 'paw-print note')}
 ${t(clipOf(CLEAN, 'gift', 0.8), { x: 0, y: 220, w: 393, h: 300 }, 66, 790, 'a gift a day')}${t(clipOf(CLEAN, 'walk', 3.2), { x: 0, y: 238, w: 220, h: 168 }, 490, 790, 'walk together')}
 \${pill('no chat. no messages.',475,1215,50,FAM,{fill:'#FFFDF7',stroke:'${GREEN}',color:'${GREEN}',padX:30})}`); }
-// 8 add us
-S.push(`\${page(7)}\${'<g transform="rotate(-2 475 350)">'+C([{s:'add us!',size:130}],475,350).svg+'</g>'}<path d="M295 425 Q475 407 655 425" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>
-<g data-safe transform="translate(475 720) scale(2.55) rotate(-2) translate(-150 -100)">${CARD}</g>
-\${box(110,1020,730,180,[{s:'then drop your friend code',size:60,pitch:72},{s:'below to swap with other players',size:46}],{fill:'${YEL}',sw:6})}`);
+// 8 the code swap (owner, 7 Nov 2026: our account holds 50 friends at most, so never "add us"): players add EACH OTHER. Blank code boxes only
+S.push(`\${page(7)}\${'<g transform="rotate(-1.5 475 395)">'+box(80,290,790,210,[{s:'drop your friend code below',size:68,pitch:84},{s:'and add each other!',size:68,fill:'#C2567A'}],{sw:7})+'</g>'}
+\${hwSwap(475,560,9,{w:600,h:132,gap:70,off:60})}
+\${pill('comment yours, add theirs',475,1180,52,FAM,{fill:'${YEL}',padX:30})}`);
 
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
