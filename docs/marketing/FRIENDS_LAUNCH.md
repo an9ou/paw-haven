@@ -1,5 +1,18 @@
 # v2.19 "Friends first": launch Reel and "add a friend in 3 steps" carousel (2 Nov 2026)
 
+> **Superseded (7 Nov 2026): the 6 Nov "final" Reel, cover, carousel and RedNote cut below were never approved and are replaced by the how-to.** The owner's changes of 7 Nov 2026: "put some in-game content, teach players how to use the function, how they can share the code through WhatsApp, IG, other social media platforms with the poster". The new English PREVIEW (a ~35 s how-to Reel in Noodle's voice with the real Friends screens, a crayon share menu with app names as text only, the poster as a chat message and a story; its own cover; an 8-slide carousel with the same steps) is in `brand/instagram/launch/friends_reel/howto/` (`*-PREVIEW.*`, scripts `capture_howto.js`, `build_howto.js`, `build_howto_carousel.js`, `howto_art.js`, `howto_cover.js`, voice lines `vo_howto.json`); captions in `FRIENDS_REEL_CAPTIONS.md`, section "How-to version". Waiting for the owner's approval: do not post anything from this page, and make no final or RedNote cut of the how-to until the owner says yes.
+>
+> How the how-to was made (7 Nov 2026, main c23aba5):
+> ```
+> git worktree add --detach <dir> origin/main; cd <dir> && node game/build.js && node game/harness.js merged && cd -
+> export NODE_PATH=$(npm root -g) OUR_CODE=DOG-K3APZ OUR_NAME=0,0
+> node brand/instagram/launch/friends_reel/howto/capture_howto.js <dir> <ui>                       # the real Friends screens, our side and the friend's
+> DOG_HEAD= DOG_NAME=Mochi node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean>  # visit, gift, walk with Mochi
+> VO_LINES=brand/instagram/launch/friends_reel/howto/vo_howto.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo>
+> PAR=5 node brand/instagram/launch/friends_reel/howto/build_howto.js <dir> <ui> <clean> <work> <vo>   # Reel + cover (ONLY=stills|cover, FRAMES=a-b, CHECK=1)
+> node brand/instagram/launch/friends_reel/howto/build_howto_carousel.js <dir> <ui> <clean>          # 8 slides
+> ```
+
 Owner's go-ahead (2 Nov 2026, via the Game Manager): the launch Reel and the carousel, English first, ready before **Sat 7 Nov 2026 00:00 JST**. **Nothing is posted before then.** Plan: `V219_FRIENDS_FIRST.md`. The RedNote cut and its 3:4 cover come after the owner approves the English.
 
 ## Status: FINAL cuts made 7 Nov 2026 (JST) with our real friend name and code

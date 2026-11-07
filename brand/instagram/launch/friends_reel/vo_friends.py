@@ -4,7 +4,7 @@
 #   python3 vo_friends.py <modelDir> <outDir> [voice af_bella] [speed 1.1]
 # Every line is true to the v2.19 game (V219.md): the friend name and code, read-only visits with pets, the 12 preset paw-print notes
 # ("Your dog is so fluffy!" is note 1), one gift a day, a friend's dog on your walk, no chat and no typed messages. Launch 7 Nov 2026.
-import soundfile as sf, numpy as np, json, sys
+import soundfile as sf, numpy as np, json, sys, os
 from kokoro_onnx import Kokoro
 k = Kokoro(sys.argv[1] + "/kokoro-v1.0.int8.onnx", sys.argv[1] + "/voices-v1.0.bin")
 OUT = sys.argv[2]; V = sys.argv[3] if len(sys.argv) > 3 else "af_bella"; SP = float(sys.argv[4]) if len(sys.argv) > 4 else 1.1
@@ -19,6 +19,8 @@ L = {
  "safe":  "No chat. No messages. Just dogs, being friends!",
  "end":   "Friends arrives on November seventh! Drop your friend code below!",
 }
+# VO_LINES=<file.json> (the how-to, 7 Nov 2026: howto/vo_howto.json): other lines in the same voice, { key: text }, in order
+if os.environ.get("VO_LINES"): L = json.load(open(os.environ["VO_LINES"]))
 out = {}
 for key, text in L.items():
     a, sr = k.create(text, voice=V, speed=SP, lang="en-gb" if V.startswith("b") else "en-us")

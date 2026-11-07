@@ -36,6 +36,8 @@ function mockInit(cfg) {
       { id: 1, from: { fid: SUNNY, name: FN }, kind: 'note', data: { i: 0 }, day: cfg.day, claimed: false }
     ]
   };
+  // cfg.extra (the how-to, 7 Nov 2026): more players the mock knows, { book: { 'DOG-XXXXX': { fid, name } }, yards: { fid: yard } } (the friend's side adds US)
+  if (cfg.extra) { Object.assign(srv.book, cfg.extra.book || {}); Object.assign(srv.yardOf, cfg.extra.yards || {}); }
   window.__frSrv = srv; window.__frHoldInbox = true;
   const user = { id: 'user000000000000000001', guest: false, email: 'x@example.com' };
   window.__pawCloudMock = {

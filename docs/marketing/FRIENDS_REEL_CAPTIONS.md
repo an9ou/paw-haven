@@ -1,5 +1,99 @@
 # v2.19 Friends launch Reel: what to post on each channel
 
+## How-to version (PREVIEW, 7 Nov 2026, waiting for the owner's approval)
+
+The owner's changes of 7 Nov 2026 ("put some in-game content, teach players how to use the function, how they can share the code through WhatsApp, IG, other social media platforms with the poster"): the launch Reel is rebuilt as a how-to, and the carousel shows the same steps. **Nothing here is approved yet: do not post it, and make no final or RedNote cut until the owner says yes** (content approval is never assumed, owner 7 Nov 2026). English only.
+
+| Piece | File (`brand/instagram/launch/friends_reel/howto/`) |
+|---|---|
+| Reel (Instagram Reels, YouTube Shorts, X: one cut) | `doodle-doggo-friends-howto-PREVIEW.mp4` (1080 x 1920, 35 s, Noodle's voice, subtitles) |
+| Reel cover (its own design) | `friends-howto-cover-PREVIEW.jpg` |
+| Carousel, 8 slides | `friends-howto-carousel-1-PREVIEW.jpg` … `-8-PREVIEW.jpg` (1080 x 1350) |
+
+The steps (the game's own button names): 1. tap More, then Friends · 2. pick a name, get your code · 3. tap Share poster, send it anywhere (a crayon share menu with the app names as text only, then the poster as a chat message and as a story, all in crayon phones, no real app logos or screens) · 4. your friend opens the link, or types your code in Add a friend, and taps Add · 5. you're friends: visit, pet, gift, walk together. End: "add us!" with our card DOG-K3APZ, "drop your friend code below", then the shared end card. The one ask everywhere: drop your friend code below.
+
+### Instagram (Reel)
+
+```
+how to add friends in Doodle Doggo, in 3 taps 👇 drop your friend code below: comment yours and add each other 🐾
+
+1. tap More, then Friends 🐶 the first time, you pick your friend name on 2 wheels
+2. your card has your code 🎴 ours is DOG-K3APZ
+3. tap Share poster and send it to WhatsApp, your story or the group chat 📲
+
+your friend opens the link, or types your code in Add a friend, and taps Add. that's it, friends! now your dog can visit their yard, pet their dogs, leave a paw-print note, send a gift once a day and go on walks with theirs 🦮
+
+there's no chat and no messages, ever 🤐 just dogs, being friends. a cozy dog game, free on your phone or computer ✏️
+
+#DoodleDoggo #CozyGames #DogGames #IndieGame #GamesWithFriends
+```
+Receipts: `caption.py` READY (726 characters, first line 111 characters lands whole, one ask: comment, 5 hashtags, 9 emoji, search terms "cozy dog game", "friend code", "add friends" 3/3) · `detect.py` human score 77.0 PASS.
+
+Alt text:
+```
+A how-to in the crayon game Doodle Doggo, told in a deadpan voice with subtitles. "How to add friends in Doodle Doggo, share your code in 3 taps" over Mochi the Shiba drinking in her autumn yard. Then the real game screens with a crayon finger on each tap: 1. More, then Friends; 2. the name wheels turn to Sunny Biscuit and the friend card shows the code DOG-K3APZ; 3. Share poster: the poster with Mochi and the code goes into a hand-drawn share menu (WhatsApp, Instagram story, Messenger, LINE, Telegram, Messages, More) and arrives as a chat message and as a story; 4. on a friend's phone the code is typed into Add a friend and "Sunny Biscuit is your friend now!" pops up; 5. Mochi visits a Corgi and a Golden puppy, a gift flies off, and they go for a walk together. "No chat. No messages." It ends on "add us!", our card and "drop your friend code below".
+```
+
+### Instagram (carousel)
+
+```
+how to add friends in a cozy dog game: 3 taps ⏱️ drop your friend code below, comment yours and swap with other players 👇
+
+1. tap More, then Friends. the first time, you pick a friend name 🐶
+2. your card shows your code 🎴 ours is DOG-K3APZ
+3. tap Share poster and send it on WhatsApp, your story or any chat you like 📲 on a computer it saves the picture instead
+4. your friend opens your link, or types your code in Add a friend, then taps Add
+5. done! you're friends. visit their yard, pet their dogs, leave a paw-print note, send a gift a day and walk together 🦮
+
+no chat. no messages 🤐 you can remove or block a friend any time 🔒 free in Doodle Doggo, on your phone or computer ✏️
+
+#DoodleDoggo #CozyGames #DogGames #IndieGame #GamesWithFriends
+```
+Receipts: `caption.py` READY (747 characters, first line lands whole, one ask: comment, 5 hashtags, 10 emoji, search terms 3/3 in the visible window) · `detect.py` human score 77.4 PASS.
+
+Alt text (slide 1):
+```
+A sketchbook page with the game's autumn yard along the top: "How to add friends in Doodle Doggo", a sticker "share your code in 3 taps", our friend poster in a crayon phone (Mochi the Shiba, Sunny Biscuit, DOG-K3APZ) and the three taps: 1. More, 2. Friends, 3. Share poster, with a crayon finger on the last one.
+```
+
+### YouTube Shorts
+
+Title:
+```
+How to add friends in a cozy dog game (3 taps) 🐾 #Shorts
+```
+
+Description:
+```
+How to add friends in Doodle Doggo, our free cozy dog game. It takes 3 taps.
+
+Tap More, then Friends, then Share poster. The first time, you pick a friend name from two Dog Card words, and your card shows your own code. Share poster makes a picture with your code and your invite link on it, so you can send it on WhatsApp, put it in your story, or drop it in the group chat. On a computer it saves the picture instead.
+
+Your friend opens the link, or types your code in Add a friend, and taps Add. That's it! Now your dog can visit their yard, pet their dogs, leave a paw-print note, send a gift once a day, and go for walks together. There's no chat and no messages, ever.
+
+We're Sunny Biscuit, code DOG-K3APZ. Comment your friend code below and add each other!
+
+🎮 Play free: https://doodledoggo.app
+🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
+☕ Support us on Ko-fi: https://ko-fi.com/doodledoggoapp
+📷 Instagram: https://www.instagram.com/doodledoggo.app/
+
+#DoodleDoggo #Shorts #CozyGames #DogGames #IndieGame
+```
+Receipts (the text above the fixed link block): `caption.py` READY (one ask: comment, search terms 3/3) · `detect.py` human score 93.1 PASS.
+
+### X (275 of 280; the link counts as 23)
+
+```
+how to add friends in Doodle Doggo, a cozy dog game: 3 taps 🐾
+tap More, Friends, Share poster, and send it to WhatsApp or your story so your friend can open it and tap Add.
+no chat, just dogs.
+we're DOG-K3APZ, comment your friend code 👇 https://doodledoggo.app/f/DOG-K3APZ #DoodleDoggo
+```
+Receipts (the text without the link): `caption.py` READY (first line lands whole, one ask: comment) · `detect.py` human score 84.2 PASS.
+
+## The 6 Nov launch cut (superseded by the how-to above, never approved)
+
 **v2.19 is live (7 Nov 2026, 00:00 Japan time).** These are the FINAL cuts, made on 7 Nov with our real friend name and code: **Sunny Biscuit** (on RedNote 阳光饼干), **DOG-K3APZ**, invite link https://doodledoggo.app/f/DOG-K3APZ. The files are in `brand/instagram/launch/friends_reel/`; the ones in `preview/` carry a placeholder code: never post those.
 
 | Channel | Video | Cover |

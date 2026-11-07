@@ -70,13 +70,16 @@ run('friends_clean', async (t) => {
   // the visit is staged (owner, 2 Nov 2026: "more interaction", "the dogs were overlapping"): the build's own friend-yard state is reached through one
   // line added to a copy of the test page, so the dogs can be placed apart and act out a greeting with the game's own poses (sniff, play bow, jump)
   // (reelPage in capture_friends.js; each capture its own copy of the page, so an English and a Chinese capture can run at once)
-  const REEL = reelPage(DEV, 'clean_' + (process.env.PAW_LANG || 'en'), PAIR_GAP);
+  const REEL = reelPage(DEV, 'clean_' + (process.env.PAW_LANG || 'en') + (process.env.DOG_NAME ? '_' + process.env.DOG_NAME : ''), PAIR_GAP);
   await t.ctx.addInitScript(stageInit);
   await p().goto('file://' + REEL);
   await p().waitForSelector('#tNew, #tContinue, #tGuest');
   if (await p().locator('#tGuest').count()) { await p().click('#tGuest'); await p().waitForSelector('#tNew'); }
-  await t.adopt({ head: '~Dachshund', sex: 'boy' }); // Noodle, our narrator (as in the 45 s promo and the profile picture)
-  await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 85, happy: 85, energy: 90, clean: 90 }, dog: { name: 'Noodle' } });
+  // Noodle, our narrator (as in the 45 s promo and the profile picture). DOG_HEAD / DOG_SEX / DOG_NAME film another dog (the how-to, 7 Nov 2026:
+  // DOG_HEAD= DOG_NAME=Mochi, the game's first dog, Mochi the Shiba, as on the Doodle Doggo account; an empty DOG_HEAD keeps the adoption page's first dog)
+  const HEAD = process.env.DOG_HEAD != null ? process.env.DOG_HEAD : '~Dachshund', DOGNAME = process.env.DOG_NAME || 'Noodle';
+  await t.adopt(Object.assign(HEAD ? { head: HEAD } : {}, { sex: process.env.DOG_SEX || (HEAD === '~Dachshund' ? 'boy' : 'girl') }));
+  await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 85, happy: 85, energy: 90, clean: 90 }, dog: { name: DOGNAME } });
   await ev(() => { window.__paw.S.coolUntil = 1e12; }); // not "too hot" on a sunny midday
   // PAW_LANG=zh-Hans: the RedNote cut's footage. The dog is adopted in English (the harness picks breeds by their English names), then the game is
   // switched to the language and reloaded with the save, so the yard's signs and every word the game draws are in that language
