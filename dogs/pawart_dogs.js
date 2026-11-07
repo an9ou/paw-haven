@@ -695,7 +695,7 @@ function layout(s,pose,k,aOv){
      const rear=[-b.rx*.72,b.ry*.3],rq=rot([rear[0]*(L.bT.sx||1),rear[1]],a);const R=[b.x-b.rx*(b.long?.15:.35)+[0,4,-4][k],GY-(aOv??24)];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.6);L.hT.x=L.bT.x+hq[0]-(b.long?16:4);L.hT.y=L.bT.y+hq[1]-4;L.hT.a=[0,-10,10][k];L.tailA=-40;L.danceFx=1;break}
    case 'bow':legMode='bow';L.face.eyes='open';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.ears='perk';L.bT.a=b.long?9:16;L.bT.y+=2;L.tailA=34+[0,18,-10][k];L.hT.y=GY-hd.ry*1.05-6;L.hT.x+=6;L.hT.a=-10;L.wiggle=0;L.wagFx=1;break;
-   case 'squat':legMode='squat';L.face.eyes='strain';L.face.mouth='tight';L.ears='norm';L.tailA=38;L.bT.a=-14;L.bT.y+=b.long?3:6;L.bT.x+=2;L.hT.y+=2;L.hT.a=-4;L.sweat=1;L.blush=0;L.shy=1;break;
+   case 'squat':legMode='squat';L.face.eyes='strain';L.face.mouth='tight';L.ears='norm';L.tailA=38;L.bT.a=s.pup===1&&b.long?-8:-14;L.bT.y+=b.long?3:6;L.bT.x+=2;L.hT.y+=2;L.hT.a=-4;L.sweat=1;L.blush=0;L.shy=1;break;
    case 'leglift':legMode='lift';L.face.eyes='whistle';L.face.mouth='whistle';L.tailA=12;L.bT.a=3;L.hT.a=-10;L.hT.y-=2;L.notes=1;break;
    case 'crouch':{legMode='crouch';L.ears='flat';L.face.eyes='open';L.face.mouth=s.face.mouth==='o'?'o':'smile';L.tailA=-60;L.tailS=.8;{const sy=s.fluff?.52:b.long?.62:.8;L.bT.sy=sy;L.bT.y=GY-6-b.ry*sy;}L.hT.y=GY-3-hd.ry*(s.fluff?.85:.95);L.hT.x=hd.x+8;L.hT.a=6;L.speed=0;L.duck=1;break}
    case 'shake':L.face.eyes='closed';L.face.mouth='smile';L.ears='fly';L.hT.a=[-16,14,-6][k];L.bT.a=[5,-5,2][k];L.hT.x+=[-3,3,0][k];L.tailA=[30,-20,10][k];L.spray=1;break;
@@ -711,13 +711,13 @@ function layout(s,pose,k,aOv){
   // gap with a short neck (the necked breeds bridge up to 20 px). Newborns keep no neck, as pupSpec drops it.
   // legs: exactly four. Far legs sit a little forward, higher, darker; front pair under the chest, hind pair under the hips
   const B=T(L.bT),lg=s.legs;L.legs=[];
-  const FAR=10;
+  const FAR=s.pup===1?PUPLEG[2]:10;// a puppy's far legs stand further off, so the four short legs read as four, with a gap
   [['FH',0,0],['NH',0,1],['FF',1,0],['NF',1,1]].forEach(([id,front,near],i)=>{
     const x=(front?lg.f:lg.h)+(near?0:FAR),hip=B([x,b.ry*(near?.42:.22)]),base=(lg.cols&&lg.cols[id])||lg.col||s.col;
     const col=near?base:mix(base,PEN,.28),sock=lg.sock?(near?lg.sock:mix(lg.sock,PEN,.28)):null,w=lg.w*(near?1:.88),up=near?0:3.5;
     let foot;
     if(legMode==='stand'){foot=[hip[0],GY-up];
-      if(swing!=null){const diagA=id==='NF'||id==='FH',sw=(diagA?swing:-swing)*(b.long?11:15);foot=[hip[0]+sw,GY-up-(L.lift&&diagA?8:0)]}
+      if(swing!=null){const diagA=id==='NF'||id==='FH',sw=(diagA?swing:-swing)*(b.long?11:15)*(s.pup===1?PUPLEG[3]:1);foot=[hip[0]+sw,GY-up-(L.lift&&diagA?(s.pup===1?5:8):0)]}
       if(id==='NH'&&L.kick)foot=[hip[0]+L.kick[0],GY+L.kick[1]];}
     else if(legMode==='lie'){foot=front?[hip[0]+22+(near?0:5),GY-2-up]:[hip[0]+14,GY-1-up];}
     else if(legMode==='squat'){if(front)foot=[hip[0]+6,GY-up];else{const kn=[hip[0]+(near?14:12),GY-8-up*.5];L.legs.push({hip,mid:kn,foot:[hip[0]-4,GY-up],col,sock,w,i,id,near});return}}
@@ -916,7 +916,7 @@ function drawLegs(h,s,L){
         h.acc.push(`<path d="${SP.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('')}" fill="none" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round" stroke-linejoin="round"/>`)}
       if(s.legFn)s.legFn(h,s,L,l);// v2.21 ART A: marks on the leg (new spec field legFn: the dalmatian's spots)
       if(s.legs.toe&&!l.raised)legToe(h,l,legTc(s,l));// v2.21 ART A: white feet (new spec field legs.toe: the bernese, the aussie's white trim)
-      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),legTc(s,l)||l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
+      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(s.pup===1?circ(l.foot[0]+1.5,l.foot[1]-l.w*PUPLEG[5],l.w*PUPLEG[4],l.w*.5,8):circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),legTc(s,l)||l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
       if(s.legs.pom){const m=l.mid||l.hip,t=.7,x=m[0]+(l.foot[0]-m[0])*t,y=m[1]+(l.foot[1]-m[1])*t;h.shape(furR(s.wet,x,y,l.w*1.05,l.w*.9,6,.25),l.sock||l.col,{step:30,amp:.6,w:3,ox:0,oy:0,sc:1})}
       if(s.legs.hair)legHair(h,l,s.wet)}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
@@ -2368,11 +2368,17 @@ function mixSpec(bk,hk){
   return s;
 }
 // puppy (62%) and newborn (42%): drawn at adult scale with puppy proportions, then scaled down by pupScale in dog()
+// PUPLEG: [share of the breed's own leg below the belly, + px, far-leg offset, walk swing, paw rx and lift (x leg width), least leg below the belly px]
+var PUPLEG=[.38,2,16,.65,.62,.28,6.5];
 function pupSpec(S0,age){
   const nb=age==='newborn',s=Object.assign({},S0),b=S0.body,hd=S0.head,lg=S0.legs,f=S0.face;
   const BK=b.long?(nb?.62:.72):(nb?.84:.9),HK=(nb?1.2:1.3)*(b.deep?1.18:1),legK=nb?.32:(b.deep?.56:.5),leg=GY-(b.y+b.ry*.42);
   s.body=Object.assign({},b,{rx:b.rx*BK,ry:b.ry*(b.deep?1.12:nb?1.08:1.04)});
   s.body.y=GY-s.body.ry*.42-leg*legK;s.body.x=b.x+(b.long?6:2);
+  // puppy legs (owner, 7 Nov 2026: "the legs is bit weird"): legK of the hip height left 0-5 px of leg below the belly (none on the fluffy and
+  // stocky breeds), so the paws sat in a pile under the body. A puppy (not a newborn) now shows a bit over half its breed's own leg below the belly.
+  // Owner, 7 Nov 2026: stubby, but the paws never tuck back under a fluffy belly (golden, samoyed, chow): at least PUPLEG[6] px below its real outline.
+  if(!nb){const lo=q=>Math.max(...bodyPts(q).map(p=>p[1])),bl=lo(s);s.body.y=Math.min(s.body.y,GY-bl-Math.max(PUPLEG[6],Math.min(s.body.ry,(GY-b.y-lo(S0))*PUPLEG[0]+PUPLEG[1])))}
   const rel=[hd.x-b.x,hd.y-b.y];
   s.head={rx:hd.rx*HK,ry:hd.ry*HK*(f.snoutL?1.12:1.04),x:s.body.x+rel[0]*(b.long?.62:.86)-(f.snout?hd.rx*.3:0),y:s.body.y+rel[1]*(b.deep?.62:.92)-hd.ry*(HK-1)*.55};
   s.legs=Object.assign({},lg,{h:lg.h*BK,f:lg.f*BK,w:lg.w*1.12});
