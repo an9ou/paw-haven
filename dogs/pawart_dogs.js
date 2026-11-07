@@ -695,7 +695,7 @@ function layout(s,pose,k,aOv){
      const rear=[-b.rx*.72,b.ry*.3],rq=rot([rear[0]*(L.bT.sx||1),rear[1]],a);const R=[b.x-b.rx*(b.long?.15:.35)+[0,4,-4][k],GY-(aOv??24)];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.6);L.hT.x=L.bT.x+hq[0]-(b.long?16:4);L.hT.y=L.bT.y+hq[1]-4;L.hT.a=[0,-10,10][k];L.tailA=-40;L.danceFx=1;break}
    case 'bow':legMode='bow';L.face.eyes='open';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.ears='perk';L.bT.a=b.long?9:16;L.bT.y+=2;L.tailA=34+[0,18,-10][k];L.hT.y=GY-hd.ry*1.05-6;L.hT.x+=6;L.hT.a=-10;L.wiggle=0;L.wagFx=1;break;
-   case 'squat':legMode='squat';L.face.eyes='strain';L.face.mouth='tight';L.ears='norm';L.tailA=38;L.bT.a=-14;L.bT.y+=b.long?3:6;L.bT.x+=2;L.hT.y+=2;L.hT.a=-4;L.sweat=1;L.blush=0;L.shy=1;break;
+   case 'squat':legMode='squat';L.face.eyes='strain';L.face.mouth='tight';L.ears='norm';L.tailA=38;L.bT.a=s.pup===1&&b.long?-8:-14;L.bT.y+=b.long?3:6;L.bT.x+=2;L.hT.y+=2;L.hT.a=-4;L.sweat=1;L.blush=0;L.shy=1;break;
    case 'leglift':legMode='lift';L.face.eyes='whistle';L.face.mouth='whistle';L.tailA=12;L.bT.a=3;L.hT.a=-10;L.hT.y-=2;L.notes=1;break;
    case 'crouch':{legMode='crouch';L.ears='flat';L.face.eyes='open';L.face.mouth=s.face.mouth==='o'?'o':'smile';L.tailA=-60;L.tailS=.8;{const sy=s.fluff?.52:b.long?.62:.8;L.bT.sy=sy;L.bT.y=GY-6-b.ry*sy;}L.hT.y=GY-3-hd.ry*(s.fluff?.85:.95);L.hT.x=hd.x+8;L.hT.a=6;L.speed=0;L.duck=1;break}
    case 'shake':L.face.eyes='closed';L.face.mouth='smile';L.ears='fly';L.hT.a=[-16,14,-6][k];L.bT.a=[5,-5,2][k];L.hT.x+=[-3,3,0][k];L.tailA=[30,-20,10][k];L.spray=1;break;
