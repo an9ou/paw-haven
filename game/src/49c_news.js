@@ -72,7 +72,7 @@ const NEWS_V219 = {
    never on the GitHub Pages test copy or with the dev switch) and once the Japan date reaches its date, so the news never shows Missions v2 before the release */
 const nwMsArt = (k, ...a) => nwSafe(() => (typeof ms2Art === 'function' ? ms2Art(k, ...a) : '')); // PawArt.MISSIONS through ms2Art, '' until the art lands
 const NEWS_V220 = {
-  id: '2.20', date: '2026-11-14', // LAUNCH DATE: set at release (owner's date)
+  id: '2.20', date: '2026-11-07', // LAUNCH DATE: set at release (owner's date)
   c: '#FFF1C9', d: 'paw', pic: 'dog',
   title: () => tt('nw.v220.title', 'More little things to do'),
   items: [

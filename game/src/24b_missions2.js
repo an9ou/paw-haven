@@ -14,7 +14,7 @@
    in the draw, no news entry, the old lesson). The save fields and the lifetime counters are still kept, silently, so the badges are right when it
    turns on; then an old or off-time save gets its earned badges quietly with one letter (S.missions.on2, trbf). On: MS2_LIVE, the GitHub Pages
    test copy (tools/pages.js sets window.__ddMs2Test, never itch.io or /play/) or the dev panel's "Missions v2 test" switch (prefs.ms2Test). */
-const MS2_LIVE = false; // the Game Manager turns this on at the v2.20 release (owner's launch date)
+const MS2_LIVE = true; // the Game Manager turns this on at the v2.20 release (owner's launch date)
 function ms2On() { return MS2_LIVE || (typeof window !== 'undefined' && !!window.__ddMs2Test) || !!(typeof prefs !== 'undefined' && prefs && prefs.ms2Test); }
 // Missions v2 progress: switched on, and (under the test harness) prefs.msTest like today's mission (msAllowed)
 const ms2Ok = () => ms2On() && msAllowed();

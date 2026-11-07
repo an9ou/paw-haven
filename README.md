@@ -129,7 +129,11 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 
 - **v2.19.3 "Puppy start"**: new friends from the shelter come home as 3-month-old puppies and grow up a little every day; starter dogs on old saves got some puppy months back.
 
-- **v2.20 "Little Helps"** (merged, off until its launch date: `MS2_LIVE`): two little helps a day beside the mission and Gerald's treat pouch, a help-wanted board every Monday, badges from bronze to crayon with a Trophy Shelf and the Crayon Medal, a 14-day notebook for new players and Growing up moments for every dog.
+- **v2.20 "Little Helps"** (7 Nov 2026): two little helps a day beside the mission and Gerald's treat pouch, a help-wanted board every Monday, badges from bronze to crayon with a Trophy Shelf and the Crayon Medal, a 14-day notebook for new players and Growing up moments for every dog.
+
+- **v2.21 "Five new breeds"** (7 Nov 2026): Dalmatian, Bernese Mountain Dog, Australian Shepherd, Cavalier King Charles Spaniel and Jack Russell Terrier, 40 breeds in all.
+
+- **v2.22 "Town levels"** (7 Nov 2026): a player level from 1 to 20 that opens places, walk routes and shop items, and one habit for each dog at every Bond level.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
