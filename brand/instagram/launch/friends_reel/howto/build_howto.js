@@ -69,7 +69,7 @@ const SUBS_TX = {
 // ---- the timeline ----
 // win shots: { at (s from the shot's start), ui: still name | clip: name, crop {x,y,w,h} in CSS px of the 393 x 659 phone } or { chat: true }
 const C1 = { x: 0, y: 300, w: 393, h: 359 }, C2 = { x: 0, y: 12, w: 393, h: 578 }, C3 = { x: 0, y: 58, w: 393, h: 318 }, C4 = { x: 0, y: 292, w: 393, h: 268 }, C5 = { x: 0, y: 58, w: 393, h: 490 };
-const mid = (r) => [r.x + r.w * 0.62, r.y + r.h * 0.66]; // a tap a little low and right of a button's middle: its words stay readable under the finger
+const mid = (r) => [r.x + r.w * 0.62, r.y + r.h * 0.5]; // a click right of a button's middle: its words stay readable beside the cursor (owner, 7 Nov 2026: a mouse cursor, not a finger)
 const SEG = [], VOAT = []; let at = 0;
 const say = (k, d) => VOAT.push({ k, at: at + (d == null ? 0.15 : d) });
 const seg = (len, o) => { SEG.push(Object.assign({ a: at, b: at + len, i: SEG.length }, o)); at += len; };
@@ -78,7 +78,7 @@ say('hook', 0.2); seg(V('hook', 0.35), { kind: 'full', clip: 'yard', from: 0.1, 
 say('s1', 0.25); seg(Math.max(V('s1'), 2.4), { kind: 'win', cap: { n: 1, s: TX.s1 }, shots: [{ at: 0, ui: 'yard_ui', crop: C1 }, { at: 1.0, ui: 'more_tray', crop: C1 }],
   taps: [{ at: 0.6, p: mid(LAY.more), ang: 62 }, { at: 1.6, p: mid(LAY.friends), ang: 28 }] });
 say('s2'); seg(V('s2', 0.5), { kind: 'win', cap: { n: 2, s: TX.s2 }, shots: [{ at: 0, clip: 'name', from: 0, crop: C2 }, { at: 2.0, ui: 'card', crop: C3 }],
-  taps: [{ at: 1.7, p: mid(LAY.ok), ang: -140 }], ring: { at: 2.35, p: [LAY.card.x + 222 / 300 * LAY.card.w, LAY.card.y + 128 / 200 * LAY.card.h], rx: 68, ry: 26 } });
+  taps: [{ at: 1.7, p: [LAY.ok.x + LAY.ok.w * 0.62, LAY.ok.y + LAY.ok.h * 0.12], ang: -140 }], ring: { at: 2.35, p: [LAY.card.x + 222 / 300 * LAY.card.w, LAY.card.y + 128 / 200 * LAY.card.h], rx: 68, ry: 26 } });
 say('s3'); seg(V('s3', 0.6), { kind: 'win', cap: { n: 3, s: TX.s3 }, shots: [{ at: 0, ui: 'card', crop: C3 }], taps: [{ at: 0.55, p: mid(LAY.poster), ang: 22 }] });
 const S3B = at; say('s3b', 0.1); seg(1.75, { kind: 'share', cap: { n: 3, s: TX.s3b } }); seg(Math.max(2.7, VOD.s3b + 0.1 + 0.8 - 1.75), { kind: 'spread', cap: { n: 3, s: TX.s3b, keep: true } });
 say('s4'); seg(V('s4', 0.95), { kind: 'win', cap: { n: 4, s: TX.s4 }, theirs: 1.45,
