@@ -278,8 +278,8 @@ run('v222_levels', async (t) => {
   await load(fix(FIX[1]), OFF);
   const o2 = await lvNow();
   ok(!o2.lv && o2.mail === 0, 'an old save loaded while off gets no S.lv and no letter');
-  const prefOff = await ev(() => { const P = window.__paw; P.lv.pref('lvTest', true); const on = P.lv.on(); P.lv.pref('ms2Test', false); const on2 = P.lv.on(); P.lv.pref('ms2Test', true); P.lv.pref('lvTest', false); return [on, on2]; });
-  ok(prefOff[0] === true && prefOff[1] === false, 'lvOn needs both the v2.20 switch and lvAllowed');
+  const prefOff = await ev(() => { const P = window.__paw; P.lv.pref('lvTest', true); const on = P.lv.on(); P.lv.pref('ms2Test', false); const on2 = P.lv.on(); P.lv.pref('ms2Test', true); P.lv.pref('lvTest', false); return [on, on2, P.ms2.live()]; });
+  ok(prefOff[0] === true && prefOff[1] === prefOff[2], 'lvOn needs both the v2.20 switch (MS2_LIVE since 7 Nov 2026, or prefs.ms2Test) and lvAllowed');
 
   /* ---------------- A9. the pace table on the built numbers ---------------- */
   sec('A9. the pace table 2.3 on the built numbers (within one level)');
