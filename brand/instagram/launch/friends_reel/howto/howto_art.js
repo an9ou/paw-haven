@@ -9,9 +9,13 @@
 //   hwTap(x, y, ang, lt)                  a crayon finger tapping (x, y) at lt = 0 (seconds from the tap; drawn from -0.45 to 0.5), with a ripple
 const HW_APPS = ['WhatsApp', 'Instagram story', 'Messenger', 'LINE', 'Telegram', 'Messages', 'More…'];
 const HW_TEXT = { msg: ['Come and play', 'Doodle Doggo with me.'], chatName: 'Maple', shareTo: 'Share to' }; // fr.share_text, split in two lines
-const HOWTO_JS = `
+// the RedNote cut (owner, 7 Nov 2026): the apps RedNote viewers use, as TEXT only (no logos), and the game's zh-Hans fr.share_text "来和我一起玩Doodle Doggo吧。"
+const HW_ZH = { apps: ['微信', '朋友圈', 'QQ', '小红书', '微博', '更多…'], text: { msg: ['来和我一起玩', 'Doodle Doggo吧。'], chatName: '小枫', shareTo: '分享到' }, fam: "'LXGW WenKai', Caveat" };
+// howtoJS('zh-Hans') gives the same drawings with the Chinese words and face; HOWTO_JS is the English
+const howtoJS = (lang) => { const zh = lang === 'zh-Hans'; return HOWTO_SRC.replace('__APPS__', JSON.stringify(zh ? HW_ZH.apps : HW_APPS)).replace('__TEXT__', JSON.stringify(zh ? HW_ZH.text : HW_TEXT)).replace('__FAM__', JSON.stringify(zh ? HW_ZH.fam : 'Caveat')); };
+const HOWTO_SRC = `
 const HW={pen:'#5B3D32',pink:'#F28FA5',yel:'#FFE3A1',cream:'#FFFDF7',paper:'#FFF8EC',soft:'#8A7468',skin:'#FFD9C4',link:'#3E6FA8',head:'#F4E7D4'};
-const HW_APPS=${JSON.stringify(HW_APPS)}, HW_TEXT=${JSON.stringify(HW_TEXT)};
+const HW_APPS=__APPS__, HW_TEXT=__TEXT__, HW_FAM=__FAM__;
 const hwF=(n)=>Math.round(n*100)/100;
 function hwPhone(id,x,y,sw,sh,inner){ const b=Math.round(sw*0.05), top=b+16, X=x-b, Y=y-top, W=sw+2*b, H=sh+top+b+16, r=Math.round(sw*0.12);
   return '<g><rect x="'+hwF(X+10)+'" y="'+hwF(Y+14)+'" width="'+hwF(W)+'" height="'+hwF(H)+'" rx="'+r+'" fill="'+HW.pen+'" opacity=".12"/>'
@@ -40,18 +44,18 @@ function hwChat(sx,sy,sw,sh,poster,o){ o=o||{}; const k=sw/350, fam=o.fam||'Cave
   let s='<rect x="'+sx+'" y="'+sy+'" width="'+sw+'" height="'+hd+'" fill="'+HW.head+'"/><path d="M'+hwF(sx)+' '+hwF(sy+hd)+' H'+hwF(sx+sw)+'" stroke="'+HW.pen+'" stroke-width="3"/>'
     +'<path d="M'+hwF(sx+28*k)+' '+hwF(sy+hd/2-11*k)+' l-11 '+hwF(11*k)+' l11 '+hwF(11*k)+'" fill="none" stroke="'+HW.pen+'" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
     +'<circle cx="'+hwF(sx+66*k)+'" cy="'+hwF(sy+hd/2)+'" r="'+hwF(20*k)+'" fill="#B8D8A8" stroke="'+HW.pen+'" stroke-width="3"/>'
-    +'<text x="'+hwF(sx+96*k)+'" y="'+hwF(sy+hd/2+11*k)+'" font-family="Caveat" font-weight="700" font-size="'+hwF(32*k)+'" fill="'+HW.pen+'">'+HW_TEXT.chatName+'</text>';
+    +'<text x="'+hwF(sx+96*k)+'" y="'+hwF(sy+hd/2+11*k)+'" font-family="'+HW_FAM.replace(/"/g,"'")+'" font-weight="700" font-size="'+hwF(32*k)+'" fill="'+HW.pen+'">'+HW_TEXT.chatName+'</text>';
   for(let i=0;i<9;i++) s+='<circle cx="'+hwF(sx+(30+(i*97)%300)*k)+'" cy="'+hwF(sy+hd+(40+(i*151)%520)*k)+'" r="'+hwF(3*k)+'" fill="'+HW.pen+'" opacity=".07"/>';
   const p=o.p==null?1:o.p; let link=null;
-  if(p>0){ const bw=300*k, bx=sx+sw-bw-16*k, by=sy+hd+18*k, iw=170*k, ih=iw*16/9, ts=27*k, lh=31*k, bh=12*k+ih+14*k+2*lh+lh+12*k, sc=0.85+0.15*p;
+  if(p>0){ const bw=300*k, bx=sx+sw-bw-16*k, by=sy+hd+18*k, iw=170*k, ih=iw*16/9, ts=27*k, lh=31*k, bh=12*k+ih+14*k+2*lh+(o.link?lh:0)+12*k, sc=0.85+0.15*p;
     const lx=bx+14*k, ly=by+12*k+ih+14*k+ts*0.8;
     s+='<g opacity="'+hwF(Math.min(1,p*1.6))+'" transform="translate('+hwF(bx+bw)+' '+hwF(by)+') scale('+hwF(sc)+') translate('+hwF(-bx-bw)+' '+hwF(-by)+')">'
       +'<path d="M'+hwF(bx+18*k)+' '+hwF(by)+' H'+hwF(bx+bw-18*k)+' Q'+hwF(bx+bw)+' '+hwF(by)+' '+hwF(bx+bw)+' '+hwF(by+18*k)+' V'+hwF(by+bh)+' l'+hwF(12*k)+' '+hwF(12*k)+' H'+hwF(bx+18*k)+' Q'+hwF(bx)+' '+hwF(by+bh+12*k)+' '+hwF(bx)+' '+hwF(by+bh-6*k)+' V'+hwF(by+18*k)+' Q'+hwF(bx)+' '+hwF(by)+' '+hwF(bx+18*k)+' '+hwF(by)+' Z" fill="#FFF1C9" stroke="'+HW.pen+'" stroke-width="3.5"/>'
       +'<clipPath id="hwci'+(o.id||'')+'"><rect x="'+hwF(lx)+'" y="'+hwF(by+12*k)+'" width="'+hwF(iw)+'" height="'+hwF(ih)+'" rx="'+hwF(12*k)+'"/></clipPath><g clip-path="url(#hwci'+(o.id||'')+')">'+hwImg(poster,lx,by+12*k,iw,ih)+'</g>'
       +'<rect x="'+hwF(lx)+'" y="'+hwF(by+12*k)+'" width="'+hwF(iw)+'" height="'+hwF(ih)+'" rx="'+hwF(12*k)+'" fill="none" stroke="'+HW.pen+'" stroke-width="2.5"/>'
-      +HW_TEXT.msg.map((m,i)=>'<text x="'+hwF(lx)+'" y="'+hwF(ly+i*lh)+'" font-family="Caveat" font-weight="700" font-size="'+hwF(ts)+'" fill="'+HW.pen+'">'+m+'</text>').join('')
-      +'<text x="'+hwF(lx)+'" y="'+hwF(ly+2*lh+2*k)+'" font-family="Andika" font-weight="700" font-size="'+hwF(17.5*k)+'" fill="'+HW.link+'" text-decoration="underline">'+o.link+'</text></g>';
-    link={x:lx+120*k, y:ly+2*lh-4*k}; }
+      +HW_TEXT.msg.map((m,i)=>'<text x="'+hwF(lx)+'" y="'+hwF(ly+i*lh)+'" font-family="'+HW_FAM.replace(/"/g,"'")+'" font-weight="700" font-size="'+hwF(HW_FAM==='Caveat'?ts:ts*0.85)+'" fill="'+HW.pen+'">'+m+'</text>').join('')
+      +(o.link?'<text x="'+hwF(lx)+'" y="'+hwF(ly+2*lh+2*k)+'" font-family="Andika" font-weight="700" font-size="'+hwF(17.5*k)+'" fill="'+HW.link+'" text-decoration="underline">'+o.link+'</text>':'')+'</g>';
+    link=o.link?{x:lx+120*k, y:ly+2*lh-4*k}:{x:lx+iw*0.6, y:by+12*k+ih*0.62}; } // no link line: the tap opens the poster
   if(o.reply>0){ const q=o.reply, rx=sx+16*k, ry=sy+sh-92*k, rw=110*k, rh=62*k;
     s+='<g opacity="'+hwF(Math.min(1,q*1.6))+'"><rect x="'+hwF(rx)+'" y="'+hwF(ry)+'" width="'+hwF(rw)+'" height="'+hwF(rh)+'" rx="'+hwF(20*k)+'" fill="#FFFFFF" stroke="'+HW.pen+'" stroke-width="3.5"/>'
       +'<path transform="translate('+hwF(rx+36*k)+' '+hwF(ry+rh/2+4*k)+') scale('+hwF(0.8*k*(0.8+0.2*q))+')" d="M0 12 C-14 0 -26 -6 -26 -18 C-26 -30 -12 -34 0 -22 C12 -34 26 -30 26 -18 C26 -6 14 0 0 12 Z" fill="'+HW.pink+'" stroke="'+HW.pen+'" stroke-width="3"/>'
@@ -102,4 +106,5 @@ function hwSwap(cx,top,lt,o){ o=o||{}; const w=o.w||600, h=o.h||140, gap=o.gap||
       +'<path transform="translate('+hwF(x+44)+' '+hwF((ya+yb)/2+4)+') scale(.6)" d="M0 12 C-14 0 -26 -6 -26 -18 C-26 -30 -12 -34 0 -22 C12 -34 26 -30 26 -18 C26 -6 14 0 0 12 Z" fill="'+HW.pink+'" stroke="'+HW.pen+'" stroke-width="5"/></g>'; });
   return s; }
 `;
-module.exports = { HOWTO_JS, HW_APPS, HW_TEXT };
+const HOWTO_JS = howtoJS('en');
+module.exports = { HOWTO_JS, howtoJS, HW_APPS, HW_TEXT, HW_ZH };

@@ -32,15 +32,31 @@ function endCard(fmt, h, logo){ const wide=fmt!=='tall', AF='Andika', CF='Caveat
 // RedNote end card (owner, 5 Nov 2026: RedNote Reels of the kids' episodes): no link, no domain, no handles, no QR. The logo, a short line about
 // the game and the search line "浏览器搜 Doodle Doggo App 就能玩" (the bio's words; never "DoodleDoggo.app" with a dot, REDNOTE.md). Chinese in
 // LXGW WenKai (load 'lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css' from cdn.jsdelivr.net and await document.fonts.load('700 40px "LXGW WenKai"', words)).
-// endCardRN(fmt, logo[, words]) -> an SVG string; words = { tag, play } overrides the two lines.
+// endCardRN(fmt, logo[, words[, qr]]) -> an SVG string; words = { tag, play } overrides the two lines.
+// qr (owner, 7 Nov 2026: a RedNote end card may carry a QR code to the game website): { matrix, caption } with matrix from qrMatrix() below (the game's
+// own QR module, mods/qr.js, as the Friends card and poster use), drawn crisp black on white with a 4-module quiet zone, 340 px across on a tall card
+// (big enough to scan off a phone screen), in a cream crayon frame with the caption (default 扫码就能玩) under it; tall: everything inside SAFE.
 const RN_WORDS={ tag:'治愈系蜡笔狗狗游戏', play:'浏览器搜 Doodle Doggo App 就能玩' };
-function endCardRN(fmt, logo, words){ const wide=fmt!=='tall', ZF="'LXGW WenKai'", w=Object.assign({},RN_WORDS,words||{});
-  const cx=wide?960:475, LW=wide?820:700, LH=LW*280/900, LY=wide?250:470;
+function endCardQR(m, x, y, S, cap, ZF){ const n=m.length, q=4, u=S/(n+2*q); let d='';
+  for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(m[r][c]) d+='M'+(x+(c+q)*u).toFixed(2)+' '+(y+(r+q)*u).toFixed(2)+'h'+u.toFixed(3)+'v'+u.toFixed(3)+'h-'+u.toFixed(3)+'z';
+  const F=22, cx=x+S/2;
+  return '<rect x="'+(x-F+8)+'" y="'+(y-F+12)+'" width="'+(S+2*F)+'" height="'+(S+2*F)+'" rx="30" fill="#5B3D32" opacity=".12"/>'
+    +'<rect data-safe x="'+(x-F)+'" y="'+(y-F)+'" width="'+(S+2*F)+'" height="'+(S+2*F)+'" rx="30" fill="#FFF1D6" stroke="#5B3D32" stroke-width="6"/>'
+    +'<rect x="'+(x-F+3)+'" y="'+(y-F-3)+'" width="'+(S+2*F-4)+'" height="'+(S+2*F-2)+'" rx="30" fill="none" stroke="#5B3D32" stroke-width="2.5" opacity=".3"/>'
+    +'<rect x="'+x+'" y="'+y+'" width="'+S+'" height="'+S+'" rx="6" fill="#FFFFFF"/><path d="'+d+'" fill="#000000" shape-rendering="crispEdges"/>'
+    +pill(cap||'扫码就能玩',cx,y+S+F+58,48,ZF,{fill:'#FFE3A1',padX:30}); }
+function endCardRN(fmt, logo, words, qr){ const wide=fmt!=='tall', ZF="'LXGW WenKai'", w=Object.assign({},RN_WORDS,words||{});
+  const cx=wide?(qr?700:960):475, LW=wide?(qr?720:820):700, LH=LW*280/900, LY=wide?250:(qr?300:470);
   let svg='<svg x="'+(cx-LW/2).toFixed(1)+'" y="'+LY+'" width="'+LW+'" height="'+LH.toFixed(1)+'" viewBox="0 0 900 280">'+logo+'</svg>';
   const TY=LY+LH+(wide?90:105);
   svg+=centred([{s:w.tag,size:wide?62:56,fill:'#8A7468'}],cx,TY,ZF).svg;
   svg+=pill(w.play,cx,TY+(wide?130:125),wide?60:44,ZF,{fill:'#FFE3A1',padX:wide?46:30}); // tall: 44 px keeps it inside SAFE
+  if(qr&&qr.matrix){ const S=wide?380:340; svg+=wide?endCardQR(qr.matrix,1300,300,S,qr.caption,ZF):endCardQR(qr.matrix,cx-S/2,TY+125+95,S,qr.caption,ZF); }
   return '<g class="endcard">'+svg+'</g>'; }
 `;
 const RN_FONT_CSS = 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css';
-module.exports = { ENDCARD_JS, handles, RN_FONT_CSS };
+// the QR matrix for endCardRN's qr option, from the game's own QR module (mods/qr.js in this repo): qrMatrix('https://doodledoggo.app')
+function qrMatrix(text, qrFile) { const vm = require('vm'), fs = require('fs'), path = require('path'), ctx = { window: {}, globalThis: null }; ctx.globalThis = ctx;
+  vm.createContext(ctx); vm.runInContext(fs.readFileSync(qrFile || path.join(__dirname, '..', '..', 'mods', 'qr.js'), 'utf8'), ctx);
+  const Q = ctx.window.PawQR || ctx.PawQR; if (!Q) throw new Error('no PawQR in mods/qr.js'); return Q.matrix(text); }
+module.exports = { ENDCARD_JS, handles, RN_FONT_CSS, qrMatrix };

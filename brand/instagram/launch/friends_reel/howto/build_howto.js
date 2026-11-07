@@ -17,12 +17,18 @@
 //   ONLY=stills   key frames only (workdir/stills/*.png)     ONLY=cover   the cover only (its own design, friends-howto-cover.jpg)
 //   CHECK=1       run every frame's checks without writing it (fast)
 //   FRAMES=a-b    re-render only frames a..b (the rest of workdir/f stays), then encode again      PAR=n   n pages render at once
+//   REDNOTE=1     the RedNote cut (owner, 7 Nov 2026): zh-Hans footage (capture_howto.js / capture_clean.js with PAW_LANG=zh-Hans), the Mandarin voice
+//                 (../vo_friends_zh.py with VO_LINES=howto/vo_howto_zh.json, zf_073 1.0x), Chinese words and subtitles in LXGW WenKai, a crayon share menu
+//                 with the apps RedNote viewers use (text only), no link in our drawings, the code swap in Chinese, and endCardRN with a QR code to
+//                 https://doodledoggo.app (the game's own QR module). Writes doodle-doggo-friends-howto-rednote.mp4 and the 3:4 cover brand/rednote/rednote-11-friends-howto.jpg
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../centre_text.js');
 const { loadArt, cardSVG, FIT_JS, apartRects } = require('../friends_card.js');
-const { HOWTO_JS } = require('./howto_art.js');
-const { ENDCARD_JS, handles } = require('../../../../kids/endcard.js');
+const { howtoJS } = require('./howto_art.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS, qrMatrix } = require('../../../../kids/endcard.js');
+const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
+const HOWTO_JS = howtoJS(RN ? 'zh-Hans' : 'en');
 const ROOT = path.join(__dirname, '..', '..', '..', '..', '..');
 const [DEV, UI, CLEAN, WORK, VO] = process.argv.slice(2, 7).map((x) => path.resolve(x));
 if (!VO) throw new Error('usage: build_howto.js <game checkout> <ui footage> <clean footage> <workdir> <vo dir>');
@@ -41,8 +47,9 @@ const dcSrc = fs.readFileSync(path.join(DEV, 'game', 'src', '40_dogcards.js'), '
 const words = (k) => JSON.parse(dcSrc.match(new RegExp('const ' + k + ' = (\\[[\\s\\S]*?\\]);'))[1].replace(/'/g, '"'));
 const OUR_NAME = words('DC_WORDS_A')[NAMEI[0]] + ' ' + words('DC_WORDS_B')[NAMEI[1]];
 if (OUR_NAME !== 'Sunny Biscuit') throw new Error('our name is ' + OUR_NAME);
+const SITE_QR = RN ? qrMatrix('https://doodledoggo.app', path.join(DEV, 'mods', 'qr.js')) : null; // the RedNote end card's QR (owner, 7 Nov 2026)
 const CARD = cardSVG(ART, { code: CODE, name: OUR_NAME, nameFont: 'Caveat' });
-const LINK = ART.link.replace(/^https?:\/\//, '') + CODE; // doodledoggo.app/f/DOG-K3APZ
+const LINK = RN ? null : ART.link.replace(/^https?:\/\//, '') + CODE; // doodledoggo.app/f/DOG-K3APZ (RedNote: no domain in our drawings; the game's own poster shows its link)
 const inner = (s) => s.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 const POSTER = 'file://' + path.join(UI, 'poster.png');
@@ -54,7 +61,25 @@ const TX = {
   s5: "you're friends!", feats: ['visit & pet', 'send a gift', 'walk together'], safe: 'no chat. no messages.', theirs: "your friend's phone",
   chat: 'a chat', story: 'a story', endA: 'drop your friend code below', endB: 'and add each other!', // owner, 7 Nov 2026: our account holds 50 friends, so the ask is a code swap, never "add us"
 };
-const SUBS_TX = {
+// RedNote: the game's zh-Hans words (fr.*, fw.more 更多, fr.menu 好友, fr.poster 分享海报, fr.add_title 添加好友, fr.add 添加), never "add us"
+const TX_ZH = {
+  hook: [{ s: '怎么在 Doodle Doggo', size: 76, pitch: 100 }, { s: '加好友', size: 96 }], hookSub: '点三下，分享你的好友码',
+  s1: '点「更多」，再点「好友」', s2: '选好友名，拿到好友码', s3: '点「分享海报」', s3b: '发到哪里都行', s4: '好友加你',
+  s5: '你们是好友啦！', feats: ['去做客，摸摸狗狗', '送一份礼物', '一起散步'], safe: '没有聊天，没有私信。', theirs: '好友的手机',
+  chat: '发给好友', story: '发朋友圈', endA: '在评论区留下你的好友码', endB: '互相加好友吧！',
+};
+const SUBS_ZH = { // vo_howto_zh.json, line by line, at most 14 characters a chunk
+  hook: ['怎么加好友？', '点三下就够了。', '我算过。'],
+  s1: ['点更多，', '再点好友。'],
+  s2: ['选一个好友名。', '你就有了一张卡片，', '上面有你自己的好友码。'],
+  s3: ['点分享海报。'],
+  s3b: ['发到哪里都行！', '微信、朋友圈、群聊。'],
+  s4: ['好友打开链接，', '或者在添加好友里', '输入你的好友码，', '再点添加。'],
+  s5a: ['你们是好友啦！', '去好友的院子做客，', '摸摸好友的狗狗。'], s5b: ['送一份礼物。'], s5c: ['一起散步。'],
+  safe: ['没有聊天，没有私信。', '只有狗狗。'],
+  end: ['在评论区留下你的好友码，', '互相加好友吧！'],
+};
+const SUBS_TX = RN ? SUBS_ZH : {
   hook: ['How to add friends in Doodle Doggo.', 'Three taps.', 'I counted.'],
   s1: ['Tap More.', 'Then Friends.'],
   s2: ['Pick a friend name.', 'Now you have a card,', 'with your own code.'],
@@ -70,6 +95,9 @@ const SUBS_TX = {
 // win shots: { at (s from the shot's start), ui: still name | clip: name, crop {x,y,w,h} in CSS px of the 393 x 659 phone } or { chat: true }
 const C1 = { x: 0, y: 300, w: 393, h: 359 }, C2 = { x: 0, y: 12, w: 393, h: 578 }, C3 = { x: 0, y: 58, w: 393, h: 318 }, C4 = { x: 0, y: 292, w: 393, h: 268 }, C5 = { x: 0, y: 58, w: 393, h: 490 };
 const mid = (r) => [r.x + r.w * 0.62, r.y + r.h * 0.5]; // a click right of a button's middle: its words stay readable beside the cursor (owner, 7 Nov 2026: a mouse cursor, not a finger)
+if (RN) { Object.assign(TX, TX_ZH); Object.values(SUBS_ZH).flat().forEach((x) => { if (x.length > 14) throw new Error('subtitle chunk over 14 characters: ' + x); }); }
+// RedNote crops: the zh-Hans sheet lays out differently (two rows of buttons under the card; "就用这个名字" scrolled into view for the tap)
+const RC2 = { x: 0, y: 12, w: 393, h: 560 }, RC3 = { x: 0, y: 64, w: 393, h: 360 }, RC4 = { x: 0, y: 266, w: 393, h: 290 }, RC5 = { x: 0, y: 62, w: 393, h: 490 };
 const SEG = [], VOAT = []; let at = 0;
 const say = (k, d) => VOAT.push({ k, at: at + (d == null ? 0.15 : d) });
 const seg = (len, o) => { SEG.push(Object.assign({ a: at, b: at + len, i: SEG.length }, o)); at += len; };
@@ -77,19 +105,23 @@ const V = (k, p) => VOD[k] + (p == null ? 0.4 : p);
 say('hook', 0.2); seg(V('hook', 0.35), { kind: 'full', clip: 'yard', from: 0.1, view: { z0: 1.05, z1: 1.12, fx: 0.5, fy0: 0.7, fy1: 0.71 }, cap: { hook: true } });
 say('s1', 0.25); seg(Math.max(V('s1'), 2.4), { kind: 'win', cap: { n: 1, s: TX.s1 }, shots: [{ at: 0, ui: 'yard_ui', crop: C1 }, { at: 1.0, ui: 'more_tray', crop: C1 }],
   taps: [{ at: 0.6, p: mid(LAY.more), ang: 62 }, { at: 1.6, p: mid(LAY.friends), ang: 28 }] });
-say('s2'); seg(V('s2', 0.5), { kind: 'win', cap: { n: 2, s: TX.s2 }, shots: [{ at: 0, clip: 'name', from: 0, crop: C2 }, { at: 2.0, ui: 'card', crop: C3 }],
+say('s2'); if (RN) seg(V('s2', 0.5), { kind: 'win', cap: { n: 2, s: TX.s2 }, shots: [{ at: 0, clip: 'name', from: 0, crop: RC2 }, { at: 1.45, ui: 'name_pick', crop: RC2 }, { at: 2.25, ui: 'card', crop: RC3 }],
+  taps: [{ at: 1.85, p: mid(LAY.ok), ang: -140 }], ring: { at: 2.6, p: [LAY.card.x + 222 / 300 * LAY.card.w, LAY.card.y + 128 / 200 * LAY.card.h], rx: 66, ry: 25 } });
+else seg(V('s2', 0.5), { kind: 'win', cap: { n: 2, s: TX.s2 }, shots: [{ at: 0, clip: 'name', from: 0, crop: C2 }, { at: 2.0, ui: 'card', crop: C3 }],
   taps: [{ at: 1.7, p: [LAY.ok.x + LAY.ok.w * 0.62, LAY.ok.y + LAY.ok.h * 0.12], ang: -140 }], ring: { at: 2.35, p: [LAY.card.x + 222 / 300 * LAY.card.w, LAY.card.y + 128 / 200 * LAY.card.h], rx: 68, ry: 26 } });
-say('s3'); seg(V('s3', 0.6), { kind: 'win', cap: { n: 3, s: TX.s3 }, shots: [{ at: 0, ui: 'card', crop: C3 }], taps: [{ at: 0.55, p: mid(LAY.poster), ang: 22 }] });
+say('s3'); seg(V('s3', 0.6), { kind: 'win', cap: { n: 3, s: TX.s3 }, shots: [{ at: 0, ui: 'card', crop: RN ? RC3 : C3 }], taps: [{ at: 0.55, p: mid(LAY.poster), ang: 22 }] });
 const S3B = at; say('s3b', 0.1); seg(1.75, { kind: 'share', cap: { n: 3, s: TX.s3b } }); seg(Math.max(2.7, VOD.s3b + 0.1 + 0.8 - 1.75), { kind: 'spread', cap: { n: 3, s: TX.s3b, keep: true } });
 say('s4'); seg(V('s4', 0.95), { kind: 'win', cap: { n: 4, s: TX.s4 }, theirs: 1.45,
-  shots: [{ at: 0, chat: true }, { at: 1.45, ui: 'add_0', crop: C4 }].concat([1, 2, 3, 4, 5].map((i) => ({ at: 1.55 + i * 0.27, ui: 'add_' + i, crop: C4 }))).concat([{ at: 3.9, ui: 'add_done', crop: C5 }]),
-  taps: [{ at: 0.8, chat: true, ang: 24 }, { at: 3.62, p: mid(LAY.f_addBtn), ang: -30, shot: 'add_5' }] });
-const ADDED = at - (V('s4', 0.95) - 3.9);
-say('s5a'); seg(V('s5a', 0.35), { kind: 'full', clip: 'visit', from: 0.2, band: { x0: 0, y0: 700, w: 1179, h: 1277 }, cap: { n: 5, s: TX.s5 }, feat: TX.feats[0] });
+  shots: RN ? [{ at: 0, chat: true }, { at: 1.6, ui: 'add_0', crop: RC4 }].concat([1, 2, 3, 4, 5].map((i) => ({ at: 1.75 + i * 0.4, ui: 'add_' + i, crop: RC4 }))).concat([{ at: 4.7, ui: 'add_done', crop: RC5 }])
+    : [{ at: 0, chat: true }, { at: 1.45, ui: 'add_0', crop: C4 }].concat([1, 2, 3, 4, 5].map((i) => ({ at: 1.55 + i * 0.27, ui: 'add_' + i, crop: C4 }))).concat([{ at: 3.9, ui: 'add_done', crop: C5 }]),
+  taps: [{ at: 0.8, chat: true, ang: 24 }, { at: RN ? 4.35 : 3.62, p: mid(LAY.f_addBtn), ang: -30, shot: 'add_5' }] });
+const ADDED = at - (V('s4', 0.95) - (RN ? 4.7 : 3.9));
+// (RedNote: the Mandarin lines are longer, so the visit plays at 0.9x and the play bows from 2.6 s, both ending before Mochi's play jumps at 4.84 s)
+say('s5a'); seg(V('s5a', 0.35), { kind: 'full', clip: 'visit', from: 0.2, rate: RN ? 0.9 : 1, band: { x0: 0, y0: 700, w: 1179, h: 1277 }, cap: { n: 5, s: TX.s5 }, feat: TX.feats[0] });
 say('s5b', 0.1); seg(V('s5b', 0.45), { kind: 'full', clip: 'gift', from: 0.15, band: { x0: 0, y0: 560, w: 1179, h: 1277 }, cap: { n: 5, s: TX.s5, keep: true }, feat: TX.feats[1] });
 say('s5c', 0.1); seg(V('s5c', 0.75), { kind: 'full', clip: 'walk', from: 1.8, band: { x0: 0, y0: 720, w: 540, h: 540 }, cap: { n: 5, s: TX.s5, keep: true }, feat: TX.feats[2] });
 // (the play bows from 3.1 s at 0.6x: Mochi's play jumps from 4.84 s come too close to Honey for apartCheck)
-say('safe'); seg(V('safe', 0.4), { kind: 'full', clip: 'visit', from: 3.1, rate: 0.6, band: { x0: 0, y0: 700, w: 1179, h: 1277 }, cap: { s: TX.safe, green: true } });
+say('safe'); seg(V('safe', 0.4), { kind: 'full', clip: 'visit', from: RN ? 2.6 : 3.1, rate: 0.6, band: { x0: 0, y0: 700, w: 1179, h: 1277 }, cap: { s: TX.safe, green: true } });
 const END = at; say('end', 0.25); seg(VOD.end + 1.0, { kind: 'end' });
 const ENDC = at; seg(2.5, { kind: 'endcard' });
 const T = at, N = Math.round(T * FPS);
@@ -98,7 +130,7 @@ if (process.env.TIMES) { SEG.forEach((x) => console.log(x.kind.padEnd(8), (x.cap
 // subtitles: each line in short chunks, timed by their share of the line (letters, plus a breath at a full stop: Kokoro gives no word times)
 const SUBS = [];
 VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) throw new Error('no subtitles for ' + v.k);
-  const wt = parts.map((x) => x.length + (/[.!?:]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
+  const wt = parts.map((x) => (RN ? x.replace(/[，。！？：、「」]/g, '').length * 2 : x.length) + (/[.!?:。！？：]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x }); t0 += d; }); });
 SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.35) : Math.min(ENDC, u.b + 0.6); });
 
@@ -145,7 +177,7 @@ function resolve(t) {
   return { s, R };
 }
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>${ART.css}html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}#scr{position:absolute;left:0;top:0;transform-origin:0 0}#un,#ov{position:absolute;left:0;top:0}</style>
 <div id="st"><svg id="un" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"></svg><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"></svg></div>
 <span style="font:700 20px Andika">a</span><span style="font:700 20px Caveat">a</span>
@@ -155,7 +187,7 @@ ${SAFE_JS}
 ${FIT_JS}
 ${HOWTO_JS}
 ${ENDCARD_JS}
-const $=(i)=>document.getElementById(i), FAM='Caveat', TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
+const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(RN ? "'LXGW WenKai', Caveat" : 'Caveat')}, RN=${RN}, SITE_QR=${JSON.stringify(SITE_QR)}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
 const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, CARD=${JSON.stringify(CARD)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM), CX=SAFE_CX;
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -210,7 +242,7 @@ window.frame=async function(t,S,R){
       +hwSwap(CX,590,lt-0.2,{w:600,h:140,gap:76,off:60})
       +'<g opacity="'+ease((lt-1.5)/0.3)+'"><path d="M'+CX+' 1250 q-10 38 0 70 M'+(CX-22)+' 1298 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>';
     subY=1395; }
-  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
+  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=RN?endCardRN('tall',LOGO_INNER,null,{matrix:SITE_QR,caption:'扫码就能玩'}):endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
   else ov+=sub(t,subY);
   $('un').innerHTML=un; $('ov').innerHTML=ov+'<g id="apart">'+(R.apart||'')+'</g>'; frFit($('ov'));
   const st=$('ov');
@@ -219,12 +251,13 @@ window.frame=async function(t,S,R){
 </script>`;
 
 // ---- the cover: its own design (not a frame), everything that matters in the grid's middle 1080 x 1440 (y 240..1680) ----
-const coverHTML = require('./howto_cover.js').coverHTML({ DEV, POSTER, CARD, LOGO_INNER, CODE });
+const coverHTML = require('./howto_cover.js').coverHTML({ DEV, POSTER, CARD, LOGO_INNER, CODE, rn: RN });
 
 async function openPage(b, src) {
   const p = await b.newPage({ viewport: { width: W, height: H } });
   const f = path.join(WORK, src === html ? 'page.html' : 'cover.html'); fs.writeFileSync(f, src); await p.goto('file://' + f); await p.waitForLoadState('networkidle');
   await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat', '700 40px Andika', '700 40px "DD Code"'].map((f) => document.fonts.load(f, 'aDOG-K3APZ'))));
+  if (RN) await p.evaluate((s) => document.fonts.load('700 40px "LXGW WenKai"', s), JSON.stringify([TX, SUBS_TX, require('./howto_art.js').HW_ZH, '扫码就能玩治愈系蜡笔狗狗游戏浏览器搜就能玩更多好友分享海报点三下就够了怎么加']));
   await p.evaluate(() => document.fonts.ready);
   if (!(await p.evaluate(() => document.fonts.check('700 19px "DD Code"', 'DOG-K3APZ')))) throw new Error('DD Code did not load');
   await p.evaluate((src) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = src; }), POSTER);
@@ -254,7 +287,9 @@ async function openPage(b, src) {
     const p = await openPage(b, coverHTML);
     const bad = await p.evaluate(() => window.cover()); if (bad.length) throw new Error('cover: ' + bad.join('; '));
     await p.waitForTimeout(300);
-    const f = path.join(OUTDIR, 'friends-howto-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f);
+    // RedNote: the 3:4 middle (y 240..1680), where the design keeps everything that matters
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-11-friends-howto.jpg') : path.join(OUTDIR, 'friends-howto-cover.jpg');
+    await p.screenshot(Object.assign({ path: f, type: 'jpeg', quality: 92 }, RN ? { clip: { x: 0, y: 240, width: 1080, height: 1440 } } : {})); console.log('wrote', f);
   }
   await b.close();
   if (only) return;
@@ -273,7 +308,7 @@ async function openPage(b, src) {
   VOAT.forEach((v, i) => { inputs.push('-i', path.join(VO, v.k + '.wav')); const d = Math.round(v.at * 1000); chains.push(`[${inputs.length / 2 + 1}:a]aresample=44100,volume=1.5,adelay=${d}|${d}[v${i}]`); labels.push(`[v${i}]`); });
   TAPS.forEach((tt, i) => { inputs.push('-i', tap); const d = Math.round(tt * 1000); chains.push(`[${inputs.length / 2 + 1}:a]adelay=${d}|${d}[t${i}]`); labels.push(`[t${i}]`); });
   const mix = `[1:a]atrim=0:${T},volume=0.3,afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${labels.join('')}amix=inputs=${labels.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
-  const out = path.join(OUTDIR, 'doodle-doggo-friends-howto.mp4');
+  const out = path.join(OUTDIR, `doodle-doggo-friends-howto${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', String(T), out]);

@@ -29,6 +29,12 @@ L = {
  "safe":  "没有聊天，没有私信。只有狗狗，一起做朋友！",
  "end":   "好友功能十一月七日上线！在评论区留下你的好友码吧！",
 }
+# VO_LINES=<file.json> (the Friends how-to, 7 Nov 2026: howto/vo_howto_zh.json, the same keys as howto/vo_howto.json): other lines, same voice
+if os.environ.get("VO_LINES"): L = json.load(open(os.environ["VO_LINES"]))
+# PHON=1: print each line's phonemes (to check misaki's readings of polyphones) and stop
+if os.environ.get("PHON"):
+    for key, text in L.items(): print(key, text, "=>", g2p(text)[0])
+    sys.exit(0)
 out = {}
 for key, text in L.items():
     ph, _ = g2p(text)
