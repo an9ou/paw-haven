@@ -8,7 +8,8 @@
 //                                                  then the poster in a crayon phone as a chat message and as a story: no real app UI)
 //   4.     your friend adds you                    (a tap on the link in the chat, then the friend's real Add a friend boxes and "Sunny Biscuit is your friend now!")
 //   5.     you're friends                          (clean footage: visit and pet, a gift, the walk together), "no chat. no messages."
-//   end    "add us!" with our card, "drop your friend code below", then the shared end card (brand/kids/endcard.js)
+//   end    the code swap (owner, 7 Nov 2026: our account holds 50 friends, so never "add us"): "drop your friend code below / and add each other!"
+//          over comment bubbles with blank code boxes (DOG- and five empty boxes) and two-way arrows, then the shared end card (brand/kids/endcard.js)
 // Every frame: centreCheck(), safeCheck() and apartCheck() (centre_text.js); the build stops on the first miss.
 //
 //   NODE_PATH=$(npm root -g) OUR_CODE=DOG-K3APZ OUR_NAME=0,0 node brand/instagram/launch/friends_reel/howto/build_howto.js <game checkout> <ui footage> <clean footage> <workdir> <vo dir>
@@ -51,7 +52,7 @@ const TX = {
   hook: [{ s: 'How to add friends', size: 82, pitch: 96 }, { s: 'in Doodle Doggo', size: 82 }], hookSub: 'share your code in 3 taps',
   s1: 'tap More, then Friends', s2: 'pick a name, get your code', s3: 'tap Share poster', s3b: 'send it anywhere', s4: 'your friend adds you',
   s5: "you're friends!", feats: ['visit & pet', 'send a gift', 'walk together'], safe: 'no chat. no messages.', theirs: "your friend's phone",
-  chat: 'a chat', story: 'a story', endAsk: 'add us!', endSub: 'drop your friend code below', endSub2: 'and swap codes with other players',
+  chat: 'a chat', story: 'a story', endA: 'drop your friend code below', endB: 'and add each other!', // owner, 7 Nov 2026: our account holds 50 friends, so the ask is a code swap, never "add us"
 };
 const SUBS_TX = {
   hook: ['How to add friends in Doodle Doggo.', 'Three taps.', 'I counted.'],
@@ -62,7 +63,7 @@ const SUBS_TX = {
   s4: ['Your friend opens the link,', 'or types your code in Add a friend.', 'Then taps Add.'],
   s5a: ["You're friends!", 'Visit their yard.', 'Pet their dogs.'], s5b: ['Send a gift.'], s5c: ['Walk together.'],
   safe: ['No chat. No messages.', 'Just dogs.'],
-  end: ['Add us!', 'Then drop your friend code below.'],
+  end: ['Drop your friend code below,', 'and add each other!'],
 };
 
 // ---- the timeline ----
@@ -92,6 +93,7 @@ say('safe'); seg(V('safe', 0.4), { kind: 'full', clip: 'visit', from: 3.1, rate:
 const END = at; say('end', 0.25); seg(VOD.end + 1.0, { kind: 'end' });
 const ENDC = at; seg(2.5, { kind: 'endcard' });
 const T = at, N = Math.round(T * FPS);
+if (process.env.TIMES) { SEG.forEach((x) => console.log(x.kind.padEnd(8), (x.cap && x.cap.s) || '', 'frames', Math.floor(x.a * FPS) + '-' + (Math.ceil(x.b * FPS) - 1), x.a.toFixed(2) + '-' + x.b.toFixed(2) + ' s')); console.log('N', N); process.exit(0); } // TIMES=1: each part's frames, for FRAMES=a-b
 
 // subtitles: each line in short chunks, timed by their share of the line (letters, plus a breath at a full stop: Kokoro gives no word times)
 const SUBS = [];
@@ -202,12 +204,12 @@ window.frame=async function(t,S,R){
       +'<g transform="rotate(4 '+(CX+60)+' 676)">'+pill(TX.hookSub,CX+60,676,54,FAM,{fill:'${YEL}',padX:28})+'</g></g>'; subY=800; }
   else if(cp.s) ov+=stepCard(cp,lt);
   if(S.feat){ const o=ease(lt/0.15), fy=R.frame?R.frame.y+R.frame.h+6:588; ov+='<g opacity="'+o+'" transform="rotate(2 '+CX+' '+fy+')">'+pill(S.feat,CX,fy,54,FAM,{fill:'${YEL}',padX:28})+'</g>'; }
-  if(S.kind==='end'){ const o=ease(lt/0.3), cs=back((lt-0.15)/0.4), a=ease((lt-0.5)/0.3);
-    ov+='<g opacity="'+o+'"><g transform="rotate(-2 '+CX+' 360)">'+C([{s:TX.endAsk,size:124}],CX,370).svg+'</g><path d="M'+(CX-190)+' 444 Q'+CX+' 426 '+(CX+190)+' 444" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>'
-      +'<g data-safe transform="translate('+CX+' 700) scale('+(Math.max(0.01,cs)*2.15)+') rotate(-2) translate(-150 -100)">'+CARD+'</g>'
-      +'<g opacity="'+a+'">'+C(fit([{s:TX.endSub,size:62}],780),CX,1010).svg
-      +'<path d="M'+CX+' 1052 q-10 38 0 70 M'+(CX-22)+' 1100 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>'
-      +C(fit([{s:TX.endSub2,size:46,fill:'#8A7468'}],760),CX,1200).svg+'</g></g>'; subY=1330; }
+  if(S.kind==='end'){ // the code swap: players add EACH OTHER (blank code boxes only, never a code that looks real)
+    const o=ease(lt/0.3), cs=0.88+0.12*back(lt/0.35);
+    ov+='<g opacity="'+o+'" transform="translate('+CX+' 410) scale('+cs+') rotate(-1.5) translate('+(-CX)+' -410)">'+card(CX-385,300,770,220,'${PEN}',6,fit([{s:TX.endA,size:68,pitch:86},{s:TX.endB,size:68,fill:'#C2567A'}],690))+'</g>'
+      +hwSwap(CX,590,lt-0.2,{w:600,h:140,gap:76,off:60})
+      +'<g opacity="'+ease((lt-1.5)/0.3)+'"><path d="M'+CX+' 1250 q-10 38 0 70 M'+(CX-22)+' 1298 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>';
+    subY=1395; }
   if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
   else ov+=sub(t,subY);
   $('un').innerHTML=un; $('ov').innerHTML=ov+'<g id="apart">'+(R.apart||'')+'</g>'; frFit($('ov'));

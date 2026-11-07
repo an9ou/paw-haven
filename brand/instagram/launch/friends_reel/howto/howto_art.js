@@ -74,5 +74,30 @@ function hwTap(x,y,ang,lt){ if(lt<-0.45||lt>0.55) return ''; const e=(v)=>{ v=Ma
   if(lt>=0){ const q=Math.min(1,lt/0.45); s+='<circle cx="'+hwF(x)+'" cy="'+hwF(y)+'" r="'+hwF(16+48*q)+'" fill="none" stroke="'+HW.pink+'" stroke-width="7" opacity="'+hwF(0.9*(1-q))+'"/>'
     +'<circle cx="'+hwF(x)+'" cy="'+hwF(y)+'" r="'+hwF(8+26*q)+'" fill="'+HW.pink+'" opacity="'+hwF(0.35*(1-q))+'"/>'; }
   return s+'<g opacity="'+hwF(Math.min(inn,out))+'">'+hwFinger(x-Math.sin(a)*d,y+d*Math.cos(a),ang,0.78*press)+'</g>'; }
+// the code swap (owner, 7 Nov 2026: our account holds 50 friends at most, so the ask is "drop your friend code below and add each other", never "add us"):
+// comment bubbles with a paw for a face and BLANK code boxes (DOG- and five empty boxes: never a made-up code that looks real), popping in one by one,
+// with two-way arrows and a heart between them. hwSwap(cx, top, lt, o): o.w bubble width, o.h height, o.gap between bubbles; lt seconds (large = all shown)
+function hwBubble(x,y,w,h,flip,col){ const k=h/140, sz=Math.round(40*k), bw=h*0.34, g=h*0.07;
+  let s='<rect x="'+hwF(x+8)+'" y="'+hwF(y+12)+'" width="'+hwF(w)+'" height="'+hwF(h)+'" rx="'+hwF(h*0.32)+'" fill="'+HW.pen+'" opacity=".12"/>';
+  const tx=flip?x+w-h*0.6:x+h*0.6, td=flip?-1:1;
+  s+='<path d="M'+hwF(tx)+' '+hwF(y+h-4)+' l'+hwF(td*-h*0.18)+' '+hwF(h*0.3)+' l'+hwF(td*h*0.42)+' '+hwF(-h*0.3)+'" fill="#FFFDF7" stroke="'+HW.pen+'" stroke-width="5" stroke-linejoin="round"/>';
+  s+='<rect data-safe x="'+hwF(x)+'" y="'+hwF(y)+'" width="'+hwF(w)+'" height="'+hwF(h)+'" rx="'+hwF(h*0.32)+'" fill="#FFFDF7" stroke="'+HW.pen+'" stroke-width="5"/>';
+  s+='<path d="M'+hwF(tx-td*h*0.17)+' '+hwF(y+h-3)+' h'+hwF(td*h*0.34)+'" stroke="#FFFDF7" stroke-width="7"/>';
+  const ax=x+h*0.5, ay=y+h/2, r=h*0.31;
+  s+='<circle cx="'+hwF(ax)+'" cy="'+hwF(ay)+'" r="'+hwF(r)+'" fill="'+col+'" stroke="'+HW.pen+'" stroke-width="4"/>'
+    +'<g transform="translate('+hwF(ax)+' '+hwF(ay+2*k)+') scale('+hwF(1.25*k)+')" fill="'+HW.pen+'" opacity=".75"><ellipse cx="0" cy="6" rx="9" ry="7"/><circle cx="-10" cy="-6" r="4"/><circle cx="-3" cy="-11" r="4"/><circle cx="5" cy="-11" r="4"/><circle cx="11" cy="-5" r="4"/></g>';
+  const fam="'DD Code'", ik=inkOf('DOG-',sz,fam), x0=x+h*1.0, by=y+h/2;
+  s+='<text x="'+hwF(x0+ik.L)+'" y="'+hwF(by+(ik.A-ik.D)/2)+'" font-family="DD Code" style="font-family:\\'DD Code\\'" font-weight="700" font-size="'+sz+'" fill="'+HW.pen+'">DOG-</text>';
+  let bx=x0+ik.L+ik.R+g*1.3; for(let i=0;i<5;i++){ s+='<rect x="'+hwF(bx)+'" y="'+hwF(by-bw/2)+'" width="'+hwF(bw)+'" height="'+hwF(bw)+'" rx="'+hwF(bw*0.18)+'" fill="#FFFFFF" stroke="'+HW.pen+'" stroke-width="3.5"/>'; bx+=bw+g; }
+  return s; }
+function hwSwap(cx,top,lt,o){ o=o||{}; const w=o.w||600, h=o.h||140, gap=o.gap||76, off=o.off||60, cols=['#F6C9A0','#BFE0B0','#F7C6D4'];
+  const e=(v)=>{ v=Math.max(0,Math.min(1,v)); return v*v*(3-2*v); }; let s='';
+  [0,1,2].forEach((i)=>{ const q=e((lt-0.15-i*0.22)/0.25); if(q<=0) return; const x=cx-w/2+(i%2?off:-off), y=top+i*(h+gap), sc=0.9+0.1*q;
+    s+='<g opacity="'+hwF(q)+'" transform="translate('+hwF(x+w/2)+' '+hwF(y+h/2)+') scale('+hwF(sc)+') translate('+hwF(-x-w/2)+' '+hwF(-y-h/2)+')">'+hwBubble(x,y,w,h,i%2===1,cols[i])+'</g>'; });
+  // two-way arrows in the gaps between the bubbles: you add theirs, they add yours
+  [0,1].forEach((i)=>{ const q=e((lt-0.8-i*0.2)/0.25); if(q<=0) return; const x=cx+(i?-1:1)*w*0.22, ya=top+i*(h+gap)+h+10, yb=top+(i+1)*(h+gap)-10;
+    s+='<g opacity="'+hwF(q)+'"><path d="M'+hwF(x)+' '+hwF(ya)+' V'+hwF(yb)+' M'+hwF(x-12)+' '+hwF(ya+13)+' L'+hwF(x)+' '+hwF(ya)+' L'+hwF(x+12)+' '+hwF(ya+13)+' M'+hwF(x-12)+' '+hwF(yb-13)+' L'+hwF(x)+' '+hwF(yb)+' L'+hwF(x+12)+' '+hwF(yb-13)+'" fill="none" stroke="'+HW.pink+'" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'<path transform="translate('+hwF(x+44)+' '+hwF((ya+yb)/2+4)+') scale(.6)" d="M0 12 C-14 0 -26 -6 -26 -18 C-26 -30 -12 -34 0 -22 C12 -34 26 -30 26 -18 C26 -6 14 0 0 12 Z" fill="'+HW.pink+'" stroke="'+HW.pen+'" stroke-width="5"/></g>'; });
+  return s; }
 `;
 module.exports = { HOWTO_JS, HW_APPS, HW_TEXT };
