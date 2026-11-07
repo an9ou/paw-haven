@@ -112,3 +112,7 @@ The owner moved the coding of parts 3–5 from Cursor back to Claude. The Game M
 - 7 Nov ~12:00 UTC: Winter Market music shipped (owner approved clips B/C and A2 for the Festive Market; GM chose the times: dawn plain market, day B, dusk/night C). paw-music skill at .claude/skills/paw-music, clip tool tools/music_clip.js. main 6fd90090, itch #2321285 (2.22.2), doodledoggo.app deployed.
 
 - 7 Nov ~11:30 UTC: Sunny Biscuit (DOG-K3APZ) moved from the container guest to an email account the owner chose (same user id, same save and code); a password-reset email was sent so the owner sets their own password on their phone. The "official" no-cap flag (Worker + D1 column) is proposed, not built: waiting on the owner.
+
+## v2.22.4 "Puppy legs" (7 Nov 2026)
+Owner-approved patch: `dogs/pawart_dogs.js` only (`PUPLEG`; puppies 3 months+ get stubby legs, adults/newborns/mixes byte-identical). Merged from `claude/puppy-legs` into main (2e075cc0). Tests: smoke, v2193_puppy, v2183_connect all PASS, no expectations changed.
+itch.io pushed as 2.22.4 (build #2322869); doodledoggo.app site deployed with the itch build. No Worker deploy, no NEWS entry.
