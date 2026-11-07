@@ -63,7 +63,7 @@ const TX = {
 };
 // RedNote: the game's zh-Hans words (fr.*, fw.more 更多, fr.menu 好友, fr.poster 分享海报, fr.add_title 添加好友, fr.add 添加), never "add us"
 const TX_ZH = {
-  hook: [{ s: '怎么在 Doodle Doggo', size: 76, pitch: 100 }, { s: '加好友', size: 96 }], hookSub: '点三下，分享你的好友码',
+  hook: [{ s: '怎么在 Doodle Doggo', size: 86, pitch: 112 }, { s: '加好友', size: 112 }], hookSub: '点三下，分享你的好友码',
   s1: '点「更多」，再点「好友」', s2: '选好友名，拿到好友码', s3: '点「分享海报」', s3b: '发到哪里都行', s4: '好友加你',
   s5: '你们是好友啦！', feats: ['去做客，摸摸狗狗', '送一份礼物', '一起散步'], safe: '没有聊天，没有私信。', theirs: '好友的手机',
   chat: '发给好友', story: '发朋友圈', endA: '在评论区留下你的好友码', endB: '互相加好友吧！',

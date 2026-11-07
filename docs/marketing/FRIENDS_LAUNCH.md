@@ -11,6 +11,11 @@
 > VO_LINES=brand/instagram/launch/friends_reel/howto/vo_howto.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo>
 > PAR=5 node brand/instagram/launch/friends_reel/howto/build_howto.js <dir> <ui> <clean> <work> <vo>   # Reel + cover (ONLY=stills|cover, FRAMES=a-b, CHECK=1)
 > node brand/instagram/launch/friends_reel/howto/build_howto_carousel.js <dir> <ui> <clean>          # 8 slides
+> # the RedNote cut (7 Nov 2026, after the owner approved the English): the same, in the zh-Hans game and Mandarin
+> PAW_LANG=zh-Hans node brand/instagram/launch/friends_reel/howto/capture_howto.js <dir> <ui_zh>
+> PAW_LANG=zh-Hans DOG_HEAD= DOG_NAME=Mochi node brand/instagram/launch/friends_reel/capture_clean.js <dir> <clean_zh>
+> VO_LINES=brand/instagram/launch/friends_reel/howto/vo_howto_zh.json PYTHONPATH=<jieba-0.42.1> python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh>   # PHON=1 prints misaki's readings
+> REDNOTE=1 PAR=5 node brand/instagram/launch/friends_reel/howto/build_howto.js <dir> <ui_zh> <clean_zh> <work_rn> <vo_zh>   # writes ...-rednote.mp4 and brand/rednote/rednote-11-friends-howto.jpg
 > ```
 
 Owner's go-ahead (2 Nov 2026, via the Game Manager): the launch Reel and the carousel, English first, ready before **Sat 7 Nov 2026 00:00 JST**. **Nothing is posted before then.** Plan: `V219_FRIENDS_FIRST.md`. The RedNote cut and its 3:4 cover come after the owner approves the English.
