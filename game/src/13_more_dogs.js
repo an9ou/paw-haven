@@ -349,7 +349,7 @@ const adoptBlock = () => {
 };
 function addDog(spec, name) {
   const fav = FAV[spec.key] || FAV.mutt;
-  const d = Object.assign({ key: spec.key, name, favFood: fav.food.slice(), favToy: fav.toy }, newDogFields(spec.key, spec.sex, spec.born || bornDaysAgo(spec.months || 10)));
+  const d = Object.assign({ key: spec.key, name, favFood: fav.food.slice(), favToy: fav.toy }, newDogFields(spec.key, spec.sex, spec.born || bornDaysAgo(spec.months || 10), spec.genes ? null : spec.pick || null)); // v2.23: a starter's picked colour
   if (spec.genes) d.genes = spec.genes;
   if (spec.id) d.id = spec.id;
   if (spec.key === 'mutt') { d.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed && !f.fest)).n]; d.favToy = PICK(TOYS.filter(t => !t.ed && !t.fest)).n; } // v2.8: festival and edition things are never a favourite
@@ -357,10 +357,11 @@ function addDog(spec, name) {
   const c = coatInfo(d); if (c) { d.coat = c.coatName; d.eyes = c.eyes; }
   S.dogs.push(d); markDirty(); hudDogKey = ''; emit('dog:added', { dog: d }); return d;
 }
-let shelterSex = {};
+let shelterSex = {}, shelterCoat = {}; // v2.23: shelterCoat[key] = { c, e, id }: the colour, eyes and dog id picked on a starter card of the Shelter list
+function shPick(key) { const o = shelterCoat[key] || {}, p = starterPick(key, o.c, o.e, o.id); if (p) shelterCoat[key] = Object.assign({}, o, { id: p.id }); return p; }
 function shelterCard(spec, kind) {
   // v2.7: rescues and residents (the playroom) gain their trait line and a Meet button (V27.md section 7); starters are as in v2.6
-  const sr = kind !== 'starter', tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
+  const sr = kind !== 'starter', pk = sr ? null : shPick(spec.key), tmp = { id: spec.id || (pk ? pk.id : 'tmp_' + spec.key), key: spec.key, genes: spec.genes || (pk ? pk.genes : STARTER_GENES[spec.key] || STARTER_GENES.mutt) }; // v2.23: a starter in its picked colour
   const c = coatInfo(tmp), info = dogInfo(spec.key), home = spec.id && dogById(spec.id);
   const sg = STARTER_GENES[spec.key] || {}, coatName = c ? c.coatName : sg.coat ? tdata('starter_genes.' + spec.key + '.coat', sg.coat) : '', eyes = c ? c.eyes : tdata('starter_genes.' + spec.key + '.eyes', sg.eyes || 'brown');
   const sx = sr ? spec.sex : shelterSex[spec.key] || null;
@@ -371,9 +372,12 @@ function shelterCard(spec, kind) {
   return `<div class="sitem shcard ${kind}">${stamp}<span class="art shdog">${dogArt}</span>
     <b>${esc(sr ? spec.name : info.name)} ${sr ? sexSym(spec.sex) : ''}</b>
     <span class="desc">${esc(adBreed(info))}${sr ? ` · ${spec.sex === 'female' ? tt('pack.girl', 'Girl') : tt('pack.boy', 'Boy')} · ${ageText(spec.months)}` : ''}<br>${esc(tt('pack.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(coatName, spec.key), eyes: eyeShown(eyes) }))}<br><i>${esc(sr && spec.trait ? spec.trait : tdata('fallback_dogs.' + info.key + '.personality', info.personality))}</i></span>
+    ${kind === 'starter' ? coatPickHTML(spec.key, (shelterCoat[spec.key] || {}).c | 0, (shelterCoat[spec.key] || {}).e | 0, (shelterCoat[spec.key] || {}).id, 'shcp|' + spec.key) : ''}
     ${kind === 'starter' ? `<div class="wrap" style="justify-content:center"><button class="btn ${sx === 'male' ? 'yes' : ''}" data-shsex="${spec.key}|male" aria-pressed="${sx === 'male'}">${tt('pack.boy', 'Boy')} ♂</button><button class="btn ${sx === 'female' ? 'yes' : ''}" data-shsex="${spec.key}|female" aria-pressed="${sx === 'female'}">${tt('pack.girl', 'Girl')} ♀</button></div>` : ''}
     ${home ? '<span class="chip own">' + tt('pack.already_home', 'Already home') + '</span>' : `<div class="sr-cardbtns">${sr ? `<button class="btn" data-srmeet="${esc(spec.id)}">${tt('pack.meet', 'Meet')}</button>` : ''}<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? tt('pack.rescue', 'Rescue') : kind === 'resident' ? tt('pack.adopt', 'Adopt') : tt('pack.adopt_a_starter', 'Adopt a starter')}</button></div>`}</div>`;
 }
+// v2.23: redraw the Shelter list where the player was (a Boy / Girl or colour tap on a starter card far down the sheet keeps it in view)
+function shRefresh(p) { const els = (q) => [q, q.querySelector('.panel-body')].filter(Boolean), was = els(p).map((e) => e.scrollTop); const p2 = openShelterList(); els(p2).forEach((e, i) => { e.scrollTop = was[i] || 0; }); }
 function openShelterList() {
   const rescues = rescuesToday().map((r) => Object.assign({ trait: srTrait(r.id) }, r)), residents = srRoster().filter((x) => x.kind === 'resident');
   const starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
@@ -382,11 +386,17 @@ function openShelterList() {
     <h3 class="shh">${tt('pack.today_s_rescues', "Today's rescues")} <span class="small">${tt('pack.new_ones_arrive_every_day', '(new ones arrive every day)')}</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
     ${residents.length ? `<h3 class="shh">${tt('pack.living_in_the_playroom', 'Living in the playroom')} <span class="small">${tt('pack.they_stay_all_week', '(they stay all week)')}</span></h3><div class="shopgrid">${residents.map((r) => shelterCard(r, 'resident')).join('')}</div>` : ''}
     ${starterKeys.length ? `<h3 class="shh">${tt('pack.starter_dogs', 'Starter dogs')}</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });
-  p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); openShelterList(); }; });
+  p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); shRefresh(p); }; });
+  p.querySelectorAll('[data-shcp]').forEach((b) => { b.onclick = () => { // v2.23 Coat pick: a colour or eye swatch on a starter card
+    const k = b.dataset.shcp.split('|')[0], [w, i] = cpTap(b.dataset.shcp), o = shelterCoat[k] || {};
+    shelterCoat[k] = w === 'c' ? { c: i, e: 0 } : { c: o.c | 0, e: i }; SFX.boop(w === 'c' ? 600 + i * 40 : 820);
+    shRefresh(p);
+  }; });
   p.querySelectorAll('[data-srmeet]').forEach((b) => { b.onclick = () => { SFX.click(); srMeet(b.dataset.srmeet); }; });
   p.querySelectorAll('[data-shadopt]').forEach((b) => {
     b.onclick = () => { const [kind, id] = b.dataset.shadopt.split('|'); srAdoptFlow(kind, id); };
   });
+  return p;
 }
 
 /* ======================= v1.5B: phone layout (portrait, touch) =======================

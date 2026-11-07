@@ -43,6 +43,94 @@ const STARTER_GENES = {
   cavalier: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blenheim', eyes: 'brown' },
   jrt: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White and tan', eyes: 'brown' }
 };
+/* v2.23 "Coat pick" (owner, 7 Nov 2026; V223.md): a starter comes home in one of its breed's real, common colours. Option 1 is always the
+   STARTER_GENES coat above (unchanged); the extra options here are [coat name as PawGenes.phenotype gives it, the loci that differ from
+   STARTER_GENES]. A token names one locus by its alleles ('Ee' E/e, 'bb' b/b, 'spsp' sp/sp, 'Mm' merle, one copy only). Every allele stays
+   inside the breed's FREQ (mods/genes.js), so later puppies inherit real genes; test_v223_coats.js checks each name, FREQ and that no option is M/M. */
+const STARTER_COATS = {
+  shiba: [['Black and tan with cream urajiro', 'Ee'], ['Cream with cream urajiro', 'dd']],
+  corgi: [['Black and white', 'Ee'], ['Cream and white', 'dd']],
+  golden: [['Cream', 'dd']],
+  dachs: [['Black and tan', 'Bb'], ['Red', 'Bb ee'], ['Black dapple', 'Bb Mm']],
+  husky: [['Red and white', 'ee'], ['Copper and white', 'bb']],
+  mutt: [['Red with white markings', 'ee Ssp'], ['Chocolate & white piebald', 'bb'], ['Black merle with white markings', 'Ssp Mm']],
+  chihuahua: [['Cream', 'dd'], ['Black and tan', 'Ee'], ['Chocolate and tan', 'bb Ee'], ['Fawn & white piebald', 'spsp']],
+  pug: [['Black', 'Ee'], ['Apricot', 'bb'], ['Silver fawn', 'dd']],
+  greyhound: [['Black', 'Dd SS'], ['Fawn', 'Dd ee SS'], ['Black & white piebald', 'Dd spsp']],
+  beagle: [['Red and white', 'ee'], ['Lemon and white', 'ee dd'], ['Chocolate tricolour', 'bb']],
+  poodle: [['Black', 'Ee'], ['White', 'dd'], ['Chocolate', 'bb Ee'], ['Silver', 'dd Ee']],
+  collie: [['Tricolour', 'SS'], ['Chocolate and white', 'bb'], ['Blue merle', 'Mm'], ['Red merle', 'bb Mm']],
+  samoyed: [['Cream', 'bb']],
+  frenchie: [['Dark fawn', 'Ee'], ['Cream', 'bb'], ['Pied', 'Ee spsp']],
+  akita: [['Sesame', 'Ee'], ['White', 'dd']],
+  spitz: [],
+  pom: [['Cream', 'dd'], ['Black', 'Ee'], ['White', 'bb'], ['Chocolate', 'bb Ee']],
+  afghan: [['Cream', 'dd'], ['Black and tan', 'Ee'], ['Black', 'EE']],
+  dane: [['Brindle', 'bb Ee'], ['Blue', 'dd Ee'], ['Harlequin', 'Ee spsp Mm'], ['Mantle', 'Ee spsp']],
+  mastiff: [['Apricot', 'bb'], ['Brindle', 'Ee']],
+  gsd: [['Sable', 'ee'], ['Black', 'EE'], ['White', 'ee dd']],
+  dobie: [['Red and rust', 'bb'], ['Blue and rust', 'dd'], ['Fawn and rust', 'bb dd']],
+  corso: [['Grey', 'dd'], ['Fawn', 'ee'], ['Black brindle', 'bb'], ['Red', 'bb ee']],
+  pitbull: [['Black', 'Dd'], ['Fawn', 'Dd ee'], ['Brindle', 'bb Dd'], ['Red', 'bb Dd ee']],
+  minpin: [['Black and rust', 'Ee'], ['Chocolate and rust', 'bb Ee']],
+  lab: [['Black', 'Ee'], ['Chocolate', 'bb Ee']],
+  malamute: [['Black and white', 'EE'], ['Sable and white', 'ee'], ['Red and white', 'bb'], ['White', 'ee dd']],
+  chow: [['Black', 'Ee'], ['Blue', 'Ee dd'], ['Cinnamon', 'bb Ee'], ['Cream', 'dd']],
+  stdpoodle: [['White', 'ee dd'], ['Apricot', 'ee'], ['Red', 'BB ee'], ['Chocolate', 'bb']],
+  schnauzer: [['Black', 'EE'], ['Black and silver', 'dd'], ['White', 'ee']],
+  westie: [],
+  yorkie: [['Black and tan', 'Dd'], ['Blue and tan parti', 'spsp']],
+  bichon: [['Cream', 'bb']],
+  maltese: [],
+  shihtzu: [['Black and white', 'Ee'], ['Brindle and white', 'EE'], ['Liver and white', 'bb Ee'], ['Black', 'Ee SS']],
+  dalmatian: [['Liver spotted', 'bb']],
+  bernese: [],
+  aussie: [['Blue merle tricolour', 'Mm'], ['Red tricolour', 'bb'], ['Red merle tricolour', 'bb Mm']],
+  cavalier: [['Tricolour', 'Ee'], ['Ruby', 'SS'], ['Black and tan', 'Ee SS']],
+  jrt: [['Tricolour', 'Ee'], ['White and black', 'EE']]
+};
+/* Eye choices (the owner: "different pupil colours"), only where real dogs have them. 'all': every coat (the husky's and the Aussie's blue-eye
+   gene Bl, which their FREQ allows); 'merle': only a merle coat (merle itself gives the blue or odd eyes; a collie never carries Bl). */
+const STARTER_EYES = { husky: 'all', aussie: 'all', collie: 'merle', dachs: 'merle', dane: 'merle', mutt: 'merle' };
+const COAT_LOCUS = { B: 'B', b: 'B', D: 'D', d: 'D', E: 'E', e: 'E', S: 'S', sp: 'S', M: 'M', m: 'M', Bl: 'Bl', bl: 'Bl', at: 'A', a: 'A' };
+function coatGenes(key, diff) { // STARTER_GENES[key] (the loci only) with the diff tokens on top
+  const g = STARTER_GENES[key] || STARTER_GENES.mutt, out = {};
+  ['B', 'D', 'E', 'S', 'M', 'Bl', 'A'].forEach((k) => { if (g[k]) out[k] = g[k].slice(); });
+  String(diff || '').split(/\s+/).filter(Boolean).forEach((t) => { const al = t.match(/sp|Bl|bl|at|[BbDdEeSMma]/g); if (al && al.length === 2 && COAT_LOCUS[al[0]]) out[COAT_LOCUS[al[0]]] = al; });
+  return out;
+}
+const coatPh = (genes, key, seed) => { const G = window.PawGenes; try { return G ? G.phenotype(genes, key, seed == null ? 'x' : seed) : null; } catch (e) { return null; } };
+// the colour options of a starter: [{ coat, genes, merle, def }]; option 0 is the STARTER_GENES dog. coat: the English name phenotype() gives
+function starterCoats(key) {
+  const k = STARTER_GENES[key] ? key : 'mutt', d = coatGenes(k, ''), p = coatPh(d, k);
+  return [{ coat: p ? p.coatName : STARTER_GENES[k].coat, genes: d, merle: false, def: true }].concat((STARTER_COATS[k] || []).map(([coat, diff]) => { const genes = coatGenes(k, diff); return { coat, genes, merle: genes.M.includes('M') }; }));
+}
+// the eye options for colour option i: [{ eyes, Bl }] (Bl: the blue-eye pair to use), or [] when the eyes simply follow the coat
+function starterEyes(key, i) {
+  const cs = starterCoats(key), c = cs[i] || cs[0], mode = STARTER_EYES[key], b = coatPh(Object.assign({}, c.genes, { Bl: ['bl', 'bl'], M: ['m', 'm'] }), key);
+  if (!mode || (mode === 'merle' && !c.merle) || !b) return [];
+  const base = b.eyes, bl = ['bl', 'bl'], het = ['Bl', 'bl']; // base: brown, or amber on a liver (b/b) coat
+  if (c.merle) return [{ eyes: base, Bl: bl }, { eyes: 'blue', Bl: bl }, { eyes: 'odd', Bl: bl }]; // merle's own eye rolls (bl/bl)
+  const own = c.genes.Bl, two = own[0] === 'Bl' && own[1] === 'Bl';
+  const L = [{ eyes: base, Bl: bl }, { eyes: 'blue', Bl: two ? own.slice() : het }, { eyes: 'odd', Bl: het }];
+  if (two) L.unshift(L.splice(1, 1)[0]); // the husky: blue (Bl/Bl, its starter) first
+  return L;
+}
+// a dog id whose eye roll gives these eyes (phenotype() seeds the Bl/bl and merle eye rolls with the dog's id)
+function starterIdFor(key, genes, eyes) {
+  const nid = () => 'd_' + Math.random().toString(36).slice(2, 9); let id = nid();
+  for (let n = 0; n < 2000 && eyes; n++) { const p = coatPh(genes, key, id); if (!p || p.eyes === eyes) break; id = nid(); }
+  return id;
+}
+// the chosen starter: colour i, eyes j -> { genes, coat, eyes, id } for newDogFields, or null for the plain STARTER_GENES dog (colour 1, first eyes).
+// id: keep this id when its eye roll already fits (the card's preview dog becomes the dog that comes home)
+function starterPick(key, i, j, id) {
+  const cs = starterCoats(key); i = cs[i | 0] ? i | 0 : 0; j = j | 0; const c = cs[i], es = starterEyes(key, i);
+  if (c.def && !j) return null;
+  const e = es[j] || es[0] || null, genes = Object.assign({}, c.genes, e ? { Bl: e.Bl.slice() } : {}), p = coatPh(genes, key);
+  const eyes = e ? e.eyes : p ? p.eyes : 'brown', q = id ? coatPh(genes, key, id) : null;
+  return { genes, coat: p ? p.coatName : c.coat, eyes, id: q && q.eyes === eyes ? id : starterIdFor(key, genes, eyes) };
+}
 // Breeding rules, stored now and switched on in v2 (1 real day = 1 dog month)
 const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   enabled: false, pair: 'male+female', adultMonths: 12, seniorMonths: 84, noBreedFromMonths: 96,
@@ -79,9 +167,14 @@ function seasonStatus(dog) {
   const pos = (((m - H.firstMonths + (dog.seasonSeed || 0)) % H.everyDays) + H.everyDays) % H.everyDays;
   return pos < H.lastsDays ? { txt: tt('genes.in_season_more_days', 'In season ({n, plural, one {# more day} other {# more days}})', { n: H.lastsDays - pos }), inSeason: true } : { txt: tt('genes.next_season_in_days', 'Next season in {n, plural, one {# day} other {# days}}', { n: H.everyDays - pos }), inSeason: false };
 }
-function newDogFields(key, sex, born) {
+function newDogFields(key, sex, born, pick) {
   const g = STARTER_GENES[key] || STARTER_GENES.mutt;
-  return { id: 'd_' + Math.random().toString(36).slice(2, 9), sex, born, genes: { B: g.B.slice(), D: g.D.slice(), E: g.E.slice(), S: g.S.slice(), M: g.M.slice(), Bl: g.Bl.slice() }, coat: g.coat, eyes: g.eyes, parents: null, litters: 0, lastLitter: null, fixed: false, seasonSeed: Math.floor(Math.random() * 6) };
+  const f = { id: 'd_' + Math.random().toString(36).slice(2, 9), sex, born, genes: { B: g.B.slice(), D: g.D.slice(), E: g.E.slice(), S: g.S.slice(), M: g.M.slice(), Bl: g.Bl.slice() }, coat: g.coat, eyes: g.eyes, parents: null, litters: 0, lastLitter: null, fixed: false, seasonSeed: Math.floor(Math.random() * 6) };
+  if (pick && pick.genes) { // v2.23 Coat pick: the colour (and eyes) chosen on the adoption card (starterPick); no pick = the STARTER_GENES dog as before
+    const G = {}; Object.keys(pick.genes).forEach((k) => { if (Array.isArray(pick.genes[k])) G[k] = pick.genes[k].slice(); });
+    Object.assign(f, { genes: G, coat: pick.coat || g.coat, eyes: pick.eyes || g.eyes }); if (pick.id) f.id = pick.id;
+  }
+  return f;
 }
 function birthdayCheck() {
   if (!S || !S.dog.born) return; const m = ageMonths();

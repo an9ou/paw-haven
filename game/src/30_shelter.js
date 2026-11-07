@@ -341,7 +341,7 @@ function srFetch() {
 }
 
 /* ---- adopt mode: the selected starter trots to the meet spot ---- */
-function srMeetSVG(key, pose, face) { const L = srStarterLook(key); return place(dogSVG(L, { pose, facing: face || 'right' }), -DW / 2, -DH * 205 / 220, DW, DH); }
+function srMeetSVG(key, pose, face) { const L = typeof adLook === 'function' ? adLook(key) : srStarterLook(key); /* v2.23: in the colour picked on the card (02_adoption.js) */ return place(dogSVG(L, { pose, facing: face || 'right' }), -DW / 2, -DH * 205 / 220, DW, DH); }
 function srPetMeet() {
   if (!SR || !SR.meet) return; const key = SR.meet.key, m = $('#adoptDog .sr-meetdog'); if (!m) return;
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
@@ -352,7 +352,13 @@ function srPetMeet() {
 }
 function srSelectKey(key, fromRd) {
   const i = dogsList().findIndex((d) => d.key === key); if (i < 0) return;
-  if (adoptIdx !== i) { adoptIdx = i; adoptSex = null; } renderAdopt(fromRd ? undefined : true);
+  if (adoptIdx !== i) { adoptIdx = i; adReset(); } renderAdopt(fromRd ? undefined : true); // v2.23: a new dog starts on its first colour too
+}
+// v2.23 Coat pick: a new colour or eyes picked on the card: the meet dog redraws in it with a happy wiggle
+function srMeetCoat(key) {
+  if (!SR || SR.mode !== 'adopt' || !SR.meet || SR.meet.key !== key) return; const m = $('#adoptDog .sr-meetdog'); if (!m) return;
+  m.innerHTML = srMeetSVG(key, 'happy', 'right'); clearTimeout(SR.meet.t);
+  SR.meet.t = srAfter(900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'idle', 'right'); });
 }
 function srMeetShow(key) {
   if (!SR || SR.mode !== 'adopt') return; const g = $('#adoptDog'); if (!g) return;
@@ -468,7 +474,7 @@ function srAdoptFlow(kind, id, back) {
   let spec;
   if (kind === 'rescue') spec = rescuesToday().find((r) => r.id === id);
   else if (kind === 'resident') spec = srRoster().find((r) => r.id === id && r.kind === 'resident');
-  else { if (!shelterSex[id]) { nope(tt('shelter.pick_sex', 'Pick Boy or Girl first. The siblings are waiting politely.')); return; } spec = { key: id, sex: shelterSex[id], months: starterMonths() }; }
+  else { if (!shelterSex[id]) { nope(tt('shelter.pick_sex', 'Pick Boy or Girl first. The siblings are waiting politely.')); return; } spec = { key: id, sex: shelterSex[id], months: starterMonths(), pick: shPick(id) }; } // v2.23: the colour picked on its card
   if (!spec || (spec.id && dogById(spec.id))) return;
   const def = kind === 'starter' ? dogInfo(spec.key).name : spec.name;
   const pp = openModal(`${esc(tt('shelter.name_new', '{sex, select, female {Name your new girl} other {Name your new boy}}', { sex: spec.sex }))} ${sexSym(spec.sex)}`, `<p>${tt('shelter.name_lead_html', '{k, select, starter {The tag says <b>{name}</b>. Keep it, or pick something just as silly.} other {The shelter calls this one <b>{name}</b>. Keep it, or pick something just as silly.}}', { k: kind === 'starter' ? 'starter' : 'other', name: def })}</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: `<button class="btn no" id="shNo">${esc(tt('shelter.back', 'Back'))}</button><button class="btn yes big" id="shOk">${esc(tt('shelter.bring_home', 'Bring home!'))}</button>` });

@@ -798,7 +798,7 @@ function audioPlace(place) {
 function audioCue(name) { const a = PAU(); if (!a) return; try { if (a.duck) a.duck(0.4, 1800); if (a.stinger) a.stinger(name); } catch (e) { /* ignore */ } }
 
 /* ---------------- state ---------------- */
-function freshState(key, name, sex) {
+function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (starterPick in 10_sex_age_genes.js), null = the breed's starter coat
   const fav = FAV[key] || FAV.mutt;
   const st = {
     v: 1, dog: { key, name, favFood: fav.food.slice(), favToy: fav.toy },
@@ -813,7 +813,7 @@ function freshState(key, name, sex) {
   };
   st.inv.charms = []; st.outfit.charm = null;
   st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
-  Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(starterMonths()))); st.kennel = []; st.pupStart = 1; // v2.19.3 Puppy start: a 3-month puppy, so the old-save migration never runs
+  Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(starterMonths()), pick || null)); st.kennel = []; st.pupStart = 1; // v2.19.3 Puppy start: a 3-month puppy, so the old-save migration never runs
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
   if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed && !f.fest)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed && !t.fest)).n; } // v2.8: festival and edition things are never a favourite
   st.dog.adoptedAt = localISO();
