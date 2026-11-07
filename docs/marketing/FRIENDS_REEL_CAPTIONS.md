@@ -2,7 +2,7 @@
 
 ## How-to version (APPROVED by the owner, 7 Nov 2026)
 
-The owner's changes of 7 Nov 2026 ("put some in-game content, teach players how to use the function, how they can share the code through WhatsApp, IG, other social media platforms with the poster"): the launch Reel is rebuilt as a how-to, and the carousel shows the same steps. **Nothing here is approved yet: do not post it, and make no final or RedNote cut until the owner says yes** (content approval is never assumed, owner 7 Nov 2026). English only.
+The owner's changes of 7 Nov 2026 ("put some in-game content, teach players how to use the function, how they can share the code through WhatsApp, IG, other social media platforms with the poster"): the launch Reel is rebuilt as a how-to, and the carousel shows the same steps. **Approved by the owner (7 Nov 2026); the RedNote cut is below.**
 
 **The ask is a code swap, never "add us" (owner, 7 Nov 2026):** our account DOG-K3APZ can hold only 50 friends (adding is two-way and instant), so a public "add us!" would fill it in hours. Players drop their own codes and add EACH OTHER. Sunny Biscuit / DOG-K3APZ only appears as the demo player in the steps (the card, the poster, the chat, the friend's Add); no caption gives our code or our invite link, and the X post links to https://doodledoggo.app.
 
@@ -33,7 +33,7 @@ Receipts: `caption.py` READY (712 characters, first line 111 characters lands wh
 
 Alt text:
 ```
-A how-to in the crayon game Doodle Doggo, told in a deadpan voice with subtitles. "How to add friends in Doodle Doggo, share your code in 3 taps" over Mochi the Shiba drinking in her autumn yard. Then the real game screens with a crayon finger on each tap: 1. More, then Friends; 2. the name wheels turn to a friend name and the friend card shows its code; 3. Share poster: the poster with Mochi and the code goes into a hand-drawn share menu (WhatsApp, Instagram story, Messenger, LINE, Telegram, Messages, More) and arrives as a chat message and as a story; 4. on a friend's phone the code is typed into Add a friend and "is your friend now!" pops up; 5. Mochi visits a Corgi and a Golden puppy, a gift flies off, and they go for a walk together. "No chat. No messages." It ends on "drop your friend code below and add each other!" over comment bubbles with empty code boxes.
+A how-to in the crayon game Doodle Doggo, told in a deadpan voice with subtitles. "How to add friends in Doodle Doggo, share your code in 3 taps" over Mochi the Shiba drinking in her autumn yard. Then the real game screens with a crayon mouse cursor clicking each step: 1. More, then Friends; 2. the name wheels turn to a friend name and the friend card shows its code; 3. Share poster: the poster with Mochi and the code goes into a hand-drawn share menu (WhatsApp, Instagram story, Messenger, LINE, Telegram, Messages, More) and arrives as a chat message and as a story; 4. on a friend's phone the code is typed into Add a friend and "is your friend now!" pops up; 5. Mochi visits a Corgi and a Golden puppy, a gift flies off, and they go for a walk together. "No chat. No messages." It ends on "drop your friend code below and add each other!" over comment bubbles with empty code boxes.
 ```
 
 ### Instagram (carousel)
