@@ -126,11 +126,11 @@ require('./test_lib').run('v21_journal', async (t) => {
   sec('Glitter Legend');
   // v2.5: every breed in the coat book counts (14 since the four v2.5 breeds, 21 since v2.11, 35 since v2.12)
   const NB = await ev(() => window.__paw.v221.live().length); // v2.21: the breeds shown now (35 while the five are off, V221.md 7)
-  const NC = COAT_CAP; // the coat book's breeds (all 35 once 07 coatBreeds lifts its 21 cap)
+  const NC = NB; // the coat book's breeds: every breed shown now (COAT_CAP 35, 40 since the v2.21 launch on 7 Nov 2026)
   await ev((n) => { const S = window.__paw.S; S.sparkleBook = {}; window.PawGenes.BREEDS.slice(0, n - 1).forEach((k) => { S.sparkleBook[k] = '2026-03-03'; }); }, NC);
   await ev(() => window.__paw.jrFamCheck()); s = await S(); ok(!s.titles['Glitter Legend'], `${NC - 1} of ${NC} Sparkle breeds: not yet`);
   await ev((n) => { const S = window.__paw.S; S.sparkleBook[window.PawGenes.BREEDS[n - 1]] = '2026-03-03'; window.__paw.jrFamCheck(); }, NC); s = await S();
-  ok(NB === 35 && !!s.famRewards.glitter && !!s.titles['Glitter Legend'], `Sparkle pup of all ${NC} coat-book breeds (${NB} breeds): Glitter Legend`);
+  ok(NB === (await ev(() => window.__paw.v221.on()) ? 40 : 35) && !!s.famRewards.glitter && !!s.titles['Glitter Legend'], `Sparkle pup of all ${NC} coat-book breeds (${NB} breeds): Glitter Legend`);
 
   sec('pen-pal schedule: day 14 = 40 coins, day 30 = 80 coins, birthdays');
   const fam = { id: 'tanaka', name: 'the Tanakas', where: 'by the bakery' };

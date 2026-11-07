@@ -21,7 +21,7 @@ require('./test_lib').run('v17', async (t) => {
   sec('all starters in the adoption carousel (10 since v1.7, 14 since v2.5, 21 since v2.11, 35 since v2.12)');
   const p = await t.boot(); await tap(); await p.click('#tNew'); await p.waitForSelector('.heads button');
   const NB = await ev(() => window.__paw.v221.live().length); // v2.21: the breeds shown now (35: the five v2.21 keys are off until the v2.20 switch, V221.md 7)
-  ok(NB === 35 && await p.locator('.heads button').count() === NB, `${NB} heads in the adoption carousel`);
+  ok(NB === (await ev(() => window.__paw.v221.on()) ? 40 : 35) && await p.locator('.heads button').count() === NB, `${NB} heads in the adoption carousel`);
   for (const [k, br, nm] of ALL) {
     await p.click(`.heads button[aria-label="${nm} the ${br}"]`); await headIs(nm);
     const h3 = await heading(), lab = await p.getAttribute('#adoptDog svg.pa-dog', 'aria-label').catch(() => '');
