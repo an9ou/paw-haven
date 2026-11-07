@@ -122,3 +122,9 @@ RedNote:
 | 澳大利亚牧羊犬 | 你家的澳大利亚牧羊犬今天才加入游戏，所以视频里还没有！🎉 游戏里的澳大利亚牧羊犬：“你家澳大利亚牧羊犬把大家都检查了一遍。现在轮到检查你了。” 🐾 |
 | 骑士查理王小猎犬 | 你家的骑士查理王小猎犬没赶上这个视频，不过今天已经在游戏里啦！🎉 游戏里的骑士查理王小猎犬：“你家骑士查理王小猎犬用水汪汪的大眼睛望着你。请给我一个腿上的位置。” 🐾 |
 | 杰克罗素梗 | 你家的杰克罗素梗太新了，视频里还没有：它今天才加入游戏！🎉 游戏里的杰克罗素梗：“你家杰克罗素梗蹦过来了。嘣。摸摸我。嘣。” 🐾 |
+
+## Breed requests from comments (for the Game Manager when the owner wants them)
+
+| Date | Breed(s) | Where | Reply |
+|---|---|---|---|
+| 7 Nov 2026 | Wirehaired Vizsla, English Setter | 35-breeds Reel comment | "we'll draw them" (kept the promise; nothing promised for the game) |
