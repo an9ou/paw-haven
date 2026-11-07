@@ -43,6 +43,53 @@ In the Reel (35), in order: Corgi, Husky, Chow Chow, Samoyed, Doberman, Shiba, M
 
 New on 7 Nov 2026 (v2.21, not in the Reel): Dalmatian, Bernese Mountain Dog, Australian Shepherd, Cavalier King Charles Spaniel, Jack Russell Terrier.
 
+## Coat colours you can pick (v2.23, live 7 Nov 2026)
+
+Since v2.23, a player picks the coat colour (and, for some breeds, the eyes) when adopting a starter dog, the first one or later from the Shelter. Puppies inherit it. Use this when someone names a colour ("black lab", "blue merle collie"): if it's in the list, tell them they can pick it; if not, don't promise it. Not in: fox red Lab, Corgi black and white, Border Collie tricolour.
+
+| Breed | Colours | Eye choice |
+|---|---|---|
+| Shiba | Red with cream markings, Black and tan with cream urajiro, Cream with cream urajiro |  |
+| Corgi | Red (tan) with white markings, Cream and white |  |
+| Golden Retriever | Golden red, Cream |  |
+| Dachshund | Chocolate (liver), Black and tan, Red, Black dapple | brown / blue / odd: Black dapple only |
+| Husky | Grey and white, Red and white, Copper and white | brown / blue / odd: every coat |
+| Mutt | Black and white patches (piebald), Red with white markings, Chocolate & white piebald, Black merle with white markings | brown / blue / odd: Black merle only |
+| Chihuahua | Fawn, Cream, Black and tan, Chocolate and tan, Fawn & white piebald |  |
+| Pug | Fawn, Black, Silver fawn |  |
+| Greyhound | Blue with white markings, Black, Fawn, Black & white piebald |  |
+| Beagle | Tricolour, Red and white, Lemon and white, Chocolate tricolour |  |
+| Miniature Poodle | Apricot, Black, White, Chocolate, Silver |  |
+| Border Collie | Black and white, Chocolate and white, Blue merle, Red merle | brown / blue / odd: every coat |
+| Samoyed | White |  |
+| French Bulldog | Fawn, Dark fawn, Pied |  |
+| Akita | Red, Sesame, White |  |
+| Japanese Spitz | White |  |
+| Pomeranian | Orange, Cream, Black, Chocolate |  |
+| Afghan Hound | Red, Cream, Black and tan, Black |  |
+| Great Dane | Fawn, Blue, Harlequin, Mantle | brown / blue / odd: Harlequin only |
+| English Mastiff | Fawn, Brindle |  |
+| German Shepherd | Black and tan, Sable, Black, White |  |
+| Doberman | Black and rust, Red and rust, Blue and rust, Fawn and rust |  |
+| Cane Corso | Black, Grey, Fawn |  |
+| Pit Bull | Blue, Black, Fawn, Red |  |
+| Miniature Pinscher | Red, Black and rust, Chocolate and rust |  |
+| Labrador | Yellow, Black, Chocolate |  |
+| Alaskan Malamute | Grey and white, Black and white, Sable and white, Red and white, White |  |
+| Chow Chow | Red, Black, Blue, Cinnamon, Cream |  |
+| Standard Poodle | Black, White, Apricot, Red, Chocolate |  |
+| Miniature Schnauzer | Salt and pepper, Black, Black and silver, White |  |
+| Westie | White |  |
+| Yorkshire Terrier | Blue and tan, Black and tan, Blue and tan parti |  |
+| Bichon Frise | White |  |
+| Maltese | White |  |
+| Shih Tzu | Gold and white, Black and white, Brindle and white, Liver and white, Black |  |
+| Dalmatian | Black spotted, Liver spotted |  |
+| Bernese Mountain Dog | Tricolour |  |
+| Australian Shepherd | Black tricolour, Blue merle tricolour, Red tricolour, Red merle tricolour | brown / blue / odd: every coat |
+| Cavalier King Charles Spaniel | Blenheim, Tricolour, Ruby, Black and tan |  |
+| Jack Russell Terrier | White and tan, Tricolour, White and black |  |
+
 ## Dogs coming
 
 - **Announced:** Japanese Chin and Kai Ken. The site says "Japanese Chin and Kai Ken are on their way." (`SOON_LINE`, since v2.12). No date. OK to say "on their way"; don't give a date.
@@ -59,13 +106,15 @@ Rules:
 3. If it is not in either list, say it's not in our crayon gang yet, so we'll draw theirs for them ✏️ and invite them to send a photo. Never promise it will be added to the game.
 4. A mix or doodle where one parent breed is in a list: say that half is in (name it, its number and time), and we'll draw the whole dog.
 5. "Mixed breed", "rescue", "mutt", "just a good boy": they are the Mutt, #31 at 0:09. Ask what the mix is.
-6. Colours (black lab, red lab, blue frenchie): name the breed's number and time. Don't promise a colour.
+6. Colours (black lab, blue merle collie): name the breed's number and time. If the colour is in COLOURS, add that they can pick that colour when they adopt one in the game. If it isn't, don't mention or promise the colour.
 7. Japanese Chin or Kai Ken: they're on their way to the game (no date); we'll draw theirs meanwhile.
 8. "Drawn badly" jokes: agree and laugh ("honestly fair, the crayon did its best 😅").
 9. If they ask where to play: on Instagram say "free in your browser, link in our bio 🎮"; on X give https://doodledoggo.app
 10. Never argue about breeds, never say "ugly" or "ugliest", never mention prices, shops or unreleased features. If the comment is rude, off-topic or not about a dog, don't reply.
 11. Rotate endings: "what's their name? 🥹" / "is yours this chaotic too? 😂" / "how old is yours?" / "does yours do that too?"
 Names people use: Lab = Labrador; Goldie / Golden Retriever = Golden; Frenchie = French Bulldog; Doxie / sausage dog / Wiener = Dachshund; Yorkie = Yorkshire Terrier; Min Pin = Miniature Pinscher; GSD / Alsatian = German Shepherd; Pom = Pomeranian; Dobie = Doberman; Aussie = Australian Shepherd; Berner = Bernese Mountain Dog; Cav / Cavalier = Cavalier King Charles Spaniel; JRT = Jack Russell Terrier; Westie = West Highland White Terrier; Malamute = Alaskan Malamute; Pittie = Pit Bull; Mastiff = English Mastiff; Toy Poodle: the closest is the Miniature Poodle.
+
+COLOURS (breed: colours you can pick when adopting): Shiba: Red with cream markings, Black and tan with cream urajiro, Cream with cream urajiro; Corgi: Red (tan) with white markings, Cream and white; Golden Retriever: Golden red, Cream; Dachshund: Chocolate (liver), Black and tan, Red, Black dapple; Husky: Grey and white, Red and white, Copper and white; Mutt: Black and white patches (piebald), Red with white markings, Chocolate & white piebald, Black merle with white markings; Chihuahua: Fawn, Cream, Black and tan, Chocolate and tan, Fawn & white piebald; Pug: Fawn, Black, Silver fawn; Greyhound: Blue with white markings, Black, Fawn, Black & white piebald; Beagle: Tricolour, Red and white, Lemon and white, Chocolate tricolour; Miniature Poodle: Apricot, Black, White, Chocolate, Silver; Border Collie: Black and white, Chocolate and white, Blue merle, Red merle; Samoyed: White; French Bulldog: Fawn, Dark fawn, Pied; Akita: Red, Sesame, White; Japanese Spitz: White; Pomeranian: Orange, Cream, Black, Chocolate; Afghan Hound: Red, Cream, Black and tan, Black; Great Dane: Fawn, Blue, Harlequin, Mantle; English Mastiff: Fawn, Brindle; German Shepherd: Black and tan, Sable, Black, White; Doberman: Black and rust, Red and rust, Blue and rust, Fawn and rust; Cane Corso: Black, Grey, Fawn; Pit Bull: Blue, Black, Fawn, Red; Miniature Pinscher: Red, Black and rust, Chocolate and rust; Labrador: Yellow, Black, Chocolate; Alaskan Malamute: Grey and white, Black and white, Sable and white, Red and white, White; Chow Chow: Red, Black, Blue, Cinnamon, Cream; Standard Poodle: Black, White, Apricot, Red, Chocolate; Miniature Schnauzer: Salt and pepper, Black, Black and silver, White; Westie: White; Yorkshire Terrier: Blue and tan, Black and tan, Blue and tan parti; Bichon Frise: White; Maltese: White; Shih Tzu: Gold and white, Black and white, Brindle and white, Liver and white, Black; Dalmatian: Black spotted, Liver spotted; Bernese Mountain Dog: Tricolour; Australian Shepherd: Black tricolour, Blue merle tricolour, Red tricolour, Red merle tricolour; Cavalier King Charles Spaniel: Blenheim, Tricolour, Ruby, Black and tan; Jack Russell Terrier: White and tan, Tricolour, White and black. Border Collie, Husky and Aussie also pick eyes: brown, blue or odd (one of each).
 
 LIST A (number. breed | time in the video | game line):
 1. Corgi | 0:00 | Your Corgi looks at you. Then the bowl. Then you.
