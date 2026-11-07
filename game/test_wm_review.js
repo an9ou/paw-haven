@@ -211,4 +211,24 @@ run('wm_review', async (t) => {
     ok(await ev(() => window.__paw.shop.hot()) === hot, `${season}, sunny, day: hot is ${hot}`);
     await t.ctx.close();
   }
+
+  sec('12. music: the Festive Market is a PawAudio place (market music + crowd, never the yard); the Winter Market variant only from 1 to 26 Dec');
+  await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 } });
+  await t.until(() => !!(window.__paw && window.__paw.fm && window.PawAudio), null, 8000);
+  {
+    const A = await ev(() => { const PA = window.PawAudio, d = (c) => PA.describe(c); return { has: PA.PLACES.includes('fmarket'), plain: d({ place: 'fmarket', time: 'day', weather: 'snow' }), market: d({ place: 'market', time: 'day', weather: 'snow' }), win: d({ place: 'fmarket', time: 'night', weather: 'snow', fest: 'winter' }), yardFest: d({ place: 'yard', time: 'day', weather: 'snow', fest: 'winter' }), yard: d({ place: 'yard', time: 'day', weather: 'snow' }) }; });
+    ok(A.has, 'fmarket is in PawAudio.PLACES');
+    ok(A.plain.sig === A.market.sig && A.plain.ambience.market === 1, 'fmarket outside the Winter Market = the market music with its crowd: ' + A.plain.label);
+    ok(/wmarket/.test(A.win.label) && A.win.top === 'celesta' && A.win.prog === 'winter' && A.win.ambience.snowmkt > 0, 'fest winter at fmarket = the Winter Market style (celesta, its own chords, snow footsteps), even at night in snow: ' + A.win.label);
+    ok(A.yardFest.sig === A.yard.sig, 'fest winter changes nothing at other places');
+    for (const [date, want] of [['2026-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-27', null], ['2026-10-27', null]]) {
+      await ev((dt) => { const P = window.__paw; P.fm.date(dt); P.S.place = 'fmarket'; P.go('yard'); }, date); await t.calm();
+      const c = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
+      ok(c && c.place === 'fmarket' && c.fest === want, date + ': audioPlace passes fest ' + want + ' (' + JSON.stringify(c) + ')');
+    }
+    await ev(() => { const P = window.__paw; P.fm.date('2026-12-05'); P.S.place = 'yard'; P.go('yard'); }); await t.calm();
+    const y = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
+    ok(y && y.place === 'yard' && y.fest === null, 'in the yard during the Winter Market: no fest');
+  }
+  await t.ctx.close();
 }, { prefs: {} });

@@ -47,6 +47,24 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 - [x] Phone review fixes (30 Oct 2026): winter decorations land where a phone sees them (`HM_DECOR`: Yard Snowman under the Fir Tree [544, 488], Present Pile in front [304, 524], Star Lantern right of the dog house [846, 420]; `hoFreeSpot` scans the yard only inside x 140-912; `wm_review` section 4 checks an empty and a full yard); the market sign takes two lines on a phone and the look-right arrow sits higher on market places (`#phPeek` `top:calc(24% - 46px)`; on short phones it overlaps the dev button, dev builds only); on a phone the roaming dogs keep their drawn body off the stall boards (`RM_BOARD`, `RM_ZONES_PH.fmarket` [478, 590], proportional board cost in `rmLeastAt`; 4-dog sampling 0 of 40, was Decor 29, Toys 21); the selected sheet tab scrolls into its row; the welcome toast goes when a sheet opens; ja break hints (ZWSP + word joiners) on 14 winter names, none strands a character at 360; shots `docs/shots/winter-market/phonefix/`
 - [x] Checks, reviews, release (30 Oct 2026): checks and the three reviews above; release prep for v2.18.4 "Winter Market": `NEWS` entry 2.18.4 in `game/src/49c_news.js` (keys `nw.v2184.*`, 11 languages, ko font subset and `packed.js` regenerated), `CHANGELOG.md` row; the Game Manager merges, pushes and briefs Marketing
 
+## Music (v2.22.1, 7 Nov 2026)
+
+The owner listened to four clips (7 Nov: "i would like to use A2 more than A, BC can be also used").
+
+- **Every festival market plays the market music.** The Festive Market place (`fmarket`) was missing from PawAudio's `PLACES`, so `norm()`
+  turned it into the yard music (clip A). It is a place now (`PLACE_BASE.fmarket = 'market'`, the market crowd ambience), so the Halloween,
+  Harvest and New Year markets sound like the Market Street (clip A2) in every weather and time of day.
+- **The Winter Market has its own variant** (clip B by day, clip C at dusk and night), only while it is open (1-26 Dec, Japan date):
+  `audioPlace()` (`game/src/00_core.js`) passes `fest: 'winter'` at `fmarket` when `fmOpen()` holds the Winter Market, and `resolve()` in
+  `mods/pawaudio.js` then picks the `wmarket` style: 76 bpm, an original 8-bar progression `PROGS.winter` (F major / D minor family, no carol
+  changes), brushed drums, a soft sleigh-bell shaker (`HATS.sleigh`, `EP.sleigh`), a celesta topline (`EP.celesta`), a softer crowd and
+  footsteps in snow (`AMBS.snowmkt`, `EP.crunch`). It keeps its chords at dusk and night (`KEEP_PROG`, `STRONG`), and snow keeps its celesta,
+  comp keys and most of its shaker. `fest` goes through `PA.setContext`, `norm()` (`FESTS`) and the `PA.contexts` log; a place change
+  without `fest` clears it.
+- Levels: B -22.3 LUFS (peak -8.6 dBFS), C -22.5 (-8.3), the plain festival market -22.1 (-9.4), the same as the approved prototype clips.
+- Checks: `wm_review` section 12 (fmarket is a place; `fest` only from 1 to 26 Dec, not in the yard), the fmarket check in
+  `mods/audio/test_audio.js`. No `NEWS` entry: players hear it from 1 Dec.
+
 ## To fix before the release (found on the way)
 
 - `check_identical` against `origin/v215-base` now differs on every render (older dog outline redraws since v215-base, before this set);

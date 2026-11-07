@@ -82,6 +82,12 @@ const log = (...a) => console.log('[audio]', ...a);
 
   await p.screenshot({ path: path.join(__dirname, 'test_bench.png') });
 
+  // v2.22.1: the Festive Market is a place (market music), its Winter Market variant comes only with fest 'winter', and setContext keeps the key
+  const fm = await p.evaluate(() => { const A = window.PawAudio, r = {}; r.place = A.PLACES.includes('fmarket'); r.plain = A.describe({ place: 'fmarket' }).label; r.win = A.describe({ place: 'fmarket', fest: 'winter' }).label;
+    A.setContext({ place: 'fmarket', time: 'day', weather: 'snow', fest: 'winter' }); r.kept = A.contexts[A.contexts.length - 1].fest; A.setContext({ place: 'yard' }); r.cleared = A.contexts[A.contexts.length - 1].fest; return r; });
+  log('fmarket:', JSON.stringify(fm));
+  if (!fm.place || !/→  market/.test(fm.plain) || !/→  wmarket/.test(fm.win) || fm.kept !== 'winter' || fm.cleared !== null) throw new Error('fmarket / Winter Market music check failed: ' + JSON.stringify(fm));
+
   // offline renders
   log('defaults', JSON.stringify(await p.evaluate(() => { const v = window.PawAudio.getVolumes(); return v; })));
   const renders = [
@@ -94,6 +100,7 @@ const log = (...a) => console.log('[audio]', ...a);
     { file: 'paw_garden_summer_day.wav', seconds: 16, segments: [{ at: 0, ctx: { place: 'garden', time: 'day', weather: 'sunny', _month: 6 } }], stingers: [{ at: 5, name: 'harvest' }, { at: 10, name: 'discover' }] },
     { file: null, label: 'garden rain dusk', seconds: 12, segments: [{ at: 0, ctx: { place: 'garden', time: 'dusk', weather: 'rain' } }] },
     { file: 'paw_kitchen_night_rain.wav', seconds: 16, segments: [{ at: 0, ctx: { place: 'kitchen', time: 'night', weather: 'rain' } }], stingers: [{ at: 8, name: 'cooked' }] },
+    { file: null, label: 'Winter Market (fmarket, fest winter) dusk snow', seconds: 12, segments: [{ at: 0, ctx: { place: 'fmarket', time: 'dusk', weather: 'snow', fest: 'winter' } }] },
     { file: null, label: 'park hangout day', seconds: 12, segments: [{ at: 0, ctx: { place: 'park', time: 'day', weather: 'sunny' } }] },
     { file: null, label: 'ambience only: river rain dawn', seconds: 12, vols: { master: 0.8, music: 0, ambience: 0.25 }, segments: [{ at: 0, ctx: { place: 'walk', area: 'river', time: 'dawn', weather: 'rain' } }] }
   ];

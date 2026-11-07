@@ -9,18 +9,19 @@
   var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
 
   /* ---------------- shared names (V12 contract) ---------------- */
-  var PLACES = ['title', 'yard', 'house', 'garden', 'kitchen', 'park', 'river', 'woods', 'beach', 'shelter', 'market', 'shop', 'map', 'walk', 'fetch', 'toy', 'bath', 'sleep', 'journal', 'wardrobe',
+  var PLACES = ['title', 'yard', 'house', 'garden', 'kitchen', 'park', 'river', 'woods', 'beach', 'shelter', 'market', 'fmarket', 'shop', 'map', 'walk', 'fetch', 'toy', 'bath', 'sleep', 'journal', 'wardrobe',
     'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier',   // v1.6 town places
     'nursery'];   // v2 puppy nursery: soft lullaby variant of the home music
   var HANGOUTS = { park: 1, river: 1, woods: 1, beach: 1, hilltop: 1, pier: 1 };   // v1.2.1 hub places: yard-style music + that area's ambience
   var TIMES = ['dawn', 'day', 'dusk', 'night'];
   var WEATHERS = ['sunny', 'cloudy', 'rain', 'snow'];
+  var FESTS = ['winter'];   // festival variants of a place (ctx.fest): 'winter' = the Winter Market at 'fmarket'
   var AREAS = ['park', 'river', 'woods', 'beach', 'town', 'hilltop', 'pier'];
   var STINGERS = ['treasure', 'levelup', 'adopt', 'harvest', 'cooked', 'discover'];
   var STINGS = ['birth', 'sparkle', 'playdate'];   // v2 sfx-bus stings (PawAudio.sting)
   var INDOOR = { nursery: 1, house: 1, kitchen: 1, cafe: 1, vet: 1, salon: 1, shelter: 1, shop: 1, bath: 1, sleep: 1, journal: 1, wardrobe: 1 };
   var LAYERS = ['keys', 'pad', 'bass', 'kick', 'snare', 'hats', 'top', 'crackle'];
-  var AMBS = ['rain', 'wind', 'birds', 'crickets', 'river', 'waves', 'market', 'window', 'bees', 'leaves', 'simmer', 'clock', 'gulls', 'cafe', 'salon', 'vet'];
+  var AMBS = ['rain', 'wind', 'birds', 'crickets', 'river', 'waves', 'market', 'window', 'bees', 'leaves', 'simmer', 'clock', 'gulls', 'cafe', 'salon', 'vet', 'snowmkt'];
   var INSIDE_AMB = { window: 1, simmer: 1, clock: 1, cafe: 1, salon: 1, vet: 1 };   // sounds inside the room: they skip the indoor muffle
   var AMB_CONT = { rain: 1, wind: 1, river: 1, waves: 1, market: 1, simmer: 1, salon: 1, vet: 1 };   // ambiences with a continuous noise bed
 
@@ -67,6 +68,7 @@
     mellow: ['Dm9', 'Gm9', 'Bbmaj9', 'C9sus', 'Dm9', 'Am9', 'Bbmaj9', 'A7b13'],
     glassy: ['F69', 'Bbmaj9', 'F69', 'Gm9', 'F69', 'Bbmaj9', 'Am9', 'C9sus'],
     lullaby: ['Fmaj9', 'Dm9', 'Bbmaj9', 'C9sus', 'Fmaj9', 'Am9', 'Bbmaj9', 'C13'],
+    winter: ['Fmaj9', 'Bbmaj9', 'Am9', 'Dm9', 'Gm9', 'C9sus', 'F69', 'C13'],   // Winter Market: warm, a little wistful
     jazz: ['Gm9', 'C13', 'Fmaj9', 'Dm9', 'Gm9', 'C13', 'Am9', 'A7b13']   // ii-V-I cafe changes
   };
   var PENTA = [0, 2, 4, 7, 9];   // F pentatonic offsets from F
@@ -102,7 +104,7 @@
     [[0, 2, 1], [2, 3, 1], [3, 4, 1], [6, 2, 1], [8, 0, 1], [10, 2, 1], [11, 3, 1], [16, 4, 1], [17, 5, 1], [18, 7, 2]],
     [[0, 4, 1], [1, 3, 1], [2, 2, 1], [3, 1, 1], [4, 0, 2], [10, 2, 1], [12, 4, 2]]
   ];
-  var TOP_OCT = { kalimba: 0, flute: 0, bubble: 0, box: 5, glock: 5, bird: 10 };
+  var TOP_OCT = { celesta: 5, kalimba: 0, flute: 0, bubble: 0, box: 5, glock: 5, bird: 10 };
 
   /* ---------------- rhythm patterns (16 steps) ---------------- */
   var KEYS = {
@@ -124,7 +126,8 @@
   var HATS = {
     std: [[0, 0.8], [2, 0.5], [4, 0.7], [6, 0.5], [8, 0.8], [10, 0.5], [12, 0.7], [14, 0.5]],
     busy: [[0, 0.8], [2, 0.5], [3, 0.3], [4, 0.7], [6, 0.5], [7, 0.35], [8, 0.8], [10, 0.5], [11, 0.3], [12, 0.7], [14, 0.55, 1], [15, 0.4]],
-    light: [[2, 0.6], [6, 0.5], [10, 0.6], [14, 0.5]]
+    light: [[2, 0.6], [6, 0.5], [10, 0.6], [14, 0.5]],
+    sleigh: [[0, 0.45], [2, 0.75], [4, 0.45], [6, 0.8], [8, 0.45], [10, 0.75], [12, 0.45], [14, 0.85], [15, 0.4]]
   };
 
   /* ---------------- variants ---------------- */
@@ -154,6 +157,8 @@
     pier: V({ bpm: 74, swing: 0.58, prog: 'warm', keys: 'sustain', bass: 'sparse', kick: 'lazy', hats: 'light', dens: 0.4, cut: 5500, L: { pad: 0.3, kick: 0.5, snare: 0.4, hats: 0.35 } }),
     home: V({ bpm: 76, prog: 'gentle', kick: 'lazy', hats: 'light', dens: 0.4, cut: 5500, L: { kick: 0.6, snare: 0.5, hats: 0.45, pad: 0.2 } }),
     market: V({ bpm: 84, swing: 0.58, prog: 'bright2', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', top: 'glock', dens: 0.6, cut: 8000 }),
+    wmarket: V({ bpm: 76, swing: 0.6, prog: 'winter', keys: 'comp', bass: 'full', kick: 'lazy', snare: 'ghost', hats: 'sleigh', top: 'celesta', dens: 0.55,
+      themeChance: 0.35, themeGap: 12, cut: 6200, brush: true, L: { keys: 0.85, pad: 0.4, bass: 0.8, kick: 0.6, snare: 0.45, hats: 0.75, top: 0.95 } }),
     walk: V({ bpm: 82, prog: 'playful', bass: 'walk', hats: 'busy', top: 'flute', dens: 0.5, cut: 7000 }),
     play: V({ bpm: 86, swing: 0.66, prog: 'playful', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', dens: 0.7, cut: 8000 }),
     bath: V({ bpm: 78, keys: 'bouncy', bass: 'bouncy', kick: 'lazy', hats: 'light', top: 'bubble', dens: 0.85, themeChance: 0.2, cut: 6500, L: { kick: 0.5, snare: 0.4, hats: 0.45, top: 0.9 } }),
@@ -163,10 +168,10 @@
       L: { keys: 0.85, pad: 0.35, bass: 0.6, kick: 0.35, snare: 0.35, hats: 0.25, top: 0.7 } })
   };
   var PLACE_BASE = { title: 'theme', yard: 'yard', house: 'house', garden: 'garden', kitchen: 'kitchen', park: 'yard', river: 'yard', woods: 'yard', beach: 'yard',
-    square: 'square', cafe: 'cafe', dogpark: 'dogpark', vet: 'vet', salon: 'salon', hilltop: 'hill', pier: 'pier', map: 'yard', shelter: 'home', market: 'market', shop: 'market', walk: 'walk',
+    square: 'square', cafe: 'cafe', dogpark: 'dogpark', vet: 'vet', salon: 'salon', hilltop: 'hill', pier: 'pier', map: 'yard', shelter: 'home', market: 'market', fmarket: 'market', shop: 'market', walk: 'walk',
     fetch: 'play', nursery: 'nursery', toy: 'play', bath: 'bath', sleep: 'sleep', journal: 'calm', wardrobe: 'calm' };
-  var KEEP_PROG = { nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
-  var STRONG = { market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
+  var KEEP_PROG = { wmarket: 1, nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
+  var STRONG = { wmarket: 1, market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
 
   function norm(c) {
     c = c || {};
@@ -175,14 +180,16 @@
       place: place,
       area: place === 'walk' ? (AREAS.indexOf(c.area) >= 0 ? c.area : 'park') : (HANGOUTS[place] ? place : null),
       time: TIMES.indexOf(c.time) >= 0 ? c.time : 'day',
-      weather: WEATHERS.indexOf(c.weather) >= 0 ? c.weather : 'sunny'
+      weather: WEATHERS.indexOf(c.weather) >= 0 ? c.weather : 'sunny',
+      fest: FESTS.indexOf(c.fest) >= 0 ? c.fest : null
     };
   }
   function scaleL(L, m) { for (var k in m) L[k] = (L[k] || 0) * m[k]; }
 
   function resolve(c0) {
     var c = norm(c0), place = c.place, time = c.time, weather = c.weather, area = c.area;
-    var bn = PLACE_BASE[place] || 'yard', v = copy(BASE[bn]), L = v.L, indoor = !!INDOOR[place];
+    var bn = PLACE_BASE[place] || 'yard'; if (place === 'fmarket' && c.fest === 'winter') bn = 'wmarket';
+    var v = copy(BASE[bn]), L = v.L, indoor = !!INDOOR[place];
     var tags = [bn];
     if (place === 'map') { v.themeChance = 0.45; v.themeGap = 8; }
     if (HANGOUTS[place]) {
@@ -237,9 +244,9 @@
         if (v.top === 'bird') v.top = 'flute';
         tags.push('rain: mellow, muted drums');
       } else if (weather === 'snow') {
-        v.top = 'glock'; v.dens *= 0.75; v.brush = true; v.cut *= 0.9;
-        scaleL(L, { kick: 0.45, hats: 0.4 });
-        if (v.keys === 'comp') v.keys = 'sustain';
+        if (bn !== 'wmarket') v.top = 'glock'; v.dens *= bn === 'wmarket' ? 0.9 : 0.75; v.brush = true; v.cut *= 0.9;
+        scaleL(L, bn === 'wmarket' ? { kick: 0.8, hats: 0.85 } : { kick: 0.45, hats: 0.4 });
+        if (v.keys === 'comp' && bn !== 'wmarket') v.keys = 'sustain';
         if (!KEEP_PROG[bn] && time !== 'night') v.prog = 'glassy';
         tags.push('snow: glassy bells, sparse');
       }
@@ -248,7 +255,7 @@
     v.swing = clamp(v.swing, 0.5, 0.7);
 
     // ambience
-    var a = { rain: 0, wind: 0, birds: 0, crickets: 0, river: 0, waves: 0, market: 0, window: 0, bees: 0, leaves: 0, simmer: 0, clock: 0, gulls: 0, cafe: 0, salon: 0, vet: 0 }, birdRate = 0.35;
+    var a = { rain: 0, wind: 0, birds: 0, crickets: 0, river: 0, waves: 0, market: 0, window: 0, bees: 0, leaves: 0, simmer: 0, clock: 0, gulls: 0, cafe: 0, salon: 0, vet: 0, snowmkt: 0 }, birdRate = 0.35;
     if (weather === 'rain') a.rain = 1;
     if (weather === 'snow') a.wind = 0.55;
     if (weather === 'cloudy') a.wind = 0.2;
@@ -257,7 +264,8 @@
       a.birds = { dawn: 1, day: 0.55, dusk: 0.3 }[time] * (weather === 'cloudy' ? 0.7 : 1);
       if (time === 'dawn') birdRate = 0.6;
     }
-    if (place === 'market') a.market = 1;
+    if (place === 'market' || place === 'fmarket') a.market = 1;
+    if (bn === 'wmarket') { a.market = 0.7; a.snowmkt = 0.8; a.wind = Math.min(a.wind, 0.3); }
     if (place === 'shop') a.market = 0.55;
     if (place === 'walk' || HANGOUTS[place]) {
       if (area === 'park') a.birds *= 1.3;
@@ -534,6 +542,28 @@
       if (!first) { first = o; (function (gg) { o.onended = function () { gg.disconnect(); }; })(g); }
     }
   };
+  EP.celesta = function (dest, t, m, dur, vel) {
+    if (!this.alloc(t, 2, 3, 0)) return;
+    var ac = this.ac, f = mtof(m), pk = 0.075 * vel * clamp(1.2 - (m - 77) / 36, 0.6, 1.2);
+    var parts = [[1, 1, 0.55], [2, 0.3, 0.12], [4.01, 0.06, 0.05]];
+    for (var i = 0; i < parts.length; i++) {
+      var o = this.O('sine', f * parts[i][0]), g = ac.createGain();
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk * parts[i][1], t + 0.003); g.gain.setTargetAtTime(0, t + 0.004, parts[i][2]);
+      o.connect(g); g.connect(dest); o.start(t); o.stop(t + (i ? 0.8 : 2.2));
+      (function (gg) { o.onended = function () { gg.disconnect(); }; })(g);
+    }
+  };
+  EP.sleigh = function (t, vel) {   // a few tiny jingles a few ms apart + a breath of shaken noise, all soft
+    if (!this.alloc(t, 0.15, 2, 0)) return;
+    var ac = this.ac, dest = this.L.hats.in, n = 2 + ((Math.random() * 3) | 0);
+    for (var i = 0; i < n; i++) {
+      var tt = t + i * rnd(0.004, 0.011), o = this.O('sine', pick([4180, 4650, 5230, 5870, 6410]) * rnd(0.985, 1.015)), g = ac.createGain();
+      g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(0.034 * vel, tt + 0.001); g.gain.setTargetAtTime(0, tt + 0.002, rnd(0.025, 0.05));
+      o.connect(g); g.connect(dest); o.start(tt); o.stop(tt + 0.25);
+      (function (gg) { o.onended = function () { gg.disconnect(); }; })(g);
+    }
+    this.noiseHit(dest, t, 0.006, 0.05 * vel, 0.03, 0.14);
+  };
   EP.flute = function (dest, t, m, dur, vel) {
     if (!this.alloc(t, dur + 0.3, 3, 0)) return;
     var ac = this.ac, f = mtof(m), o = this.O('sine', f), o2 = this.O('triangle', f), g = ac.createGain(), g2 = ac.createGain();
@@ -568,7 +598,8 @@
     o.onended = function () { g.disconnect(); };
   };
   EP.topNote = function (instr, dest, t, m, dur, vel) {
-    if (instr === 'glock') this.glock(dest, t, m, dur, vel, false);
+    if (instr === 'celesta') this.celesta(dest, t, m, dur, vel);
+    else if (instr === 'glock') this.glock(dest, t, m, dur, vel, false);
     else if (instr === 'box') this.glock(dest, t, m, dur, vel * 0.9, true);
     else if (instr === 'flute') this.flute(dest, t, m, dur, vel);
     else if (instr === 'bird') this.bird(dest, t, m, dur, vel);
@@ -772,6 +803,15 @@
       s.start(tt, Math.random() * 1.5); s.stop(tt + 0.06); o.start(tt); o.stop(tt + 0.1);
     }
   };
+  EP.crunch = function (t) {
+    var n = 2 + ((Math.random() * 4) | 0), d = this.evDest('snowmkt'), gap = rnd(0.42, 0.6);
+    for (var i = 0; i < n; i++) {
+      if (!this.alloc(t + i * gap, 0.2, 1, -1)) return;
+      var s = this.ac.createBufferSource(), lp = this.F('bandpass', rnd(900, 1500), 0.8), g = this.ac.createGain(), tt = t + i * gap;
+      s.buffer = this.white; g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(rnd(0.05, 0.09), tt + 0.02); g.gain.setTargetAtTime(0, tt + 0.05, 0.04);
+      s.connect(lp); lp.connect(g); g.connect(d); s.start(tt, Math.random() * 1.5); s.stop(tt + 0.25);
+    }
+  };
   EP.ambEvents = function (t, dt) {
     var a = this.ambT, self = this;
     function times(rate, fn) { var x = rate * dt, n = Math.floor(x) + (chance(x - Math.floor(x)) ? 1 : 0); for (var i = 0; i < n; i++) fn.call(self, t + Math.random() * dt); }
@@ -794,8 +834,9 @@
       times(0.3, this.snip); times(1.4, function (tt) { this.murmur(tt, 'salon', 0.8); });   // scissors + soft chatter
     }
     if (a.vet > 0) { times(0.05, this.bell); times(0.22, this.rustle); }
+    if (a.snowmkt > 0) times(0.35, this.crunch);
     if (a.market > 0) {
-      times(5.5, this.murmur);
+      times(this.v && this.v.base === 'wmarket' ? 3.5 : 5.5, this.murmur);
       times(0.035, function (tt) { this.glock(this.evDest('market'), tt, pick([77, 81, 84]), 0.5, 0.35, true); });
     }
   };
@@ -901,7 +942,7 @@
     }
     if (E.on('kick', t)) { p = KICK[P.kick] || KICK.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) E.kick(t, p[i][1] * rnd(0.9, 1)); }
     if (E.on('snare', t)) { p = SNARE[P.snare] || SNARE.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) E.snare(t + hum(), p[i][1] * rnd(0.85, 1), E.brush); }
-    if (E.on('hats', t)) { p = HATS[P.hats] || HATS.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) E.hat(t + hum(), p[i][1] * rnd(0.75, 1), !!p[i][2] && chance(0.4)); }
+    if (E.on('hats', t)) { p = HATS[P.hats] || HATS.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) { if (P.hats === 'sleigh') E.sleigh(t + hum(), p[i][1] * rnd(0.75, 1)); else E.hat(t + hum(), p[i][1] * rnd(0.75, 1), !!p[i][2] && chance(0.4)); } }
     var q = E.topQ[step];
     if (q) {
       delete E.topQ[step];
@@ -1602,11 +1643,12 @@
   };
   PA.setContext = function (o) {
     o = o || {};
-    var n = { place: cur.place, area: cur.area, time: cur.time, weather: cur.weather };
-    ['place', 'area', 'time', 'weather'].forEach(function (k) { if (k in o && o[k] !== undefined) n[k] = o[k] == null ? null : String(o[k]).toLowerCase(); });
+    var n = { place: cur.place, area: cur.area, time: cur.time, weather: cur.weather, fest: cur.fest };
+    ['place', 'area', 'time', 'weather', 'fest'].forEach(function (k) { if (k in o && o[k] !== undefined) n[k] = o[k] == null ? null : String(o[k]).toLowerCase(); });
     if ('place' in o && !('area' in o) && n.place !== 'walk') n.area = null;
+    if ('place' in o && !('fest' in o)) n.fest = null;
     cur = norm(n);
-    PA.contexts.push({ place: cur.place, area: cur.area, time: cur.time, weather: cur.weather });
+    PA.contexts.push({ place: cur.place, area: cur.area, time: cur.time, weather: cur.weather, fest: cur.fest });
     if (PA.contexts.length > 40) PA.contexts.shift();
     if (!eng) return;
     clearTimeout(deb);
