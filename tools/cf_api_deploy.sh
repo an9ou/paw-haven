@@ -28,6 +28,22 @@ echo "D1 $DBNAME: $DBID"
 SQL=$(py "import json,re; s=open('cloudflare/schema.sql').read(); print(json.dumps({'sql': re.sub(r'--[^\n]*', '', s)}))")
 curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' -d "$SQL" | ok
 echo "schema applied"
+# 2b. added columns: SQLite has no "add column if not exists", so each is added only when it is missing (safe to repeat).
+#     Additive only: never drop or rename. users.official (v2.22.3): the official Friends account, set by hand in D1 only.
+addcol() { # table column definition
+  local n
+  n=$(curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' \
+      -d "{\"sql\":\"select count(*) as n from pragma_table_info('$1') where name = '$2'\"}" \
+    | py "import json,sys; d=json.load(sys.stdin); assert d.get('success'), d.get('errors'); print(d['result'][0]['results'][0]['n'])")
+  if [ "$n" = "0" ]; then
+    curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' \
+      -d "{\"sql\":\"alter table $1 add column $2 $3\"}" | ok
+    echo "added $1.$2"
+  else
+    echo "$1.$2 is there"
+  fi
+}
+addcol users official 'integer not null default 0'
 
 # 3. the Worker, bound to D1 (no plain vars since v2.9.1: Supabase is gone)
 META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'}]}))")

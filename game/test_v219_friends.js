@@ -21,7 +21,9 @@ function mockInit() {
     book: {
       'DOG-4K7PM': { fid: fid('sunnybiscuit'), name: [0, 0], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }] },
       'DOG-7HJKN': { fid: fid('happyclover'), name: [1, 6], dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 }] },
-      'DOG-9QRST': { fid: fid('cozyfern'), name: [2, 11], dogs: [{ b: 3, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }] }
+      'DOG-9QRST': { fid: fid('cozyfern'), name: [2, 11], dogs: [{ b: 3, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }] },
+      // v2.22.3: the game's official yard (users.official in D1): no cap on its side, and it does not count toward my 50
+      'DOG-K3APZ': { fid: fid('officialyard'), name: [0, 0], dogs: [{ b: 1, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 1 }], official: true }
     },
     // part 3: the friends' yard snapshots (V219.md 2). Happy Clover has none yet
     yardOf: {
@@ -64,11 +66,11 @@ function mockInit() {
         const code = norm(body.code);
         if (!code) return send(404, { error: 'not_found' });
         if (srv.me && code === srv.me.code) return send(400, { error: 'self' });
-        if (srv.forceFull || srv.friends.length >= 50) return send(400, { error: 'full' });
         const who = srv.book[code];
+        if (srv.forceFull || (!(who && who.official) && srv.friends.filter((f) => !f.official).length >= 50)) return send(400, { error: 'full' }); // as the Worker: official friends don't count
         if (!who) return send(404, { error: 'not_found' });
         if (srv.friends.some((f) => f.fid === who.fid)) return send(409, { error: 'already' });
-        srv.friends.push({ fid: who.fid, name: who.name.slice(), dogs: srv.yardOf[who.fid] ? srv.yardOf[who.fid].dogs : [], seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } }); // as the Worker: the snapshot's dogs, [] with none
+        srv.friends.push(Object.assign({ fid: who.fid, name: who.name.slice(), dogs: srv.yardOf[who.fid] ? srv.yardOf[who.fid].dogs : [], seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } }, who.official ? { official: true } : {})); // as the Worker: the snapshot's dogs, [] with none
         return send(200, { ok: true });
       }
       if (method === 'POST' && path === '/friends/remove') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
@@ -197,6 +199,7 @@ run('v219_friends', async (t) => {
   if (process.env.FR_ONLY === 'poster') { await posterPart(t); return; }
   if (process.env.FR_ONLY === 'walk') { await walkPart(t); return; } // FR_ONLY=walk: part 5 alone (a quicker loop while working on it)
   if (process.env.FR_ONLY === 'greet') { await greetPart(t); return; } // FR_ONLY=greet: part 3b alone
+  if (process.env.FR_ONLY === 'official') { await officialPart(t); return; } // FR_ONLY=official: the official account alone (v2.22.3)
   const workerLim = limM ? limM[1].replace(/\s/g, '') : '';
 
   sec('1. lists match the Worker, and the gift order is the contract');
@@ -827,8 +830,58 @@ run('v219_friends', async (t) => {
   ok(await ev(() => window.__paw.mbCollect(['fr_gift_61', 'fr_gift_62', 'fr_gift_63']) === '' && window.__paw.S.mail.filter((m) => /^fr_gift_6[123]$/.test(m.id)).every((m) => m.gift.claimed)), 'collecting again gives nothing');
   await t.ctx.close();
 
+  await officialPart(t);
   await walkPart(t);
 }, { timeout: 420000 }); // fix batch: ~250 s now (Remove's undo window, the visit pan); the runner allows 600
+
+/* ---------------- v2.22.3: the official Friends account (V219.md "Official accounts") ---------------- */
+async function officialPart(t) {
+  const { ok, sec, ev } = t;
+  sec('22b. the official account: added past 50 normal friends, a crayon star and "Official" on its row only, the cap unchanged, remove works');
+  await start(t);
+  await befriend(t, ['DOG-4K7PM']);
+  // 49 more normal friends: 50 in all
+  await ev(() => { const S = window.__frSrv; for (let i = 0; i < 49; i++) S.friends.push({ fid: ('filler' + i + 'xxxxxxxxxxxxxxxxxxxxxx').slice(0, 22), name: [i % 10, (i * 3) % 10], dogs: [], seen: 'older', sent: { pet: false, note: false, gift: false, walk: false } }); });
+  await ev(() => window.__paw.fr.open());
+  await t.until(() => document.querySelectorAll('.fr-row').length === 50, null, 8000);
+  await ev(() => { window.__toasts.length = 0; '9QRST'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  await t.p.click('#frAdd');
+  ok(await t.waitToast(/50 friends/, 4000), 'official: a 51st normal friend is still full');
+  await ev(() => { window.__toasts.length = 0; 'K3APZ'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  await t.p.click('#frAdd');
+  ok(await t.waitToast(/is your friend now/, 5000), 'official: with 50 friends, the official account can still be added');
+  ok(await t.until(() => document.querySelectorAll('.fr-row').length === 51, null, 6000), 'official: 51 rows on the list');
+  const mark = await ev(() => {
+    const rows = [...document.querySelectorAll('.fr-row')], off = rows.filter((r) => r.querySelector('.fr-ofc'));
+    const r = off[0], m = r && r.querySelector('.fr-ofc'), b = m && m.getBoundingClientRect(), nb = r && r.querySelector('.fr-nm').getBoundingClientRect();
+    return { n: off.length, fid: r && r.dataset.fid, txt: m && m.textContent, star: !!(m && m.querySelector('svg path[fill]')), inName: !!(b && nb && b.left >= nb.left - 1 && b.right <= nb.right + 1), cls: !!(r && r.classList.contains('fr-isofc')) };
+  });
+  ok(mark.n === 1 && mark.fid === 'officialyardxxxxxxxxxx' && mark.txt === 'Official' && mark.star && mark.inName && mark.cls, 'official: only the official row has the crayon star and "Official", inside the name: ' + JSON.stringify(mark));
+  await ev(() => { document.getElementById('toasts').innerHTML = ''; document.querySelector('.fr-isofc').scrollIntoView({ block: 'center' }); });
+  await shot(t, 'official_row_1280');
+  ok(await ev(() => (window.__paw.S.fr.cache.friends.find((f) => f.fid === 'officialyardxxxxxxxxxx') || {}).official === true), 'official: the cached list keeps official: true');
+  await ev(() => { window.__toasts.length = 0; '9QRST'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  await t.p.click('#frAdd');
+  ok(await t.waitToast(/50 friends/, 4000), 'official: the official friend does not free a normal slot either (still 50 normal: full)');
+  // remove the official friend like any other
+  await t.p.click('.fr-isofc [data-fr="more"]');
+  await t.p.click('[data-fr="remove"]');
+  ok(await t.until(() => !document.querySelector('.fr-ofc'), null, 4000), 'official: Remove takes the official row off the list');
+  ok(await t.until(() => !window.__frSrv.friends.some((f) => f.official), null, 7000), 'official: and the remove reaches the Worker');
+  // a phone: the row with the mark fits
+  await t.ctx.close();
+  for (const [w, h, tag] of [[360, 740, '360']]) {
+    await start(t, { vw: w, vh: h });
+    await t.until(() => document.documentElement.dataset.layout === 'phone', null, 4000);
+    await befriend(t, ['DOG-K3APZ', 'DOG-4K7PM']);
+    ok(await t.until(() => !!document.querySelector('.fr-ofc'), null, 4000), tag + ': the official mark shows on a phone');
+    const lay = await layout(t);
+    ok(!lay.side && !lay.bad.length, tag + ' official row fits: ' + JSON.stringify(lay));
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; document.querySelector('.fr-isofc').scrollIntoView({ block: 'center' }); });
+    await shot(t, 'official_row_' + tag);
+    await t.ctx.close();
+  }
+}
 
 /* ---------------- part 5: walk together (V219.md section 6) ---------------- */
 async function walkPart(t) {

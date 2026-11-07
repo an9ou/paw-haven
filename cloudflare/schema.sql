@@ -10,8 +10,11 @@ create table if not exists users (
   pw_salt    text,                     -- 16 random bytes, hex
   created_at integer not null,         -- ms
   guest      integer not null default 0,
-  migrated   integer not null default 0 -- 1: moved over from Supabase (v2.8.1-v2.9; unused since v2.9.1)
+  migrated   integer not null default 0, -- 1: moved over from Supabase (v2.8.1-v2.9; unused since v2.9.1)
+  official   integer not null default 0  -- v2.22.3: 1 = the game's official Friends account (no friend cap). Set by hand in D1 only.
 );
+-- An older database gets "official" from tools/cf_api_deploy.sh (ALTER TABLE only when the column is missing: SQLite has no
+-- "add column if not exists", so it cannot live in this file).
 
 -- Logins. Only the SHA-256 of the 32-byte bearer token is kept.
 create table if not exists sessions (

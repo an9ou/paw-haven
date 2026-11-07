@@ -645,6 +645,75 @@ async function checks(label, call, sql, mail) {
     res = await frCall('POST', '/friends/add', { code: pCapD.code }, capA.token, { 'CF-Connecting-IP': '10.19.27.7' });
     ok(res.status === 400 && res.json.error === 'full', 'I answer full once I have 50, whoever the other side is');
 
+    // v2.22.3 official accounts (users.official = 1, set by hand in D1): no cap on their side, they don't count toward anyone's 50,
+    // and their own list is their newest 50.
+    {
+      const filler = async (pre, owner, n, t0) => {
+        for (let i = 0; i < n; i++) {
+          const id = pre + i;
+          await sql('insert into users (id, email, created_at, guest) values (?, null, ?, 1)', id, Date.now(), true);
+          await sql('insert into friend_ids (user_id, fid, code, name_a, name_b, created_at, code_at, seen_at) values (?, ?, ?, 0, 0, 1, 1, 0)', id, (pre + i + '_').padEnd(22, 'x').slice(0, 22), 'F' + pre + i, true);
+          await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', owner, id, (t0 || 1) + i, true);
+          await sql('insert into friends (user_id, friend_id, created_at) values (?, ?, ?)', id, owner, (t0 || 1) + i, true);
+        }
+      };
+      const ofc = await user('10.19.33.1'), pOfc = await profile(ofc, [7, 7]);
+      await sql('update users set official = 1 where id = ?', ofc.user.id, true);
+      await filler('of-o-', ofc.user.id, 55, 1000);
+      // a player with 50 normal friends can still add the official account
+      const at50 = await user('10.19.33.2'), pAt50 = await profile(at50, [7, 8]);
+      await filler('of-a-', at50.user.id, 50, 1000);
+      res = await frCall('POST', '/friends/add', { code: pOfc.code }, at50.token, { 'CF-Connecting-IP': '10.19.33.20' });
+      ok(res.status === 200 && res.json.ok === true, 'official: a player with 50 friends can add the official account');
+      ok((await nOf('select count(*) as n from friends where user_id = ?', ofc.user.id)) === 56, 'official: the official account goes past 50 (56 rows)');
+      ok((await nOf('select count(*) as n from friends where user_id = ? and friend_id = ?', ofc.user.id, at50.user.id)) === 1, 'official: both rows are written');
+      // a player at 49 normal friends: official, then one more normal, then full
+      const at49 = await user('10.19.33.3'), pAt49 = await profile(at49, [7, 9]);
+      await filler('of-b-', at49.user.id, 49, 1000);
+      const n1 = await user('10.19.33.4'), pN1 = await profile(n1, [7, 10]);
+      const n2 = await user('10.19.33.5'), pN2 = await profile(n2, [7, 11]);
+      ok((await frCall('POST', '/friends/add', { code: pOfc.code }, at49.token, { 'CF-Connecting-IP': '10.19.33.21' })).json.ok === true, 'official: 49 normal friends, adding official is fine');
+      ok((await frCall('POST', '/friends/add', { code: pN1.code }, at49.token, { 'CF-Connecting-IP': '10.19.33.21' })).json.ok === true, 'official: the official friend does not count, so a 50th normal friend still fits');
+      res = await frCall('POST', '/friends/add', { code: pN2.code }, at49.token, { 'CF-Connecting-IP': '10.19.33.21' });
+      ok(res.status === 400 && res.json.error === 'full', 'official: the normal cap is unchanged (51st normal friend: full)');
+      res = await frCall('POST', '/friends/add', { code: pAt49.code }, n2.token, { 'CF-Connecting-IP': '10.19.33.22' });
+      ok(res.status === 400 && res.json.error === 'full', 'official: adding a player who has 50 normal friends plus official is still full');
+      // the official account adding a player who has 50 normal friends: no cap on either side
+      const at50b = await user('10.19.33.6'), pAt50b = await profile(at50b, [7, 12]);
+      await filler('of-c-', at50b.user.id, 50, 1000);
+      ok((await frCall('POST', '/friends/add', { code: pAt50b.code }, ofc.token, { 'CF-Connecting-IP': '10.19.33.23' })).json.ok === true, 'official: the official account can add a player who has 50 friends');
+      // lists: official sees its newest 50; players see the official row marked, their own rows unmarked
+      res = await frCall('GET', '/friends', null, ofc.token);
+      const offFids = res.json.friends.map((f) => f.fid);
+      ok(res.json.friends.length === 50, 'official: its own list is 50 long (' + res.json.friends.length + ')');
+      ok(offFids.includes(pAt50.fid) && offFids.includes(pAt49.fid) && offFids.includes(pAt50b.fid), 'official: the newest friends are in its list');
+      ok(!offFids.some((f) => /^of-o-[0-7]_/.test(f)) && offFids.includes('of-o-8_'.padEnd(22, 'x')), 'official: the oldest 8 of 58 are left out');
+      ok(!res.json.friends.some((f) => 'official' in f), 'official: no friend of the official account is marked official');
+      res = await frCall('GET', '/friends', null, at50.token);
+      const offRow = res.json.friends.find((f) => f.fid === pOfc.fid);
+      ok(res.json.friends.length === 51 && offRow && offRow.official === true, 'official: a player sees all 51 rows and the official one says official: true');
+      ok(res.json.friends.filter((f) => 'official' in f).length === 1, 'official: normal rows have no official field');
+      ok((await frCall('GET', '/friends', null, capA.token)).json.friends.every((f) => !('official' in f)), 'official: a normal list is as before');
+      // the official yard and sends work like any friend's
+      ok((await frCall('PUT', '/friends/yard', { yard: yard() }, ofc.token)).json.ok === true, 'official: yard save');
+      ok((await frCall('GET', '/friends/yard?fid=' + pOfc.fid, null, at50.token)).json.yard !== null, 'official: a player can visit the official yard');
+      ok((await frCall('POST', '/friends/send', { fid: pOfc.fid, kind: 'pet' }, at50.token)).json.ok === true, 'official: a player can pet the official dogs');
+      // remove and block still work for players
+      ok((await frCall('POST', '/friends/remove', { fid: pOfc.fid }, at50.token)).json.ok === true, 'official: remove answers ok');
+      ok((await nOf('select count(*) as n from friends where (user_id = ? and friend_id = ?) or (user_id = ? and friend_id = ?)', at50.user.id, ofc.user.id, ofc.user.id, at50.user.id)) === 0, 'official: remove deletes both rows');
+      ok((await frCall('POST', '/friends/block', { fid: pOfc.fid }, at49.token)).json.ok === true, 'official: block answers ok');
+      ok((await nOf('select count(*) as n from friends where user_id = ? and friend_id = ?', at49.user.id, ofc.user.id)) === 0, 'official: block removes the friendship');
+      ok((await frCall('POST', '/friends/add', { code: pAt49.code }, ofc.token, { 'CF-Connecting-IP': '10.19.33.23' })).json.error === 'not_found', 'official: a block holds against the official account too');
+      // nothing can set official: no route writes it, and extra fields are ignored or refused
+      ok(!/update\s+users\s+set[^`'"]*official|insert\s+into\s+users\s*\([^)]*official|body\.official/i.test(workerSrc), 'official: no route writes users.official');
+      const gOff = (await call('POST', '/guest', { official: 1 }, null, { 'CF-Connecting-IP': '10.19.33.30' })).json;
+      ok(gOff && gOff.user && (await nOf('select official as n from users where id = ?', gOff.user.id)) === 0, 'official: POST /guest with official: 1 makes a normal guest');
+      res = await frCall('POST', '/friends/me', { name: [1, 1], official: 1 }, gOff.token);
+      ok(res.status === 400 && res.json.error === 'bad', 'official: POST /friends/me refuses an official field');
+      await call('POST', '/register', { email: 'official-try@example.com', password: 'pupper123', official: 1 }, gOff.token, { 'CF-Connecting-IP': '10.19.33.30' });
+      ok((await nOf('select official as n from users where email = ?', 'official-try@example.com')) === 0, 'official: register with official: 1 stays normal');
+    }
+
     // leave deletes my code, both directions, blocks I made, my yard and my events. Blocks against me stay.
     const lA = await user('10.19.28.1'), lB = await user('10.19.28.2'), lC = await user('10.19.28.3'), lD = await user('10.19.28.4'), lE = await user('10.19.28.5');
     const plA = await profile(lA, [2, 8]), plB = await profile(lB, [2, 9]), plD = await profile(lD, [3, 1]);

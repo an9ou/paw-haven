@@ -22,7 +22,7 @@
 //   POST   /paw {id}                 -> { paws, given }   one paw per card per Japan day per account (guests too), never your own, 100 an hour
 //   Friends (v2.19, V219.md sections 1, 2 and 7). A bearer token (guest or email). No free text, and no user id, email or
 //   exact time in any answer. seen is only today / week / older. Errors are { error: 'code' }.
-//   GET  /friends                          -> { me, friends }     120/h
+//   GET  /friends                          -> { me, friends }     120/h   an official account (users.official, D1 only) gets its newest 50
 //   POST /friends/me { name:[a,b] }        -> me                  20/h
 //   POST /friends/code/new                 -> me                  5 per Japan day
 //   POST /friends/add { code }             -> { ok }              10/h per user and 30/h per IP; misses count
@@ -251,7 +251,7 @@ const FR_ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const FR_CODE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/;
 const FR_KINDS = ['pet', 'note', 'gift', 'walk'];
 const FR_SEASONS = ['spring', 'summer', 'autumn', 'winter'];
-const FR_MAX_FRIENDS = 50, FR_YARD_MAX = 16384, FR_DOGS = 5, FR_DECOR_N = 40, FR_KEEP = 30 * 864e5, FR_INBOX = 30;
+const FR_MAX_FRIENDS = 50, FR_OFFICIAL_LIST = 50, FR_YARD_MAX = 16384, FR_DOGS = 5, FR_DECOR_N = 40, FR_KEEP = 30 * 864e5, FR_INBOX = 30;
 // Rate-limit keys. test_worker.js looks these up to check each limit.
 const frKey = {
   list: (id) => 'fr:list:' + id, me: (id) => 'fr:me:' + id, code: (id, day) => 'fr:code:' + id + ':' + day,
@@ -353,6 +353,13 @@ function frWalk(data, dogs) {
 const frMine = (env, uid) => one(env, 'select fid, code, name_a, name_b, seen_at from friend_ids where user_id = ?1', uid);
 const frByFid = (env, fid) => one(env, 'select user_id, fid, code, name_a, name_b from friend_ids where fid = ?1', fid);
 const frByCode = (env, code) => one(env, 'select user_id, fid, name_a, name_b, seen_at from friend_ids where code = ?1', code);
+// v2.22.3 official accounts (V219.md "Official accounts"): users.official = 1, set by hand in D1 only (no route writes it).
+// An official account has no friend cap, a friendship with one does not count toward the other player's 50, and its own
+// GET /friends lists only its newest FR_OFFICIAL_LIST friends.
+const frIsOfficial = async (env, uid) => { const r = await one(env, 'select official from users where id = ?1', uid); return !!(r && r.official); };
+// My friends that count toward the 50: official accounts left out.
+const FR_COUNT_SQL = (p) => `(select count(*) from friends cf left join users cu on cu.id = cf.friend_id where cf.user_id = ${p} and coalesce(cu.official, 0) = 0)`;
+const frCount = async (env, uid) => { const r = await one(env, `select ${FR_COUNT_SQL('?1')} as n`, uid); return r ? r.n | 0 : 0; };
 const frFriends = async (env, a, b) => !!(await one(env, 'select 1 as x from friends where user_id = ?1 and friend_id = ?2', a, b));
 const frBlocked = async (env, a, b) => !!(await one(env, 'select 1 as x from friend_blocks where (user_id = ?1 and blocked_id = ?2) or (user_id = ?2 and blocked_id = ?1)', a, b));
 async function frSnapDogs(env, uid) {
@@ -386,29 +393,36 @@ async function frRotate(env, uid) {
 }
 async function frList(env, uid) {
   const mine = await frMine(env, uid), day = dcDay(Date.now()), now = Date.now();
-  const rows = await all(env, `select f.friend_id as uid, fi.fid as fid, fi.name_a as name_a, fi.name_b as name_b, fi.seen_at as seen_at, y.data as yard
-    from friends f join friend_ids fi on fi.user_id = f.friend_id left join yards y on y.user_id = f.friend_id
-    where f.user_id = ?1 order by f.created_at asc, fi.fid asc`, uid);
+  // An official account can have thousands: it gets its newest FR_OFFICIAL_LIST only (then oldest first, like everyone else's).
+  const cap = (await frIsOfficial(env, uid)) ? ` limit ${FR_OFFICIAL_LIST}` : '';
+  const rows = await all(env, `select * from (select f.friend_id as uid, fi.fid as fid, fi.name_a as name_a, fi.name_b as name_b, fi.seen_at as seen_at, y.data as yard,
+      coalesce(u.official, 0) as official, f.created_at as at
+    from friends f join friend_ids fi on fi.user_id = f.friend_id left join yards y on y.user_id = f.friend_id left join users u on u.id = f.friend_id
+    where f.user_id = ?1 order by f.created_at desc, fi.fid desc${cap}) order by at asc, fid asc`, uid);
   const ev = await all(env, 'select to_id, kind from friend_events where from_id = ?1 and day = ?2', uid, day);
   const sent = new Map();
   for (const e of ev) { if (!sent.has(e.to_id)) sent.set(e.to_id, new Set()); sent.get(e.to_id).add(e.kind); }
   const friends = rows.map((r) => {
     const kinds = sent.get(r.uid) || new Set();
-    return {
+    const f = {
       fid: r.fid, name: [r.name_a | 0, r.name_b | 0], dogs: frDogsOf(r.yard), seen: frSeen(r.seen_at, now),
       sent: { pet: kinds.has('pet'), note: kinds.has('note'), gift: kinds.has('gift'), walk: kinds.has('walk') }
     };
+    if (r.official) f.official = true; // only on an official account's row: everyone else's answer is as before
+    return f;
   });
   return { me: mine ? frPub(mine) : null, friends };
 }
 // Both rows, or neither. The WHERE is the race backstop for the 50 cap, a block and a double add.
+// The cap is off when either side is official (the official side has none, and it does not count for the other side);
+// otherwise each side's non-official friends must be under 50.
 async function frLink(env, a, b) {
   const now = Date.now();
   await env.DB.batch([
     env.DB.prepare(`insert into friends (user_id, friend_id, created_at)
       select ?1, ?2, ?3
-      where (select count(*) from friends where user_id = ?1) < ${FR_MAX_FRIENDS}
-        and (select count(*) from friends where user_id = ?2) < ${FR_MAX_FRIENDS}
+      where (coalesce((select official from users where id = ?1), 0) = 1 or coalesce((select official from users where id = ?2), 0) = 1
+          or (${FR_COUNT_SQL('?1')} < ${FR_MAX_FRIENDS} and ${FR_COUNT_SQL('?2')} < ${FR_MAX_FRIENDS}))
         and not exists (select 1 from friends where user_id = ?1 and friend_id = ?2)
         and not exists (select 1 from friends where user_id = ?2 and friend_id = ?1)
         and not exists (select 1 from friend_blocks where (user_id = ?1 and blocked_id = ?2) or (user_id = ?2 and blocked_id = ?1))`).bind(a, b, now),
@@ -728,9 +742,9 @@ const ROUTES = {
     if (them.user_id === me.id) return fail('self', 400);
     if (await frBlocked(env, me.id, them.user_id)) return fail('not_found', 404); // either direction, and never the word blocked
     if (await frFriends(env, me.id, them.user_id)) return fail('already', 409);
-    const ca = await one(env, 'select count(*) as n from friends where user_id = ?1', me.id);
-    const cb = await one(env, 'select count(*) as n from friends where user_id = ?1', them.user_id);
-    if ((ca && ca.n >= FR_MAX_FRIENDS) || (cb && cb.n >= FR_MAX_FRIENDS)) return fail('full', 400);
+    // The 50 cap counts non-official friends only, and is off when either side is an official account.
+    const capped = !(await frIsOfficial(env, me.id)) && !(await frIsOfficial(env, them.user_id));
+    if (capped && ((await frCount(env, me.id)) >= FR_MAX_FRIENDS || (await frCount(env, them.user_id)) >= FR_MAX_FRIENDS)) return fail('full', 400);
     let linked = false;
     try { linked = await frLink(env, me.id, them.user_id); } catch (e) {
       if (/unique/i.test(String(e && e.message))) return fail('already', 409);

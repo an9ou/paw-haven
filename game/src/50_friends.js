@@ -444,10 +444,16 @@ function frBoxesHTML() {
   const boxes = [0, 1, 2, 3, 4].map((i) => `<input class="fr-ch" id="frCh${i}" data-i="${i}" maxlength="1" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="${esc(tt('fr.letter_n', 'Letter {n}', { n: i + 1 }))}" value="${esc(raw[i] || '')}">`).join('');
   return `<div class="fr-add"><span class="fr-pre" aria-hidden="true">DOG-</span><span class="fr-boxes">${boxes}</span><button class="btn yes" type="button" id="frAdd">${esc(tt('fr.add', 'Add'))}</button></div>`;
 }
+// v2.22.3: the game's official Friends account (the Worker marks its row official: true). A crayon star and a small word under the name.
+// It does not count toward your 50 (the Worker's rule), so the client has no count of its own to keep in step.
+function frStarSVG() {
+  return `<svg viewBox="-13 -13 26 26" aria-hidden="true"><path d="M0 -11.2 L3.1 -3.9 L10.8 -3.4 L4.9 1.6 L6.8 9.4 L0.2 5.1 L-6.6 9.6 L-4.8 1.8 L-10.9 -3.2 L-3.2 -4.1Z" fill="#FFD25E" stroke="${INKG}" stroke-width="1.8" stroke-linejoin="round"/><path d="M-1.2 -5.5 L-2.4 -2.6" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".8"/></svg>`;
+}
+const frOfficialHTML = (f) => (f && f.official === true ? `<span class="fr-ofc">${frStarSVG()}<span>${esc(tt('fr.official', 'Official'))}</span></span>` : '');
 function frRowHTML(f) {
   const name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
   const s = f.sent || {};
-  return `<div class="fr-row" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
+  return `<div class="fr-row${f.official === true ? ' fr-isofc' : ''}" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}${frOfficialHTML(f)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
 }
 function frSheetHTML() {
   v219Fields(S);
