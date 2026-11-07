@@ -118,7 +118,9 @@ function frCardOf(d) {
   const x = dcWireDog(d);
   if (!x || !Number.isInteger(x.b) || x.b < 0) return null;
   if (x.c && x.c.M && x.c.M[0] === 'M' && x.c.M[1] === 'M') return null;
-  return { b: x.b, c: x.c, o: x.o, a: x.a, s: x.s, sp: x.sp ? 1 : 0, n: x.n };
+  const o = { b: x.b, c: x.c, o: x.o, a: x.a, s: x.s, sp: x.sp ? 1 : 0, n: x.n };
+  if (Number.isInteger(x.e)) o.e = x.e; if (Number.isInteger(x.p)) o.p = x.p; // v2.23: its eyes and coat pattern (40_dogcards.js dcLook)
+  return o;
 }
 // the snapshot's dogs in order (the leader first, at most 5): { d: my dog, x: its card dog }. A walk letter's `dog` index points into this list
 function frYardDogs() {

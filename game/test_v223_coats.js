@@ -1,10 +1,13 @@
 // v2.23 "Coat pick" (V223.md, owner 7 Nov 2026): the first dog (and a later starter from the Shelter list) comes home in a colour chosen on its
 // card, with an eye choice for the husky, the Aussie and merle coats. Checks: every breed's options give the coat they name, stay inside the
 // breed's FREQ, never M/M; option 1 is the old STARTER_GENES dog; the meet dog redraws; the pick resets with the dog; Random rolls a valid colour;
-// the chosen coat and eyes survive a reload; a Shelter-list starter keeps its colour; the card fits on desktop (1280x720) and iPhone 13 (390x844).
+// the chosen coat and eyes survive a reload; a Shelter-list starter keeps its colour; the card fits on desktop (1280x720), iPhone 13 (390x844) and
+// a 360x740 phone, and so do the Shelter list's starter cards. Review fixes (7 Nov 2026): no amber-eye b/b stand-ins, every Border Collie coat has the
+// eye choice (Bl only through the starter preset), the arrow keys reset Boy / Girl, and a Dog Card / Friends dog keeps its eyes and coat pattern.
 // COAT_SHOTS=<dir> also writes the card screenshots (lab, border collie with eyes, husky; phone and desktop).
 // node game/run_tests.js v223_coats
-const { run } = require('./test_lib'); const path = require('path'); const fs = require('fs');
+const { run } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path'); const fs = require('fs');
+devices['Phone 360x740'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 740 }, screen: { width: 360, height: 740 } }); // as test_account.js
 const SHOTS = process.env.COAT_SHOTS || null;
 
 run('v223_coats', async (t) => {
@@ -39,7 +42,8 @@ run('v223_coats', async (t) => {
           const p = C.pick(k, i, j);
           if (i === 0 && j === 0) { if (p !== null) out.bad.push(`${k}: option 1 is not the plain starter`); return; }
           if (!p) { out.bad.push(`${k} ${i}/${j}: no pick`); return; }
-          if (p.genes.Bl.includes('Bl') && !f.Bl) out.bad.push(`${k} ${c.coat}: Bl in a breed without it`);
+          if (p.genes.Bl.includes('Bl') && !f.Bl && k !== 'collie') out.bad.push(`${k} ${c.coat}: Bl in a breed without it`); // the collie: Bl only through the starter preset (its FREQ stays 0)
+          if (p.eyes === 'amber' && !(e && C.eyesBy[k]) && !/Chocolate|Liver|Red|Copper|Cinnamon|Fawn and rust/.test(c.coat)) out.bad.push(`${k} ${c.coat}: amber eyes on a coat that is not a liver colour`);
           if (p.genes.M[0] === 'M' && p.genes.M[1] === 'M') out.bad.push(`${k} ${c.coat}: M/M pick`);
           const q = G.phenotype(p.genes, k, p.id);
           if (q.coatName !== c.coat || p.coat !== c.coat) out.bad.push(`${k} ${i}/${j}: pick coat ${p.coat} / ${q.coatName}`);
@@ -58,8 +62,14 @@ run('v223_coats', async (t) => {
   });
   ok(Object.keys(R.counts).length === 40, '40 breeds have colour options: ' + Object.keys(R.counts).length);
   ok(!R.bad.length, 'every option draws the coat it names, keeps to FREQ, no M/M, option 1 = the old starter, eye picks land: ' + R.bad.slice(0, 6).join(' | '));
-  ok(R.counts.lab === 3 && R.counts.collie === 5 && R.counts.husky === 3 && R.counts.westie === 1 && R.counts.dalmatian === 2, 'lab 3, border collie 5, husky 3, westie 1, dalmatian 2: ' + JSON.stringify({ lab: R.counts.lab, collie: R.counts.collie, husky: R.counts.husky }));
-  ok(R.eyes.husky === 3 && R.eyes.aussie === 4 && R.eyes.collie === 2 && !R.eyes.lab, 'eye choices: every husky and Aussie coat, the two collie merles, none for the lab: ' + JSON.stringify(R.eyes));
+  ok(R.counts.lab === 3 && R.counts.collie === 4 && R.counts.husky === 3 && R.counts.westie === 1 && R.counts.dalmatian === 2, 'lab 3, border collie 4 (no tricolour: drawn as black and white), husky 3, westie 1, dalmatian 2: ' + JSON.stringify({ lab: R.counts.lab, collie: R.counts.collie, husky: R.counts.husky }));
+  ok(R.counts.samoyed === 1 && R.counts.bichon === 1 && R.counts.corgi === 2 && R.counts.pug === 3 && R.counts.frenchie === 3 && R.counts.pom === 4 && R.counts.dane === 4 && R.counts.mastiff === 2 && R.counts.corso === 3 && R.counts.pitbull === 4, 'review fix: the b/b stand-ins and the corgi black and white are gone: ' + ['samoyed', 'bichon', 'corgi', 'pug', 'frenchie', 'pom', 'dane', 'mastiff', 'corso', 'pitbull'].map((k) => k + ' ' + R.counts[k]).join(', '));
+  const names = await ev(() => { const C = window.__paw.cp; return ['pug', 'samoyed', 'frenchie', 'pom', 'dane', 'mastiff', 'corso', 'bichon', 'corgi', 'pitbull'].map((k) => k + ':' + C.coats(k).map((c) => c.coat).join('/')).join(' '); });
+  ok(!/pug:[^ ]*Apricot|samoyed:[^ ]*Cream|frenchie:[^ ]*Cream|pom:[^ ]*White|dane:[^ ]*Brindle|mastiff:[^ ]*Apricot|corso:[^ ]*(brindle|Red)|bichon:[^ ]*Cream|corgi:[^ ]*Black and white|pitbull:[^ ]*Brindle/.test(names), 'none of the dropped options is offered: ' + names);
+  ok(R.eyes.husky === 3 && R.eyes.aussie === 4 && R.eyes.collie === 4 && !R.eyes.lab, 'eye choices: every husky, Aussie and Border Collie coat (the owner\'s example), none for the lab: ' + JSON.stringify(R.eyes));
+  const colB = await ev(() => { const G = window.PawGenes, C = window.__paw.cp, out = []; for (let n = 0; n < 300; n++) { const g = G.randomGenotype('collie'); if (g.Bl.includes('Bl')) out.push('random'); } return { f: G.FREQ.collie.Bl, n: out.length, blue: C.pick('collie', 0, 1), odd: C.pick('collie', 1, 2) }; });
+  ok(colB.f === 0 && colB.n === 0, 'random and rescue collies never get Bl (FREQ 0, 300 draws)');
+  ok(colB.blue && colB.blue.eyes === 'blue' && colB.blue.coat === 'Black and white' && colB.odd && colB.odd.eyes === 'odd' && colB.odd.coat === 'Chocolate and white', 'a black and white collie with blue eyes, a chocolate and white one with odd eyes: ' + JSON.stringify([colB.blue && colB.blue.eyes, colB.odd && colB.odd.eyes]));
   const total = Object.values(R.counts).reduce((a, b) => a + b, 0);
   console.log('  per-breed options: ' + Object.entries(R.counts).map(([k, n]) => k + ' ' + n).join(', ') + ' (total ' + total + ')');
 
@@ -71,6 +81,12 @@ run('v223_coats', async (t) => {
   const labels = await ev(() => [...document.querySelectorAll('.adopt-card [data-cp^="c|"]')].map((b) => b.getAttribute('aria-label')));
   ok(labels.join() === 'Yellow,Black,Chocolate', 'the lab comes in Yellow, Black and Chocolate: ' + labels.join(', '));
   ok(await ev(() => !document.querySelector('.adopt-card [data-cp^="e|"]')), 'no eye choice for a lab');
+  for (const [re, k] of [['Yorkshire', 'yorkie'], ['Greyhound', 'greyhound'], ['Border Collie', 'collie']]) { // review fix 5: the swatch is the whole sitting dog, cropped to it, and no two options look the same
+    await pickDog(re); await t.until((kk) => window.__paw.sr.meetKey === kk, k, 4000);
+    const sw = await ev(() => [...document.querySelectorAll('.adopt-card .cp-sw svg')].map((x) => ({ sit: x.classList.contains('pa-pose-sit'), vb: x.getAttribute('viewBox'), crop: x.hasAttribute('data-cpcrop'), h: x.innerHTML.length + ':' + [...x.querySelectorAll('[fill]')].map((n) => n.getAttribute('fill')).join() })));
+    ok(sw.length > 1 && sw.every((x) => x.sit && !x.crop && x.vb && x.vb !== '0 0 240 200' && x.vb === sw[0].vb) && new Set(sw.map((x) => x.h)).size === sw.length, k + ': every swatch is the sitting dog, cropped (' + (sw[0] && sw[0].vb) + '), each option drawn differently');
+  }
+  await pickDog('Labrador'); await t.until(() => window.__paw.sr.meetKey === 'lab', null, 4000); await t.sleep(1600);
   const meet0 = await ev(() => document.querySelector('#adoptDog .sr-meetdog').innerHTML);
   await t.p.click('[data-cp="c|2"]');
   ok(await t.until((m) => { const g = document.querySelector('#adoptDog .sr-meetdog'); return !!g && g.innerHTML !== m; }, meet0, 3000), 'the meet dog redraws in the new colour');
@@ -79,12 +95,16 @@ run('v223_coats', async (t) => {
   ok(await ev(() => /svg/.test(document.querySelector('.heads button[aria-current="true"]').innerHTML)), 'the picked head in the heads row is drawn');
   await t.p.click('#aNext'); let s = await st();
   ok(s.coat === 0 && s.eye === 0 && s.sex === null, 'the next dog starts on its first colour (like Boy / Girl)');
+  await t.p.click('[data-cp="c|1"]').catch(() => {}); await t.p.click('#aGirl'); await t.p.keyboard.press('ArrowRight'); s = await st();
+  ok(s.coat === 0 && s.eye === 0 && s.sex === null, 'the arrow keys reset the colour and Boy / Girl too: ' + JSON.stringify(s));
+  await t.p.click('#aGirl'); await t.p.keyboard.press('ArrowLeft'); s = await st();
+  ok(s.sex === null, 'ArrowLeft resets Boy / Girl');
   // collie: blue merle, odd eyes
   await pickDog('Border Collie'); await t.until(() => window.__paw.sr.meetKey === 'collie', null, 4000);
-  await t.p.click('[data-cp="c|3"]'); ok(await ev(() => document.querySelectorAll('.adopt-card [data-cp^="e|"]').length) === 3, 'a blue merle collie has three eye choices');
+  await t.p.click('[data-cp="c|2"]'); ok(await ev(() => document.querySelectorAll('.adopt-card [data-cp^="e|"]').length) === 3, 'a blue merle collie has three eye choices');
   await t.p.click('[data-cp="e|2"]'); s = await st();
   m = await ev(() => window.__paw.cp.meet());
-  ok(s.coat === 3 && s.eye === 2 && m.id === s.id && await ev((id) => window.PawGenes.phenotype(window.__paw.cp.meet().genes, 'collie', id).eyes, m.id) === 'odd', 'the meet dog is the blue merle with odd eyes');
+  ok(s.coat === 2 && s.eye === 2 && m.id === s.id && await ev((id) => window.PawGenes.phenotype(window.__paw.cp.meet().genes, 'collie', id).eyes, m.id) === 'odd', 'the meet dog is the blue merle with odd eyes');
   // Random: a valid colour every time, and not always the first
   const seen = [];
   for (let i = 0; i < 14; i++) { await t.p.click('#aRandom'); const r = await st(); const n = await ev((k) => window.__paw.cp.coats(k).length, r.key); const ne = await ev((a) => window.__paw.cp.eyes(a[0], a[1]).length, [r.key, r.coat]); seen.push(r); if (!(r.coat >= 0 && r.coat < n && r.eye >= 0 && r.eye < Math.max(1, ne) && r.sex)) { seen.bad = r; break; } }
@@ -94,7 +114,7 @@ run('v223_coats', async (t) => {
 
   sec('3. adopt the blue merle collie with odd eyes; it keeps them after a reload');
   await pickDog('Border Collie'); await t.until(() => window.__paw.sr.meetKey === 'collie', null, 4000);
-  await t.p.click('[data-cp="c|3"]'); await t.p.click('[data-cp="e|2"]'); const pid = (await st()).id;
+  await t.p.click('[data-cp="c|2"]'); await t.p.click('[data-cp="e|2"]'); const pid = (await st()).id;
   await t.p.click('#aGirl'); await t.p.click('#aAdopt'); await t.p.waitForSelector('#nOk'); await t.p.click('#nOk'); await t.intro(); await t.calm();
   let d = await ev(() => window.__paw.cp.dog());
   ok(d.key === 'collie' && d.id === pid && d.coat === 'Blue merle' && d.eyes === 'odd' && d.shown === 'Blue merle' && d.shownEyes === 'odd' && d.genes.M.join('/') === 'M/m', 'the first dog is the blue merle (M/m) with odd eyes it was on the card: ' + JSON.stringify(d));
@@ -104,6 +124,11 @@ run('v223_coats', async (t) => {
   await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
   d = await ev(() => window.__paw.cp.dog());
   ok(d.coat === 'Blue merle' && d.shown === 'Blue merle' && d.shownEyes === 'odd' && d.id === pid, 'after a reload: still a blue merle with odd eyes');
+  // review fix 1: the Dog Card, a friend's yard and a friend's walk dog keep the eyes and the merle pattern
+  const cd = await ev(() => window.__paw.cp.card());
+  ok(cd.wire.e === 3 && cd.wire.p === cd.seed && cd.fr && cd.fr.e === 3 && cd.fr.p === cd.seed, 'the card and friends wire carry the eyes (e: odd = 3) and the pattern seed (p): ' + JSON.stringify({ e: cd.wire.e, p: cd.wire.p, fr: cd.fr && [cd.fr.e, cd.fr.p] }));
+  ok(cd.eyes === 'odd' && cd.coat === 'Blue merle' && cd.same, 'the card dog has odd eyes, the blue merle and the very same drawing as at home: ' + JSON.stringify({ eyes: cd.eyes, coat: cd.coat, same: cd.same, id: cd.id }));
+  ok(cd.oldId === 'dcv:cpTestCard:0', 'an old card dog (no e, no p) decodes exactly as before: ' + cd.oldId);
   // a later starter from the Shelter list gets the same colour row
   await ev(() => { const S = window.__paw.S; S.house = 'Treehouse Den'; S.dogs[0].bond = { level: 8, pts: 1900 }; S.careDays = 21; S.coins = 2000; });
   await ev(() => window.__paw.sr.list()); await t.waitH2(/Doodle Doggo Shelter/);
@@ -125,11 +150,11 @@ run('v223_coats', async (t) => {
   ok(JSON.stringify(d.genes) === JSON.stringify({ B: sg.B, D: sg.D, E: sg.E, S: sg.S, M: sg.M, Bl: sg.Bl }) && d.coat === sg.coat && d.eyes === sg.eyes, `a dog adopted without a colour tap is the STARTER_GENES ${d.key} (${d.coat}, ${d.eyes} eyes)`);
   await t.ctx.close();
 
-  sec('5. layout: the card on desktop 1280x720 and iPhone 13 (390x844)');
-  for (const dev of [null, 'iPhone 13']) {
+  sec('5. layout: the card on desktop 1280x720, iPhone 13 (390x844) and a 360x740 phone');
+  for (const dev of [null, 'iPhone 13', 'Phone 360x740']) {
     await t.boot({ pupStart: true, device: dev || undefined }); await t.p.click('#tNew'); await t.p.waitForSelector('#aAdopt');
-    const tag = dev ? 'phone' : 'desktop';
-    for (const [re, key, c, e] of [['Labrador', 'lab', 0, 0], ['Border Collie', 'collie', 3, 2], ['Husky', 'husky', 2, 2]]) {
+    const tag = dev ? (dev === 'Phone 360x740' ? 'phone360' : 'phone') : 'desktop';
+    for (const [re, key, c, e] of [['Labrador', 'lab', 0, 0], ['Border Collie', 'collie', 2, 2], ['Husky', 'husky', 2, 2]]) {
       await pickDog(re); await t.until((k) => window.__paw.sr.meetKey === k, key, 4000);
       if (c) await t.p.click(`[data-cp="c|${c}"]`); if (e) await t.p.click(`[data-cp="e|${e}"]`);
       await t.p.click('#aGirl'); await t.sleep(300);
@@ -151,9 +176,38 @@ run('v223_coats', async (t) => {
         return bad;
       }, !!dev);
       ok(!L.length, `${tag} ${key}: the colour row fits (${dev ? '44 px taps, ' : ''}no overlap, Adopt reachable): ${L.slice(0, 4).join(' | ')}`);
-      if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); if (dev) await ev(() => document.querySelector('.adopt-card .coatpick').scrollIntoView({ block: 'center' })); await t.sleep(1400); await t.p.screenshot({ path: path.join(SHOTS, `adopt_${key}_${tag}.png`) }); }
+      if (SHOTS && dev !== 'Phone 360x740') { fs.mkdirSync(SHOTS, { recursive: true }); if (dev) await ev(() => document.querySelector('.adopt-card .coatpick').scrollIntoView({ block: 'center' })); await t.sleep(1400); await t.p.screenshot({ path: path.join(SHOTS, `adopt_${key}_${tag}.png`) }); }
     }
     ok(!errs().length, tag + ': no page errors: ' + errs().slice(0, 3).join(' | '));
     await t.ctx.close();
   }
-}, { timeout: 600000 });
+
+  sec('6. the Shelter list\'s starter cards on phones (390x844 and 360x740)');
+  for (const dev of ['iPhone 13', 'Phone 360x740']) {
+    await t.boot({ pupStart: true, device: dev }); await t.adopt({ sex: 'girl' });
+    await ev(() => { const S = window.__paw.S; S.house = 'Treehouse Den'; S.dogs[0].bond = { level: 8, pts: 1900 }; S.careDays = 21; S.coins = 2000; });
+    await ev(() => window.__paw.sr.list()); await t.waitH2(/Doodle Doggo Shelter/);
+    await ev(() => { const b = document.querySelector('[data-shcp="collie|c|2"]'); if (b) b.click(); });
+    await t.until(() => { const b = document.querySelector('[data-shcp="collie|c|2"]'); return !!b && b.getAttribute('aria-pressed') === 'true'; }, null, 3000);
+    const L = await ev(() => {
+      const vw = innerWidth, bad = [], R = (el) => el.getBoundingClientRect(), cards = [...document.querySelectorAll('.shcard.starter')];
+      if (!cards.length) bad.push('no starter cards');
+      cards.forEach((c) => {
+        const cr = R(c), key = (c.querySelector('[data-shsex]') || { dataset: { shsex: '?' } }).dataset.shsex.split('|')[0];
+        if (cr.left < -0.5 || cr.right > vw + 0.5) bad.push(key + ' card off screen');
+        const btns = [...c.querySelectorAll('.cp-sw, .cp-ey')].map(R);
+        btns.forEach((r, i) => { if (r.width < 43.5 || r.height < 43.5) bad.push(key + ' swatch ' + i + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); if (r.left < cr.left - 0.5 || r.right > cr.right + 0.5) bad.push(key + ' swatch ' + i + ' outside its card'); btns.forEach((q, j) => { if (j > i && Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) bad.push(key + ' swatches ' + i + '/' + j + ' overlap'); }); });
+        const desc = c.querySelector('.desc'); if (desc && /, .* eyes/.test(desc.textContent)) bad.push(key + ': the coat and eyes line is still on the card');
+      });
+      const pnl = document.querySelector('#modal .panel'); if (pnl && pnl.scrollWidth > pnl.clientWidth + 1) bad.push('sideways scroll in the sheet');
+      if (document.documentElement.scrollWidth > vw + 1) bad.push('sideways page scroll');
+      const col = document.querySelector('[data-shcp="collie|c|2"]'); if (col) col.closest('.shcard').scrollIntoView({ block: 'center' });
+      return { bad, n: cards.length, eyes: col ? col.closest('.shcard').querySelectorAll('.cp-ey').length : -1 };
+    });
+    ok(!L.bad.length && L.n > 0, `${dev}: ${L.n} Shelter starter cards fit (44 px taps inside each card, no overlap, no sideways scroll, no duplicate coat line): ${L.bad.slice(0, 4).join(' | ')}`);
+    ok(L.eyes === 3, dev + ': the blue merle collie card has its three eye choices: ' + L.eyes);
+    if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await t.sleep(600); await t.p.screenshot({ path: path.join(SHOTS, `shelter_collie_${dev === 'iPhone 13' ? 'phone' : 'phone360'}.png`) }); }
+    ok(!errs().length, dev + ' shelter: no page errors: ' + errs().slice(0, 3).join(' | '));
+    await t.ctx.close();
+  }
+}, { timeout: 900000 });

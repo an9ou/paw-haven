@@ -115,7 +115,7 @@ const NEWS_V223 = { // v2.23 Coat colours (V223.md): the starter's coat and eye 
   title: () => tt('nw.v223.title', 'Pick your dog\'s coat colour'),
   items: [
     { ic: () => nwHead('lab'), tx: () => tt('nw.v223.coat', 'When you adopt a starter dog, you can pick its coat colour. Every breed has its own real colours') },
-    { ic: () => nwHead('husky'), tx: () => tt('nw.v223.eyes', 'Huskies, Aussies and merle dogs can have blue, brown or odd eyes too') }
+    { ic: () => nwHead('husky'), tx: () => tt('nw.v223.eyes', 'Huskies, Aussies, Border Collies and merle dogs can have blue, brown or odd eyes too') }
   ]
 };
 const nwV223Due = () => MS2_LIVE && jstISO() >= NEWS_V223.date;

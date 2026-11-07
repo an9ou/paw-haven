@@ -1,6 +1,6 @@
 /* ======================= ADOPTION ======================= */
 let adoptIdx = 0, adoptSex = null, adoptCoat = 0, adoptEye = 0, adoptPid = null; // v2.23 Coat pick: the colour option, the eye option and the dog id that gives those eyes
-/* v2.23 "Coat pick" (owner, 7 Nov 2026; V223.md): the starter's colour (and, for the husky, the Aussie and merle coats, its eyes) is chosen on the card.
+/* v2.23 "Coat pick" (owner, 7 Nov 2026; V223.md): the starter's colour (and, for the husky, the Aussie, the Border Collie and merle coats, its eyes) is chosen on the card.
    The table and the genetics are STARTER_COATS / starterPick in 10_sex_age_genes.js; option 1 is the old starter, so a player who picks nothing gets it. */
 function adPick(key) { const p = starterPick(key, adoptCoat, adoptEye, adoptPid); adoptPid = p ? p.id : null; return p; }
 function adReset() { adoptSex = null; adoptCoat = 0; adoptEye = 0; adoptPid = null; }
@@ -8,12 +8,23 @@ function adReset() { adoptSex = null; adoptCoat = 0; adoptEye = 0; adoptPid = nu
 function adLook(key) { const L = srStarterLook(key), d = dogsList()[adoptIdx]; if (!d || d.key !== key) return L; const p = adPick(key); if (p) { L.genes = p.genes; L.id = p.id; } return L; }
 const CP_EYE = { brown: ['#6B3E1E', '#6B3E1E'], amber: ['#C98A2E', '#C98A2E'], blue: ['#4F9BE0', '#4F9BE0'], odd: ['#4F9BE0', '#6B3E1E'] };
 function cpEyeSVG(e) { const c = CP_EYE[e] || CP_EYE.brown; return `<svg viewBox="0 0 44 24" aria-hidden="true">${[12, 32].map((x, i) => `<path d="M${x - 9} 12.5c0-5 4.3-8.6 9.2-8.4 4.8.2 8.6 3.8 8.4 8.6-.2 4.6-4.4 7.9-9 7.7-4.7-.2-8.6-3.4-8.6-7.9z" fill="#fff" stroke="#3a2e2e" stroke-width="2.2" stroke-linejoin="round"/><circle cx="${x + 0.4}" cy="12.6" r="5" fill="${c[i]}"/><circle cx="${x + 0.6}" cy="12.8" r="2.2" fill="#2a2226"/><circle cx="${x - 1.6}" cy="10.4" r="1.4" fill="#fff"/>`).join('')}</svg>`; }
+/* v2.23 review fix: a swatch is the whole dog sitting, cropped to the dog (a head hid the coat: a Yorkie's head is tan in every coat, a piebald's white
+   is on its body). The crop is measured once per breed in the page (getBBox, cpCrop) and then written into the drawing, so later cards never jump. */
+const CP_BOX = {};
+function cpSit(key, o) { const s = dogArtSafe(key, Object.assign({ pose: 'sit' }, o)), b = CP_BOX[key]; return b ? s.replace(/viewBox="[^"]*"/, `viewBox="${b}"`) : s.replace('<svg', `<svg data-cpcrop="${key}"`); }
+function cpCrop(root) {
+  (root || document).querySelectorAll('svg[data-cpcrop]').forEach((s) => {
+    const k = s.dataset.cpcrop; let b = CP_BOX[k];
+    if (!b) { let r = null; try { r = s.getBBox(); } catch (e) { r = null; } if (!r || !(r.width > 4) || !(r.height > 4)) return; const side = Math.max(r.width, r.height) + 8; b = CP_BOX[k] = [r.x + r.width / 2 - side / 2, r.y + r.height / 2 - side / 2, side, side].map((v) => Math.round(v * 10) / 10).join(' '); }
+    s.setAttribute('viewBox', b); s.removeAttribute('data-cpcrop');
+  });
+}
 /* the colour row of a starter card: crayon dog heads in each coat, then the eye choices when the breed has them. ci, ei: the picked options; pid: the
    picked dog id; at: the data attribute the buttons carry (the adoption card 'cp', the Shelter list 'shcp|<key>'). One option: just the coat line. */
 function coatPickHTML(key, ci, ei, pid, at) {
   const cs = starterCoats(key), es = starterEyes(key, ci), G = window.PawGenes, pk = starterPick(key, ci, ei, pid);
   const cur = cs[ci] || cs[0], eyes = pk ? pk.eyes : es.length ? es[0].eyes : ((G && G.phenotype(cur.genes, key, 'x')) || {}).eyes || 'brown';
-  const head = (c, i) => { let o = {}; try { const ph = G.phenotype(c.genes, key, 'tmp_' + key), e0 = starterEyes(key, i)[0]; o = { coat: Object.assign({}, ph.coat, e0 ? { eyes: e0.eyes } : {}), seed: hashId('tmp_' + key) }; } catch (e) { o = {}; } return art('dogHead', key, o); };
+  const head = (c, i) => { let o = {}; try { const ph = G.phenotype(c.genes, key, 'tmp_' + key), e0 = starterEyes(key, i)[0]; o = { coat: Object.assign({}, ph.coat, e0 ? { eyes: e0.eyes } : {}), seed: hashId('tmp_' + key) }; } catch (e) { o = {}; } return cpSit(key, o); }; // the sitting dog in that coat (cpSit)
   const sw = cs.length > 1 ? cs.map((c, i) => `<button type="button" class="cp-sw" data-${at.split('|')[0]}="${at.indexOf('|') > 0 ? at.split('|')[1] + '|' : ''}c|${i}" aria-pressed="${i === ci}" aria-label="${esc(coatShown(c.coat, key))}" title="${esc(coatShown(c.coat, key))}">${head(c, i)}</button>`).join('') : `<span class="cp-sw one" aria-hidden="true">${head(cs[0], 0)}</span>`;
   const ew = es.length ? `<span class="cp-eyes" role="group" aria-label="${esc(tt('adopt.label_eye_colour', 'Eye colour'))}">${es.map((e, j) => `<button type="button" class="cp-ey" data-${at.split('|')[0]}="${at.indexOf('|') > 0 ? at.split('|')[1] + '|' : ''}e|${j}" aria-pressed="${j === ei}" aria-label="${esc(eyeShown(e.eyes))}" title="${esc(eyeShown(e.eyes))}">${cpEyeSVG(e.eyes)}</button>`).join('')}</span>` : '';
   return `<div class="coatpick"><p class="cp-lbl">${esc(tt('adopt.coat_line', 'Coat: {coat}', { coat: coatShown(pk ? pk.coat : cur.coat, key) }))}${es.length ? ` <span class="cp-eyelbl">${esc(tt('adopt.eyes_line', 'Eyes: {eyes}', { eyes: eyeShown(eyes) }))}</span>` : ''}</p>
@@ -54,7 +65,7 @@ function enterAdopt() {
   view.innerHTML = srRoomSVG('adopt'); // v2.7: the Shelter Playroom (30_shelter.js). No S is read or written here
   srEnter('adopt');
   renderAdopt(true);
-  const onKey = (e) => { if (!modal.hidden) return; const n = dogsList().length; if (e.key === 'ArrowLeft') { adoptIdx = (adoptIdx + n - 1) % n; adoptCoat = adoptEye = 0; adoptPid = null; renderAdopt(); } if (e.key === 'ArrowRight') { adoptIdx = (adoptIdx + 1) % n; adoptCoat = adoptEye = 0; adoptPid = null; renderAdopt(); } }; // v2.23: a new dog starts on its first colour
+  const onKey = (e) => { if (!modal.hidden) return; const n = dogsList().length; if (e.key === 'ArrowLeft') { adoptIdx = (adoptIdx + n - 1) % n; adReset(); renderAdopt(); } if (e.key === 'ArrowRight') { adoptIdx = (adoptIdx + 1) % n; adReset(); renderAdopt(); } }; // v2.23: a new dog starts on its first colour, Boy / Girl unpicked (as the < > buttons)
   window.addEventListener('keydown', onKey); onCleanup(() => window.removeEventListener('keydown', onKey));
 }
 function renderAdopt(first) {
@@ -75,6 +86,7 @@ function renderAdopt(first) {
     const [k, i] = cpTap(b.dataset.cp); if (k === 'c') { if (i === adoptCoat) return; adoptCoat = i; adoptEye = 0; adoptPid = null; } else { if (i === adoptEye) return; adoptEye = i; adoptPid = null; }
     SFX.boop(k === 'c' ? 600 + i * 40 : 820); renderAdopt(true); if (typeof srMeetCoat === 'function') srMeetCoat(d.key);
   }; });
+  cpCrop(dock); // v2.23: crop the sitting-dog swatches
   $('#aRandom').onclick = () => { // owner, 24 Oct 2026: a random dog and a random sibling, ready to adopt
     adoptIdx = dogs.length > 1 ? (adoptIdx + 1 + Math.floor(Math.random() * (dogs.length - 1))) % dogs.length : 0;
     adReset(); adoptSex = Math.random() < 0.5 ? 'male' : 'female';
@@ -133,6 +145,9 @@ function cpExpose() {
     state: () => ({ key: (dogsList()[adoptIdx] || {}).key, coat: adoptCoat, eye: adoptEye, id: adoptPid, sex: adoptSex }),
     meet: () => { const L = SR && SR.meet ? adLook(SR.meet.key) : null; return L ? { key: L.key, id: L.id, genes: L.genes } : null; },
     shelter: () => JSON.parse(JSON.stringify(shelterCoat)),
+    // v2.23 review fix: a dog through the Dog Card / Friends wire and back (40_dogcards.js dcDogOf -> dcDog), and the same wire without e and p (an old card)
+    card: (id) => { const d = id ? dogById(id) : S.dog, x = dcDogOf(d), v = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [x] }, 0), old = Object.assign({}, x); delete old.e; delete old.p; const v0 = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [old] }, 0), own = dogSVG(d, { pose: 'sit' });
+      return { wire: x, fr: typeof frCardOf === 'function' ? frCardOf(d) : null, seed: hashId(d.id), id: v.id, eyes: eyesOf(v), coat: coatNameOf(v), same: dogSVG(v, { pose: 'sit' }) === own, oldId: v0.id, oldEyes: eyesOf(v0), oldSame: dogSVG(v0, { pose: 'sit' }) === own }; },
     dog: (id) => { const d = id ? dogById(id) : S.dog; return d ? { id: d.id, key: d.key, genes: d.genes, coat: d.coat, eyes: d.eyes, shown: coatNameOf(d), shownEyes: eyesOf(d) } : null; }
   };
 }

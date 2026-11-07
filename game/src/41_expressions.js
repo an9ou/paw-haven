@@ -191,7 +191,7 @@ on('act:paw', (a) => {
 });
 function exDcDraw(d) {
   if (typeof DC !== 'object' || !DC) return; DC.vis.forEach((v) => { if (v.dog.id === d.id) dcPaint(v); });
-  const m = d.id.split(':'), cid = m.slice(1, -1).join(':'), i = +m[m.length - 1], p = document.querySelector(`#modal [data-dc-card="${CSS.escape(cid)}"]`); if (!p) return;
+  const m = d.id.split(':'), cid = d.dc ? d.dc[0] : m.slice(1, -1).join(':'), i = d.dc ? d.dc[1] : +m[m.length - 1], p = /* v2.23: an eye-roll id has a suffix, d.dc says the card and dog */ document.querySelector(`#modal [data-dc-card="${CSS.escape(cid)}"]`); if (!p) return;
   const c = exCard(cid); if (!c) return; const shown = c.dogs.map((x, j) => j).filter((j) => dcDog(c, j)), k = shown.indexOf(i), fig = p.querySelectorAll('.dc-dogs .dc-dog')[k];
   const a = fig && fig.querySelector('.dc-art'), dd = dcDog(c, i); if (a && dd) a.innerHTML = dogSVG(dd, exOpt(dd, 'sit', { pose: 'sit', outfit: dd.outfit })); // the card's own picture of that dog
 }

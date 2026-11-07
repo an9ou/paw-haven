@@ -49,29 +49,29 @@ const STARTER_GENES = {
    inside the breed's FREQ (mods/genes.js), so later puppies inherit real genes; test_v223_coats.js checks each name, FREQ and that no option is M/M. */
 const STARTER_COATS = {
   shiba: [['Black and tan with cream urajiro', 'Ee'], ['Cream with cream urajiro', 'dd']],
-  corgi: [['Black and white', 'Ee'], ['Cream and white', 'dd']],
+  corgi: [['Cream and white', 'dd']],
   golden: [['Cream', 'dd']],
   dachs: [['Black and tan', 'Bb'], ['Red', 'Bb ee'], ['Black dapple', 'Bb Mm']],
   husky: [['Red and white', 'ee'], ['Copper and white', 'bb']],
   mutt: [['Red with white markings', 'ee Ssp'], ['Chocolate & white piebald', 'bb'], ['Black merle with white markings', 'Ssp Mm']],
   chihuahua: [['Cream', 'dd'], ['Black and tan', 'Ee'], ['Chocolate and tan', 'bb Ee'], ['Fawn & white piebald', 'spsp']],
-  pug: [['Black', 'Ee'], ['Apricot', 'bb'], ['Silver fawn', 'dd']],
+  pug: [['Black', 'Ee'], ['Silver fawn', 'dd']],
   greyhound: [['Black', 'Dd SS'], ['Fawn', 'Dd ee SS'], ['Black & white piebald', 'Dd spsp']],
   beagle: [['Red and white', 'ee'], ['Lemon and white', 'ee dd'], ['Chocolate tricolour', 'bb']],
   poodle: [['Black', 'Ee'], ['White', 'dd'], ['Chocolate', 'bb Ee'], ['Silver', 'dd Ee']],
-  collie: [['Tricolour', 'SS'], ['Chocolate and white', 'bb'], ['Blue merle', 'Mm'], ['Red merle', 'bb Mm']],
-  samoyed: [['Cream', 'bb']],
-  frenchie: [['Dark fawn', 'Ee'], ['Cream', 'bb'], ['Pied', 'Ee spsp']],
+  collie: [['Chocolate and white', 'bb'], ['Blue merle', 'Mm'], ['Red merle', 'bb Mm']], // no Tricolour: the collie art has no tan points, so S/S draws as black and white
+  samoyed: [],
+  frenchie: [['Dark fawn', 'Ee'], ['Pied', 'Ee spsp']],
   akita: [['Sesame', 'Ee'], ['White', 'dd']],
   spitz: [],
-  pom: [['Cream', 'dd'], ['Black', 'Ee'], ['White', 'bb'], ['Chocolate', 'bb Ee']],
+  pom: [['Cream', 'dd'], ['Black', 'Ee'], ['Chocolate', 'bb Ee']],
   afghan: [['Cream', 'dd'], ['Black and tan', 'Ee'], ['Black', 'EE']],
-  dane: [['Brindle', 'bb Ee'], ['Blue', 'dd Ee'], ['Harlequin', 'Ee spsp Mm'], ['Mantle', 'Ee spsp']],
-  mastiff: [['Apricot', 'bb'], ['Brindle', 'Ee']],
+  dane: [['Blue', 'dd Ee'], ['Harlequin', 'Ee spsp Mm'], ['Mantle', 'Ee spsp']],
+  mastiff: [['Brindle', 'Ee']],
   gsd: [['Sable', 'ee'], ['Black', 'EE'], ['White', 'ee dd']],
   dobie: [['Red and rust', 'bb'], ['Blue and rust', 'dd'], ['Fawn and rust', 'bb dd']],
-  corso: [['Grey', 'dd'], ['Fawn', 'ee'], ['Black brindle', 'bb'], ['Red', 'bb ee']],
-  pitbull: [['Black', 'Dd'], ['Fawn', 'Dd ee'], ['Brindle', 'bb Dd'], ['Red', 'bb Dd ee']],
+  corso: [['Grey', 'dd'], ['Fawn', 'ee']],
+  pitbull: [['Black', 'Dd'], ['Fawn', 'Dd ee'], ['Red', 'bb Dd ee']],
   minpin: [['Black and rust', 'Ee'], ['Chocolate and rust', 'bb Ee']],
   lab: [['Black', 'Ee'], ['Chocolate', 'bb Ee']],
   malamute: [['Black and white', 'EE'], ['Sable and white', 'ee'], ['Red and white', 'bb'], ['White', 'ee dd']],
@@ -80,7 +80,7 @@ const STARTER_COATS = {
   schnauzer: [['Black', 'EE'], ['Black and silver', 'dd'], ['White', 'ee']],
   westie: [],
   yorkie: [['Black and tan', 'Dd'], ['Blue and tan parti', 'spsp']],
-  bichon: [['Cream', 'bb']],
+  bichon: [],
   maltese: [],
   shihtzu: [['Black and white', 'Ee'], ['Brindle and white', 'EE'], ['Liver and white', 'bb Ee'], ['Black', 'Ee SS']],
   dalmatian: [['Liver spotted', 'bb']],
@@ -89,9 +89,13 @@ const STARTER_COATS = {
   cavalier: [['Tricolour', 'Ee'], ['Ruby', 'SS'], ['Black and tan', 'Ee SS']],
   jrt: [['Tricolour', 'Ee'], ['White and black', 'EE']]
 };
-/* Eye choices (the owner: "different pupil colours"), only where real dogs have them. 'all': every coat (the husky's and the Aussie's blue-eye
-   gene Bl, which their FREQ allows); 'merle': only a merle coat (merle itself gives the blue or odd eyes; a collie never carries Bl). */
-const STARTER_EYES = { husky: 'all', aussie: 'all', collie: 'merle', dachs: 'merle', dane: 'merle', mutt: 'merle' };
+/* Eye choices (the owner: "different pupil colours"), only where real dogs have them. 'all': every coat (the blue-eye gene Bl: the husky's and
+   the Aussie's FREQ allow it; the Border Collie (owner: "border collie can be black & white, or 3 mixed colours with different pupil colours") gets it
+   only through this starter preset, its FREQ stays Bl 0 so random and rescue collies are as before; a merle coat keeps merle's own eye rolls);
+   'merle': only a merle coat (merle itself gives the blue or odd eyes). Review fix (7 Nov 2026): no b/b stand-in colours that would give a
+   breed amber eyes it does not have (Pug and Mastiff apricot, Samoyed, Frenchie and Bichon cream, Pom white, Dane, Corso and Pit Bull brindle, Corso red),
+   and no Corgi black and white (a Cardigan colour) or Collie tricolour (drawn the same as black and white: the collie art has no tan points). */
+const STARTER_EYES = { husky: 'all', aussie: 'all', collie: 'all', dachs: 'merle', dane: 'merle', mutt: 'merle' };
 const COAT_LOCUS = { B: 'B', b: 'B', D: 'D', d: 'D', E: 'E', e: 'E', S: 'S', sp: 'S', M: 'M', m: 'M', Bl: 'Bl', bl: 'Bl', at: 'A', a: 'A' };
 function coatGenes(key, diff) { // STARTER_GENES[key] (the loci only) with the diff tokens on top
   const g = STARTER_GENES[key] || STARTER_GENES.mutt, out = {};
@@ -116,11 +120,12 @@ function starterEyes(key, i) {
   if (two) L.unshift(L.splice(1, 1)[0]); // the husky: blue (Bl/Bl, its starter) first
   return L;
 }
-// a dog id whose eye roll gives these eyes (phenotype() seeds the Bl/bl and merle eye rolls with the dog's id)
-function starterIdFor(key, genes, eyes) {
-  const nid = () => 'd_' + Math.random().toString(36).slice(2, 9); let id = nid();
-  for (let n = 0; n < 2000 && eyes; n++) { const p = coatPh(genes, key, id); if (!p || p.eyes === eyes) break; id = nid(); }
-  return id;
+// a dog id whose eye roll gives these eyes (phenotype() seeds the Bl/bl and merle eye rolls with the dog's id). mk(n): the n-th id to try
+// (default: a fresh random dog id; a Dog Card dog passes a fixed list, so the same card always gives the same id, or null when none of them fits)
+function starterIdFor(key, genes, eyes, mk, tries) {
+  const fixed = typeof mk === 'function', next = fixed ? mk : () => 'd_' + Math.random().toString(36).slice(2, 9); let id = next(0);
+  for (let n = 1; n <= (tries || 2000) && eyes; n++) { const p = coatPh(genes, key, id); if (!p || p.eyes === eyes) return id; id = next(n); }
+  return eyes && fixed ? null : id;
 }
 // the chosen starter: colour i, eyes j -> { genes, coat, eyes, id } for newDogFields, or null for the plain STARTER_GENES dog (colour 1, first eyes).
 // id: keep this id when its eye roll already fits (the card's preview dog becomes the dog that comes home)

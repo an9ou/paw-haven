@@ -234,7 +234,10 @@ async function checks(label, call, sql, mail) {
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })],
       ['a coat locus with 3 alleles', card({ dogs: [dog({ c: { B: ['B', 'b', 'b'] } })] })], ['a double merle', card({ dogs: [dog({ c: { M: ['M', 'M'] } })] })], ['an empty coat', card({ dogs: [dog({ c: {} })] })],
       ['a coat locus named constructor', card({ dogs: [dog({ c: { constructor: ['B', 'b'] } })] })], ['a coat with __proto__', card({ dogs: [dog({ c: JSON.parse('{"__proto__":["B","b"]}') })] })],
-      ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })], ['an oversized card', card({ dogs: [dog({ c: '#' + 'a'.repeat(3000) })] })], ['an array body', [card()]]
+      ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })],
+      ['eyes past the list (v2.23)', card({ dogs: [dog({ e: 4 })] })], ['eyes as text', card({ dogs: [dog({ e: 'blue' })] })], ['eyes negative', card({ dogs: [dog({ e: -1 })] })],
+      ['a pattern seed as text', card({ dogs: [dog({ p: '12' })] })], ['a pattern seed past 32 bits', card({ dogs: [dog({ p: 4294967296 })] })], ['a pattern seed fraction', card({ dogs: [dog({ p: 1.5 })] })], ['a pattern seed negative', card({ dogs: [dog({ p: -1 })] })],
+      ['an oversized card', card({ dogs: [dog({ c: '#' + 'a'.repeat(3000) })] })], ['an array body', [card()]]
     ];
     const bad = [];
     for (const [label, b] of junk) { const x = await call('PUT', '/card', b, ca.token); if (!(x.status === 400 && x.json && (x.json.error === 'bad_card' || x.json.error === 'bad_json'))) bad.push(label + ' ' + x.status); }
@@ -244,6 +247,13 @@ async function checks(label, call, sql, mail) {
     const mine = r.json;
     ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 4 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
     ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()) && mine.dogs[1].b === 20 && mine.dogs[1].n === 100 && mine.dogs[3].b === 39 && mine.dogs[3].o === 49 && mine.dogs[3].n === 119 && JSON.stringify(mine.dogs[3].c) === '{"B":["B","b"],"E":["E","E"],"A":["a","a"]}', 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
+    { // v2.23: the optional eyes (e, 0-3) and coat-pattern seed (p, 32 bits) come back as sent; a dog without them comes back without them
+      const r2 = await call('PUT', '/card', card({ dogs: [dog({ e: 3, p: 4294967295 }), dog({ e: 0 }), dog({ p: 0 }), dog()] }), ca.token), ds = r2.json && r2.json.dogs;
+      ok(r2.status === 200 && ds && ds[0].e === 3 && ds[0].p === 4294967295 && ds[1].e === 0 && !('p' in ds[1]) && ds[2].p === 0 && !('e' in ds[2]) && JSON.stringify(ds[3]) === JSON.stringify(dog()), 'v2.23: a dog may carry its eyes (e) and pattern seed (p); a dog without them is as before: ' + JSON.stringify(ds && ds.slice(0, 3)));
+      const rw = await sql('select * from cards where user_id = ?', ca.user.id), kk = JSON.parse(rw.dogs).map((d) => Object.keys(d).join());
+      ok(kk.join(' ') === 'b,c,o,a,s,sp,n,e,p b,c,o,a,s,sp,n,e b,c,o,a,s,sp,n,p b,c,o,a,s,sp,n', 'D1 keeps e and p only when sent: ' + kk.join(' '));
+      r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' }), dog({ b: 39, o: 49, n: 119, c: { B: ['B', 'b'], E: ['E', 'E'], A: ['a', 'a'] } })] }), ca.token); // back to the card the checks below expect
+    }
     ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
     const row = await sql('select * from cards where user_id = ?', ca.user.id);
     ok(row && !/[a-z]{3,}@/.test(row.dogs) && JSON.parse(row.dogs).every((d) => Object.keys(d).join() === 'b,c,o,a,s,sp,n'), 'D1 keeps only the checked fields');
@@ -457,7 +467,8 @@ async function checks(label, call, sql, mail) {
       ['age not pup or adult', dog({ a: 'old' })], ['sex not m or f', dog({ s: 'x' })], ['sparkle 2', dog({ sp: 2 })],
       ['an extra dog key', Object.assign(dog(), { name: 'Pip' })], ['a missing dog key', (() => { const d = dog(); delete d.n; return d; })()],
       ['a bad allele', dog({ c: { B: ['B', 'x'] } })], ['a coat word', dog({ c: 'red' })], ['an unknown locus', dog({ c: { K: ['K', 'k'] } })],
-      ['a double merle', dog({ c: { M: ['M', 'M'] } })], ['an empty coat', dog({ c: {} })], ['a colour that is not #rrggbb', dog({ c: '#12345g' })]
+      ['a double merle', dog({ c: { M: ['M', 'M'] } })], ['an empty coat', dog({ c: {} })], ['a colour that is not #rrggbb', dog({ c: '#12345g' })],
+      ['eyes past the list (v2.23)', dog({ e: 4 })], ['a pattern seed as text', dog({ p: 'x' })]
     ];
     const junkBad = [];
     for (const [label, d] of junk) {
@@ -482,7 +493,7 @@ async function checks(label, call, sql, mail) {
     }
     ok(!yardFails.length, `anything outside the snapshot rules is bad ${yardFails.join(', ')}`);
     ok(!(await sql('select user_id from yards where user_id = ?', yB.user.id)), 'no junk yard was stored');
-    const goodDogs = [dog({ b: 3 }), dog({ b: 39, o: 49, n: 119, c: '#AABBCC' }), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog(), dog({ b: 1, c: null })];
+    const goodDogs = [dog({ b: 3 }), dog({ b: 39, o: 49, n: 119, c: '#AABBCC' }), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ e: 2, p: 123456789 }), dog({ b: 1, c: null })]; // v2.23: the fourth carries eyes and a pattern seed
     const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 30, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 31, x: i, y: i })));
     const good = { v: 1, name: [9, 9], house: 13, season: 'winter', dogs: goodDogs, decor: goodDecor };
     ok(good.dogs.length === 5 && good.decor.length === 40 && JSON.stringify(good).length < 16384, 'the accepted snapshot is 5 dogs, 40 decor and under 16 KB');
@@ -490,6 +501,7 @@ async function checks(label, call, sql, mail) {
     ok(res.status === 200 && res.json.ok === true, 'a snapshot inside the rules is stored');
     res = await frCall('GET', '/friends/yard?fid=' + pyB.fid, null, yA.token);
     ok(res.status === 200 && res.json.yard.house === 13 && res.json.yard.season === 'winter' && res.json.yard.name.join() === '9,9', 'GET /friends/yard returns the snapshot');
+    ok(res.json.yard.dogs[3].e === 2 && res.json.yard.dogs[3].p === 123456789 && !('e' in res.json.yard.dogs[0]) && !('p' in res.json.yard.dogs[0]), 'v2.23: a yard dog keeps its eyes and pattern seed; a dog without them has none');
     ok(res.json.yard.dogs.length === 5 && res.json.yard.dogs[0].b === 3 && res.json.yard.dogs[1].c === '#aabbcc' && res.json.yard.dogs[2].c === null && res.json.yard.dogs[2].o === -1, 'dogs come back in the Dog Card shape, leader first, colour lower case');
     ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 30, 'decor keeps integer coordinates up to 1200 and 800');
     ok(!res.text.includes(yB.user.id) && !/"updated_at"|"created_at"/.test(res.text), 'the yard answer has no user id and no timestamp');

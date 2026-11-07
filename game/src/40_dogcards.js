@@ -35,6 +35,10 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'];
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
+/* v2.23 (review fix): a card dog's eyes and its coat pattern. phenotype() rolls Bl/bl and merle eyes from the dog's id and the art places merle smudges,
+   white patches and spots from it (seed = hashId(id)), and a card dog has its own id, so the card sends both: e = the eyes (an index into DC_EYES, only
+   when the roll decides them) and p = the art seed (hashId of the dog's id: a number, never the id). Both optional: a card without them draws as before. */
+const DC_EYES = ['brown', 'amber', 'blue', 'odd']; // append only (the Worker checks e < 4)
 const DC_TAN = ['at', 'a']; // v2.21: the tan-point locus (PawGenes TAN, the Aussie's copper). Sent only with MS2_LIVE (dcWireLive): the Worker of today refuses it
 const DC_PLACES = ['dogpark', 'yoyogi'];
 const DC_MAX_DOGS = 4, DC_VIS_CARDS = 2, DC_VIS_DOGS = 3;
@@ -77,14 +81,23 @@ const dcGiven = (c) => S && S.dc.given[c.id] === dcDay();
 const dcPawsOf = (c) => (c.paws | 0) + (c.fake && dcGiven(c) ? 1 : 0); // a paw to a town player stays in this save
 function dcPrune() { const y = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10); Object.keys(S.dc.given).forEach((k) => { if (!(S.dc.given[k] >= y)) delete S.dc.given[k]; }); }
 // a card dog -> a dog object the game's art draws (null when this copy of the game does not know its breed yet)
+const dcEyeIds = new Map(); // v2.23: card dog -> the id whose eye roll gives the eyes it was sent with
+function dcDogId(c, i, key, genes, eyes) {
+  const id0 = `dcv:${c.id}:${i}`; if (!eyes || !genes) return id0;
+  const k = id0 + '|' + key + '|' + JSON.stringify(genes) + '|' + eyes; if (dcEyeIds.has(k)) return dcEyeIds.get(k);
+  const id = starterIdFor(key, genes, eyes, (n) => (n ? id0 + ':' + n : id0), 400) || id0; // the same card always gives the same id; eyes the genes cannot give: as before
+  if (dcEyeIds.size > 400) dcEyeIds.clear(); dcEyeIds.set(k, id); return id;
+}
 function dcDog(c, i) {
   const x = c.dogs[i], key = dcBreeds()[x.b]; if (!key) return null;
   const G = PGN(), base = (G && G.STARTER_GENES && (G.STARTER_GENES[key] || G.STARTER_GENES.shiba)) || null;
   const genes = x.c && typeof x.c === 'object' ? Object.assign({}, base || {}, x.c) : base;
   const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null };
   if (wear) outfit[wear.slot] = wear.n;
-  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: dcNameOk(x.n) ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
+  const eyes = Number.isInteger(x.e) ? DC_EYES[x.e] || null : null; // v2.23: the eyes the dog has at home (no e: an old card, drawn as before)
+  const d = { id: dcDogId(c, i, key, genes, eyes), dc: [c.id, i], key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: dcNameOk(x.n) ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
   if (x.a === 'pup') d.born = localISO(new Date(Date.now() - 3 * 864e5)); // a puppy: about 3 dog months old
+  if (Number.isInteger(x.p) && x.p >= 0 && x.p <= 0xFFFFFFFF) d.artSeed = x.p; // v2.23: its merle smudges, patches and spots as at home (lookOpts)
   return d;
 }
 // a card this copy can show: name words and at least one dog it knows
@@ -104,9 +117,16 @@ function dcCoat(d) {
   if (dcWireLive() && Array.isArray(g.A) && g.A.length === 2 && g.A.every((a) => DC_TAN.includes(a))) out.A = [g.A[0], g.A[1]]; // v2.21
   return Object.keys(out).length ? out : null;
 }
+// v2.23: e and p for the card (DC_EYES above): e only when the id roll decides the eyes (Bl/bl, or a merle that shows), p whenever the dog has genes
+function dcLook(d, x) {
+  const g = d && d.genes; if (!g || typeof g !== 'object') return x;
+  const c = coatInfo(d), Bl = Array.isArray(g.Bl) ? g.Bl : [], roll = (Bl.includes('Bl') && !(Bl[0] === 'Bl' && Bl[1] === 'Bl')) || !!(c && c.coat && c.coat.merle);
+  const e = c && roll ? DC_EYES.indexOf(c.eyes) : -1; if (e >= 0) x.e = e;
+  x.p = d.artSeed != null ? d.artSeed : hashId(d.id); return x;
+}
 function dcDogOf(d, nm) {
   const own = dcOwnNameIdx(d), n = own >= 0 ? own : (dcNameOk(nm) ? nm : dcDefaultNm(d)); // its own name when the list has it
-  return { b: dcBreeds().indexOf(d.key), c: dcCoat(d), o: dcOutfitIdx(d), a: ageMonths(d) < 6 ? 'pup' : 'adult', s: d.sex === 'female' ? 'f' : 'm', sp: d.sparkle ? 1 : 0, n };
+  return dcLook(d, { b: dcBreeds().indexOf(d.key), c: dcCoat(d), o: dcOutfitIdx(d), a: ageMonths(d) < 6 ? 'pup' : 'adult', s: d.sex === 'female' ? 'f' : 'm', sp: d.sparkle ? 1 : 0, n });
 }
 const dcCanShow = (d) => !!d && dcBreeds().indexOf(d.key) >= 0;
 /* v2.21 (V221.md 9): what the Worker gets. The live Worker knows 35 breeds and 115 dog names until the launch, when it is deployed FIRST and then

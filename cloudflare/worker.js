@@ -218,13 +218,21 @@ function dcCoat(c) {
   return Object.keys(out).length ? out : undefined;
 }
 // one Dog Card dog in the Worker's own shape, or null. Friends use the same checks (a yard may hold 5, a card 4).
+// v2.23: two optional keys. e = the dog's eyes (an index into the game's DC_EYES: brown, amber, blue, odd), p = its coat-pattern seed (a 32-bit
+// number, the hash of the dog's local id). A dog without them (every card and yard before v2.23) is stored and served exactly as before.
+const DC_DOG_KEYS = ['b', 'c', 'o', 'a', 's', 'sp', 'n'], DC_DOG_OPT = ['e', 'p'], DC_EYES_N = 4;
 function dcDog(d) {
-  if (!dcKeys(d, ['b', 'c', 'o', 'a', 's', 'sp', 'n'])) return null;
+  if (!d || typeof d !== 'object' || Array.isArray(d) || !DC_DOG_KEYS.every((k) => Object.hasOwn(d, k)) || Object.keys(d).some((k) => !DC_DOG_KEYS.includes(k) && !DC_DOG_OPT.includes(k))) return null;
   const c = dcCoat(d.c);
   if (c === undefined || !dcInt(d.b, 0, DC_LIM.breed - 1) || !dcInt(d.o, -1, DC_LIM.outfit - 1) || !dcInt(d.n, 0, DC_LIM.n - 1) || !dcInt(d.sp, 0, 1)) return null;
   if (d.a !== 'pup' && d.a !== 'adult') return null;
   if (d.s !== 'm' && d.s !== 'f') return null;
-  return { b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n };
+  if (Object.hasOwn(d, 'e') && !dcInt(d.e, 0, DC_EYES_N - 1)) return null;
+  if (Object.hasOwn(d, 'p') && !dcInt(d.p, 0, 4294967295)) return null;
+  const out = { b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n };
+  if (Object.hasOwn(d, 'e')) out.e = d.e;
+  if (Object.hasOwn(d, 'p')) out.p = d.p;
+  return out;
 }
 // the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
 function dcCardOf(body) {
