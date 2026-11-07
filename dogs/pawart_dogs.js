@@ -2368,8 +2368,8 @@ function mixSpec(bk,hk){
   return s;
 }
 // puppy (62%) and newborn (42%): drawn at adult scale with puppy proportions, then scaled down by pupScale in dog()
-// PUPLEG: [share of the breed's own leg below the belly, + px, far-leg offset, walk swing, paw rx and lift (x leg width)]
-var PUPLEG=[.55,2,16,.65,.62,.28];
+// PUPLEG: [share of the breed's own leg below the belly, + px, far-leg offset, walk swing, paw rx and lift (x leg width), least leg below the belly px]
+var PUPLEG=[.38,2,16,.65,.62,.28,6.5];
 function pupSpec(S0,age){
   const nb=age==='newborn',s=Object.assign({},S0),b=S0.body,hd=S0.head,lg=S0.legs,f=S0.face;
   const BK=b.long?(nb?.62:.72):(nb?.84:.9),HK=(nb?1.2:1.3)*(b.deep?1.18:1),legK=nb?.32:(b.deep?.56:.5),leg=GY-(b.y+b.ry*.42);
@@ -2377,7 +2377,8 @@ function pupSpec(S0,age){
   s.body.y=GY-s.body.ry*.42-leg*legK;s.body.x=b.x+(b.long?6:2);
   // puppy legs (owner, 7 Nov 2026: "the legs is bit weird"): legK of the hip height left 0-5 px of leg below the belly (none on the fluffy and
   // stocky breeds), so the paws sat in a pile under the body. A puppy (not a newborn) now shows a bit over half its breed's own leg below the belly.
-  if(!nb)s.body.y=Math.min(s.body.y,GY-s.body.ry-Math.min(s.body.ry,(leg-b.ry*.58)*PUPLEG[0]+PUPLEG[1]));
+  // Owner, 7 Nov 2026: stubby, but the paws never tuck back under a fluffy belly (golden, samoyed, chow): at least PUPLEG[6] px below its real outline.
+  if(!nb){const lo=q=>Math.max(...bodyPts(q).map(p=>p[1])),bl=lo(s);s.body.y=Math.min(s.body.y,GY-bl-Math.max(PUPLEG[6],Math.min(s.body.ry,(GY-b.y-lo(S0))*PUPLEG[0]+PUPLEG[1])))}
   const rel=[hd.x-b.x,hd.y-b.y];
   s.head={rx:hd.rx*HK,ry:hd.ry*HK*(f.snoutL?1.12:1.04),x:s.body.x+rel[0]*(b.long?.62:.86)-(f.snout?hd.rx*.3:0),y:s.body.y+rel[1]*(b.deep?.62:.92)-hd.ry*(HK-1)*.55};
   s.legs=Object.assign({},lg,{h:lg.h*BK,f:lg.f*BK,w:lg.w*1.12});
