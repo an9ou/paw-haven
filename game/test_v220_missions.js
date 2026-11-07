@@ -674,6 +674,8 @@ require('./test_lib').run('v220_missions', async (t) => {
     await t.ctx.close();
   }
 
+  // L1-L2 test the switched-off state and turning it on; since the launch (7 Nov 2026, MS2_LIVE = true) no player can be in it
+  if (!/const MS2_LIVE = true/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '24b_missions2.js'), 'utf8'))) {
   sec('L1. the launch switch: MS2_LIVE off, no test flag: exactly the v2.19.2 missions');
   await t.newGame({ sex: 'girl', prefs: { msTest: true, ddTest: true } }, { bond: { level: 5, pts: 900 }, coins: 1000, stats: { hunger: 80, happy: 70, energy: 90, clean: 90 } });
   await t.home('yard'); await t.freezeMotion(true);
@@ -737,6 +739,8 @@ require('./test_lib').run('v220_missions', async (t) => {
   await ev(() => window.__paw.ms.open()); await t.until(() => !!document.querySelector('#modal .panel.ms-pop .ms-tab'), null, 4000);
   ok(await ev(() => document.querySelectorAll('#modal .panel.ms-pop .ms-tab').length >= 3 && document.querySelectorAll('#modal .ms2-h').length === 2), 'on: the sheet has its tabs and two little helps');
   await t.closeX();
+
+  } else console.log('  (L1 and L2 skipped: MS2_LIVE is on since the 7 Nov 2026 launch, so the switched-off state no longer exists)');
 
   sec('L3. the GitHub Pages test copy has window.__ddMs2Test, the itch.io / play copy never');
   {
