@@ -132,3 +132,4 @@ RedNote:
 | 7 Nov 2026 | Cockapoo (black) | 35-breeds Reel comment | half of it (Miniature Poodle #30) is in; "we'll draw yours" |
 | 7 Nov 2026 | Old English Bulldog | 35-breeds Reel comment | "we'll draw yours", photo by DM |
 | 7 Nov 2026 | 泰迪 (Teddy-cut toy poodle) | RedNote comment | Miniature Poodle #30 is in; offered a teddy-cut drawing |
+| 7 Nov 2026 | American wolfdog | 35-breeds Reel comment | pointed to Husky #2 and Malamute #22; "we'll draw yours" |

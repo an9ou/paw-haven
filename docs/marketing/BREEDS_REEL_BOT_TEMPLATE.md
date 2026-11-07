@@ -46,7 +46,7 @@ New on 7 Nov 2026 (v2.21, not in the Reel): Dalmatian, Bernese Mountain Dog, Aus
 ## Dogs coming
 
 - **Announced:** Japanese Chin and Kai Ken. The site says "Japanese Chin and Kai Ken are on their way." (`SOON_LINE`, since v2.12). No date. OK to say "on their way"; don't give a date.
-- **Asked for in comments, not planned:** Wirehaired Vizsla, English Setter, Whippet, Cockapoo, Old English Bulldog, a teddy-cut poodle (the log in `BREEDS_REEL_REPLIES.md`). Use template B: we draw them, and we never promise them for the game.
+- **Asked for in comments, not planned:** Wirehaired Vizsla, English Setter, Whippet, Cockapoo, Old English Bulldog, a teddy-cut poodle, American wolfdog (the log in `BREEDS_REEL_REPLIES.md`). Use template B: we draw them, and we never promise them for the game.
 
 ## Prompt to paste into the bot
 
