@@ -58,10 +58,13 @@ run('friends_howto', async (t) => {
     if (await p().locator('#tGuest').count()) { await p().click('#tGuest'); await p().waitForSelector('#tNew'); }
   };
 
+  // (the game can write its prefs back between the write and the reload, so the language is checked after the reload and set again if it did not stick)
   const toLang = async () => { if (!LANG) return;
-    await ev((l) => { window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
-    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm();
-    console.log('language', await ev(() => document.documentElement.lang)); };
+    for (let i = 0; i < 4; i++) {
+      await ev((l) => { window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+      await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm();
+      const got = await ev(() => document.documentElement.lang); console.log('language', got); if (got === LANG) return; }
+    throw new Error('the game did not switch to ' + LANG); };
   // ---------------- our side: Mochi, Sunny Biscuit, DOG-K3APZ ----------------
   await start('howto_us', { code: OUR_CODE, day, friend: FRIEND });
   await t.adopt({});
