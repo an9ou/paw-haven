@@ -793,7 +793,7 @@ function modePlace() { const m = cur.mode; if (m === 'adopt') return 'shelter'; 
 function audioPlace(place) {
   const a = PAU(); if (!a || typeof a.setContext !== 'function') return;
   const pl = place || modePlace(), e = envNow();
-  try { a.setContext({ place: pl, area: cur.mode === 'walk' ? (W && W.area) || cur.arg || null : (cur.mode === 'yard' && S && ROUTE_KEYS.includes(S.place) ? S.place : null), time: e.time, weather: e.weather, fest: pl === 'fmarket' && typeof fmOpen === 'function' && fmOpen().some((o) => o.m.id === 'winter') ? 'winter' : null }); lastPlace = pl; } catch (er) { /* audio module error */ } // v2.22.1: fest 'winter' = the Winter Market's own music at the Festive Market (1-26 Dec, fmOpen in 49_market.js)
+  try { a.setContext({ place: pl, area: cur.mode === 'walk' ? (W && W.area) || cur.arg || null : (cur.mode === 'yard' && S && ROUTE_KEYS.includes(S.place) ? S.place : null), time: e.time, weather: e.weather, fest: pl === 'fmarket' && e.time !== 'dawn' && typeof fmOpen === 'function' && fmOpen().some((o) => o.m.id === 'winter') ? 'winter' : null }); lastPlace = pl; } catch (er) { /* audio module error */ } // v2.22.1: fest 'winter' = the Winter Market's own music at the Festive Market (owner chose the times, 7 Nov 2026: dawn = the plain market music while the stalls open, day = Winter Market, dusk/night = its night version) (1-26 Dec, fmOpen in 49_market.js)
 }
 function audioCue(name) { const a = PAU(); if (!a) return; try { if (a.duck) a.duck(0.4, 1800); if (a.stinger) a.stinger(name); } catch (e) { /* ignore */ } }
 

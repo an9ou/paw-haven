@@ -224,7 +224,13 @@ run('wm_review', async (t) => {
     for (const [date, want] of [['2026-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-27', null], ['2026-10-27', null]]) {
       await ev((dt) => { const P = window.__paw; P.fm.date(dt); P.S.place = 'fmarket'; P.go('yard'); }, date); await t.calm();
       const c = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
-      ok(c && c.place === 'fmarket' && c.fest === want, date + ': audioPlace passes fest ' + want + ' (' + JSON.stringify(c) + ')');
+      const w2 = want && c && c.time !== 'dawn' ? want : null; // dawn: the plain market music while the stalls open (owner, 7 Nov 2026)
+      ok(c && c.place === 'fmarket' && c.fest === w2, date + ': audioPlace passes fest ' + w2 + ' at ' + (c && c.time) + ' (' + JSON.stringify(c) + ')');
+    }
+    { // the owner's times (7 Nov 2026): dawn = the plain market music, day and dusk/night = the Winter Market (C at dusk/night is the same fest, its night style)
+      const at = async (tm) => { await ev(() => { const P = window.__paw; P.fm.date('2026-12-05'); P.S.place = 'fmarket'; P.go('yard'); }); await t.dev(async () => { await t.p.selectOption('#dvTime', tm); }); await t.calm(); return ev(() => { const L = window.PawAudio.contexts.filter((c) => c.place === 'fmarket'); return L[L.length - 1]; }); };
+      const dn = await at('dawn'), dy = await at('day'), nt = await at('night'); await at('auto');
+      ok(dn && dn.time === 'dawn' && dn.fest === null && dy && dy.time === 'day' && dy.fest === 'winter' && nt && nt.time === 'night' && nt.fest === 'winter', 'Winter Market times: dawn plain market, day and night Winter Market (' + JSON.stringify([dn, dy, nt].map((c) => c && c.time + ':' + c.fest)) + ')');
     }
     await ev(() => { const P = window.__paw; P.fm.date('2026-12-05'); P.S.place = 'yard'; P.go('yard'); }); await t.calm();
     const y = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
