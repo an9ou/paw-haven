@@ -214,6 +214,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
     if (missing.length && !live) console.log(`  note: art pending for ${missing.join(', ')} (drawn as the mutt placeholder; MS2_LIVE is off, so it cannot ship)`);
   }
 
+  if (!/const MS2_LIVE = true/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '24b_missions2.js'), 'utf8'))) { // the gate off: gone since the 7 Nov 2026 launch
   sec('4. the gate off: a new game and an old save never see the five');
   await t.newGame({}, { coins: 1000 });
   const off = await ev(() => { const P = window.__paw, N = P.v221, days = [], wk = [], pb = []; const d0 = new Date('2026-11-04T12:00:00');
@@ -241,6 +242,7 @@ require('./test_lib').run('v221_breeds', async (t) => {
     ok(heads.length === 35 && !heads.some((h) => / the (Dalmatian|Bernese Mountain Dog|Australian Shepherd|Cavalier King Charles Spaniel|Jack Russell Terrier)$/.test(h)), `off: 35 heads in the adoption carousel, none of the five`);
     await t.ctx.close();
   }
+  } else console.log('  (section 4 skipped: MS2_LIVE is on since the 7 Nov 2026 launch, the five are live)');
 
   sec('5. the gate on (prefs.ms2Test, as the GitHub Pages test copy)');
   {
