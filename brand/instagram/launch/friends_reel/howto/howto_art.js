@@ -61,19 +61,25 @@ function hwStory(sx,sy,sw,sh,poster,p){ const k=sw/350; let s=hwImg(poster,sx,sy
   s+='<rect x="'+hwF(sx+14*k)+'" y="'+hwF(sy+14*k)+'" width="'+hwF(sw-28*k)+'" height="'+hwF(6*k)+'" rx="'+hwF(3*k)+'" fill="'+HW.pen+'" opacity=".25"/>'
     +'<rect x="'+hwF(sx+14*k)+'" y="'+hwF(sy+14*k)+'" width="'+hwF((sw-28*k)*Math.max(0.02,Math.min(1,p)))+'" height="'+hwF(6*k)+'" rx="'+hwF(3*k)+'" fill="'+HW.pen+'" opacity=".75"/>';
   return s; }
-// a crayon finger: the tip at (x, y), the hand along the angle (0: the hand below the tip; positive: turned clockwise, so 25 is down and to the left)
-function hwFinger(x,y,ang,sc){ return '<g data-safe transform="translate('+hwF(x)+' '+hwF(y)+') rotate('+hwF(ang)+') scale('+hwF(sc)+')">'
-  +'<path d="M-25 112 C-62 118 -80 150 -74 196 Q0 222 64 196 C72 156 62 120 25 112 Z" fill="'+HW.skin+'" stroke="'+HW.pen+'" stroke-width="5" stroke-linejoin="round"/>'
-  +'<path d="M-62 150 q-14 -16 -6 -34 q16 -6 34 14" fill="'+HW.skin+'" stroke="'+HW.pen+'" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>'
-  +'<path d="M-23 8 Q-23 -9 0 -9 Q23 -9 23 8 L25 122 L-25 122 Z" fill="'+HW.skin+'" stroke="'+HW.pen+'" stroke-width="5" stroke-linejoin="round"/>'
-  +'<path d="M-13 6 Q-13 -2 0 -2 Q13 -2 13 6 L12 27 Q0 32 -12 27 Z" fill="#FFF3EC" stroke="'+HW.pen+'" stroke-width="2.5"/>'
-  +'<path d="M-10 66 q10 5 20 0 M-8 79 q8 4 16 0" fill="none" stroke="'+HW.pen+'" stroke-width="2.5" stroke-linecap="round"/></g>'; }
-function hwTap(x,y,ang,lt){ if(lt<-0.45||lt>0.55) return ''; const e=(v)=>{ v=Math.max(0,Math.min(1,v)); return v*v*(3-2*v); };
+// a crayon pointing hand: the INDEX finger's tip at (x, y), the hand along the angle (0: the hand below the tip; positive: turned clockwise,
+// so 25 is down and to the left). Owner, 7 Nov 2026: the first hand (one finger up from the middle of a fist) read as a middle finger. Now
+// the pointing finger rises from the fist's thumb-side edge, the other three fingers curl over the top of the fist as knuckles, and the
+// thumb tucks across the front, so it always reads as an index finger.
+function hwFinger(x,y,ang,sc,flip){ const sk=HW.skin, pn=HW.pen; // flip: a left hand (the fist on the other side), for taps near the right edge
+  return '<g data-safe transform="translate('+hwF(x)+' '+hwF(y)+') rotate('+hwF(flip?-ang:ang)+') scale('+hwF(flip?-sc:sc)+' '+hwF(sc)+')">'
+  +'<path d="M-26 110 C-52 122 -56 172 -40 202 Q30 230 100 202 C116 166 110 122 84 110 Z" fill="'+sk+'" stroke="'+pn+'" stroke-width="5" stroke-linejoin="round"/>'
+  +[24,50,76].map((cx)=>'<path d="M'+(cx-13)+' 140 L'+(cx-13)+' 118 Q'+(cx-13)+' 102 '+cx+' 102 Q'+(cx+13)+' 102 '+(cx+13)+' 118 L'+(cx+13)+' 140" fill="'+sk+'" stroke="'+pn+'" stroke-width="4.5" stroke-linejoin="round"/>').join('')
+  +'<path d="M-23 8 Q-23 -9 0 -9 Q23 -9 23 8 L25 132 L-25 132 Z" fill="'+sk+'" stroke="'+pn+'" stroke-width="5" stroke-linejoin="round"/>'
+  +'<path d="M-13 6 Q-13 -2 0 -2 Q13 -2 13 6 L12 27 Q0 32 -12 27 Z" fill="#FFF3EC" stroke="'+pn+'" stroke-width="2.5"/>'
+  +'<path d="M-10 66 q10 5 20 0 M-8 79 q8 4 16 0" fill="none" stroke="'+pn+'" stroke-width="2.5" stroke-linecap="round"/>'
+  +'<path d="M-44 176 Q-40 150 -10 150 L56 150 Q72 150 72 163 Q72 176 56 176 L-6 178" fill="'+sk+'" stroke="'+pn+'" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>'
+  +'</g>'; }
+function hwTap(x,y,ang,lt,flip){ if(lt<-0.45||lt>0.55) return ''; const e=(v)=>{ v=Math.max(0,Math.min(1,v)); return v*v*(3-2*v); };
   const inn=e((lt+0.45)/0.3), out=1-e((lt-0.3)/0.25), d=60*(1-inn), press=lt>-0.06&&lt<0.12?0.93:1, a=ang*Math.PI/180;
   let s='';
   if(lt>=0){ const q=Math.min(1,lt/0.45); s+='<circle cx="'+hwF(x)+'" cy="'+hwF(y)+'" r="'+hwF(16+48*q)+'" fill="none" stroke="'+HW.pink+'" stroke-width="7" opacity="'+hwF(0.9*(1-q))+'"/>'
     +'<circle cx="'+hwF(x)+'" cy="'+hwF(y)+'" r="'+hwF(8+26*q)+'" fill="'+HW.pink+'" opacity="'+hwF(0.35*(1-q))+'"/>'; }
-  return s+'<g opacity="'+hwF(Math.min(inn,out))+'">'+hwFinger(x-Math.sin(a)*d,y+d*Math.cos(a),ang,0.78*press)+'</g>'; }
+  return s+'<g opacity="'+hwF(Math.min(inn,out))+'">'+hwFinger(x-Math.sin(flip?-a:a)*d,y+d*Math.cos(a),ang,0.78*press,flip)+'</g>'; }
 // the code swap (owner, 7 Nov 2026: our account holds 50 friends at most, so the ask is "drop your friend code below and add each other", never "add us"):
 // comment bubbles with a paw for a face and BLANK code boxes (DOG- and five empty boxes: never a made-up code that looks real), popping in one by one,
 // with two-way arrows and a heart between them. hwSwap(cx, top, lt, o): o.w bubble width, o.h height, o.gap between bubbles; lt seconds (large = all shown)

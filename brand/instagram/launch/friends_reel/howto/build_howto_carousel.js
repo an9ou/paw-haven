@@ -43,7 +43,7 @@ function win_(f, c, X, Y, WW) { const k = WW / c.w, HH = c.h * k, id = 'w' + (wi
   return { svg, k, X, Y, h: HH, at: (p) => [X + (p[0] - c.x) * k, Y + (p[1] - c.y) * k] }; }
 const mid = (r) => [r.x + r.w * 0.62, r.y + r.h * 0.66];
 const corner = (r) => [r.x + r.w * 0.86, r.y + r.h * 0.86];
-const tapAt = (w, r, ang) => { const [x, y] = w.at(corner(r)); return `\${hwTap(${x},${y},${ang},0.12)}`; };
+const tapAt = (w, r, ang) => { const [x, y] = w.at(corner(r)); return `\${hwTap(${x},${y},${x > 640 ? Math.max(ang, 52) : ang},0.12)}`; }; // near the right edge the hand leans further left, so the fist stays inside SAFE
 const ripple = (x, y) => `<circle cx="${x}" cy="${y}" r="46" fill="none" stroke="${PINK}" stroke-width="7" opacity=".85"/><circle cx="${x}" cy="${y}" r="24" fill="${PINK}" opacity=".3"/>`;
 const rippleAt = (w, r) => { const [x, y] = w.at([r.x + r.w / 2, r.y + r.h / 2]); return ripple(x, y); };
 
@@ -76,7 +76,7 @@ S.push(`\${page(0)}\${'<g transform="rotate(-1.5 475 395)">'+box(80,290,790,210,
 \${'<g transform="rotate(3 600 548)">'+pill('share your code in 3 taps',600,548,52,FAM,{fill:'${YEL}',padX:28})+'</g>'}
 \${'<g transform="rotate(-4 245 900)">'+hwPhone('c1',125,655,240,240*16/9,hwImg(POSTER,125,655,240,240*16/9))+'</g>'}
 \${[['1.','More'],['2.','Friends'],['3.','Share poster']].map(([n,w],i)=>{ const y=730+i*150, x=440; return bub(x,y,44,n,58)+pill(w,x+64+(inkOf(w,58,FAM).L+inkOf(w,58,FAM).R)/2+30,y,58,FAM,{fill:i===2?'${YEL}':'#FFFDF7',padX:30}); }).join('')}
-\${hwFinger(815,1058,20,0.85)}`);
+\${hwFinger(788,1058,20,0.85)}`);
 // 2 step 1
 { const c = { x: 150, y: 300, w: 243, h: 359 }, a = win_(stillOf(UI, 'yard_ui'), c, 66, 450, 380), b = win_(stillOf(UI, 'more_tray'), c, 498, 450, 380);
   S.push(`\${page(1)}\${head(1,'tap More, then Friends',290)}${a.svg}${b.svg}${tapAt(a, LAY.more, -38)}${tapAt(b, LAY.friends, 30)}
