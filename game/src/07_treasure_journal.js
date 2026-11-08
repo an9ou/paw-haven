@@ -123,8 +123,8 @@ function coatGeneMap(key) {
   const G = PGN(), m = {}; if (!G) return m;
   const P = { B: [['B', 'B'], ['B', 'b'], ['b', 'b']], D: [['D', 'D'], ['D', 'd'], ['d', 'd']], E: [['E', 'E'], ['E', 'e'], ['e', 'e']], S: [['S', 'S'], ['S', 'sp'], ['sp', 'sp']], M: [['m', 'm'], ['M', 'm']], Bl: [['bl', 'bl'], ['Bl', 'bl'], ['Bl', 'Bl']] };
   try {
-    for (const a of [null, ['a', 'a']]) for (const b of P.B) for (const d of P.D) for (const e of P.E) for (const s of P.S) for (const mm of P.M) for (const bl of P.Bl) {
-      const g = { B: b, D: d, E: e, S: s, M: mm, Bl: bl }; if (a) g.A = a; // v2.21: no tan-point locus first (every older coat as before), then a/a (the Aussie's no-copper coats)
+    for (const x of [null, { A: ['a', 'a'] }, { A: ['at', 'at'] }, { I: ['I', 'I'] }]) for (const b of P.B) for (const d of P.D) for (const e of P.E) for (const s of P.S) for (const mm of P.M) for (const bl of P.Bl) {
+      const g = { B: b, D: d, E: e, S: s, M: mm, Bl: bl }; if (x) Object.assign(g, x); // v2.21: no tan-point locus first (every older coat as before), then a/a (the Aussie's no-copper coats); then the collie and corgi tan points and the deep red (fox red, dark golden), which only add names
       const ph = G.phenotype(g, key, 'coatbook');
       if (ph && ph.coatName && !m[ph.coatName]) m[ph.coatName] = g;
     }

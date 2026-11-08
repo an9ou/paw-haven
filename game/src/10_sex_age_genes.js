@@ -49,8 +49,8 @@ const STARTER_GENES = {
    inside the breed's FREQ (mods/genes.js), so later puppies inherit real genes; test_v223_coats.js checks each name, FREQ and that no option is M/M. */
 const STARTER_COATS = {
   shiba: [['Black and tan with cream urajiro', 'Ee'], ['Cream with cream urajiro', 'dd']],
-  corgi: [['Cream and white', 'dd']],
-  golden: [['Cream', 'dd']],
+  corgi: [['Cream and white', 'dd'], ['Black-headed tricolour', 'Ee atat']], // tan points (A locus, mods/genes.js TAN_ART): a black saddle and head, tan face and legs
+  golden: [['Cream', 'dd'], ['Dark golden', 'II']], // II: the red-intensity locus (mods/genes.js RED_I)
   dachs: [['Black and tan', 'Bb'], ['Red', 'Bb ee'], ['Black dapple', 'Bb Mm']],
   husky: [['Red and white', 'ee'], ['Copper and white', 'bb']],
   mutt: [['Red with white markings', 'ee Ssp'], ['Chocolate & white piebald', 'bb'], ['Black merle with white markings', 'Ssp Mm']],
@@ -59,7 +59,7 @@ const STARTER_COATS = {
   greyhound: [['Black', 'Dd SS'], ['Fawn', 'Dd ee SS'], ['Black & white piebald', 'Dd spsp']],
   beagle: [['Red and white', 'ee'], ['Lemon and white', 'ee dd'], ['Chocolate tricolour', 'bb']],
   poodle: [['Black', 'Ee'], ['White', 'dd'], ['Chocolate', 'bb Ee'], ['Silver', 'dd Ee']],
-  collie: [['Chocolate and white', 'bb'], ['Blue merle', 'Mm'], ['Red merle', 'bb Mm']], // no Tricolour: the collie art has no tan points, so S/S draws as black and white
+  collie: [['Chocolate and white', 'bb'], ['Blue merle', 'Mm'], ['Red merle', 'bb Mm'], ['Tricolour', 'atat']], // Tricolour: black and white with tan points (A locus, mods/genes.js TAN_ART)
   samoyed: [],
   frenchie: [['Dark fawn', 'Ee'], ['Pied', 'Ee spsp']],
   akita: [['Sesame', 'Ee'], ['White', 'dd']],
@@ -73,7 +73,7 @@ const STARTER_COATS = {
   corso: [['Grey', 'dd'], ['Fawn', 'ee']],
   pitbull: [['Black', 'Dd'], ['Fawn', 'Dd ee'], ['Red', 'bb Dd ee']],
   minpin: [['Black and rust', 'Ee'], ['Chocolate and rust', 'bb Ee']],
-  lab: [['Black', 'Ee'], ['Chocolate', 'bb Ee']],
+  lab: [['Black', 'Ee'], ['Chocolate', 'bb Ee'], ['Fox red', 'II']], // Fox red: the red-intensity locus (mods/genes.js RED_I)
   malamute: [['Black and white', 'EE'], ['Sable and white', 'ee'], ['Red and white', 'bb'], ['White', 'ee dd']],
   chow: [['Black', 'Ee'], ['Blue', 'Ee dd'], ['Cinnamon', 'bb Ee'], ['Cream', 'dd']],
   stdpoodle: [['White', 'ee dd'], ['Apricot', 'ee'], ['Red', 'BB ee'], ['Chocolate', 'bb']],
@@ -94,13 +94,14 @@ const STARTER_COATS = {
    only through this starter preset, its FREQ stays Bl 0 so random and rescue collies are as before; a merle coat keeps merle's own eye rolls);
    'merle': only a merle coat (merle itself gives the blue or odd eyes). Review fix (7 Nov 2026): no b/b stand-in colours that would give a
    breed amber eyes it does not have (Pug and Mastiff apricot, Samoyed, Frenchie and Bichon cream, Pom white, Dane, Corso and Pit Bull brindle, Corso red),
-   and no Corgi black and white (a Cardigan colour) or Collie tricolour (drawn the same as black and white: the collie art has no tan points). */
+   and no Corgi black and white (a Cardigan colour). The Collie tricolour and the Corgi black-headed tricolour carry the tan-point locus A (at/at), the
+   Lab fox red and the Golden dark golden the red-intensity locus I (I/I): both only through these presets, so random and rescue dogs are as before. */
 const STARTER_EYES = { husky: 'all', aussie: 'all', collie: 'all', dachs: 'merle', dane: 'merle', mutt: 'merle' };
-const COAT_LOCUS = { B: 'B', b: 'B', D: 'D', d: 'D', E: 'E', e: 'E', S: 'S', sp: 'S', M: 'M', m: 'M', Bl: 'Bl', bl: 'Bl', at: 'A', a: 'A' };
+const COAT_LOCUS = { B: 'B', b: 'B', D: 'D', d: 'D', E: 'E', e: 'E', S: 'S', sp: 'S', M: 'M', m: 'M', Bl: 'Bl', bl: 'Bl', at: 'A', a: 'A', I: 'I', i: 'I' };
 function coatGenes(key, diff) { // STARTER_GENES[key] (the loci only) with the diff tokens on top
   const g = STARTER_GENES[key] || STARTER_GENES.mutt, out = {};
-  ['B', 'D', 'E', 'S', 'M', 'Bl', 'A'].forEach((k) => { if (g[k]) out[k] = g[k].slice(); });
-  String(diff || '').split(/\s+/).filter(Boolean).forEach((t) => { const al = t.match(/sp|Bl|bl|at|[BbDdEeSMma]/g); if (al && al.length === 2 && COAT_LOCUS[al[0]]) out[COAT_LOCUS[al[0]]] = al; });
+  ['B', 'D', 'E', 'S', 'M', 'Bl', 'A', 'I'].forEach((k) => { if (g[k]) out[k] = g[k].slice(); });
+  String(diff || '').split(/\s+/).filter(Boolean).forEach((t) => { const al = t.match(/sp|Bl|bl|at|[BbDdEeSMmaIi]/g); if (al && al.length === 2 && COAT_LOCUS[al[0]]) out[COAT_LOCUS[al[0]]] = al; });
   return out;
 }
 const coatPh = (genes, key, seed) => { const G = window.PawGenes; try { return G ? G.phenotype(genes, key, seed == null ? 'x' : seed) : null; } catch (e) { return null; } };
