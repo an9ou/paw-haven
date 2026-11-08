@@ -1,6 +1,6 @@
 # Doodle Doggo on Instagram
 
-Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, owner pick) or `doodle-doggo-instagram-1080.png` (Biscuit the corgi). 1080x1080; Instagram crops to a circle and everything important sits inside it. Sources: the matching `.svg` files. Halloween (1-31 Oct): `doodle-doggo-instagram-halloween-1080.png` (Noodle in the game's Witch Hat and Candy Corn Bandana; a 512 x 512 copy, rendered from the same SVG, is `doodle-doggo-instagram-halloween-512.png`). Winter: `brand/winter/doodle-doggo-icon-winter-1080.png` (Noodle in the game's Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, with the game's snowman, Felt Fir Tree and presents; sizes and channels in `brand/winter/README.md`).
+Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, owner pick) or `doodle-doggo-instagram-1080.png` (Biscuit the corgi). 1080x1080; Instagram crops to a circle and everything important sits inside it. Sources: the matching `.svg` files. Halloween (1-31 Oct): `doodle-doggo-instagram-halloween-1080.png` (Noodle in the game's Witch Hat and Candy Corn Bandana; a 512 x 512 copy, rendered from the same SVG, is `doodle-doggo-instagram-halloween-512.png`). Winter: `brand/winter/doodle-doggo-icon-winter-1080.png` (Noodle in the game's Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, with the game's Felt Fir Tree; sizes and channels in `brand/winter/README.md`).
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 

@@ -2,7 +2,7 @@
 //   node brand/winter/make_winter_icon.js [variant]      (needs playwright; chromium at /opt/pw-browsers/chromium)
 // Same layout as the Halloween icon (brand/instagram/doodle-doggo-instagram-halloween.svg): a night background,
 // the paper circle with its pencil ring (taken from that file), Noodle the dachshund in the game's own winter outfits,
-// and the game's own snowman, Felt Fir Tree and Present Pile (Winter Market art), with crayon baubles and holly. Everything important sits inside the circle, so every round crop keeps it.
+// and the game's own Felt Fir Tree (Winter Market art), with crayon baubles and holly. Noodle is the main character: nothing overlaps him. Everything important sits inside the circle, so every round crop keeps it.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..', '..'), OUT = __dirname;
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -57,24 +57,18 @@ function icon() {
   let paper = `<defs><clipPath id="cc"><circle cx="540" cy="540" r="400"/></clipPath></defs><circle cx="540" cy="540" r="400" fill="${PAPER}"/>`;
   paper += `<g clip-path="url(#cc)">`;
   // snow falling on the paper, very light
-  for (let i = 0; i < 26; i++) { const x = 160 + rnd() * 760, y = 150 + rnd() * 470; paper += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(3 + rnd() * 3)}" fill="${ICE}"/>`; }
-  paper += `<path d="M120 770 Q300 735 540 752 Q780 768 960 738 L960 960 L120 960Z" fill="${SNOW}" stroke="#B9CFE0" stroke-width="5" stroke-linejoin="round"/>`;
-  paper += `<path d="M190 800 q40 -10 80 0 M640 790 q50 -12 100 0 M420 815 q30 -8 60 0" fill="none" stroke="#B9CFE0" stroke-width="4" stroke-linecap="round"/></g>`;
-  // the game's snowman in the yard, behind Noodle on the left (clipped to the circle like the ground)
-  const snowman = `<g clip-path="url(#cc)">${prop('snowman', {}, 78, 470, 330, 330)}</g>`;
-  // the game's Felt Fir Tree behind Noodle (its pot hides behind his sweater) and the Present Pile at his feet
-  const tree = `<g clip-path="url(#cc)">${prop('wmfirtree', {}, 400, 136, 380, 543)}</g>`;
-  const presents = prop('wmpresents', {}, 432, 690, 230, 172);
-  // baubles hanging from the ring, holly on the ring
-  const hang = bauble(250, 120, 24, '#D7263D', 4) + bauble(330, 70, 20, '#F2C14E', -3) + bauble(830, 110, 24, '#4A7FC1', -4) + bauble(750, 62, 19, '#D7263D', 3)
-    + holly(540, 148, 1.3, 0) + holly(232, 820, 1.1, 40) + holly(848, 820, 1.1, -40);
-  // Noodle in the Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, facing right like the Halloween icon
-  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 322, 282, 590);
-  // crayon snowflakes and stars round the circle (inside the circle's crop for a round avatar)
-  const deco = ''
-    + flake(140, 180, 28, 12) + flake(950, 150, 22, 30) + flake(110, 900, 24, 5) + flake(960, 930, 30, 18) + flake(540, 1035, 18, 0) + flake(40, 520, 18, 10) + flake(1040, 520, 18, 25)
-    + star(720, 860, 22, 4) + star(380, 330, 16) + star(700, 300, 14);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">\n${bg}${paper}${tree}${snowman}${ring}${noodle}${presents}${deco}${hang}\n</svg>\n`;
+  for (let i = 0; i < 26; i++) { const x = 160 + rnd() * 760, y = 150 + rnd() * 420; paper += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(3 + rnd() * 3)}" fill="${ICE}"/>`; }
+  paper += `<path d="M120 715 Q300 680 540 697 Q780 713 960 683 L960 960 L120 960Z" fill="${SNOW}" stroke="#B9CFE0" stroke-width="5" stroke-linejoin="round"/>`;
+  paper += `<path d="M200 760 q40 -10 80 0 M640 750 q50 -12 100 0 M420 790 q30 -8 60 0 M560 850 q40 -10 80 0" fill="none" stroke="#B9CFE0" stroke-width="4" stroke-linecap="round"/></g>`;
+  // the game's Felt Fir Tree on the left, on its own: nothing overlaps it
+  const tree = prop('wmfirtree', {}, 148, 445, 180, 257);
+  // three baubles hanging from the ring and one holly sprig on top, clear of the tree and Noodle
+  const hang = bauble(300, 92, 22, '#D7263D', 3) + bauble(395, 44, 17, '#F2C14E', -2) + bauble(800, 96, 22, '#4A7FC1', -3) + holly(540, 148, 1.25, 0);
+  // Noodle, the main character: big, in the Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, facing right
+  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 330, 278, 580);
+  // crayon snowflakes on the night, outside the circle
+  const deco = flake(140, 180, 28, 12) + flake(950, 150, 22, 30) + flake(110, 900, 24, 5) + flake(960, 930, 30, 18) + flake(540, 1035, 18, 0) + flake(40, 520, 18, 10) + flake(1040, 520, 18, 25);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">\n${bg}${paper}${tree}${ring}${noodle}${deco}${hang}\n</svg>\n`;
 }
 
 async function main() {
