@@ -108,7 +108,7 @@ function ksTakeLook(n) {
   if (HM_DECOR[n]) { if (S.decor) delete S.decor[n]; if (typeof HO === 'object' && HO.uses) Object.keys(HO.uses).forEach((id) => { if (HO.uses[id] && HO.uses[id].name === n) delete HO.uses[id]; }); return; }
   if (n === KS_HOUSE) {
     S.inv.houses = S.inv.houses.filter((h) => h !== n);
-    if (S.house === n) { const pv = sh.prevHouse && owns('houses', sh.prevHouse) ? sh.prevHouse : null; S.house = pv || S.inv.houses.slice().sort((a, b) => (HOUSE_CAP[b] || 1) - (HOUSE_CAP[a] || 1))[0] || 'Cardboard Box'; }
+    if (S.house === n) { const cap = (h) => HOUSE_CAP[h] || 1, hc = (h) => (HOUSES.find((x) => x.n === h) || {}).comfort || 0, pv = sh.prevHouse && owns('houses', sh.prevHouse) && cap(sh.prevHouse) >= S.dogs.length ? sh.prevHouse : null; S.house = pv || S.inv.houses.slice().sort((a, b) => cap(b) - cap(a) || hc(b) - hc(a))[0] || 'Cardboard Box'; }
     return;
   }
   S.inv.clothes = S.inv.clothes.filter((c) => c !== n);
@@ -123,12 +123,14 @@ function ksTakeBack(item) {
 /* the future GET /shop/owned result: [{ id, item, refunded }]. Each unclaimed id is granted once and recorded in S.shop.claimed; a refunded id that
    was granted here takes back its one-time items once (unless another live purchase of the same thing is owned), never coins. Pure on its input:
    the same list twice grants nothing more. Returns { granted: [ids], refunded: [ids], coins } */
-function ksGrant(purchases) {
+function ksGrant(purchases, give) {
+  give = give || ksGive;
   const sh = ksS(), out = { granted: [], refunded: [], coins: 0 }; if (!sh) return out;
   const list = (Array.isArray(purchases) ? purchases : []).filter((p) => p && typeof p.id === 'string' && p.id && KS_ITEMS[p.item]);
   list.forEach((p) => {
     if (p.refunded || sh.claimed.includes(p.id)) return;
-    sh.claimed.push(p.id); out.coins += ksGive(p.item); out.granted.push(p.id);
+    try { out.coins += give(p.item); } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); return; } // unclaimed: the next poll retries
+    sh.claimed.push(p.id); out.granted.push(p.id);
   });
   list.forEach((p) => {
     if (!p.refunded || sh.refunded.includes(p.id)) return;
@@ -201,10 +203,12 @@ function ksRoboTick() {
     return;
   }
 }
+const KS_BOWL_GRACE = 20;
+function ksHelpOpen(id) { try { const h = S.missions && S.missions.help; return !!(h && h.date === jstISO() && Array.isArray(h.list) && h.list.some((it) => it && it.id === id && !it.done)); } catch (e) { return false; } }
 // Auto Water Bowl: Fresh Water refills and the dog drinks by itself when it is ready (every 2 game hours): +5 Happiness, +10 Energy, as by hand, no water tick
 function ksBowlTick() {
   if (!ksToolOn('bowl') || cur.mode !== 'yard' || !atHome() || busy || S.sleeping || !modal.hidden || popOpen() || (typeof buyOpen !== 'undefined' && buyOpen)) return;
-  if (S.gameMin - S.waterAt < shWaterWait()) return;
+  if (S.gameMin - S.waterAt < shWaterWait() + KS_BOWL_GRACE || ksHelpOpen('h_water')) return; // the hand way first: 20 game minutes of grace, and never while today's help is open
   S.waterAt = S.gameMin; addStat('happy', 5); addStat('energy', 10); pottyAfter('water'); markDirty(); updateHUD();
   try { setBowl('Fresh Water'); SFX.slurp(); setTimeout(() => { if (S && cur.mode === 'yard' && !busy && !S.bowl) setBowl(null); }, 2600); } catch (e) { /* no bowl here */ }
   toast(tt('ks.bowl_did', 'The Auto Water Bowl filled up and {name} had a drink. +5 Happiness, +10 Energy.', { name: NAME() }), 'good');
@@ -288,7 +292,7 @@ function ksCardHTML(id) {
   const I = KS_ITEMS[id], own = ksOwnedId(id);
   const list = id === 'supporter' || I.looks || I.tools ? `<ul class="ks-gets">${ksGets(id).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : '';
   const or = I.looks ? `<span class="small ks-or">${esc(tt('ks.or_each', 'or {n} coins each', { n: tnum(KS_LOOK_COINS) }))}</span>` : '';
-  const act = own ? ksYours() : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
+  const act = own ? ksYours() : `${ksCashMode() === 'off' ? '' : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
   return `<div class="sitem ks-card ks-${I.tab}${list ? ' ks-wide' : ''}" data-ks="${id}"><span class="art">${ksArt(id)}</span><b>${esc(ksName(id))}</b><span class="desc">${esc(ksLine(id))}</span>${list}<span class="ks-acts">${act}</span></div>`;
 }
 function ksLookCardHTML(n) {
@@ -304,6 +308,24 @@ function ksTabHTML(t) {
   return ['coins_1k', 'coins_3k', 'coins_8k'].map(ksCardHTML).join('');
 }
 function ksTabName(t) { return { supporter: tt('ks.tab_supporter', 'Supporter'), looks: tt('ks.tab_looks', 'Looks'), tools: tt('ks.tab_tools', 'Tools'), coins: tt('ks.tab_coins', 'Coins') }[t]; }
+// how cash buys can work here: 'ok' (a cloud account with an email), 'guest' (cloud on, no email yet), 'off' (cloud off: the claude.ai build, no Worker).
+// Tests: prefs.shopCash or window.__ddShopCash set it.
+function ksCashMode() {
+  const o = (typeof window !== 'undefined' && window.__ddShopCash) || (typeof prefs !== 'undefined' && prefs && prefs.shopCash); if (o) return o;
+  if (typeof CL === 'undefined' || !CL.on) return 'off';
+  return CL.uid && !CL.anon && CL.email ? 'ok' : 'guest';
+}
+// guest without an email: purchases are tied to the account, so add an email first
+function ksEmailSheet(panel) {
+  const old = panel.querySelector('.buyveil'); if (old) old.remove();
+  const v = document.createElement('div'); v.className = 'buyveil ks-veil';
+  v.innerHTML = `<div class="buybox pop ks-confirm ks-email" role="dialog" aria-modal="true"><p>${esc(tt('ks.need_email', 'Add an email to your save first, so your purchases can come back on a new device.'))}</p>
+    <div class="foot"><button class="btn no ks-no" type="button">${esc(tt('ks.not_now', 'Not now'))}</button><button class="btn yes big ks-addmail" type="button">${esc(tt('ks.add_email', 'Add an email'))}</button></div></div>`;
+  panel.appendChild(v);
+  v.addEventListener('click', (e) => { if (e.target === v) { SFX.click(); v.remove(); } });
+  v.querySelector('.ks-no').onclick = () => { SFX.click(); v.remove(); };
+  v.querySelector('.ks-addmail').onclick = () => { SFX.click(); closeModal(); if (typeof cloudOpen === 'function') cloudOpen(); };
+}
 function ksOpen(tab) {
   if (!ksOn() || !S) return null;
   v224Fields(S); if (KS_TABS.includes(tab)) ksTab = tab;
@@ -312,13 +334,13 @@ function ksOpen(tab) {
   const tabs = `<div class="tabs" role="tablist">${KS_TABS.map((t) => `<button class="btn" role="tab" type="button" aria-selected="${t === ksTab}" data-kstab="${t}">${esc(ksTabName(t))}</button>`).join('')}</div>`;
   const why = `<details class="ks-why"><summary>${esc(tt('ks.why', 'Why is there a shop?'))}</summary><div class="ks-whyb">${duck ? `<span class="ks-duck" aria-hidden="true">${duck}</span>` : ''}<p>${esc(tt('ks.why_text', 'Gerald: "Doodle Doggo is made by one person. The shop helps keep the crayons sharp. Everything here except the Supporter Pack and the coins can also be earned by playing, and the game is complete without paying. Dogs, Bond and chances are never in the shop."'))}</p></div></details>`;
   const body = `<p class="small ks-hi">${esc(tt('ks.hi', 'Looks, comfort tools and coins. You have {coins} Paw Coins.', { coins: tnum(S.coins) }))}</p>${why}${tabs}<div class="shopgrid ks-grid">${ksTabHTML(ksTab)}</div>
-    <p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p><p class="ks-links"><button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button></p>`;
+    <p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p><p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>`;
   const p = openModal(esc(tt('ks.title', 'Kind shop')), body, { cls: 'shop ks' });
   p.querySelectorAll('[data-kstab]').forEach((b) => { b.onclick = () => { SFX.click(); ksTab = b.dataset.kstab; ksOpen(); }; });
-  p.querySelectorAll('[data-kscash]').forEach((b) => { b.onclick = () => { SFX.click(); ksConfirm(p, b.dataset.kscash); }; });
+  p.querySelectorAll('[data-kscash]').forEach((b) => { b.onclick = () => { SFX.click(); if (ksCashMode() === 'guest') ksEmailSheet(p); else ksConfirm(p, b.dataset.kscash); }; });
   p.querySelectorAll('[data-kscoin]').forEach((b) => { b.onclick = () => { SFX.click(); ksCoinBuy(p, b.dataset.kscoin); }; });
   p.querySelectorAll('[data-kslook]').forEach((b) => { b.onclick = () => { SFX.click(); ksCoinBuy(p, b.dataset.kslook); }; });
-  $('#ksRestore', p).onclick = () => { SFX.click(); ksRestore(); };
+  const rs = $('#ksRestore', p); if (rs) rs.onclick = () => { SFX.click(); if (ksCashMode() === 'guest') ksEmailSheet(p); else ksRestore(); };
   return p;
 }
 // the confirm sheet for a cash price: the item, exactly what you get, the price, where you pay. Resolves true when Pay was tapped
@@ -374,7 +396,7 @@ function ksExpose() {
   if (!window.__paw || window.__paw.ks) return;
   window.__paw.ks = {
     on: () => ksOn(), live: SHOP_LIVE, items: KS_ITEMS, tokyo: KS_TOKYO.slice(), cozy: KS_COZY.slice(), LOOK: KS_LOOK_COINS,
-    grant: (l) => ksGrant(l), fields: (s) => v224Fields(s), sup: () => ksSup(), tool: (t) => ksTool(t), toolOn: (t) => ksToolOn(t), owned: (id) => ksOwnedId(id), look: (n) => ksLookOwned(n),
+    grant: (l, g) => ksGrant(l, g), cashMode: () => ksCashMode(), bowlWait: () => shWaterWait() + KS_BOWL_GRACE, fields: (s) => v224Fields(s), sup: () => ksSup(), tool: (t) => ksTool(t), toolOn: (t) => ksToolOn(t), owned: (id) => ksOwnedId(id), look: (n) => ksLookOwned(n),
     walkBonus: (n) => (ksSup() ? Math.floor(Math.max(0, +n || 0) * KS_WALK_K) : 0), growMul: () => ksGrowMul(), gift2: (ym, d) => ksGift2(ym, d), gift2Claim: () => ksGift2Claim(), gift2Can: () => ksGift2Can(),
     open: (t) => ksOpen(t), confirm: (id) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? (ksConfirm(p, id), true) : false; }, coinBuy: (n) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? ksCoinBuy(p, n) : false; },
     tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id),

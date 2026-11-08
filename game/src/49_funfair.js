@@ -371,7 +371,7 @@ function ffPhotoEnter(cap) {
   const P = ffContest(); if (P.judged || P.e.length >= 3) return '';
   const who = (cap && cap.who) || [], lead = who[0], vb = (cap && cap.vb) || [0, 0, 1000, 600];
   let centred = 0; if (lead && lead[1] != null) { const mid = (lead[1] + lead[2]) / 2, c = vb[0] + vb[2] / 2; centred = Math.abs(mid - c) <= vb[2] * 0.18 ? 1 : 0; }
-  const o = S.dog.outfit || {}, dressed = ['head', 'eyes', 'neck', 'body'].some((k) => o[k]) ? 1 : 0;
+  const o = S.dog.outfit || {}, dressed = SLOTS.some((k) => o[k]) ? 1 : 0;
   P.e.push({ p: S.place, c: centred, o: dressed, n: Math.max(1, who.length), d: localISO(), dog: S.dog.name }); markDirty(); saveNow();
   trackAct('funfair', { game: 'photo', score: P.e.length });
   if (P.e.length >= 3) setTimeout(() => { if (cur.mode === 'yard' && !(typeof phActive === 'function' && phActive())) ffContestCheck(); }, 400);

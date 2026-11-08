@@ -14,7 +14,7 @@
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
 const SAVE = 'pawhaven_proto_v1', LOGS = path.join(__dirname, 'test_logs');
-const ON = { shopTest: true };
+const ON = { shopTest: true, shopCash: 'ok' };
 
 run('v224_shop', async (t) => {
   const { ok, sec, ev } = t;
@@ -172,6 +172,31 @@ run('v224_shop', async (t) => {
   const hasSw = await t.until(() => !!document.getElementById('ksT-robo') && !!document.getElementById('ksT-bowl') && !!document.getElementById('ksT-sprinkler'), null, 3000);
   ok(set && hasSw, 'Settings shows a switch for each owned tool');
   if (hasSw) { await t.p.click('#ksT-bowl'); ok(await t.until(() => window.__paw.S.shop.tools.bowl === false, null, 2000), 'the switch turns the Auto Water Bowl off'); await t.p.click('#ksT-bowl'); }
+
+  sec('6b. code-review fixes: bowl grace and the hand way, refund house, throwing grant, email gate, cloud off');
+  await ev(() => { document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); }); await t.until(() => document.getElementById('modal').hidden, null, 2000); await t.calm();
+  const bw = await ev(() => { const P = window.__paw, S = P.S, K = P.ks, W = K.bowlWait(), out = {}; S.sleeping = false; S.stats.happy = 50; S.stats.energy = 50;
+    const jst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); S.missions = S.missions || {}; const keep = S.missions.help;
+    S.waterAt = S.gameMin - (W - 5); K.bowl(); out.inGrace = Math.round(S.stats.happy) === 50;
+    S.missions.help = { date: jst, sw: '', list: [{ id: 'h_water', n: 1, p: 0, done: null }] }; S.waterAt = S.gameMin - 9999; K.bowl(); out.helpOpen = Math.round(S.stats.happy) === 50;
+    S.missions.help.list[0].done = 1; S.waterAt = S.gameMin - 9999; out.pre = [S.sleeping, S.waterAt, S.missions.help.date, jst]; K.bowl(); out.helpDone = Math.round(S.stats.happy) === 55; out.h = S.stats.happy; S.missions.help = keep; return out; });
+  ok(bw.inGrace && bw.helpOpen && bw.helpDone, 'Auto Water Bowl: waits a 20-minute grace, never while the water help is open, drinks once it is done: ' + JSON.stringify(bw));
+  const rh = await ev(() => { const P = window.__paw, S = P.S, K = P.ks, dogs = S.dogs, h0 = S.inv.houses.slice(), hs = S.house, pv = S.shop.prevHouse, ow = S.shop.owned.slice(), cl = S.shop.claimed.slice();
+    S.inv.houses = ['Cardboard Box', 'Cozy Cottage', 'Golden Paw Cottage']; S.house = 'Golden Paw Cottage'; S.shop.prevHouse = 'Cardboard Box'; S.shop.owned = ['supporter']; S.shop.claimed = ['rh1']; S.shop.coin = [];
+    S.dogs = [dogs[0], dogs[0]]; K.grant([{ id: 'rh1', item: 'supporter', refunded: true }]); const r = S.house; S.dogs = dogs; S.inv.houses = h0; S.house = hs; S.shop.prevHouse = pv; S.shop.owned = ow; S.shop.claimed = cl; return r; });
+  ok(rh.house !== 'Cardboard Box' && rh === 'Cozy Cottage', 'refund: the previous house is skipped when it no longer fits the dogs; the biggest owned house is used (' + rh + ')');
+  const gt = await ev(() => { const K = window.__paw.ks, S = window.__paw.S, n0 = S.shop.claimed.length; const e = console.warn; console.warn = () => {}; let r1; try { r1 = K.grant([{ id: 'boom1', item: 'coins_1k', refunded: false }], () => { throw new Error('x'); }); } finally { console.warn = e; } const mid = S.shop.claimed.includes('boom1'); const r2 = K.grant([{ id: 'boom1', item: 'coins_1k', refunded: false }]); return { g1: r1.granted.length, mid, g2: r2.granted.length, after: S.shop.claimed.includes('boom1'), n0 }; });
+  ok(gt.g1 === 0 && !gt.mid && gt.g2 === 1 && gt.after, 'a throwing grant stays unclaimed and the next poll grants it: ' + JSON.stringify(gt));
+  const gm = await ev(async () => { const P = window.__paw, out = {}; for (const m of ['guest', 'off', 'ok']) { P.prefs ? 0 : 0; window.__ddShopCash = m; document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); P.ks.open('coins'); await new Promise((r) => setTimeout(r, 150));
+      const pn = document.querySelector('#modal .panel.ks'), cash = pn.querySelectorAll('.ks-cash').length, rs = !!pn.querySelector('#ksRestore'), txt = /Shop payments are not open here/.test(pn.innerText); let sheet = false, coin = 0;
+      if (m === 'guest') { pn.querySelector('.ks-cash').click(); await new Promise((r) => setTimeout(r, 100)); sheet = /Add an email to your save first/.test(pn.innerText); }
+      P.ks.open('tools'); await new Promise((r) => setTimeout(r, 100)); coin = document.querySelectorAll('#modal .panel.ks .ks-coin').length + document.querySelectorAll('#modal .panel.ks .ks-yours, #modal .panel.ks .ks-own').length;
+      out[m] = { cash, rs, txt, coin, sheet }; }
+    delete window.__ddShopCash; return out; });
+  ok(gm.guest.cash > 0 && gm.guest.rs && gm.guest.sheet, 'guest without an email: a cash button opens the "Add an email" sheet: ' + JSON.stringify(gm.guest));
+  ok(gm.off.cash === 0 && !gm.off.rs && gm.off.txt && gm.off.coin > 0, 'cloud off: no cash buttons or Restore, "Shop payments are not open here", coin buys stay: ' + JSON.stringify(gm.off));
+  ok(gm.ok.cash > 0 && gm.ok.rs && !gm.ok.txt, 'an account with an email: cash buttons and Restore');
+  await ev(() => { document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); });
 
   sec('9. phone 360x640: the shop sheet and the confirm sheet');
   { const was = t.ctx; await t.newGame({ prefs: ON, device: 'Phone 360x640' }, { coins: 3000 }); await was.close(); }

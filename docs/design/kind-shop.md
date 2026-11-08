@@ -60,3 +60,5 @@ Research behind them: itch.io web games run in a frame on itch.io's own domain, 
 10. **A feet slot** (`S.outfit.feet`, additive) for Little Sneakers; later packs can add shoes.
 11. **Stripe account: already open** (Hong Kong). Live keys go into the Worker as secrets only; the build is made against test mode.
 12. **v2.24, aiming for early December.** The owner sets the exact date after the three reviews and a live Stripe check.
+
+Note (code review): with the Sprinkler on, plots never run dry, so the 'never dry' quality point comes free and Pepper's tend buddy perk rarely fires; accepted.
