@@ -196,8 +196,11 @@ function ksRoboTick() {
     const i = a.findIndex((x) => x && now - (+x.at || 0) >= 10); if (i < 0) continue;
     const mx = a[i]; a.splice(i, 1); sh.roboAt = now; markDirty();
     if (S.place === pl && cur.mode === 'yard') {
-      const fx = $('#fx'), ic = ksPA('prop', 'Robo Scoop') || doodle('spark', 0, 0, 14);
-      if (fx) fx.insertAdjacentHTML('beforeend', `<g class="popfx ks-robofx">${ic.includes('<svg') ? place(ic, mx.x - 32, 470, 64, 64) : `<svg x="${mx.x - 20}" y="480" width="40" height="40" viewBox="-20 -20 40 40" overflow="visible">${ic}</svg>`}</g>`);
+      const fx = $('#fx'), my = +mx.y > 0 ? +mx.y : 470, frame = (k) => { const r = ksPA('prop', 'ksrobo', { k }); return r ? place(r, mx.x - 30, my - 30, 60, 50) : ''; }, ic = frame(0) || ksPA('prop', 'Robo Scoop') || doodle('spark', 0, 0, 14);
+      if (fx) {
+        fx.insertAdjacentHTML('beforeend', `<g class="popfx ks-robofx">${frame(0) ? frame(0) : ic.includes('<svg') ? place(ic, mx.x - 32, 470, 64, 64) : `<svg x="${mx.x - 20}" y="480" width="40" height="40" viewBox="-20 -20 40 40" overflow="visible">${ic}</svg>`}</g>`);
+        const g = fx.lastElementChild; let k = 0; if (g && frame(0)) { const iv = setInterval(() => { if (!g.isConnected) { clearInterval(iv); return; } g.innerHTML = frame(++k % 3); }, 140); setTimeout(() => clearInterval(iv), 4000); } // the wheels turn while it rolls
+      }
       drawMess(); toast(tt('ks.robo_did', '{type, select, poop {Beep boop. The Robo Scoop tidied a poop.} other {Beep boop. The Robo Scoop mopped a puddle.}}', { type: mx.type === 'poop' ? 'poop' : 'pee' }), 'good');
     }
     return;
@@ -227,7 +230,7 @@ function ksSettingsHTML() {
 function ksSettingsBind(p) { KS_TOOLS.forEach((k) => { const c = $('#ksT-' + k, p); if (c) c.onchange = () => { S.shop.tools[k] = !!c.checked; markDirty(); saveNow(); SFX.click(); }; }); }
 
 /* ---------------- art (the art lane's PawArt.SHOP, read defensively: the sheet works before it lands) ---------------- */
-function ksPA(fn, n) { try { const P = window.PawArt, f = P && P.SHOP && P.SHOP[fn]; const v = typeof f === 'function' ? f.call(P.SHOP, n) : ''; return typeof v === 'string' && v.includes('<svg') ? v : ''; } catch (e) { return ''; } }
+function ksPA(fn, n, o) { try { const P = window.PawArt, f = P && P.SHOP && P.SHOP[fn]; const v = typeof f === 'function' ? f.call(P.SHOP, n, o) : ''; return typeof v === 'string' && v.includes('<svg') ? v : ''; } catch (e) { return ''; } }
 const KS_BADGE_FB = '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 10 L74 40 L106 44 L82 66 L88 98 L60 82 L32 98 L38 66 L14 44 L46 40 Z" fill="#FFD56B" stroke="#5B3D32" stroke-width="5" stroke-linejoin="round"/><circle cx="60" cy="58" r="12" fill="#F7B2C4" stroke="#5B3D32" stroke-width="4"/></svg>';
 const ksBadgeIcon = () => `<span class="ks-bic" aria-hidden="true">${ksPA('prop', 'Founding Friend Badge') || KS_BADGE_FB}</span>`;
 function ksBadgeHTML() { return `<span class="ks-badge" role="img" aria-label="${esc(tt('ks.badge', 'Founding Friend'))}">${ksBadgeIcon()}<b>${esc(tt('ks.badge', 'Founding Friend'))}</b></span>`; }
@@ -243,9 +246,10 @@ function ksLookArt(n) {
 function ksArt(id) {
   const I = KS_ITEMS[id];
   if (id === 'supporter') return ksPA('house', KS_HOUSE) || art('house', KS_HOUSE);
-  if (I.pack) return ksIcon('coins');
+  if (I.pack) return ksIcon({ 1000: 'coins1', 3000: 'coins3', 8000: 'coins8' }[I.pack] || 'coins');
   if (I.prop) return ksToolArt(id);
-  if (id === 'comfort') return ksToolArt('robo');
+  if (id === 'comfort') return `<span class="ks-trio" style="display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:100%">${KS_TOOLS.map((t) => `<span style="flex:1 1 0;min-width:0;height:62%">${ksToolArt(t)}</span>`).join('')}</span>`;
+  if (id === 'cozy') return ksLookArt(KS_COZY_BED);
   return ksLookArt(I.looks[0]);
 }
 

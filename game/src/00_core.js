@@ -171,9 +171,9 @@ const CLOTHES = [
   // v2.24 Kind shop (V224.md 1, 52_kindshop.js): sold only in the kind shop (ks: the pack it belongs to), never in the Boutique, a stall, a market, a level list or a journey.
   // reward: true keeps every older shop list off them, bond 1 keeps them off every Bond and level-up card. Looks only: the perks are flavour
   { n: 'Golden Name Tag', slot: 'neck', price: 0, bond: 1, ks: 'supporter', reward: true, perk: 'Thank you: a gold bone tag on a blue collar. From the Supporter Pack.' },
-  { n: 'Sukajan Jacket', slot: 'body', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a shiny jacket with a crane stitched on the back. Very cool, very soft.' },
+  { n: 'Sukajan Jacket', slot: 'body', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a shiny jacket with a pink blossom and a gold star stitched on the back. Very cool, very soft.' },
   { n: 'Bucket Hat', slot: 'head', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a floppy canvas hat. It keeps the sun off one ear at a time.' },
-  { n: 'Little Sneakers', slot: 'feet', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: four tiny sneakers with white laces. They come off for naps.' },
+  { n: 'Little Sneakers', slot: 'feet', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: four tiny sneakers with pink lace dots. They come off for naps.' },
   { n: 'Paw Tote', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a little canvas tote with a paw print, for one biscuit and big plans.' },
   { n: 'Round Shades', slot: 'eyes', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: round sunglasses. Nobody has ever looked so relaxed.' },
   { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' }
