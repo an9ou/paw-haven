@@ -23,7 +23,7 @@ const FILES = {
   'world_b.js': ['world/pawart_world_b.js'],
   'world_c.js': ['world/pawart_world_c.js'],
   'world_d.js': ['world/pawart_world_d.js'],
-  'world_e.js': ['world/pawart_world_e.js'],
+  'world_e.js': ['world/pawart_world_e.js', 'world/pawart_shop.js'], // v2.24: the kind shop's art rides with world E (it wraps world B's lookups, so it loads after B)
   'world_f.js': ['world/pawart_world_f.js'], // v2.15: the v2.15 map (MAP ART), only when the file exists
   'world_g.js': ['world/pawart_world_g.js'], // v2.15: the new places (PLACE ART), only when the file exists
   'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js', 'mods/qr.js'],

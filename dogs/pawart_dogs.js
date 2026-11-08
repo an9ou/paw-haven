@@ -919,6 +919,7 @@ function drawLegs(h,s,L){
       if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(s.pup===1?circ(l.foot[0]+1.5,l.foot[1]-l.w*PUPLEG[5],l.w*PUPLEG[4],l.w*.5,8):circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),legTc(s,l)||l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
       if(s.legs.pom){const m=l.mid||l.hip,t=.7,x=m[0]+(l.foot[0]-m[0])*t,y=m[1]+(l.foot[1]-m[1])*t;h.shape(furR(s.wet,x,y,l.w*1.05,l.w*.9,6,.25),l.sock||l.col,{step:30,amp:.6,w:3,ox:0,oy:0,sc:1})}
       if(s.legs.hair)legHair(h,l,s.wet)}
+    if(L.feet&&FEET2[L.feet])FEET2[L.feet](h,s,L,l);// v2.24: a shoe on this leg's foot (outfit.feet)
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
   };
   const only=h._legPass||'ground';const ok=l=>(only==='raised'?l.raised:!l.raised)&&(!h._legSkip||l.id!==h._legSkip)&&(!h._legOnly||l.id===h._legOnly);
@@ -947,6 +948,7 @@ function drawHaunch(h,s,L,B){
     {const th=s.fluff?null:[c[0],c[1]+2,b.ry*.95,b.ry*.85];hock(h,s,L,l,c,[c[0]+b.ry*.75,GY-5],ovalTop(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5),th)}
     if(!s.fluff)h.shape(circ(c[0],c[1]+2,b.ry*.95,b.ry*.85,10),s.col);
     h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),legTc(s,l)||l.col,{w:3.6});}
+    if(L.feet&&FEET2[L.feet])FEET2[L.feet](h,s,L,l,1);// v2.24: the sitting hind foot's shoe
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-NH">`);h.acc.push('</g>');
   });
 }
@@ -1964,6 +1966,90 @@ HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn
 // draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
 function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.cy=h.cy;if(h.wet)g.wet=1;plain(g);const e=h.r.st();h.r.st(st);draw(h);h.r.st(e)}
 
+/* ---------- v2.24 "Kind shop" wearables (docs/design/kind-shop.md; the owner's approved preview of 3 Nov 2026, world/pawart_shop.js) ----------
+   neck 'Golden Name Tag' (the Supporter Pack: a gold bone tag on a blue collar, not the Bond 10 Golden Collar), and the Tokyo Street set:
+   body 'Sukajan Jacket', head 'Bucket Hat', neck 'Paw Tote', neck 'Lucky Cat Charm', eyes 'Round Shades' (EYES2, the eyes slot's own table from v2.24),
+   feet 'Little Sneakers': a NEW slot, outfit.feet (FEET2). A shoe goes on every foot of every pose but sleep (the eyes slot's rule), on adults and puppies,
+   never on a newborn; each foot's shoe is drawn inside its own leg (its pa-d-leg group), so the body still lies over the far feet.
+   Every draw hands the dog back its random stream (the v2.18.1 rule), so a dog without them is byte for byte the plain dog, and with them its own
+   lines are; under the Bucket Hat a topknot moves the stream on as if drawn (hmPlain), so the head is the plain dog's head too. */
+const KS={jade:'#2F8F6E',jadeL:'#8FD3B4',rib:'#2B2430',ribS:'#F08A24',hat:'#B9A6E8',hatD:'#7E63C7',hatB:'#FFF1D6',canvas:'#F6EBD3',strap:'#C99A5E',shade:'#3B3346',
+  sole:'#7FCBB0',pink:'#FF7EB6',red:'#D7263D',blue:'#4F8FD6',gold:'#F2C14E',goldD:'#C9962A'},EYES2={},FEET2={};
+OUT.head.push('Bucket Hat');OUT.neck.push('Golden Name Tag','Paw Tote','Lucky Cat Charm');OUT.body.push('Sukajan Jacket');OUT.eyes.push('Round Shades');OUT.feet=['Little Sneakers'];
+const KS_HAT=new Set(['Bucket Hat']);
+function ksBone(cx,cy,len,th){const L=len/2-th*.42,kr=th*.44,k1=th*.4,t=th*.22,half=[];// a dog bone outline (from world B's boneP), level
+  for(let i=0;i<=3;i++)half.push([-L*.5+i*L*.5/3*2,-t]);
+  const arc=(ox,oy,a0,a1,n)=>{for(let i=0;i<=n;i++){const q=(a0+(a1-a0)*i/n)*D2R;half.push([ox+Math.cos(q)*kr,oy+Math.sin(q)*kr])}};
+  arc(L,-k1,165,415,8);half.push([L+kr*.2,0]);arc(L,k1,-55,195,8);for(let i=3;i>=0;i--)half.push([-L*.5+i*L*.5/3*2,t]);
+  const right=half.filter(p=>p[0]>=-0.001),left=right.map(p=>[-p[0],-p[1]]);return right.concat(left).map(p=>[cx+p[0],cy+p[1]])}
+function ksSag(s,HT){const a=neckAnchor(s,HT);return t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]}}
+NECK2['Golden Name Tag']=function(h,s,L,HT){// a soft blue leather collar and a big gold bone tag under the chin with an engraved paw
+  const sag=ksSag(s,HT),pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.6,INK);h.line(pts,5.2,KS.blue,.4);
+  const c0=sag(.56),R=Math.max(6,Math.min(8.5,s.head.rx*.26)),c=[c0[0],Math.min(c0[1]+R+4,GY-R-2)];
+  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R*.6]],1.6,INK,.1);
+  h.shape(ksBone(c[0],c[1],R*3.1,R*1.35),KS.gold,{w:2.6,step:5,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});
+  [[-.25,0],[.05,-.28],[.32,-.02],[.05,.22]].forEach(([dx,dy],i)=>h.dot(c[0]+dx*R*1.1,c[1]+dy*R*1.1,i===3?R*.24:R*.13,i===3?R*.2:R*.13,KS.goldD));
+  h.line([[c[0]-R*.9,c[1]-R*.3],[c[0]-R*.55,c[1]-R*.45]],1.4,'#FFF6CC',.2)};
+BODY2['Sukajan Jacket']=function(h,s,L,B,p){// a jade satin souvenir jacket: black and orange ribbed hem and collar, a pink blossom and a gold star stitched on the side
+  const b=s.body,f=s.fluff?1.12:1.08;
+  h.shape(p.map(B),KS.jade,{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),KS.jade,6);
+  h.line([[b.rx*.05,-b.ry*.6],[b.rx*.35,-b.ry*.74],[b.rx*.62,-b.ry*.62]].map(B),3.2,KS.jadeL,.4);
+  const hem=[];for(let a=104;a>=34;a-=7)hem.push([Math.cos(a*D2R)*b.rx*f*.9,Math.sin(a*D2R)*b.ry*f*.84]);h.line(hem.map(B),7.6,KS.rib,.5);h.line(hem.map(B),2.4,KS.ribS,.4);
+  const ed=[];for(let a=-64;a<=-6;a+=8)ed.push([Math.cos(a*D2R)*b.rx*f*.88,Math.sin(a*D2R)*b.ry*f*.88]);h.line(ed.map(B),7,KS.rib,.5);h.line(ed.map(B),2.2,KS.ribS,.4);
+  const fl=B([b.rx*.12,-b.ry*.08]),R=Math.max(3.4,b.ry*.17);for(let i=0;i<5;i++){const t=-Math.PI/2+i/5*Math.PI*2;h.dot(fl[0]+Math.cos(t)*R,fl[1]+Math.sin(t)*R,R*.72,R*.72,'#FFB3CF')}h.dot(fl[0],fl[1],R*.42,R*.42,'#FFD84A');
+  const sc=B([b.rx*.5,b.ry*.05]),Z=Math.max(5,b.ry*.26),sp=[];for(let i=0;i<10;i++){const t=-Math.PI/2+i*Math.PI/5,r=i%2?Z*.45:Z;sp.push([sc[0]+Math.cos(t)*r,sc[1]+Math.sin(t)*r])}
+  h.shape(sp,KS.gold,{w:2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2})};
+HAT2['Bucket Hat']=function(h,s,L,HT){// a soft lilac bucket hat with crayon checks, a cream band and a drooping brim
+  const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,.1,-5),W2=hx*.62,H=hy*.46;
+  h.shape([[-W2*1.7,12],[-W2*1.3,-1],[W2*1.3,-1],[W2*1.7,12],[W2*1.15,15],[-W2*1.15,15]].map(P),KS.hat,{w:3.6,step:8});
+  h.shape([[-W2,1],[-W2*.94,-H*.7],[-W2*.62,-H],[W2*.62,-H],[W2*.94,-H*.7],[W2,1]].map(P),KS.hat,{w:3.8,step:8});
+  for(let i=-2;i<=2;i++)h.line([[i*W2*.34,-2],[i*W2*.3,-H*.92]].map(P),1.8,KS.hatD,.4);
+  [[.34,.92],[.68,.8]].forEach(([y,k])=>h.line([[-W2*k,-H*y],[W2*k,-H*y]].map(P),1.8,KS.hatD,.4));
+  h.line([[-W2*.98,-3],[W2*.98,-3]].map(P),4.6,KS.hatB,.4);
+  h.line([[-W2*1.4,9],[0,11],[W2*1.4,9]].map(P),1.4,KS.hatD,.5)};
+NECK2['Paw Tote']=function(h,s,L,HT){// a little canvas tote on a strap round the neck, a blue stripe and a pink paw, resting on the chest
+  const a=neckAnchor(s,HT),hx=s.head.rx,pk=s.pup?.78:1,bw=Math.max(14,hx*.78*pk),bh=Math.max(13,hx*.7*pk),cl=q=>[q[0],Math.min(q[1],GY-4)],c=[a.c[0]-hx*.06,Math.min(a.c[1]+bh*.95,GY-4-bh*.5)];// the whole bag stays above the ground (head down, it rests there)
+  h.line([a.l,[c[0]-bw*.3,c[1]-bh*.48]],2.6,KS.strap);h.line([a.r,[c[0]+bw*.3,c[1]-bh*.48]],2.6,KS.strap);
+  h.line([a.l,[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2+5],a.r],2.6,KS.strap);
+  h.shape([[c[0]-bw*.5,c[1]-bh*.5],[c[0]+bw*.5,c[1]-bh*.5],[c[0]+bw*.58,c[1]+bh*.5],[c[0]-bw*.58,c[1]+bh*.5]].map(cl),KS.canvas,{w:3,step:7,ox:0,oy:0,sc:1,closed:1,amp:.6,famp:.4});
+  h.line([[c[0]-bw*.48,c[1]-bh*.22],[c[0]+bw*.48,c[1]-bh*.22]],2.6,KS.blue,.3);
+  const q=[c[0],c[1]+bh*.14];h.dot(q[0],q[1]+1.5,3,2.4,KS.pink);[[-3.2,-2],[-1,-4],[1.4,-4],[3.4,-2]].forEach(([dx,dy])=>h.dot(q[0]+dx,q[1]+dy,1.1,1.2,KS.pink))};
+NECK2['Lucky Cat Charm']=function(h,s,L,HT){// a red cord with a tiny white beckoning cat charm (a cat on a dog: the joke), one paw up, a gold bell
+  const sag=ksSag(s,HT),pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5.6,INK);h.line(pts,3.4,KS.red,.4);
+  const c0=sag(.56),R=Math.max(8,Math.min(10.5,s.head.rx*.33)),c=[c0[0],Math.min(c0[1]+R+3,GY-R-2)];
+  h.shape([[c[0]-R,c[1]-R*.2],[c[0]-R*.95,c[1]-R*1.5],[c[0]-R*.3,c[1]-R*.9],[c[0]+R*.3,c[1]-R*.9],[c[0]+R*.95,c[1]-R*1.5],[c[0]+R,c[1]-R*.2],[c[0]+R*.8,c[1]+R*.8],[c[0]-R*.8,c[1]+R*.8]],W,{w:2.4,step:5,ox:0,oy:0,sc:1,closed:1,amp:.35,famp:.2});
+  h.line([[c[0]-R*.5,c[1]-R*.2],[c[0]-R*.2,c[1]-R*.3]],1.4,INK,.1);h.line([[c[0]+R*.2,c[1]-R*.3],[c[0]+R*.5,c[1]-R*.2]],1.4,INK,.1);
+  h.dot(c[0]-R*.68,c[1]-R*.95,R*.14,R*.22,'#FF9EB8');h.dot(c[0]+R*.68,c[1]-R*.95,R*.14,R*.22,'#FF9EB8');h.dot(c[0],c[1]+R*.25,R*.24,R*.24,KS.gold);
+  h.shape(circ(c[0]+R*1.15,c[1]-R*.75,R*.34,R*.42,7),W,{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15})};
+EYES2['Round Shades']=function(h,s,L,HT){// round tinted glasses in a thin gold frame, a white shine on each lens
+  const f=s.face,hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes;
+  const a=HT([hx*e0[0],hy*e0[1]]),b=HT([hx*e1[0],hy*e1[1]]),s0=Math.max(er[0],7)+4,s1=Math.max(er[1],7)+4;
+  h.line([[a[0]+s0*.8,a[1]-1],[(a[0]+b[0])/2,Math.min(a[1],b[1])-5],[b[0]-s1*.8,b[1]-1]],2.6,KS.goldD);h.line([[a[0]-s0,a[1]],HT([-hx*.88,-hy*.22])],2.6,KS.goldD);
+  [[a,s0],[b,s1]].forEach(([c,z])=>{h.shape(circ(c[0],c[1],z,z,12),KS.shade,{w:3,ox:0,oy:0,sc:1,closed:1,famp:.3,fop:.88,amp:.5});h.line([[c[0]-z*.5,c[1]-z*.1],[c[0]-z*.15,c[1]-z*.5]],2.2,W,.2)})};
+// Little Sneakers: white with a mint sole, a pink dot on the side and two pink lace dots. The shoe in its own units (x toward the toe, y down; the sole at y .4):
+const KS_SHOE=[[-.95,-1.15],[.45,-1.25],[1.05,-.65],[1.75,-.3],[1.8,.4],[-1.05,.4]],KS_SHF=mix(W,PEN,.2),KS_PKF=mix(KS.pink,PEN,.28);
+// where the shoe sits on leg l: {x, y} its origin (the foot), kx, ky its size, a its turn. haunch: the sitting near hind foot (drawHaunch's oval)
+function ksFoot(s,L,l,haunch){const b=s.body,far=!l.near,w=Math.max(5,l.w);
+  const oval=(cx,cy,rx,ry,k)=>{const kx=(rx*2+3)/2.85,ky=Math.max(6,w*(k||.95));return{x:cx-rx-1.5+1.05*kx,y:cy+ry+1.6-.4*ky,kx,ky,a:0,far}};
+  if(haunch){const c=T(L.bT)([-b.rx*.45,b.ry*.25]);if(L.gfold)return{x:c[0]+b.ry*2.1+1,y:GY-4+w*.15,kx:w*.95,ky:w*.85,a:0,far};return oval(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5)}
+  if(l.sitfoot){const hp=T(L.bT)([-b.rx*.45,b.ry*.25]);if(L.gfold)return{x:hp[0]+b.ry*1.9+9,y:GY-3.5+w*.15,kx:w*.9,ky:w*.8,a:0,far};return oval(hp[0]+b.ry*.9+9,GY-6,b.ry*.5+3,4,.85)}
+  if(!l.foot)return null;const f=l.foot;
+  if(l.raised){const m=l.mid||l.hip,dx=f[0]-m[0],dy=f[1]-m[1],d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d,k=s.pup?.8:1;
+    // a leg held up: a leg pointing up or down wears the shoe on its end (the sole away from the knee); one held out level, the toe along it
+    let a;if(Math.abs(uy)>=Math.abs(ux))a=Math.atan2(uy,ux)-Math.PI/2;else a=ux>0?Math.atan2(uy,ux):Math.atan2(uy,ux)+Math.PI;
+    const o=Math.abs(uy)>=Math.abs(ux)?[0,w*.1]:[-w*.45,-w*.15],c=Math.cos(a),sn=Math.sin(a);return{x:f[0]+o[0]*c-o[1]*sn,y:f[1]+o[0]*sn+o[1]*c,kx:w*k,ky:w*k,a,far}}
+  if(s.pup)return{x:f[0]+1.5-.3*w*.88,y:f[1]+w*.34+1.6-.4*w*.88,kx:w*.88,ky:w*.88,a:0,far};// over the puppy's round paw (drawLegs)
+  return{x:f[0],y:Math.min(f[1],GY)+w*.15,kx:w,ky:w,a:0,far}}
+function ksShoe(h,F){const c=Math.cos(F.a),sn=Math.sin(F.a),R=q=>{const x=q[0]*F.kx,y=q[1]*F.ky;return[F.x+x*c-y*sn,F.y+x*sn+y*c]};
+  h.shape(KS_SHOE.map(R),F.far?KS_SHF:W,{w:2.8,step:5,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});
+  h.line([[-1,.28],[1.75,.28]].map(R),3,KS.sole,.3);
+  const pk=F.far?KS_PKF:KS.pink,p=R([-.2,-.35]);h.dot(p[0],p[1],F.kx*.32,F.ky*.3,pk);[[.35,-1],[.7,-.75]].forEach(q=>{const d=R(q);h.dot(d[0],d[1],F.kx*.14,F.kx*.14,pk)})}
+FEET2['Little Sneakers']=function(h,s,L,l,haunch){const F=ksFoot(s,L,l,haunch);if(F)ksShoe(h,F)};
+// the v2.18.1 rule: each draw hands the dog back its random stream
+[HAT2,NECK2,BODY2,EYES2,FEET2].forEach(R=>['Bucket Hat','Golden Name Tag','Paw Tote','Lucky Cat Charm','Sukajan Jacket','Round Shades','Little Sneakers'].forEach(n=>{const fn=R[n];
+  if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+function drawEyewear(h,s,L,HT,e){if(EYES2[e])return EYES2[e](h,s,L,HT);(e==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
+
 function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
   L.face.eyes='closed';L.ears='sleep';L.face.mouth=L.pose==='sleep'?'sleep':'smile';L.blush=0;L.hearts=0;L.tear=0;L.tailS*=.8;
   if(L.pose==='sleep'){L.hT.x-=s.head.rx*.42;L.hT.y+=s.head.ry*.08;L.hT.a=16;L.tailA=-140}else{L.hT.y+=s.head.ry*.18;L.hT.a=8;L.tailA=-120}}
@@ -2243,10 +2329,11 @@ function wetDrops(h,s,L,B,HT,bp,hp,k,dryHead){
 function frame(key,s,pose,outfit,k,seed,ex){
   const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.wet)h.wet=1;if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}const X=ex?EXPR[ex]:null;if(X&&X.pose)X.pose(s,L,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
-  const body=has('body'),top=body&&TOP2[body]?body:null,neck=has('neck'),hat=top?null:has('head'),eyes=has('eyes'),sheet=body==='Ghost Sheet'||body==='Trick-or-Treat Ghost';// v2.11.1: a costume with its own head piece (TOP2) drops the hat
+  const body=has('body'),top=body&&TOP2[body]?body:null,neck=has('neck'),hat=top?null:has('head'),eyes=has('eyes'),feet=has('feet'),sheet=body==='Ghost Sheet'||body==='Trick-or-Treat Ghost';// v2.11.1: a costume with its own head piece (TOP2) drops the hat
   if(top==='Little Bat Costume'||top==='Dinosaur Hood'||top==='Polar Bear Hood'||top==='Penguin Suit')L.hood=1;// the dog's own ears stay inside the bat hood
   if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
   if(hat==='Year of the Sheep Hood'){L.hood=1;if(body==='Ghost Sheet')L.ghost=1}// v2.8: flop ears stay inside the hood, the hood draws the prick ears itself
+  if(feet&&pose!=='sleep'&&s.pup!==2)L.feet=feet;// v2.24: shoes (outfit.feet), drawn on each leg by drawLegs and drawHaunch; none asleep, none on a newborn
   if(body==='Superhero Cape')drawCape(h,s,L,B);
   if(body&&BACK2[body])BACK2[body](h,s,L,B);
   drawTail(h,s,L,B);
@@ -2273,7 +2360,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   const hmk=top&&HM_OWN.has(top);if(hmk&&L.hood)L.hmHood=1;// v2.18.1: drawEars hands the stream on as the plain dog's ears would
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
-  else if(hmk&&s.topknot)hmPlain(h,()=>0,g=>drawTopknot(g,s,HT));// v2.18.1: the topknot stays under a market hat; the stream moves on as if it were drawn
+  else if((hmk||KS_HAT.has(hat))&&s.topknot)hmPlain(h,()=>0,g=>drawTopknot(g,s,HT));// v2.24: and under the Bucket Hat// v2.18.1: the topknot stays under a market hat; the stream moves on as if it were drawn
   {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2,closed:(s.mixHead?SP[s.mixHead]:s).headShut})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
@@ -2284,15 +2371,15 @@ function frame(key,s,pose,outfit,k,seed,ex){
   const xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;
   {const a0=h.acc.length;drawFace(h,s,L,HT);const ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(ff)ff(h,s,L,HT,a0)}// v2.12 ART B: the head breed's own face extras (new spec field faceFn)
   if(X)exFace(h,s,L,HT,X,k,xa,seed);
-  if(eyes&&pose!=='sleep'&&!sheet)(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
+  if(eyes&&pose!=='sleep'&&!sheet)drawEyewear(h,s,L,HT,eyes);
   if(body==='Cozy Hoodie'&&/^(cold|sleep)$/.test(pose))drawHood(h,s,L,HT);
   if(!sheet)drawEars(h,s,L,HT,true);
-  if(body==='Ghost Sheet'){drawGhost(h,s,L,B,HT);if(eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
+  if(body==='Ghost Sheet'){drawGhost(h,s,L,B,HT);if(eyes&&pose!=='sleep')drawEyewear(h,s,L,HT,eyes)}
   if(neck&&top!=='Trick-or-Treat Ghost')drawNeck(h,s,L,HT,neck);
   if(hat)drawHat(h,s,L,HT,hat);
   else if(body==='Bumblebee Suit')HAT2.Antennae(h,s,L,HT);
   else if(body==='Pyjamas'&&outfit.sleepwear)HAT2.Nightcap(h,s,L,HT);
-  if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
+  if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')drawEyewear(h,s,L,HT,eyes)}
   if(outfit&&outfit.charm==='Crayon Medal'&&!sheet)drawMedalCharm(h,s,L,HT,neck);// v2.20: the only charm drawn on the dog
   if(s.wet)wetDrops(h,s,L,B,HT,bp,hp,k,hat==='Rain Hat'||hat==='Astronaut Helmet');
   drawFx(h,s,L,B,HT);

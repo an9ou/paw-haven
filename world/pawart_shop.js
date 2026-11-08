@@ -1,25 +1,23 @@
-/* Doodle Doggo world art, module SHOP (PREVIEW, 3 Nov 2026): the planned kind shop's items (docs/design/kind-shop.md "Item previews (draft)").
-   NOT in the game build (not in game/ORDER.txt or tools/build.pl): the owner looks at the items first. Nothing here is wired into the game.
+/* Doodle Doggo world art, module SHOP (v2.24 "Kind shop", docs/design/kind-shop.md): the kind shop's items. Drawn as a preview on 3 Nov 2026 (the owner
+   approved the direction), in the build from v2.24 (game/build.js, tools/build.pl: after the other worlds, inline, as it wraps world B's lookups).
    Style G "Doodle sketch" like world B: coloured-pencil washes inside two-stroke tapered pencil outlines, light diagonal hatching, sparkles.
    The pencil kit (mk, serve, the shape generators, paw, ground, shingles, tuft, tinyFlower, tapeB) is copied from world B (pawart_world_b.js
    lines 32-224), ids prefixed pws. Every colour fill stays inside its own outline (the kit's fillIn / pinIn, owner's rule of 25 Oct 2026).
-   PawArt.SHOP.house(name)   viewBox 0 0 240 200 (ground y=190, door centred near x=120, like every house): 'Golden Paw Cottage' (the Supporter House)
-   PawArt.SHOP.prop(name)    supporter: 'Golden Name Tag' 120x120, 'Founding Friend Badge' 120x120, 'Thank-You Letter' 140x120
-                             tools:     'Robo Scoop' 120x120, 'Garden Sprinkler' 120x120, 'Auto Water Bowl' 120x120
-                             Cozy Winter: 'Cable-Knit Rug' 240x80, 'Cocoa Mug Lamp' 100x140, 'Doggy Snow Globe' 120x140, 'Tea-Cosy Bed' 260x160 (bed:
-                             floor y=152, front lip in <g class="pa-bed-front">), 'Cardboard Fireplace' 160x160, 'Woolly Armchair' 160x150
+   The wearables (Golden Name Tag, the Tokyo Street set, the Little Sneakers' feet slot) are drawn by the dog renderer: dogs/pawart_dogs.js, v2.24 section.
+   Through the world's own lookups (each falls through to the older modules for any other name):
+   PawArt.house('Golden Paw Cottage')  the Supporter House, 240x200, ground y=190, door centred at x=120; at night its panes glow (.pa-wb-glow)
+   PawArt.bed('Tea-Cosy Bed')          260x160, floor y=152, the front lip in <g class="pa-bed-front">, data-bed like every bed
+   PawArt.prop(id, o)                  the Cozy Winter decor, by the game's HM_DECOR prop ids: ksrug 'Cable-Knit Rug' 240x80 (flat floor rug),
+                                       kslamp 'Cocoa Mug Lamp' 100x140 {lit}, ksglobe 'Doggy Snow Globe' 120x140, ksfireplace 'Cardboard Fireplace' 160x160,
+                                       ksarmchair 'Woolly Armchair' 160x150; ksrobo: the Robo Scoop rolling in the yard, 60x50, {k: 0..2} (wheels turn, antenna nods)
+   PawArt.item(name)                   64 item cards: the 7 wearables, the 5 decorations, the Tea-Cosy Bed, the Golden Paw Cottage
+   PawArt.SHOP.prop(name)    the shop sheet's pictures: 'Golden Name Tag' 120x120, 'Founding Friend Badge' 120x120, 'Thank-You Letter' 140x120,
+                             'Robo Scoop' 120x120, 'Garden Sprinkler' 120x120, 'Auto Water Bowl' 120x120, and the decor and bed by name (or by prop id)
                              (PawArt.SHOP.VB[name] holds each viewBox)
-   PawArt.SHOP.icon(name)    64x64 perk icons: 'walkcoins' (a coin with a paw and an up arrow), 'cropsfast' (a sprout and a little clock), 'giftplus' (a gift box)
-   PawArt.SHOP.frame(w,h,wash,seed), .tag(w,h,col,seed)  the crayon card frame and the price tag of the preview boards (any pixel size)
-   PawArt.SHOP.WEAR          the wearables, drawn by the dog renderer's own crude kit (h) like dogs/pawart_dogs.js HAT2 / NECK2 / BODY2:
-                             { name: { slot: 'head' | 'neck' | 'body' | 'eyes', draw(K, h, s, L, HT_or_B, p) } }. Supporter: 'Golden Name Tag' (neck).
-                             Tokyo Street: 'Sukajan Jacket' (body), 'Bucket Hat' (head), 'Little Sneakers' (feet: a 'body' slot in this preview only; the real
-                             build needs a feet slot), 'Paw Tote' (neck), 'Round Shades' (eyes), 'Lucky Cat Charm' (neck), and the preview look
-                             'Sukajan Jacket + Little Sneakers' (body). Each draw hands the dog back its random stream (the v2.18.1 rule), so the dog's own lines
-                             stay the plain dog's.
-   PawArt.SHOP.installWear(K) adds WEAR to a dog kit K = { OUT, HAT2, NECK2, BODY2, hatP, neckAnchor, circ, rot, GY, INK, W, ... }. The dog module
-                             does not expose K: the preview pages load a copy of dogs/pawart_dogs.js with one line that sets PawArt._K and an EYES2 hook
-                             (the game's file stays byte for byte as it is). Building the shop for real means moving these into dogs/pawart_dogs.js. */
+   PawArt.SHOP.icon(name)    64x64 icons: perks 'walkcoins' (a coin with a paw and an up arrow), 'cropsfast' (a sprout and a little clock), 'giftplus' (a gift box);
+                             coin packs 'coins1', 'coins3', 'coins8' (a growing pile for the 1,000 / 3,000 / 8,000 packs), 'coins' (= coins3)
+   PawArt.SHOP.house(name), .robo(k), .item(name)   the same art as above; PawArt.SHOP.NAMES lists the sets, .PROPS the prop ids
+   PawArt.SHOP.frame(w,h,wash,seed), .tag(w,h,col,seed)  a crayon card frame and a price tag (any pixel size) */
 window.PawArt = window.PawArt || {};
 (function(){
 'use strict';
@@ -250,6 +248,7 @@ HOUSE['Golden Paw Cottage']=function(b){
    inner:b.st(b.jl(52,128,188,128,.5)+b.jl(64,116,64,172,.5)+b.jl(176,116,176,172,.5),'#D9B98C',1.6,.55)});
   const st=[];[[58,181,9],[76,183,8],[94,180,7],[146,181,8],[163,183,9],[181,180,7]].forEach(([x,y,r])=>st.push({pts:E(x,y,r,5.4,12),fill:'#D8D2CC'}));
   b.sh([[48,190],[47,172],[193,172],[192,190]],C.stone,{k:.04,hatch:0,hl:0,lw:.9,base:'#F1ECE6',marks:st});
+  b.raw('<g class="pa-wb-glow"><circle cx="120" cy="86" r="28" fill="#FFF3C2" opacity=".5"/><circle cx="70" cy="150" r="22" fill="#FFF3C2" opacity=".5"/><circle cx="165" cy="149" r="24" fill="#FFF3C2" opacity=".5"/><circle cx="88.5" cy="143" r="13" fill="#FFF3C2" opacity=".6"/></g>');
   // the roof: a swooping bell of blue scallop shingles
   b.sh([[18,128],[30,118],[52,100],[74,76],[96,50],[120,30],[144,50],[166,76],[188,100],[210,118],[222,128],[200,132],[160,128],[120,126],[80,128],[40,132]],'#7FA8DC',
    {k:.12,hl:0,sh:'#4E78AD',ho:.3,base:'#CADCF3',inner:b.st(shingles(b,[30,124],[118,36],3,10,16)+shingles(b,[122,36],[210,124],3,10,16),'#E9F1FB',1.6,.9)});
@@ -269,6 +268,12 @@ HOUSE['Golden Paw Cottage']=function(b){
   b.sh(RR(154,140,22,18,2),'#CFE8F8',{k:0,hatch:0,hl:0,lw:.8,base:'#EAF5FC',marks:[{pts:E(160,145,4,3,8),fill:'#FFFFFF',op:.8}],inner:b.st('M165 140V158M154 149H176',GLDD,1.6,.9)});
   b.sh(RR(146,161,38,9,2),C.woodD,{k:0,hatch:0,hl:0,lw:.85,base:C.wood});
   [[152,158,'#F28FA5'],[160,156,'#FFE08A'],[168,158,'#B9A6E8'],[176,156,'#F28FA5']].forEach(([x,y,c])=>{b.ln([[x,y+2],[x,y+5]],{w:1,col:'#7FA65E'});tinyFlower(b,x,y,4.2,c)});
+  // at night the panes glow warm yellow (the yard shows .pa-wb-glow on #houseG.night only), each inside its own frame
+  b.raw('<g class="pa-wb-glow">');
+  b.sh(heartP(120,86,22),'#FFC94A',{hatch:0,hl:0,lw:.8,base:'#FFE27A',marks:[{pts:E(113,80,4,3,8),fill:'#FFF3C2',op:.9}]});
+  b.sh(E(70,150,10.5,10.5,18),'#FFC94A',{hatch:0,hl:0,lw:.8,base:'#FFE27A',inner:b.st('M59 150H81M70 139V161',GLDD,1.6,.9)});
+  b.sh(RR(154,140,22,18,2),'#FFC94A',{k:0,hatch:0,hl:0,lw:.8,base:'#FFE27A',inner:b.st('M165 140V158M154 149H176',GLDD,1.6,.9)});
+  b.raw('</g>');
   // the door: a gold arch round a blue door, a gold paw on it and a round knob
   b.sh(arch(96,144,190,126),GLD,{hatch:0,hl:0,lw:.9,base:GLDL});
   b.sh(arch(103,137,190,134),'#5C84B8',Object.assign({},DOOR_O,{base:'#8FAFD8'}));
@@ -400,12 +405,15 @@ PROP['Cable-Knit Rug']=function(b){b.shadow(120,74,110,5);
   b.ex('heart',120,8,3.6,'#F7B2C4');b.ex('spark',226,12,3.6,'#FFE07A');
 };
 VB['Cocoa Mug Lamp']='0 0 100 140';
-PROP['Cocoa Mug Lamp']=function(b){b.shadow(48,131,32,4);
-  // a big red cocoa mug with a white heart; out of it rises the lamp: a glowing marshmallow cloud; the cord and plug like the Moon Lamp's
-  b.raw('<circle cx="48" cy="46" r="40" fill="#FFF3C2" opacity=".55"/>','under');
+PROP['Cocoa Mug Lamp']=function(b,o){const lit=!!(o&&o.lit);b.shadow(48,131,32,4);
+  // a big red cocoa mug with a white heart; out of it rises the lamp: a marshmallow cloud that glows after dark (o.lit; the glow sits in .pa-wb-glow
+  // so the night tint keeps its colour); the cord and plug like the Moon Lamp's. Lit and unlit share the jitter (the glow is drawn without it)
+  if(lit)b.raw('<g class="pa-wb-glow"><circle cx="48" cy="46" r="44" fill="#FFF3C2" opacity=".6"/><ellipse cx="48" cy="131" rx="44" ry="5" fill="#FFE38A" opacity=".35"/></g>','under');
   b.ln([[76,124],[86,128],[90,132]],{w:1.4,col:GRAPH});b.sh(RR(88,128,7,6,1),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.6});
   b.sh(ribbon([[70,86],[84,90],[88,102],[82,114],[70,116]],[7,7,7,7,7]),'#E46F6B',{k:1/6,hatch:0,hl:0,lw:.85,base:'#F7C4C0'});
-  b.sh(cloudP(48,48,32,26,7,.16,48),'#FFE59A',{k:1/6,hl:0,hatch:0,base:'#FFF6D0',marks:[{pts:E(40,40,12,7,12),fill:'#FFFFFF',op:.85}]});
+  if(lit)b.raw('<g class="pa-wb-glow">');
+  b.sh(cloudP(48,48,32,26,7,.16,48),lit?'#FFE59A':'#F6EEDC',{k:1/6,hl:0,hatch:0,base:lit?'#FFF6D0':'#FFFBF2',marks:[{pts:E(40,40,12,7,12),fill:'#FFFFFF',op:.85}]});
+  if(lit)b.raw('</g>');
   [[36,24],[58,22]].forEach(([x,y],i)=>b.sh(rot(RR(x-6,y-5,12,10,3),i?.3:-.2,x,y),'#FFFFFF',{k:.05,hatch:0,hl:0,lw:.7,base:'#FFFFFF',marks:[{pts:[[x-6,y+2],[x+6,y+2],[x+6,y+5],[x-6,y+5]],fill:'#FBD3DC',k:0}]}));
   b.sh([[20,74],[76,74],[74,120],[66,128],[30,128],[22,120]],'#E46F6B',{k:.08,sh:'#B5404A',ho:.35,base:'#F7C4C0'});
   b.sh(E(48,74,28,5,20),'#8A5A3C',{k:.1,hatch:0,hl:0,lw:.8,base:'#B98A5E'});
@@ -479,95 +487,113 @@ PROP['Woolly Armchair']=function(b){b.shadow(80,142,66,4);
   b.ex('heart',80,10,4.4,'#F7B2C4');b.ex('spark',150,30,4,'#FFE07A');
 };
 
-/* ---------- card chrome for the preview boards ---------- */
+const TK={jade:'#2F8F6E',jadeL:'#8FD3B4',rib:'#2B2430',ribS:'#F08A24',hat:'#B9A6E8',hatD:'#7E63C7',hatB:'#FFF1D6',canvas:'#F6EBD3',strap:'#C99A5E',shade:'#3B3346',sole:'#7FCBB0',pink:'#FF7EB6',red:'#D7263D',blue:'#4F8FD6'};
+/* ---------- the crayon card frame and the price tag (any pixel size), for the shop sheet ---------- */
 function frame(w,h,wash,seed){const b=mk('card','frame'+(seed||0)+':'+w+'x'+h);
   b.sh(RR(5,6,w-11,h-12,Math.min(18,h*.12),3),wash||'#FFFDF8',{k:.04,hatch:0,hl:0,base:wash||'#FFFDF8',dr:0});
   return b.svg(`0 0 ${w} ${h}`,` width="${w}" height="${h}" preserveAspectRatio="none"`,'')}
-// the sketchbook's spiral strip along the top of a board (w px wide, 44 high): punched holes and wire loops, like the Friends poster
-function spiral(w){const b=mk('card','spiral:'+w);
-  for(let x=24;x<w;x+=29){b.sh(E(x,32,4.2,4.6,10),'#8A6A5C',{k:0,hatch:0,hl:0,lw:.5,base:'#B8A595',dr:0});
-    b.raw(b.st(`M${x-1.5} 32C${x-9} 20 ${x-7} 6 ${x+1} 0`,'#7D7A80',3.4)+b.st(`M${x-1.5} 32C${x-9} 20 ${x-7} 6 ${x+1} 0`,'#C9C6CF',1.2),'top')}
-  return b.svg(`0 0 ${w} 44`,` width="${w}" height="44"`,'')}
-// a pencil ring round a zoom inset (s px square)
-function ring(s,seed){const b=mk('card','ring'+(seed||0)+':'+s),c=s/2;b.sh(E(c,c,c-4,c-4,40),'#FFFDF8',{k:1/6,hatch:0,hl:0,base:'#FFFDF8',dr:0,nofill:1});
-  return b.svg(`0 0 ${s} ${s}`,` width="${s}" height="${s}"`,'')}
 function tag(w,h,col,seed){const b=mk('card','tag'+(seed||0)+':'+w+'x'+h);
   b.sh([[h*.42,4],[w-6,5],[w-5,h-5],[h*.42,h-4],[5,h/2]],col||'#FFE08A',{k:.06,hatch:0,hl:0,base:col||'#FFE08A',dr:0});
   b.sh(E(h*.48,h/2,3.4,3.4,10),'#FFFBF3',{k:0,hatch:0,hl:0,lw:.6,base:'#FFFBF3'});
   return b.svg(`0 0 ${w} ${h}`,` width="${w}" height="${h}"`,'')}
 
-/* ---------- 3. the wearables: drawn by the dog's own crude kit (K = the dog module's kit, h = its pen) ---------- */
-const TK={jade:'#2F8F6E',jadeL:'#8FD3B4',rib:'#2B2430',ribS:'#F08A24',hat:'#B9A6E8',hatD:'#7E63C7',hatB:'#FFF1D6',canvas:'#F6EBD3',strap:'#C99A5E',shade:'#3B3346',sole:'#7FCBB0',pink:'#FF7EB6',red:'#D7263D',blue:'#4F8FD6'};
-const WEAR={
- 'Golden Name Tag':{slot:'neck',draw(K,h,s,L,HT){// a soft blue leather collar and a big gold bone tag under the chin with an engraved paw (not the Bond 10 Golden Collar: a gold band and a round tag)
-  const a=K.neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,K.GY-18)]};
-  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.6,K.INK);h.line(pts,5.2,TK.blue,.4);
-  const c0=sag(.56),R=Math.max(6,Math.min(8.5,s.head.rx*.26)),c=[c0[0],Math.min(c0[1]+R+4,K.GY-R-2)];
-  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R*.6]],1.6,K.INK,.1);
-  h.shape(boneP(c[0],c[1],R*3.1,R*1.35,0),GLD,{w:2.6,step:5,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});
-  [[-.25,.0],[.05,-.28],[.32,-.02],[.05,.22]].forEach(([dx,dy],i)=>h.dot(c[0]+dx*R*1.1,c[1]+dy*R*1.1,i===3?R*.24:R*.13,i===3?R*.2:R*.13,GLDD));
-  h.line([[c[0]-R*.9,c[1]-R*.3],[c[0]-R*.55,c[1]-R*.45]],1.4,'#FFF6CC',.2)}},
- 'Sukajan Jacket':{slot:'body',draw(K,h,s,L,B,p){// a jade satin souvenir jacket: a black and orange ribbed hem and collar, a pink blossom and a gold crane wing stitched on the side
-  const b=s.body,f=s.fluff?1.12:1.08,D=K.D2R;
-  h.shape(p.map(B),TK.jade,{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),TK.jade,6);
-  h.line([[b.rx*.05,-b.ry*.6],[b.rx*.35,-b.ry*.74],[b.rx*.62,-b.ry*.62]].map(B),3.2,TK.jadeL,.4);
-  const hem=[];for(let a=104;a>=34;a-=7)hem.push([Math.cos(a*D)*b.rx*f*.9,Math.sin(a*D)*b.ry*f*.84]);h.line(hem.map(B),7.6,TK.rib,.5);h.line(hem.map(B),2.4,TK.ribS,.4);
-  const ed=[];for(let a=-64;a<=-6;a+=8)ed.push([Math.cos(a*D)*b.rx*f*.88,Math.sin(a*D)*b.ry*f*.88]);h.line(ed.map(B),7,TK.rib,.5);h.line(ed.map(B),2.2,TK.ribS,.4);
-  const fl=B([b.rx*.12,-b.ry*.08]),R=Math.max(3.4,b.ry*.17);for(let i=0;i<5;i++){const t=-Math.PI/2+i/5*Math.PI*2;h.dot(fl[0]+Math.cos(t)*R,fl[1]+Math.sin(t)*R,R*.72,R*.72,'#FFB3CF')}h.dot(fl[0],fl[1],R*.42,R*.42,'#FFD84A');
-  const sc=B([b.rx*.5,b.ry*.05]),Z=Math.max(5,b.ry*.26),sp=[];for(let i=0;i<10;i++){const t=-Math.PI/2+i*Math.PI/5,r=i%2?Z*.45:Z;sp.push([sc[0]+Math.cos(t)*r,sc[1]+Math.sin(t)*r])}h.shape(sp,GLD,{w:2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2})}},
- 'Bucket Hat':{slot:'head',draw(K,h,s,L,HT){// a soft lilac bucket hat with crayon checks, a cream band and a drooping brim
-  const hx=s.head.rx,hy=s.head.ry,P=K.hatP(s,L,HT,.1,-5),W2=hx*.62,H=hy*.46;
-  h.shape([[-W2*1.7,12],[-W2*1.3,-1],[W2*1.3,-1],[W2*1.7,12],[W2*1.15,15],[-W2*1.15,15]].map(P),TK.hat,{w:3.6,step:8});
-  h.shape([[-W2,1],[-W2*.94,-H*.7],[-W2*.62,-H],[W2*.62,-H],[W2*.94,-H*.7],[W2,1]].map(P),TK.hat,{w:3.8,step:8});
-  for(let i=-2;i<=2;i++)h.line([[i*W2*.34,-2],[i*W2*.3,-H*.92]].map(P),1.8,TK.hatD,.4);
-  [[.34,.92],[.68,.8]].forEach(([y,k])=>h.line([[-W2*k,-H*y],[W2*k,-H*y]].map(P),1.8,TK.hatD,.4));
-  h.line([[-W2*.98,-3],[W2*.98,-3]].map(P),4.6,TK.hatB,.4);
-  h.line([[-W2*1.4,9],[0,11],[W2*1.4,9]].map(P),1.4,TK.hatD,.5)}},
- 'Little Sneakers':{slot:'body',draw(K,h,s,L,B,p){sneakers(K,h,s,L)}},
- 'Sukajan Jacket + Little Sneakers':{slot:'body',preview:1,draw(K,h,s,L,B,p){WEAR['Sukajan Jacket'].draw(K,h,s,L,B,p);sneakers(K,h,s,L)}},
- 'Paw Tote':{slot:'neck',draw(K,h,s,L,HT){// a little canvas tote on a long strap round the neck, a blue stripe and a pink paw, resting on the chest
-  const a=K.neckAnchor(s,HT),hx=s.head.rx,bw=Math.max(16,hx*.78),bh=Math.max(15,hx*.7),cl=q=>[q[0],Math.min(q[1],K.GY-4)];
-  const c=cl([a.c[0]-hx*.06,a.c[1]+bh*.95]);
-  h.line([a.l,[c[0]-bw*.3,c[1]-bh*.48]],2.6,TK.strap);h.line([a.r,[c[0]+bw*.3,c[1]-bh*.48]],2.6,TK.strap);
-  h.line([a.l,[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2+5],a.r],2.6,TK.strap);
-  h.shape([[c[0]-bw*.5,c[1]-bh*.5],[c[0]+bw*.5,c[1]-bh*.5],[c[0]+bw*.58,c[1]+bh*.5],[c[0]-bw*.58,c[1]+bh*.5]].map(cl),TK.canvas,{w:3,step:7,ox:0,oy:0,sc:1,closed:1,amp:.6,famp:.4});
-  h.line([[c[0]-bw*.48,c[1]-bh*.22],[c[0]+bw*.48,c[1]-bh*.22]],2.6,TK.blue,.3);
-  const q=[c[0],c[1]+bh*.14];h.dot(q[0],q[1]+1.5,3,2.4,TK.pink);[[-3.2,-2],[-1,-4],[1.4,-4],[3.4,-2]].forEach(([dx,dy])=>h.dot(q[0]+dx,q[1]+dy,1.1,1.2,TK.pink))}},
- 'Round Shades':{slot:'eyes',draw(K,h,s,L,HT){// round tinted glasses in a thin gold frame, a white shine on each lens
-  const f=s.face,hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes;
-  const a=HT([hx*e0[0],hy*e0[1]]),b=HT([hx*e1[0],hy*e1[1]]),s0=Math.max(er[0],7)+4,s1=Math.max(er[1],7)+4;
-  h.line([[a[0]+s0*.8,a[1]-1],[(a[0]+b[0])/2,Math.min(a[1],b[1])-5],[b[0]-s1*.8,b[1]-1]],2.6,GLDD);h.line([[a[0]-s0,a[1]],HT([-hx*.88,-hy*.22])],2.6,GLDD);
-  [[a,s0],[b,s1]].forEach(([c,z])=>{h.shape(K.circ(c[0],c[1],z,z,12),TK.shade,{w:3,ox:0,oy:0,sc:1,closed:1,famp:.3,fop:.88,amp:.5});h.line([[c[0]-z*.5,c[1]-z*.1],[c[0]-z*.15,c[1]-z*.5]],2.2,'#FFFFFF',.2)})}},
- 'Lucky Cat Charm':{slot:'neck',draw(K,h,s,L,HT){// a red cord with a tiny white beckoning cat charm (a joke: a cat on a dog), one paw up, a gold bell
-  const a=K.neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,K.GY-18)]};
-  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5.6,K.INK);h.line(pts,3.4,TK.red,.4);
-  const c0=sag(.56),R=Math.max(8,Math.min(10.5,s.head.rx*.33)),c=[c0[0],Math.min(c0[1]+R+3,K.GY-R-2)];
-  h.shape([[c[0]-R,c[1]-R*.2],[c[0]-R*.95,c[1]-R*1.5],[c[0]-R*.3,c[1]-R*.9],[c[0]+R*.3,c[1]-R*.9],[c[0]+R*.95,c[1]-R*1.5],[c[0]+R,c[1]-R*.2],[c[0]+R*.8,c[1]+R*.8],[c[0]-R*.8,c[1]+R*.8]],'#FFFFFF',{w:2.4,step:5,ox:0,oy:0,sc:1,closed:1,amp:.35,famp:.2});
-  h.line([[c[0]-R*.5,c[1]-R*.2],[c[0]-R*.2,c[1]-R*.3]],1.4,K.INK,.1);h.line([[c[0]+R*.2,c[1]-R*.3],[c[0]+R*.5,c[1]-R*.2]],1.4,K.INK,.1);
-  h.dot(c[0]-R*.68,c[1]-R*.95,R*.14,R*.22,'#FF9EB8');h.dot(c[0]+R*.68,c[1]-R*.95,R*.14,R*.22,'#FF9EB8');h.dot(c[0],c[1]+R*.25,R*.24,R*.24,GLD);
-  h.shape(K.circ(c[0]+R*1.15,c[1]-R*.75,R*.34,R*.42,7),'#FFFFFF',{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15})}}
+/* ---------- 5. the coin packs' icons (64): a little crayon pile of gold coins that grows with the pack ---------- */
+// one coin seen a little from above: the gold face over a darker rim band, a paw stamped on the face (light lines, so a small pile stays gold, not ink)
+function coin(b,x,y,r){const t=r*.3;
+  b.sh([[x-r,y],[x-r,y+t],[x-r*.72,y+t+r*.3],[x,y+t+r*.42],[x+r*.72,y+t+r*.3],[x+r,y+t],[x+r,y],[x,y+r*.42]],'#E2A93A',{k:.15,hatch:0,hl:0,lw:.5,step:6,base:'#F2C76A'});
+  b.sh(E(x,y,r,r*.42,14),GLD,{k:.15,hatch:0,hl:0,lw:.5,step:6,base:GLDL});b.raw(`<ellipse cx="${R1(x-r*.08)}" cy="${R1(y-r*.04)}" rx="${R1(r*.6)}" ry="${R1(r*.2)}" fill="${GLDS}" opacity=".9"/>`);// the shine sits well inside the face
+  if(r>12)paw(b,x,y+r*.02,r*.12,GLDD,{noline:1});else b.dot(x,y+r*.02,r*.12,GLDD)}
+// a coin standing on its edge, leaning
+function coinUp(b,x,y,r,a){b.sh(rot(E(x,y,r*.46,r,16),a,x,y),'#E2A93A',{k:.15,hatch:0,hl:0,lw:.5,step:6,base:'#F2C76A'});
+  b.sh(rot(E(x+r*.14,y,r*.36,r*.86,16),a,x,y),GLD,{k:.15,hatch:0,hl:0,lw:.45,step:6,base:GLDL})}
+const COINS={
+  coins1(b){[[32,50],[33.5,43],[31,36]].forEach(([x,y])=>coin(b,x,y,15));b.ex('spark',54,16,4.6,'#FFE07A')},
+  coins3(b){[[22,52],[23.4,45.5],[21.6,39],[22.8,32.5]].forEach(([x,y])=>coin(b,x,y,13));[[46,52],[44.8,45.5]].forEach(([x,y])=>coin(b,x,y,12));
+    coinUp(b,50,30,9,.32);b.ex('spark',58,12,4.4,'#FFE07A');b.ex('spark',8,16,3.4,'#FFE07A')},
+  coins8(b){// a heap: a tall stack behind, a wide bottom row, a coin rolling off the side
+    [[47,38],[48,32],[46.5,26],[47.5,20],[46.6,14]].forEach(([x,y])=>coin(b,x,y,10));
+    [[12,54],[26,56],[40,56],[53,54]].forEach(([x,y])=>coin(b,x,y,10));[[19,48],[33,49],[46,48]].forEach(([x,y])=>coin(b,x,y,10));[[25,41],[38,42]].forEach(([x,y])=>coin(b,x,y,10));coin(b,31,34,10);
+    coinUp(b,10,38,8,-.35);b.ex('spark',20,14,4.8,'#FFE07A');b.ex('spark',60,46,3.4,'#FFE07A');b.ex('glint',26,30,5)}
 };
-// little white sneakers with a mint sole, a pink star on the side and pink lace dots, on every foot that stands on the ground (toes point the way the dog faces)
-function sneakers(K,h,s,L){(L.legs||[]).filter(l=>l.foot&&!l.raised&&!l.sitfoot).sort((a,b)=>(a.near?1:0)-(b.near?1:0)).forEach(l=>{
-  const w=Math.max(5,l.w),x=l.foot[0],y=Math.min(l.foot[1],K.GY)+w*.15;
-  h.shape([[x-w*.95,y-w*1.15],[x+w*.45,y-w*1.25],[x+w*1.05,y-w*.65],[x+w*1.75,y-w*.3],[x+w*1.8,y+w*.4],[x-w*1.05,y+w*.4]],K.W,{w:2.8,step:5,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});
-  h.line([[x-w*1,y+w*.28],[x+w*1.75,y+w*.28]],3,TK.sole,.3);
-  h.dot(x-w*.2,y-w*.35,w*.32,w*.3,TK.pink);h.dot(x+w*.35,y-w*1.0,w*.14,w*.14,TK.pink);h.dot(x+w*.7,y-w*.75,w*.14,w*.14,TK.pink)})}
-function installWear(K){if(!K||K._shop)return false;K._shop=1;
-  Object.keys(WEAR).forEach(n=>{const w=WEAR[n],fn=function(h,...a){const st=h.r.st();w.draw(K,h,...a);h.r.st(st)};
-    if(w.slot==='head'){K.OUT.head.push(n);K.HAT2[n]=fn}else if(w.slot==='neck'){K.OUT.neck.push(n);K.NECK2[n]=fn}
-    else if(w.slot==='body'){K.OUT.body.push(n);K.BODY2[n]=fn}else if(w.slot==='eyes'){K.OUT.eyes.push(n);(PA._EYES2=PA._EYES2||{})[n]=fn}});
-  return true}
+Object.assign(ICON,COINS,{coins:COINS.coins3});
 
+/* ---------- 6. the Robo Scoop in the yard (ksrobo 60x50): the little round robot rolling about with its scoop ---------- */
+// o.k 0..2: the wheels' spokes turn and the antenna nods, for the game to flip through while it rolls (facing right; the game mirrors it)
+function roboYard(b,k){const G=46;b.shadow(29,G+1,22,2.4);
+  [[16,G-5],[42,G-5]].forEach(([x,y])=>{b.sh(E(x,y,5,5,12),'#6E6470',{k:.1,hatch:0,hl:0,lw:.7,base:'#9A90A0'});
+    const a=k*Math.PI/3;b.raw(b.st(`M${R1(x-Math.cos(a)*3.4)} ${R1(y-Math.sin(a)*3.4)}L${R1(x+Math.cos(a)*3.4)} ${R1(y+Math.sin(a)*3.4)}`,'#D8D2CC',1.1),'top')});
+  const nod=[0,2,-2][k];b.ln([[29,15],[30+nod,6]],{w:1.4,col:INK});b.sh(E(30+nod,4.6,3,3,10),'#FFE59A',{k:.1,hatch:0,hl:0,lw:.55,base:'#FFF6D0'});
+  b.sh([[8,G-4],[8,G-12],[11,G-22],[19,G-30],[29,G-33],[39,G-30],[47,G-22],[50,G-12],[50,G-4]],C.mint,{k:.14,sh:'#7FBFA4',ho:.4,base:'#E6F6EE',hatch:0});
+  b.sh(ribbon([[7,G-8],[29,G-7],[51,G-8]],[6,6,6]),'#6FBFB0',{k:.2,hatch:0,hl:0,lw:.6,base:'#A9DCD3'});
+  b.sh(RR(17,G-27,26,13,5),'#3B4A6B',{k:.05,hatch:0,hl:0,lw:.6,base:'#5A6B8E'});
+  b.raw(b.st(`M22 ${G-19}q2.5 -4 5 0M33 ${G-19}q2.5 -4 5 0M27 ${G-17}q3 2 6 0`,'#9EF0E8',1.6,1));
+  b.dot(13,G-17,1.8,'#F7A1B5');b.dot(45,G-17,1.8,'#F7A1B5');
+  // the arm out front and the little yellow scoop, low to the grass
+  b.ln([[49,G-15],[54,G-17],[55,G-10]],{w:1.6,col:INK});
+  b.sh(rot(E(55.5,G-6,3.6,4.8,12),-.6,55.5,G-6),'#FFE08A',{k:.1,hatch:0,hl:0,lw:.55,base:'#FFF2C2',marks:[{pts:rot(E(56,G-5,2.2,2.8,10),-.6,55.5,G-6),fill:GLD,op:.8}]});
+  b.ex('glint',16,G-24,4)}
+
+/* ---------- 7. item cards (64), like every other item: the wearables drawn on their own, the decor, bed and house fitted into the box ---------- */
+const ITEM={};
+ITEM['Golden Name Tag']=function(b){b.sh(ribbon([[6,22],[20,30],[32,33],[44,30],[58,22]],[6,6,6,6,6]),'#4F8FD6',{k:1/6,hatch:0,hl:0,lw:.85,base:'#B9D4F3'});
+  b.ln([[32,35],[32,40]],{w:1.4,col:INK});b.sh(boneP(32,48,34,15,-.08),GLD,{hatch:0,hl:0,base:GLDL,marks:[{pts:boneP(32,48,26,9,-.08),fill:GLDS,op:.85}]});
+  paw(b,32,49,2.2,GLDD,{noline:1});b.ex('spark',54,44,4,'#FFE07A');b.ex('glint',20,44,4)};
+ITEM['Sukajan Jacket']=function(b){// the jacket laid flat: jade satin, ribbed black and orange collar, cuffs and hem, a pink blossom and a gold star
+  b.sh([[18,12],[8,22],[4,40],[12,42],[16,30],[17,56],[47,56],[48,30],[52,42],[60,40],[56,22],[46,12],[39,12],[32,20],[25,12]],TK.jade,{k:.06,sh:'#1F6A50',base:TK.jadeL});
+  b.sh(ribbon([[16,54],[32,55.5],[48,54]],[5,5,5]),TK.rib,{k:1/6,hatch:0,hl:0,lw:.8,inner:b.st('M14 54.2H50',TK.ribS,1.4)});
+  b.sh(ribbon([[24,11],[32,19],[40,11]],[4.4,4.4,4.4]),TK.rib,{k:1/6,hatch:0,hl:0,lw:.75});
+  [[8,41],[56,41]].forEach(([x,y])=>b.sh(E(x,y,4.4,2.4,10,x<30?-.2:.2),TK.rib,{k:.1,hatch:0,hl:0,lw:.6,top:1}));
+  b.ln([[32,21],[32,52]],{w:1,col:'#1F6A50'});
+  for(let i=0;i<5;i++){const t=-Math.PI/2+i/5*Math.PI*2;b.dot(23+Math.cos(t)*3.2,36+Math.sin(t)*3.2,2.4,'#FFB3CF','top')}b.dot(23,36,1.4,'#FFD84A','top');
+  b.sh(starP(42,38,5,2.2),GLD,{k:0,hatch:0,hl:0,lw:.6,top:1});b.ex('spark',58,8,3.4,'#FFE07A')};
+ITEM['Bucket Hat']=function(b){const ck=b.st('M17 36L19 18M25 36L26 15M33 36L33 14M41 36L40 15M47 36L45 18M14 24H50M12 31H52',TK.hatD,1.2,.7);
+  b.sh([[4,46],[10,36],[54,36],[60,46],[48,50],[16,50]],TK.hat,{k:.12,hatch:0,hl:0,lw:.9,base:'#E4DBF7',inner:b.st('M10 46Q32 52 54 46',TK.hatD,1,.6)});
+  b.sh([[14,37],[15,22],[22,14],[42,14],[49,22],[50,37]],TK.hat,{k:.1,hl:0,sh:TK.hatD,ho:.3,base:'#E4DBF7',inner:ck});
+  b.sh(RR(13,32,38,6,2.4),TK.hatB,{k:0,hatch:0,hl:0,lw:.7,base:'#FFFFFF'});b.ex('spark',56,12,3.4,'#FFE07A')};
+function sneakerCard(b,x,y,s){const P=[[-.95,-1.15],[.45,-1.25],[1.05,-.65],[1.75,-.3],[1.8,.4],[-1.05,.4]].map(([u,v])=>[x+u*s,y+v*s]);
+  b.sh(P,'#FFFFFF',{k:.08,hatch:0,hl:0,lw:.8,base:'#FFFFFF',marks:[{pts:[[x-1.2*s,y+.12*s],[x+2*s,y+.12*s],[x+2*s,y+.5*s],[x-1.2*s,y+.5*s]],fill:TK.sole,k:0}]});
+  b.dot(x-.2*s,y-.35*s,s*.3,TK.pink);[[.35,-1],[.7,-.75]].forEach(([u,v])=>b.dot(x+u*s,y+v*s,s*.13,TK.pink))}
+ITEM['Little Sneakers']=function(b){sneakerCard(b,14,30,9);sneakerCard(b,30,50,10);b.ex('spark',56,12,3.4,'#FFE07A')};
+ITEM['Paw Tote']=function(b){b.raw(b.st('M20 30C18 10 46 10 44 30',TK.strap,3.4));
+  b.sh([[14,28],[50,28],[54,58],[10,58]],TK.canvas,{k:.04,hl:0,sh:'#C9B48C',ho:.35,base:'#FFFBF0',marks:[{pts:[[0,34],[64,34],[64,38],[0,38]],fill:TK.blue,k:0}]});
+  paw(b,32,48,3.4,TK.pink,{lw:.5});b.ex('spark',56,14,3.4,'#FFE07A')};
+ITEM['Round Shades']=function(b){b.raw(b.st('M24 30Q32 24 40 30M6 28L2 24M58 28L62 24',GLDD,2.2));
+  [[16,32],[48,32]].forEach(([x,y])=>{b.sh(E(x,y,11,11,20),TK.shade,{k:.06,hatch:0,hl:0,lw:.9,base:'#6A5E7E',ink:GLDD});b.raw(b.st(`M${x-6} ${y-1}L${x-2} ${y-6}`,'#FFFFFF',1.8,.9),'top')});
+  b.ex('spark',56,12,3.4,'#FFE07A')};
+ITEM['Lucky Cat Charm']=function(b){b.raw(b.st('M8 12Q32 34 56 12',TK.red,3));
+  const x=32,y=42,R=13;b.ln([[x,24],[x,30]],{w:1.2,col:INK});
+  b.sh([[x-R,y-R*.2],[x-R*.95,y-R*1.4],[x-R*.3,y-R*.85],[x+R*.3,y-R*.85],[x+R*.95,y-R*1.4],[x+R,y-R*.2],[x+R*.8,y+R*.8],[x-R*.8,y+R*.8]],'#FFFFFF',{k:.1,hatch:0,hl:0,lw:.85,base:'#FFFFFF'});
+  b.raw(b.st(`M${x-7} ${y-3}l4 -1M${x+3} ${y-4}l4 1`,INK,1.2),'top');b.dot(x-9,y-12,1.4,'#FF9EB8','top');b.dot(x+9,y-12,1.4,'#FF9EB8','top');
+  b.sh(E(x,y+5,3.2,3.2,10),GLD,{k:0,hatch:0,hl:0,lw:.6,top:1});b.sh(E(x+R+2,y-9,4,5,10),'#FFFFFF',{k:.1,hatch:0,hl:0,lw:.7,top:1});b.ex('spark',56,48,3.4,'#FFE07A')};
+// the decor, the bed and the house: their own art fitted into the 64 box (crop [x, y, w, h] of the art)
+function fitCard(b,svg,crop){const [x,y,w,h]=crop,k=Math.min(60/w,54/h),W=w*k,H=h*k,t=svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<svg x="${R1(32-W/2)}" y="${R1(34-H/2)}" width="${R1(W)}" height="${R1(H)}" viewBox="${crop.join(' ')}" overflow="hidden">${t}</svg>`)}
+const CROP={'Cable-Knit Rug':[4,4,232,74],'Cocoa Mug Lamp':[4,14,92,122],'Doggy Snow Globe':[10,12,100,124],'Cardboard Fireplace':[4,14,152,142],'Woolly Armchair':[6,4,150,142],'Tea-Cosy Bed':[16,4,230,152],'Golden Paw Cottage':[10,0,220,198]};
+
+/* ---------- the module API ---------- */
+// the world's prop ids for the Cozy Winter decorations (the game's HM_DECOR `prop`), and the Robo Scoop in the yard
+const PID={ksrug:'Cable-Knit Rug',kslamp:'Cocoa Mug Lamp',ksglobe:'Doggy Snow Globe',ksfireplace:'Cardboard Fireplace',ksarmchair:'Woolly Armchair'},LIT={kslamp:1};
+VB.ksrobo='0 0 60 50';
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),lab=s=>esc(s);
+function propSvg(name,o){const kind=name==='Tea-Cosy Bed'?'bed':'prop',lt=!!(o&&o.lit);
+  return serve('sp:'+name+(lt?':lit':''),()=>{const b=mk(kind,'shop:'+name);PROP[name](b,{lit:lt});return b.svg(VB[name],kind==='bed'?` data-bed="${esc(name)}"`:name==='Cocoa Mug Lamp'?` data-lit="${lt?1:0}"`:'',(lt?'Lit ':'')+lab(name))})}
+const house=name=>serve('sh:'+name,()=>{const b=mk('house','shop:'+name);HOUSE[name](b);return b.svg('0 0 240 200','',lab(name),true)});
+const robo=k=>{k=((k|0)%3+3)%3;return serve('sr:'+k,()=>{const b=mk('prop','shop:robo');roboYard(b,k);return b.svg(VB.ksrobo,'','Robo Scoop')})};
+const item=name=>serve('st:'+name,()=>{const b=mk('item','shop:'+name);if(ITEM[name])ITEM[name](b);else if(HOUSE[name])fitCard(b,house(name),CROP[name]);else fitCard(b,propSvg(name),CROP[name]);return b.svg('0 0 64 64','',lab(name))});
+// the world's own lookups learn the shop's art: PA.prop(id), PA.bed(name), PA.house(name), PA.item(name) (each falls through to the older modules)
+{const _p=PA.prop,_b=PA.bed,_h=PA.house,_i=PA.item;
+ PA.prop=function(name,o){if(PID[name])return propSvg(PID[name],LIT[name]?{lit:!!(o&&o.lit)}:null);if(name==='ksrobo')return robo(o&&o.k);return _p?_p.apply(this,arguments):''};
+ PA.bed=function(name){if(name==='Tea-Cosy Bed')return propSvg(name);return _b?_b.apply(this,arguments):''};
+ PA.house=function(name){if(HOUSE[name])return house(name);return _h?_h.apply(this,arguments):''};
+ PA.item=function(name){if(ITEM[name]||CROP[name])return item(name);return _i?_i.apply(this,arguments):''}}
 PA.SHOP={
-  house:name=>serve('sh:'+name,()=>{const f=HOUSE[name],b=mk('house','shop:'+name);f(b);return b.svg('0 0 240 200','',lab(name),true)}),
-  prop:name=>serve('sp:'+name,()=>{const f=PROP[name],kind=name==='Tea-Cosy Bed'?'bed':'prop',b=mk(kind,'shop:'+name);f(b);return b.svg(VB[name],'',lab(name))}),
-  icon:name=>serve('si:'+name,()=>{const b=mk('icon','shop:'+name);ICON[name](b);return b.svg('0 0 64 64','',lab(name))}),
-  frame,tag,spiral,ring,WEAR,installWear,VB:Object.assign({},VB),
-  NAMES:{supporter:['Golden Paw Cottage','Golden Name Tag','Founding Friend Badge','Thank-You Letter'],perks:['walkcoins','cropsfast','giftplus'],
+  house,
+  prop:(name,o)=>PID[name]?PA.prop(name,o):name==='ksrobo'?robo(o&&o.k):PROP[name]?propSvg(name,o):'',
+  robo,item,
+  icon:name=>ICON[name]?serve('si:'+name,()=>{const b=mk('icon','shop:'+name);ICON[name](b);return b.svg('0 0 64 64','',lab(name))}):'',
+  frame,tag,VB:Object.assign({},VB),PROPS:Object.assign({},PID),
+  NAMES:{supporter:['Golden Paw Cottage','Golden Name Tag','Founding Friend Badge','Thank-You Letter'],perks:['walkcoins','cropsfast','giftplus'],coins:['coins1','coins3','coins8'],
     tools:['Robo Scoop','Garden Sprinkler','Auto Water Bowl'],tokyo:['Sukajan Jacket','Bucket Hat','Little Sneakers','Paw Tote','Round Shades','Lucky Cat Charm'],
     winter:['Cable-Knit Rug','Cocoa Mug Lamp','Doggy Snow Globe','Tea-Cosy Bed','Cardboard Fireplace','Woolly Armchair']}
 };
-if(PA._K)installWear(PA._K);
 })();
