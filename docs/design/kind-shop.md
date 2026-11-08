@@ -43,3 +43,16 @@ Every tool can be switched off in Settings and the hand way always works; nothin
 **Economy check:** walks about 100 a day (230 real coins in the v2.18 sim) become 120 (276), and the garden (about 35 a day at 6 plots, 60 in the sim) becomes at most about 44 (75) if every plot is replanted on time, so walks stay the largest source and the garden stays below them; the v1.3 garden check (6 plots ≤ 45 a day) is close at 44, so the perk should be counted in the balance sim.
 
 **Design concerns:** (1) +20% walk coins is a paid coin boost, against the Growth Plan's "never coins-for-power" line above: the owner asked for it (3 Nov 2026), so that line needs rewording ("no coins for sale; the Supporter Pack's small, capped speed-ups") before the shop ships, and a cap (e.g. +20 real coins a day) keeps it small. (2) Little Sneakers need a new feet slot in the Wardrobe and the save (`S.outfit.feet`, additive). (3) The Robo Scoop must not tick the daily `scoop` mission, or a paid tool would do a mission for the player.
+
+## Owner's decisions, 8 Nov 2026 (kind shop lead session)
+
+Research behind them: itch.io web games run in a frame on itch.io's own domain, so programmatic ads (they need `ads.txt` on a domain we control) can only run on doodledoggo.app/play/; itch.io allows unobtrusive ads if the page says so. Google H5 Games Ads needs AdSense plus a separate approval; each rewarded ad is opted into one by one; the "child" age tag (TFAT, which replaced TFCD/TFUA) turns off personalised ads and remarketing. Stripe Managed Payments (Stripe as merchant of record) supports Hong Kong sellers; Stripe Tax alone only calculates.
+
+1. **Tax: Stripe Managed Payments.** Stripe is the merchant of record and files sales tax and VAT abroad; the owner files nothing overseas.
+2. **Web ads: later, doodledoggo.app/play/ only.** The paid shop ships first. A later update adds AdSense + H5 Games Ads with the child tag (non-personalised), an EU/UK consent prompt and at most 3 a day; no ads in the itch.io build. Apply for AdSense early.
+3. **+20% walk coins, no daily limit** (owner's choice over the +30 cap; the sim says +14-17% income for payers).
+4. **Coins are for sale.** New shop rule (replaces "never coins-for-power"): *"We sell coins and looks, never dogs, Bond, welfare or chances. No loot boxes or random paid rewards, and the game is complete without paying."* Sparkle stays free and is never sold for coins either.
+5. **Coin packs: 1,000 coins 0.99 · 3,000 coins 1.99 · 8,000 coins 4.99 USD.** No "best deal" banner.
+6. **Spending guard: the confirm step only** (no grown-up check, no monthly cap); Stripe Checkout does the rest.
+7. **First packs: Tokyo Street (6 outfits) and Cozy Winter (6 decorations)**, 2.99 USD each or 600 coins an item.
+8. **Supporter Pack as drafted plus a one-time 2,000-coin gift.**
