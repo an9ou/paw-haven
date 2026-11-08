@@ -92,7 +92,7 @@ function dcDog(c, i) {
   const x = c.dogs[i], key = dcBreeds()[x.b]; if (!key) return null;
   const G = PGN(), base = (G && G.STARTER_GENES && (G.STARTER_GENES[key] || G.STARTER_GENES.shiba)) || null;
   const genes = x.c && typeof x.c === 'object' ? Object.assign({}, base || {}, x.c) : base;
-  const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null };
+  const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null, feet: null };
   if (wear) outfit[wear.slot] = wear.n;
   const eyes = Number.isInteger(x.e) ? DC_EYES[x.e] || null : null; // v2.23: the eyes the dog has at home (no e: an old card, drawn as before)
   const d = { id: dcDogId(c, i, key, genes, eyes), dc: [c.id, i], key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: dcNameOk(x.n) ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
@@ -164,7 +164,8 @@ function dcDogFig(c, i, pose) {
 const dcPawWord = (n) => tt('cards.paws_html', '{n, plural, one {<b>#</b> paw} other {<b>#</b> paws}}', { n });
 function dcCardBody(c, note) {
   const n = dcPawsOf(c);
-  return `<div class="dc-card"><p class="dc-paws"><span class="dc-pawic">${artReal('item', 'Paw') ? place(artReal('item', 'Paw'), 0, 0, 30, 30) : '<svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"><ellipse cx="15" cy="19" rx="7" ry="6"/><circle cx="7" cy="11" r="3"/><circle cx="12" cy="7" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="23" cy="11" r="3"/></g></svg>'}</span><span class="dc-pawn">${dcPawWord(n)}</span></p><div class="dc-dogs">${c.dogs.map((x, i) => dcDogFig(c, i)).join('')}</div>${note ? `<p class="small">${note}</p>` : ''}</div>`;
+  const ff = typeof ksBadgeHTML === 'function' && (c.id === 'preview' ? ksSup() : c.ff === 1) ? ksBadgeHTML() : ''; // v2.24: the Founding Friend badge (my card's preview; another card once the Worker sends ff)
+  return `<div class="dc-card">${ff}<p class="dc-paws"><span class="dc-pawic">${artReal('item', 'Paw') ? place(artReal('item', 'Paw'), 0, 0, 30, 30) : '<svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"><ellipse cx="15" cy="19" rx="7" ry="6"/><circle cx="7" cy="11" r="3"/><circle cx="12" cy="7" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="23" cy="11" r="3"/></g></svg>'}</span><span class="dc-pawn">${dcPawWord(n)}</span></p><div class="dc-dogs">${c.dogs.map((x, i) => dcDogFig(c, i)).join('')}</div>${note ? `<p class="small">${note}</p>` : ''}</div>`;
 }
 function dcCard(c) {
   if (!c || !dcShowable(c)) return null;

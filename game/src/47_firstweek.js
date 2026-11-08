@@ -367,11 +367,12 @@ function fwCalHTML(morning) {
     note = `<div class="fw-wish"><span class="fw-whead">${headSVG(dog)}</span><div class="fw-wsay"><p><b>${esc(tt('fw.wish_remember', '{name} remembered yesterday:', { name: dog.name }))}</b> ${esc(fwWishLine(wi.k, true))}</p><p class="small">${esc(tt('fw.wish_hint', 'Make it come true today for a happy bonus.'))}</p></div></div>`;
   }
   const hello = morning ? `<p class="fw-hello">${esc(tt('fw.morning', 'A new paw for today! Thanks for coming back.'))}</p>` : '';
-  return `<div class="fw-cal">${hello}${fwDgHTML()}${note}<div class="fw-pages">${wel}${mon}</div></div>`; // v2.17: the sheet leads with today's gift
+  return `<div class="fw-cal">${hello}${fwDgHTML()}${typeof ksGift2HTML === 'function' ? ksGift2HTML() : ''}${note}<div class="fw-pages">${wel}${mon}</div></div>`; // v2.17: the sheet leads with today's gift
 }
 function fwCalBind(root, redraw) {
   root.querySelectorAll('[data-fwclaim]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); const [pg, n] = b.dataset.fwclaim.split(':'); if (fwClaim(pg, +n)) redraw(); }; });
   const dg = root.querySelector('#fwDgClaim'); if (dg) dg.onclick = (e) => { e.stopPropagation(); if (fwDgClaim()) redraw(); };
+  const d2 = root.querySelector('#ksDg2'); if (d2) d2.onclick = (e) => { e.stopPropagation(); if (ksGift2Claim()) redraw(); }; // v2.24: the Supporter Pack's second gift (52_kindshop.js)
 }
 function fwCalOpen(morning) {
   if (!S || !fwOn()) return;

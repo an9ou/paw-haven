@@ -123,8 +123,9 @@ let gardenCtl = null, kitchenCtl = null, lastGardenTick = 0;
 function gardenAdvance(extra) {
   const m = PG(); if (!S || !S.garden || !m || typeof m.advance !== 'function') return;
   try {
-    const r = m.advance(S.garden, Object.assign({ now: Date.now(), weatherAt: weatherForKey, buddy: buddyNow(), maxHours: 720 }, extra || {}));
-    if (r && r.state) { S.garden = mergeHarvests(r.state); markDirty(); (r.events || []).slice(0, 4).forEach(gardenEvent); }
+    const ks = typeof ksGardenCtx === 'function' ? ksGardenCtx() : {}; // v2.24: the Supporter Pack's faster crops (growMul) and the Garden Sprinkler (sprinkler)
+    const r = m.advance(S.garden, Object.assign({ now: Date.now(), weatherAt: weatherForKey, buddy: buddyNow(), maxHours: 720 }, ks, extra || {}));
+    if (r && r.state) { S.garden = mergeHarvests(r.state); if (typeof ksSprinkle === 'function') ksSprinkle(r.events); markDirty(); (r.events || []).filter((e) => e.type !== 'sprinkler').slice(0, 4).forEach(gardenEvent); }
   } catch (e) { console.warn('PawGarden.advance failed', e); }
   if (gardenCtl && gardenCtl.update) { try { gardenCtl.update({ state: S.garden, time: timePhase(), weather: weatherNow(), seeds: seedCounts() }); } catch (e) { /* ignore */ } }
 }
@@ -164,7 +165,7 @@ function enterGarden() {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = '';
   gardenAdvance(); const e = envNow(); let closed = false;
   const o = {
-    state: S.garden, time: e.time, weather: e.weather, season: e.season, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
+    state: S.garden, time: e.time, weather: e.weather, season: e.season, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx, growMul: typeof ksGrowMul === 'function' ? ksGrowMul() : 1, // v2.24
     say: (t) => toast(t),
     onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); trackAct('garden', { what: 'plant', crop: cropId }); return true; },
     onHarvest: (plot, items, took) => {
@@ -303,7 +304,7 @@ function gardenStatusTxt() {
   const pl = (S.garden && S.garden.plots) || [], m = monthNow(), G = PG();
   const ready = pl.filter((p) => p.crop && p.g >= 1).length, grow = pl.filter((p) => p.crop && p.g < 1);
   if (!grow.length) return ready ? tt('garden.plots_ready', '{n, plural, one {# plot is ready to pick!} other {# plots are ready to pick!}}', { n: ready }) : tt('garden.nothing_growing', 'Nothing growing right now.');
-  const left = grow.map((p) => { const c = cropInfo(p.crop); if (!c) return 99; if (G && G.hoursLeft) { try { return G.hoursLeft(p, m); } catch (e) { /* fall through */ } } return (1 - p.g) * c.hours / (c.seasons.includes(seasonOf(m)) ? 1 : 0.5); });
+  const left = grow.map((p) => { const c = cropInfo(p.crop); if (!c) return 99; const gm = typeof ksGrowMul === 'function' ? ksGrowMul() : 1; if (G && G.hoursLeft) { try { return G.hoursLeft(p, m) / gm; } catch (e) { /* fall through */ } } return (1 - p.g) * c.hours / (c.seasons.includes(seasonOf(m)) ? 1 : 0.5) / gm; }); // v2.24: x0.8 grow time with the Supporter Pack
   const next = Math.min.apply(null, left), dry = grow.filter((p) => !p.water).length;
   return [ready ? tt('garden.n_ready', '{n} ready to pick ·', { n: ready }) : '', next < 0.75 ? tt('garden.next_under', 'next crop ready in under an hour') : tt('garden.next_about', 'next crop ready in about {hrs}', { hrs: hrs(next) }), dry ? tt('garden.thirsty', '· {n, plural, one {# thirsty plot (not growing until watered)} other {# thirsty plots (not growing until watered)}}', { n: dry }) : ''].filter(Boolean).join(' ');
 }

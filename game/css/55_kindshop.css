@@ -1,0 +1,37 @@
+/* v2.24 Kind shop (V224.md 3, 52_kindshop.js): the sheet is a shop sheet (.panel.shop.ks). Desktop: two columns, the pack cards across both.
+   Phones: one column, every tap 44 px, nothing under the phone bar (the sheet and its confirm veil sit above it like every shop sheet). */
+.panel.ks .ks-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:18px}
+.panel.ks .ks-card .art{width:112px;height:96px}
+.panel.ks .ks-card .art svg{width:100%;height:100%}
+.panel.ks .ks-wide{grid-column:1/-1}
+.panel.ks .ks-wide .art{width:150px;height:126px}
+.ks-gets{margin:4px 0 2px;padding:0 0 0 20px;text-align:left;font-size:17px;line-height:1.35;align-self:stretch}
+.ks-gets li{margin:1px 0}
+.ks-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-top:4px}
+.ks-acts .btn{min-height:44px}
+.ks-or{flex-basis:100%;opacity:.8}
+.ks-yours{font-family:var(--font-hand);font-size:22px;transform:rotate(-3deg)}
+.ks-hi{margin:0 0 6px}
+.ks-why{margin:0 0 8px;border:2px dashed #CDBBA6;border-radius:12px 9px 13px 8px;padding:0 10px}
+.ks-why summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-family:var(--font-hand);font-size:22px}
+.ks-whyb{display:flex;gap:10px;align-items:center;padding:0 0 8px}
+.ks-whyb p{margin:0}
+.ks-duck{width:64px;height:64px;flex:none}
+.ks-duck svg{width:100%;height:100%}
+.ks-ask{margin:6px 0 2px;text-align:center}
+.ks-links{display:flex;justify-content:center;margin:4px 0 8px}
+.ks-link{min-height:44px;font-size:17px}
+.ks-confirm .ks-price{font-size:26px}
+.ks-stripe{margin:8px 0 4px}
+.ks-have{color:#8A5A2E}
+.ks-confirm .foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:10px}
+.ks-confirm .foot .btn{min-height:44px}
+.ks-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 4px;margin:4px 0;border:2px solid #5B3D32;border-radius:14px 9px 13px 10px;background:#FFF2C4;font-size:16px;vertical-align:middle}
+.ks-badge b{font-family:var(--font-hand);font-size:20px;line-height:1}
+.ks-bic{display:inline-block;width:28px;height:28px;flex:none;vertical-align:middle}
+.ks-bic svg{width:100%;height:100%}
+.ks-walk{display:flex;align-items:center;gap:6px;justify-content:center;font-weight:700}
+.ks-set{margin:6px 0}
+html[data-layout="phone"] .panel.ks .ks-grid{grid-template-columns:1fr;gap:16px 0}
+html[data-layout="phone"] .panel.ks .btn{min-height:44px;box-sizing:border-box}
+html[data-layout="phone"] .ks-confirm{max-height:calc(100% - 8px);overflow-y:auto}

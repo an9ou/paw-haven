@@ -95,8 +95,8 @@ function mailPush(msg) {
   if (S.mail.some((x) => x.id === m.id)) return S.mail.find((x) => x.id === m.id);
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // unread litter letters are kept (v2.8: and every gift still waiting for Collect, e.g. a New Year card)
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i]) && !S.mail[i].keep) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !mbOwed(S.mail[i]) && !S.mail[i].keep) S.mail.splice(i, 1); // v2.24: a kept letter (Gerald's thank-you) stays to reread // unread litter letters are kept (v2.8: and every gift still waiting for Collect, e.g. a New Year card)
   }
   markDirty(); mailSfx();
   const tl = toast(tt('mail.new_mail', 'New mail: {title}', { title: m.title }), 'gold', { group: 'mail', many: (n) => tt('mail.new_letters', '{n} new letters in your mailbox.', { n }) }); // phones: letters that arrive together make one note

@@ -70,4 +70,5 @@
 50_friends.js
 51_levels.js
 51b_habits.js
+52_kindshop.js
 23_boot.js
