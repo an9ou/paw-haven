@@ -9,8 +9,9 @@
 //   hwTap(x, y, ang, lt)                  a crayon finger tapping (x, y) at lt = 0 (seconds from the tap; drawn from -0.45 to 0.5), with a ripple
 const HW_APPS = ['WhatsApp', 'Instagram story', 'Messenger', 'LINE', 'Telegram', 'Messages', 'More…'];
 const HW_TEXT = { msg: ['Come and play', 'Doodle Doggo with me.'], chatName: 'Maple', shareTo: 'Share to' }; // fr.share_text, split in two lines
-// the RedNote cut (owner, 7 Nov 2026): the apps RedNote viewers use, as TEXT only (no logos), and the game's zh-Hans fr.share_text "来和我一起玩Doodle Doggo吧。"
-const HW_ZH = { apps: ['微信', '朋友圈', 'QQ', '小红书', '微博', '更多…'], text: { msg: ['来和我一起玩', 'Doodle Doggo吧。'], chatName: '小枫', shareTo: '分享到' }, fam: "'LXGW WenKai', Caveat" };
+// the RedNote cut (owner, 7 Nov 2026), and the game's zh-Hans fr.share_text "来和我一起玩Doodle Doggo吧。". Owner, 8 Nov 2026 (RedNote throttled the cut
+// for naming other platforms): NO platform names at all on RedNote, only plain share actions; the first row (发给朋友) is the one tapped
+const HW_ZH = { apps: ['发给朋友', '复制链接', '保存海报', '更多…'], text: { msg: ['来和我一起玩', 'Doodle Doggo吧。'], chatName: '小枫', shareTo: '分享到' }, fam: "'LXGW WenKai', Caveat" };
 // howtoJS('zh-Hans') gives the same drawings with the Chinese words and face; HOWTO_JS is the English
 const howtoJS = (lang) => { const zh = lang === 'zh-Hans'; return HOWTO_SRC.replace('__APPS__', JSON.stringify(zh ? HW_ZH.apps : HW_APPS)).replace('__TEXT__', JSON.stringify(zh ? HW_ZH.text : HW_TEXT)).replace('__FAM__', JSON.stringify(zh ? HW_ZH.fam : 'Caveat')); };
 const HOWTO_SRC = `

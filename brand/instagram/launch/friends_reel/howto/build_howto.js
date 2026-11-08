@@ -19,14 +19,18 @@
 //   FRAMES=a-b    re-render only frames a..b (the rest of workdir/f stays), then encode again      PAR=n   n pages render at once
 //   REDNOTE=1     the RedNote cut (owner, 7 Nov 2026): zh-Hans footage (capture_howto.js / capture_clean.js with PAW_LANG=zh-Hans), the Mandarin voice
 //                 (../vo_friends_zh.py with VO_LINES=howto/vo_howto_zh.json, zf_073 1.0x), Chinese words and subtitles in LXGW WenKai, a crayon share menu
-//                 with the apps RedNote viewers use (text only), no link in our drawings, the code swap in Chinese, and endCardRN with a QR code to
-//                 https://doodledoggo.app (the game's own QR module). Writes doodle-doggo-friends-howto-rednote.mp4 and the 3:4 cover brand/rednote/rednote-11-friends-howto.jpg
+//                 with plain share actions (text only), no link in our drawings, the code swap in Chinese, and endCardRN with "浏览器搜 Doodle Doggo App
+//                 就能玩". Writes doodle-doggo-friends-howto-rednote.mp4 and the 3:4 cover brand/rednote/rednote-11-friends-howto.jpg
+//                 Owner, 8 Nov 2026 (RedNote throttled the cut for naming other platforms): NO platform name anywhere (no 微信, 朋友圈, 群聊, QQ, 微博,
+//                 小红书...; the voice says 把链接和海报分享给朋友), no QR and no readable domain: the end card has no QR, and rnClean() below paints the
+//                 game's QR out of our card (card.png) and the poster (poster.png) with a pink paw, as friends_card.js does, and swaps the poster's
+//                 "扫一扫，或添加 DOG-K3APZ / doodledoggo.app/f/DOG-K3APZ" lines for the game's own "添加 DOG-K3APZ" (WORK/card_rn.png, WORK/poster_rn.png)
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../centre_text.js');
 const { loadArt, cardSVG, FIT_JS, apartRects } = require('../friends_card.js');
 const { howtoJS } = require('./howto_art.js');
-const { ENDCARD_JS, handles, RN_FONT_CSS, qrMatrix } = require('../../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../../kids/endcard.js');
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const HOWTO_JS = howtoJS(RN ? 'zh-Hans' : 'en');
 const ROOT = path.join(__dirname, '..', '..', '..', '..', '..');
@@ -47,12 +51,12 @@ const dcSrc = fs.readFileSync(path.join(DEV, 'game', 'src', '40_dogcards.js'), '
 const words = (k) => JSON.parse(dcSrc.match(new RegExp('const ' + k + ' = (\\[[\\s\\S]*?\\]);'))[1].replace(/'/g, '"'));
 const OUR_NAME = words('DC_WORDS_A')[NAMEI[0]] + ' ' + words('DC_WORDS_B')[NAMEI[1]];
 if (OUR_NAME !== 'Sunny Biscuit') throw new Error('our name is ' + OUR_NAME);
-const SITE_QR = RN ? qrMatrix('https://doodledoggo.app', path.join(DEV, 'mods', 'qr.js')) : null; // the RedNote end card's QR (owner, 7 Nov 2026)
 const CARD = cardSVG(ART, { code: CODE, name: OUR_NAME, nameFont: 'Caveat' });
 const LINK = RN ? null : ART.link.replace(/^https?:\/\//, '') + CODE; // doodledoggo.app/f/DOG-K3APZ (RedNote: no domain in our drawings; the game's own poster shows its link)
 const inner = (s) => s.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
-const POSTER = 'file://' + path.join(UI, 'poster.png');
+const POSTER = 'file://' + (RN ? path.join(WORK, 'poster_rn.png') : path.join(UI, 'poster.png')); // RedNote: rnClean() writes it (no QR, no link)
+const RNFIX = RN ? { card: path.join(WORK, 'card_rn.png') } : {}; // RedNote: our card without its QR (rnClean())
 
 // ---- the words (the game's own button names: fr.* in game/i18n/en.json) ----
 const TX = {
@@ -64,16 +68,16 @@ const TX = {
 // RedNote: the game's zh-Hans words (fr.*, fw.more 更多, fr.menu 好友, fr.poster 分享海报, fr.add_title 添加好友, fr.add 添加), never "add us"
 const TX_ZH = {
   hook: [{ s: '怎么在 Doodle Doggo', size: 86, pitch: 112 }, { s: '加好友', size: 112 }], hookSub: '点三下，分享你的好友码',
-  s1: '点「更多」，再点「好友」', s2: '选好友名，拿到好友码', s3: '点「分享海报」', s3b: '发到哪里都行', s4: '好友加你',
+  s1: '点「更多」，再点「好友」', s2: '选好友名，拿到好友码', s3: '点「分享海报」', s3b: '分享给朋友', s4: '好友加你',
   s5: '你们是好友啦！', feats: ['去做客，摸摸狗狗', '送一份礼物', '一起散步'], safe: '没有聊天，没有私信。', theirs: '好友的手机',
-  chat: '发给好友', story: '发朋友圈', endA: '在评论区留下你的好友码', endB: '互相加好友吧！',
+  chat: '发给好友', story: '保存海报', endA: '在评论区留下你的好友码', endB: '互相加好友吧！',
 };
 const SUBS_ZH = { // vo_howto_zh.json, line by line, at most 14 characters a chunk
   hook: ['怎么加好友？', '点三下就够了。', '我算过。'],
   s1: ['点更多，', '再点好友。'],
   s2: ['选一个好友名。', '你就有了一张卡片，', '上面有你自己的好友码。'],
   s3: ['点分享海报。'],
-  s3b: ['发到哪里都行！', '微信、朋友圈、群聊。'],
+  s3b: ['把链接和海报', '分享给朋友！'],
   s4: ['好友打开链接，', '或者在添加好友里', '输入你的好友码，', '再点添加。'],
   s5a: ['你们是好友啦！', '去好友的院子做客，', '摸摸好友的狗狗。'], s5b: ['送一份礼物。'], s5c: ['一起散步。'],
   safe: ['没有聊天，没有私信。', '只有狗狗。'],
@@ -163,7 +167,7 @@ function resolve(t) {
     if (sh.chat) R.chat = true;
     else { const g = geo(sh.crop); let file, bx;
       if (sh.clip) { const c = clipOf(path.join(UI, sh.clip)), i = pick(c, sh.from + (lt - sh.at)); file = c.file(i); bx = c.bx[i] || []; }
-      else { file = path.join(UI, sh.ui + '.png'); bx = stillBoxes(UI, sh.ui); }
+      else { file = RNFIX[sh.ui] || path.join(UI, sh.ui + '.png'); bx = stillBoxes(UI, sh.ui); }
       R.img = 'file://' + file; const c = g.c;
       R.place = { tx: g.X - c.x * g.k, ty: g.Y - c.y * g.k, s: g.k / 3, clip: [c.y * 3, 1179 - (c.x + c.w) * 3, 1977 - (c.y + c.h) * 3, c.x * 3], round: 34 * 3 / g.k };
       R.frame = { x: g.X, y: g.Y, w: g.w, h: g.h };
@@ -187,7 +191,7 @@ ${SAFE_JS}
 ${FIT_JS}
 ${HOWTO_JS}
 ${ENDCARD_JS}
-const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(RN ? "'LXGW WenKai', Caveat" : 'Caveat')}, RN=${RN}, SITE_QR=${JSON.stringify(SITE_QR)}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
+const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(RN ? "'LXGW WenKai', Caveat" : 'Caveat')}, RN=${RN}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
 const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, CARD=${JSON.stringify(CARD)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM), CX=SAFE_CX;
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -223,12 +227,12 @@ window.frame=async function(t,S,R){
     const sw=440, sh=sw*16/9, sx=CX-sw/2, sy=575+(1-ease(lt/0.25))*30, p=ease((lt-0.3)/0.3), sm=hwShare(sx,sy,sw,sh*0.97,p,lt>1.18?0:-1,FAM);
     ov+='<g opacity="'+ease(lt/0.2)+'">'+hwPhone('ph3',sx,sy,sw,sh*0.97,hwImg(POSTER,sx,sy,sw,sh*0.97)+sm.svg)+'</g>';
     if(p>0.99){ const r=sm.rows[0]; ov+=hwTap(r.x+r.w*0.7,r.y+r.h*0.55,24,lt-1.15); } }
-  if(S.kind==='spread'){ // the poster as a chat message and as a story: two crayon phones
+  if(S.kind==='spread'){ // the poster as a chat message and as a story: two crayon phones (RedNote: a saved poster, no story bar)
     const sw=330, sh=sw*16/9*0.97, y0=600, a=ease(lt/0.25), b=ease((lt-0.55)/0.25);
     const xa=86, xb=522; // the two phones (with their tilt) inside x 60..890
     const ch=hwChat(xa+6,y0,sw-12,sh,POSTER,{p:ease((lt-0.15)/0.3),reply:ease((lt-1.5)/0.3),link:LINK,id:'b'});
     if(a>0) ov+='<g opacity="'+a+'" transform="rotate(-2.5 '+(xa+sw/2)+' '+(y0+sh/2)+')">'+hwPhone('ph5a',xa+6,y0,sw-12,sh,ch.svg)+'</g>'+pill(TX.chat,xa+sw/2,y0+sh+78,48,FAM,{fill:'${YEL}',padX:26,op:a});
-    if(b>0) ov+='<g opacity="'+b+'" transform="rotate(2.5 '+(xb+sw/2)+' '+(y0+sh/2)+')">'+hwPhone('ph5b',xb+6,y0,sw-12,sh,hwStory(xb+6,y0,sw-12,sh,POSTER,(lt-0.55)/2.4))+'</g>'+pill(TX.story,xb+sw/2,y0+sh+78,48,FAM,{fill:'${YEL}',padX:26,op:b}); }
+    if(b>0) ov+='<g opacity="'+b+'" transform="rotate(2.5 '+(xb+sw/2)+' '+(y0+sh/2)+')">'+hwPhone('ph5b',xb+6,y0,sw-12,sh,RN?hwImg(POSTER,xb+6,y0,sw-12,sh):hwStory(xb+6,y0,sw-12,sh,POSTER,(lt-0.55)/2.4))+'</g>'+pill(TX.story,xb+sw/2,y0+sh+78,48,FAM,{fill:'${YEL}',padX:26,op:b}); }
   (R.taps||[]).forEach((g)=>{ ov+=hwTap(g.x,g.y,g.ang,g.lt); });
   const cp=S.cap||{};
   if(cp.hook){ const dur=S.b-S.a, o=lt<dur-0.25?1:Math.max(0,1-(lt-dur+0.25)/0.25);
@@ -242,7 +246,7 @@ window.frame=async function(t,S,R){
       +hwSwap(CX,590,lt-0.2,{w:600,h:140,gap:76,off:60})
       +'<g opacity="'+ease((lt-1.5)/0.3)+'"><path d="M'+CX+' 1250 q-10 38 0 70 M'+(CX-22)+' 1298 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>';
     subY=1395; }
-  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=RN?endCardRN('tall',LOGO_INNER,null,{matrix:SITE_QR,caption:'扫码就能玩'}):endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
+  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=RN?endCardRN('tall',LOGO_INNER):endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
   else ov+=sub(t,subY);
   $('un').innerHTML=un; $('ov').innerHTML=ov+'<g id="apart">'+(R.apart||'')+'</g>'; frFit($('ov'));
   const st=$('ov');
@@ -253,11 +257,52 @@ window.frame=async function(t,S,R){
 // ---- the cover: its own design (not a frame), everything that matters in the grid's middle 1080 x 1440 (y 240..1680) ----
 const coverHTML = require('./howto_cover.js').coverHTML({ DEV, POSTER, CARD, LOGO_INNER, CODE, rn: RN });
 
+// RedNote (owner, 8 Nov 2026: no QR, no link): the game's QR painted out of our card and the poster (white tile, the pink paw of friends_card.js),
+// and the poster's two lines under the card ("扫一扫，或添加 DOG-K3APZ" and the doodledoggo.app/f/ link) swapped for the game's own "添加 DOG-K3APZ",
+// moved to the middle on the poster's own backdrop (PawArt.FRIENDS.poster()). The ink is lifted against the backdrop, so the dots stay in place.
+async function rnClean(b) {
+  const p = await b.newPage({ viewport: { width: W, height: H } }); await p.goto('about:blank');
+  const url = (f) => 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
+  const back = 'data:image/svg+xml;base64,' + Buffer.from(ART.PA.FRIENDS.poster()).toString('base64');
+  const PB = ART.PA.FRIENDS.posterBox, CQ = ART.PA.FRIENDS.cardQR;
+  const out = await p.evaluate(async ([poster, card, back, PB, CQ, LC]) => {
+    const load = (s) => new Promise((r, j) => { const i = new Image(); i.onload = () => r(i); i.onerror = j; i.src = s; });
+    const canvasOf = (im, w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); return c; };
+    const paw = (g, x, y, w) => { const cx = x + w / 2, cy = y + w / 2, u = w / 10; g.fillStyle = '#FFFFFF'; g.fillRect(x + u * 0.5, y + u * 0.5, w - u, w - u); g.fillStyle = '#F28FA5';
+      [[0, 1.2, 2.2], [-2.2, -1.2, 1.1], [-0.8, -2.6, 1.1], [0.8, -2.6, 1.1], [2.2, -1.2, 1.1]].forEach(([a, b, r]) => { g.beginPath(); g.arc(cx + a * u, cy + b * u, r * u, 0, 7); g.fill(); }); };
+    // the poster (1080 x 1920 = 2.4 x its 450 x 800 units)
+    const P = canvasOf(await load(poster), 1080, 1920), B = canvasOf(await load(back), 1080, 1920), g = P.getContext('2d'), k = 2.4;
+    const y0 = Math.round((PB.scan.y - 27) * k), y1 = Math.round((PB.link.y + 12) * k); // both lines (scan baseline 630, link 651)
+    const src = g.getImageData(0, y0, 1080, y1 - y0), bg = B.getContext('2d').getImageData(0, y0, 1080, y1 - y0);
+    // the "添加 DOG-K3APZ" part of the scan line: from the first ink column right of the comma's gap ("或" ends, "添" starts) to the line's end
+    const lum = (d, i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2], W0 = 1080, hh = y1 - y0;
+    const ink = (x) => { let n = 0; for (let y = 0; y < Math.round((PB.scan.y + 6) * k) - y0; y++) { const i = (y * W0 + x) * 4; if (lum(bg.data, i) - lum(src.data, i) > 60) n++; } return n; };
+    const cols = []; for (let x = 0; x < W0; x++) cols.push(ink(x));
+    const runs = []; let a = -1; for (let x = 0; x <= W0; x++) { const on = x < W0 && cols[x] > 0; if (on && a < 0) a = x; if (!on && a >= 0) { runs.push([a, x - 1]); a = -1; } }
+    // characters: 扫 一扫 ， 或 添 加 DOG-K3APZ (glyph runs with gaps); the kept part starts at the run after "或", i.e. the 3rd ink block after the comma
+    const comma = runs.findIndex((r) => r[1] - r[0] < 16); if (comma < 0) throw new Error('rnClean: no comma in the scan line');
+    const x0 = runs[comma + 2][0], x1 = runs[runs.length - 1][1], dx = Math.round(540 - (x0 + x1) / 2); // centred on the poster's middle
+    if (x0 + dx < 40 || x1 + dx > 1040) throw new Error('rnClean: the kept line does not fit');
+    const outD = new ImageData(new Uint8ClampedArray(bg.data), W0, hh);
+    let inkC = [91, 61, 50]; // INKG
+    const sh = Math.round((PB.scan.y + 6) * k) - y0; // the scan line's rows only (the link line under it goes)
+    for (let y = 0; y < sh; y++) for (let x = x0; x <= x1; x++) { const i = (y * W0 + x) * 4, al = Math.max(0, Math.min(1, (lum(bg.data, i) - lum(src.data, i)) / (lum(bg.data, i) - 70))); if (al <= 0) continue;
+      const j = (y * W0 + x + dx) * 4; for (let c = 0; c < 3; c++) outD.data[j + c] = Math.round(outD.data[j + c] * (1 - al) + inkC[c] * al); }
+    g.putImageData(outD, 0, y0);
+    paw(g, PB.qr.x * k, PB.qr.y * k, PB.qr.w * k);
+    // our card (card.png, 3x the 393 x 659 phone; the card's 300 x 200 units at LC)
+    const C = canvasOf(await load(card), 1179, 1977), u = LC.w * 3 / 300; paw(C.getContext('2d'), LC.x * 3 + CQ.x * u, LC.y * 3 + CQ.y * u, CQ.w * u);
+    return { poster: P.toDataURL('image/png'), card: C.toDataURL('image/png'), kept: [x0, x1, dx], runs };
+  }, [url(path.join(UI, 'poster.png')), url(path.join(UI, 'card.png')), back, PB, CQ, LAY.card]);
+  fs.writeFileSync(path.join(WORK, 'poster_rn.png'), Buffer.from(out.poster.split(',')[1], 'base64'));
+  fs.writeFileSync(RNFIX.card, Buffer.from(out.card.split(',')[1], 'base64'));
+  console.log('rnClean: kept x', out.kept, 'of runs', JSON.stringify(out.runs)); await p.close();
+}
 async function openPage(b, src) {
   const p = await b.newPage({ viewport: { width: W, height: H } });
   const f = path.join(WORK, src === html ? 'page.html' : 'cover.html'); fs.writeFileSync(f, src); await p.goto('file://' + f); await p.waitForLoadState('networkidle');
   await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat', '700 40px Andika', '700 40px "DD Code"'].map((f) => document.fonts.load(f, 'aDOG-K3APZ'))));
-  if (RN) await p.evaluate((s) => document.fonts.load('700 40px "LXGW WenKai"', s), JSON.stringify([TX, SUBS_TX, require('./howto_art.js').HW_ZH, '扫码就能玩治愈系蜡笔狗狗游戏浏览器搜就能玩更多好友分享海报点三下就够了怎么加']));
+  if (RN) await p.evaluate((s) => document.fonts.load('700 40px "LXGW WenKai"', s), JSON.stringify([TX, SUBS_TX, require('./howto_art.js').HW_ZH, '治愈系蜡笔狗狗游戏浏览器搜就能玩更多好友分享海报点三下就够了怎么加']));
   await p.evaluate(() => document.fonts.ready);
   if (!(await p.evaluate(() => document.fonts.check('700 19px "DD Code"', 'DOG-K3APZ')))) throw new Error('DD Code did not load');
   await p.evaluate((src) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = src; }), POSTER);
@@ -265,6 +310,7 @@ async function openPage(b, src) {
 }
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  if (RN) await rnClean(b);
   const only = process.env.ONLY || '';
   if (only !== 'cover') {
     const par = Math.max(1, +(process.env.PAR || 1)), pages = [];

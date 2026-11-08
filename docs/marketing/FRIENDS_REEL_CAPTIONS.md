@@ -96,7 +96,7 @@ Receipts (the text without the link): `caption.py` READY (first line lands whole
 
 ### RedNote / 小红书 (the how-to in Mandarin; owner approved the English how-to and asked for this, 7 Nov 2026)
 
-Video: `brand/instagram/launch/friends_reel/howto/doodle-doggo-friends-howto-rednote.mp4` (1080 x 1920, Mandarin voice zf_073 1.0x, Chinese subtitles, the zh-Hans game screens). Cover: `brand/rednote/rednote-11-friends-howto.jpg` (3:4). The end card carries a QR code to https://doodledoggo.app (owner, 7 Nov 2026: a RedNote end card may carry a QR to the game website); the captions still carry no link and no domain with a dot. The ask is the code swap, never "add us".
+Video: `brand/instagram/launch/friends_reel/howto/doodle-doggo-friends-howto-rednote.mp4` (1080 x 1920, Mandarin voice zf_073 1.0x, Chinese subtitles, the zh-Hans game screens). Cover: `brand/rednote/rednote-11-friends-howto.jpg` (3:4). **Re-made 8 Nov 2026** after RedNote throttled the 7 Nov cut for naming other platforms (owner: "we cannot include other social media platforms in the video, only can say share link and poster with friends"): no platform name anywhere (the voice says 把链接和海报分享给朋友, the crayon share menu says 发给朋友 / 复制链接 / 保存海报 / 更多…), no QR (the end card says 浏览器搜 Doodle Doggo App 就能玩; our card and the poster carry a pink paw in the QR tile) and no readable domain (the poster's link line is gone). The captions carry no link and no domain with a dot. The ask is the code swap, never "add us".
 
 标题 (title, 15 characters):
 ```
@@ -109,7 +109,7 @@ Doodle Doggo 加好友，只要点三下👇
 
 1. 点「更多」，再点「好友」🐶 第一次先选一个好友名
 2. 你的卡片上就有你自己的好友码🎴
-3. 点「分享海报」，发到微信、朋友圈或者群聊📲
+3. 点「分享海报」，把链接和海报分享给朋友📲
 
 好友打开链接，或者在「添加好友」里输入你的好友码，再点「添加」就好啦✅ 然后就能去好友的院子做客、摸摸狗狗、留个爪印、每天送一份礼物，还能带好友的狗狗一起散步🦮
 
@@ -122,9 +122,9 @@ Doodle Doggo 加好友，只要点三下👇
 #我在小红书做游戏 #交换好友码 #治愈系游戏 #独立游戏 #狗狗
 ```
 
-Checked by hand (7 Nov 2026): title 15 characters (≤ 20); no link, no domain with a dot, no QR in the text; the game's own zh-Hans words (更多, 好友, 选好友名, 分享海报, 添加好友, 添加, 去做客, 留个爪印, 送一份礼物, 和好友的狗狗一起散步); one ask (评论区留下好友码，互相加好友); "no chat, no messages" as 没有聊天，没有私信 (never "no typing"); 5 hashtags; no 免费/无广告 claims.
+Checked by hand (7 Nov 2026; step 3 re-worded 8 Nov 2026: no platform names): title 15 characters (≤ 20); no link, no domain with a dot, no QR in the text; the game's own zh-Hans words (更多, 好友, 选好友名, 分享海报, 添加好友, 添加, 去做客, 留个爪印, 送一份礼物, 和好友的狗狗一起散步); one ask (评论区留下好友码，互相加好友); "no chat, no messages" as 没有聊天，没有私信 (never "no typing"); 5 hashtags; no 免费/无广告 claims.
 
-English meaning: "Adding friends in Doodle Doggo takes three taps. 1. Tap More, then Friends; the first time, pick a friend name. 2. Your card shows your own friend code. 3. Tap Share poster and send it to WeChat, Moments or a group chat. Your friend opens the link, or types your code in Add a friend and taps Add, and that's it. Then you can visit their yard, pet their dogs, leave a paw print, send one gift a day, and walk with their dog. No chat, no messages; you can remove or block a friend any time. Drop your friend code in the comments and add each other! Search Doodle Doggo App in your browser to play."
+English meaning: "Adding friends in Doodle Doggo takes three taps. 1. Tap More, then Friends; the first time, pick a friend name. 2. Your card shows your own friend code. 3. Tap Share poster and share the link and the poster with your friends. Your friend opens the link, or types your code in Add a friend and taps Add, and that's it. Then you can visit their yard, pet their dogs, leave a paw print, send one gift a day, and walk with their dog. No chat, no messages; you can remove or block a friend any time. Drop your friend code in the comments and add each other! Search Doodle Doggo App in your browser to play."
 
 ## The 6 Nov launch cut (superseded by the how-to above, never approved)
 
