@@ -298,7 +298,7 @@ function letterBody(m) {
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
   const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   const paw = typeof frLetterArt === 'function' ? frLetterArt(m) : ''; // v2.19: a paw-print note or a friend's wrapped gift (50_friends.js)
-  return `<article class="letter k-${esc(m.kind)}"><header><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }), m)}</span></header>${card}${paw}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
+  return `<article class="letter k-${esc(m.kind)}"><header><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }), m)}</span></header>${card}${paw}${pups}<p class="mb-text"${m.id === 'ks_thanks' ? ' style="white-space:pre-line"' : ''}>${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {
   if (!S) return; mailFields(); audioPlace('journal'); jrFields();

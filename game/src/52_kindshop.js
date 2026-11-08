@@ -73,7 +73,13 @@ const ksPackOwned = (id) => ksHas(id) || (KS_ITEMS[id] && KS_ITEMS[id].looks ? K
 const ksOwnedId = (id) => (KS_ITEMS[id] && KS_ITEMS[id].pack ? false : id === 'comfort' ? ksAllTools() : KS_TOOLS.includes(id) ? ksTool(id) : ksPackOwned(id));
 // the Feet row in the Wardrobe: with the kind shop on, or once shoes are owned
 function ksFeetRow() { return ksOn() || (!!S && ALL_WEAR.some((c) => c.slot === 'feet' && owns('clothes', c.n))); }
-function ksHouseMove(n) { const sh = ksS(); if (sh && n === KS_HOUSE && S.house !== KS_HOUSE) { sh.prevHouse = S.house; markDirty(); } }
+function ksHouseMove(n) {
+  const sh = ksS();
+  if (sh && n === KS_HOUSE && S.house !== KS_HOUSE) {
+    sh.prevHouse = S.house; markDirty();
+    if (!sh.camSeen) { sh.camSeen = 1; if (cur.mode === 'yard' && typeof camTo === 'function') setTimeout(() => { try { camTo(740, 0.9); } catch (e) { /* no camera here */ } }, 400); } // the first time: show the new kennel on a phone
+  }
+}
 
 /* ---------------- giving and taking back ---------------- */
 function ksGiveLook(n) {
@@ -296,7 +302,7 @@ function ksCardHTML(id) {
   const I = KS_ITEMS[id], own = ksOwnedId(id);
   const list = id === 'supporter' || I.looks || I.tools ? `<ul class="ks-gets">${ksGets(id).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : '';
   const or = I.looks ? `<span class="small ks-or">${esc(tt('ks.or_each', 'or {n} coins each', { n: tnum(KS_LOOK_COINS) }))}</span>` : '';
-  const act = own ? ksYours() : `${ksCashMode() === 'off' ? '' : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
+  const off = ksCashMode() === 'off', act = own ? ksYours() : `${off ? (I.coins ? '' : `<span class="small ks-nopay-note">${esc(tt('ks.not_here', 'Not open here'))}</span>`) : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
   return `<div class="sitem ks-card ks-${I.tab}${list ? ' ks-wide' : ''}" data-ks="${id}"><span class="art">${ksArt(id)}</span><b>${esc(ksName(id))}</b><span class="desc">${esc(ksLine(id))}</span>${list}<span class="ks-acts">${act}</span></div>`;
 }
 function ksLookCardHTML(n) {
@@ -338,7 +344,7 @@ function ksOpen(tab) {
   const tabs = `<div class="tabs" role="tablist">${KS_TABS.map((t) => `<button class="btn" role="tab" type="button" aria-selected="${t === ksTab}" data-kstab="${t}">${esc(ksTabName(t))}</button>`).join('')}</div>`;
   const why = `<details class="ks-why"><summary>${esc(tt('ks.why', 'Why is there a shop?'))}</summary><div class="ks-whyb">${duck ? `<span class="ks-duck" aria-hidden="true">${duck}</span>` : ''}<p>${esc(tt('ks.why_text', 'Gerald: "Doodle Doggo is made by one person. The shop helps keep the crayons sharp. Everything here except the Supporter Pack and the coins can also be earned by playing, and the game is complete without paying. Dogs, Bond and chances are never in the shop."'))}</p></div></details>`;
   const body = `<p class="small ks-hi">${esc(tt('ks.hi', 'Looks, comfort tools and coins. You have {coins} Paw Coins.', { coins: tnum(S.coins) }))}</p>${why}${tabs}<div class="shopgrid ks-grid">${ksTabHTML(ksTab)}</div>
-    <p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p><p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>`;
+    ${ksCashMode() === 'off' ? '' : `<p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p>`}<p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>`;
   const p = openModal(esc(tt('ks.title', 'Kind shop')), body, { cls: 'shop ks' });
   p.querySelectorAll('[data-kstab]').forEach((b) => { b.onclick = () => { SFX.click(); ksTab = b.dataset.kstab; ksOpen(); }; });
   p.querySelectorAll('[data-kscash]').forEach((b) => { b.onclick = () => { SFX.click(); if (ksCashMode() === 'guest') ksEmailSheet(p); else ksConfirm(p, b.dataset.kscash); }; });
@@ -379,7 +385,7 @@ async function ksCoinBuy(panel, n) {
   const tool = KS_TOOLS.includes(n), look = KS_TOKYO.includes(n) || KS_COZY.includes(n); if (!tool && !look) return false;
   const price = tool ? KS_ITEMS[n].coins : KS_LOOK_COINS, owned = tool ? ksTool(n) : ksLookOwned(n), nm = tool ? ksName(n) : homeName(n);
   const c = CLOTHES.find((x) => x.n === n);
-  const q = await buyWindow(panel, { art: tool ? ksToolArt(n) : ksLookArt(n), name: nm, desc: tool ? ksLine(n) : c ? shPerk(c) : '', price, stack: false, owned, have: owned ? 1 : 0, haveLabel: tt('shop.owned', 'Owned') });
+  const q = await buyWindow(panel, { art: tool ? ksToolArt(n) : ksLookArt(n), name: nm, desc: tool ? ksLine(n) : c ? shPerk(c) : '', price, stack: false, one: true, owned, have: owned ? 1 : 0, haveLabel: tt('shop.owned', 'Owned') });
   if (!q) return false;
   if (S.coins < price) { nope(tt('shop.not_enough', 'Not enough coins. Have you tried being rich?')); return false; }
   const sh = ksS();

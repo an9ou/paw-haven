@@ -47,9 +47,9 @@ function buyWindow(panel, o) {
     let q = o.stack || sell ? Math.min(1, Math.max(0, maxQ())) || 1 : 1;
     const v = document.createElement('div'); v.className = 'buyveil';
     v.innerHTML = `<div class="buybox pop" role="dialog" aria-modal="true" aria-label="${esc(sell ? tt('shop.aria_sell', 'Sell {name}', { name: o.name }) : tt('shop.aria_buy', 'Buy {name}', { name: o.name }))}">
-      <div class="bb-top"><span class="bb-art">${o.art}</span><div><h3>${esc(o.name)}</h3><p class="small">${esc(o.desc || '')}</p><p class="bb-unit">${priceHTML(tt('shop.price_each', '{price} each', { price: fmtC(unit) }))}</p></div></div>
+      <div class="bb-top"><span class="bb-art">${o.art}</span><div><h3>${esc(o.name)}</h3><p class="small">${esc(o.desc || '')}</p><p class="bb-unit">${priceHTML(o.one ? fmtC(unit) : tt('shop.price_each', '{price} each', { price: fmtC(unit) }))}</p></div></div>
       ${o.stack || sell ? `<div class="bb-qty"><button class="btn bb-m" aria-label="${tt('shop.one_less', 'One less')}">−</button><input class="bb-in" type="number" min="1" inputmode="numeric" aria-label="${tt('shop.quantity', 'Quantity')}" value="${q}"><button class="btn bb-p" aria-label="${tt('shop.one_more', 'One more')}">+</button>
-        <span class="bb-quick">${[1, 5, 10].map((n) => `<button class="btn" data-qq="${n}">×${n}</button>`).join('')}<button class="btn" data-qq="max">${tt('shop.max', 'Max')}</button></span></div>` : `<p class="bb-one">${o.owned ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span> ${tt('shop.already_have', 'You already have this one.')}` : tt('shop.one_of_kind', 'One of a kind: quantity 1.')}</p>`}
+        <span class="bb-quick">${[1, 5, 10].map((n) => `<button class="btn" data-qq="${n}">×${n}</button>`).join('')}<button class="btn" data-qq="max">${tt('shop.max', 'Max')}</button></span></div>` : `<p class="bb-one">${o.owned ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span> ${tt('shop.already_have', 'You already have this one.')}` : o.one ? '' : tt('shop.one_of_kind', 'One of a kind: quantity 1.')}</p>`}
       <div class="bb-sum"></div>
       <div class="foot"><button class="btn no bb-no">${tt('shop.cancel', 'Cancel')}</button><button class="btn yes big bb-yes">${sell ? tt('shop.sell', 'Sell') : tt('shop.buy', 'Buy')}</button></div></div>`;
     panel.appendChild(v); buyOpen = true;
