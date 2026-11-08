@@ -445,8 +445,8 @@ PROP['Tea-Cosy Bed']=function(b){b.shadow(130,151,110,3.5);
   const st=[];[40,62,84].forEach(y=>st.push({pts:[[10,y],[250,y],[250,y+10],[10,y+10]],fill:'#6FAFB8',k:0}));
   b.sh([[26,140],[28,100],[42,64],[76,36],[130,24],[184,36],[218,64],[232,100],[234,140]],'#F2C14E',{k:.14,hl:0,sh:'#C9962A',ho:.3,base:'#FFE9A8',marks:st,inner:b.st(knit(30,24,232,140,12,10,5.4),'#C9962A',1.2,.5)});
   b.sh(cloudP(130,22,16,14,8,.2,30),'#E46F6B',{k:.12,hl:0,lw:.85,base:'#F7C4C0',sh:'#B5404A'});
-  b.sh(arch(74,186,140,62),'#8A5A3C',{hatch:0,hl:0,lw:.95,base:'#A87A5C',dr:.3});
-  b.sh(cloudP(130,124,52,14,9,.08,50),'#FFF2DA',{hl:0,sh:'#D9B98C',ho:.3,base:'#FFF8EC',marks:[{pts:E(118,120,24,5,14),fill:'#FFFFFF',op:.85}]});
+  b.sh(arch(50,210,140,46),'#8A5A3C',{hatch:0,hl:0,lw:.95,base:'#A87A5C',dr:.3});// v2.24 art fix: a wider, taller opening, so a curled-up dog's back and tail stay inside it
+  b.sh(cloudP(130,124,70,14,9,.08,50),'#FFF2DA',{hl:0,sh:'#D9B98C',ho:.3,base:'#FFF8EC',marks:[{pts:E(118,120,24,5,14),fill:'#FFFFFF',op:.85}]});
   FRONT0(b);
   let rb='';for(let x=30;x<232;x+=8)rb+=b.jl(x,130,x,150,.4);
   b.sh([[22,128],[238,128],[240,152],[20,152]],'#6FAFB8',{k:.04,hl:0,sh:'#3E7E88',ho:.3,base:'#BFE0E4',inner:b.st(rb,'#3E7E88',1.4,.6)});
@@ -460,10 +460,13 @@ PROP['Cardboard Fireplace']=function(b){b.shadow(80,152,70,4);
   b.sh([[18,150],[18,50],[142,50],[142,150]],C.card,{k:.02,hl:0,sh:'#B08550',ho:.35,base:'#EBCB9C',inner:b.st(br,'#C0504A',1.3,.55)});
   b.sh(arch(46,114,150,82),'#5E463D',{hatch:0,hl:0,lw:1,base:'#6E544A'});
   b.sh(RR(52,136,30,8,4),'#B07A45',{k:0,hatch:0,hl:0,lw:.8,base:'#D9A274'});b.sh(RR(76,138,32,8,4),'#C58F5E',{k:0,hatch:0,hl:0,lw:.8,base:'#E2B07E'});
+  // the paper flames sit in .pa-wb-glow (like the Cocoa Mug Lamp's marshmallow), so the night tint leaves them warm: they glow after dark
+  b.raw('<g class="pa-wb-glow">');
   b.sh(flameP(80,138,34,46,-3),'#F9A23C',{k:.2,hatch:0,hl:0,lw:.8,base:'#FBC98A'});
   b.sh(flameP(68,138,18,30,-4),'#F28FA5',{k:.2,hatch:0,hl:0,lw:.7,base:'#FBD3DC'});
   b.sh(flameP(92,138,18,32,3),'#FFD84A',{k:.2,hatch:0,hl:0,lw:.7,base:'#FFEFA8'});
   b.sh(flameP(80,136,14,24,1),'#FFE9A8',{k:.2,hatch:0,hl:0,lw:.6,base:'#FFF6D0'});
+  b.raw('</g>');
   b.sh(RR(8,40,144,13,3),'#C99A72',{k:0,hatch:0,hl:0,lw:.9,base:'#E2BC94'});
   b.sh(RR(26,18,22,22,2),'#FFF6E6',{k:0,hatch:0,hl:0,lw:.8,base:'#FFFFFF'});b.ex('heart',37,29,5,'#F28FA5');
   b.sh(E(104,32,7,9,12),'#A0703F',{k:.1,hatch:0,hl:0,lw:.75,base:'#C99A6A',inner:b.st('M98 28L110 28M97 33L111 33M99 38L109 38','#6E4A24',1,.7)});

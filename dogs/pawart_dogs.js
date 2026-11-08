@@ -1969,7 +1969,7 @@ function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.c
 /* ---------- v2.24 "Kind shop" wearables (docs/design/kind-shop.md; the owner's approved preview of 3 Nov 2026, world/pawart_shop.js) ----------
    neck 'Golden Name Tag' (the Supporter Pack: a gold bone tag on a blue collar, not the Bond 10 Golden Collar), and the Tokyo Street set:
    body 'Sukajan Jacket', head 'Bucket Hat', neck 'Paw Tote', neck 'Lucky Cat Charm', eyes 'Round Shades' (EYES2, the eyes slot's own table from v2.24),
-   feet 'Little Sneakers': a NEW slot, outfit.feet (FEET2). A shoe goes on every foot of every pose but sleep (the eyes slot's rule), on adults and puppies,
+   feet 'Little Sneakers': a NEW slot, outfit.feet (FEET2). A shoe goes on every foot of every pose but sleep and playdead (the eyes slot's rule), on adults and puppies,
    never on a newborn; each foot's shoe is drawn inside its own leg (its pa-d-leg group), so the body still lies over the far feet.
    Every draw hands the dog back its random stream (the v2.18.1 rule), so a dog without them is byte for byte the plain dog, and with them its own
    lines are; under the Bucket Hat a topknot moves the stream on as if drawn (hmPlain), so the head is the plain dog's head too. */
@@ -2009,8 +2009,13 @@ HAT2['Bucket Hat']=function(h,s,L,HT){// a soft lilac bucket hat with crayon che
   h.line([[-W2*1.4,9],[0,11],[W2*1.4,9]].map(P),1.4,KS.hatD,.5)};
 NECK2['Paw Tote']=function(h,s,L,HT){// a little canvas tote on a strap round the neck, a blue stripe and a pink paw, resting on the chest
   const a=neckAnchor(s,HT),hx=s.head.rx,pk=s.pup?.78:1,bw=Math.max(14,hx*.78*pk),bh=Math.max(13,hx*.7*pk),cl=q=>[q[0],Math.min(q[1],GY-4)],c=[a.c[0]-hx*.06,Math.min(a.c[1]+bh*.95,GY-4-bh*.5)];// the whole bag stays above the ground (head down, it rests there)
-  h.line([a.l,[c[0]-bw*.3,c[1]-bh*.48]],2.6,KS.strap);h.line([a.r,[c[0]+bw*.3,c[1]-bh*.48]],2.6,KS.strap);
   h.line([a.l,[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2+5],a.r],2.6,KS.strap);
+  // v2.24 art fix: only the strap when the bag would lie on the face: a newborn, a head tipped over (rollover, playdead: the neck no longer under
+  // the head), or the bag over an eye (a head held low)
+  const hc=HT([0,0]),dv=[a.c[0]-hc[0],a.c[1]-hc[1]],f=s.face,er=s.eyes,box=[c[0]-bw*.6,c[1]-bh*.55,c[0]+bw*.6,c[1]+bh*.55];
+  const onEye=[[f.e0||[-.1,-.04],er[0]],[f.e1||[.42,-.1],er[1]]].some(([e,r])=>{const p=HT([hx*e[0],s.head.ry*e[1]]),z=Math.max(r,5)+1;return p[0]+z>box[0]&&p[0]-z<box[2]&&p[1]+z>box[1]&&p[1]-z<box[3]});
+  if(s.pup===2||L.pose==='rollover'||L.pose==='playdead'||dv[1]<Math.hypot(dv[0],dv[1])*.6||onEye)return;
+  h.line([a.l,[c[0]-bw*.3,c[1]-bh*.48]],2.6,KS.strap);h.line([a.r,[c[0]+bw*.3,c[1]-bh*.48]],2.6,KS.strap);
   h.shape([[c[0]-bw*.5,c[1]-bh*.5],[c[0]+bw*.5,c[1]-bh*.5],[c[0]+bw*.58,c[1]+bh*.5],[c[0]-bw*.58,c[1]+bh*.5]].map(cl),KS.canvas,{w:3,step:7,ox:0,oy:0,sc:1,closed:1,amp:.6,famp:.4});
   h.line([[c[0]-bw*.48,c[1]-bh*.22],[c[0]+bw*.48,c[1]-bh*.22]],2.6,KS.blue,.3);
   const q=[c[0],c[1]+bh*.14];h.dot(q[0],q[1]+1.5,3,2.4,KS.pink);[[-3.2,-2],[-1,-4],[1.4,-4],[3.4,-2]].forEach(([dx,dy])=>h.dot(q[0]+dx,q[1]+dy,1.1,1.2,KS.pink))};
@@ -2333,7 +2338,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(top==='Little Bat Costume'||top==='Dinosaur Hood'||top==='Polar Bear Hood'||top==='Penguin Suit')L.hood=1;// the dog's own ears stay inside the bat hood
   if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
   if(hat==='Year of the Sheep Hood'){L.hood=1;if(body==='Ghost Sheet')L.ghost=1}// v2.8: flop ears stay inside the hood, the hood draws the prick ears itself
-  if(feet&&pose!=='sleep'&&s.pup!==2)L.feet=feet;// v2.24: shoes (outfit.feet), drawn on each leg by drawLegs and drawHaunch; none asleep, none on a newborn
+  if(feet&&pose!=='sleep'&&pose!=='playdead'&&s.pup!==2)L.feet=feet;// v2.24: shoes (outfit.feet), drawn on each leg by drawLegs and drawHaunch; none asleep or playing dead (its legs lie tucked on the body), none on a newborn
   if(body==='Superhero Cape')drawCape(h,s,L,B);
   if(body&&BACK2[body])BACK2[body](h,s,L,B);
   drawTail(h,s,L,B);
