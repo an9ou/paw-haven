@@ -16,6 +16,7 @@ Tick each box. Times are JST. Everything you need is in `brand/instagram/` and `
 - [ ] **Link: https://an9ou.itch.io/doodle-doggo** (live since 17 Oct). Before launch the link was left empty. When the itch.io page (or the game link) is live and tested, add it here and change the last bio line to `🎮 Free · play in your browser 👇`. (A free link page that counts clicks, such as Linktree, shows you taps; point it at the game when it is live.)
 - [ ] **Profile picture:** `brand/instagram/doodle-doggo-instagram-halloween-1080.png` (Noodle in the Witch Hat and Candy Corn Bandana).
   - [ ] **Swap on Tue 3 Nov** to `doodle-doggo-instagram-dachshund-1080.png`.
+  - [ ] **Winter:** `brand/winter/doodle-doggo-icon-winter-1080.png` on every channel (sizes in `brand/winter/README.md`); the owner picks the swap date.
 - [ ] **Contact button:** the Professional account can show email. Use an address you are happy to make public, or leave it off.
 - [ ] Turn on **notifications** for comments so you can reply fast.
 - [ ] Follow 30 to 50 accounts: cozy-game makers, dachshund and corgi accounts, Japanese indie devs. Like and comment kindly. Do not follow 200 at once.
