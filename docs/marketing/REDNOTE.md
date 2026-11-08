@@ -28,7 +28,7 @@ If both are flagged: leave the search line out of the bio and put it in the pinn
 
 Old bio (banned, kept for the record): 🐾 一款画在铅笔素描本里的温馨狗狗游戏 / 🐶 领养歪歪扭扭的蜡笔小狗，在富士山下散步 / 🎮 免费 · 没有广告 · 浏览器直接玩 / 🔍 搜索 Doodle Doggo 就能玩
 
-Profile picture: the Halloween Noodle icon, `brand/instagram/doodle-doggo-instagram-halloween-512.png`, works here too. Winter: `brand/winter/doodle-doggo-icon-winter-512.png`.
+Profile picture: the Halloween Noodle icon, `brand/instagram/doodle-doggo-instagram-halloween-512.png`, works here too. Winter: `brand/winter/doodle-doggo-icon-winter-512.png` (made once the owner approves the design; see `brand/winter/README.md`).
 
 Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (1080 x 1080). The game's Mt. Fuji Lookout in spring (torii, Fuji, cherry petals, the sign in the game's Chinese name 富士山观景台) with Mochi, Noodle and Sunny on the grass. No words, because RedNote puts the name and bio over it; the square crops cleanly to whatever shape the app shows. Made by the same `make.js shots rednote` run.
 

@@ -1,8 +1,8 @@
 // Doodle Doggo winter profile picture for every channel (Instagram, Threads, X, TikTok, YouTube, RedNote).
-//   node brand/winter/make_winter_icon.js [variant]      (needs playwright; chromium at /opt/pw-browsers/chromium)
+//   node brand/winter/make_winter_icon.js [all]      (needs playwright; chromium at /opt/pw-browsers/chromium)
 // Same layout as the Halloween icon (brand/instagram/doodle-doggo-instagram-halloween.svg): a night background,
 // the paper circle with its pencil ring (taken from that file), Noodle the dachshund in the game's own winter outfits,
-// and the game's own Felt Fir Tree (Winter Market art), with crayon baubles and holly. Noodle is the main character: nothing overlaps him. Everything important sits inside the circle, so every round crop keeps it.
+// and the game's Christmas art (Winter Market) as a softened background. Noodle is the main character, in front, lifted by a glow. Everything important sits inside the circle, so every round crop keeps it.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.join(__dirname, '..', '..'), OUT = __dirname;
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -60,15 +60,25 @@ function icon() {
   for (let i = 0; i < 26; i++) { const x = 160 + rnd() * 760, y = 150 + rnd() * 420; paper += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(3 + rnd() * 3)}" fill="${ICE}"/>`; }
   paper += `<path d="M120 715 Q300 680 540 697 Q780 713 960 683 L960 960 L120 960Z" fill="${SNOW}" stroke="#B9CFE0" stroke-width="5" stroke-linejoin="round"/>`;
   paper += `<path d="M200 760 q40 -10 80 0 M640 750 q50 -12 100 0 M420 790 q30 -8 60 0 M560 850 q40 -10 80 0" fill="none" stroke="#B9CFE0" stroke-width="4" stroke-linecap="round"/></g>`;
-  // the game's Felt Fir Tree on the left, on its own: nothing overlaps it
-  const tree = prop('wmfirtree', {}, 148, 445, 180, 257);
-  // three baubles hanging from the ring and one holly sprig on top, clear of the tree and Noodle
-  const hang = bauble(300, 92, 22, '#D7263D', 3) + bauble(395, 44, 17, '#F2C14E', -2) + bauble(800, 96, 22, '#4A7FC1', -3) + holly(540, 148, 1.25, 0);
-  // Noodle, the main character: big, in the Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, facing right
-  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 330, 278, 580);
+  // THE BACKGROUND: the game's Christmas art (Felt Fir Trees, Present Piles, Candy-Cane Fairy Lights) and crayon baubles,
+  // softened (a light blur and a paper wash) so it reads as a background and Noodle stands out in front of it
+  const back = `<defs><filter id="soft" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="1.6"/></filter>`
+    + `<radialGradient id="halo"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".9"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".6"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>`
+    + `<g clip-path="url(#cc)"><g filter="url(#soft)">`
+    + prop('wmcanelights', {}, 200, 196, 680, 181)
+    + bauble(290, 150, 24, '#D7263D', 3) + bauble(400, 96, 19, '#F2C14E', -2) + bauble(690, 104, 19, '#3F8F3A', 2) + bauble(800, 150, 24, '#4A7FC1', -3)
+    + prop('wmfirtree', {}, 520, 410, 170, 243)
+    + prop('wmfirtree', {}, 118, 352, 236, 337)
+    + prop('wmpresents', {}, 262, 592, 150, 112) + prop('wmpresents', {}, 772, 590, 150, 112)
+    + `</g><rect x="140" y="140" width="800" height="800" fill="${PAPER}" opacity=".42"/>`
+    // the glow behind Noodle that lifts him off the background
+    + `<ellipse cx="622" cy="600" rx="340" ry="150" fill="url(#halo)"/></g>`;
+  const top = holly(540, 148, 1.25, 0);
+  // Noodle, the main character, in front: full colour, the Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, facing right
+  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 322, 270, 596);
   // crayon snowflakes on the night, outside the circle
   const deco = flake(140, 180, 28, 12) + flake(950, 150, 22, 30) + flake(110, 900, 24, 5) + flake(960, 930, 30, 18) + flake(540, 1035, 18, 0) + flake(40, 520, 18, 10) + flake(1040, 520, 18, 25);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">\n${bg}${paper}${tree}${ring}${noodle}${deco}${hang}\n</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">\n${bg}${paper}${back}${ring}${top}${noodle}${deco}\n</svg>\n`;
 }
 
 async function main() {
@@ -76,13 +86,16 @@ async function main() {
   fs.writeFileSync(path.join(OUT, 'doodle-doggo-icon-winter.svg'), svg);
   const { chromium } = require('playwright');
   const browser = await chromium.launch();
-  // 1080: Instagram, Threads, TikTok, X (uploads crop to a circle); 800: YouTube (its recommended size); 512: RedNote; 400: X's own size
-  for (const s of [1080, 800, 512, 400]) {
+  // 1080: Instagram, Threads, TikTok, X (uploads crop to a circle). With 'all' also 800: YouTube; 512: RedNote; 400: X's own size,
+  // and a round-crop check (owner, 8 Nov: one picture per request while the design is being worked on)
+  const ALL = process.argv[2] === 'all';
+  for (const s of ALL ? [1080, 800, 512, 400] : [1080]) {
     const page = await browser.newPage({ viewport: { width: s, height: s }, deviceScaleFactor: 1 });
     await page.setContent(`<html><body style="margin:0">${svg.replace('width="1080" height="1080"', `width="${s}" height="${s}"`)}</body></html>`);
     await page.screenshot({ path: path.join(OUT, `doodle-doggo-icon-winter-${s}.png`), clip: { x: 0, y: 0, width: s, height: s } });
     await page.close();
   }
+  if (!ALL) return browser.close();
   // a round-crop check, as the channels show it (not for upload)
   const page = await browser.newPage({ viewport: { width: 520, height: 520 } });
   await page.setContent(`<html><body style="margin:0;background:#fff"><div style="width:500px;height:500px;margin:10px;border-radius:50%;overflow:hidden">${svg.replace('width="1080" height="1080"', 'width="500" height="500"')}</div></body></html>`);
