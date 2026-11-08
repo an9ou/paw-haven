@@ -152,7 +152,9 @@ function frYard() {
   const hi = FR_HOUSES.indexOf(S.house);
   const season = typeof seasonNow === 'function' ? seasonNow() : 'spring';
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
-  return { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
+  const out = { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
+  if (typeof KS_FR_FF !== 'undefined' && KS_FR_FF && typeof ksSup === 'function' && ksSup()) out.ff = 1; // v2.24: the Founding Friend badge, sent once the Worker takes the field (52_kindshop.js KS_FR_FF)
+  return out;
 }
 function frAfterPush() {
   try {
@@ -463,7 +465,7 @@ function frSheetHTML() {
   const friends = frSorted((S.fr.cache && S.fr.cache.friends) || []);
   const off = FR.offline ? `<p class="fr-off" id="frOff">${esc(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'))}</p>` : '';
   const list = friends.length ? friends.map(frRowHTML).join('') : `<p class="small">${esc(tt('fr.none', 'No friends yet. Share your code, or add one below.'))}</p>`;
-  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div><div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
+  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div>${typeof ksBadgeHTML === 'function' && ksSup() ? ksBadgeHTML() : ''}<div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
 }
 function frCodeChars() { return [0, 1, 2, 3, 4].map((i) => { const el = document.getElementById('frCh' + i); return el ? el.value.toUpperCase() : ''; }).join(''); }
 function frFillCode(code) {
@@ -814,7 +816,7 @@ function frYardClean(y) {
     name: Array.isArray(y.name) ? y.name.slice(0, 2) : null,
     house: Number.isInteger(y.house) && FR_HOUSES[y.house] ? FR_HOUSES[y.house] : FR_HOUSES[0],
     season: SEASONS.includes(y.season) ? y.season : seasonNow(),
-    dogs, decor
+    dogs, decor, ff: y.ff === 1 // v2.24: a Founding Friend (the Supporter Pack's badge)
   };
 }
 // the cache: S.fr.yards[fid] = { day, yard }. Only today's visits stay (a snapshot can be 16 KB)
@@ -887,7 +889,7 @@ function frNoteBtnHTML() {
 }
 function frBtns() {
   const pb = $('#placeBtns'); if (!pb) return;
-  pb.innerHTML = frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
+  pb.innerHTML = (FRV.yard && FRV.yard.ff && typeof ksBadgeHTML === 'function' ? ksBadgeHTML() : '') + frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
   $('#frNoteBtn', pb).onclick = () => { SFX.click(); if (!frSentToday(FRV.fid, 'note')) frNoteSheet(); };
   $('#frGiftBtn', pb).onclick = () => { SFX.click(); frGiftSheet(FRV.fid, 'yard'); };
   $('#frHomeBtn', pb).onclick = () => { SFX.click(); frHome(); };

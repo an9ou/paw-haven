@@ -167,7 +167,16 @@ const CLOTHES = [
   { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' },
   // v2.17 Dog Days (V217.md 2): the Bond 10 gifts on the Bond track (48_dogdays.js), never sold; bond 1 so no level-up card lists them as a shop unlock
   { n: 'Crayon Crown', slot: 'head', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift.' },
-  { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' }
+  { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' },
+  // v2.24 Kind shop (V224.md 1, 52_kindshop.js): sold only in the kind shop (ks: the pack it belongs to), never in the Boutique, a stall, a market, a level list or a journey.
+  // reward: true keeps every older shop list off them, bond 1 keeps them off every Bond and level-up card. Looks only: the perks are flavour
+  { n: 'Golden Name Tag', slot: 'neck', price: 0, bond: 1, ks: 'supporter', reward: true, perk: 'Thank you: a gold bone tag on a blue collar. From the Supporter Pack.' },
+  { n: 'Sukajan Jacket', slot: 'body', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a shiny jacket with a crane stitched on the back. Very cool, very soft.' },
+  { n: 'Bucket Hat', slot: 'head', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a floppy canvas hat. It keeps the sun off one ear at a time.' },
+  { n: 'Little Sneakers', slot: 'feet', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: four tiny sneakers with white laces. They come off for naps.' },
+  { n: 'Paw Tote', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a little canvas tote with a paw print, for one biscuit and big plans.' },
+  { n: 'Round Shades', slot: 'eyes', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: round sunglasses. Nobody has ever looked so relaxed.' },
+  { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -184,10 +193,12 @@ const HOUSES = [
   { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
   { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'halloween', ed: 2026, fm: true, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.2 Spooky Stalls (Festive Market)
   { n: 'Gingerbread Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'winter', fm: true, note: 'A little brown house with white icing on the roof and gumdrops by the door. A look, not a snack: it is wood all the way through.' }, // Winter Market 2026 (docs/design/winter-market.md part 4), sold every December
-  { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
+  { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' },
+  // v2.24 Kind shop (V224.md 1): the Supporter House, only in the Supporter Pack (never for coins); the comfort of a mid house
+  { n: 'Golden Paw Cottage', price: 0, bond: 1, comfort: 0.32, hd: 3, ks: 'supporter', reward: true, note: 'A blue bell roof, gold trim, a heart window and a golden paw on the weathervane. A thank-you from Gerald.' }
 ];
-const SLOTS = ['head', 'eyes', 'neck', 'body'];
-const SLOT_NAME = { head: 'Head', eyes: 'Eyes', neck: 'Neck', body: 'Body' };
+const SLOTS = ['head', 'eyes', 'neck', 'body', 'feet']; // v2.24: feet (the Little Sneakers, V224.md 2); the Wardrobe shows its row only with the kind shop on or shoes owned
+const SLOT_NAME = { head: 'Head', eyes: 'Eyes', neck: 'Neck', body: 'Body', feet: 'Feet' };
 const TRICKS = [
   { n: 'Sit', bond: 1, fx: 'sit', pose: 'sit' },
   { n: 'Paw', bond: 2, fx: 'tk-paw', pose: 'sit' },
@@ -805,7 +816,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
     stats: { hunger: 70, happy: 70, energy: 80, clean: 80 },
     bond: { level: 1, pts: 0 }, coins: 150,
     inv: { food: { 'Basic Kibble': 5, 'Bone-shaped Biscuit': 3, 'Pupcake': 1 }, toys: ['Tennis Ball'], clothes: [], houses: ['Cardboard Box'] },
-    outfit: { head: null, eyes: null, neck: null, body: null }, house: 'Cardboard Box',
+    outfit: { head: null, eyes: null, neck: null, body: null, feet: null }, house: 'Cardboard Box',
     tricks: {}, gameMin: 8 * 60, lastReal: Date.now(), waterAt: -999, pupUntil: -1,
     daily: { day: '', pupcake: false, feed: false, pet: false, play: false, outfit: false, walks: 0 },
     sleeping: false, collection: {}, adopted: true,
@@ -834,6 +845,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v219Fields(st); // v2.19 Friends (V219.md 8)
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
+  v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
   return linkDogs(st);
 }
 let S = null;
@@ -904,6 +916,7 @@ function migrate(s) {
   rhythmFields(s); // Daily rhythm (docs/design/daily-rhythm.md): additive
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
+  v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
@@ -1271,7 +1284,7 @@ const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (type
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
 const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 && S.stats.happy > 80 && S.stats.energy > 80 && S.stats.clean > 80);
-const dogOutfit = () => ({ head: S.outfit.head, eyes: S.outfit.eyes, neck: S.outfit.neck, body: S.outfit.body, charm: S.outfit.charm || null }); // v2.20: the charm too (the dog art draws only the Crayon Medal)
+const dogOutfit = () => ({ head: S.outfit.head, eyes: S.outfit.eyes, neck: S.outfit.neck, body: S.outfit.body, feet: S.outfit.feet || null, charm: S.outfit.charm || null }); // v2.24: feet (the dog art reads outfit.feet) // v2.20: the charm too (the dog art draws only the Crayon Medal)
 const wearing = (n) => SLOTS.some((k) => S.outfit[k] === n) || S.outfit.charm === n;
 const tInfo = (n) => TREASURES.find((t) => t.n === n);
 /* ---- v2.14 display text of the core tables (V214.md 4.3). The English names stay the data, the keys and the save values; only what is shown

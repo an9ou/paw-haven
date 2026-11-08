@@ -17,7 +17,7 @@ function openWardrobeFor(wd, pick) {
   const owned = ALL_WEAR.filter((c) => owns('clothes', c.n));
   const opt = (c, s) => `<button class="opt" data-eq="${esc(c.n)}" aria-pressed="${S.outfit[s] === c.n}"><span class="ic">${c.ed ? hwItemArt(c.n) : art('item', c.n)}</span>${esc(shNameAny(c.n))}${hwTag(c.n)}${c.treasure || s === 'charm' ? ` <span class="tstar" title="${tt('wardrobe.treasure', 'Treasure')}">&#10022;</span>` : ''}</button>`;
   const slotRow = (s, label, opts, empty) => `<div class="slot"><h4>${label}</h4>${opts.length ? `<button class="opt" data-un="${s}" aria-pressed="${!S.outfit[s]}">${tt('wardrobe.nothing', 'Nothing')}</button>` + opts.map((c) => opt(c, s)).join('') : `<span class="small">${empty}</span>`}${s === 'body' ? shPjToggle() : ''}</div>`;
-  const slots = SLOTS.map((s) => slotRow(s, shSlotName(s), owned.filter((c) => c.slot === s), tt('wardrobe.none_owned', 'Nothing owned yet. Bow-Wow Boutique sells some, walks hide others.'))).join('')
+  const slots = SLOTS.filter((s) => s !== 'feet' || (typeof ksFeetRow === 'function' && ksFeetRow())).map((s) => slotRow(s, shSlotName(s), owned.filter((c) => c.slot === s), s === 'feet' ? tt('ks.no_shoes', 'No shoes yet. The kind shop has some.') : tt('wardrobe.none_owned', 'Nothing owned yet. Bow-Wow Boutique sells some, walks hide others.'))).join('') // v2.24: the Feet row only with the kind shop on or shoes owned
     + slotRow('charm', tt('wardrobe.charm', 'Charm'), CHARMS.filter((c) => S.inv.charms.includes(c.n)), tt('wardrobe.no_charms', 'No charms yet. They are buried on walks.'));
   const perks = SLOTS.concat('charm').map((s) => S.outfit[s]).filter(Boolean).map((n) => { const c = ALL_WEAR.find((x) => x.n === n) || CHARMS.find((x) => x.n === n); return c ? tt('wardrobe.perk_line', '{item}: {perk}', { item: shNameAny(n), perk: shPerk(c) }) : ''; });
   audioPlace('wardrobe');
@@ -34,6 +34,7 @@ function openWardrobeFor(wd, pick) {
 function shSleepOutfit(d, pose) {
   d = d || D(); const o = outfitOf(d);
   if ((d.sleeping || pose === 'sleep') && S && owns('clothes', 'Pyjamas') && S.pjAuto !== false) { o.body = 'Pyjamas'; o.sleepwear = true; }
+  if (d.sleeping || pose === 'sleep') o.feet = null; // v2.24: shoes come off for naps (V224.md 2)
   return o;
 }
 const shPjOn = () => S.outfit.body === 'Pyjamas' || (owns('clothes', 'Pyjamas') && S.pjAuto !== false);

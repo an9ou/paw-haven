@@ -24,6 +24,7 @@ function tick() {
   S.dogs.filter((d) => d.id !== S.activeId).forEach((d) => { const st = d.stats, c = (k, v) => { st[k] = clamp(st[k] + v, 0, 100); }; c('hunger', -6 * h * (d.key === 'corgi' ? 1.2 : 1)); c('happy', -houseInfo().hd * h * pack * (fluffyOn(d) ? 0.5 : 1)); c('clean', -3 * h); if (d.sleeping) { c('energy', napRate(d) * h); if (st.energy >= 100) { d.sleeping = false; if (cur.mode === 'yard') redrawPackDog(d); } } else c('energy', -2 * h); });
   buffTick();
   pottyTick();
+  if (typeof ksTick === 'function') ksTick(); // v2.24: the comfort tools (52_kindshop.js), once a game minute
   if (Date.now() - lastGardenTick > 60000) { lastGardenTick = Date.now(); gardenAdvance(); birthdayCheck(); emit('clock:minute', {}); }
   addStat('clean', -3 * h);
   if (S.gameMin < (S.glowUntil || -1) && S.stats.happy < 80) S.stats.happy = 80;

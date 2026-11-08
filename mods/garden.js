@@ -194,8 +194,11 @@
   function waterHours(p, w, night) { var r = drainRate(w, night); if (!p || r <= 0) return Infinity; return Math.max(0, p.water - (p.wd || 0)) / r; }
 
   // one real hour (V171.md Part A)
-  function stepHour(s, key, w, night, buddy, events) {
-    var q = parseHour(key), ki = hourIdx(key);
+  // v2.24 Kind shop: o.growMul (1 = as before; the Supporter Pack's 1.25 = grow time x0.8) and o.sprinkler (the Garden Sprinkler: a growing plot with
+  // no water left gets 3 again at the start of the hour, so it never has a dry hour; an event 'sprinkler' tells the game, which never ticks a mission for it)
+  function stepHour(s, key, w, night, buddy, events, o) {
+    var q = parseHour(key), ki = hourIdx(key), gm = o && o.growMul > 0 ? o.growMul : 1;
+    if (o && o.sprinkler) s.plots.forEach(function (p, i) { if (growing(p) && p.water < 1) { p.water = 3; p.wd = 0; events.push({ type: 'sprinkler', plot: i, crop: p.crop }); } });
     // 1. rain fills every plot
     if (w === 'rain') s.plots.forEach(function (p) { p.water = 3; p.wd = 0; });
     // 2. growing plots: a plot with at least 1 drop grows this hour, then drinks; a dry plot pauses (nothing dies)
@@ -203,7 +206,7 @@
       if (!growing(p)) return;
       var c = BY_ID[p.crop];
       if (p.water >= 1) {
-        p.g += seasonMult(c, q.m) * growFactor(c, w, night, buddy) / c.hours;
+        p.g += seasonMult(c, q.m) * growFactor(c, w, night, buddy) * gm / c.hours;
         p.wd += drainRate(w, night);
         while (p.wd >= 1 - EPS && p.water > 0) { p.water -= 1; p.wd = Math.max(0, p.wd - 1); }
         if (p.water <= 0) { p.water = 0; p.wd = 0; }
@@ -251,7 +254,7 @@
       var h = parseHour(k).h, night = isNightHour(h), w;
       if (steps > 0) { w = sw; if (ctx.stepTime) night = ctx.stepTime === 'night'; }
       else w = safeWeather(ctx.weatherAt, hourToPeriod(k));
-      stepHour(s, k, w, night, buddy, events);
+      stepHour(s, k, w, night, buddy, events, { growMul: +ctx.growMul || 1, sprinkler: !!ctx.sprinkler });
     });
     if (keys.length) s.last = keys[keys.length - 1];
     return { state: s, events: events };
@@ -637,7 +640,7 @@
     var root = null, DY = 0; // DY: phone, stage px the scene and plots move down so they clear a tall header (hudFit)
     try { injectCSS(); } catch (e) { /* ignore */ }
     var st = norm(clone(o.state) || newState());
-    var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
+    var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1), growMul: o.growMul > 0 ? +o.growMul : 1 }; // v2.24: growMul, the shown time to ready
     var dog = o.dog || {}; var dogKey = dog.key || 'mutt', dogName = dog.name || L('mod.garden.your_dog', 'Your dog'), outfit = dog.outfit || {}; var dogCoat = dog.coat, dogSeed = dog.seed;
     var buddy = o.buddy !== undefined ? o.buddy : (BUDDY[dogKey] || null);
     var seeds = Object.assign({}, o.seeds || {});
@@ -863,7 +866,7 @@
       hint(t);
     }
     function etaText(p, c) {
-      var h = hoursLeft(p, env.month);
+      var h = hoursLeft(p, env.month) / env.growMul;
       return h < 0.75 ? L('mod.garden.eta_under', 'Ready in under an hour.') : L('mod.garden.eta_about', 'Ready in about {hours}.', { hours: hoursText(h) });
     }
     // "Water 2 / 3", with the hours the water lasts when it does

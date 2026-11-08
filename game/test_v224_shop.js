@@ -1,0 +1,223 @@
+// v2.24 "Kind shop" (V224.md section 8, items 1-6 and 9): the game half. The Worker (/shop/*, Stripe) and the art (8) are other parts.
+//   1. migration: an old save loads with every dog's outfit.feet = null and the S.shop defaults; nothing else changes
+//   2. SHOP_LIVE off: no Kind shop button (Market Street, the phone menu), no Feet row, the sheet does not open, and no other shop, list or level row
+//      carries a kind-shop item
+//   3. coin buys: every look for 600 coins and every tool for its price, owned once; the Wardrobe wears and removes the sneakers (feet slot), the house
+//      shows a Cozy Winter decoration once placed; the Supporter Pack and coins are never for coins
+//   4. granting: a fake /shop/owned list grants once; the same list again, and the synced save after a reload, grant nothing more; a refund takes back
+//      the one-time items (worn ones go back to nothing, the house moves back), never coins, and keeps what was bought with coins
+//   5. perks: walk pay x1.2 rounded down after the half pay (and the walk result line), crops grow time x0.8, the second calendar gift never coins
+//   6. tools: no Bond, coins, scooped count or act (mission) from the Robo Scoop, the Sprinkler or the Auto Water Bowl; town messes stay; Settings
+//      switches them off
+//   9. phone 360x640: the shop sheet and the confirm sheet with the phone bar, one column, 44 px taps, nothing covered (screenshots in test_logs/)
+// node game/run_tests.js v224_shop
+const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
+devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
+const SAVE = 'pawhaven_proto_v1', LOGS = path.join(__dirname, 'test_logs');
+const ON = { shopTest: true };
+
+run('v224_shop', async (t) => {
+  const { ok, sec, ev } = t;
+  const later = async () => { if (await t.until(() => !!document.querySelector('#modal .confirm .no'), null, 2500)) await t.p.click('#modal .confirm .no'); };
+
+  sec('1. migration: an old save (no S.shop, no outfit.feet) loads with the defaults and nothing else changes');
+  await t.newGame({ prefs: ON });
+  const base = await ev((k) => { const P = window.__paw; P.S.outfit.neck = 'Red Bandana'; P.S.inv.clothes.push('Red Bandana'); P.saveNow(); const s = JSON.parse(localStorage.getItem(k)); delete s.shop; s.dogs.forEach((d) => { delete d.outfit.feet; }); return s; }, SAVE);
+  ok(!('shop' in base) && base.dogs.every((d) => !('feet' in d.outfit)), 'the base save has no v2.24 fields');
+  { const was = t.ctx; await t.mk({ storage: { [SAVE]: JSON.stringify(base) }, prefs: ON }); await was.close(); }
+  await t.p.goto(URL); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+  const m1 = await ev(() => { const S = JSON.parse(JSON.stringify(window.__paw.S)); return { keys: Object.keys(S), shop: S.shop, feet: S.dogs.map((d) => d.outfit.feet), neck: S.dogs[0].outfit.neck, coins: S.coins, inv: S.inv, house: S.house, v: S.v }; });
+  const lost = Object.keys(base).filter((k) => !m1.keys.includes(k));
+  ok(m1.v === 1 && !lost.length, 'v stays 1, no field dropped' + (lost.length ? ': ' + lost.join(' ') : ''));
+  ok(m1.feet.every((f) => f === null), 'every dog has outfit.feet = null: ' + JSON.stringify(m1.feet));
+  ok(m1.shop && JSON.stringify(m1.shop.owned) === '[]' && JSON.stringify(m1.shop.claimed) === '[]' && JSON.stringify(m1.shop.tools) === '{"robo":true,"sprinkler":true,"bowl":true}', 'S.shop = { owned: [], claimed: [], tools: all on }: ' + JSON.stringify(m1.shop));
+  ok(m1.neck === 'Red Bandana' && m1.coins === base.coins && JSON.stringify(m1.inv) === JSON.stringify(base.inv) && m1.house === base.house, 'the outfit, coins, bag and house are as they were');
+
+  sec('2. SHOP_LIVE off (no test switch): nothing new for players');
+  { const was = t.ctx; await t.newGame({ prefs: { shopTest: false } }); await was.close(); }
+  const off = await ev(() => { const K = window.__paw.ks; return { live: K.live, on: K.on(), open: !!K.open() }; });
+  ok(off.live === false && off.on === false && !off.open, 'SHOP_LIVE is false, ksOn() is false, the sheet does not open: ' + JSON.stringify(off));
+  await t.home('market');
+  ok(await t.until(() => !!document.querySelector('#placeBtns [data-sh]'), null, 5000) && !(await ev(() => !!document.querySelector('[data-pb="kindshop"]'))), 'Market Street has its shop buttons and no Kind shop button');
+  ok(!(await ev(() => /Kind shop/.test(document.body.innerText))), 'no "Kind shop" anywhere on the page');
+  const leak = await ev(async () => {
+    const P = window.__paw, out = [], K = P.ks, all = K.tokyo.concat(K.cozy, ['Golden Name Tag', 'Golden Paw Cottage']);
+    const look = (k, tabs) => { for (const tb of tabs || [null]) { P.shop.shop(k); if (tb) { const b = document.querySelector(`[data-btab="${tb}"],[data-tab="${tb}"]`); if (b) b.click(); } const txt = document.querySelector('#modal .panel') ? document.querySelector('#modal .panel').innerText : ''; all.forEach((n) => { if (txt.includes(n)) out.push(k + '/' + (tb || '') + ': ' + n); }); } };
+    look('boutique'); look('builder', ['houses', 'beds', 'decor', 'furniture']); look('kibble', ['food', 'toys', 'tools']);
+    document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click();
+    return out;
+  });
+  ok(!leak.length, 'the Boutique, Barkitecture (houses, beds, decor, furniture) and Kibble Corner list no kind-shop item: ' + leak.join(' | '));
+  const rows = await ev(() => { const K = window.__paw.ks, all = K.tokyo.concat(K.cozy, ['Golden Name Tag', 'Golden Paw Cottage']); const lv = window.__paw.lv; let r = []; try { r = (lv && lv.rows ? lv.rows() : []).map((x) => x.id); } catch (e) { r = []; } return { lv: all.filter((n) => r.includes(n)), wardFeet: (() => { window.__paw.shop.wardrobe(); const f = [...document.querySelectorAll('#modal .ward .slot h4')].map((h) => h.textContent); document.querySelector('#modal .panel .x').click(); return f; })() }; });
+  ok(!rows.lv.length, 'no town level row unlocks a kind-shop item: ' + rows.lv.join(' '));
+  ok(rows.wardFeet.length === 5 && !rows.wardFeet.includes('Feet'), 'the Wardrobe has its four rows and the charm, no Feet row: ' + rows.wardFeet.join(', '));
+  const menu = await ev(() => typeof window.__paw.ks.open === 'function' && !document.getElementById('mmKs'));
+  ok(menu, 'no kind shop in the menu');
+
+  sec('3. coin buys: every look for 600 coins, every tool for its price, owned once');
+  { const was = t.ctx; await t.newGame({ prefs: ON }, { coins: 30000 }); await was.close(); }
+  await t.home('market');
+  ok(await t.until(() => !!document.querySelector('[data-pb="kindshop"]'), null, 5000), 'with the kind shop on, Market Street shows a Kind shop button');
+  await t.p.click('[data-pb="kindshop"]');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.ks [data-kstab]'), null, 4000), 'it opens the Kind shop sheet with its tabs');
+  const tabs = await ev(() => [...document.querySelectorAll('#modal .panel.ks [data-kstab]')].map((b) => b.dataset.kstab).join(','));
+  ok(tabs === 'supporter,looks,tools,coins', 'tabs Supporter, Looks, Tools, Coins: ' + tabs);
+  const sup = await ev(() => { const c = document.querySelector('[data-ks="supporter"]'); return { cash: !!c.querySelector('[data-kscash="supporter"]'), coin: !!c.querySelector('[data-kscoin]'), txt: c.innerText, ask: /Ask a grown-up before you buy/.test(document.querySelector('#modal .panel').innerText), why: !!document.querySelector('.ks-why summary') }; });
+  ok(sup.cash && !sup.coin && /US\$4\.99/.test(sup.txt), 'the Supporter Pack: US$4.99, never for coins');
+  ok(sup.ask && sup.why, '"Ask a grown-up before you buy" and "Why is there a shop?" are on the sheet');
+  const coins0 = await ev(() => window.__paw.S.coins);
+  const looks = await ev(() => window.__paw.ks.tokyo.concat(window.__paw.ks.cozy));
+  for (const n of looks) { await ev((n) => { window.__paw.ks.coinBuy(n); }, n); await t.win(); await later(); }
+  const got = await ev((L) => L.filter((n) => window.__paw.ks.look(n)), looks);
+  const c1 = await ev(() => window.__paw.S.coins);
+  ok(got.length === 12 && coins0 - c1 === 12 * 600, `all 12 looks owned for 600 coins each (${got.length}, spent ${coins0 - c1})`);
+  ok(await ev(() => window.__paw.ks.owned('tokyo') && window.__paw.ks.owned('cozy')), 'both packs show as owned once every piece is');
+  await ev(() => { window.__paw.ks.coinBuy('Bucket Hat'); }); await t.p.waitForSelector('.buyveil .bb-yes');
+  ok(await ev(() => document.querySelector('.buyveil .bb-yes').disabled), 'a second buy of an owned look is refused (the coin window is disabled)');
+  await t.p.click('.buyveil .bb-no'); await t.until(() => !document.querySelector('.buyveil'), null, 2000);
+  for (const n of ['robo', 'sprinkler', 'bowl']) { await ev((n) => { window.__paw.ks.coinBuy(n); }, n); await t.win(); }
+  const c2 = await ev(() => window.__paw.S.coins), tl = await ev(() => ['robo', 'sprinkler', 'bowl'].map((k) => window.__paw.ks.tool(k)));
+  ok(tl.every(Boolean) && c1 - c2 === 9000, `the three tools for 4,000 + 2,500 + 2,500 coins (spent ${c1 - c2})`);
+  await ev(() => window.__paw.ks.open('tools'));
+  ok(await ev(() => !document.querySelector('[data-ks="comfort"]') && document.querySelectorAll('.panel.ks .ks-yours').length === 3), 'all tools owned: three "Yours" and the Comfort Kit is not offered');
+  ok(await ev(async () => (await window.__paw.ks.coinBuy('supporter')) === false && (await window.__paw.ks.coinBuy('coins_1k')) === false), 'the Supporter Pack and coin packs cannot be bought with coins');
+  await t.closeX();
+  // the feet slot
+  await ev(() => window.__paw.shop.wardrobe());
+  ok(await t.until(() => [...document.querySelectorAll('#modal .ward .slot h4')].some((h) => h.textContent === 'Feet'), null, 3000), 'the Wardrobe has a Feet row');
+  await t.p.click('#modal [data-eq="Little Sneakers"]');
+  ok(await t.until(() => window.__paw.S.outfit.feet === 'Little Sneakers', null, 3000), 'the Little Sneakers go on the feet slot');
+  ok(await ev(() => window.__paw.shop.outfit('sleep').feet === null && window.__paw.shop.outfit('idle').feet === 'Little Sneakers'), 'shoes come off for naps (the sleep outfit has no feet), on again awake');
+  await t.p.click('#modal [data-un="feet"]');
+  ok(await t.until(() => window.__paw.S.outfit.feet === null, null, 3000), 'Nothing on the Feet row takes them off');
+  await t.closeX();
+  // a Cozy Winter decoration in the house
+  await ev(() => { const P = window.__paw, S = P.S, n = 'Cable-Knit Rug'; S.decor[n].at = P.ho.freeSpot(n); S.decor[n].out = true; S.place = 'house'; P.go('yard'); });
+  ok(await t.until(() => !!document.querySelector('[data-decor="Cable-Knit Rug"]'), null, 6000), 'the Cable-Knit Rug, placed, stands in the house');
+
+  sec('4. granting: once, again nothing, a synced save nothing, a refund takes back items but never coins');
+  await t.home('yard');
+  const L1 = [{ id: 'cs_test_sup', item: 'supporter', refunded: false }, { id: 'cs_test_3k', item: 'coins_3k', refunded: false }, { id: 'cs_test_tokyo', item: 'tokyo', refunded: false }, { id: 'cs_test_kit', item: 'comfort', refunded: false }];
+  const g1 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { r, d: P.S.coins - c, sup: P.ks.sup(), house: P.S.inv.houses.includes('Golden Paw Cottage'), tag: P.S.inv.clothes.includes('Golden Name Tag'), mail: (P.S.mail || []).find((m) => m.id === 'ks_thanks'), kit: P.S.shop.owned.includes('comfort') }; }, L1);
+  ok(g1.r.granted.length === 4 && g1.d === 5000, `four purchases granted: 2,000 Supporter coins + 3,000 (got ${g1.d})`);
+  ok(g1.sup && g1.house && g1.tag && g1.kit, 'the Supporter Pack: perks on, the Golden Paw Cottage, the Golden Name Tag; the Comfort Kit owned');
+  ok(g1.mail && g1.mail.keep === true && /Gerald/.test(g1.mail.from), "Gerald's thank-you letter is in the mailbox, kept to reread");
+  const g2 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { n: r.granted.length, d: P.S.coins - c, letters: P.S.mail.filter((m) => m.id === 'ks_thanks').length }; }, L1);
+  ok(g2.n === 0 && g2.d === 0 && g2.letters === 1, 'the same list again grants nothing (no coins, one letter)');
+  await ev(() => { window.__paw.saveNow(); });
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+  const g3 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { n: r.granted.length, d: P.S.coins - c, sup: P.ks.sup() }; }, L1);
+  ok(g3.n === 0 && g3.d === 0 && g3.sup, 'the saved (synced) copy carries claimed: after a reload the list grants nothing more');
+  // wear the pack pieces and live in the cottage, then refund
+  await ev(() => { const S = window.__paw.S; if (!S.inv.houses.includes('Cozy Cottage')) S.inv.houses.push('Cozy Cottage'); window.__paw.shop.equip('Golden Name Tag'); window.__paw.shop.equip('Little Sneakers'); window.__paw.shop.equip('Round Shades'); });
+  await ev(() => { const P = window.__paw; P.S.shop.prevHouse = 'Cozy Cottage'; P.S.house = 'Golden Paw Cottage'; });
+  const L2 = L1.map((p) => Object.assign({}, p, { refunded: true }));
+  const g4 = await ev((L) => { const P = window.__paw, S = P.S, c = S.coins, r = P.ks.grant(L); return { r, d: S.coins - c, sup: P.ks.sup(), house: S.house, houses: S.inv.houses.includes('Golden Paw Cottage'), tag: S.inv.clothes.includes('Golden Name Tag'), neck: S.outfit.neck, feet: S.outfit.feet, eyes: S.outfit.eyes, sneakers: S.inv.clothes.includes('Little Sneakers'), kit: S.shop.owned.includes('comfort'), robo: P.ks.tool('robo') }; }, L2);
+  ok(g4.r.refunded.length === 4 && g4.d === 0, 'four refunds handled, no coins taken back (' + g4.d + ')');
+  ok(!g4.sup && !g4.houses && g4.house === 'Cozy Cottage', 'the Supporter perks end, the cottage is taken back and the dog moves back to the house before: ' + g4.house);
+  ok(!g4.tag && g4.neck === null, 'the worn Golden Name Tag goes back to Nothing');
+  ok(g4.sneakers && g4.feet === 'Little Sneakers' && g4.eyes === 'Round Shades', 'Tokyo Street pieces bought with coins stay, worn as they were');
+  ok(!g4.kit && g4.robo, 'the Comfort Kit is taken back; the Robo Scoop bought with coins stays');
+  const g5 = await ev((L) => { const P = window.__paw, c = P.S.coins; P.S.inv.clothes.push('Golden Name Tag'); const r = P.ks.grant(L); const keep = P.S.inv.clothes.includes('Golden Name Tag'); P.S.inv.clothes = P.S.inv.clothes.filter((x) => x !== 'Golden Name Tag'); return { n: r.refunded.length + r.granted.length, d: P.S.coins - c, keep }; }, L2);
+  ok(g5.n === 0 && g5.d === 0 && g5.keep, 'a refund is handled once: the same refunded list again takes nothing');
+  const g6 = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_late', item: 'cozy', refunded: true }, { id: 'cs_bad', item: 'a_dog', refunded: false }, { id: '', item: 'coins_8k' }, null]); return { r, d: P.S.coins - c }; });
+  ok(!g6.r.granted.length && !g6.r.refunded.length && g6.d === 0, 'a purchase refunded before it was granted, an unknown item and a bad row do nothing');
+
+  sec('5. perks: walk pay x1.2 after half pay, crops x0.8 grow time, the second gift never coins');
+  await ev(() => window.__paw.ks.grant([{ id: 'cs_sup2', item: 'supporter' }]));
+  const wp = await ev(() => { const P = window.__paw, h = P.rh.share(37, 0, 0.5), f = P.rh.share(37, 0, 1); return { half: h, full: f, bh: P.ks.walkBonus(P.rh.share(37, 0, 0.5)), bf: P.ks.walkBonus(f), b9: P.ks.walkBonus(9) }; });
+  ok(wp.half === 19 && wp.bh === 3 && wp.bf === 7 && wp.b9 === 1, `+20% rounded down after the half pay: 37 half -> ${wp.half} +${wp.bh}, full 37 +${wp.bf}, 9 +${wp.b9}`);
+  // a real walk after the 5th of the day: the result says "+N Supporter" and N is 20% of the pay, rounded down
+  await ev(() => { const S = window.__paw.S; window.__paw.rh.dailyCheck(); S.daily.walks = 5; S.stats.energy = 100; });
+  await ev(() => { const s0 = window.PawWalk.start; window.PawWalk.start = (el, o) => { window.__ksWalk = o; return s0(el, o); }; }); // the runner's end, with a known pay: 47 raw coins, no pouch
+  await t.startWalk(true); await t.sleep(1500);
+  await ev(() => window.__ksWalk.onEnd({ coins: 47, distance: 12, early: false, happiness: 5, bond: 1, energy: 5, cleanliness: 2 }));
+  await t.until(() => !!document.getElementById('resOk'), null, 8000);
+  const wr = await ev(() => { const l = document.querySelector('#modal .ks-walk'), tile = [...document.querySelectorAll('#modal .results .res')].map((r) => r.innerText).find((x) => /Paw Coins/.test(x)) || ''; return { line: l ? l.innerText : '', tired: !!document.querySelector('#modal .walk-tired'), tile }; });
+  const tot5 = +((/\+(\d+)/.exec(wr.tile) || [0, 0])[1]), m5 = /\+(\d+) Supporter/.exec(wr.line), n5 = m5 ? +m5[1] : 0;
+  ok(wr.tired, 'the walk was the 6th today (half pay)');
+  ok(tot5 - n5 === 48 && n5 === 9, `47 raw coins on the 6th walk: half pay 24, x2 = 48, the walk result shows +${n5} Supporter on ${tot5 - n5} coins of half pay (the tile says +${tot5}): 20% rounded down`);
+  await t.p.click('#resOk'); await t.untilMode('yard'); await t.lu(); await t.calm();
+  const gr = await ev(() => { const P = window.__paw, G = window.PawGarden, pl = () => ({ crop: 'carrot', g: 0, water: 3, wd: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 }); const st = { v: 2, plots: [pl(), pl(), pl(), pl(), pl(), pl()], last: P.S.garden.last, harvests: {} };
+    const a = G.advance(st, { steps: 1, stepWeather: 'cloudy', growMul: P.ks.growMul() }).state.plots[0].g, b = G.advance(st, { steps: 1, stepWeather: 'cloudy' }).state.plots[0].g; return { mul: P.ks.growMul(), a, b }; });
+  ok(gr.mul === 1.25 && Math.abs(gr.a / gr.b - 1.25) < 1e-9, `crops: one hour grows ${gr.a.toFixed(4)} with the Supporter Pack vs ${gr.b.toFixed(4)} (grow time x0.8)`);
+  const gifts = await ev(() => { const K = window.__paw.ks, bad = []; for (let m = 1; m <= 12; m++) for (let d = 1; d <= 31; d++) { const ym = '2026-' + String(m).padStart(2, '0'), r = K.gift2(ym, d); if (!r || r.t === 'coins' || r.c) bad.push(ym + '-' + d); } return bad; });
+  ok(!gifts.length, 'the second daily gift is never coins (a whole year of days): ' + gifts.slice(0, 3).join(' '));
+  const gc = await ev(() => { const P = window.__paw, S = P.S, t = new Date(), ym = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'), d = t.getDate(); S.fw = S.fw || {}; S.fw.cal = Object.assign(S.fw.cal || {}, { ym, days: [d], dg: S.fw.cal && S.fw.cal.ym === ym ? S.fw.cal.dg : [] }); const c = S.coins, can = P.ks.gift2Can(), a = P.ks.gift2Claim(), b = P.ks.gift2Claim(); return { can, a, b, d: S.coins - c }; });
+  ok(gc.can && gc.a && !gc.b && gc.d === 0, 'the Supporter claims the second gift once a day, and it adds no coins');
+
+  sec('6. tools: no Bond, coins, scooped or acts; town messes stay; Settings switches them off');
+  await t.home('yard');
+  const r1 = await ev(() => { const P = window.__paw, S = P.S, gm = S.gameMin; S.shop.roboAt = -1e9; S.messes.yard = [{ type: 'poop', x: 420, at: gm - 30, dog: S.dog.id }]; S.messes.park = [{ type: 'pee', x: 300, at: gm - 300, dog: S.dog.id }];
+    const b = JSON.stringify(S.dogs.map((d) => d.bond)), c = S.coins, sc = S.dogs.map((d) => d.potty.scooped).join(); P.ks.rec(); P.ks.robo();
+    const r = { yard: S.messes.yard.length, park: S.messes.park.length, bond: JSON.stringify(S.dogs.map((d) => d.bond)) === b, coins: S.coins === c, sc: S.dogs.map((d) => d.potty.scooped).join() === sc, acts: P.ks.acts() };
+    S.messes.yard = [{ type: 'pee', x: 300, at: gm - 30, dog: S.dog.id }]; P.ks.robo(); r.hour = S.messes.yard.length; return r; });
+  ok(r1.yard === 0 && r1.bond && r1.coins && r1.sc && !r1.acts.length, 'Robo Scoop: the yard poop is tidied with no Bond, coins, scooped count or act: ' + JSON.stringify(r1.acts));
+  ok(r1.park === 1, 'a town mess (the park) is never tidied by it');
+  ok(r1.hour === 1, 'once a game hour: a second mess right after waits');
+  const r2 = await ev(() => { const P = window.__paw, S = P.S; S.shop.tools.robo = false; S.shop.roboAt = -1e9; P.ks.robo(); const n = S.messes.yard.length; S.shop.tools.robo = true; return n; });
+  ok(r2 === 1, 'switched off in Settings, the Robo Scoop does nothing');
+  const w1 = await ev(() => { const P = window.__paw, S = P.S; S.sleeping = false; S.stats.happy = 50; S.stats.energy = 50; S.waterAt = S.gameMin - 9999; const b = JSON.stringify(S.bond), c = S.coins; P.ks.rec(); P.ks.bowl(); return { water: S.gameMin - S.waterAt < 1, happy: Math.round(S.stats.happy), energy: Math.round(S.stats.energy), bond: JSON.stringify(S.bond) === b, coins: S.coins === c, acts: P.ks.acts() }; });
+  ok(w1.water && w1.happy === 55 && w1.energy === 60, `Auto Water Bowl: the dog drinks by itself, +5 Happiness, +10 Energy (${w1.happy}, ${w1.energy})`);
+  ok(w1.bond && w1.coins && !w1.acts.includes('water') && !w1.acts.length, 'no Bond, coins or water tick from the bowl: ' + JSON.stringify(w1.acts));
+  const w2 = await ev(() => { const P = window.__paw, S = P.S, at = S.waterAt; P.ks.bowl(); const again = S.waterAt === at; S.shop.tools.bowl = false; S.waterAt = S.gameMin - 9999; const at2 = S.waterAt; P.ks.bowl(); const off = S.waterAt === at2; S.shop.tools.bowl = true; return { again, off }; });
+  ok(w2.again && w2.off, 'not again before it refills, and switched off it never drinks');
+  const sp = await ev(() => { const P = window.__paw, S = P.S; S.garden.plots[0] = Object.assign({}, S.garden.plots[0], { crop: 'carrot', g: 0.1, water: 0, wd: 0, dry: 0, inSeason: true, ready: null }); P.ks.rec(); P.ks.garden(1); const p0 = S.garden.plots[0], on = { water: p0.water, dry: p0.dry, acts: P.ks.acts() };
+    S.shop.tools.sprinkler = false; S.garden.plots[1] = Object.assign({}, S.garden.plots[1], { crop: 'carrot', g: 0.1, water: 0, wd: 0, dry: 0, inSeason: true, ready: null }); P.ks.garden(1); const p1 = S.garden.plots[1]; S.shop.tools.sprinkler = true; return { on, off: { water: p1.water, dry: p1.dry } }; });
+  ok(sp.on.water >= 2 && sp.on.dry === 0 && !sp.on.acts.length, `Garden Sprinkler: the dry plot is watered (water ${sp.on.water}, no dry hour), no garden_water act: ` + JSON.stringify(sp.on.acts));
+  ok(sp.off.water === 0 && sp.off.dry === 1, 'switched off, the dry plot just waits (dry ' + sp.off.dry + ')');
+  await ev(() => window.__paw.go('yard'));
+  const set = await ev(() => { document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); return true; });
+  await ev(() => document.getElementById('gearBtn').click());
+  const hasSw = await t.until(() => !!document.getElementById('ksT-robo') && !!document.getElementById('ksT-bowl') && !!document.getElementById('ksT-sprinkler'), null, 3000);
+  ok(set && hasSw, 'Settings shows a switch for each owned tool');
+  if (hasSw) { await t.p.click('#ksT-bowl'); ok(await t.until(() => window.__paw.S.shop.tools.bowl === false, null, 2000), 'the switch turns the Auto Water Bowl off'); await t.p.click('#ksT-bowl'); }
+
+  sec('9. phone 360x640: the shop sheet and the confirm sheet');
+  { const was = t.ctx; await t.newGame({ prefs: ON, device: 'Phone 360x640' }, { coins: 3000 }); await was.close(); }
+  await ev(() => window.__paw.ks.open('supporter'));
+  await t.until(() => !!document.querySelector('#modal .panel.ks'), null, 4000); await t.sleep(600);
+  const audit = () => ev(() => {
+    const vw = innerWidth, vh = innerHeight, bad = [], bar = document.getElementById('bar'), br = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null;
+    const panel = document.querySelector('#modal .panel.ks'), pr = panel.getBoundingClientRect();
+    const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+    [...panel.querySelectorAll('.btn, summary')].filter(vis).forEach((b) => { const r = b.getBoundingClientRect(); if (r.height < 43.5 || r.width < 43.5) bad.push('small ' + (b.innerText || b.className).trim().slice(0, 20) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); });
+    const cols = new Set([...panel.querySelectorAll('.ks-grid > .sitem')].filter(vis).map((e) => Math.round(e.getBoundingClientRect().left))).size;
+    return { bad, cols, over: document.documentElement.scrollWidth > vw + 1, pw: Math.round(pr.width), pBottom: Math.round(pr.bottom), barTop: br ? Math.round(br.top) : null, vh };
+  });
+  const a1 = await audit();
+  await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_phone_sheet.png') });
+  ok(!a1.bad.length, 'every tap on the sheet is 44 px or more: ' + a1.bad.slice(0, 4).join(' | '));
+  ok(a1.pw <= 360 && !a1.over, `the sheet fits 360 px (${a1.pw}), no sideways scroll`);
+  ok(a1.barTop == null || a1.pBottom <= a1.barTop + 1, `the sheet ends above the phone bar (sheet ${a1.pBottom}, bar ${a1.barTop})`);
+  await ev(() => window.__paw.ks.open('looks')); await t.sleep(400);
+  const a2 = await audit();
+  ok(a2.cols === 1 && !a2.bad.length, `Looks: one column (${a2.cols}), 44 px taps ` + a2.bad.slice(0, 3).join(' | '));
+  await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_phone_looks.png') });
+  // the confirm sheet: tap a cash price
+  await ev(() => window.__paw.ks.open('tools')); await t.sleep(300);
+  await t.p.locator('[data-kscash="robo"]').scrollIntoViewIfNeeded(); await t.p.click('[data-kscash="robo"]');
+  ok(await t.until(() => !!document.querySelector('.ks-confirm .ks-pay'), null, 3000), 'a cash price opens the confirm sheet');
+  await t.sleep(400);
+  const cf = await ev(() => {
+    const box = document.querySelector('.ks-confirm'), txt = box.innerText, pay = box.querySelector('.ks-pay'), no = box.querySelector('.ks-no'), bar = document.getElementById('bar'), br = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null;
+    const hit = (e) => { const r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, h = document.elementFromPoint(x, y); return { ok: !!h && (h === e || e.contains(h)), r: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)] }; };
+    const p = hit(pay), n = hit(no), r = box.getBoundingClientRect();
+    return { txt, p, n, inView: r.left >= -1 && r.right <= innerWidth + 1 && pay.getBoundingClientRect().bottom <= innerHeight, barTop: br ? br.top : null, payBottom: pay.getBoundingClientRect().bottom };
+  });
+  await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_phone_confirm.png') });
+  ok(/US\$1\.99/.test(cf.txt) && /secure page in a new tab/.test(cf.txt) && /You get exactly this/.test(cf.txt), 'the confirm sheet says what you get, the price and where you pay');
+  ok(cf.p.ok && cf.n.ok && cf.inView && cf.p.r[3] >= 44 && cf.n.r[3] >= 44, 'Pay with Stripe and Not now are 44 px, in view and on top (nothing covers them): ' + JSON.stringify([cf.p, cf.n]));
+  ok(cf.barTop == null || cf.payBottom <= cf.barTop + 1, `Pay sits above the phone bar (${Math.round(cf.payBottom)} / ${cf.barTop})`);
+  await t.p.click('.ks-confirm .ks-pay');
+  ok(await t.waitToast(/The shop opens soon/, 3000) && !(await ev(() => !!document.querySelector('.ks-confirm'))), 'Pay calls ksCheckout: "The shop opens soon" for now, the confirm sheet closes');
+  await ev(() => window.__paw.ks.open('tools')); await t.p.locator('[data-kscash="robo"]').scrollIntoViewIfNeeded(); await t.p.click('[data-kscash="robo"]'); await t.p.click('.ks-confirm .ks-no');
+  ok(await t.until(() => !document.querySelector('.ks-confirm'), null, 2000) && await ev(() => !window.__paw.ks.tool('robo')), 'Not now closes it and nothing is bought');
+  // the phone menu has the shop
+  await ev(() => { document.querySelector('#modal .panel .x').click(); });
+  await t.until(() => document.getElementById('modal').hidden, null, 2000);
+  await ev(() => document.getElementById('moreBtn').click());
+  const mm = await t.until(() => !!document.getElementById('mmKs'), null, 2500);
+  ok(mm, 'the phone "..." menu has a Kind shop button');
+  if (mm) { await t.p.click('#mmKs'); ok(await t.until(() => !!document.querySelector('#modal .panel.ks'), null, 3000), 'it opens the Kind shop'); }
+});

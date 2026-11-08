@@ -559,13 +559,14 @@ function placeButtons() {
   if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">${gardenUnlocked() ? tt('yard.garden', 'Garden') : lvOn() ? tt('lv.garden_btn', 'Garden (level {n})', { n: wNeed('feat', 'garden', 2) }) : tt('yard.garden_bond_2', 'Garden (Bond 2)')}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">' + tt('yard.garden_coming_soon', 'Garden: coming soon') + '</button>', '<button class="btn" data-pb="house">' + tt('yard.go_inside', 'Go inside') + '</button>');
   if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">${kitchenUnlocked() ? tt('yard.kitchen', 'Kitchen') : lvOn() ? tt('lv.kitchen_btn', 'Kitchen (level {n})', { n: wNeed('feat', 'kitchen', 3) }) : tt('yard.kitchen_bond_3', 'Kitchen (Bond 3)')}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">' + tt('yard.kitchen_coming_soon', 'Kitchen: coming soon') + '</button>', '<button class="btn" data-pb="yard">' + tt('yard.go_outside', 'Go outside') + '</button>');
   if (S.place === 'market' || mpShopOf(S.place)) (mpShopOf(S.place) ? [mpShopOf(S.place)] : Object.keys(SHOP_NAME)).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`)); // v2.15: a storefront (and Kibble Corner) has its own shop only
+  if (S.place === 'market' && typeof ksOn === 'function' && ksOn()) b.push(`<button class="btn ks-btn" data-pb="kindshop">${esc(tt('ks.btn', 'Kind shop'))}</button>`); // v2.24 (V224.md 3), only while the kind shop is on
   if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? tt('yard.dug_today', 'Dug today') : tt('yard.dig_in_the_sand', 'Dig in the sand')}</button>`); }
   const placeBtn = { square: ['notice', tt('yard.town_notice', 'Town notice')], cafe: ['cafe', tt('yard.cafe_menu', 'Café menu')], dogpark: ['social', tt('yard.socialise', 'Socialise')], vet: ['vet', tt('yard.check_up', 'Check-up')], salon: ['groom', tt('yard.full_groom', 'Full groom')], hilltop: weatherNow() === 'sunny' ? ['kites', tt('yard.watch_kites', 'Watch kites')] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
   if (S.place !== 'yard' && S.place !== 'house') b.push(`<button class="btn${S.place === 'market' ? ' yes' : ''}" data-pb="yard">${tt('yard.go_home', 'Go home')}</button>`);
   pb.innerHTML = b.join('');
   pb.querySelectorAll('[data-sh]').forEach((x) => { x.onclick = () => openShop(x.dataset.sh); });
-  pb.querySelectorAll('[data-pb]').forEach((x) => { x.onclick = () => { const v = x.dataset.pb, f = { dig: beachDig, garden: openGarden, kitchen: openKitchen, notice: squareNotice, cafe: cafeMenu, social: socialise, vet: vetCheck, groom: salonGroom, kites: kiteWatch }[v]; if (f) f(); else travelTo(v); }; });
+  pb.querySelectorAll('[data-pb]').forEach((x) => { x.onclick = () => { const v = x.dataset.pb, f = { dig: beachDig, garden: openGarden, kitchen: openKitchen, notice: squareNotice, cafe: cafeMenu, social: socialise, vet: vetCheck, groom: salonGroom, kites: kiteWatch, kindshop: () => ksOpen() }[v]; if (f) f(); else travelTo(v); }; });
 }
 // v2.3 TOWN-3: the pier bubble goes on the deck under the dog (the boats and the seagull sit above its head); the .below class flips the tail
 let bubbleBelowT = 0;
@@ -914,6 +915,7 @@ function openHouses() {
 }
 function switchHouse(n) {
   if ((HOUSE_CAP[n] || 1) < S.dogs.length) { nope(tt('yard.only_fits_you_have_dogs_and', 'The {house} only fits {cap}. You have {n, plural, one {# dog} other {# dogs}}, and nobody is getting left out.', { house: homeName(n), cap: HOUSE_CAP[n] || 1, n: S.dogs.length })); return; }
+  if (typeof ksHouseMove === 'function') ksHouseMove(n); // v2.24: the house before the Supporter House (a refund moves back there)
   S.house = n; markDirty(); trackAct('house', { name: n }); SFX.thud(); setTimeout(() => SFX.boop(700), 150);
   toast(tt('yard.moved_into_the', '{name} moved into the {house}. {pick}', { name: NAME(), house: homeName(n), pick: PICK([tt('yard.sniffed_every_corner', 'Sniffed every corner.'), tt('yard.approves_mostly', 'Approves. Mostly.'), tt('yard.already_shed_on_it', 'Already shed on it.')]) }), 'good');
   if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(n) })); shHouseNight(); } if (S.sleeping) sleepTray(); }
@@ -997,7 +999,14 @@ const HM_DECOR = {
   // v2.11 Tokyo Trip (V211.md section 5.3): the Asakusa souvenir stand only (tokyo + fest 'tokyo', never at Barkitecture), placed with the v2.7 placement mode. Prop by TOKYO ART E (0 0 80 100, o.indoor)
   'Lucky Cat': { prop: 'luckycat', at: [470, 436, 64, 80], vb: [80, 100], price: 150, room: 'house', zone: 'floor', kind: 'decor', fest: 'tokyo', tokyo: true, v211: true, story: 'A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way.' },
   // v2.20 Missions v2 (V220.md 5): the trophy shelf, a reward (no price, never sold). It holds one cup per gold badge track (msCups(), 24c_badges.js; 'c' once crayon), drawn by PawArt.MISSIONS.shelf / PawArt.prop('trophyshelf', { cups })
-  'Trophy Shelf': { prop: 'trophyshelf', at: [676, 290, 120, 135], vb: [160, 180], room: 'house', zone: 'floor', kind: 'decor', v220: true, story: 'A wooden shelf with room for eighteen little cups. Every gold badge puts one more on it, and somebody polishes them with a tail.' }
+  'Trophy Shelf': { prop: 'trophyshelf', at: [676, 290, 120, 135], vb: [160, 180], room: 'house', zone: 'floor', kind: 'decor', v220: true, story: 'A wooden shelf with room for eighteen little cups. Every gold badge puts one more on it, and somebody polishes them with a tail.' },
+  // v2.24 Kind shop (V224.md 1, 52_kindshop.js): Cozy Winter, house decorations sold only in the kind shop (ks; no v27, so Barkitecture never lists them, and no price).
+  // Props by the art lane (ks*, viewBox = vb). Catalogue spots clear of the bed box (610-870), the window seat and the sofa ramp; a buy waits in the house until placed
+  'Cable-Knit Rug': { prop: 'ksrug', at: [372, 536, 180, 60], vb: [240, 80], room: 'house', zone: 'floor', flat: true, kind: 'decor', ks: 'cozy', reward: true, story: 'A thick cream rug knitted in big cables, like a jumper for the floor. Every dog turns round three times on it.' },
+  'Cocoa Mug Lamp': { prop: 'kslamp', at: [236, 436, 60, 84], vb: [100, 140], room: 'house', zone: 'floor', kind: 'decor', lit: true, ks: 'cozy', reward: true, story: 'A lamp shaped like a mug of cocoa with a marshmallow on top. After dark it glows warm and brown. Not for drinking.' },
+  'Doggy Snow Globe': { prop: 'ksglobe', at: [312, 454, 60, 70], vb: [120, 140], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A glass globe with a tiny dog and a tiny house inside. Shake it and it snows, indoors, on purpose.' },
+  'Cardboard Fireplace': { prop: 'ksfireplace', at: [388, 300, 120, 120], vb: [160, 160], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fireplace made of painted cardboard with paper flames. All the cosy, none of the heat, so noses stay safe.' },
+  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
