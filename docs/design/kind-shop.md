@@ -56,3 +56,7 @@ Research behind them: itch.io web games run in a frame on itch.io's own domain, 
 6. **Spending guard: the confirm step only** (no grown-up check, no monthly cap); Stripe Checkout does the rest.
 7. **First packs: Tokyo Street (6 outfits) and Cozy Winter (6 decorations)**, 2.99 USD each or 600 coins an item.
 8. **Supporter Pack as drafted plus a one-time 2,000-coin gift.**
+9. **Comfort tools as drafted**: Robo Scoop 1.99 USD / 4,000 coins, Garden Sprinkler and Auto Water Bowl 0.99 USD / 2,500 coins each, Comfort Kit 2.99 USD.
+10. **A feet slot** (`S.outfit.feet`, additive) for Little Sneakers; later packs can add shoes.
+11. **Stripe account: already open** (Hong Kong). Live keys go into the Worker as secrets only; the build is made against test mode.
+12. **v2.24, aiming for early December.** The owner sets the exact date after the three reviews and a live Stripe check.
