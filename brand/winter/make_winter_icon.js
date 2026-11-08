@@ -66,16 +66,16 @@ function icon() {
     + `<radialGradient id="halo"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".9"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".6"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>`
     + `<g clip-path="url(#cc)"><g filter="url(#soft)">`
     + prop('wmcanelights', {}, 200, 196, 680, 181)
-    + bauble(290, 150, 24, '#D7263D', 3) + bauble(400, 96, 19, '#F2C14E', -2) + bauble(690, 104, 19, '#3F8F3A', 2) + bauble(800, 150, 24, '#4A7FC1', -3)
-    + prop('wmfirtree', {}, 520, 410, 170, 243)
-    + prop('wmfirtree', {}, 118, 352, 236, 337)
-    + prop('wmpresents', {}, 262, 592, 150, 112) + prop('wmpresents', {}, 772, 590, 150, 112)
+    + bauble(290, 62, 22, '#D7263D', 3) + bauble(400, 96, 19, '#F2C14E', -2) + bauble(690, 104, 19, '#3F8F3A', 2) + bauble(800, 62, 22, '#4A7FC1', -3)
+    + prop('wmfirtree', {}, 726, 330, 236, 337)
+    + prop('wmfirtree', {}, 104, 300, 272, 389)
+    + prop('wmpresents', {}, 262, 600, 160, 120) + prop('wmpresents', {}, 640, 604, 150, 112)
     + `</g><rect x="140" y="140" width="800" height="800" fill="${PAPER}" opacity=".42"/>`
     // the glow behind Noodle that lifts him off the background
-    + `<ellipse cx="622" cy="600" rx="340" ry="150" fill="url(#halo)"/></g>`;
+    + `<ellipse cx="540" cy="600" rx="340" ry="150" fill="url(#halo)"/></g>`;
   const top = holly(540, 148, 1.25, 0);
   // Noodle, the main character, in front: full colour, the Reindeer Antlers, Knit Winter Sweater and Snowflake Snood, facing right
-  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 322, 270, 596);
+  const noodle = dog('dachs', { pose: 'happy', outfit: OUTFIT }, 236, 270, 596);
   // crayon snowflakes on the night, outside the circle
   const deco = flake(140, 180, 28, 12) + flake(950, 150, 22, 30) + flake(110, 900, 24, 5) + flake(960, 930, 30, 18) + flake(540, 1035, 18, 0) + flake(40, 520, 18, 10) + flake(1040, 520, 18, 25);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">\n${bg}${paper}${back}${ring}${top}${noodle}${deco}\n</svg>\n`;
