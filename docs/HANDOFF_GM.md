@@ -120,3 +120,7 @@ itch.io pushed as 2.22.4 (build #2322869); doodledoggo.app site deployed with th
 ## v2.23 "Coat colours" (7 Nov 2026)
 Owner-approved launch. Starter coat and eye colour choice on the adoption card and Shelter starter cards (`STARTER_COATS`, `V223.md`, suite `v223_coats`), with the review fixes: Dog Card / Friends dogs keep their eyes and coat pattern (optional wire fields `e` and `p`), b/b amber stand-ins, Corgi black and white and Collie tricolour dropped (130 options), every Border Collie coat has eyes, sitting-dog swatches; lab fox red left out (no shade that leaves existing dogs alone).
 Worker `pawhaven-api` deployed first (accepts `e`/`p`, live smoke OK), then main 20a24004 (Pages workflow green), itch.io 2.23 build #2324707, doodledoggo.app with the itch build (/play/ md5 matches). Test fixes: worker rate-limit count, v211_cards (v2.21 live), v219_friends greet sampling race.
+
+## v2.23.1 "More colours" (8 Nov 2026)
+Owner-approved. Worker `pawhaven-api` deployed first (accepts optional `I`, live smoke OK), then main 64372bdd, itch.io 2.23.1 build #2329447, doodledoggo.app with the itch build.
+Tan points for Border Collie/Corgi, Lab Fox red, Golden Dark golden; no NEWS entry; check_identical vs 60cc2907: 0 differences.
