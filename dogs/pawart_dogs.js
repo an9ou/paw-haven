@@ -2008,7 +2008,7 @@ HAT2['Bucket Hat']=function(h,s,L,HT){// a soft lilac bucket hat with crayon che
   h.line([[-W2*.98,-3],[W2*.98,-3]].map(P),4.6,KS.hatB,.4);
   h.line([[-W2*1.4,9],[0,11],[W2*1.4,9]].map(P),1.4,KS.hatD,.5)};
 NECK2['Paw Tote']=function(h,s,L,HT){// a little canvas tote on a strap round the neck, a blue stripe and a pink paw, resting on the chest
-  const a=neckAnchor(s,HT),hx=s.head.rx,pk=s.pup?.78:1,bw=Math.max(14,hx*.78*pk),bh=Math.max(13,hx*.7*pk),cl=q=>[q[0],Math.min(q[1],GY-4)],c=cl([a.c[0]-hx*.06,a.c[1]+bh*.95]);
+  const a=neckAnchor(s,HT),hx=s.head.rx,pk=s.pup?.78:1,bw=Math.max(14,hx*.78*pk),bh=Math.max(13,hx*.7*pk),cl=q=>[q[0],Math.min(q[1],GY-4)],c=[a.c[0]-hx*.06,Math.min(a.c[1]+bh*.95,GY-4-bh*.5)];// the whole bag stays above the ground (head down, it rests there)
   h.line([a.l,[c[0]-bw*.3,c[1]-bh*.48]],2.6,KS.strap);h.line([a.r,[c[0]+bw*.3,c[1]-bh*.48]],2.6,KS.strap);
   h.line([a.l,[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2+5],a.r],2.6,KS.strap);
   h.shape([[c[0]-bw*.5,c[1]-bh*.5],[c[0]+bw*.5,c[1]-bh*.5],[c[0]+bw*.58,c[1]+bh*.5],[c[0]-bw*.58,c[1]+bh*.5]].map(cl),KS.canvas,{w:3,step:7,ox:0,oy:0,sc:1,closed:1,amp:.6,famp:.4});
