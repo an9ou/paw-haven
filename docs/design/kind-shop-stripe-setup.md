@@ -88,3 +88,8 @@ recorded by the webhook, refunded in full by the owner, `refunded: true` on the 
 **Blocker before SHOP_LIVE:** the live session showed `automatic_tax.liability: self` and invoice issuer `self` (the sandbox showed
 `stripe`), so Managed Payments is not fully active on the live account yet (Stripe's eligibility review). Don't turn the shop on until
 a live checkout shows `liability: stripe`.
+Second live test (9 Nov, after the owner finished the Managed Payments setup, status "Ready to use", all products eligible): paid,
+recorded, refunded, `refunded: true`, test account deleted. The session again showed `managed_payments.enabled: true` but
+`automatic_tax.liability: self`, and the Dashboard's Managed Payments page still says "None of your transactions used Managed
+Payments". Both live buyers were in Hong Kong (the owner's own card). Open question for Stripe support (owner): why live sessions with
+managed_payments enabled don't count as Managed Payments, and whether same-country (HK) buyers are excluded. SHOP_LIVE stays false.
