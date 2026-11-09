@@ -4,7 +4,7 @@ Today's idea from `VIRAL_REEL_IDEAS.md` (9 Nov 2026, hook score 94.8): pause and
 
 | File | |
 |---|---|
-| Video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat.mp4` (22.0 s, 1080 x 1920, 30 fps, AAC stereo) |
+| Video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat.mp4` (24.0 s, 1080 x 1920, 30 fps, AAC stereo; ends on our standard end card since 9 Nov 2026) |
 | Script | `brand/instagram/launch/coat_reel/build_coat.js`, voice lines `brand/instagram/launch/coat_reel/vo_coat.json`, picker capture `brand/instagram/launch/coat_reel/capture_picker.js` |
 | Cover | `brand/instagram/launch/coat_reel/coat-cover.jpg` (1080 x 1920, its own design and not a frame of the Reel: the hook card, the four numbered dogs with their coat names, "PICK 1 · 2 · 3 · 4", the NEW sticker. All of it sits inside the 1:1 profile-grid crop (y 420 to 1500), and the logo inside the 4:5 grid crop) |
 | RedNote video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat-rednote.mp4` (30.4 s, 1080 x 1920, 30 fps, everything in Simplified Chinese, ends on the RedNote end card with the QR code) |
@@ -24,7 +24,7 @@ Owner, 9 Nov 2026 (second ask: "more informative to audiences"): the news line w
 |---|---|---|
 | 0.0 to 1.35 | "Stop picking the yellow Lab. Pick one of these four dogs instead." (0.1 to 3.75) | Card at frame 1: **Stop picking the yellow Lab. / Pick 1 of these 4 dogs instead.** over the sitting yellow Lab. A red crayon cross at 0.4 s (two scratch sounds), pill: *sorry yellow Labs, you're great*. The Lab slides off to the left at 0.95 s |
 | 1.35 to 3.85 | (hook continues) | The four pop in at once in a 2 x 2 grid with a tick: 1 Fox red, 2 Dark golden, 3 Red merle, 4 Chocolate (number badges, coat pills) |
-| 3.87 to 5.6 | "Pause now! Three, two, one." | Card: **pause now! / PICK 1 · 2 · 3 · 4**, a pink 3, 2, 1 bubble on the spoken numbers (soft ticks). The sticker **NEW! pick your dog's coat** pops in under the card and stays until the loop |
+| 3.87 to 5.6 | "Pause now! Three, two, one." | Card: **pause now! / PICK 1 · 2 · 3 · 4**, a pink 3, 2, 1 bubble on the spoken numbers (soft ticks). The sticker **NEW! pick your dog's coat** pops in under the card and stays until the end card |
 | 5.64 | "Fox red. Not a fox. We checked." | Dog 1 pops big, card **1 Fox red / Labrador** with a **NEW!** sticker, subtitles |
 | 7.77 | "Dark golden. Like toast, but a dog." | Dog 2 big, **2 Dark golden / Golden Retriever**, **NEW!** |
 | 10.19 | "Odd eyes. Both judging you." | Dog 3 big, **3 Red merle / Border Collie**, an eye loupe on its face, pill *one blue eye, one brown* |
@@ -32,7 +32,7 @@ Owner, 9 Nov 2026 (second ask: "more informative to audiences"): the news line w
 | 14.04 | "New! Almost every dog comes in different coats!" | The chocolate Lab fades. A grid of the 34 dogs that have a choice pops in, each cycling through its coats. Green card **134 coats / 34 of 40 dogs have a choice**, subtitles |
 | 17.04 | "Pick one when you adopt. Puppies inherit it!" | The real adoption colour picker in a crayon phone. Taps (pink rings, ticks) at 17.7 Blue merle, 18.5 Red merle, 19.3 odd eyes. A yellow pill shows the game's Coat / Eyes line. Card **pick the coat / when you adopt**, the game's "adopt" sting, subtitles |
 | 20.54 | "Comment your number!" | The four pop back into the grid. Card **Comment / your number!**, the four bounce |
-| 21.46 to 21.96 | (none) | The four slide off and the yellow Lab slides back in under the hook card: loop |
+| 21.46 to 23.97 | (none) | The four slide off as our standard end card fades in over paper (owner, 9 Nov 2026: "can we add the social media and website at the end card of the reels"; `brand/kids/endcard.js`): the logo, **doodledoggo.app**, Instagram **@doodledoggo.app**, X **@doodledoggoapp**, YouTube **@DoodleDoggoApp**, each with its icon. The music fades out under it. The Reel no longer loops back to the hook |
 
 Sound: Noodle (Kokoro af_bella 1.1x) at -16 LUFS. Under it is the game's own cozy yard music (`mods/pawaudio.js`), 11 dB under the voice (about 30 %), plus crayon ticks and scratches. The whole mix is at -16 LUFS, true peak -1.5.
 
@@ -56,7 +56,7 @@ This is the owner-approved English Reel remade for RedNote (owner, 9 Nov 2026: "
 - **Words.** Chinese cards and subtitles of at most 14 characters, in LXGW WenKai. Coat, breed and eye words are the game's own zh-Hans text: 狐狸红, 深金色, 红陨石色, 巧克力色, 拉布拉多寻回犬, 金毛寻回犬, 边境牧羊犬, 蓝色, 棕色 and 异色, via `mods/genes.js` `coatLabel` and `game/i18n/zh-Hans.json`.
 - **Picker beat.** Re-recorded in Chinese (`capture_picker.js` with `PAW_LANG=zh-Hans`).
 - **RedNote rules.** No link, no written domain, no other platform's name. Owner, 9 Nov 2026: every RedNote video ends on the RedNote end card (`brand/kids/endcard.js` `endCardRN`). The card has the logo, 治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩, and the QR code to the game's site with 扫码就能玩. The QR is made by `qrMatrix` from the game's `mods/qr.js`. So this cut ends on that card and does not loop.
-- **Length.** 30.4 s (2.3 s of it the end card), against 22.0 s for the English. The Mandarin lines are longer, even after shortening.
+- **Length.** 30.4 s (2.3 s of it the end card), against 24.0 s for the English (2.5 s of it the end card). The Mandarin lines are longer, even after shortening.
 
 | Time (s) | Noodle says | On screen |
 |---|---|---|
