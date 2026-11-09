@@ -61,17 +61,6 @@ Which number would you pick? Tell us in the comments.
 ```
 The text above the link block scores 72.7 PASS on `detect.py`. The link block is the same fixed one as on the other Shorts.
 
-### Threads
-
-```
-new in Doodle Doggo: almost every dog comes in different coats now 🖍️
-
-you pick one when you adopt. 134 coats across 34 of our 40 crayon dogs. real coat genes, so the puppies inherit them.
-
-I can't decide between these four. fox red Lab? dark golden Golden? the red merle Collie with one blue eye and one brown, or the chocolate Lab? which number would you pick?
-```
-`detect.py` 78.6 PASS. No hashtags and no link, as with our other Threads posts.
-
 ### X (258 of 280; the link counts as 23, each emoji as 2)
 
 ```

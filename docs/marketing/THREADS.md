@@ -1,5 +1,7 @@
 # Threads posts
 
+**Unused (owner, 9 Nov 2026): we have no Threads account. Don't write Threads captions.**
+
 Threads is text-first and conversational: a short, honest line from the dev, one picture or video, and a question people want to answer. Keep the link in the first reply (posts with links in the main text tend to get shown less), and use one topic tag. Limit: 500 characters per post.
 
 ## 1. "I made a cozy game with 35 dogs" (picture)

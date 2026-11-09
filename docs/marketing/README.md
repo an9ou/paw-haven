@@ -16,6 +16,7 @@ For every Marketing session (branch `marketing/launch`). Read these with `CLAUDE
 - **The game is live:** say "play free on itch.io" (https://an9ou.itch.io/doodle-doggo), link in bio. Instagram is @doodledoggo.app.
 - **Support link (24 Oct 2026, from the Game Manager):** the owner's Ko-fi page is https://ko-fi.com/doodledoggoapp (bio and first post: `docs/marketing/KOFI_INTRO.md` on main). Use it as the support link in future posts, alongside itch.io.
 - **Site links (21 Oct 2026):** the game plays right on https://doodledoggo.app (say "play right on doodledoggo.app", never "tap Play at itch.io on our site"). The How to play page, https://doodledoggo.app/guide, is the link for "new here? start here" posts.
+- **No Threads account (owner, 9 Nov 2026).** Don't write Threads captions or Threads versions; caption sets cover Instagram, TikTok, YouTube Shorts, X and RedNote. `THREADS.md` and `brand/threads/` are old and unused.
 - **The Noodle story videos never show game UI.**
 - **Reports:** no progress updates; report when the whole task is done, and send the Game Manager a one-line done note.
 - **Every video's end card (owner, 4 Nov 2026):** the game logo, the website (doodledoggo.app) and our Instagram, X and YouTube, each with its icon and handle. Instagram @doodledoggo.app, X @doodledoggoapp, YouTube @DoodleDoggoApp (owner, 4 Nov 2026). Shared card: `brand/kids/endcard.js`. This replaces the kids' rule of "the logo only" on the last card. RedNote still never shows a link, a domain or a QR.
