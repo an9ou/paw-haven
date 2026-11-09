@@ -7,7 +7,7 @@ Today's idea from `VIRAL_REEL_IDEAS.md` (9 Nov 2026, hook score 94.8): pause and
 | Video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat.mp4` (22.0 s, 1080 x 1920, 30 fps, AAC stereo) |
 | Script | `brand/instagram/launch/coat_reel/build_coat.js`, voice lines `brand/instagram/launch/coat_reel/vo_coat.json`, picker capture `brand/instagram/launch/coat_reel/capture_picker.js` |
 | Cover | `brand/instagram/launch/coat_reel/coat-cover.jpg` (1080 x 1920, its own design and not a frame of the Reel: the hook card, the four numbered dogs with their coat names, "PICK 1 · 2 · 3 · 4", the NEW sticker. All of it sits inside the 1:1 profile-grid crop (y 420 to 1500), and the logo inside the 4:5 grid crop) |
-| RedNote video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat-rednote.mp4` (28.6 s, 1080 x 1920, 30 fps, everything in Simplified Chinese) |
+| RedNote video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat-rednote.mp4` (30.4 s, 1080 x 1920, 30 fps, everything in Simplified Chinese, ends on the RedNote end card with the QR code) |
 | RedNote cover | `brand/rednote/rednote-12-coats.jpg` (1080 x 1440, 3:4: the middle of the Chinese cover) |
 
 The art is the game's own. The coats come from the starter presets the adoption colour picker uses (`STARTER_COATS`, `starterCoats`, `starterEyes` in `game/src/10_sex_age_genes.js`). Names and colours come from `mods/genes.js` `phenotype()`, and each dog is drawn the way the game draws that dog (`PawArt.dog(key, { coat, seed: hashId(id) })`). The collie's id is picked the same way `starterIdFor()` does it, so its merle eye roll really gives odd eyes (one blue, one brown). The Chocolate Lab has the game's amber eyes (b/b). The yellow Lab is the game's default Lab. Every frame passes `centreCheck()`, `safeCheck()` (everything inside x 60..890, y 270..1440) and `apartCheck()`. The last frame is the same as the first, so the Reel loops.
@@ -55,8 +55,8 @@ This is the owner-approved English Reel remade for RedNote (owner, 9 Nov 2026: "
 - **Voice.** Noodle's Mandarin voice, Kokoro v1.1-zh zf_073 at 1.0x, the same as the Friends how-to RedNote cut (`../friends_reel/vo_friends_zh.py` with `VO_LINES=coat_reel/vo_coat_zh.json`).
 - **Words.** Chinese cards and subtitles of at most 14 characters, in LXGW WenKai. Coat, breed and eye words are the game's own zh-Hans text: 狐狸红, 深金色, 红陨石色, 巧克力色, 拉布拉多寻回犬, 金毛寻回犬, 边境牧羊犬, 蓝色, 棕色 and 异色, via `mods/genes.js` `coatLabel` and `game/i18n/zh-Hans.json`.
 - **Picker beat.** Re-recorded in Chinese (`capture_picker.js` with `PAW_LANG=zh-Hans`).
-- **RedNote rules.** No link, no domain, no QR, no other platform's name. There is no play line in the video.
-- **Length.** 28.6 s, against 22.0 s for the English. The Mandarin lines are longer, even after shortening.
+- **RedNote rules.** No link, no written domain, no other platform's name. Owner, 9 Nov 2026: every RedNote video ends on the RedNote end card (`brand/kids/endcard.js` `endCardRN`). The card has the logo, 治愈系蜡笔狗狗游戏, 浏览器搜 Doodle Doggo App 就能玩, and the QR code to the game's site with 扫码就能玩. The QR is made by `qrMatrix` from the game's `mods/qr.js`. So this cut ends on that card and does not loop.
+- **Length.** 30.4 s (2.3 s of it the end card), against 22.0 s for the English. The Mandarin lines are longer, even after shortening.
 
 | Time (s) | Noodle says | On screen |
 |---|---|---|
@@ -69,7 +69,7 @@ This is the owner-approved English Reel remade for RedNote (owner, 9 Nov 2026: "
 | 18.44 | 新！几乎每只狗狗都能选毛色！ | The coat grid, card **134种毛色 / 40只狗狗里34只可以选** |
 | 22.04 | 领养时挑一个，小狗会遗传！ | The real picker in Chinese (毛色：巧克力色和白色 → 蓝陨石色 → 红陨石色 → 异色眼睛), card **领养的时候 / 挑选毛色** |
 | 25.54 | 评论区告诉我你选几号！ | Card **评论区告诉我 / 你选几号！**, the four bounce |
-| 28.1 to 28.6 | (none) | Loop back to the hook |
+| 28.09 to 30.39 | (none) | The RedNote end card with the QR code and 扫码就能玩 (the game's "discover" sting) |
 
 Rebuild:
 ```
@@ -188,4 +188,4 @@ Upload `doodle-doggo-pick-a-coat-rednote.mp4` with `brand/rednote/rednote-12-coa
 ```
 > New: you can pick the coat when you adopt a dog! 34 of the 40 dogs have a choice, 134 coats in all, and puppies inherit the coat genes. Which of these 4 would you pick? 1 fox red Labrador (new), 2 dark golden Golden (new), 3 red merle Border Collie with one blue eye and one brown, 4 chocolate Labrador (the only chocolate that is safe for dogs). Tell me your number in the comments. Search Doodle Doggo App in your browser to play.
 
-One ask (评论区告诉我你选几号). 7 tags. The only play line is 浏览器搜 Doodle Doggo App 就能玩. No link, no domain with a dot, no QR, no other platform named.
+One ask (评论区告诉我你选几号). 7 tags. The only play line is 浏览器搜 Doodle Doggo App 就能玩. The caption has no link, no domain with a dot, no QR and names no other platform. The QR code is only on the video's end card.

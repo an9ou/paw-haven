@@ -98,4 +98,4 @@ Upload `doodle-doggo-pick-a-coat-rednote.mp4` with `brand/rednote/rednote-12-coa
 ```
 > New: you can pick the coat when you adopt a dog! 34 of the 40 dogs have a choice, 134 coats in all, and puppies inherit the coat genes. Which of these 4 would you pick? 1 fox red Labrador (new), 2 dark golden Golden (new), 3 red merle Border Collie with one blue eye and one brown, 4 chocolate Labrador (the only chocolate that is safe for dogs). Tell me your number in the comments. Search Doodle Doggo App in your browser to play.
 
-One ask (评论区告诉我你选几号). 7 tags. The only play line is 浏览器搜 Doodle Doggo App 就能玩. No link, no domain with a dot, no QR, no other platform named.
+One ask (评论区告诉我你选几号). 7 tags. The only play line is 浏览器搜 Doodle Doggo App 就能玩. The caption has no link, no domain with a dot, no QR and names no other platform. The QR code is only on the video's end card.

@@ -20,7 +20,7 @@
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { RN_FONT_CSS } = require('../../../kids/endcard.js');
+const { RN_FONT_CSS, ENDCARD_JS, qrMatrix } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'coat_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
@@ -79,7 +79,9 @@ const BEAT = PICKS.map((_, i) => say('d' + (i + 1), 0.12));
 // owner, 9 Nov 2026: two informative beats instead of one line. A: almost every dog comes in different coats (a grid of every dog with a choice,
 // each cycling through its own coats); B: the real adoption colour picker on a phone (capture_picker.js), then the ask
 const A_AT = say('coats', Math.max(0.35, 3.0 - VOD.coats)), B_AT = say('adopt', Math.max(0.3, 3.5 - VOD.adopt)), ASK_AT = say('ask', 0.12);
-const LOOP = at, T = LOOP + 0.5, NF = Math.round(T * FPS); // LOOP: the four leave and the yellow Lab slides back to where frame 0 has it
+// LOOP: the four leave and the yellow Lab slides back to where frame 0 has it. RedNote (owner, 9 Nov 2026): every RedNote video ends on the RedNote
+// end card with the QR code to the game's site and 扫码就能玩 (brand/kids/endcard.js endCardRN), so the RedNote cut ends there instead of looping
+const LOOP = at, T = LOOP + (RN ? 2.3 : 0.5), NF = Math.round(T * FPS);
 // the count: 3, 2, 1 on the spoken numbers in Noodle's "Pause now! Three, two, one." (Kokoro gives no word times): the words start after the
 // quietest 30 ms dips of the line's loudness (after "Pause now!" and after "three"); "one" where "two" has faded
 function wavEnv(f) { const b = fs.readFileSync(f); let o = 12, fmt = null, data = null;
@@ -133,6 +135,7 @@ if (RN) Object.assign(TX, { hook: ['别再选黄色拉布拉多了', '从这4只
   coatsCard: [NCOATS + '种毛色', DOGKEYS.length + '只狗狗里' + MONT.length + '只可以选'], adoptCard: ['领养的时候', '挑选毛色'], newSticker: '新！领养时可以选毛色',
   ask: ['评论区告诉我', '你选几号！'], newTag: '新！' });
 const FAM = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
+const SITE_QR = RN ? qrMatrix('https://doodledoggo.app', path.join(ART_ROOT, 'mods', 'qr.js')) : null;
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
@@ -146,6 +149,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
+${RN ? ENDCARD_JS : ''}
 const $=(i)=>document.getElementById(i), ART=${JSON.stringify(ART)}, SUBS=${JSON.stringify(SUBS)}, TX=${JSON.stringify(TX)}, F=${JSON.stringify(FAM)}, RN=${RN}, CX=SAFE_CX;
 const P=${JSON.stringify(PICKS.map((p) => ({ word: p.word, sub: p.sub, isNew: !!p.isNew, extra: p.extra || '' })))}, MONT=${JSON.stringify(MONT)}, PL=${JSON.stringify(PL)}, CROP=${JSON.stringify(CROP)}, PH=${JSON.stringify(PH)}, TAPS=${JSON.stringify(TAPS)};
 const XAT=${XAT}, SLIDE=${SLIDE}, POP=${POP}, HOOK_AT=${HOOK_AT}, PAUSE_AT=${PAUSE_AT}, BEAT=${JSON.stringify(BEAT)}, A_AT=${A_AT}, B_AT=${B_AT}, ASK_AT=${ASK_AT}, LOOP=${LOOP}, T=${T}, COUNT=${JSON.stringify(COUNT)};
@@ -176,7 +180,12 @@ function stroke(x0,y0,x1,y1,u,col,w){ if(u<=0) return ''; const x=lerp(x0,x1,u),
 const GX=[268,682], GF=[890,1250], GW=360, GH=260; // row 1 starts under the NEW sticker
 const cell=(i)=>({x:GX[i%2], feet:GF[i>>1]});
 function hookCard(o,lt){ return '<g opacity="'+f2(o)+'" transform="rotate(-2 '+CX+' 395)">'+card(CX-405,288,810,214,[{s:TX.hook[0],size:fitS(TX.hook[0],74,730),pitch:92},{s:TX.hook[1],size:fitS(TX.hook[1],70,730)}])+'</g>'; }
+let ENDCARD=null;
 window.frame=function(t){
+  if(RN&&t>=LOOP){ if(!ENDCARD) ENDCARD=endCardRN('tall',LOGO_INNER,null,{matrix:SITE_QR,caption:'扫码就能玩'});
+    $('bg').innerHTML='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; $('art').innerHTML=''; $('phone').setAttribute('opacity',0); $('ov').innerHTML='<g opacity="'+f2(sm((t-LOOP)/0.3))+'">'+ENDCARD+'</g>';
+    const bad=centreCheck($('st')); if(bad.length) return 'end card not centred: '+bad.join('; ');
+    const out=safeCheck($('st')); if(out.length) return 'end card outside SAFE: '+out.join('; '); return ''; }
   let bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>', art='', ov='';
   const k=Math.floor(t/0.12)%3;
   // ---- the yellow Lab: on the paper at frame 0, crossed out, slides off; slides back in at the loop ----
@@ -265,7 +274,7 @@ window.frame=function(t){
 const VOD_HOOK=${VOD.hook};
 // the cover (owner, 9 Nov 2026): its own design, never a frame of the Reel. Everything that matters inside the 1:1 profile-grid crop (y 420..1500), the
 // logo inside the 4:5 grid crop (y 285..1635); the RedNote 3:4 cover is the middle 1080 x 1440 (y 240..1680) of the Chinese one
-const LOGO_INNER=${JSON.stringify(LOGO_INNER)};
+const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, SITE_QR=${JSON.stringify(SITE_QR)};
 window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>', art='', ov='';
   const XS=[300,780], FS=[935,1262], cols=['#F6B98C','#F1CF62','#EE9CB6','#C9A27E'];
   P.forEach((p,i)=>{ const x=XS[i%2], feet=FS[i>>1]; bg+=blob(x,feet-118,175,cols[i],i+21,0.5);
@@ -291,7 +300,7 @@ window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const allText = [Object.values(TX), PICKS.map((p) => [p.word, p.sub, p.extra || '']), Object.values(SUBS_TX), '0123456789'].flat(3).join(' ');
   await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), allText);
-  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText + Object.values(PL).join(''));
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt + JSON.stringify(RN_WORDS) + '扫码就能玩'), allText + Object.values(PL).join(''));
     if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready);
   await p.evaluate(() => Promise.all([0, 1, 2, 3].map((i) => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = () => no(new Error('pk' + i)); im.src = 'pk' + i + '.png'; }))));
@@ -313,13 +322,13 @@ window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${
   await b.close();
   // the loop: the last frame is the first one
   const same = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', path.join(WORK, 'f', 'f00000.png'), '-i', path.join(WORK, 'f', `f${String(NF - 1).padStart(5, '0')}.png`), '-lavfi', 'psnr', '-f', 'null', '-'], { encoding: 'utf8' }).stderr.match(/average:([0-9.inf]+)/);
-  console.log('first vs last frame PSNR', same && same[1]);
+  if (!RN) console.log('first vs last frame PSNR', same && same[1]);
 
   // ---- sound: the game's cozy yard music, ticks, scratches, Noodle on top ----
   const ab = await chromium.launch({ executablePath: exe, args: ['--autoplay-policy=no-user-gesture-required'] });
   const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ROOT, 'mods', 'pawaudio.js') });
   const wav = await ap.evaluate(async ([s, st]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.8, ambience: 0 },
-    segments: [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, [{ at: B_AT - 0.05, name: 'adopt' }]]);
+    segments: [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, [{ at: B_AT - 0.05, name: 'adopt' }].concat(RN ? [{ at: LOOP + 0.1, name: 'discover' }] : [])]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64')); await ab.close();
   const ff = (args) => cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...args]);
   ff(['-f', 'lavfi', '-i', "aevalsrc='0.35*sin(2*PI*(900+500*t)*t)*exp(-t*45)':s=44100:d=0.12", path.join(WORK, 'tick.wav')]);
