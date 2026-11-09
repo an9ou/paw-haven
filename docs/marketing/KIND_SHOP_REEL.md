@@ -12,7 +12,10 @@ without paying."* No prices, countdowns, "limited", "best deal" or "buy now" any
 | File | |
 |---|---|
 | Video | `brand/instagram/launch/shop_reel/doodle-doggo-kind-shop.mp4` (34.4 s, 1080 x 1920, 30 fps, H.264 + AAC stereo, -16 LUFS; ends on our standard end card since 9 Nov 2026) |
-| Cover | `brand/instagram/launch/shop_reel/shop-cover.jpg` (1080 x 1920, its own design, not a frame: the hook card, a "NEW: the Kind shop" pill, six item pictures (Golden Paw Cottage, Cocoa Mug Lamp, Little Sneakers, Robo Scoop, Doggy Snow Globe, Golden Name Tag), Noodle in the Tokyo Street set and the logo, all inside the 1:1 crop y 420..1500) |
+| Cover | `brand/instagram/launch/shop_reel/shop-cover.jpg` (1080 x 1920; owner, 9 Nov 2026: "different from the reels, eye catching". Its own design, never a frame: a bright pink crayon colour block with a sunburst, the hook **Our new shop has / NO dogs in it!** big with a white outline, Noodle big in the Tokyo Street set and Little Sneakers on a yellow sticker, five item pictures on white stickers (Golden Paw Cottage, Doggy Snow Globe, Robo Scoop, Cocoa Mug Lamp lit, Golden Name Tag), a yellow **NEW!** burst; all key content inside the 1:1 crop y 420..1500, the logo inside the 4:5 crop. The hook reads at 200 px wide) |
+| RedNote video | `brand/instagram/launch/shop_reel/doodle-doggo-kind-shop-rednote.mp4` (42.7 s, 1080 x 1920, 30 fps; everything in Simplified Chinese; ends on the RedNote end card with no QR) |
+| RedNote cover | `brand/rednote/rednote-13-kind-shop.jpg` (1080 x 1440, 3:4, its own design like the English cover: **我们开店啦！ / 但不卖狗狗**, a **上新！** burst; no link, no QR) |
+| Captions | all platforms in one file: `docs/marketing/captions/KIND_SHOP_CAPTIONS.md` |
 | Scripts | `brand/instagram/launch/shop_reel/build_shop.js` (the Reel and the cover), `capture_shop.js` (the game footage), `vo_shop.json` (Noodle's lines) |
 
 ## Where the pictures come from
@@ -85,66 +88,31 @@ The Kokoro model files (`kokoro-v1.0.int8.onnx`, `voices-v1.0.bin`) are never co
 - **Where to play.** The YouTube and X texts link the itch.io page and doodledoggo.app; check both have v2.24 live before posting.
 - The shop needs a cloud account (email) to buy with money; the captions do not promise anything about that, so nothing to change.
 
+## RedNote cut
+
+Owner, 9 Nov 2026: a RedNote version and new covers for both. `build_shop.js` with `REDNOTE=1`:
+- **Words.** Every word in Simplified Chinese, LXGW WenKai. Item names and the shop rule are the kind-shop branch's own zh-Hans strings
+  (`game/i18n/zh-Hans.json`: 金爪小屋, 金色名牌, 创始好友, 东京街头, 横须贺夹克, 渔夫帽, 圆圆墨镜, 爪印帆布袋, 招财猫挂饰, 小小运动鞋, 暖暖冬日, 麻花针织地毯,
+  可可杯台灯, 狗狗雪花水晶球, 纸板壁炉, 毛线扶手椅, 茶壶保暖套小窝, 扫扫机器人, 花园洒水器, 自动水碗; the rule cards follow `ks.why_text` and `nw.v224.free`:
+  狗狗、亲密度和运气永远不会出现在小店里, 外观也能用金币换到, 不付钱游戏也是完整的). The build stops if any of them changes. Subtitles at most 14 characters.
+- **Voice.** Noodle's Mandarin voice, Kokoro v1.1-zh zf_073 at 1.0x (`../friends_reel/vo_friends_zh.py` with `VO_LINES=shop_reel/vo_shop_zh.json`):
+  我们开店啦！但是不卖狗狗哦。/ 支持者礼包！金爪小屋、金色名牌，还有杰拉德的感谢信。/ 他是认真的。/ 东京街头服装！/ 没错，我现在有运动鞋了。/ 暖暖冬日，装点你的房子！/
+  壁炉是纸板做的。别告诉别人。/ 还有贴心工具！扫扫机器人、洒水器、自动水碗，随时都能关掉。/ 没有盲盒。狗狗、亲密度和运气，永远不在小店里。除了支持者礼包，都能靠玩游戏得到。/
+  这个游戏是一个人做的。谢谢你的支持！
+- **Footage.** Captured with `PAW_LANG=zh-Hans` (the game in Chinese; the capture checks Chinese is on the page). The house's drawn signs ("home sweet home",
+  "kitchen", "treats") are part of the game's art and stay English in every language; the Cozy Winter name card covers most of the sampler.
+- **End card.** The RedNote card (`brand/kids/endcard.js` `endCardRN`, called with no QR): the logo, 治愈系蜡笔狗狗游戏 and only **搜 Doodle Doggo App**.
+- **Anti-ban checks** (README, owner, 9 Nov 2026), run by the build on every word: no QR, no URL or dot-domain, no other platform names, no handles, none of
+  链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳, no 浏览器, no 免费 (left out as in the RedNote bio, so "free to play" is not said), no prices, no pressure words.
+- **Length.** 42.7 s (2.5 s of it the end card): the Mandarin lines are longer.
+
+```
+PAW_LANG=zh-Hans DOG_HOUSE_TX=-160 NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/capture_shop.js <scratch>/kindshop <cap_zh dir>
+VO_LINES=brand/instagram/launch/shop_reel/vo_shop_zh.json PYTHONPATH=<jieba 0.42.1 src> python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh dir>
+REDNOTE=1 ART_ROOT=<scratch>/kindshop CAP=<cap_zh dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/build_shop.js <workdir_rn> <vo_zh dir>
+# covers: ONLY=cover on the English build (shop-cover.jpg) and on the RedNote build (brand/rednote/rednote-13-kind-shop.jpg)
+```
+
 ## Captions
 
-One ask each (which would you get first?), no em dashes, no links in the Instagram and TikTok captions. No Threads (no account).
-
-### Instagram
-
-Linted with `.claude/skills/ig-caption/caption.py` (search terms "cozy game, crayon dogs": PASS; the ask is a question, which the linter does not
-count) and `ig-human/detect.py` (human score 82.8, PASS; no em dashes, no hidden characters).
-
-```
-we opened a kind shop in Doodle Doggo, and you can't buy a dog in it 🖍️
-
-inside: the Supporter Pack (a Golden Paw Cottage, a Golden Name Tag, a Founding Friend badge and a thank-you letter from Gerald), Tokyo Street outfits (yes, Noodle has sneakers now), Cozy Winter things for your house, three little helpers you can switch off any time, and coin packs
-
-our shop rule: no loot boxes, no random paid rewards, never dogs, Bond, welfare or chances. the looks packs and the helpers can also be bought with coins you earn by playing, and the game is complete without paying
-
-Doodle Doggo is a free cozy game about crayon dogs, made by one person. thank you for helping keep the crayons sharp 🐾
-
-which would you get first? 👇
-
-#DoodleDoggo #CozyGames #IndieGame #CozyGaming
-```
-
-### TikTok
-
-```
-we opened a shop. you can't buy a dog in it 🖍️ sneakers for Noodle, a cardboard fireplace, a robo scoop, a golden cottage. no loot boxes, never dogs, and the looks packs and helpers can also be earned with coins by playing. made by one person, free to play 🐾 which would you get first? 👇 #DoodleDoggo #CozyGames #IndieGame #cozygaming
-```
-
-### YouTube Shorts
-
-Title (under 100 characters):
-```
-We opened a shop. You can't buy a dog in it. 🖍️ #DoodleDoggo #Shorts
-```
-Description:
-```
-Doodle Doggo has a kind shop now. Inside: the Supporter Pack (Golden Paw Cottage, Golden Name Tag, Founding Friend badge and a thank-you letter from Gerald), Tokyo Street outfits (Noodle has sneakers now), Cozy Winter things for your house, three comfort tools you can switch off any time, and coin packs.
-
-Our shop rule: no loot boxes, no random paid rewards, never dogs, Bond, welfare or chances. The looks packs and the tools can also be bought with coins you earn by playing, and the game is complete without paying.
-
-Doodle Doggo is a free cozy browser game about crayon dogs, made by one person. Thank you for helping!
-
-Which would you get first? 👇
-
-Play free: https://an9ou.itch.io/doodle-doggo
-More: https://doodledoggo.app
-
-#DoodleDoggo #CozyGames #IndieGame
-```
-
-### X
-
-```
-We opened a shop in Doodle Doggo. You can't buy a dog in it 🖍️
-
-No loot boxes, never dogs, and the looks packs and helpers can also be earned by playing. Made by one person, free to play.
-
-Which would you get first? 👇
-
-https://an9ou.itch.io/doodle-doggo
-#DoodleDoggo #CozyGames #IndieGame
-```
+All captions (Instagram, TikTok, YouTube Shorts, X, RedNote) are in one file: `docs/marketing/captions/KIND_SHOP_CAPTIONS.md`.

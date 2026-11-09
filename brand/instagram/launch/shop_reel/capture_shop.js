@@ -7,7 +7,7 @@
 //   house  the Cozy Winter set placed in the house (each at the spot the game picks), a slow pan from the Woolly Armchair and the Tea-Cosy Bed
 //          to the Cardboard Fireplace, the Doggy Snow Globe and the Cocoa Mug Lamp   (stills house_l.png, house_r.png + clip house/)
 //
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/capture_shop.js <kind-shop checkout, built: node game/build.js && node game/harness.js merged> <outdir>
+//   [PAW_LANG=zh-Hans] NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/capture_shop.js <kind-shop checkout, built: node game/build.js && node game/harness.js merged> <outdir>
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.');
 const OUT = path.resolve(process.argv[3] || 'shop_clean'); fs.mkdirSync(OUT, { recursive: true });
@@ -43,6 +43,14 @@ run('shop_clean', async (t) => {
   await t.lu();
   await ev((o) => { const P = window.__paw, S = P.S; S.house = 'Golden Paw Cottage'; Object.values(o).forEach((n) => P.shop.equip(n)); S.mail = []; }, TOKYO);
   console.log('outfit', JSON.stringify(await ev(() => window.__paw.S.outfit)));
+  // PAW_LANG=zh-Hans: the RedNote cut's footage (as friends_reel/capture_clean.js): the dog is adopted in English (the harness picks breeds by their
+  // English names), then the game is switched to the language and reloaded with the save, so every word the game draws (the house's signs) is Chinese
+  if (process.env.PAW_LANG) {
+    await ev((l) => { window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, process.env.PAW_LANG);
+    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+    const zh = await ev(() => (document.body.innerText.match(/[\u4e00-\u9fff]+/g) || []).slice(0, 6).join(' ')); console.log('language: Chinese on the page:', zh || 'NONE');
+    if (/^zh/.test(process.env.PAW_LANG) && !zh) throw new Error('the game did not switch to ' + process.env.PAW_LANG);
+  }
   await p().addStyleTag({ content: CLEAN_CSS });
   const relayout = async () => { await ev(() => window.dispatchEvent(new Event('resize'))); await p().waitForTimeout(900); };
   let cdp = null;
