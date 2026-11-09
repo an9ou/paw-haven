@@ -1,6 +1,6 @@
 # Game Manager handoff — CURRENT (4 Nov 2026, ~10:00 UTC)
 
-**9 Nov: v2.24 "Kind shop" RELEASED** (owner: "launch the shop once tests pass"): SHOP_LIVE = true, NEWS_V224.date 2026-11-09, on main, site and itch.io; pawhaven-api already live with the live Stripe keys (not redeployed, same worker.js). Marketing briefing still to send.
+**9 Nov: v2.24 "Kind shop" RELEASED** (owner: "launch the shop once tests pass"): SHOP_LIVE = true, NEWS_V224.date 2026-11-09, on main, site and itch.io; pawhaven-api already live with the live Stripe keys (not redeployed, same worker.js). Marketing (session_01D6KLY4Gxx78VuyjbRFaSgb) briefed with the final names and prices (reels first, then the carousel; no ads mentioned). KIND SHOP session told it can push again; open: refund arriving before its completed webhook is lost.
 
 **Update 4 Nov ~10:00 UTC (new GM session_01D6KLY6QbtZ2YkSVej5r1gh, lineage depth 8 = the limit: it cannot create sessions, send_later or triggers; the NEXT GM must be started by the owner from claude.ai):** release wake-up is now trig_01AACJT9y7TX41RBYgRn2GHM (6 Nov 14:00 UTC, bound to this GM, made by the old GM; trig_01DgxwqnJoCqd3jtDsPncUu8 deleted). Missions v2: worktree /home/user/paw-haven-missions, branch claude/missions-v2 (contract V220.md), art on claude/missions-v2-art. Also new: docs/design/retention-ideas.md (owner's retention study, nothing decided).
 
