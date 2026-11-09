@@ -46,7 +46,7 @@ const PSEUDO = [
   { code: 'ja-XA', dir: 'xx-cjk', name: '[犬犬犬]', og: 'ja_JP', script: 'cjk', pseudo: 'cjk', rules: 'ja' }
 ];
 // site v3: six pages; the header (every page) links the first four (NAV), the footer the rest
-const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'map', path: '/map' }, { id: 'about', path: '/about' }, { id: 'guide', path: '/guide' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
+const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'map', path: '/map' }, { id: 'about', path: '/about' }, { id: 'guide', path: '/guide' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }, { id: 'thanks', path: '/thanks' }];
 const NAV = [{ page: 'home', id: 'index', path: '/' }, { page: 'dogs', id: 'dogs', path: '/dogs' }, { page: 'map', id: 'map', path: '/map' }, { page: 'guide', id: 'guide', path: '/guide' }, { page: 'about', id: 'about', path: '/about' }];
 // owner (site v3.3): a little crayon doodle on each menu tab (24x24, drawn in the tab's ink colour)
 const NAV_ICON = {
@@ -140,7 +140,8 @@ const JPW = {
   osanpo: '<span class="jpw" lang="ja">お散歩</span> <i>osanpo</i>', fujisan: '<span lang="ja" class="jp">富士山</span> <i>Fuji-san</i>', shibainu: '<span lang="ja" class="jp">柴犬</span>',
   dogrun: '<span lang="ja" class="jp">ドッグラン</span> <i>doggu ran</i>', torii: '<span lang="ja" class="jp">鳥居</span>', arigato: '<span lang="ja" class="jp">ありがとう</span> <i>arigatō</i>',
   inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', chizu: '<span lang="ja">地図</span> <i>chizu</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
-  mail: '<a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a>'
+  mail: '<a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a>',
+  link: '<a class="mail" href="https://stripe.com/privacy" rel="noopener">stripe.com/privacy</a>' // v2.24: Stripe's privacy policy (privacy.shop.stripe)
 };
 // the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
 // .prof h2 .dtype, .bubble, .traits b, .loves>b): the corpus of the 'DD Local Title' subset.
@@ -305,7 +306,7 @@ ${sec.places.map((id) => `        <article class="place" id="place-${id}"><img s
         htmlattrs: L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`,
         fontcss: L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}?v=${crypto.createHash('sha1').update(fs.readFileSync(fontCss)).digest('hex').slice(0, 8)}">` : '',
         canonical: ORIGIN + urlFor(L, page.path),
-        alternates: o.legacy || L.pseudo || page.id === 'reset' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${hrefTag(x)}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
+        alternates: o.legacy || L.pseudo || page.id === 'reset' || page.id === 'thanks' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${hrefTag(x)}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
         oglocale: L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`,
         langscript: o.legacy ? '' : langScript(L, page),
         header: header(L, page, t, a, o.legacy ? '' : langMenu(L, page, render(T['lang.label'], base, rules, false), render(T['lang.menu'], base, rules, true))),

@@ -119,9 +119,24 @@ const NEWS_V223 = { // v2.23 Coat colours (V223.md): the starter's coat and eye 
   ]
 };
 const nwV223Due = () => MS2_LIVE && jstISO() >= NEWS_V223.date;
+/* v2.24 "Kind shop" (V224.md 7): added by nwSort only with SHOP_LIVE on (52_kindshop.js), so the news never mentions the shop before the release.
+   LAUNCH DATE: the date below is a placeholder; the launch step must set it to the owner's date (V224.md, "Launch checklist"). */
+const NEWS_V224 = {
+  id: '2.24', date: '2026-12-01', // LAUNCH DATE: placeholder, set at release (owner's date)
+  c: '#FFEFD0', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v224.title', 'The Kind shop is open'),
+  items: [
+    { ic: () => nwSafe(() => nwItemArt('Sukajan Jacket')) || nwSafe(() => ICON('star')), tx: () => tt('nw.v224.shop', 'The Kind shop on Market Street has coins and looks only, nothing that changes a dog or its Bond') },
+    { ic: () => nwSafe(() => nwItemArt('Little Sneakers')) || nwSafe(() => ICON('walk')), tx: () => tt('nw.v224.tokyo', 'Tokyo Street outfits, with Little Sneakers for the new Feet slot in the Wardrobe') },
+    { ic: () => nwSafe(() => nwItemArt('Cocoa Mug Lamp')) || nwSafe(() => ICON('heart')), tx: () => tt('nw.v224.cozy', 'Cozy Winter decorations for the yard and the house') },
+    { ic: () => nwSafe(() => nwItemArt('Garden Sprinkler')) || nwSafe(() => ICON('sleep')), tx: () => tt('nw.v224.tools', 'Comfort tools: a Robo Scoop, a Garden Sprinkler and an Auto Water Bowl. Switch them off any time in Settings') },
+    { ic: () => nwSafe(() => nwItemArt('Golden Name Tag')) || nwSafe(() => ICON('bond')), tx: () => tt('nw.v224.free', "The Supporter Pack and coin packs are there if you like. Gerald says: the game stays complete for free, and looks can be earned with coins too") }
+  ]
+};
+const nwV224Due = () => SHOP_LIVE && jstISO() >= NEWS_V224.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

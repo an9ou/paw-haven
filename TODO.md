@@ -207,3 +207,8 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `POST /reset` (the v2.8.2 link) and the D1 table `resets` stay only for links sent before v2.9.2 (they all ran out 30 minutes after the deploy). Remove both in a later release. `cloudflare/worker.js`, `cloudflare/schema.sql`
 - [ ] The keyboard check runs in Chromium with a shorter screen (the Android way). Check the iPhone overlay keyboard once on a real phone (`rsKeyboard`, `game/src/22d_reset.js`).
 - [x] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless). Done in v2.14: it says /reset is a notice.
+
+## v2.24 Kind shop (not released)
+- [ ] Stripe: connect the live account (Managed Payments), live keys as Worker secrets, a live check, then the Worker deploy (owner).
+- [ ] Translations: one batch for the new `ks.*`, `nw.v224.*` game keys and the site keys `thanks.*`, `privacy.shop.*` and the reworded `about.description`, `about.og_description`, `about.p5`, `guide.faq.a1` (11 languages; `node tools/i18n_extract.js --en`, `node tools/site_i18n.js`).
+- [ ] Launch date from the owner: set `SHOP_LIVE = true`, change `NEWS_V224.date` in `game/src/49c_news.js` (placeholder 2026-12-01), then deploy the site (`/thanks`, `/privacy`, About, FAQ) with the game.

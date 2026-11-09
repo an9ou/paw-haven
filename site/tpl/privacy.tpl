@@ -54,6 +54,16 @@
       <li>{{t privacy.friends.leave}}</li>
     </ul>
 
+    <h2>{{t privacy.shop.title}}</h2>
+    <p>{{t privacy.shop.lead}}</p>
+    <ul>
+      <li>{{t privacy.shop.stripe}}</li>
+      <li>{{t privacy.shop.keep}}</li>
+      <li>{{t privacy.shop.refund}}</li>
+      <li>{{t privacy.shop.delete}}</li>
+    </ul>
+    <p>{{t privacy.shop.noads}}</p>
+
     <h2>{{t privacy.where.title}}</h2>
     <p>{{t privacy.where.text}}</p>
 

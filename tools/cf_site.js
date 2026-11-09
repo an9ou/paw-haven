@@ -230,7 +230,7 @@ export default {
     const html = hit[1].startsWith('text/html');
     Object.assign(headers, { 'content-type': hit[1], 'cache-control': HASHED.test(p) ? 'public, max-age=31536000, immutable' : html ? (p.startsWith('/play/') ? 'public, max-age=300, stale-while-revalidate=86400' : 'public, max-age=300') : 'public, max-age=86400' });
     if (html) headers['content-language'] = LANG_OF[lpre];
-    if (p === '/reset' || p.endsWith('/reset')) headers['referrer-policy'] = 'no-referrer';
+    if (p === '/reset' || p.endsWith('/reset') || p === '/thanks' || p.endsWith('/thanks')) headers['referrer-policy'] = 'no-referrer';
     return new Response(req.method === 'HEAD' ? null : hit[0], { headers });
   }
 };

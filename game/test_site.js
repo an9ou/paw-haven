@@ -30,7 +30,7 @@ const MADE_JP = /made in japan|(made|from|created|built) [^.]{0,30}\bin japan\b|
 const MADE_JP_L10N = /日本製|日本で作|日本產|日本产|일본에서 만든|ผลิตในญี่ปุ่น|hecho en jap|feito no jap|fabriqué au jap|aus japan|buatan jepang/i;
 // the seven pages (data-page: the nav link that is aria-current there; privacy and reset have none)
 const PG = [{ id: 'index', path: '/', nav: 'home' }, { id: 'dogs', path: '/dogs', nav: 'dogs' }, { id: 'map', path: '/map', nav: 'map' }, { id: 'guide', path: '/guide', nav: 'guide' }, { id: 'about', path: '/about', nav: 'about' },
-  { id: 'privacy', path: '/privacy', nav: null }, { id: 'reset', path: '/reset', nav: null }];
+  { id: 'privacy', path: '/privacy', nav: null }, { id: 'reset', path: '/reset', nav: null }, { id: 'thanks', path: '/thanks', nav: null }];
 const NAV = [['home', '/'], ['dogs', '/dogs'], ['map', '/map'], ['guide', '/guide'], ['about', '/about']];
 const PLACES = ['yard', 'house', 'garden', 'kitchen', 'park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'shelter', 'fujihill',
   'station', 'shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'];
@@ -135,7 +135,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     ok(SIZES.fontMode !== 'split' || SIZES.fonts < 9e6, `the per-language fonts (${SIZES.fontMode}${SIZES.fontMode === 'split' ? ', Worker doodle-doggo-fonts ' + (SIZES.fonts / 1e6).toFixed(2) + ' MB gzipped' : ', served by the main Worker'}) fit their Worker`);
     ok(['split', 'inline', 'none'].includes(SIZES.imgMode) && (SIZES.imgMode !== 'split' || (imf && SIZES.img < 9e6)), `the map pictures (imgMode ${SIZES.imgMode}${SIZES.imgMode === 'split' ? ', Worker _cfsite_img ' + ((SIZES.img || 0) / 1e6).toFixed(2) + ' MB gzipped' : ', served by the main Worker'}) fit their Worker`);
     if (SIZES.perLang) console.log('  .. per language, gzipped pages: ' + Object.entries(SIZES.perLang).map(([l, n]) => `${l} ${(n / 1e3).toFixed(1)} kB`).join(', '));
-    ok(I18N.PAGES.length === PG.length && PG.every((p) => I18N.PAGES.some((x) => x.path === p.path)), 'tools/site_i18n.js makes the seven pages (/, /dogs, /map, /guide, /about, /privacy, /reset) ' + I18N.PAGES.map((x) => x.path).join(' '));
+    ok(I18N.PAGES.length === PG.length && PG.every((p) => I18N.PAGES.some((x) => x.path === p.path)), 'tools/site_i18n.js makes the eight pages (/, /dogs, /map, /guide, /about, /privacy, /reset, /thanks) ' + I18N.PAGES.map((x) => x.path).join(' '));
     const get = (u, o) => mf.dispatchFetch(u, Object.assign({ redirect: 'manual' }, o || {}));
     let r = await get(SITE + '/');
     const csp = r.headers.get('content-security-policy') || '', home = await r.text();
@@ -516,7 +516,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         const { rep, own } = I18N.table(L);
         if (L.code !== 'en' && !L.pseudo) console.log(`  .. ${L.code}: ${rep.translated}/${rep.total} keys translated${rep.complete ? ', marked complete' : ''}`);
         ok(!rep.broken.length && !rep.unknown.length, `${L.code}: no broken messages or unknown keys ${rep.broken.concat(rep.unknown).slice(0, 3).join(' | ')}`);
-        if (rep.complete) { const miss = rep.missing.filter((k) => !/^(invite\.|privacy\.friends\.|dog\.(?:dalmatian|bernese|aussie|cavalier|jrt)\.)/.test(k)); ok(!miss.length, `${L.code} is marked complete: no missing keys ${miss.slice(0, 5).join(' ')}`); } // v2.19 invite and Friends: English until Claude translates; v2.21 the five new profiles: English until the release's one translation batch
+        if (rep.complete) { const miss = rep.missing.filter((k) => !/^(invite\.|thanks\.|privacy\.shop\.|privacy\.friends\.|dog\.(?:dalmatian|bernese|aussie|cavalier|jrt)\.)/.test(k)); ok(!miss.length, `${L.code} is marked complete: no missing keys ${miss.slice(0, 5).join(' ')}`); } // v2.24 thanks and Purchases wait for the one translation batch; v2.19 invite and Friends: English until Claude translates; v2.21 the five new profiles: English until the release's one translation batch
         // the dog count rule in every language: the number always comes from {count}, so it follows the breed list
         const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count[,}]/.test(own[k]));
         ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Forty')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);
@@ -529,18 +529,18 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       for (const pg of PG) {
         const u = pageUrl(L, pg.path); r = await get(SITE + u); const h = await r.text();
         const alt = [...h.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => [m[1], m[2]]);
-        const want = L.pseudo || pg.id === 'reset' ? [] : I18N.LANGS.map((x) => [I18N.hrefTag(x), SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
+        const want = L.pseudo || pg.id === 'reset' || pg.id === 'thanks' ? [] : I18N.LANGS.map((x) => [I18N.hrefTag(x), SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
         const langsBlock = (h.match(/<details\b[^>]*\bid="langs"[^>]*>[\s\S]*?<\/details>/) || [''])[0];
         const menu = [...langsBlock.matchAll(/<a\b([^>]*)>/g)].map((m) => attrs(m[1])).filter((a) => 'data-lang' in a).map((a) => a.href);
         const hp = headerProblems(headerFromHtml(h), L, pg);
         const vis = words(h.replace(/<noscript[\s\S]*?<\/noscript>/g, ''));
         const checks = {
           status: r.status === 200, lang: h.includes(`<html lang="${I18N.htmlTag(L)}"`), clang: r.headers.get('content-language') === I18N.htmlTag(L),
-          hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
+          hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || pg.id === 'thanks' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
           menu: menu.length === I18N.LANGS.length && I18N.LANGS.filter((x) => x.code === 'en').concat(I18N.LANGS.filter((x) => x.code !== 'en')).every((x, i) => menu[i] === pageUrl(x, pg.path)), // English first (owner, 24 Oct 2026)
           script: /localStorage/.test(h) && h.includes(`H='${L.dir || 'en'}'`),
           font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && (() => { const f = path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'); return fs.existsSync(f) && /@font-face/.test(fs.readFileSync(f, 'utf8')); })()),
-          links: L.code === 'en' || !/href="\/(dogs|privacy|map|guide|about|reset)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>/g, '').replace(langsBlock, '')),
+          links: L.code === 'en' || !/href="\/(dogs|privacy|map|guide|about|reset|thanks)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>/g, '').replace(langsBlock, '')),
           header: !hp.length, placeholders: !/[{}]/.test(vis)
         };
         Object.entries(checks).forEach(([k, v]) => { if (!v) { fine = false; why.push(pg.id + ':' + k + (k === 'header' ? ' (' + hp.join(', ') + ')' : k === 'placeholders' ? ' (' + (vis.match(/.{0,20}[{}].{0,20}/) || [''])[0] + ')' : '')); } });
