@@ -19,3 +19,13 @@ Shape for every one: **0-2 s** the hook card up at frame 1 with motion behind it
 Dropped (under 50): "POV: your dog after 1 rainy walk" (51.8, fine but flat), "I drew my friend's dog..." (46.3), "Pause on a door..." (47.0, rewritten as #3), "Your birth month is your crayon dog" (38.4).
 
 **Recommended first three:** #1 grapes (strongest hook, our best topic so far, useful enough to save and share; also makes RedNote 狗狗能吃吗 ep. 2), #3 pick a door (a pause-to-pick game makes people rewatch and comment), #4 all 35 breeds (everyone looks for their own dog and comments it). #2 is the cheapest to make: the Dog manners art is already built.
+
+## Today's idea (9 Nov 2026): pause and pick a coat
+
+Hook: **"Stop picking the yellow Lab. Pick 1 of these 4 dogs instead."** (hookscore 94.8 STRONG, Negative Command + pause-to-pick, the "pick a door" shape the owner liked, #3 above). Card: **PICK 1 · 2 · 3 · 4**. News behind it: v2.23.1 "More colours" (8 Nov), new coats in the adoption picker.
+
+- 0-2 s: a crayon yellow Lab on the paper gets a big red ✕ and slides off; four numbered crayon dogs pop in at once.
+- 2-5 s: "pause now" with a 3-2-1. The four: 1 Fox red Labrador (new), 2 Dark golden Golden Retriever (new), 3 Red merle Border Collie with odd eyes, 4 Chocolate Labrador. No black or white dog as a pick (owner rule, 1 Nov 2026).
+- 5-12 s: each number gets a one-line deadpan payoff from the game's voice ("1: fox red. Very proud of being red."), 1.5 s each.
+- 12-15 s: "all 4 are real coats you can pick when you adopt. puppies keep the colour." Then the ask, loop to the hook.
+- Ask: "comment your number". RedNote cut: "别再选黄色拉布拉多了，从这4只里挑1只", no link, no other platforms.
