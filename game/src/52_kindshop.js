@@ -483,5 +483,18 @@ function ksExpose() {
 let KS_REC = null; // tests: the act kinds seen since rec() (the tools must add none)
 on('act', (a) => { if (KS_REC && a && a.kind) KS_REC.push(a.kind); });
 on('game:ready', () => { if (S) v224Fields(S); setTimeout(ksExpose, 0); setTimeout(() => { if (!ksOn() || !S) return; Promise.resolve(typeof clStart === 'function' ? clStart() : null).then(() => ksPoll(true)).catch(() => {}); }, 1200); }); // part 3: purchases made on another device, or while the game was closed
-on('yard:enter', () => { if (S) v224Fields(S); if (window.__paw && !window.__paw.ks) ksExpose(); });
+// a (+) inside the coin counter opens the shop on its Coins tab, only while the shop is on (owner, 9 Nov 2026)
+function ksPlusSync() {
+  const coins = $('#coins'); if (!coins) return; let b = $('#ksPlus');
+  if (!b) {
+    coins.insertAdjacentHTML('beforeend', '<button id="ksPlus" class="ks-plus" type="button" hidden><svg viewBox="-10 -10 20 20" aria-hidden="true"><path d="M0.4 -5.6L-0.3 5.8M-5.7 0.3L5.6 -0.4" fill="none" stroke="#5B3D32" stroke-width="3.2" stroke-linecap="round"/></svg></button>');
+    b = $('#ksPlus'); b.onclick = (e) => { e.stopPropagation(); SFX.click(); ksOpen('coins'); };
+  }
+  const on = ksOn() && !!S && cur.mode !== 'title';
+  if (b.hidden === on) b.hidden = !on;
+  const lbl = tt('ks.title', 'Kind shop') + ': ' + tt('ks.tab_coins', 'Coins');
+  if (b.getAttribute('aria-label') !== lbl) { b.setAttribute('aria-label', lbl); b.title = lbl; }
+}
+on('game:ready', () => setTimeout(ksPlusSync, 0));
+on('yard:enter', () => { if (S) v224Fields(S); if (window.__paw && !window.__paw.ks) ksExpose(); ksPlusSync(); });
 setTimeout(ksExpose, 0);

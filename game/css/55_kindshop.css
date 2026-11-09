@@ -5,7 +5,7 @@
 .panel.ks .ks-card .art svg{width:100%;height:100%}
 .panel.ks .ks-wide{grid-column:1/-1}
 .panel.ks .ks-wide .art{width:150px;height:126px}
-.ks-gets{margin:4px 0 2px;padding:0 0 0 20px;text-align:left;font-size:17px;line-height:1.35;align-self:stretch}
+.ks-gets{margin:4px auto 2px;padding:0 14px 0 36px;text-align:left;font-size:17px;line-height:1.35;align-self:center;max-width:100%;box-sizing:border-box}
 .ks-gets li{margin:1px 0}
 .ks-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-top:4px}
 .ks-acts .btn{min-height:44px}
@@ -36,3 +36,10 @@ html[data-layout="phone"] .panel.ks .ks-grid{grid-template-columns:1fr;gap:16px 
 html[data-layout="phone"] .panel.ks .btn{min-height:44px;box-sizing:border-box}
 html[data-layout="phone"] .ks-confirm{max-height:calc(100% - 8px);overflow-y:auto}
 @media (min-width:600px){html[data-layout="phone"] .panel.ks .ks-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}}
+/* the (+) in the coin counter (ksPlusSync): a small crayon button, its tap area grown to 44 px without moving the counter */
+.ks-plus{position:relative;flex:none;width:26px;height:26px;margin-left:4px;padding:0;border:2px solid #5B3D32;border-radius:50% 45% 52% 48%;background:#FFE9A8;color:#5B3D32;font:700 20px/1 var(--font-hand);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.ks-plus svg{width:16px;height:16px;display:block}
+.ks-plus::after{content:"";position:absolute;inset:-9px}
+.ks-plus:hover,.ks-plus:focus-visible{background:#FFD978}
+.ks-plus[hidden]{display:none}
+#stage.frvisit .ks-plus{display:none !important}

@@ -54,6 +54,7 @@ run('v224_shop', async (t) => {
   ok(rows.wardFeet.length === 5 && !rows.wardFeet.includes('Feet'), 'the Wardrobe has its four rows and the charm, no Feet row: ' + rows.wardFeet.join(', '));
   const menu = await ev(() => typeof window.__paw.ks.open === 'function' && !document.getElementById('mmKs'));
   ok(menu, 'no kind shop in the menu');
+  ok(await ev(() => { const b = document.getElementById('ksPlus'); return !b || b.hidden || !b.offsetParent; }), 'no (+) by the coins while the shop is off');
 
   sec('3. coin buys: every look for 600 coins, every tool for its price, owned once');
   { const was = t.ctx; await t.newGame({ prefs: ON }, { coins: 30000 }); await was.close(); }
@@ -268,6 +269,11 @@ run('v224_shop', async (t) => {
 
   sec('9. phone 360x640: the shop sheet and the confirm sheet');
   { const was = t.ctx; await t.newGame({ prefs: ON, device: 'Phone 360x640' }, { coins: 3000 }); await was.close(); }
+  { const pl = await ev(() => { const b = document.getElementById('ksPlus'), c = document.getElementById('coins'); if (!b || b.hidden || !b.offsetParent) return null; const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'), g = -parseFloat(a.top) || 0, cr = c.getBoundingClientRect(); return { w: r.width + 2 * g, h: r.height + 2 * g, inside: r.left >= cr.left - 1 && r.right <= cr.right + 1, over: document.documentElement.scrollWidth > innerWidth + 1 }; });
+    ok(pl && pl.w >= 44 && pl.h >= 44 && pl.inside && !pl.over, 'the (+) sits in the coin counter with a 44 px tap area, no sideways scroll: ' + JSON.stringify(pl));
+    await t.p.click('#ksPlus');
+    ok(await t.until(() => !!document.querySelector('#modal .panel.ks [data-kstab="coins"][aria-selected="true"]'), null, 3000), 'the (+) opens the Kind shop on the Coins tab');
+    await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_phone_plus.png') }); }
   await ev(() => window.__paw.ks.open('supporter'));
   await t.until(() => !!document.querySelector('#modal .panel.ks'), null, 4000); await t.sleep(600);
   const audit = () => ev(() => {
