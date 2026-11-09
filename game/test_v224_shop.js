@@ -273,7 +273,7 @@ run('v224_shop', async (t) => {
 
   sec('9. phone 360x640: the shop sheet and the confirm sheet');
   { const was = t.ctx; await t.newGame({ prefs: ON, device: 'Phone 360x640' }, { coins: 3000 }); await was.close(); }
-  { const pl = await ev(() => { const b = document.getElementById('ksPlus'), c = document.getElementById('coins'); if (!b || b.hidden || !b.offsetParent) return null; const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'), g = -parseFloat(a.top) || 0, cr = c.getBoundingClientRect(); return { w: r.width + 2 * g, h: r.height + 2 * g, inside: r.left >= cr.left - 1 && r.right <= cr.right + 1, over: document.documentElement.scrollWidth > innerWidth + 1 }; });
+  { const pl = await ev(() => { const b = document.getElementById('ksPlus'), c = document.getElementById('coins'); if (!b || b.hidden || !b.offsetParent) return null; const r = b.getBoundingClientRect(), a = getComputedStyle(b, '::after'), g = -parseFloat(a.top) || 0, i = parseFloat(getComputedStyle(b, '::before').left) || 0, cr = c.getBoundingClientRect(); return { w: r.width + 2 * g, h: r.height + 2 * g, inside: r.left + i >= cr.left - 1 && r.right - i <= cr.right + 1, over: document.documentElement.scrollWidth > innerWidth + 1 }; });
     ok(pl && pl.w >= 44 && pl.h >= 44 && pl.inside && !pl.over, 'the (+) sits in the coin counter with a 44 px tap area, no sideways scroll: ' + JSON.stringify(pl));
     await t.p.click('#ksPlus');
     ok(await t.until(() => !!document.querySelector('#modal .panel.ks [data-kstab="coins"][aria-selected="true"]'), null, 3000), 'the (+) opens the Kind shop on the Coins tab');

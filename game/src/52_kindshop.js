@@ -14,7 +14,7 @@
      S.shop.roboAt   gameMin of the Robo Scoop's last tidy; S.shop.g2 { ym, days } the Supporter's second calendar gift; S.shop.prevHouse
      every dog's outfit.feet (null): the feet slot (V224.md 2)
    Test hook: window.__paw.ks. */
-const SHOP_LIVE = false; // the Game Manager turns this on at the v2.24 release (owner's launch date)
+const SHOP_LIVE = true; // live since the v2.24 release, 9 Nov 2026
 const KS_FR_FF = true; // v2.24 part 3: the friend yard snapshot sends ff (the Worker takes it and then sets the badge itself from its purchases table, never from this field)
 function ksOn() { return SHOP_LIVE || (typeof window !== 'undefined' && !!window.__ddShopTest) || !!(typeof prefs !== 'undefined' && prefs && prefs.shopTest); }
 

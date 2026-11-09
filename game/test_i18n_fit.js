@@ -212,7 +212,7 @@ async function worker(job) {
     const eachTab = async (pre, tabsSel, max) => {
       const n = await ev((s) => document.querySelectorAll(s).length, tabsSel);
       for (let i = 0; i < Math.min(n, max || 12); i++) {
-        const lbl = await ev(([s, i]) => { const b = document.querySelectorAll(s)[i]; if (!b) return null; const k = b.dataset.jt || b.dataset.tab || b.dataset.mt || b.dataset.ptab || b.dataset.trtab || b.dataset.wt || b.dataset.mstab || String(i); b.click(); return k; }, [tabsSel, i]);
+        const lbl = await ev(([s, i]) => { const b = document.querySelectorAll(s)[i]; if (!b) return null; const k = b.dataset.jt || b.dataset.tab || b.dataset.mt || b.dataset.ptab || b.dataset.trtab || b.dataset.wt || b.dataset.mstab || b.dataset.kstab || String(i); b.click(); return k; }, [tabsSel, i]);
         if (lbl == null) break; await sleep(250); await measure(`${pre}: ${lbl}`);
       }
     };
@@ -330,7 +330,13 @@ async function worker(job) {
       await jsClick('#setLang'); await waitSel('#setLangBox [data-lang]'); await measure('settings: language list'); await closeAll();
     });
     // ---------------------------------------------------------------- wardrobe, journal, mailbox, missions ----------------------------------------------------------------
-    await step('wardrobe', async () => { await jsClick('[data-act=wardrobe]'); await waitSel('.ward'); await measure('wardrobe'); await eachTab('wardrobe', '#modal .panel [role=tab]', 6); await closeAll(); });
+    await step('wardrobe', async () => { await jsClick('[data-act=wardrobe]'); await waitSel('.ward'); await measure('wardrobe'); await eachTab('wardrobe', '#modal .panel [role=tab]', 8); await closeAll(); });
+    await step('kind shop', async () => { // v2.24 (52_kindshop.js): the four tabs, then the cash confirm sheet of a pack and of the Supporter Pack
+      if (!(await ev(() => !!(window.__paw.ks && window.__paw.ks.on())))) return;
+      await ev(() => window.__paw.ks.open('supporter')); await modalUp(); await measure('kind shop'); await eachTab('kind shop', '#modal .panel.ks [role=tab]', 6);
+      for (const id of ['supporter', 'tokyo']) { await ev((id) => window.__paw.ks.confirm(id), id); await waitSel('.ks-confirm'); await sleep(250); await measure('kind shop: confirm ' + id); await jsClick('.ks-confirm .ks-no'); await sleep(150); }
+      await closeAll();
+    });
     await step('journal', async () => { await jsClick('[data-act=journal]'); await waitSel('.panel.journal'); await eachTab('journal', '#modal .jtabs [data-jt]', 14); await closeAll(); }, 90000);
     await step('mailbox', async () => {
       await ev(() => window.__paw.openMailbox()); await modalUp(); await measure('mailbox');

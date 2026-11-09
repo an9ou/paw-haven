@@ -131,7 +131,7 @@ const nwV2232Due = () => MS2_LIVE && jstISO() >= NEWS_V2232.date;
 /* v2.24 "Kind shop" (V224.md 7): added by nwSort only with SHOP_LIVE on (52_kindshop.js), so the news never mentions the shop before the release.
    LAUNCH DATE: the date below is a placeholder; the launch step must set it to the owner's date (V224.md, "Launch checklist"). */
 const NEWS_V224 = {
-  id: '2.24', date: '2026-12-01', // LAUNCH DATE: placeholder, set at release (owner's date)
+  id: '2.24', date: '2026-11-09', // LAUNCH DATE: the owner's launch, 9 Nov 2026
   c: '#FFEFD0', d: 'paw', pic: 'dog',
   title: () => tt('nw.v224.title', 'The Kind shop is open'),
   items: [
