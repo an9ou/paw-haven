@@ -4,13 +4,17 @@ Today's idea from `VIRAL_REEL_IDEAS.md` (9 Nov 2026, hook score 94.8): pause and
 
 | File | |
 |---|---|
-| Video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat.mp4` (19.5 s, 1080 x 1920, 30 fps, AAC stereo) |
-| Script | `brand/instagram/launch/coat_reel/build_coat.js`, voice lines `brand/instagram/launch/coat_reel/vo_coat.json` |
+| Video | `brand/instagram/launch/coat_reel/doodle-doggo-pick-a-coat.mp4` (22.0 s, 1080 x 1920, 30 fps, AAC stereo) |
+| Script | `brand/instagram/launch/coat_reel/build_coat.js`, voice lines `brand/instagram/launch/coat_reel/vo_coat.json`, picker capture `brand/instagram/launch/coat_reel/capture_picker.js` |
 | Cover | none: Instagram and TikTok can use frame 1 (the hook card over the yellow Lab), or pick the 4-dog grid at about 3 s |
 
 The art is the game's own. The coats come from the starter presets the adoption colour picker uses (`STARTER_COATS`, `starterCoats`, `starterEyes` in `game/src/10_sex_age_genes.js`). Names and colours come from `mods/genes.js` `phenotype()`, and each dog is drawn the way the game draws that dog (`PawArt.dog(key, { coat, seed: hashId(id) })`). The collie's id is picked the same way `starterIdFor()` does it, so its merle eye roll really gives odd eyes (one blue, one brown). The Chocolate Lab has the game's amber eyes (b/b). The yellow Lab is the game's default Lab. Every frame passes `centreCheck()`, `safeCheck()` (everything inside x 60..890, y 270..1440) and `apartCheck()`. The last frame is the same as the first, so the Reel loops.
 
 Owner, 9 Nov 2026: make the news explicit. Picking the coat when you adopt a new dog is new in the game (v2.23, 7 Nov; more coats in v2.23.1, 8 Nov). A pink crayon sticker **NEW! pick your dog's coat** sits between the top card and the dogs from the countdown to the loop, and the news line was re-voiced.
+
+Owner, 9 Nov 2026 (second ask: "more informative to audiences"): the news line was replaced by two beats.
+- **A, the coat grid.** Every dog that has a choice of coat (34 of the 40), in the game's dog order and drawn with the game's art. Each dog cycles through its own starter coats every 0.4 s, staggered so the grid shimmers. The card reads **134 coats / 34 of 40 dogs have a choice**. Both numbers are counted by the build from `starterCoats()` on main, and it prints them: 40 dogs, 134 coats including each dog's default coat. Six dogs have one coat only (Samoyed, Japanese Spitz, Westie, Bichon, Maltese, Bernese), so the line says "almost every dog", not "all dogs". Some coats in the grid are black or white, but no black or white dog is singled out or enlarged.
+- **B, the real adoption colour picker.** `capture_picker.js` records it in a phone viewport (393 x 659 at 3x) from the v2.23.1 build of main. It starts a new game, picks the Shelter's Border Collie (Scout) and scrolls its colour row up. The only thing hidden is the dog's joke bubble. It starts on Chocolate and white, then taps Blue merle, then Red merle, then odd eyes; the meet dog changes each time. The Reel shows the full-width screen (CSS y 110 to 490) in a crayon phone frame, with a pink ring on each tap. The game's own "Coat: ... · Eyes: ..." line is repeated large in a yellow pill, because the in-game line is small on a phone. The card reads **pick the coat / when you adopt**.
 
 ## Shots
 
@@ -23,18 +27,20 @@ Owner, 9 Nov 2026: make the news explicit. Picking the coat when you adopt a new
 | 7.77 | "Dark golden. Like toast, but a dog." | Dog 2 big, **2 Dark golden / Golden Retriever**, **NEW!** |
 | 10.19 | "Odd eyes. Both judging you." | Dog 3 big, **3 Red merle / Border Collie**, an eye loupe on its face, pill *one blue eye, one brown* |
 | 12.05 | "Chocolate. The dog-safe kind." | Dog 4 big, **4 Chocolate / Labrador** |
-| 14.04 | "New! Now you pick the coat when you adopt a new dog. Puppies inherit it!" | The four back in the grid, green card **new: pick the coat / when you adopt**, the game's "adopt" sting, subtitles |
-| 18.10 | "Comment your number!" | Card **Comment / your number!**, the four bounce |
-| 19.02 to 19.52 | (none) | The four slide off and the yellow Lab slides back in under the hook card: loop |
+| 14.04 | "New! Almost every dog comes in different coats!" | The chocolate Lab fades. A grid of the 34 dogs that have a choice pops in, each cycling through its coats. Green card **134 coats / 34 of 40 dogs have a choice**, subtitles |
+| 17.04 | "Pick one when you adopt. Puppies inherit it!" | The real adoption colour picker in a crayon phone. Taps (pink rings, ticks) at 17.7 Blue merle, 18.5 Red merle, 19.3 odd eyes. A yellow pill shows the game's Coat / Eyes line. Card **pick the coat / when you adopt**, the game's "adopt" sting, subtitles |
+| 20.54 | "Comment your number!" | The four pop back into the grid. Card **Comment / your number!**, the four bounce |
+| 21.46 to 21.96 | (none) | The four slide off and the yellow Lab slides back in under the hook card: loop |
 
 Sound: Noodle (Kokoro af_bella 1.1x) at -16 LUFS. Under it is the game's own cozy yard music (`mods/pawaudio.js`), 11 dB under the voice (about 30 %), plus crayon ticks and scratches. The whole mix is at -16 LUFS, true peak -1.5.
 
-Changes from the draft in `VIRAL_REEL_IDEAS.md`: spoken numbers are left out of the payoffs (the big number badge carries them). Line 3 is "Odd eyes. Both judging you." and the screen says "one blue eye, one brown". Line 4 is "Chocolate. The dog-safe kind.", which keeps the food-safety wink. The news line is "New! Now you pick the coat when you adopt a new dog. Puppies inherit it!" (owner, 9 Nov 2026). The full draft lines ran 22 s at 1.1x, and these cuts bring it to 19.5 s.
+Changes from the draft in `VIRAL_REEL_IDEAS.md`: spoken numbers are left out of the payoffs (the big number badge carries them). Line 3 is "Odd eyes. Both judging you." and the screen says "one blue eye, one brown". Line 4 is "Chocolate. The dog-safe kind.", which keeps the food-safety wink. The closing beats are "New! Almost every dog comes in different coats!" and "Pick one when you adopt. Puppies inherit it!" (owner, 9 Nov 2026). The Reel runs 22.0 s.
 
 ## Rebuild
 
 ```
-# main checkout with the v2.23.1 coats, e.g. a worktree of origin/main
+# main checkout with the v2.23.1 coats, e.g. a worktree of origin/main, with game/test_merged.html built (node game/build.js && node game/harness.js merged)
+NODE_PATH=$(npm root -g) node brand/instagram/launch/coat_reel/capture_picker.js <main checkout> <workdir>/../picker   # or PICKER=<dir>
 VO_LINES=brand/instagram/launch/coat_reel/vo_coat.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo dir>
 ART_ROOT=<main checkout> NODE_PATH=$(npm root -g) node brand/instagram/launch/coat_reel/build_coat.js <workdir> <vo dir>
 # ONLY=stills (STRIP=t1,t2,...) renders key frames only into <workdir>/stills
@@ -44,7 +50,7 @@ The Kokoro model files (`kokoro-v1.0.int8.onnx`, `voices-v1.0.bin`) are never co
 ## Instagram caption (TikTok: the same text)
 
 ```
-new in Doodle Doggo: you pick the coat when you adopt a new dog 🖍️ comment your number 👇 1, 2, 3 or 4?
+new in Doodle Doggo: almost every dog comes in different coats, pick one when you adopt 🖍️ comment your number 👇 1, 2, 3 or 4?
 
 the yellow Lab is lovely. but these four are just as real, and fox red and dark golden only arrived this week
 
