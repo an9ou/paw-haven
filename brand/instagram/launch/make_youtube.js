@@ -18,11 +18,21 @@ module.exports = async function ({ render, browser, helpers: h }) {
     ['golden', 'happy', 2200, 260, { head: 'Flower Crown' }, 'left'],
     ['pug', 'sit', 2430, 200, null, 'left'],
   ];
-  for (const [k, pose, cx, hh, outfit, facing] of cast) {
-    const sv = PA.dog(k, { pose, outfit: outfit || undefined, facing, anim: false }), b = await bbox(sv), sc = hh / b[3], w = b[2] * sc;
-    g += `<ellipse cx="${f1(cx)}" cy="${FEET - 3}" rx="${f1(w * 0.44)}" ry="9" fill="#5B3D32" opacity=".16"/>`;
-    g += `<svg x="${f1(cx - w / 2)}" y="${f1(FEET - hh)}" width="${f1(w)}" height="${f1(hh)}" viewBox="${b.map(f1).join(' ')}" overflow="visible">${inner(sv)}</svg>`;
-  }
+  // owner, 9 Nov 2026: dogs never overlap or touch, and none goes behind the word box. Each side is laid out from the dogs' own
+  // bounding boxes (hearts and outfits included) with a clear gap, and shrunk together if the row would not fit its side.
+  const BOXL = 1280 - 400 - 50, BOXR = 1280 + 400 + 50, GAP = 46;
+  const items = [];
+  for (const [k, pose, , hh, outfit, facing] of cast) { const sv = PA.dog(k, { pose, outfit: outfit || undefined, facing, anim: false }); items.push({ sv, b: await bbox(sv), hh }); }
+  const need = (row) => row.reduce((a, it) => a + it.b[2] * it.hh / it.b[3], 0) + GAP * (row.length - 1);
+  const L = items.slice(0, 3), R = items.slice(3), K = Math.min(1, (BOXL - 40) / need(L), (W - 40 - BOXR) / need(R)); // one size for both sides
+  const place = (row, x0, x1) => {
+    let x = x0 + Math.max(0, (x1 - x0 - need(row) * K) / 2);
+    for (const it of row) { const hh = it.hh * K, w = it.b[2] * hh / it.b[3];
+      g += `<ellipse cx="${f1(x + w / 2)}" cy="${FEET - 3}" rx="${f1(w * 0.44)}" ry="9" fill="#5B3D32" opacity=".16"/>`;
+      g += `<svg x="${f1(x)}" y="${f1(FEET - hh)}" width="${f1(w)}" height="${f1(hh)}" viewBox="${it.b.map(f1).join(' ')}" overflow="visible">${inner(it.sv)}</svg>`;
+      x += w + GAP * K; }
+  };
+  place(L, 40, BOXL); place(R, BOXR, W - 40);
   await mp.close();
   // the word box, centred in the phone-safe area
   const CX = 1280, BW = 800, BH = 250, BY = 560;
