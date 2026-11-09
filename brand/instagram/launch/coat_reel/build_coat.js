@@ -4,7 +4,8 @@
 // then each pops big for its deadpan line in Noodle's voice: 1 Fox red Labrador (new in v2.23.1), 2 Dark golden Golden Retriever (new),
 // 3 Red merle Border Collie with odd eyes (one blue, one brown), 4 Chocolate Labrador. Then the news (owner, 9 Nov 2026: say it is new): a NEW sticker from the countdown on, then "New! Almost every dog comes in different coats!" over every dog that has a choice,
 // each cycling through its coats, and "Pick one when you adopt. Puppies inherit it!" over the REAL adoption colour picker (capture_picker.js); then
-// "comment your number", and the yellow Lab slides back in: the last frame is the first one, so the Reel loops.
+// "comment your number", then (owner, 9 Nov 2026) the four slide off and our standard end card (brand/kids/endcard.js: the logo, doodledoggo.app,
+// Instagram, X and YouTube with icons and handles) for 2.5 s; the RedNote cut ends on the RedNote end card with the QR instead.
 // No black or white dog is a pick (owner, 1 Nov 2026). Nothing typed from memory: the coats are the game's own starter presets
 // (game/src/10_sex_age_genes.js STARTER_COATS, starterCoats / starterPick as the adoption colour picker uses them), the coat names and colours
 // come from mods/genes.js phenotype(), and each dog is drawn as the game draws that dog (PawArt.dog(key, { coat: phenotype.coat, seed: hashId(id) }),
@@ -16,11 +17,12 @@
 // the cross, the game's "adopt" sting on the real-coats line.
 //
 //   ART_ROOT=<main checkout> NODE_PATH=$(npm root -g) node brand/instagram/launch/coat_reel/build_coat.js <workdir> <vo dir>
-//   ONLY=stills: key frames only (WORK/stills). Output next to this file: doodle-doggo-pick-a-coat.mp4
+//   ONLY=stills: key frames only (WORK/stills). FRAMES=a-b: re-render only frames a..b (the rest of WORK/f stays), then encode again.
+//   Output next to this file: doodle-doggo-pick-a-coat.mp4
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { RN_FONT_CSS, ENDCARD_JS, qrMatrix } = require('../../../kids/endcard.js');
+const { RN_FONT_CSS, ENDCARD_JS, handles, qrMatrix } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'coat_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
@@ -79,9 +81,11 @@ const BEAT = PICKS.map((_, i) => say('d' + (i + 1), 0.12));
 // owner, 9 Nov 2026: two informative beats instead of one line. A: almost every dog comes in different coats (a grid of every dog with a choice,
 // each cycling through its own coats); B: the real adoption colour picker on a phone (capture_picker.js), then the ask
 const A_AT = say('coats', Math.max(0.35, 3.0 - VOD.coats)), B_AT = say('adopt', Math.max(0.3, 3.5 - VOD.adopt)), ASK_AT = say('ask', 0.12);
-// LOOP: the four leave and the yellow Lab slides back to where frame 0 has it. RedNote (owner, 9 Nov 2026): every RedNote video ends on the RedNote
+// LOOP: the end of the ask (the name is from when the Reel looped back to frame 0). RedNote (owner, 9 Nov 2026): every RedNote video ends on the RedNote
 // end card with the QR code to the game's site and 扫码就能玩 (brand/kids/endcard.js endCardRN), so the RedNote cut ends there instead of looping
-const LOOP = at, T = LOOP + (RN ? 2.3 : 0.5), NF = Math.round(T * FPS);
+// English (owner, 9 Nov 2026: "add the social media and website at the end card of the reels"): no loop any more; the four slide off and the
+// standard end card (brand/kids/endcard.js endCard) holds for 2.5 s while the music fades out
+const LOOP = at, T = LOOP + (RN ? 2.3 : 2.5), NF = Math.round(T * FPS);
 // the count: 3, 2, 1 on the spoken numbers in Noodle's "Pause now! Three, two, one." (Kokoro gives no word times): the words start after the
 // quietest 30 ms dips of the line's loudness (after "Pause now!" and after "three"); "one" where "two" has faded
 function wavEnv(f) { const b = fs.readFileSync(f); let o = 12, fmt = null, data = null;
@@ -137,7 +141,7 @@ if (RN) Object.assign(TX, { hook: ['别再选黄色拉布拉多了', '从这4只
 const FAM = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
 const SITE_QR = RN ? qrMatrix('https://doodledoggo.app', path.join(ART_ROOT, 'mods', 'qr.js')) : null;
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
 <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><path d="M0 7H14" stroke="#5B3D32" stroke-width="2.2" stroke-linecap="round" opacity=".12"/></pattern>
@@ -149,7 +153,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-${RN ? ENDCARD_JS : ''}
+${ENDCARD_JS}
 const $=(i)=>document.getElementById(i), ART=${JSON.stringify(ART)}, SUBS=${JSON.stringify(SUBS)}, TX=${JSON.stringify(TX)}, F=${JSON.stringify(FAM)}, RN=${RN}, CX=SAFE_CX;
 const P=${JSON.stringify(PICKS.map((p) => ({ word: p.word, sub: p.sub, isNew: !!p.isNew, extra: p.extra || '' })))}, MONT=${JSON.stringify(MONT)}, PL=${JSON.stringify(PL)}, CROP=${JSON.stringify(CROP)}, PH=${JSON.stringify(PH)}, TAPS=${JSON.stringify(TAPS)};
 const XAT=${XAT}, SLIDE=${SLIDE}, POP=${POP}, HOOK_AT=${HOOK_AT}, PAUSE_AT=${PAUSE_AT}, BEAT=${JSON.stringify(BEAT)}, A_AT=${A_AT}, B_AT=${B_AT}, ASK_AT=${ASK_AT}, LOOP=${LOOP}, T=${T}, COUNT=${JSON.stringify(COUNT)};
@@ -188,9 +192,9 @@ window.frame=function(t){
     const out=safeCheck($('st')); if(out.length) return 'end card outside SAFE: '+out.join('; '); return ''; }
   let bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>', art='', ov='';
   const k=Math.floor(t/0.12)%3;
-  // ---- the yellow Lab: on the paper at frame 0, crossed out, slides off; slides back in at the loop ----
-  const labIn=t>=LOOP?eo((t-LOOP-0.06)/0.38):1, labOff=t<POP+0.2?sm((t-SLIDE)/0.4):1;
-  if(t<POP+0.2||t>=LOOP){ const dx=t>=LOOP?(1-labIn)*900:-labOff*900, rot=t>=LOOP?0:-labOff*14;
+  // ---- the yellow Lab: on the paper at frame 0, crossed out, slides off ----
+  const labIn=1, labOff=t<POP+0.2?sm((t-SLIDE)/0.4):1; // the English cut no longer brings the Lab back at the end (it ends on the end card)
+  if(t<POP+0.2){ const dx=t>=LOOP?(1-labIn)*900:-labOff*900, rot=t>=LOOP?0:-labOff*14;
     bg+=blob(CX+dx*0.6,930,330,'#FFF0B8',3,(0.7*(t>=LOOP?labIn:1-labOff)).toFixed(3));
     if(dx<560&&dx>-560) art+=place('ylab',CX+dx,1180,560,520,1,0,k,{rot,safe:Math.abs(dx)<0.5}); // sliding off or back in: out of SAFE on its way
     if(t<LOOP){ const u1=clamp((t-XAT)/0.14), u2=clamp((t-XAT-0.16)/0.14);
@@ -198,7 +202,7 @@ window.frame=function(t){
   // the kind aside, under the hook while the Lab leaves
   { const o=Math.min(sm((t-XAT-0.25)/0.15),1-sm((t-HOOK_AT-VOD_HOOK+0.2)/0.2)); if(o>0&&t<LOOP) ov+='<g transform="rotate(2 '+CX+' 1385)">'+pill(TX.aside,CX,1385,50,F,{fill:'${YEL}',padX:30,op:o.toFixed(3)})+'</g>'; }
   // ---- the four ----
-  const inGrid=(t>=POP&&t<A_AT+0.2)||t>=ASK_AT, tp=t>=ASK_AT?ASK_AT:POP, gdx=t>=LOOP?-950*eo((t-LOOP)/0.3):0; // the loop: the four slide off to the left as the Lab comes back
+  const inGrid=(t>=POP&&t<A_AT+0.2)||t>=ASK_AT, tp=t>=ASK_AT?ASK_AT:POP, gdx=t>=LOOP?-950*eo((t-LOOP)/0.3):0; // the end: the four slide off to the left as the end card comes in
   if(inGrid){ const lt=t-tp, popIn=back(lt/0.32), leave=1-sm((t-LOOP+0.12)/0.12); // the badges and pills fade just before the four slide off
     let big=-1, bigU=0; BEAT.forEach((b,i)=>{ if(t>=b && t<(BEAT[i+1]||A_AT+0.2)) big=i; });
     if(big>=0) bigU=eo((t-BEAT[big])/0.32); const bigOp=big===3?1-sm((t-A_AT)/0.18):1; // the fourth fades out as the coat grid comes in
@@ -249,7 +253,7 @@ window.frame=function(t){
         ov+='<g opacity="'+f2(o*(1-sm(u)))+'"><circle cx="'+f2(x)+'" cy="'+f2(y)+'" r="'+f2(20+46*eo(u))+'" fill="none" stroke="${PINK}" stroke-width="9"/><circle cx="'+f2(x)+'" cy="'+f2(y)+'" r="14" fill="${PINK}" opacity=".35"/></g>'; }); }
     else ph.setAttribute('opacity',0); }
   // ---- the card at the top ----
-  if(t<POP+0.2||t>=LOOP) ov+=hookCard(t>=LOOP?sm((t-LOOP-0.08)/0.25):1);
+  if(t<POP+0.2) ov+=hookCard(1);
   else if(t<PAUSE_AT){ ov+=hookCard(1); }
   else if(t<BEAT[0]){ const lt=t-PAUSE_AT, o=sm(lt/0.15), cs=0.92+0.08*back(lt/0.3);
     ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' 400) scale('+f2(cs)+') rotate(-2) translate('+(-CX)+' -400)">'+card(CX-380,292,760,216,[{s:TX.pause,size:90,pitch:98},{s:TX.pick,size:74,fill:'#C2567A'}])+'</g>';
@@ -261,10 +265,12 @@ window.frame=function(t){
     ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' 400) scale('+f2(cs)+') rotate(-1.5) translate('+(-CX)+' -400)">'+card(CX-400,292,800,216,[{s:TX.adoptCard[0],size:84,pitch:84},{s:TX.adoptCard[1],size:76}],{stroke:'${GREEN}',sw:7})+'</g>'; }
   if(t>=ASK_AT&&t<LOOP+0.12){ const lt=t-ASK_AT, o=Math.min(sm(lt/0.15),1-sm((t-LOOP+0.02)/0.14)), cs=0.9+0.1*back(lt/0.3);
     ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' 400) scale('+f2(cs)+') rotate(-2) translate('+(-CX)+' -400)">'+card(CX-380,292,760,216,[{s:TX.ask[0],size:92,pitch:98},{s:TX.ask[1],size:92,fill:'#C2567A'}])+'</g>'; }
-  // owner, 9 Nov 2026: the news is explicit. A NEW sticker from the countdown on (between the card and the dogs), gone as the loop starts
+  // owner, 9 Nov 2026: the news is explicit. A NEW sticker from the countdown on (between the card and the dogs), gone as the end card comes in
   { const so=Math.min(sm((t-PAUSE_AT)/0.15),1-sm((t-LOOP+0.12)/0.12)); if(so>0.01){ const ss=0.85+0.15*back((t-PAUSE_AT)/0.3);
     ov+='<g opacity="'+f2(so)+'" transform="translate(492 556) scale('+f2(ss)+') rotate(-2) translate(-492 -556)">'+pill(TX.newSticker,492,556,38,F,{fill:'${PINK}',padX:22})+'</g>'; } }
   ov+=sub(t,1385);
+  // the end card (owner, 9 Nov 2026): paper and the card fade in over the four as they slide off
+  if(t>=LOOP){ if(!ENDCARD) ENDCARD=endCard('tall',HANDLES,LOGO_INNER); ov+='<g opacity="'+f2(sm((t-LOOP)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+ENDCARD+'</g>'; }
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov;
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const out=safeCheck($('st')); if(out.length) return 'outside SAFE: '+out.join('; ');
@@ -274,7 +280,7 @@ window.frame=function(t){
 const VOD_HOOK=${VOD.hook};
 // the cover (owner, 9 Nov 2026): its own design, never a frame of the Reel. Everything that matters inside the 1:1 profile-grid crop (y 420..1500), the
 // logo inside the 4:5 grid crop (y 285..1635); the RedNote 3:4 cover is the middle 1080 x 1440 (y 240..1680) of the Chinese one
-const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, SITE_QR=${JSON.stringify(SITE_QR)};
+const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, SITE_QR=${JSON.stringify(SITE_QR)}, HANDLES=${JSON.stringify(handles())};
 window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>', art='', ov='';
   const XS=[300,780], FS=[935,1262], cols=['#F6B98C','#F1CF62','#EE9CB6','#C9A27E'];
   P.forEach((p,i)=>{ const x=XS[i%2], feet=FS[i>>1]; bg+=blob(x,feet-118,175,cols[i],i+21,0.5);
@@ -300,6 +306,8 @@ window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const allText = [Object.values(TX), PICKS.map((p) => [p.word, p.sub, p.extra || '']), Object.values(SUBS_TX), '0123456789'].flat(3).join(' ');
   await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), allText);
+  if (!RN) { const ht = Object.values(handles()).join('') + 'doodledoggo.app'; await p.evaluate((txt) => Promise.all(['700 40px Caveat', '700 40px Andika'].map((f) => document.fonts.load(f, txt))), ht);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px Andika', txt) && document.fonts.check('700 40px Caveat', txt), ht))) throw new Error('Andika or Caveat did not load for the end card'); }
   if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt + JSON.stringify(RN_WORDS) + '扫码就能玩'), allText + Object.values(PL).join(''));
     if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready);
@@ -318,11 +326,11 @@ window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${
     console.log(ts.length, 'stills'); await b.close(); return;
   }
   const t0 = Date.now();
-  for (let fi = 0; fi < NF; fi++) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); if (fi % 100 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
+  let fr = [...Array(NF).keys()];
+  if (process.env.FRAMES) { const [a, z] = process.env.FRAMES.split('-').map(Number); fr = fr.filter((f) => f >= a && f <= z); }
+  for (const fi of fr) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); if (fi % 100 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
   await b.close();
-  // the loop: the last frame is the first one
-  const same = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', path.join(WORK, 'f', 'f00000.png'), '-i', path.join(WORK, 'f', `f${String(NF - 1).padStart(5, '0')}.png`), '-lavfi', 'psnr', '-f', 'null', '-'], { encoding: 'utf8' }).stderr.match(/average:([0-9.inf]+)/);
-  if (!RN) console.log('first vs last frame PSNR', same && same[1]);
+  for (let fi = NF; fs.existsSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); fi++) fs.unlinkSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); // frames of a longer earlier cut
 
   // ---- sound: the game's cozy yard music, ticks, scratches, Noodle on top ----
   const ab = await chromium.launch({ executablePath: exe, args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -346,7 +354,7 @@ window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${
   const vG = -16 - vI, mG = -16 - 11 - mI; console.log('voice', vI.toFixed(1), 'LUFS, music', mI.toFixed(1), 'LUFS: gains', vG.toFixed(1), mG.toFixed(1), 'dB');
   const pre = path.join(WORK, 'premix.wav'), mixWav = path.join(WORK, 'mix.wav');
   ff(['-i', voWav, '-i', path.join(WORK, 'music.wav'), '-i', fx, '-filter_complex',
-    `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},afade=t=in:d=0.05,volume=${mG.toFixed(2)}dB,afade=t=out:st=${(T - 0.6).toFixed(2)}:d=0.6[m];[2:a]volume=-9dB,aformat=channel_layouts=stereo[k];[m][k][v]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.5:level=false[a]`,
+    `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},afade=t=in:d=0.05,volume=${mG.toFixed(2)}dB,afade=t=out:st=${(RN ? T - 0.6 : LOOP).toFixed(2)}:d=${(RN ? 0.6 : T - LOOP).toFixed(2)}[m];[2:a]volume=-9dB,aformat=channel_layouts=stereo[k];[m][k][v]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.5:level=false[a]`,
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);

@@ -1,5 +1,5 @@
 // v2.24 "Kind shop" launch Reel (PREPARED FOR LAUNCH: do not post before the owner's launch date; docs/marketing/KIND_SHOP_REEL.md).
-// Told by Noodle the dachshund (Kokoro af_bella 1.1x, vo_shop.json), about 32 s, 1080 x 1920, 30 fps. Every word follows V224.md on the
+// Told by Noodle the dachshund (Kokoro af_bella 1.1x, vo_shop.json), about 34 s (the last 2.5 s our end card), 1080 x 1920, 30 fps. Every word follows V224.md on the
 // claude/kind-shop branch (the contract): the shop rule, the item names, "also for coins", made by one person. No prices anywhere in the video.
 //   hook     "We opened a shop! You can't buy a dog in it."  card at frame 1, twelve of the shop's own item pictures, plain Noodle "not in the shop"
 //   sup      the Supporter Pack: the REAL game yard with the Golden Paw Cottage (capture_shop.js), then the Golden Name Tag, the Founding Friend
@@ -10,6 +10,8 @@
 //   tools    the Robo Scoop, the Garden Sprinkler and the Auto Water Bowl, each with its switch going off (V224.md 1: each can be switched off)
 //   trust    the shop rule, line by line (V224.md 0 and 1)
 //   end      "Made by one person. Free to play. Thank you for helping!" + the logo
+//   card     our standard end card (owner, 9 Nov 2026; brand/kids/endcard.js: the logo, doodledoggo.app, Instagram, X and YouTube with icons
+//            and handles), 2.5 s, the music fading out under it; nothing spoken
 // The item art is the branch's own (world/pawart_shop.js PawArt.SHOP / PawArt.item, dogs/pawart_dogs.js wearables), loaded as the game loads it.
 // Every frame: centreCheck(), safeCheck() (text and boxes inside x 60..850, y 270..1440) and apartCheck() (../centre_text.js); the build stops on a miss.
 // Music: the game's cozy yard music (mods/pawaudio.js) about 11 dB under the voice (~30%), a crayon tick per pop.
@@ -17,10 +19,12 @@
 //   VO_LINES=brand/instagram/launch/shop_reel/vo_shop.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo dir>
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/capture_shop.js <kind-shop checkout> <cap dir>
 //   ART_ROOT=<kind-shop checkout> CAP=<cap dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/shop_reel/build_shop.js <workdir> <vo dir>
-//   ONLY=stills: key frames (WORK/stills); ONLY=cover: shop-cover.jpg. Output next to this file: doodle-doggo-kind-shop.mp4
+//   ONLY=stills: key frames (WORK/stills); ONLY=cover: shop-cover.jpg. FRAMES=a-b: re-render only frames a..b (the rest of WORK/f stays), then
+//   encode again. Output next to this file: doodle-doggo-kind-shop.mp4
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
+const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = path.resolve(process.env.ART_ROOT || ROOT);
 if (!fs.existsSync(path.join(ART_ROOT, 'world', 'pawart_shop.js'))) throw new Error('ART_ROOT must be a checkout of claude/kind-shop (world/pawart_shop.js)');
@@ -48,9 +52,9 @@ console.log('Tokyo Street:', TOKYO.join(', '), '| Cozy Winter:', COZY.join(', ')
 const VOAT = {}; let at = 0.1; const ORDER = [];
 const say = (k, gap) => { VOAT[k] = at; ORDER.push(k); at += VOD[k] + gap; return VOAT[k]; };
 say('hook', 0.3); say('sup', 0.14); say('supb', 0.3); say('tokyo', 0.42); say('tokyob', 0.3); say('cozy', 0.18); say('cozyb', 0.3); say('tools', 0.3); say('trust', 0.3); say('end', 0.85);
-const T = at, NF = Math.round(T * FPS);
+const ENDC = at, T = ENDC + 2.5, NF = Math.round(T * FPS); // ENDC: the standard end card, 2.5 s (owner, 9 Nov 2026)
 const BEATS = { hook: [0, VOAT.sup - 0.12], sup: [VOAT.sup - 0.12, VOAT.tokyo - 0.15], tokyo: [VOAT.tokyo - 0.15, VOAT.cozy - 0.12], cozy: [VOAT.cozy - 0.12, VOAT.tools - 0.15],
-  tools: [VOAT.tools - 0.15, VOAT.trust - 0.15], trust: [VOAT.trust - 0.15, VOAT.end - 0.15], end: [VOAT.end - 0.15, T + 1] };
+  tools: [VOAT.tools - 0.15, VOAT.trust - 0.15], trust: [VOAT.trust - 0.15, VOAT.end - 0.15], end: [VOAT.end - 0.15, ENDC], card: [ENDC, T + 1] };
 // cue points inside a line (Kokoro gives no word times: fractions of the line, by its words)
 const cue = (k, word) => { const tx = VOJ.text[k], i = tx.indexOf(word); if (i < 0) throw new Error('no "' + word + '" in ' + k); return VOAT[k] + VOD[k] * (i / tx.length); };
 const CUE = {
@@ -86,7 +90,7 @@ Object.values(NOODLE).forEach((n) => { if (!TOKYO.includes(n)) throw new Error(n
 const LOGO_INNER = fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '').trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 const ARTS = ['dogs/pawart_dogs.js', ...fs.readdirSync(path.join(ART_ROOT, 'world')).filter((f) => /^pawart_world_[a-g]\.js$/.test(f)).sort().map((f) => 'world/' + f), 'world/pawart_shop.js'];
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 ${ARTS.map((a) => `<script src="file://${path.join(ART_ROOT, a)}"></script>`).join('\n')}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
@@ -100,7 +104,9 @@ ${SAFE_JS}
 SAFE.x1=850; // this Reel: inside x 60..850 (the brief), y 270..1440
 const $=(i)=>document.getElementById(i), F='Caveat', CX=SAFE_CX, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, VOAT=${JSON.stringify(VOAT)}, VOD=${JSON.stringify(VOD)};
 const B=${JSON.stringify(BEATS)}, CUE=${JSON.stringify(CUE)}, T=${T}, CLIP=${JSON.stringify({ yard: { dir: CLIP.yard.dir, ts: CLIP.yard.ts }, house: { dir: CLIP.house.dir, ts: CLIP.house.ts } })};
-const TOOLS=${JSON.stringify(TOOLS)}, NOODLE=${JSON.stringify(NOODLE)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)};
+const TOOLS=${JSON.stringify(TOOLS)}, NOODLE=${JSON.stringify(NOODLE)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, ENDC=${ENDC};
+${ENDCARD_JS}
+let ENDCARD=null;
 const clamp=(x,a,b)=>Math.max(a==null?0:a,Math.min(b==null?1:b,x)), sm=(x)=>{ x=clamp(x); return x*x*(3-2*x); }, eo=(x)=>1-Math.pow(1-clamp(x),3);
 const back=(x,c)=>{ x=clamp(x); c=c||1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const f2=(n)=>Math.round(n*100)/100, lerp=(a,b,u)=>a+(b-a)*u;
@@ -216,12 +222,14 @@ function scene(t){ let bg=PAPERBG, art='', ov='', wait=null; const k=Math.floor(
     const at=[VOAT.trust,CUE.never,CUE.earn,CUE.complete], ys=[530,750,970,1190];
     TX.rules.forEach((L,i)=>{ const cy=ys[i]; const s=card(CX-350,cy-90,700,180,L.map((l)=>({s:l,size:fitS(l,52,600),pitch:62})),{sw:5,rx:28,fill:i===1?'#FDE3E8':'${CREAM}'})+check(CX-350,cy-90,1);
       ov+=popS(at[i],t,CX,cy,s); });
-  } else {
+  } else { if(t<ENDC+0.3){
     const t0=B.end[0]; bg+=blob(CX,760,430,'#FDE3E8',13,0.55,1.0);
     const at=[t0+0.1,CUE.free,CUE.thanks], ys=[350,450,550];
     TX.end.forEach((l,i)=>{ ov+=popS(at[i],t,CX,ys[i],pill(l,CX,ys[i],fitS(l,i===2?66:58,680),F,{fill:i===2?'${PINK}':'${CREAM}',padX:28})); });
     art+=place('dressSit',CX,1110,560,430,1,k,{apart:'noodle'});
-    const lw=500, lh=lw*280/900; ov+=popS(t0+0.3,t,CX,1300,'<svg data-safe x="'+(CX-lw/2)+'" y="'+f2(1300-lh/2)+'" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>');
+    const lw=500, lh=lw*280/900; ov+=popS(t0+0.3,t,CX,1300,'<svg data-safe x="'+(CX-lw/2)+'" y="'+f2(1300-lh/2)+'" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>'); }
+    // the standard end card (owner, 9 Nov 2026): paper and the card fade in over the thank-you page
+    if(t>=ENDC){ if(!ENDCARD) ENDCARD=endCard('tall',HANDLES,LOGO_INNER); ov+='<g opacity="'+f2(sm((t-ENDC)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+ENDCARD+'</g>'; }
   }
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov; return wait; }
 function checks(where){ const bad=centreCheck($('st')); if(bad.length) return where+': not centred: '+bad.join('; ');
@@ -250,8 +258,9 @@ window.cover=function(){ let bg=PAPERBG+blob(CX,960,470,'#FFF0B8',21,0.6,1.05), 
   const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html);
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   if (errs.length) throw new Error('page: ' + errs.join(' | '));
-  const allText = JSON.stringify(TX) + SUBS.map((s) => s.s).join(' ') + '0123456789';
-  await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), allText); await p.evaluate(() => document.fonts.ready);
+  const allText = JSON.stringify(TX) + SUBS.map((s) => s.s).join(' ') + '0123456789' + Object.values(handles()).join('') + 'doodledoggo.app';
+  await p.evaluate((txt) => Promise.all(['700 40px Caveat', '700 40px Andika'].map((f) => document.fonts.load(f, txt))), allText); await p.evaluate(() => document.fonts.ready);
+  if (!(await p.evaluate((txt) => document.fonts.check('700 40px Andika', txt) && document.fonts.check('700 40px Caveat', txt), allText))) throw new Error('Andika or Caveat did not load');
   console.log('drawings', await p.evaluate(() => window.measure())); fs.unlinkSync(pageFile);
   console.log('T =', T.toFixed(2), 's,', NF, 'frames; voice at', ORDER.map((k) => k + ' ' + VOAT[k].toFixed(2)).join(', '));
   const render = async (t, file, o) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) throw new Error(err); await p.screenshot(Object.assign({ path: file }, o || {})); };
@@ -262,7 +271,9 @@ window.cover=function(){ let bg=PAPERBG+blob(CX,960,470,'#FFF0B8',21,0.6,1.05), 
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
     console.log(ts.length, 'stills'); await b.close(); return; }
   const t0 = Date.now();
-  for (let fi = 0; fi < NF; fi++) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); if (fi % 150 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
+  let fr = [...Array(NF).keys()];
+  if (process.env.FRAMES) { const [a, z] = process.env.FRAMES.split('-').map(Number); fr = fr.filter((f) => f >= a && f <= z); }
+  for (const fi of fr) { await render(fi / FPS, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); if (fi % 150 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
   await b.close();
 
   // ---- sound: the game's cozy yard music ~11 dB under Noodle, a crayon tick per pop ----
@@ -288,7 +299,7 @@ window.cover=function(){ let bg=PAPERBG+blob(CX,960,470,'#FFF0B8',21,0.6,1.05), 
   const vG = -16 - vI, mG = -16 - 11 - mI; console.log('voice', vI.toFixed(1), 'LUFS, music', mI.toFixed(1), 'LUFS: gains', vG.toFixed(1), mG.toFixed(1), 'dB');
   const pre = path.join(WORK, 'premix.wav'), mixWav = path.join(WORK, 'mix.wav');
   ff(['-i', voWav, '-i', path.join(WORK, 'music.wav'), '-i', fx, '-filter_complex',
-    `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},afade=t=in:d=0.05,volume=${mG.toFixed(2)}dB,afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];[2:a]volume=-9dB,aformat=channel_layouts=stereo[k];[m][k][v]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.5:level=false[a]`,
+    `[0:a]aresample=44100,volume=${vG.toFixed(2)}dB,aformat=channel_layouts=stereo[v];[1:a]atrim=0:${T.toFixed(2)},afade=t=in:d=0.05,volume=${mG.toFixed(2)}dB,afade=t=out:st=${ENDC.toFixed(2)}:d=${(T - ENDC).toFixed(2)}[m];[2:a]volume=-9dB,aformat=channel_layouts=stereo[k];[m][k][v]amix=inputs=3:duration=first:normalize=0,alimiter=limit=0.5:level=false[a]`,
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);

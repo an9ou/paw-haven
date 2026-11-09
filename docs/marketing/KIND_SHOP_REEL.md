@@ -11,7 +11,7 @@ without paying."* No prices, countdowns, "limited", "best deal" or "buy now" any
 
 | File | |
 |---|---|
-| Video | `brand/instagram/launch/shop_reel/doodle-doggo-kind-shop.mp4` (31.9 s, 1080 x 1920, 30 fps, H.264 + AAC stereo, -16 LUFS) |
+| Video | `brand/instagram/launch/shop_reel/doodle-doggo-kind-shop.mp4` (34.4 s, 1080 x 1920, 30 fps, H.264 + AAC stereo, -16 LUFS; ends on our standard end card since 9 Nov 2026) |
 | Cover | `brand/instagram/launch/shop_reel/shop-cover.jpg` (1080 x 1920, its own design, not a frame: the hook card, a "NEW: the Kind shop" pill, six item pictures (Golden Paw Cottage, Cocoa Mug Lamp, Little Sneakers, Robo Scoop, Doggy Snow Globe, Golden Name Tag), Noodle in the Tokyo Street set and the logo, all inside the 1:1 crop y 420..1500) |
 | Scripts | `brand/instagram/launch/shop_reel/build_shop.js` (the Reel and the cover), `capture_shop.js` (the game footage), `vo_shop.json` (Noodle's lines) |
 
@@ -44,6 +44,7 @@ without paying."* No prices, countdowns, "limited", "best deal" or "buy now" any
 | 16.96 | "And helpers! A Robo Scoop, a sprinkler, a water bowl. Switch them off any time." (17.11) | Pill **Comfort tools**, cards **Robo Scoop**, **Garden Sprinkler**, **Auto Water Bowl** pop on the words; a card **switch them off any time** with three switches that click off one by one on "Switch them off" and back on; pill **the hand way always works** |
 | 21.86 | "No loot boxes. Never dogs. Everything but the Supporter Pack can also be earned by playing." (22.01) | Pill **Our shop rule**, four cards with green ticks, each on its words: **No loot boxes. / No random paid rewards.** · **Never dogs, Bond, / welfare or chances.** · **Looks packs and tools: / also for coins, by playing.** · **The game is complete / without paying.** |
 | 27.74 to 31.87 | "Made by one person. Free to play. Thank you for helping!" (27.89) | Pills **Made by one person.** · **Free to play.** · **Thank you for helping!** on the words, Noodle sitting in the Tokyo Street set, the logo (the game's "discover" sting) |
+| 31.87 to 34.37 | (none) | Our standard end card fades in over paper (owner, 9 Nov 2026; `brand/kids/endcard.js`): the logo, **doodledoggo.app**, Instagram **@doodledoggo.app**, X **@doodledoggoapp**, YouTube **@DoodleDoggoApp**, each with its icon. The music fades out under it |
 
 Sound: Noodle (Kokoro af_bella 1.1x) at -16 LUFS; the game's own cozy yard music (`mods/pawaudio.js`) about 11 dB under the voice (~30 %), a crayon
 tick per pop, a soft click per switch. Whole mix -16 LUFS, true peak -1.5.
@@ -58,7 +59,7 @@ tick per pop, a soft click per switch. Whole mix -16 LUFS, true peak -1.5.
 - **Supporter beat:** the Founding Friend badge is on screen but not spoken (time). The pack's perks (2,000 coins, +20 % walk coins, faster crops,
   a second daily gift) are not in the Reel; the captions do not hide them either, they just keep to the looks.
 - **Cocoa Mug Lamp:** shown unlit (the footage is daytime; the lamp lights at night). "Lit" is not claimed anywhere.
-- **Length:** 31.9 s, a little over the 25 to 30 s target: seven beats at Noodle's speed.
+- **Length:** 34.4 s: 31.9 s of beats (a little over the 25 to 30 s target: seven beats at Noodle's speed) plus the 2.5 s end card.
 
 ## Rebuild
 

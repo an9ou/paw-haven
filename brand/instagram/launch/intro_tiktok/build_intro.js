@@ -8,13 +8,16 @@
 // Shots (the live game of 8 Nov 2026, autumn, no festival on screen; footage from capture_intro.js):
 //   hook   Noodle at home, petted, hearts           dogs   a line-up of the game's own crayon dogs (PawArt.dog), "40 crayon dogs"
 //   fuji   Noodle walks the path at the Mt. Fuji Lookout   play   the Bumblebee Suit, ball play, the veggie patch
-//   safe   Noodle, Udon and their puppies, hearts   end    paper, Noodle, the logo, "free · no download · play in your browser", doodledoggo.app
+//   safe   Noodle, Udon and their puppies, hearts   end    paper: our standard end card (brand/kids/endcard.js, owner 9 Nov 2026: the logo,
+//          doodledoggo.app, Instagram, X and YouTube with icons and handles) and "free · play in your browser" under it; Noodle's last line over it
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/intro_tiktok/build_intro.js <game checkout> <footage dir> <workdir> <vo dir>
-//   ONLY=stills renders one key frame per shot (and the end page) into <workdir>/f; FRAMES=a-b renders those frames only.
+//   ONLY=stills renders one key frame per shot (and the end page) into <workdir>/f; FRAMES=a-b re-renders those frames only (the rest of
+//   <workdir>/f stays), then encodes again; TIMES=1 prints each shot's frames.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
+const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const DEV = path.resolve(process.argv[2] || '.'), FOOT = path.resolve(process.argv[3] || 'intro_footage');
 const WORK = path.resolve(process.argv[4] || 'intro_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
@@ -38,12 +41,15 @@ const LINEUP = ['shiba', 'corgi', 'golden', 'beagle', 'pug', 'husky', 'pom', 'ca
 const ART = {}; LINEUP.forEach((k, i) => { ART['d' + i] = inner(PA.dog(k, { anim: false, pose: 'happy', facing: i % 2 ? 'left' : 'right' })); });
 ART.noodle = inner(PA.dog('dachs', { anim: false, pose: 'happy', facing: 'right' }));
 const LOGO = fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8');
+// the end card's logo: the logo without its <svg> wrapper, <title> and paper rect (as brand/kids/endcard.js asks)
+const LOGO_INNER = inner(LOGO.replace(/<title>[^<]*<\/title>/, '').trim()).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
+if (LOGO_INNER.includes('<title') || LOGO_INNER.includes('fill="#FFF8EC"/><svg x="10"')) throw new Error('logo svg changed: check LOGO_INNER');
 
 // ---- the words (TikTok: short, lowercase, centred; the font has no ✏️, so a crayon is drawn next to the hook instead) ----
 const TX = {
   hook: [{ s: 'a cozy dog game', size: 76, pitch: 86 }, { s: 'where the dogs', size: 76, pitch: 86 }, { s: 'drew themselves', size: 76 }],
   dogs: NDOGS + ' crayon dogs', fuji: 'walk to Mt. Fuji', play: ['dress up', 'play', 'garden'], safe: ['nothing bad', 'ever happens'],
-  end1: 'free · no download', end2: 'play in your browser', url: 'doodledoggo.app',
+  end: 'free · play in your browser', // under the standard end card (owner, 9 Nov 2026)
 };
 
 // ---- the timeline: each shot lasts its line plus a beat; the line starts 0.15 s in ----
@@ -64,6 +70,7 @@ seg(PL * 0.30, { src: 'garden', from: 0.2, view: { s0: S0 * 1.0, s1: S0 * 1.03, 
 say('safe'); seg(VOD.safe + 1.1, { src: 'pups', from: 0.15, view: { s0: S0 * 1.05, s1: S0 * 1.1, f0: [190, 460], f1: [190, 462], o: [440, 1110] }, cap: 'safe' });
 const END = at; say('end', 0.3); seg(VOD.end + 1.5, { src: null, cap: 'end' });
 const T = at, N = Math.round(T * FPS);
+if (process.env.TIMES) { SEG.forEach((s) => console.log(String(s.src || s.cap).padEnd(7), 'frames', Math.floor(s.a * FPS) + '-' + (Math.ceil(s.b * FPS) - 1), s.a.toFixed(2) + '-' + s.b.toFixed(2) + ' s')); console.log('N', N); process.exit(0); }
 
 // ---- footage: frames and their game times; dog boxes (CSS px) for apartCheck and the ball's follow camera ----
 const CLIPS = {};
@@ -82,7 +89,7 @@ function viewAt(s, t) { const v = s.view, u = ease((t - s.a) / (s.b - s.a)), sc 
 function dogRects(s, t, V) { return (CLIPS[s.src].boxes[idxAt(s, t)] || []).map((d) => { const [a, b, c, e] = d.b;
   return `<rect data-apart="${d.n}" x="${(V.l + a * V.s).toFixed(1)}" y="${(V.t + b * V.s).toFixed(1)}" width="${((c - a) * V.s).toFixed(1)}" height="${((e - b) * V.s).toFixed(1)}" fill="none" stroke="none"/>`; }).join(''); }
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}#st{position:relative;width:${W}px;height:${H}px;overflow:hidden;background:${PAPER}}
 #scr{position:absolute;left:0;top:0;width:${PW}px;height:${PH}px;transform-origin:0 0}#ov{position:absolute;left:0;top:0}.pa-dog *{animation:none!important}[class$="-hl"]{display:none}</style>
 <div id="st"><img id="scr"><svg id="ov" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
@@ -91,6 +98,9 @@ ${Object.keys(ART).map((k) => `<symbol id="${k}" overflow="visible">${ART[k]}</s
 <script>
 ${CENTRE_JS}
 ${SAFE_TT}
+${ENDCARD_JS}
+const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
+let ENDCARD=null;
 const $=(i)=>document.getElementById(i), FAM='Caveat', TX=${JSON.stringify(TX)}, LOGO=${JSON.stringify(LOGO.replace(/^<svg/, '<svg id="logo"'))};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM).svg, CX=SAFE_CX;
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.6; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -133,14 +143,12 @@ window.frame=async function(t,S,src,V,apart){ $('apart').innerHTML=apart||'';
   if(S.cap==='safe'){ const L=[{s:TX.safe[0],size:84,pitch:92},{s:TX.safe[1],size:84}], w=Math.max(inkW(TX.safe[0],84),inkW(TX.safe[1],84))+100;
     cap='<g opacity="'+fade(0.1)+'" transform="translate('+CX+' 330) scale('+pop(0.1)+') rotate(-2) translate('+(-CX)+' -330)">'+card(CX-w/2,230,w,200,L,{stroke:'#4E9A54'})+'</g>'
       +'<g opacity="'+fade(0.5)+'">'+heart(CX-w/2+10,250,1.3)+heart(CX+w/2-14,410,1.1)+'</g>'; }
-  if(S.cap==='end'){ const o=ease(lt/0.3), a=ease((lt-0.6)/0.3), b=ease((lt-1.0)/0.3), hop=Math.max(0,Math.sin(Math.max(0,lt-0.2)*5.2))*(lt<2.6?22:0);
+  if(S.cap==='end'){ // the standard tall end card (brand/kids/endcard.js), shifted onto TikTok's centre line, and the one line under it
+    const o=ease(lt/0.3), a=ease((lt-0.7)/0.3);
+    if(!ENDCARD) ENDCARD=endCard('tall',HANDLES,LOGO_INNER);
     page='<rect width="${W}" height="${H}" fill="${PAPER}" opacity="'+o+'"/>';
-    cap='<g opacity="'+o+'">'
-      +'<g data-safe transform="translate('+(CX-380)+' 250) scale('+(760/900)+')">'+LOGO+'</g>'
-      +'<g data-apart="noodle">'+dogUse('noodle',CX,980-hop,620,380,back((lt-0.1)/0.4))+'</g>'
-      +heart(CX+150,600-hop*0.5,1.2,ease((lt-0.5)/0.2))
-      +'<g opacity="'+a+'">'+C([{s:TX.end1,size:68,pitch:80},{s:TX.end2,size:68}],CX,1110)+'</g>'
-      +'<g opacity="'+b+'" transform="rotate(-2 '+CX+' 1320)">'+card(CX-inkW(TX.url,78)/2-48,1262,inkW(TX.url,78)+96,116,[{s:TX.url,size:78}],{fill:'${YEL}'})+'</g></g>'; }
+    cap='<g opacity="'+o+'"><g transform="translate('+(CX-475)+' 0)">'+ENDCARD+'</g>'
+      +'<g opacity="'+a+'">'+C([{s:TX.end,size:62}],CX,1262)+'</g></g>'; }
   $('edge').innerHTML=edge; $('page').innerHTML=page; $('cap').innerHTML=cap;
 };
 </script>`.replace('PLAY_A', String(PLAY));
@@ -149,8 +157,9 @@ window.frame=async function(t,S,src,V,apart){ $('apart').innerHTML=apart||'';
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle');
-  await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f, 'a·')))); await p.evaluate(() => document.fonts.ready);
-  if (!(await p.evaluate(() => document.fonts.check('700 40px Caveat', 'a')))) throw new Error('Caveat did not load');
+  const endTxt = 'a·' + Object.values(handles()).join('') + 'doodledoggo.app?' + TX.end;
+  await p.evaluate((txt) => Promise.all(['600 40px Caveat', '700 40px Caveat', '700 40px Andika'].map((f) => document.fonts.load(f, txt))), endTxt); await p.evaluate(() => document.fonts.ready);
+  if (!(await p.evaluate((txt) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', txt), endTxt))) throw new Error('Caveat or Andika did not load');
   const segAt = (t) => SEG.find((s) => t >= s.a && t < s.b) || SEG[SEG.length - 1];
   const render = async (t, file) => { const s = segAt(t), src = s.src ? 'file://' + CLIPS[s.src].files[idxAt(s, t)] : null, V = s.src ? viewAt(s, t) : null;
     await p.evaluate(async ([t, S, src, V, ap]) => window.frame(t, S, src, V, ap), [t, s, src, V, s.src ? dogRects(s, t, V) : '']);
@@ -165,7 +174,7 @@ window.frame=async function(t,S,src,V,apart){ $('apart').innerHTML=apart||'';
   for (const f of list) await render(f / FPS, path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`));
   console.log(list.length, 'frames, T =', T.toFixed(2), 'shots', SEG.map((s) => (s.src || s.cap) + ' ' + s.a.toFixed(2)).join(', '));
   await b.close();
-  if (still || process.env.FRAMES) return;
+  if (still) return;
 
   // sound: the game's own music (the yard by day) and the "discover" sting on the end page (as the Friends Reel)
   const ab = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -174,10 +183,11 @@ window.frame=async function(t,S,src,V,apart){ $('apart').innerHTML=apart||'';
     segments: [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, [{ at: END + 0.1, name: 'discover' }]]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64'));
   await ab.close();
-  // Noodle's voice over the music at 30%
+  // Noodle's voice over the music at 30%; the music fades out under the end card (its last 2.5 s)
+  const FADE = Math.min(2.5, T - END);
   const inputs = [], chains = [];
   VOAT.forEach((v, i) => { inputs.push('-i', path.join(VO, v.k + '.wav')); const d = Math.round(v.at * 1000); chains.push(`[${i + 2}:a]aresample=44100,volume=1.5,adelay=${d}|${d}[v${i}]`); });
-  const mix = `[1:a]atrim=0:${T},volume=0.3,afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${VOAT.map((_, i) => `[v${i}]`).join('')}amix=inputs=${VOAT.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
+  const mix = `[1:a]atrim=0:${T},volume=0.3,afade=t=out:st=${(T - FADE).toFixed(2)}:d=${FADE.toFixed(2)}[m];` + chains.join(';') + ';' + `[m]${VOAT.map((_, i) => `[v${i}]`).join('')}amix=inputs=${VOAT.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
   const out = path.join(WORK, 'doodle-doggo-intro-tiktok.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
