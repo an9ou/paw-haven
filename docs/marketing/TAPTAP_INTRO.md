@@ -25,7 +25,7 @@ Doodle Doggo是一款画在铅笔素描本里的温馨狗狗游戏。
 - 🥕 菜园和厨房：种胡萝卜和南瓜，再做成对狗狗安全的零食。
 - 🐾 小狗玩伴聚会：真实的毛色遗传，每一只小狗都会去温柔的新家庭。
 - 🗼 坐新干线去东京，参观涩谷、浅草和东京塔。
-- 🌍 支持11种语言，包括简体中文和繁体中文。
+- 🌍 支持12种语言，包括简体中文、繁体中文和粤语。
 
 > - 35 breeds, each with its own personality and faces.
 > - Walks: sniff around town, find treasures, earn coins.
@@ -33,7 +33,7 @@ Doodle Doggo是一款画在铅笔素描本里的温馨狗狗游戏。
 > - Garden and kitchen: grow carrots and pumpkins, then cook dog-safe snacks.
 > - Puppy playdates: real coat genetics, and every puppy goes to a kind new family.
 > - Ride the Shinkansen to Tokyo: Shibuya, Asakusa and Tokyo Tower.
-> - 11 languages, including Simplified and Traditional Chinese.
+> - 12 languages, including Simplified Chinese, Traditional Chinese and Cantonese.
 
 ## 结尾 (closing line)
 
