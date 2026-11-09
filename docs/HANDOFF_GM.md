@@ -128,3 +128,7 @@ Tan points for Border Collie/Corgi, Lab Fox red, Golden Dark golden; no NEWS ent
 ## v2.23.2 "廣東話 Cantonese" (9 Nov 2026)
 Owner's go-ahead (special update). YUE_LIVE = true after the native speaker's review (docs/i18n/coord/yue_review_applied.md; Play = 去玩 kept); NEWS 2.23.2 in 12 languages; main 5f5752cf, itch.io 2.23.2 build #2339518, doodledoggo.app with the itch build (/yue/ 200 in Cantonese, /play/ md5 = dist/itch, zh-HK -> /yue/ by the first-visit script).
 No Worker change. Next: brief Marketing (12 languages, 廣東話; marketing texts already say 12) and the kind shop (v2.24) when the owner sets it.
+
+- 2026-11-09 v2.23.3 "Tidy wardrobe" shipped (main c67d0d04, merged over v2.23.2; packed.js regenerated, never hand-merged). itch push 2.23.3 done (build #2340996), site deployed with SITE_GAME=dist/itch, no Worker deploy.
+- Tests green: wardrobe_tidy, smoke, i18n, v29_pack, i18n_fit (wardrobe). v2182_news failed once on "nor after a reload" / "newest entry" and passed on a plain rerun (flake). i18n_phone and phone_v29_pack not run (known failures on main).
+- No NEWS entry for this release. Marketing not yet briefed.
