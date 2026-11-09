@@ -8,6 +8,7 @@ Stripe state `docs/design/kind-shop-stripe-setup.md` (section 5 = what is done).
 - Stripe connector is connected (accounts: live acct_1UXv1dElR1ebyhgm, sandbox acct_1UXv1nIdJRrYdh73).
 Live (9 Nov): live products, webhook, rk_live_ key and live SHOP_PRICES are in; a real US$0.99 buy and refund worked end to end.
 Managed Payments confirmed on live (SG card: liability stripe); HK buyers show `self` (domestic, no HK sales tax). No blocker.
+Launch: the owner launches it together with the Game Manager (9 Nov). The owner lives in Japan; the Stripe account is Hong Kong.
 Open:
 1. Merge origin/main into claude/kind-shop: conflicts in i18n json, packed.js, font subsets, CHANGELOG, HANDOFF_GM, 06_wardrobe,
    49c_news, css ORDER, worker.js (keep both: FR_LIM houses 15 + DC_COAT I). Regenerate packed.js and fonts, rerun the suites.

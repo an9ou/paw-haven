@@ -4,7 +4,7 @@ The Worker's shop routes are built and closed: they answer "shop_closed" until t
 Do everything in **test mode** first, then repeat it in live mode for the launch. Keys go into the Worker as secrets only, never into
 the repo, a chat or a file.
 
-## 0. Account country (owner, 9 Nov 2026)
+## 0. Account country (owner, 9 Nov 2026; the owner lives in Japan)
 The Stripe account is registered in **Hong Kong** (the owner's accountant's advice). Hong Kong is a supported business location for
 Managed Payments (docs.stripe.com/payments/managed-payments/eligibility: AU, HK, JP, SG in Asia Pacific). Keep Managed Payments **on**:
 Hong Kong has no sales tax, but buyers' own countries tax digital sales to consumers (EU and UK VAT, Japan JCT, Australian GST, many US
@@ -91,7 +91,7 @@ a live checkout shows `liability: stripe`.
 Second live test (9 Nov, after the owner finished the Managed Payments setup, status "Ready to use", all products eligible): paid,
 recorded, refunded, `refunded: true`, test account deleted. The session again showed `managed_payments.enabled: true` but
 `automatic_tax.liability: self`, and the Dashboard's Managed Payments page still says "None of your transactions used Managed
-Payments". Both live buyers were in Hong Kong (the owner's own card). Open question for Stripe support (owner): why live sessions with
+Payments". Both live buyers were in Hong Kong (a friend's Hong Kong card; the owner lives in Japan). Open question for Stripe support (owner): why live sessions with
 managed_payments enabled don't count as Managed Payments, and whether same-country (HK) buyers are excluded. SHOP_LIVE stays false.
 Third live test (9 Nov, the owner's Singapore card): `automatic_tax.liability: stripe`, invoice issuer `stripe`, 8 cents SG GST inside
 the US$0.99 (tax-inclusive works). So Managed Payments works on live; the two Hong Kong-card tests showed `self` because Stripe is not
