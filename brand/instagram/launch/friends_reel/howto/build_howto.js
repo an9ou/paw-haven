@@ -19,10 +19,10 @@
 //   FRAMES=a-b    re-render only frames a..b (the rest of workdir/f stays), then encode again      PAR=n   n pages render at once
 //   REDNOTE=1     the RedNote cut (owner, 7 Nov 2026): zh-Hans footage (capture_howto.js / capture_clean.js with PAW_LANG=zh-Hans), the Mandarin voice
 //                 (../vo_friends_zh.py with VO_LINES=howto/vo_howto_zh.json, zf_073 1.0x), Chinese words and subtitles in LXGW WenKai, a crayon share menu
-//                 with plain share actions (text only), no link in our drawings, the code swap in Chinese, and endCardRN with "浏览器搜 Doodle Doggo App
-//                 就能玩". Writes doodle-doggo-friends-howto-rednote.mp4 and the 3:4 cover brand/rednote/rednote-11-friends-howto.jpg
+//                 with plain share actions (text only), no link in our drawings, the code swap in Chinese, and endCardRN with a QR code to
+//                 https://doodledoggo.app (the game's own QR module; owner, 9 Nov 2026: every RedNote cut ends on the website QR). Writes doodle-doggo-friends-howto-rednote.mp4 and the 3:4 cover brand/rednote/rednote-11-friends-howto.jpg
 //                 Owner, 8 Nov 2026 (RedNote throttled the cut for naming other platforms): NO platform name anywhere (no 微信, 朋友圈, 群聊, QQ, 微博,
-//                 小红书...; the voice says 把链接和海报分享给朋友), no QR and no readable domain: the end card has no QR, and rnClean() below paints the
+//                 小红书...; the voice says 把链接和海报分享给朋友), no game QR and no readable domain in the footage (the end card's website QR is the only QR): rnClean() below paints the
 //                 game's QR out of our card (card.png) and the poster (poster.png) with a pink paw, as friends_card.js does, and swaps the poster's
 //                 "扫一扫，或添加 DOG-K3APZ / doodledoggo.app/f/DOG-K3APZ" lines for the game's own "添加 DOG-K3APZ" (WORK/card_rn.png, WORK/poster_rn.png)
 const path = require('path'), fs = require('fs'), cp = require('child_process');
@@ -30,7 +30,7 @@ const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../../centre_text.js');
 const { loadArt, cardSVG, FIT_JS, apartRects } = require('../friends_card.js');
 const { howtoJS } = require('./howto_art.js');
-const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS, qrMatrix } = require('../../../../kids/endcard.js');
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const HOWTO_JS = howtoJS(RN ? 'zh-Hans' : 'en');
 const ROOT = path.join(__dirname, '..', '..', '..', '..', '..');
@@ -52,6 +52,7 @@ const words = (k) => JSON.parse(dcSrc.match(new RegExp('const ' + k + ' = (\\[[\
 const OUR_NAME = words('DC_WORDS_A')[NAMEI[0]] + ' ' + words('DC_WORDS_B')[NAMEI[1]];
 if (OUR_NAME !== 'Sunny Biscuit') throw new Error('our name is ' + OUR_NAME);
 const CARD = cardSVG(ART, { code: CODE, name: OUR_NAME, nameFont: 'Caveat' });
+const SITE_QR = RN ? qrMatrix('https://doodledoggo.app', path.join(DEV, 'mods', 'qr.js')) : null; // the RedNote end card's QR (owner, 7 and 9 Nov 2026)
 const LINK = RN ? null : ART.link.replace(/^https?:\/\//, '') + CODE; // doodledoggo.app/f/DOG-K3APZ (RedNote: no domain in our drawings; the game's own poster shows its link)
 const inner = (s) => s.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
@@ -191,7 +192,7 @@ ${SAFE_JS}
 ${FIT_JS}
 ${HOWTO_JS}
 ${ENDCARD_JS}
-const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(RN ? "'LXGW WenKai', Caveat" : 'Caveat')}, RN=${RN}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
+const $=(i)=>document.getElementById(i), FAM=${JSON.stringify(RN ? "'LXGW WenKai', Caveat" : 'Caveat')}, RN=${RN}, SITE_QR=${JSON.stringify(SITE_QR)}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)}, POSTER=${JSON.stringify(POSTER)}, LINK=${JSON.stringify(LINK)};
 const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, CARD=${JSON.stringify(CARD)};
 const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM), CX=SAFE_CX;
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -246,7 +247,7 @@ window.frame=async function(t,S,R){
       +hwSwap(CX,590,lt-0.2,{w:600,h:140,gap:76,off:60})
       +'<g opacity="'+ease((lt-1.5)/0.3)+'"><path d="M'+CX+' 1250 q-10 38 0 70 M'+(CX-22)+' 1298 l22 26 l22 -26" fill="none" stroke="${PEN}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>';
     subY=1395; }
-  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=RN?endCardRN('tall',LOGO_INNER):endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
+  if(S.kind==='endcard'){ if(!ENDCARD) ENDCARD=RN?endCardRN('tall',LOGO_INNER,null,{matrix:SITE_QR,caption:'扫码就能玩'}):endCard('tall',HANDLES,LOGO_INNER); un='<rect width="${W}" height="${H}" fill="${PAPER}"/>'; ov='<g opacity="'+ease(lt/0.3)+'">'+ENDCARD+'</g>'; }
   else ov+=sub(t,subY);
   $('un').innerHTML=un; $('ov').innerHTML=ov+'<g id="apart">'+(R.apart||'')+'</g>'; frFit($('ov'));
   const st=$('ov');
@@ -302,7 +303,7 @@ async function openPage(b, src) {
   const p = await b.newPage({ viewport: { width: W, height: H } });
   const f = path.join(WORK, src === html ? 'page.html' : 'cover.html'); fs.writeFileSync(f, src); await p.goto('file://' + f); await p.waitForLoadState('networkidle');
   await p.evaluate(() => Promise.all(['600 40px Caveat', '700 40px Caveat', '700 40px Andika', '700 40px "DD Code"'].map((f) => document.fonts.load(f, 'aDOG-K3APZ'))));
-  if (RN) await p.evaluate((s) => document.fonts.load('700 40px "LXGW WenKai"', s), JSON.stringify([TX, SUBS_TX, require('./howto_art.js').HW_ZH, '治愈系蜡笔狗狗游戏浏览器搜就能玩更多好友分享海报点三下就够了怎么加']));
+  if (RN) await p.evaluate((s) => document.fonts.load('700 40px "LXGW WenKai"', s), JSON.stringify([TX, SUBS_TX, require('./howto_art.js').HW_ZH, '扫码就能玩治愈系蜡笔狗狗游戏浏览器搜就能玩更多好友分享海报点三下就够了怎么加']));
   await p.evaluate(() => document.fonts.ready);
   if (!(await p.evaluate(() => document.fonts.check('700 19px "DD Code"', 'DOG-K3APZ')))) throw new Error('DD Code did not load');
   await p.evaluate((src) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = src; }), POSTER);
