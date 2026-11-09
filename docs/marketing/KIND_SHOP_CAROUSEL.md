@@ -1,5 +1,8 @@
 # Kind shop: the launch carousel (v2.24)
 
+> **LIVE (9 Nov 2026, GM confirmed): the Kind shop is out (v2.24) on doodledoggo.app, itch.io 2.24 and GitHub Pages. Post now, in the owner's order: the Reels first, then the carousel.** Final names and prices (live catalog): Supporter Pack US$4.99 once; Tokyo Street US$2.99 or 600 coins each; Cozy Winter US$2.99 or 600 coins each; Robo Scoop US$1.99 or 4,000 coins; Garden Sprinkler and Auto Water Bowl US$0.99 or 2,500 coins each; Comfort Kit US$2.99; coins 1,000 / 3,000 / 8,000 for US$0.99 / 1.99 / 4.99. The released branch's item art and words match what these were built from. No rewarded ads yet: never mention ads. Captions stay without prices (kind, no pressure); "from US$0.99" is true if the owner wants a price line in English captions. Never on RedNote.
+
+
 **HOLD: post only after the GM confirms the shop is live; re-check item names/prices at launch.** (The shop goes live once the merged build passes its tests, together with the owner and the Game Manager; `SHOP_LIVE` is still false on `claude/kind-shop`.) English only. Made by Marketing on 9 Nov 2026 for the Game Manager's brief. Not posted anywhere. The Kind shop Reel is a separate piece (`KIND_SHOP_REEL.md`).
 
 | File | |
