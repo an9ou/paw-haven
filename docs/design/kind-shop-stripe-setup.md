@@ -4,11 +4,19 @@ The Worker's shop routes are built and closed: they answer "shop_closed" until t
 Do everything in **test mode** first, then repeat it in live mode for the launch. Keys go into the Worker as secrets only, never into
 the repo, a chat or a file.
 
+## 0. Account country (owner, 9 Nov 2026)
+The Stripe account is registered in **Hong Kong** (the owner's accountant's advice). Hong Kong is a supported business location for
+Managed Payments (docs.stripe.com/payments/managed-payments/eligibility: AU, HK, JP, SG in Asia Pacific). Keep Managed Payments **on**:
+Hong Kong has no sales tax, but buyers' own countries tax digital sales to consumers (EU and UK VAT, Japan JCT, Australian GST, many US
+states) wherever the seller is based, and with Managed Payments Stripe is the seller of record and files those. A Stripe account's country
+can't be changed, so a Hong Kong account is a new account (Dashboard > account menu > New account > Hong Kong). Payouts go to a Hong Kong
+bank account in HKD; the prices stay in USD. Buyers in China, Russia and a few other places can't buy (Stripe's restricted list).
+
 ## 1. In Stripe (Dashboard)
 1. Turn on Managed Payments (Settings > Managed Payments) and accept its terms. Stripe is then the merchant of record and handles tax.
 2. Check the API version (Developers > API version) is `2025-03-31.basil` or later. Managed Payments needs it.
-3. Create one product per shop item, each with a one-time price in USD and a tax code marked "Eligible for Managed Payments"
-   (a digital good, such as video game content):
+3. Create one product per shop item, each with a one-time price in USD and a tax code marked "Eligible for Managed Payments":
+   use `txcd_10201000` (Video Games - downloaded - non subscription - with permanent rights) for every item:
 
    | id | product | price |
    |---|---|---|
