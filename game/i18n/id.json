@@ -9183,6 +9183,7 @@
  "wardrobe.perk_line": "{item}: {perk}",
  "wardrobe.perks": "Bonus: {list}",
  "wardrobe.pj_toggle": "Piyama saat tidur siang: {state, select, on {nyala} other {mati}}",
+ "wardrobe.tab_all": "Semua",
  "wardrobe.title": "Lemari Baju",
  "wardrobe.title_dog": "Lemari Baju: {name}",
  "wardrobe.treasure": "Harta karun",

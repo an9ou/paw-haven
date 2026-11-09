@@ -66,5 +66,6 @@
 53_levels.css
 53b_habits.css
 54_coat_pick.css
+55_wardrobe.css
 50_i18n.css
 51_i18n_room.css

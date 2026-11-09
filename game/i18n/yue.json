@@ -9183,6 +9183,7 @@
  "wardrobe.perk_line": "{item}：{perk}",
  "wardrobe.perks": "好處：{list}",
  "wardrobe.pj_toggle": "瞓覺時著睡衣：{state, select, on {開} other {關}}",
+ "wardrobe.tab_all": "全部",
  "wardrobe.title": "衣櫃",
  "wardrobe.title_dog": "衣櫃：{name}",
  "wardrobe.treasure": "寶物",

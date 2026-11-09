@@ -9183,6 +9183,7 @@
  "wardrobe.perk_line": "{item}: {perk}",
  "wardrobe.perks": "Vantagens: {list}",
  "wardrobe.pj_toggle": "Pijama na hora da soneca: {state, select, on {ligado} other {desligado}}",
+ "wardrobe.tab_all": "Tudo",
  "wardrobe.title": "Guarda-roupa",
  "wardrobe.title_dog": "Guarda-roupa: {name}",
  "wardrobe.treasure": "Tesouro",

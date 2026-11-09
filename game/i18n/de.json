@@ -9183,6 +9183,7 @@
  "wardrobe.perk_line": "{item}: {perk}",
  "wardrobe.perks": "Vorteile: {list}",
  "wardrobe.pj_toggle": "Schlafanzug beim Nickerchen: {state, select, on {an} other {aus}}",
+ "wardrobe.tab_all": "Alle",
  "wardrobe.title": "Kleiderschrank",
  "wardrobe.title_dog": "Kleiderschrank: {name}",
  "wardrobe.treasure": "Schatz",

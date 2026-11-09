@@ -1,0 +1,76 @@
+/* Tidy wardrobe (owner, 9 Nov 2026; game/src/06_wardrobe.js): the dog on the left (on top on phones), slot tabs, and one neat grid of equal square tiles that
+   scrolls inside the sheet. Each tile: the item art at one size, the name under it (it wraps, never cut), a crayon tick when worn, "new!" tape on
+   clothes not seen here yet. The tiles and the perks note use the shared sketch frame (01_sketch_surface.css), so every fill stays inside its line. */
+.panel.wd-pop{width:min(980px,100%);height:min(660px,100%)}
+.panel.wd-pop .panel-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.panel.wd-still{animation:none}
+.ward{flex:1;min-height:0;display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:stretch}
+.wd-stage{display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto;padding:4px 2px}
+.ward .preview{position:relative;flex:none;padding:12px 12px 8px;--wash:var(--w-blue);background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf)}
+.ward .preview svg{display:block;width:100%;height:232px}
+.ward .charmtag{font-size:19px;margin:0 0 2px}
+.wd-perks{margin:0;padding:12px 16px 14px;font-size:16px;line-height:1.3;--wash:var(--w-cream);--fr:var(--fr-card)}
+.wd-shelf{display:flex;flex-direction:column;min-width:0;min-height:0}
+.wd-tabs{flex:none;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:6px 4px 10px;scrollbar-width:none}
+.wd-tabs::-webkit-scrollbar{display:none}
+.wd-tab{flex:1 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:4px 9px 6px 14px;font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1.1;white-space:nowrap;--wash:var(--paper)}
+.wd-tab[aria-selected="true"]{--wash:var(--w-yellow);transform:translateY(-2px) rotate(-1deg)}
+.wd-ti{position:relative;flex:none;width:30px;height:30px}
+.wd-ti svg{display:block;width:100%;height:100%}
+.wd-ti:not(.wd-on) > svg{opacity:.4;filter:grayscale(1)}
+.wd-ti .wd-n{position:absolute;left:-12px;top:-6px}
+html[data-layout="phone"] .wd-ti .wd-n{left:auto;right:-14px;top:-7px}
+.wd-n{display:inline-block;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--ink);color:var(--paper);font:700 11px/16px var(--font-read);text-align:center;font-variant-numeric:tabular-nums}
+.wd-scroll{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:12px 6px 18px 4px}
+.wd-scroll .slot{margin:0 0 18px}
+.wd-scroll .slot h4{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:25px;line-height:1.1}
+.wd-scroll .slot h4 .wd-n{background:var(--w-lilac);color:var(--ink);font-size:13px}
+/* one slot per tab; All shows every slot that has something, each under its own heading */
+.ward[data-tab="head"] .slot:not([data-slot="head"]),.ward[data-tab="eyes"] .slot:not([data-slot="eyes"]),.ward[data-tab="neck"] .slot:not([data-slot="neck"]),
+.ward[data-tab="body"] .slot:not([data-slot="body"]),.ward[data-tab="charm"] .slot:not([data-slot="charm"]),.ward[data-tab="all"]:not(.wd-bare) .slot.wd-none,
+.ward.wd-bare[data-tab="all"] .slot:not([data-slot="head"]){display:none}
+.ward:not([data-tab="all"]) .slot h4,.ward.wd-bare .slot h4{display:none}
+.wd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:16px 12px}
+.wd-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;min-height:128px;padding:14px 6px 11px;cursor:pointer;color:var(--ink);text-align:center;
+  --wash:var(--paper);--fr:var(--fr-card);transition:transform .12s ease-out}
+.wd-tile:hover{transform:translateY(-2px) rotate(-.7deg)}
+.wd-tile:active{transform:translate(1px,2px)}
+.wd-tile:focus-visible{outline:3px dashed var(--pink,#F28FA5);outline-offset:2px}
+.wd-tile[aria-pressed="true"]{--wash:var(--w-yellow)}
+.wd-art{display:block;flex:none;width:60px;height:60px}
+.wd-art svg{display:block;width:100%;height:100%}
+.wd-name{font-family:var(--font-hand);font-weight:700;font-size:18px;line-height:1.05;overflow-wrap:break-word;max-width:100%}
+.wd-off .wd-name{color:var(--muted)}
+.wd-tile .tstar{font-size:15px;line-height:1;margin-top:-2px}
+.wd-tile .hw-tag{position:absolute;left:5px;top:5px;margin:0;padding:0 4px;font-size:11px;line-height:1.3}
+.wd-tick{display:none;position:absolute;right:3px;top:3px;width:26px;height:26px}
+.wd-tick svg{display:block;width:100%;height:100%}
+.wd-tile[aria-pressed="true"] .wd-tick{display:block}
+.wd-flag{position:absolute;left:50%;top:-10px;z-index:1;padding:0 8px 1px;background:rgba(242,143,165,.62);color:var(--ink);font-family:var(--font-hand);font-weight:700;font-size:15px;line-height:1.25;
+  transform:translateX(-50%) rotate(-5deg);white-space:nowrap;pointer-events:none}
+.wd-scroll .sh-pj{display:flex;width:100%;justify-content:flex-start;margin:14px 0 0;text-align:left}
+.wd-empty{display:flex;align-items:center;gap:12px;margin:4px 0;padding:14px 16px;color:var(--muted);font-size:17px;line-height:1.3;border:2px dashed #D9C7B3;border-radius:14px 10px 16px 9px}
+.wd-empty .wd-art{width:44px;height:44px;opacity:.75}
+/* phones: a short dog strip on top, compact tabs (icon over word), three tiles a row, the perks close the list */
+html[data-layout="phone"] #modal .panel.wd-pop{height:min(100%,88vh);height:min(100%,88dvh)}
+html[data-layout="phone"] .panel.wd-still{animation:none}
+html[data-layout="phone"] .ward{display:flex;flex-direction:column;gap:6px}
+html[data-layout="phone"] .wd-stage{flex:none;overflow:visible;padding:0}
+html[data-layout="phone"] .ward .preview{height:128px;padding:6px 8px;display:flex;justify-content:center;overflow:hidden}
+html[data-layout="phone"] .ward .preview svg{height:100%;width:auto;max-width:100%}
+html[data-layout="phone"] .ward .charmtag{position:absolute;right:14px;top:8px;margin:0;font-size:17px;max-width:42%;text-align:right;line-height:1.1}
+html[data-layout="phone"] .wd-tabs{gap:5px;padding:6px 2px 8px}
+html[data-layout="phone"] .wd-tab{flex-direction:column;gap:1px;min-width:44px;min-height:54px;padding:6px 5px 4px;font-size:16px;line-height:1}
+html[data-layout="phone"] .wd-ti{width:26px;height:26px}
+html[data-layout="phone"] .wd-scroll{padding:12px 2px 16px}
+html[data-layout="phone"] .wd-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px}
+html[data-layout="phone"] .wd-tile{min-height:106px;padding:12px 4px 9px;gap:4px}
+html[data-layout="phone"] .wd-art{width:50px;height:50px}
+html[data-layout="phone"] .wd-name{font-size:16px}
+html[data-layout="phone"] .wd-tick{width:24px;height:24px;right:2px;top:2px}
+html[data-layout="phone"] .wd-perks{margin:4px 0 0;font-size:15px}
+html[data-layout="phone"] .wd-scroll .slot h4{font-size:23px}
+html[data-layout="phone"] .wd-tile .hw-tag{position:static;font-size:15px;padding:0 6px 1px;line-height:1.2} /* phones: every word 15 px or more, so the year sits under the name, clear of the "new!" tape */
+html[data-layout="phone"] .wd-n{font-size:15px;line-height:19px;min-width:21px;padding:0 5px}
+html[data-layout="phone"] .wd-scroll .slot h4 .wd-n{font-size:15px}
+@media (max-height:760px){html[data-layout="phone"] .ward .preview{height:112px}}

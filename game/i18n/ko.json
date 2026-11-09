@@ -9183,6 +9183,7 @@
  "wardrobe.perk_line": "{item}: {perk}",
  "wardrobe.perks": "효과: {list}",
  "wardrobe.pj_toggle": "낮잠 시간 잠옷: {state, select, on {켜짐} other {꺼짐}}",
+ "wardrobe.tab_all": "전체",
  "wardrobe.title": "옷장",
  "wardrobe.title_dog": "옷장: {name}",
  "wardrobe.treasure": "보물",
