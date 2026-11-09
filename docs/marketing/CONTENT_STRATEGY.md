@@ -9,7 +9,7 @@ People who:
 - play on their phone in short gaps (commute, lunch, bed);
 - are tired of games that nag, punish or charge them;
 - often love dogs but can't have one right now (rented flat, allergies, long work hours, a dog that passed away);
-- live all over the world (the game is in 11 languages).
+- live all over the world (the game is in 12 languages, Cantonese since v2.23.2).
 
 **Their goals:** a few calm minutes a day, something cute that is theirs to care for, a small daily reward, something funny to share with a friend.
 
@@ -49,7 +49,7 @@ People who:
 7. **"Today my dog wished for…"** (a small daily goal). The v2.17 daily wish in the dog's own words; ask "what would yours wish for?"
 8. **"Diary of a crayon dog"** (wanting to feel cared for). A dog's own diary page read out ("Today the human came back. Best day of my life. Again.").
 9. **"Draw your dog this badly"** (wanting to share). Followers draw their real dog in crude crayon, and we turn the best ones into a post. Community and comments.
-10. **"Play it in your language"** (non-English players). One dog line in 11 languages, with a "which language do you play in?" poll.
+10. **"Play it in your language"** (non-English players). One dog line in 12 languages, with a "which language do you play in?" poll.
 
 ## 3. Five new ideas in the same format as the best Reel
 

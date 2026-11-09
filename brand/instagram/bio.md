@@ -4,9 +4,9 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 
-**Bio, now (18 Oct, 35 dogs since v2.12 and the Tokyo Trip; 133 of 150 characters; link: https://an9ou.itch.io/doodle-doggo):**
+**Bio, now (18 Oct; 9 Nov: 40 dogs since v2.21, so the first line says 40; 133 of 150 characters; link: https://an9ou.itch.io/doodle-doggo):**
 
-    🖍️ 35 wobbly crayon pups (they drew themselves)
+    🖍️ 40 wobbly crayon pups (they drew themselves)
     🗻 Walks, puppies & a Tokyo trip, Japan-style
     🎮 Free cozy dog game · play on itch.io 👇
 

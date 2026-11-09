@@ -7,7 +7,7 @@ Banner: `youtube-banner-2560x1440.jpg` (`youtube-banner-safe-areas-check.jpg` sh
 ```
 Welcome to Doodle Doggo 🖍️🐶 a free cozy dog game you play right in your browser.
 
-It's a little town drawn in pencil, where every dog drew themselves (and it shows). Adopt one of 35 wobbly crayon pups, feed them, cuddle them and give them baths. Play fetch with the whole pack, take walks around town, grow a garden, cook dog-safe treats, plan puppy playdates with real coat genetics, watch the sun go down over Mt. Fuji in a Japan-style town, and take a day trip to Tokyo. Nothing bad ever happens here.
+It's a little town drawn in pencil, where every dog drew themselves (and it shows). Adopt one of 40 wobbly crayon pups, feed them, cuddle them and give them baths. Play fetch with the whole pack, take walks around town, grow a garden, cook dog-safe treats, plan puppy playdates with real coat genetics, watch the sun go down over Mt. Fuji in a Japan-style town, and take a day trip to Tokyo. Nothing bad ever happens here.
 
 On this channel: trailers, dog introductions, seasonal updates and little stories from Noodle the dachshund, who is sure he's the star.
 
