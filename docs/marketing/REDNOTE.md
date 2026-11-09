@@ -34,7 +34,9 @@ Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (
 
 **English first, RedNote after approval (owner, 30 Oct 2026).** For every new Reel or post, render only the English version first. Make the RedNote version only after the owner approves the English one.
 
-**RedNote (owner, 8 Nov 2026): never name other social platforms (微信, 朋友圈, QQ, 微博, 抖音, WhatsApp, Instagram...) in a video, caption or picture; say 分享链接和海报给朋友 only. The how-to Reel was throttled for it.** (The how-to's RedNote cut was re-made the same day: plain share actions, no QR, no readable domain.)
+**RedNote (owner, 8 Nov 2026): never name other social platforms (微信, 朋友圈, QQ, 微博, 抖音, WhatsApp, Instagram...) in a video, caption or picture; say 分享链接和海报给朋友 only. The how-to Reel was throttled for it.** (The how-to's RedNote cut was re-made the same day with plain share actions and no readable domain.)
+
+**RedNote end card QR (owner, 7 Nov 2026, mandatory from 9 Nov 2026): every RedNote video ends on the RedNote end card with the QR code to https://doodledoggo.app and "扫码就能玩". The QR on the end card is required; only a written domain (with a dot) and other platforms' names stay banned.**
 
 **Update (4 Nov 2026, recommended default under the 5-minute rule; the owner can still change it): new RedNote posts, end cards and captions say "在浏览器搜 Doodle Doggo App 就能玩" (search Doodle Doggo App in the browser), the same words as the new bio, and never "DoodleDoggo.app" with a dot, which reads as a URL and is the likely reason for the bans.** Posts already made are left as they are.
 
