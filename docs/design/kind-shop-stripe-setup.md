@@ -93,3 +93,6 @@ recorded, refunded, `refunded: true`, test account deleted. The session again sh
 `automatic_tax.liability: self`, and the Dashboard's Managed Payments page still says "None of your transactions used Managed
 Payments". Both live buyers were in Hong Kong (the owner's own card). Open question for Stripe support (owner): why live sessions with
 managed_payments enabled don't count as Managed Payments, and whether same-country (HK) buyers are excluded. SHOP_LIVE stays false.
+Third live test (9 Nov, the owner's Singapore card): `automatic_tax.liability: stripe`, invoice issuer `stripe`, 8 cents SG GST inside
+the US$0.99 (tax-inclusive works). So Managed Payments works on live; the two Hong Kong-card tests showed `self` because Stripe is not
+the seller of record for buyers in the account's own country (Hong Kong: no sales tax, so nothing is owed). Blocker cleared.
