@@ -20,15 +20,24 @@
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
+const { RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'coat_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', YEL = '#FFE3A1', PINK = '#F28FA5', RED = '#D2473C', GREEN = '#4E9A54';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
+// REDNOTE=1 (owner, 9 Nov 2026): the RedNote cut. Every word in Simplified Chinese (the game's own zh-Hans coat, breed and eye words, through
+// mods/genes.js coatLabel with the game's zh-Hans strings), Noodle's Mandarin voice (../friends_reel/vo_friends_zh.py with VO_LINES=coat_reel/vo_coat_zh.json,
+// zf_073 1.0x), subtitles of at most 14 characters, LXGW WenKai, the picker beat from capture_picker.js with PAW_LANG=zh-Hans (PICKER=<its dir>).
+// RedNote rules (docs/marketing/REDNOTE.md): no link, no domain, no QR, no other platform's name. Writes doodle-doggo-pick-a-coat-rednote.mp4.
+const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
+if (RN !== /[\u4e00-\u9fff]/.test(VOJ.text.hook)) throw new Error(RN ? 'REDNOTE=1 needs the Mandarin vo dir' : 'a Mandarin vo dir needs REDNOTE=1');
 
 // ---- the game's art, genes and starter coats, loaded as the game loads them ----
-const win = {}, ctx = { window: win, console, Intl, navigator: {} }; vm.createContext(ctx);
+const ZH = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8')), zt = (k) => { if (ZH[k] == null) throw new Error('no zh-Hans text ' + k); return ZH[k]; };
+const fmtV = (x, v) => String(x).replace(/\{(\w+)\}/g, (m, k) => (v && v[k] != null ? v[k] : m));
+const win = RN ? { PawI18n: { tt: (k, en, v) => fmtV(ZH[k] != null ? ZH[k] : en, v), tlang: () => 'zh-Hans' } } : {}, ctx = { window: win, console, Intl, navigator: {} }; vm.createContext(ctx);
 for (const f of ['dogs/pawart_dogs.js', 'mods/genes.js']) vm.runInContext(fs.readFileSync(path.join(ART_ROOT, f), 'utf8'), ctx);
 { let s = fs.readFileSync(path.join(ART_ROOT, 'game/src/10_sex_age_genes.js'), 'utf8'); const cut = s.indexOf('// Breeding rules'); if (cut < 0) throw new Error('10_sex_age_genes.js changed'); vm.runInContext(s.slice(0, cut), ctx); }
 const PA = win.PawArt, G = win.PawGenes, inner = (s) => s.trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
@@ -53,6 +62,9 @@ const PICKS = [
   Object.assign(starter('collie', 'Red merle', 'odd', 'c'), { word: 'Red merle', sub: 'Border Collie', extra: 'one blue eye, one brown' }),
   Object.assign(starter('lab', 'Chocolate', null, 'h'), { word: 'Chocolate', sub: 'Labrador' }),
 ];
+// RedNote: the game's own Chinese coat names (coatLabel) and breed names; the collie's eye line from the game's eye words (genes.eye_blue / eye_brown)
+if (RN) PICKS.forEach((p) => { p.word = G.coatLabel(p.word, p.key); p.sub = zt('data.breed_names.' + p.key); if (p.extra) p.extra = '一只' + zt('genes.eye_blue') + '，一只' + zt('genes.eye_brown');
+  if (!/[\u4e00-\u9fff]/.test(p.word)) throw new Error('no Chinese coat name for ' + p.key); });
 // owner, 1 Nov 2026: no black or white dog as a pick
 PICKS.forEach((p) => { if (/black|white/i.test(p.ph.coatName.replace(/ and white$/, '')) || /black|white/i.test(p.word)) throw new Error('a black or white pick: ' + p.word); });
 if (PICKS[2].ph.eyes !== 'odd') throw new Error('the collie lost its odd eyes');
@@ -85,9 +97,12 @@ console.log('count at', COUNT.map((x) => (x - PAUSE_AT).toFixed(2)).join(', '), 
 // subtitles: the payoffs and the real-coats line (the hook, the pause and the ask are on the card already)
 const SUBS_TX = { d1: ['Fox red. Not a fox.', 'We checked.'], d2: ['Dark golden.', 'Like toast, but a dog.'], d3: ['Odd eyes.', 'Both judging you.'],
   d4: ['Chocolate.', 'The dog-safe kind.'], coats: ['New! Almost every dog', 'comes in different coats!'], adopt: ['Pick one when you adopt.', 'Puppies inherit it!'] };
-for (const [k, parts] of Object.entries(SUBS_TX)) if (parts.join(' ') !== VOJ.text[k]) throw new Error('subtitles differ from the voice: ' + k);
+if (RN) Object.assign(SUBS_TX, { d1: ['狐狸红。', '不是狐狸，查过了。'], d2: ['深金色。', '像烤面包的狗狗。'], d3: ['异色眼睛。', '都在审视你。'], d4: ['巧克力色。', '唯一安全的巧克力。'],
+  coats: ['新！几乎每只狗狗', '都能选毛色！'], adopt: ['领养时挑一个，', '小狗会遗传！'] }); // vo_coat_zh.json, line by line, at most 14 characters a chunk
+for (const [k, parts] of Object.entries(SUBS_TX)) { if (parts.join(RN ? '' : ' ') !== VOJ.text[k]) throw new Error('subtitles differ from the voice: ' + k);
+  if (RN) for (const x of parts) if ([...x].length > 14) throw new Error('subtitle over 14 characters: ' + x); }
 const SUBS = [];
-VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) return; const wt = parts.map((x) => x.length + (/[.!?]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
+VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) return; const wt = parts.map((x) => (RN ? x.replace(/[，。！？：、]/g, '').length * 2 : x.length) + (/[.!?。！？]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d, s: x, k: v.k }); t0 += d; }); });
 SUBS.forEach((u, i) => { const nx = SUBS[i + 1]; u.b = nx ? Math.min(nx.a, u.b + 0.3) : u.b + 0.3; });
 
@@ -106,14 +121,20 @@ const ONE = DOGKEYS.filter((k, j) => ALLC[j].length === 1);
 console.log(DOGKEYS.length + ' dogs, ' + NCOATS + ' coats, ' + MONT.length + ' with a choice; one coat only: ' + ONE.join(', '));
 if (MONT.length + ONE.length !== DOGKEYS.length || MONT.length < 30) throw new Error('coat table changed');
 // beat B: the picker stills and the tapped buttons (CSS px of the 393 x 659 phone)
-const PICKDIR = path.resolve(process.env.PICKER || path.join(WORK, '..', 'picker')), PL = JSON.parse(fs.readFileSync(path.join(PICKDIR, 'layout.json'), 'utf8'));
-if (!/Red merle/.test(PL.label3) || !/odd/.test(PL.label3)) throw new Error('the picker stills do not end on Red merle, odd eyes');
+const PICKDIR = path.resolve(process.env.PICKER || path.join(WORK, '..', RN ? 'picker_zh' : 'picker')), PL = JSON.parse(fs.readFileSync(path.join(PICKDIR, 'layout.json'), 'utf8'));
+if (PL.state ? PL.state.coat !== 3 || PL.state.eye !== 2 : !/Red merle/.test(PL.label3) || !/odd/.test(PL.label3)) throw new Error('the picker stills do not end on Red merle, odd eyes');
+if (RN !== /[\u4e00-\u9fff]/.test(PL.label3)) throw new Error('the picker stills are not in the cut\'s language (PAW_LANG=zh-Hans for the RedNote cut)');
 const CROP = { y0: 110, h: 380 }, PH = { x: 475 - 314.5, y: 640, w: 629, h: 380 * 629 / 393 }, TAPS = [0.7, 1.45, 2.25].map((x) => B_AT + x); // the crop of the 393 px wide screen: the playroom with the meet dog, the Coat line, the swatches and the eye choices
 for (const [id, s] of Object.entries(ART)) if (!s.includes('pa-d-f2')) throw new Error('no line boil in ' + id);
 
 const TX = { hook: ['Stop picking the yellow Lab.', 'Pick 1 of these 4 dogs instead.'], aside: "sorry yellow Labs, you're great", pick: 'PICK 1 · 2 · 3 · 4', pause: 'pause now!', coatsCard: [NCOATS + ' coats', MONT.length + ' of ' + DOGKEYS.length + ' dogs have a choice'], adoptCard: ['pick the coat', 'when you adopt'],
   newSticker: "NEW! pick your dog's coat", ask: ['Comment', 'your number!'], newTag: 'NEW!' };
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+if (RN) Object.assign(TX, { hook: ['别再选黄色拉布拉多了', '从这4只里挑1只'], aside: '黄色拉布拉多，你也很棒！', pick: '选 1 · 2 · 3 · 4', pause: '暂停！',
+  coatsCard: [NCOATS + '种毛色', DOGKEYS.length + '只狗狗里' + MONT.length + '只可以选'], adoptCard: ['领养的时候', '挑选毛色'], newSticker: '新！领养时可以选毛色',
+  ask: ['评论区告诉我', '你选几号！'], newTag: '新！' });
+const FAM = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
+const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
 <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><path d="M0 7H14" stroke="#5B3D32" stroke-width="2.2" stroke-linecap="round" opacity=".12"/></pattern>
@@ -125,7 +146,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const $=(i)=>document.getElementById(i), ART=${JSON.stringify(ART)}, SUBS=${JSON.stringify(SUBS)}, TX=${JSON.stringify(TX)}, F='Caveat', CX=SAFE_CX;
+const $=(i)=>document.getElementById(i), ART=${JSON.stringify(ART)}, SUBS=${JSON.stringify(SUBS)}, TX=${JSON.stringify(TX)}, F=${JSON.stringify(FAM)}, RN=${RN}, CX=SAFE_CX;
 const P=${JSON.stringify(PICKS.map((p) => ({ word: p.word, sub: p.sub, isNew: !!p.isNew, extra: p.extra || '' })))}, MONT=${JSON.stringify(MONT)}, PL=${JSON.stringify(PL)}, CROP=${JSON.stringify(CROP)}, PH=${JSON.stringify(PH)}, TAPS=${JSON.stringify(TAPS)};
 const XAT=${XAT}, SLIDE=${SLIDE}, POP=${POP}, HOOK_AT=${HOOK_AT}, PAUSE_AT=${PAUSE_AT}, BEAT=${JSON.stringify(BEAT)}, A_AT=${A_AT}, B_AT=${B_AT}, ASK_AT=${ASK_AT}, LOOP=${LOOP}, T=${T}, COUNT=${JSON.stringify(COUNT)};
 const clamp=(x,a,b)=>Math.max(a==null?0:a,Math.min(b==null?1:b,x)), sm=(x)=>{ x=clamp(x); return x*x*(3-2*x); }, eo=(x)=>1-Math.pow(1-clamp(x),3);
@@ -213,7 +234,7 @@ window.frame=function(t){
       ph.setAttribute('opacity',f2(o)); ph.setAttribute('transform','translate('+CX+' '+(PH.y+PH.h/2)+') scale('+f2(ps)+') translate('+(-CX)+' '+(-(PH.y+PH.h/2))+')');
       for(let i=0;i<4;i++) $('pk'+i).setAttribute('opacity',i===n?1:0);
       // the game's own Coat / Eyes line of this screen, read big in a crayon pill over the playroom wall (the screen's line is small on a phone)
-      const lab=PL['label'+n].replace(/\s*·?\s*Eyes:/,' · Eyes:'), ls=n?0.9+0.1*back((t-TAPS[n-1]-0.12)/0.25):1;
+      const lab=RN?PL['label'+n].replace(/ +/,' · '):PL['label'+n].replace(/\s*·?\s*Eyes:/,' · Eyes:'), ls=n?0.9+0.1*back((t-TAPS[n-1]-0.12)/0.25):1;
       ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' '+(PH.y+48)+') scale('+f2(ls*ps)+') translate('+(-CX)+' '+(-(PH.y+48))+')">'+pill(lab,CX,PH.y+48,fitS(lab,46,540),F,{fill:'${YEL}',padX:26})+'</g>';
       TAPS.forEach((a,i)=>{ const u=(t-a)/0.45; if(u<0||u>1) return; const r=PL.taps[i], x=PH.x+(r.x+r.w/2)*S, y=PH.y+(r.y+r.h/2-CROP.y0)*S;
         ov+='<g opacity="'+f2(o*(1-sm(u)))+'"><circle cx="'+f2(x)+'" cy="'+f2(y)+'" r="'+f2(20+46*eo(u))+'" fill="none" stroke="${PINK}" stroke-width="9"/><circle cx="'+f2(x)+'" cy="'+f2(y)+'" r="14" fill="${PINK}" opacity=".35"/></g>'; }); }
@@ -242,6 +263,23 @@ window.frame=function(t){
   return '';
 };
 const VOD_HOOK=${VOD.hook};
+// the cover (owner, 9 Nov 2026): its own design, never a frame of the Reel. Everything that matters inside the 1:1 profile-grid crop (y 420..1500), the
+// logo inside the 4:5 grid crop (y 285..1635); the RedNote 3:4 cover is the middle 1080 x 1440 (y 240..1680) of the Chinese one
+const LOGO_INNER=${JSON.stringify(LOGO_INNER)};
+window.cover=function(){ const C=540, k=0; let bg='<rect width="${W}" height="${H}" fill="${PAPER}"/>', art='', ov='';
+  const XS=[300,780], FS=[935,1262], cols=['#F6B98C','#F1CF62','#EE9CB6','#C9A27E'];
+  P.forEach((p,i)=>{ const x=XS[i%2], feet=FS[i>>1]; bg+=blob(x,feet-118,175,cols[i],i+21,0.5);
+    art+=place('s'+i,x,feet,400,250,1,0,i%3,{safe:false,flip:i%2===1});
+    ov+='<g transform="translate('+(x-204)+' '+(feet-232)+') rotate(-8)">'+bubble(0,0,48,String(i+1),76)+'</g>'+pill(p.word,x,feet+40,48,F,{fill:'${CREAM}',padX:26}); });
+  ov+='<g transform="rotate(-2 '+C+' 545)">'+card(C-470,445,940,200,[{s:TX.hook[0],size:fitS(TX.hook[0],80,860),pitch:94},{s:TX.hook[1],size:fitS(TX.hook[1],76,860)}],{sw:7})+'</g>';
+  ov+='<g transform="rotate(-2 320 1420)">'+pill(TX.pick,320,1420,fitS(TX.pick,64,380),F,{fill:'${YEL}',padX:34})+'</g>';
+  ov+='<g transform="rotate(4 790 1418)">'+pill(TX.newSticker,790,1418,fitS(TX.newSticker,46,360),F,{fill:'${PINK}',padX:22})+'</g>';
+  const lw=400, lh=lw*280/900; ov+='<svg x="'+(C-lw/2)+'" y="1500" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>';
+  $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov; $('phone').setAttribute('opacity',0);
+  const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
+  for(const e of $('st').querySelectorAll('#ov > *, #art > *')){ const b=e.getBoundingClientRect(), logo=e.tagName.toLowerCase()==='svg';
+    if(logo?(b.top<285||b.bottom>1635):(b.top<420||b.bottom>1500||b.left<0||b.right>1080)) return 'cover: outside the '+(logo?'4:5':'1:1')+' crop: '+(e.textContent||e.tagName).slice(0,30)+' '+[b.left,b.top,b.right,b.bottom].map(Math.round); }
+  return ''; };
 </script>`;
 
 (async () => {
@@ -252,12 +290,19 @@ const VOD_HOOK=${VOD.hook};
   const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html);
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const allText = [Object.values(TX), PICKS.map((p) => [p.word, p.sub, p.extra || '']), Object.values(SUBS_TX), '0123456789'].flat(3).join(' ');
-  await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), allText); await p.evaluate(() => document.fonts.ready);
+  await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), allText);
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText + Object.values(PL).join(''));
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
+  await p.evaluate(() => document.fonts.ready);
   await p.evaluate(() => Promise.all([0, 1, 2, 3].map((i) => new Promise((ok, no) => { const im = new Image(); im.onload = ok; im.onerror = () => no(new Error('pk' + i)); im.src = 'pk' + i + '.png'; }))));
   const m = await p.evaluate(() => measure()); fs.unlinkSync(pageFile);
   console.log('T =', T.toFixed(2), 's,', NF, 'frames; voice at', VOAT.map((v) => v.k + ' ' + v.at.toFixed(2)).join(', '), '; collie eye at', m.EYE.map(Math.round));
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) throw new Error(err + ' at ' + t.toFixed(2));
     await p.screenshot({ path: file }); };
+  if (process.env.ONLY === 'cover') { // the English cover next to this file; the RedNote 3:4 cover in brand/rednote
+    const err = await p.evaluate(() => window.cover()); if (err) throw new Error(err);
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-12-coats.jpg') : path.join(OUT, 'coat-cover.jpg');
+    await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0, XAT + 0.4, SLIDE + 0.3, POP + 0.5, PAUSE_AT + 0.3, COUNT[2] + 0.1, ...BEAT.map((x) => x + 0.9), A_AT + 0.5, A_AT + 2, B_AT + 0.5, B_AT + 1.2, B_AT + 3, ASK_AT + 0.4, LOOP + 0.2, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -296,7 +341,7 @@ const VOD_HOOK=${VOD.hook};
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-pick-a-coat.mp4');
+  const mp4 = path.join(OUT, `doodle-doggo-pick-a-coat${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
