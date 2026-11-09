@@ -132,3 +132,4 @@ No Worker change. Next: brief Marketing (12 languages, 廣東話; marketing text
 - 2026-11-09 v2.23.3 "Tidy wardrobe" shipped (main c67d0d04, merged over v2.23.2; packed.js regenerated, never hand-merged). itch push 2.23.3 done (build #2340996), site deployed with SITE_GAME=dist/itch, no Worker deploy.
 - Tests green: wardrobe_tidy, smoke, i18n, v29_pack, i18n_fit (wardrobe). v2182_news failed once on "nor after a reload" / "newest entry" and passed on a plain rerun (flake). i18n_phone and phone_v29_pack not run (known failures on main).
 - No NEWS entry for this release. Marketing not yet briefed.
+- v2.23.3 live check: doodledoggo.app/play/ kept serving the v2.23.2 page for ~15 min after the Worker deploy (deployment at 100%, no route or cache to blame; the token cannot purge the cache), then switched by itself (md5 dda3d21c = dist/itch). If a deploy looks stale, wait ~15 min before redeploying. Marketing briefed.
