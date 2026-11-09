@@ -228,7 +228,7 @@ async function checks(label, call, sql, mail) {
       ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
       ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 120 })] })],
       ['a breed past the list', card({ dogs: [dog({ b: 40 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
-      ['an outfit past the list', card({ dogs: [dog({ o: 50 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 57 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })],
@@ -316,7 +316,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 }'), 'FR_LIM is notes 12, gifts 47, decor 31, houses 14, next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 31, houses 15 (v2.24: + the Golden Paw Cottage), next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);
@@ -463,7 +463,7 @@ async function checks(label, call, sql, mail) {
     ok((await frCall('PUT', '/friends/yard', { yard: yard(), extra: 1 }, yB.token)).json.error === 'bad', 'an extra field on the yard put is bad');
     const junk = [
       ['typed dog name', dog({ n: 'Mochi' })], ['dog name past the list', dog({ n: 120 })], ['breed past the list', dog({ b: 40 })],
-      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 50 })], ['outfit under -1', dog({ o: -2 })],
+      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 57 })], ['outfit under -1', dog({ o: -2 })],
       ['age not pup or adult', dog({ a: 'old' })], ['sex not m or f', dog({ s: 'x' })], ['sparkle 2', dog({ sp: 2 })],
       ['an extra dog key', Object.assign(dog(), { name: 'Pip' })], ['a missing dog key', (() => { const d = dog(); delete d.n; return d; })()],
       ['a bad allele', dog({ c: { B: ['B', 'x'] } })], ['a coat word', dog({ c: 'red' })], ['an unknown locus', dog({ c: { K: ['K', 'k'] } })],
@@ -477,7 +477,7 @@ async function checks(label, call, sql, mail) {
     }
     ok(!junkBad.length, `yard dogs use the Dog Card checks (${junk.length} kinds) ${junkBad.join(', ')}`);
     const yardBad = [
-      ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 14 })],
+      ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 15 })],
       ['6 dogs', yard({ dogs: [dog(), dog(), dog(), dog(), dog(), dog()] })],
       ['41 decor', yard({ decor: Array.from({ length: 41 }, (_, i) => ({ i: 0, x: i, y: 0 })) })],
       ['decor index past the list', yard({ decor: [{ i: 31, x: 0, y: 0 }] })],
