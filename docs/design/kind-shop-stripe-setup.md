@@ -72,4 +72,6 @@ End-to-end sandbox test, 9 Nov 2026, with a throwaway account (deleted from D1 a
   US$0.99 + 8.875% NY tax = US$1.08, back to doodledoggo.app/thanks?ok=1; the webhook recorded it in `/shop/owned`.
 - Tokyo Street: paid (US$3.26 with tax), a second checkout answered 409 owned; a full refund through the API reached the Worker
   (`refunded: true`) and the item could be bought again.
-Prices are tax-exclusive by default (US buyers pay sales tax on top); Adaptive Pricing is on. Live-mode products: not made yet.
+Tax: the owner chose **tax-inclusive** prices (9 Nov 2026): buyers pay exactly the price the game shows, the tax comes out of the
+owner's share. All 10 sandbox prices are `tax_behavior: inclusive`; set the same on every live price. Adaptive Pricing is on.
+Live-mode products: not made yet.
