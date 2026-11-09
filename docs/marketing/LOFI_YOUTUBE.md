@@ -11,6 +11,7 @@ ffmpeg -stream_loop 59 -i loop_crf24.mp4 -stream_loop 59 -i <workdir>/cozy_loop.
 
 - `rainy-evening-loop-30s.mp4`: the loop, 1920 x 1080, 30 fps, 900 frames, H.264 + AAC 192k, exactly 30.000 s, -16 LUFS integrated, true peak -2.6 dBTP. Frame 900 would be frame 0 again (checked pixel for pixel), the music is a seamless 10-bar loop.
 - `lofi-rainy-evening-thumb.jpg`: the 1280 x 720 thumbnail ("rainy evening lofi" in Caveat, Pickle with his curious "?", Scone asleep, the logo).
+- `lofi-rainy-evening-poster.jpg`: the same picture with "play at doodledoggo.app" beside the logo (owner, 9 Nov 2026; `make_poster.js`). Bottom-left only, as YouTube puts the video length bottom-right.
 - `build_lofi.js`: the video build. `cozy_lofi.js`: the music (the game's music engine with one added place, 'cozy').
 
 ## The scene
