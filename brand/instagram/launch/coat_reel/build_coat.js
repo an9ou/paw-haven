@@ -2,8 +2,8 @@
 // Hook at frame 1: "Stop picking the yellow Lab. / Pick 1 of these 4 dogs instead." over the game's yellow Labrador (its default coat); a red crayon
 // cross, a kind aside ("sorry yellow Labs, you're great") and the Lab slides off. Four numbered dogs pop in at once, "pause now!" with a 3-2-1,
 // then each pops big for its deadpan line in Noodle's voice: 1 Fox red Labrador (new in v2.23.1), 2 Dark golden Golden Retriever (new),
-// 3 Red merle Border Collie with odd eyes (one blue, one brown), 4 Chocolate Labrador. Then "real coats you pick when you adopt, puppies inherit
-// them", "comment your number", and the yellow Lab slides back in: the last frame is the first one, so the Reel loops.
+// 3 Red merle Border Collie with odd eyes (one blue, one brown), 4 Chocolate Labrador. Then the news (owner, 9 Nov 2026: say it is new): "New! Now you pick the coat when you adopt a new dog. Puppies inherit it!", with a NEW sticker from the countdown on; then
+// "comment your number", and the yellow Lab slides back in: the last frame is the first one, so the Reel loops.
 // No black or white dog is a pick (owner, 1 Nov 2026). Nothing typed from memory: the coats are the game's own starter presets
 // (game/src/10_sex_age_genes.js STARTER_COATS, starterCoats / starterPick as the adoption colour picker uses them), the coat names and colours
 // come from mods/genes.js phenotype(), and each dog is drawn as the game draws that dog (PawArt.dog(key, { coat: phenotype.coat, seed: hashId(id) }),
@@ -81,7 +81,7 @@ const COUNT = (() => { const { env, hop } = wavEnv(path.join(VO, 'pause.wav')), 
 console.log('count at', COUNT.map((x) => (x - PAUSE_AT).toFixed(2)).join(', '), 's into the pause line');
 // subtitles: the payoffs and the real-coats line (the hook, the pause and the ask are on the card already)
 const SUBS_TX = { d1: ['Fox red. Not a fox.', 'We checked.'], d2: ['Dark golden.', 'Like toast, but a dog.'], d3: ['Odd eyes.', 'Both judging you.'],
-  d4: ['Chocolate.', 'The dog-safe kind.'], real: ['Real coats you pick when you adopt.', 'Puppies inherit them!'] };
+  d4: ['Chocolate.', 'The dog-safe kind.'], real: ['New! Now you pick the coat', 'when you adopt a new dog.', 'Puppies inherit it!'] };
 for (const [k, parts] of Object.entries(SUBS_TX)) if (parts.join(' ') !== VOJ.text[k]) throw new Error('subtitles differ from the voice: ' + k);
 const SUBS = [];
 VOAT.forEach((v) => { const parts = SUBS_TX[v.k]; if (!parts) return; const wt = parts.map((x) => x.length + (/[.!?]$/.test(x) ? 6 : 2)), sum = wt.reduce((a, b) => a + b, 0); let t0 = v.at;
@@ -98,7 +98,7 @@ ART.zoom = ART.s2; // the collie's face for the eye loupe
 for (const [id, s] of Object.entries(ART)) if (!s.includes('pa-d-f2')) throw new Error('no line boil in ' + id);
 
 const TX = { hook: ['Stop picking the yellow Lab.', 'Pick 1 of these 4 dogs instead.'], aside: "sorry yellow Labs, you're great", pick: 'PICK 1 · 2 · 3 · 4', pause: 'pause now!',
-  real: ['4 real coats you can pick', 'when you adopt'], realSub: 'puppies inherit the colour!', ask: ['Comment', 'your number!'], newTag: 'NEW!' };
+  real: ['new: pick the coat', 'when you adopt'], newSticker: "NEW! pick your dog's coat", ask: ['Comment', 'your number!'], newTag: 'NEW!' };
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:${PAPER}}svg{display:block}#art .pa-d-f0,#art .pa-d-f1,#art .pa-d-f2{display:none}#art .k0 .pa-d-f0,#art .k1 .pa-d-f1,#art .k2 .pa-d-f2{display:inline}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
@@ -136,7 +136,7 @@ function stroke(x0,y0,x1,y1,u,col,w){ if(u<=0) return ''; const x=lerp(x0,x1,u),
   return '<path d="M'+f2(x0)+' '+f2(y0)+' Q'+f2(mx)+' '+f2(my)+' '+f2(x)+' '+f2(y)+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" opacity=".92"/>'
     +'<path d="M'+f2(x0+6)+' '+f2(y0+5)+' Q'+f2(mx-6)+' '+f2(my+8)+' '+f2(x-4)+' '+f2(y+4)+'" fill="none" stroke="'+col+'" stroke-width="'+(w*0.45)+'" stroke-linecap="round" opacity=".55"/>'; }
 // the grid: two by two, numbered, each dog with its coat in a pill under it
-const GX=[268,682], GF=[880,1252], GW=360, GH=275;
+const GX=[268,682], GF=[890,1250], GW=360, GH=260; // row 1 starts under the NEW sticker
 const cell=(i)=>({x:GX[i%2], feet:GF[i>>1]});
 function hookCard(o,lt){ return '<g opacity="'+f2(o)+'" transform="rotate(-2 '+CX+' 395)">'+card(CX-405,288,810,214,[{s:TX.hook[0],size:fitS(TX.hook[0],74,730),pitch:92},{s:TX.hook[1],size:fitS(TX.hook[1],70,730)}])+'</g>'; }
 window.frame=function(t){
@@ -181,7 +181,7 @@ window.frame=function(t){
         +(p.isNew?'<g transform="rotate(8 '+(CX+312)+' 326)">'+pill(TX.newTag,CX+312,326,50,F,{fill:'${PINK}',padX:20})+'</g>':'')+'</g>';
       if(p.extra){ const lu=eo((t-BEAT[big]-0.35)/0.3); if(lu>0){ const b=BOX['h'+big], s0=Math.min(720/b[2],520/b[3]), zb=BOX.zoom, zs=Math.min(GW/zb[2],GH/zb[3]);
           // the loupe: the collie's sitting drawing at 4x its grid size, centred on its eyes, in a crayon circle up and to the side
-          const Z=zs*2.8, lx=200, ly=632; // up and to the left, clear of the card, the collie's tail and head
+          const Z=zs*2.8, lx=190, ly=640; // up and to the left, clear of the card, the collie's tail and head
           ov+='<g opacity="'+f2(lu)+'" transform="translate('+lx+' '+ly+') scale('+f2(0.85+0.15*back(lu))+')"><circle r="105" fill="${CREAM}"/><g clip-path="url(#loupe)"><g class="k'+k+'" transform="scale('+Z.toFixed(4)+') translate('+f2(-EYE[0]-9)+' '+f2(-EYE[1])+')">'+ART.zoom+'</g></g><circle data-safe r="105" fill="none" stroke="${PEN}" stroke-width="8"/></g>';
           ov+='<g opacity="'+f2(lu)+'">'+pill(p.extra,CX,1262,50,F,{fill:'#D5E8F8',padX:28})+'</g>'; } } }
   }
@@ -196,6 +196,9 @@ window.frame=function(t){
     ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' 400) scale('+f2(cs)+') rotate(-1.5) translate('+(-CX)+' -400)">'+card(CX-400,292,800,216,[{s:TX.real[0],size:fitS(TX.real[0],78,720),pitch:84},{s:TX.real[1],size:70}],{stroke:'${GREEN}',sw:7})+'</g>'; }
   if(t>=ASK_AT&&t<LOOP+0.12){ const lt=t-ASK_AT, o=Math.min(sm(lt/0.15),1-sm((t-LOOP+0.02)/0.14)), cs=0.9+0.1*back(lt/0.3);
     ov+='<g opacity="'+f2(o)+'" transform="translate('+CX+' 400) scale('+f2(cs)+') rotate(-2) translate('+(-CX)+' -400)">'+card(CX-380,292,760,216,[{s:TX.ask[0],size:92,pitch:98},{s:TX.ask[1],size:92,fill:'#C2567A'}])+'</g>'; }
+  // owner, 9 Nov 2026: the news is explicit. A NEW sticker from the countdown on (between the card and the dogs), gone as the loop starts
+  { const so=Math.min(sm((t-PAUSE_AT)/0.15),1-sm((t-LOOP+0.12)/0.12)); if(so>0.01){ const ss=0.85+0.15*back((t-PAUSE_AT)/0.3);
+    ov+='<g opacity="'+f2(so)+'" transform="translate(492 556) scale('+f2(ss)+') rotate(-2) translate(-492 -556)">'+pill(TX.newSticker,492,556,38,F,{fill:'${PINK}',padX:22})+'</g>'; } }
   ov+=sub(t,1385);
   if(t>=REAL_AT+0.3&&t<ASK_AT){ } // (the real-coats line is in the subtitles)
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov;
