@@ -1,7 +1,7 @@
 // Tidy wardrobe (9 Nov 2026; game/src/06_wardrobe.js, game/css/55_wardrobe.css; owner: "more beautiful and tidy, now is a bit messy"). Checks: the slot tabs
 // (All / Head / Eyes / Neck / Body / Charm) show one slot each, wear and take off by tile, the crayon tick on what is worn, a tap redraws in place
 // (same tab, same scroll, no pop), "new!" on clothes not seen here yet and gone after the sheet closes, the Pyjamas toggle in the Body slot, equal tiles
-// at one art size, and the fit: desktop 1280x720 (wide panel, 4+ tiles a row), a 390x844 and a 360x740 phone (3 tiles a row, 44 px taps, every tab
+// at one art size, and the fit: desktop 1280x720 (wide panel, 4+ tiles a row), a 390x844 and a 360x740 phone (a big dog strip, 4 tiles a row, 44 px taps, every tab
 // in view, the grid scrolls inside the sheet, nothing behind the phone bar, no sideways page scroll).
 // node game/run_tests.js wardrobe_tidy
 const { run } = require('./test_lib'); const { devices } = require('playwright');
@@ -91,7 +91,9 @@ run('wardrobe_tidy', async (t) => {
     const L = await layout();
     ok(L.pageW <= L.vw, `${dev}: no sideways page scroll (${L.pageW} / ${L.vw})`);
     ok(L.barTop == null || L.pBottom <= L.barTop + 1, `${dev}: nothing behind the phone bar (sheet ${Math.round(L.pBottom)}, bar ${L.barTop && Math.round(L.barTop)})`);
-    ok(L.perRow === 3 && L.widths.length === 1 && L.arts.length === 1, `${dev}: three equal tiles a row, one art size (${L.perRow}, ${L.widths}, ${L.arts})`);
+    ok(L.perRow === 4 && L.widths.length === 1 && L.arts.length === 1, `${dev}: four equal tiles a row, one art size (${L.perRow}, ${L.widths}, ${L.arts})`);
+    ok(await ev(() => [...document.querySelectorAll('#modal .wd-name')].every((n) => { const t = n.closest('.wd-tile').getBoundingClientRect(), r = n.getBoundingClientRect(); return n.scrollWidth <= n.clientWidth + 1 && r.left >= t.left - 1 && r.right <= t.right + 1 && r.bottom <= t.bottom + 1; })), `${dev}: every name fits inside its tile (wrapped, never cut)`);
+    ok(await ev(() => { const s = document.querySelector('#modal .preview svg').getBoundingClientRect().height; return s >= (innerHeight > 760 ? 170 : 150); }), `${dev}: the dog is drawn big (about 1.5x the first tidy strip)`);
     ok(L.minTileH >= 44 && L.minTileW >= 44 && L.minTabH >= 44 && L.minTabW >= 44, `${dev}: 44 px taps (tiles ${Math.round(L.minTileW)}x${Math.round(L.minTileH)}, tabs ${Math.round(L.minTabW)}x${Math.round(L.minTabH)})`);
     ok(L.tabsIn && L.rowFits, `${dev}: all six tabs in view, no sideways tab scroll in English`);
     ok(!L.bodyScrolls && L.gridScrolls, `${dev}: the grid scrolls inside its panel, the dog strip stays`);
