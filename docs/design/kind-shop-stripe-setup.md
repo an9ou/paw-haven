@@ -75,3 +75,10 @@ End-to-end sandbox test, 9 Nov 2026, with a throwaway account (deleted from D1 a
 Tax: the owner chose **tax-inclusive** prices (9 Nov 2026): buyers pay exactly the price the game shows, the tax comes out of the
 owner's share. All 10 sandbox prices are `tax_behavior: inclusive`; set the same on every live price. Adaptive Pricing is on.
 Live-mode products: not made yet.
+
+## 6. Live mode (9 Nov 2026)
+The owner activated the live Hong Kong account. Live account `Doodle Doggo` (acct_1UXv1dElR1ebyhgm): the 10 products, tax code
+`txcd_10201000`, prices `tax_behavior: inclusive`. Live `SHOP_PRICES` (set on the Worker only together with the live key and webhook secret):
+```
+{"supporter":"price_1UZvj2ElR1ebyhgmR6Dk5Sg1","tokyo":"price_1UZvjKElR1ebyhgmA142oDy3","cozy":"price_1UZvjLElR1ebyhgmtUqgDKTc","robo":"price_1UZvjLElR1ebyhgm3oBmS0Yz","sprinkler":"price_1UZvjMElR1ebyhgmRjrpXstr","bowl":"price_1UZvjNElR1ebyhgml5WXm5lh","comfort":"price_1UZvjNElR1ebyhgmmbQU4db2","coins_1k":"price_1UZvjOElR1ebyhgmjwMv3WE5","coins_3k":"price_1UZvjPElR1ebyhgmqTs7uy7c","coins_8k":"price_1UZvjPElR1ebyhgmAeovn2xd"}
+```
