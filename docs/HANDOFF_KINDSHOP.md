@@ -6,6 +6,8 @@ Stripe state `docs/design/kind-shop-stripe-setup.md` (section 5 = what is done).
 - Stripe: Hong Kong account, Managed Payments on, sandbox products/prices (tax-inclusive), webhook, restricted key; the Worker
   is DEPLOYED with the sandbox secrets and passed a real end-to-end buy / owned / refund test. SHOP_LIVE stays false.
 - Stripe connector is connected (accounts: live acct_1UXv1dElR1ebyhgm, sandbox acct_1UXv1nIdJRrYdh73).
+Live (9 Nov): live products, webhook, rk_live_ key and live SHOP_PRICES are in; a real US$0.99 buy and refund worked end to end.
+BLOCKER: the live checkout showed tax liability `self`, not `stripe` (Managed Payments review pending?). Re-test before SHOP_LIVE.
 Open:
 1. Merge origin/main into claude/kind-shop: conflicts in i18n json, packed.js, font subsets, CHANGELOG, HANDOFF_GM, 06_wardrobe,
    49c_news, css ORDER, worker.js (keep both: FR_LIM houses 15 + DC_COAT I). Regenerate packed.js and fonts, rerun the suites.

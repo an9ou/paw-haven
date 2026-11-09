@@ -82,3 +82,9 @@ The owner activated the live Hong Kong account. Live account `Doodle Doggo` (acc
 ```
 {"supporter":"price_1UZvj2ElR1ebyhgmR6Dk5Sg1","tokyo":"price_1UZvjKElR1ebyhgmA142oDy3","cozy":"price_1UZvjLElR1ebyhgmtUqgDKTc","robo":"price_1UZvjLElR1ebyhgm3oBmS0Yz","sprinkler":"price_1UZvjMElR1ebyhgmRjrpXstr","bowl":"price_1UZvjNElR1ebyhgml5WXm5lh","comfort":"price_1UZvjNElR1ebyhgmmbQU4db2","coins_1k":"price_1UZvjOElR1ebyhgmjwMv3WE5","coins_3k":"price_1UZvjPElR1ebyhgmqTs7uy7c","coins_8k":"price_1UZvjPElR1ebyhgmAeovn2xd"}
 ```
+Live: owner pasted the live `STRIPE_KEY` (rk_live_, same permissions), `STRIPE_WEBHOOK_SECRET` (destination `we_1UZvlWElR1ebyhgmJaPHEydX`)
+and the live `SHOP_PRICES` into Cloudflare. Real-money test, 9 Nov 2026: 1,000 coins, US$0.99 (shown as HK$8.07, Adaptive Pricing),
+recorded by the webhook, refunded in full by the owner, `refunded: true` on the Worker; throwaway account deleted from D1.
+**Blocker before SHOP_LIVE:** the live session showed `automatic_tax.liability: self` and invoice issuer `self` (the sandbox showed
+`stripe`), so Managed Payments is not fully active on the live account yet (Stripe's eligibility review). Don't turn the shop on until
+a live checkout shows `liability: stripe`.
