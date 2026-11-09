@@ -63,11 +63,8 @@ html[data-layout="phone"] .shopgrid,html[data-layout="phone"] .jgrid{grid-templa
 html[data-layout="phone"] .sitem{padding:12px 6px 10px;font-size:15px}
 html[data-layout="phone"] .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
 html[data-layout="phone"] .tabs .btn{flex:none}
-html[data-layout="phone"] .ward{grid-template-columns:1fr}
 html[data-layout="phone"] .jtop{grid-template-columns:1fr;display:grid;gap:10px}
 html[data-layout="phone"] .jmap-art{max-width:220px}
-html[data-layout="phone"] .ward .preview{height:180px;overflow:hidden;display:flex;justify-content:center}
-html[data-layout="phone"] .ward .preview svg{height:100%;width:auto;max-width:100%}
 html[data-layout="phone"] .opt{min-height:44px}
 html[data-layout="phone"] .pf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 html[data-layout="phone"] .pf-head{flex-direction:column;align-items:flex-start}

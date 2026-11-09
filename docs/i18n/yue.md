@@ -4,7 +4,7 @@ Doodle Doggo v2.20, the 12th language. Source language: English (`game/i18n/en.j
 
 **Owner's choice:** spoken Hong Kong Cantonese (口語廣東話), written in Traditional characters with the Cantonese characters people really type (嘅、咗、啲、唔、冇、喺、嚟、佢、哋). Readers are in Hong Kong and Macau, children included. Short buttons stay simple (餵食、散步). The picker shows the language as **廣東話**; `<html lang>` is `yue-Hant-HK`, and Intl formats numbers and dates as `zh-HK`.
 
-This is **not** a conversion of `zh-Hant.json`. zh-Hant is written Mandarin with Taiwan words: it says 他們在這裡吃飯了; Cantonese says 佢哋喺度食緊飯. Translate from the English meaning. zh-Hant is only a reference for item names and joke ideas, and its Taiwan words (飼料、存檔、米克斯、吉娃娃、馬鈴薯、優格) are wrong here: section 11 has the list. Anything marked TODO(native) needs a native speaker's check (the owner's friends).
+This is **not** a conversion of `zh-Hant.json`. zh-Hant is written Mandarin with Taiwan words: it says 他們在這裡吃飯了; Cantonese says 佢哋喺度食緊飯. Translate from the English meaning. zh-Hant is only a reference for item names and joke ideas, and its Taiwan words (飼料、米克斯、吉娃娃、馬鈴薯、優格) are wrong here: section 11 has the list. Anything marked TODO(native) needs a native speaker's check (the owner's friends).
 
 ## 1. Tone
 
@@ -258,7 +258,7 @@ Every term the game uses more than once. The zh-Hant column shows where Taiwan w
 | English | 廣東話 | zh-Hant (Taiwan) | Note |
 |---|---|---|---|
 | Feed | 餵食 | 餵食 |  |
-| Play | 玩耍 | 一齊玩 | Bar button and the "Play" verb in UI (owner, 3 Nov: 一齊玩). |
+| Play | 去玩 | 一齊玩 | Bar button, the Play tray and the journal Play button (native check, 9 Nov: 去玩; the owner had chosen 一齊玩 on 3 Nov). |
 | Care | 照顧 | 照顧 |  |
 | Walk | 散步 | 散步 |  |
 | More | 更多 | — | Phone bar button. |
@@ -436,7 +436,7 @@ Every term the game uses more than once. The zh-Hant column shows where Taiwan w
 | Squeaky Duck | 吱吱鴨仔 | — | Squeak = 吱吱. 鴨仔 = a little duck. |
 | Rope Tug | 拔河繩 | — |  |
 | Puzzle Feeder | 益智餵食器 | — |  |
-| Snuffle Mat | 索索墊 | — | 索 = sniff, as in 基因索索機. TODO(native): 嗅聞墊 is the shop word. |
+| Snuffle Mat | 聞嗅墊 | — | Native check (9 Nov). The toy line says 聞嗅：. 索 = sniff stays in 基因索索機, 索索搵寶, 索索儀. |
 | Rubber Chicken | 尖叫雞 | — | Same in HK. |
 | ball pit | 波波池 | — | HK 波波池. |
 | mittens / gloves | 手襪 | — | HK 手襪. |
@@ -581,9 +581,9 @@ Every term the game uses more than once. The zh-Hant column shows where Taiwan w
 | Mute all | 全部靜音 | 全部靜音 |  |
 | Motion and wobble | 動態同搖晃 | 動態與搖晃 |  |
 | Language | 語言 | 語言 |  |
-| Reset save | 刪除進度 | 刪除存檔 | HK says 進度 for a game's progress. 存檔 is Taiwan wording. |
+| Reset save | 刪除存檔 | 刪除存檔 | Native check (9 Nov): a save is 存檔 (save code 存檔碼). 進度 stays for progress (Bond track, walk progress). |
 | save (verb) | 儲存 | — | 已經儲存咗。 |
-| saved game (the save data) | 遊戲進度 | — |  |
+| saved game (the save data) | 遊戲存檔, 存檔 | — | 訪客存檔, 載入呢個存檔. |
 | Saved. | 已經儲存咗。 | — |  |
 | Cloud save | 雲端儲存 | 雲端存檔 |  |
 | device (this phone or computer) | 呢部機 | — | 部 is the measure word for phones and computers. |
@@ -624,7 +624,7 @@ The merge tool excuses a ban hit when the line contains an `allow` phrase, so ev
 
 **Not in `bans` (for now), but a reviewer's check.** The placeholder tables (`game/i18n/yue.json`, `site/i18n/yue.json`) start as copies of zh-Hant, so Mandarin-only patterns cannot be bans until every key is translated (they would fail `test_i18n_node.js` on the placeholders). Each translation batch must pass `node tools/yue_chunks.js --leaks <batch.json>` instead (step 4 of `coord/yue_plan.md`; it uses this list, with 的 / 了 / 是 / 在 as hand checks only): these strings almost never appear in spoken Cantonese, and each hit means a line was converted, not translated.
 
-`們` `牠` `(?<!其)他` `她` `它` `沒有` `沒什麼` `什麼` `這` `那` `哪` `怎麼` `為什麼` `不要` `不是` `不會` `不能` `不用` `喜歡` `東西` `現在` `今天` `明天` `昨天` `吧` `嗎` `喔`, and the Taiwan words of section 11 (飼料, 存檔, 米克斯 …). When the table is fully translated, a later release may move these into `bans` (TODO, section 14).
+`們` `牠` `(?<!其)他` `她` `它` `沒有` `沒什麼` `什麼` `這` `那` `哪` `怎麼` `為什麼` `不要` `不是` `不會` `不能` `不用` `喜歡` `東西` `現在` `今天` `明天` `昨天` `吧` `嗎` `喔`, and the Taiwan words of section 11 (飼料, 帳號, 米克斯 …). When the table is fully translated, a later release may move these into `bans` (TODO, section 14).
 
 ## 11. Hong Kong words, not Taiwan words
 
@@ -634,7 +634,6 @@ zh-Hant is written for Taiwan. These are the differences translators meet most. 
 |---|---|---|
 | 毛孩 | 狗狗, 狗仔 | fur kid (毛孩 is creeping into HK, but keep it out of the game) |
 | 飼料 | 狗糧 | kibble |
-| 存檔, 已存檔 | 儲存, 遊戲進度, 已經儲存咗 | save |
 | 帳號 | 帳戶 | account |
 | 軟體, 網路, 影片 | 軟件, 網絡, 片 | software, internet, video |
 | 品質 | 質素 | quality |
@@ -673,7 +672,7 @@ zh-Hant is written for Taiwan. These are the differences translators meet most. 
 Rewrite, never translate word for word. A good Cantonese joke for kids is short, uses a word they say every day, and is never rude.
 
 - **Dog sounds:** 汪汪 (bark), 嗷嗚 (howl), 吱吱 (squeak), *哼哼* (pug snort), *索索* (sniffing), 咻 (zoom). 汪 works as a prefix pun: 汪汪冬甩, 汪奇諾咖啡室, 汪汪時裝店, 汪汪蛋糕.
-- **索 = sniff** is a free Cantonese joke: 基因索索機, 索索墊, 索索搵寶 (Sniff & Seek), 「索到啲好嘢喎！」
+- **索 = sniff** is a free Cantonese joke: 基因索索機, 索索搵寶 (Sniff & Seek), 「索到啲好嘢喎！」 (the Snuffle Mat is the shop word 聞嗅墊, native check 9 Nov).
 - **HK life gives the best jokes:** the Chihuahua's "I AM A WEATHER EVENT" becomes 「我係八號風球！！」; the Husky's opera howl becomes 大戲 (Cantonese opera); the Corgi "loaf" is 一條方包; a dog guarding the house checks your 身份證; the Shiba is 話事人 (the boss).
 - **Reduplication** is cute and natural: 摸摸, 霜霜, 桃桃, 麵麵, 暖笠笠, 毛毛, 濕立立, 香噴噴, 圓碌碌.
 - **Never** a pun that lands on a rude word, a curse homophone (anything near 屌, 鳩, 柒, 撚, 閪, 仆), a toilet word beyond 去廁所, or 死 / 鬼 as an intensifier (好鬼好食, 笑死). Ghosts at Halloween are 小幽靈, never 鬼仔 (also slang for a foreign boy).
@@ -695,19 +694,40 @@ Rewrite, never translate word for word. A good Cantonese joke for kids is short,
 11. **Length:** buttons 4 characters, toasts about 18; drop the particle first if it is long.
 12. **Run the batch through** `node tools/i18n_todo.js yue --merge <file> --dry`, then the Mandarin check of section 10, then merge.
 
-## 14. TODO(native)
+## 14. Native check (answered 9 Nov 2026)
 
-- Owner confirmed (3 Nov): this voice for the whole game; 狗BB, HK breed/food names and HK jokes as in the sample; Play button = 一齊玩; the website privacy page in the same spoken Cantonese (the English version is the one that counts).
-- 狗BB for every "puppy" (UI headings included). The alternative is 小狗 (written) or 狗仔 (also means any dog).
-- 布冧太太 for Mrs. Plum (布冧 is the Cantonese loan word for plum; 梅子太太 is the zh-Hant name).
-- 唐狗 for the Shelter Mutt: warm in HK, but some people hear it as "just a local dog". 混種狗 is the neutral option.
-- Breeds: 銀狐犬 (Japanese Spitz), 松鼠狗 (Pomeranian), 約瑟爹利 (Yorkie), 馬爾濟斯 (Maltese), 迷你史納莎, 迷你杜賓, 格力犬.
-- 隕石色 for merle (Taiwan and mainland word; HK breeders may say 雲石色).
-- 獎章 for rosette (襟花 is the ribbon itself).
-- 商店街 for Market Street (understood from Japan; HK has no single word for a shopping high street).
-- 東京鐵塔 vs 東京塔 for Tokyo Tower.
-- 索索墊 for the Snuffle Mat (the pet-shop word is 嗅聞墊).
-- 汪汪建築 for Barkitecture (or 汪築師).
-- 發情期 for "in season": plain and correct, said once per screen. Is it fine for children in HK?
-- The site: all of it, including the privacy page, in the same spoken Cantonese (no 書面語 legal register). The privacy page keeps a line saying the English version wins if they differ.
-- Later: move the Mandarin-leak patterns of section 10 into `bans` once `game/i18n/yue.json` and `site/i18n/yue.json` hold no zh-Hant placeholders.
+The owner's friend, a native Hong Kong speaker, checked 480 lines on the review page (391 game, 39 site, plus the questions of `coord/yue_native_check.md`): 430 OK, 50 changed. Applied in `coord/yue_review_applied.md`. Everything this section used to ask is answered:
+
+- **Confirmed as they are:** 狗BB for "puppy" in sentences; 布冧太太; 唐狗; the breed names (銀狐犬, 松鼠狗, 約瑟爹利, 馬爾濟斯, 迷你史納莎, 迷你杜賓, 格力犬); 隕石色 for merle; 獎章 for rosette; 商店街; 東京鐵塔; 汪汪建築; 發情期; the website and privacy page in spoken Cantonese.
+- **Changed:** the Snuffle Mat is 聞嗅墊; the Play button is 去玩 (see section 9).
+
+## 15. Rules from the native check (9 Nov 2026)
+
+Each rule comes from one or more of the friend's changes and was swept across `game/i18n/yue.json` and `site/i18n/yue.json`. Keep them in new text.
+
+| Rule | Instead of | Note |
+|---|---|---|
+| a save, the save data: **存檔**; save code **存檔碼**; Reset save **刪除存檔** | 進度, 進度碼 | 進度 stays for progress (親密度進度表, 散步進度, 訓練進度). 儲存 stays the verb. 存檔 is no longer a leak word. |
+| ENCORE: **encore / Encore** in Latin letters | 安哥 | As HK people write it. |
+| Vampire Cape: **吸血鬼披風** | 德古拉披風 | Fine for children in this one item name. |
+| cranberry: **蔓越莓** | 紅莓 | |
+| baked plain: **齋焗** | 淨焗 | |
+| couch potato: **電視精** | 梳化薯仔, 梳化懶蟲 | |
+| show-off: **show off** (鍾意show off, 愛show off; the Spitz trick Show Off緊) | 騷包 | |
+| bring, carry (a toy, a baguette): **拎** | 擰 | 擰 stays for turning the head (擰轉頭, 擰起頭) and 扭扭擰擰. |
+| Boing, boing: **彈下，彈下** | 彈彈，彈彈 | 彈彈彈 and 彈彈跳 stay. |
+| a horse: **一隻馬** | 一匹馬 | |
+| Puppy Playdates (heading): **BB狗Gathering** | 狗BB玩伴聚會 | In a sentence the feature stays 狗BB玩伴聚會 (the friend kept it there). |
+| Off (a setting): **閂**; Barking: **狗吠** | 關, 吠聲 | |
+| Cone of Dignity: **頭罩** | 尊嚴頭罩 | |
+| grand-mix: **第二代混種** | 混混種 | |
+| N dog years: **N歲狗** | N狗狗歲 | |
+| play bow: **趴低搖尾** | 玩耍鞠躬 | |
+| roaching (greyhound): **瞓到反肚** | 曱甴瞓 | |
+| shimekazari: **新年裝飾** | 注連飾 | |
+| Paw! (the spoken command): **Hand Hand！** | 俾手！ | The trick itself stays 握手. |
+| legally (in a joke): drop it or say **照規矩** | 依法 | |
+| Welcome week: **迎新週**; Today's gift: **是日禮物** | 歡迎週, 今日禮物 | |
+| English names stay English where HK kids say them: **Gary** | 加利 | Other NPC names keep their Cantonese names. |
+
+Still open (not asked): moving the Mandarin-leak patterns of section 10 into `bans` now that both tables hold no zh-Hant placeholders (`tools/yue_chunks.js --leaks game/i18n/yue.json`: 0 leaks).

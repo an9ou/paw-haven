@@ -97,6 +97,19 @@ function kit(r){
 }
 
 /* ---------- breed rigs (facing right; body-local and head-local coordinates in px) ---------- */
+/* Tan points ("tan-points" branch, owner, 8 Nov 2026): the tricolour Border Collie and the Pembroke black-headed tricolour. s.tan is set by coated()
+   only from coat.tan (mods/genes.js TAN_ART: genes that carry at_ on a dark coat), so every older collie and corgi takes none of these branches.
+   The tan goes down first and the white over it, so it shows as a crayon band between the black and the white, as on the real dogs. */
+function tanBrows(h,Hd,s,r){const hx=s.head.rx,hy=s.head.ry,f=s.face,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1];
+  [e0,e1].forEach((e,i)=>h.dot(...Hd([hx*(e[0]+.04),hy*(e[1]-.4)]),r*(i?.9:1),r*.72,s.tan))}// a tan dot over each eye
+function tanCollie(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,T=s.tan,o={noline:1,ox:0,oy:0};
+  h.shape([[b.rx*.4,-b.ry*.72],[b.rx*.6,-b.ry*.5],[b.rx*.54,b.ry*.06],[b.rx*.3,b.ry*.5],[b.rx*.1,b.ry*.98],[b.rx*.26,b.ry*.98],[b.rx*.4,b.ry*.6],[b.rx*.7,b.ry*.1],[b.rx*.6,-b.ry*.8]].map(B),T,o);// a tan edge behind the white chest, down to the forelegs
+  h.shape(circ(-b.rx*.84,b.ry*.12,b.rx*.12,b.ry*.3,7).map(B),T,o);// under the tail
+  h.shape(circ(hx*.4,hy*.3,hx*.36,hy*.17,9).map(Hd),T,o);h.shape(circ(-hx*.36,hy*.3,hx*.24,hy*.16,8).map(Hd),T,o)}// the cheeks and the sides of the muzzle (the white muzzle and chin go over the lower half)
+function tanCorgi(h,B,Hd,s){const b=s.body,hx=s.head.rx,hy=s.head.ry,T=s.tan,o={noline:1,ox:0,oy:0};
+  h.shape([[-b.rx*.96,b.ry*.12],[-b.rx*.3,b.ry*.3],[b.rx*.3,b.ry*.36],[b.rx*.76,-b.ry*.16],[b.rx*1.04,-b.ry*.3],[b.rx*1.04,b.ry*.3],[b.rx*.3,b.ry*.8],[-b.rx*.8,b.ry*.8]].map(B),T,o);// a tan band round the black saddle, over the chest and the sides
+  h.shape(circ(-b.rx*.66,b.ry*.18,b.rx*.2,b.ry*.42,8).map(B),T,o);// the thigh
+  h.shape(circ(-hx*.42,hy*.24,hx*.34,hy*.26,9).map(Hd),T,o);h.shape(circ(hx*.72,hy*.08,hx*.3,hy*.2,8).map(Hd),T,o)}// tan cheeks round the white face
 const SP={
  shiba:{name:'Mochi',breed:'Shiba Inu',personality:'Proud, independent, dramatic',joke:'heh.',
   col:'#F7892E',hcol:'#F7892E',light:'#FFE7B3',body:{x:112,y:142,rx:42,ry:22,lop:.05},head:{x:164,y:106,rx:32,ry:28},
@@ -106,8 +119,8 @@ const SP={
  corgi:{name:'Biscuit',breed:'Corgi',personality:'Cheerful, greedy for food',joke:'is that... a snack?',
   col:'#F8A23C',hcol:'#F8A23C',light:W,body:{x:110,y:153,rx:50,ry:21,lop:.04},head:{x:166,y:126,rx:31,ry:27},
   legs:{h:-34,f:30,w:10,col:W},ears:'giant',tail:'nub',eyes:[6.4,5.2],face:{eyes:'open',mouth:'grin',brow:'eager',drool:1,pupil:.74},
-  marks:(h,B,Hd,s)=>{const b=s.body;h.shape([[-b.rx*.8,b.ry*.45],[b.rx*.2,b.ry*.62],[b.rx*1.0,b.ry*.1],[b.rx*.85,b.ry*.95],[-b.rx*.6,b.ry*1.0]].map(B),s.light,{noline:1});
-   const hx=s.head.rx,hy=s.head.ry;h.shape([[hx*.1,-hy*.95],[hx*.3,-hy*.95],[hx*.42,hy*.05],[hx*.95,hy*.25],[hx*.85,hy*.85],[-hx*.5,hy*.9],[-hx*.75,hy*.4],[-hx*.05,hy*.15]].map(Hd),s.light,{noline:1})}},
+  marks:(h,B,Hd,s)=>{const b=s.body;if(s.tan)tanCorgi(h,B,Hd,s);h.shape([[-b.rx*.8,b.ry*.45],[b.rx*.2,b.ry*.62],[b.rx*1.0,b.ry*.1],[b.rx*.85,b.ry*.95],[-b.rx*.6,b.ry*1.0]].map(B),s.light,{noline:1});
+   const hx=s.head.rx,hy=s.head.ry;h.shape([[hx*.1,-hy*.95],[hx*.3,-hy*.95],[hx*.42,hy*.05],[hx*.95,hy*.25],[hx*.85,hy*.85],[-hx*.5,hy*.9],[-hx*.75,hy*.4],[-hx*.05,hy*.15]].map(Hd),s.light,{noline:1});if(s.tan)tanBrows(h,Hd,s,3)}},
  golden:{name:'Sunny',breed:'Golden Retriever',personality:'Friendly, loves fetch',joke:'BALL? BALL! BALL!!',
   col:'#F2B84A',hcol:'#F2B84A',ear:'#D98A22',fluff:1,body:{x:108,y:130,rx:52,ry:38},head:{x:160,y:96,rx:34,ry:30},
   legs:{h:-27,f:22,w:9},ears:'flop2',tail:'wiggle',eyes:[5.4,7.6],face:{eyes:'open',mouth:'tongue',e0:[-.18,-.08],e1:[.36,-.16],nose:[.12,.22],look:[[-.35,.2],[.3,-.15]],tside:1},marks:null},
@@ -161,9 +174,9 @@ SP.collie={name:'Scout',breed:'Border Collie',personality:'Has counted the sheep
   col:'#2A2628',hcol:'#2A2628',light:W,body:{x:110,y:144,rx:44,ry:23,lop:.04},head:{x:164,y:106,rx:30,ry:26},neck:1,neckCol:W,// 25 Oct 2026: the white chest between body and head is a white neck tube with its own line (the white bib used to spill off the body and head to join them)
   legs:{h:-28,f:25,w:8.6,sock:W},ears:'semi',tail:'fluffy',eyes:[7,6.6],
   face:{eyes:'open',mouth:'smile',e0:[-.14,-.16],e1:[.38,-.2],nose:[1.42,.1],snout:1,snoutL:1.4,brow:'curious',browCol:'#CFC6C0',look:[[-.3,.18],[-.3,.18]]},
-  marks:(h,B,Hd,s)=>{const b=s.body,K=s.light;h.shape([[b.rx*.5,-b.ry*.95],[b.rx*.82,-b.ry*.78],[b.rx*1.03,b.ry*.05],[b.rx*.88,b.ry*.95],[b.rx*.2,b.ry*1.0],[b.rx*.35,b.ry*.55],[b.rx*.62,b.ry*.1]].map(B),K,{noline:1});
+  marks:(h,B,Hd,s)=>{const b=s.body,K=s.light;if(s.tan)tanCollie(h,B,Hd,s);h.shape([[b.rx*.5,-b.ry*.95],[b.rx*.82,-b.ry*.78],[b.rx*1.03,b.ry*.05],[b.rx*.88,b.ry*.95],[b.rx*.2,b.ry*1.0],[b.rx*.35,b.ry*.55],[b.rx*.62,b.ry*.1]].map(B),K,{noline:1});
    const hx=s.head.rx,hy=s.head.ry;h.shape([[hx*.06,-hy*.98],[hx*.24,-hy*.98],[hx*.46,hy*.02],[hx*.04,-hy*.02]].map(Hd),K,{noline:1});
-   h.shape([[hx*.0,hy*.42],[hx*.9,hy*.28],[hx*.82,hy*.92],[-hx*.38,hy*.96]].map(Hd),K,{noline:1});h.shape(circ(-hx*.5,hy*.62,hx*.42,hy*.36,9).map(Hd),K,{noline:1,ox:0,oy:0})}};
+   h.shape([[hx*.0,hy*.42],[hx*.9,hy*.28],[hx*.82,hy*.92],[-hx*.38,hy*.96]].map(Hd),K,{noline:1});h.shape(circ(-hx*.5,hy*.62,hx*.42,hy*.36,9).map(Hd),K,{noline:1,ox:0,oy:0});if(s.tan)tanBrows(h,Hd,s,3)}};
 SP.samoyed={name:'Cloud',breed:'Samoyed',personality:'Smiles so the snow does not stick. Also just smiles.',joke:'Sheds a second dog every spring.',
   col:'#FBF6EC',hcol:'#FBF6EC',light:W,dark:'#E8DECB',fluff:1,hfluff:1,body:{x:106,y:128,rx:55,ry:39},head:{x:162,y:93,rx:35,ry:31},
   legs:{h:-28,f:24,w:9.6},ears:'prick',earS:.8,earRound:2,tail:'spiral',tsc:.64,spS:.7,eyes:[6.4,6],
@@ -2304,7 +2317,7 @@ const wetC=c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c)?mix(c,lum(c)<.3?'
 // a kit that lays every colour a shade darker (white spotting and merle patches: their colours were fixed when the coat was made)
 const wetH=h=>Object.assign({},h,{shape:(p,f,o)=>h.shape(p,f&&wetC(f),o),crayon:(rx,ry,M,c,n)=>h.crayon(rx,ry,M,wetC(c),n),line:(p,w,c,a)=>h.line(p,w,c&&c!==INK?wetC(c):c,a),dot:(x,y,rx,ry,f)=>h.dot(x,y,rx,ry,f&&wetC(f))});
 function wetSpec(S0){const s=Object.assign({},S0),d=wetC;
-  ['col','hcol','light','dark','ear','neckCol','tailTip','harl','bib'].forEach(k=>{if(s[k])s[k]=d(s[k])});
+  ['col','hcol','light','dark','ear','neckCol','tailTip','harl','bib','tan'].forEach(k=>{if(s[k])s[k]=d(s[k])});
   s.legs=Object.assign({},S0.legs);['col','sock','toe'].forEach(k=>{if(s.legs[k])s.legs[k]=d(s.legs[k])});
   if(S0.legs.cols){s.legs.cols={};Object.keys(S0.legs.cols).forEach(k=>{s.legs.cols[k]=d(S0.legs.cols[k])})}
   if(S0.pat)s.pat={body:(h,B,L)=>S0.pat.body(wetH(h),B,L),head:(h,HT,L)=>S0.pat.head(wetH(h),HT,L)};
@@ -2438,6 +2451,7 @@ function coated(key,coat,seed,S0){
     };
     if(white>=.25)s.tailTip=Wt;
   }
+  if(c('tan')&&(key==='collie'||key==='corgi')){s.tan=c('tan');if(key==='collie')s.legs.sock=s.tan;else s.legs.col=s.tan;s.legs.toe=Wt}// tan points (coat.tan, mods/genes.js TAN_ART): tan lower legs with white feet (the collie), tan legs with white feet (the corgi)
   if(S0.coatFn)S0.coatFn(s,coat,{white:+coat.white||0,merle,R:R0});// v2.21 ART A: a breed's own coat pass (new spec field coatFn: the aussie's merle and white trim)
   return s;
 }

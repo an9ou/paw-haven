@@ -231,7 +231,7 @@ async function checks(label, call, sql, mail) {
       ['an outfit past the list', card({ dogs: [dog({ o: 57 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
-      ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })],
+      ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })], ['a red-intensity allele not in the set', card({ dogs: [dog({ c: { I: ['I', 'x'] } })] })], ['a red-intensity locus with one allele', card({ dogs: [dog({ c: { I: ['I'] } })] })],
       ['a coat locus with 3 alleles', card({ dogs: [dog({ c: { B: ['B', 'b', 'b'] } })] })], ['a double merle', card({ dogs: [dog({ c: { M: ['M', 'M'] } })] })], ['an empty coat', card({ dogs: [dog({ c: {} })] })],
       ['a coat locus named constructor', card({ dogs: [dog({ c: { constructor: ['B', 'b'] } })] })], ['a coat with __proto__', card({ dogs: [dog({ c: JSON.parse('{"__proto__":["B","b"]}') })] })],
       ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })],
@@ -252,6 +252,9 @@ async function checks(label, call, sql, mail) {
       ok(r2.status === 200 && ds && ds[0].e === 3 && ds[0].p === 4294967295 && ds[1].e === 0 && !('p' in ds[1]) && ds[2].p === 0 && !('e' in ds[2]) && JSON.stringify(ds[3]) === JSON.stringify(dog()), 'v2.23: a dog may carry its eyes (e) and pattern seed (p); a dog without them is as before: ' + JSON.stringify(ds && ds.slice(0, 3)));
       const rw = await sql('select * from cards where user_id = ?', ca.user.id), kk = JSON.parse(rw.dogs).map((d) => Object.keys(d).join());
       ok(kk.join(' ') === 'b,c,o,a,s,sp,n,e,p b,c,o,a,s,sp,n,e b,c,o,a,s,sp,n,p b,c,o,a,s,sp,n', 'D1 keeps e and p only when sent: ' + kk.join(' '));
+      // the red-intensity locus I (fox red Lab, dark golden): optional in the coat, comes back as sent; a coat without it is as before
+      const r3 = await call('PUT', '/card', card({ dogs: [dog({ b: 25, c: { B: ['B', 'b'], E: ['e', 'e'], I: ['I', 'I'] } }), dog({ b: 2, c: { E: ['e', 'e'], I: ['I', 'i'] } }), dog({ b: 11, c: { B: ['B', 'b'], A: ['at', 'at'] } }), dog()] }), ca.token), d3 = r3.json && r3.json.dogs;
+      ok(r3.status === 200 && d3 && JSON.stringify(d3[0].c) === '{"B":["B","b"],"E":["e","e"],"I":["I","I"]}' && JSON.stringify(d3[1].c) === '{"E":["e","e"],"I":["I","i"]}' && JSON.stringify(d3[2].c) === '{"B":["B","b"],"A":["at","at"]}' && JSON.stringify(d3[3]) === JSON.stringify(dog()), 'a coat may carry the red-intensity locus I (a fox red Lab, a dark golden) and the collie tan points A; one without is as before: ' + JSON.stringify(d3 && d3.map((d) => d.c)));
       r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' }), dog({ b: 39, o: 49, n: 119, c: { B: ['B', 'b'], E: ['E', 'E'], A: ['a', 'a'] } })] }), ca.token); // back to the card the checks below expect
     }
     ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
@@ -296,8 +299,8 @@ async function checks(label, call, sql, mail) {
     const cg2 = (await call('POST', '/guest', {}, null, ipC(8))).json;
     const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token, ipC(40))).status);
     ok(codesP[0] === 200 && codesP[99] === 200 && codesP[100] === 429, 'paws are rate-limited per account (100 an hour)');
-    const codesU = []; for (let i = 0; i < 17; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 4 PUTs above (v2.23 added two for e and p): the 21st is refused
-    ok(codesU[15] === 200 && codesU[16] === 429, 'publishing is rate-limited (20 an hour)');
+    const codesU = []; for (let i = 0; i < 16; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 5 PUTs above (v2.23 added two for e and p, the tan-points branch one for A and I): the 21st is refused
+    ok(codesU[14] === 200 && codesU[15] === 429, 'publishing is rate-limited (20 an hour)');
     // stop sharing: the card and its paws go
     r = await call('DELETE', '/card', null, cb.token); ok(r.status === 200 && r.json.ok, 'DELETE /card');
     ok(!(await sql('select * from cards where id = ?', cbCard.id)) && !(await sql('select * from paws where card_id = ?', cbCard.id)), 'the card and its paws are deleted');

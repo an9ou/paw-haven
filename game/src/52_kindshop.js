@@ -117,6 +117,7 @@ function ksTakeLook(n) {
     if (S.house === n) { const cap = (h) => HOUSE_CAP[h] || 1, hc = (h) => (HOUSES.find((x) => x.n === h) || {}).comfort || 0, pv = sh.prevHouse && owns('houses', sh.prevHouse) && cap(sh.prevHouse) >= S.dogs.length ? sh.prevHouse : null; S.house = pv || S.inv.houses.slice().sort((a, b) => cap(b) - cap(a) || hc(b) - hc(a))[0] || 'Cardboard Box'; }
     return;
   }
+  const ci = S.inv.clothes.indexOf(n); if (ci >= 0 && typeof S.wardN === 'number' && ci < S.wardN) S.wardN--; // v2.23.3's "new!" tape counts clothes by place: one taken back before the mark moves the mark back
   S.inv.clothes = S.inv.clothes.filter((c) => c !== n);
   S.dogs.forEach((d) => { if (d.outfit) Object.keys(d.outfit).forEach((k) => { if (d.outfit[k] === n) d.outfit[k] = null; }); }); // worn: back to "Nothing"
 }
@@ -472,7 +473,7 @@ async function ksCoinBuy(panel, n) {
 function ksExpose() {
   if (!window.__paw || window.__paw.ks) return;
   window.__paw.ks = {
-    on: () => ksOn(), live: SHOP_LIVE, items: KS_ITEMS, tokyo: KS_TOKYO.slice(), cozy: KS_COZY.slice(), LOOK: KS_LOOK_COINS,
+    on: () => ksOn(), live: SHOP_LIVE, newsDate: NEWS_V224.date, items: KS_ITEMS, tokyo: KS_TOKYO.slice(), cozy: KS_COZY.slice(), LOOK: KS_LOOK_COINS,
     grant: (l, g) => ksGrant(l, g), cashMode: () => ksCashMode(), bowlWait: () => shWaterWait() + KS_BOWL_GRACE, fields: (s) => v224Fields(s), sup: () => ksSup(), tool: (t) => ksTool(t), toolOn: (t) => ksToolOn(t), owned: (id) => ksOwnedId(id), look: (n) => ksLookOwned(n),
     walkBonus: (n) => (ksSup() ? Math.floor(Math.max(0, +n || 0) * KS_WALK_K) : 0), growMul: () => ksGrowMul(), gift2: (ym, d) => ksGift2(ym, d), gift2Claim: () => ksGift2Claim(), gift2Can: () => ksGift2Can(),
     open: (t) => ksOpen(t), confirm: (id) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? (ksConfirm(p, id), true) : false; }, coinBuy: (n) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? ksCoinBuy(p, n) : false; },

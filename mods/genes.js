@@ -61,6 +61,19 @@
   const TAN = { key: 'A', name: 'Tan points (A locus, ASIP)', alleles: ['at', 'a'], dominant: 'at', rule: 'at_ gives tan (copper) points on a dark coat; a/a gives none.' }; // copy-ok: reference text, not shown
   const tanOk = (p) => Array.isArray(p) && p.length === 2 && p.every((x) => x === 'at' || x === 'a');
   const tanOf = (g) => (g && tanOk(g.A) ? g.A : ['at', 'at']);
+  /* Tan points ("tan-points" branch, owner, 8 Nov 2026): the Border Collie and the Pembroke Corgi read the same A locus. Their art draws tan only when the
+     genes carry it (TAN_ART): a missing pair is no tan here (every older collie and corgi, so all of them draw as before), at_ gives tan points on a dark
+     coat (coat.tan), a/a none. Red and cream (e/e) hide it, as the real E locus does. Only a starter picked as a tricolour carries it (FREQ has no a). */
+  const TAN_ART = { collie: true, corgi: true };
+  const TAN_SHADE = { black: '#C8743A', liver: '#E2A86C', blue: '#D69C6A', lilac: '#E4BC92' }; // the tan on each dark pigment (lighter on the paler coats, so it shows)
+  const tanShows = (g, breed, pig) => !!TAN_ART[breed] && tanOk(g.A) && !both(g.A, 'a') && pig !== 'red' && pig !== 'cream';
+  /* Red intensity (owner, 8 Nov 2026: the fox red Lab): a seventh, optional locus like TAN. I (deep red) over i (today's red), incompletely dominant:
+     I/I the deep shade, I/i in between, i/i (or no pair: every older dog) the red as before. Only the INTENSE breeds read it, only on a red (e/e, not
+     dilute) coat: the Lab's "Fox red", the Golden's "Dark golden". Only a starter picked in that colour carries it (FREQ has no I). */
+  const RED_I = { key: 'I', name: 'Red intensity', alleles: ['I', 'i'], dominant: 'I', rule: 'I/I gives a deep red (fox red), I/i a red in between, i/i the usual red.' }; // copy-ok: reference text, not shown
+  const redOk = (p) => Array.isArray(p) && p.length === 2 && p.every((x) => x === 'I' || x === 'i');
+  const redOf = (g) => (g && redOk(g.I) ? g.I : ['i', 'i']);
+  const INTENSE = { lab: true, golden: true };
 
   // From V2_GENES.md (the v2 doc). Each must reproduce the starter dog's current art.
   const STARTER_GENES = {
@@ -139,6 +152,8 @@
     },
     golden: {
       red:   ['#F2B84A', '#FBE3A6', '#D98A22'], // *
+      fox:   ['#D9892C', '#F4C47A', '#A85E16'], // dark golden (I/I, RED_I)
+      fox1:  ['#E6A03A', '#F8D690', '#C27418'], // dark golden, in between (I/i)
       cream: ['#F6E0B0', '#FFF6E0', '#E0BE7A'],
       black: ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver: ['#7A4A2E', '#9A6A4A', '#5A3420'],
@@ -376,6 +391,8 @@
     },
     lab: {
       red:    ['#F0CC84', '#F9E6B6', '#D9A458'], // * yellow
+      fox:    ['#C8682E', '#E8A672', '#94461C'], // fox red (I/I, RED_I)
+      fox1:   ['#DE9A52', '#F2C994', '#B26E34'], // fox red, in between (I/i)
       black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver:  ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
       cream:  ['#F4E6C8', '#FFF6E2', '#DCC8A0'], // champagne (only from a mix parent)
@@ -534,7 +551,7 @@
   const WORDS = {
     shiba:  { red: 'Red', cream: 'Cream', black: 'Black and tan', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
     corgi:  { red: 'Red', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
-    golden: { red: 'Golden', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
+    golden: { red: 'Golden', fox: 'Dark golden', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
     dachs:  { red: 'Red', cream: 'Cream', black: 'Black and tan', liver: 'Chocolate and tan', blue: 'Blue and tan', lilac: 'Isabella' },
     husky:  { red: 'Red', cream: 'Cream', black: 'Grey', liver: 'Copper', blue: 'Blue', lilac: 'Lilac' },
     mutt:   { red: 'Red', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
@@ -558,7 +575,7 @@
     corso:     { black: 'Black', blue: 'Grey', red: 'Fawn', redliver: 'Red', cream: 'Grey fawn', liver: 'Black brindle', lilac: 'Grey brindle' },
     pitbull:   { blue: 'Blue', black: 'Black', red: 'Fawn', redliver: 'Red', cream: 'Blue fawn', liver: 'Brindle', lilac: 'Blue brindle', white: 'White' },
     minpin:    { red: 'Red', cream: 'Cream', black: 'Black and rust', liver: 'Chocolate and rust', blue: 'Blue and rust', lilac: 'Fawn and rust' },
-    lab:       { red: 'Yellow', cream: 'Champagne', black: 'Black', liver: 'Chocolate', blue: 'Charcoal', lilac: 'Silver' },
+    lab:       { red: 'Yellow', fox: 'Fox red', cream: 'Champagne', black: 'Black', liver: 'Chocolate', blue: 'Charcoal', lilac: 'Silver' },
     malamute:  { black: 'Grey', solid: 'Black', liver: 'Red', red: 'Sable', cream: 'White', blue: 'Blue', lilac: 'Silver' },
     chow:      { red: 'Red', cream: 'Cream', black: 'Black', liver: 'Cinnamon', blue: 'Blue', lilac: 'Fawn' },
     stdpoodle: { red: 'Apricot', deep: 'Red', cream: 'White', redliver: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Silver', dblue: 'Blue', lilac: 'Silver beige' },
@@ -621,6 +638,7 @@
     const d = STARTER_GENES.mutt, out = {};
     LOCUS_KEYS.forEach((k) => { const p = g && Array.isArray(g[k]) && g[k].length === 2 ? g[k] : d[k]; out[k] = [p[0], p[1]]; });
     if (g && tanOk(g.A)) out.A = [g.A[0], g.A[1]]; // v2.21: only when the genes carry the tan-point locus
+    if (g && redOk(g.I)) out.I = [g.I[0], g.I[1]]; // tan-points branch: only when the genes carry the red-intensity locus
     return out;
   }
   const genesOf = (x) => (x && x.genes ? x.genes : x);
@@ -630,6 +648,7 @@
     if (pig === 'black' && SOLID_E[breed] && both(g.E, 'E')) return 'solid';
     if (COPPER[breed] && pig !== 'red' && pig !== 'cream' && !both(tanOf(g), 'a')) return pig + 'cu'; // v2.21 aussie: copper points (at_, the tan-point locus; independent of E)
     if (WHITE_SP[breed] && both(g.S, 'sp') && (pig === 'red' || pig === 'cream')) return 'white'; // v2.12
+    if (INTENSE[breed] && pig === 'red' && has(redOf(g), 'I')) return 'fox'; // the deep red (RED_I; I/i draws the fox1 shade under the same name)
     const dd = DOUBLE[breed] && DOUBLE[breed][pig]; // v2.12
     if (dd && both(g[dd[0]], dd[0])) return dd[1];
     return pig === 'red' && both(g.B, 'b') && RED_LIVER[breed] ? RED_LIVER[breed] : pig;
@@ -685,6 +704,7 @@
       }
       else if (allWhite) { /* "White" already says it */ }
       else if (AND_WHITE[breed] && white) name = L('mod.genes.coat_and_white', '{coat} and white', { coat: name }); // v2.12
+      else if (white < 0.6 && !merle && tanShows(g, breed, pig)) name = breed === 'corgi' && pig === 'black' ? L('mod.genes.coat_black_headed_tri', 'Black-headed tricolour') : D('tri_solid.collie.' + pig, TRI_SOLID.collie[pig]); // tan points: the collie's tricolours, the Pembroke's black-headed tricolour
       else if (white === 0.6) name = L('mod.genes.coat_piebald', '{coat} & white piebald', { coat: name });
       else if (TRI_SOLID[breed] && !merle && !white && TRI_SOLID[breed][pig]) name = D('tri_solid.' + breed + '.' + pig, TRI_SOLID[breed][pig]);
       else if (MERLE_BY[breed] && merle) { /* "Blue merle" already says the white */ }
@@ -707,7 +727,8 @@
     const merleAllele = has(g.M, 'M');
     const merle = merleAllele && pig !== 'red' && pig !== 'cream'; // cryptic merle hides on e/e
     // v2.5: a breed may give its merles a lighter base (collie blue merle is grey under the dark patches); 'm' + pigment keys
-    const shade = (merle && (SHADES[breed]['m' + sk] || SHADES[breed]['m' + pig])) || SHADES[breed][sk] || SHADES[breed][pig]; // v2.21: 'm' + shade key first (the Aussie's mblackcu); no older breed has one
+    let shade = (merle && (SHADES[breed]['m' + sk] || SHADES[breed]['m' + pig])) || SHADES[breed][sk] || SHADES[breed][pig]; // v2.21: 'm' + shade key first (the Aussie's mblackcu); no older breed has one
+    if (sk === 'fox' && !both(g.I, 'I') && SHADES[breed].fox1) shade = SHADES[breed].fox1; // RED_I: I/i is the shade in between
     const white = both(g.S, 'sp') ? 0.6 : has(g.S, 'sp') ? 0.25 : 0;
 
     // eyes: Bl first, then visible merle, then b/b, else brown
@@ -727,6 +748,7 @@
     // merle on white is the harlequin look: black patches (base and dark) on a white dog
     if (breed === 'dane' && white > 0) coat.light = '#FFFFFF';
     if (breed === 'dane' && merle && white >= 0.6) { coat.base = '#2A2628'; coat.dark = '#2A2628'; }
+    if (tanShows(g, breed, pig)) coat.tan = TAN_SHADE[pig]; // tan points (TAN_ART): only a collie or corgi whose genes carry at_ has this key
     if (BRINDLE[breed] && BRINDLE[breed][sk] && !merle) coat.brindle = true; // only the BRINDLE breeds ever have this key (by shade key: the same as the pigment for dane and mastiff)
     return {
       coatName: name,
@@ -752,6 +774,17 @@
       }
       ALL_PAIRS[loci[i]].forEach((pr) => { g[loci[i]] = pr; rec(i + 1, g); });
     })(0, {});
+    // the tan-point and red-intensity coats (TAN_ART, INTENSE) after every older one, so no older name changes its genes
+    const extra = (TAN_ART[breed] ? [{ A: ['at', 'at'] }] : []).concat(INTENSE[breed] ? [{ I: ['I', 'I'] }] : []);
+    extra.forEach((x) => (function rec(i, g) {
+      if (i === loci.length) {
+        const gg = normGenes(Object.assign({ Bl: ['bl', 'bl'] }, g, x)), b = coatBits(gg, breed);
+        const en = coatNameFor(gg, breed, b.pig, b.sk, b.merle, b.white, false);
+        if (!m[en]) m[en] = { g: gg, pig: b.pig, sk: b.sk, merle: b.merle, white: b.white };
+        return;
+      }
+      ALL_PAIRS[loci[i]].forEach((pr) => { g[loci[i]] = pr; rec(i + 1, g); });
+    })(0, {}));
     return (nameMaps[breed] = m);
   }
   /** coatLabel(coatName, breedKey?) -> the coat name in the current language. coatName is the English text phenotype() gives (and the game
@@ -833,6 +866,7 @@
     const R = rngOf(rng), m = normGenes(genesOf(mumGenes)), d = normGenes(genesOf(dadGenes)), out = {};
     LOCUS_KEYS.forEach((k) => { out[k] = [m[k][R() < 0.5 ? 0 : 1], d[k][R() < 0.5 ? 0 : 1]]; });
     if (m.A || d.A) { const ma = tanOf(m), da = tanOf(d); out.A = [ma[R() < 0.5 ? 0 : 1], da[R() < 0.5 ? 0 : 1]]; } // v2.21: only when a parent carries the tan-point locus (drawn last)
+    if (m.I || d.I) { const mi = redOf(m), di = redOf(d); out.I = [mi[R() < 0.5 ? 0 : 1], di[R() < 0.5 ? 0 : 1]]; if (out.I[0] === 'i' && out.I[1] === 'I') out.I = ['I', 'i']; } // red intensity: only when a parent carries it (drawn after A, so no older draw moves)
     return out;
   }
 
@@ -1273,8 +1307,9 @@
   }
   // all unordered genotype classes of the 6 loci with their probability for a pair of parents
   function offspringDist(ga, gb) {
-    const keys = ga.A || gb.A ? LOCUS_KEYS.concat('A') : LOCUS_KEYS; // v2.21: the tan-point locus only when a parent carries it
+    let keys = ga.A || gb.A ? LOCUS_KEYS.concat('A') : LOCUS_KEYS; // v2.21: the tan-point locus only when a parent carries it
     if (keys !== LOCUS_KEYS) { ga = Object.assign({}, ga, { A: tanOf(ga) }); gb = Object.assign({}, gb, { A: tanOf(gb) }); }
+    if (ga.I || gb.I) { keys = keys.concat('I'); ga = Object.assign({}, ga, { I: redOf(ga) }); gb = Object.assign({}, gb, { I: redOf(gb) }); } // red intensity, the same way
     const per = keys.map((k) => {
       const m = {};
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
@@ -1479,6 +1514,11 @@
       if (both(g.A, 'a')) lines.push(L('mod.genes.line_a_none', '{pair}: no copper points', pr('A', 'at')));
       else if (has(g.A, 'a')) lines.push(L('mod.genes.line_a_carry', '{pair}: copper points, carries no copper', pr('A', 'at')));
       else lines.push(L('mod.genes.line_a_copper', '{pair}: copper points', pr('A', 'at')));
+    }
+    if (redOk(g.I)) { // red intensity (RED_I), only for genes that carry it
+      if (both(g.I, 'I')) lines.push(L('mod.genes.line_i_deep', '{pair}: deep red (fox red on a red coat)', pr('I', 'I')));
+      else if (has(g.I, 'I')) lines.push(L('mod.genes.line_i_half', '{pair}: a deeper red, in between', pr('I', 'I')));
+      else lines.push(L('mod.genes.line_i_none', '{pair}: the usual red', pr('I', 'I')));
     }
 
     // the hidden genes (carriers keep their ids) and what a puppy could look like, as lists in the current language
@@ -1717,7 +1757,7 @@
     return { p, mult, parts, text };
   }
 
-  const api = { LOCI, LOCUS_KEYS, TAN, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, WORDS, WHITE_MARKED, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
+  const api = { LOCI, LOCUS_KEYS, TAN, RED_I, TAN_ART, INTENSE, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, WORDS, WHITE_MARKED, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
     BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog: coatCatalogV21, describe,
     ancestry, grandMix, sparkleOdds, fracText, GRAND_RECIPES,
     coatLabel, mixLabel, mixName, breedLabel: bn }; // v2.14: display helpers (the returned data stays English)

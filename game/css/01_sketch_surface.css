@@ -1,5 +1,5 @@
 /* ---------- shared sketch surface ---------- */
-.tray,.card,.sitem,.btn,.act,.iconbtn,.xbtn,.opt,.toast,#status,.res,.confirm,.chip,.arrow,.heads button,.namebox,#devPanel,.panel,#bubble,.portrait,#devBtn,.cover{
+.tray,.card,.sitem,.wd-tile,.wd-perks,.btn,.act,.iconbtn,.xbtn,.opt,.toast,#status,.res,.confirm,.chip,.arrow,.heads button,.namebox,#devPanel,.panel,#bubble,.portrait,#devBtn,.cover{
   border:0;background:var(--fr) 0 0/100% 100% no-repeat,var(--wf)}
 /* v2.5 FIXES A: the crayon fill stays inside the pencil outline, at every size, day and night (the owner saw fills poke past the lines at night).
    A frame is one SVG stretched over the whole box, so its line sits a fixed share of the box in from each edge (and wobbles), never a fixed number of px.
@@ -10,7 +10,7 @@
    route cards and the other card-framed boxes used one plain rectangle (--ins), which left uncoloured strips inside the outline; they all use --wf now. */
 :root{--ins:center/calc(100% - 5.16% - 1px) calc(100% - 7% - 1px) no-repeat}
 .tray,.card,.sitem,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover,.holdbtn,#mapZoom span,
-#trainPanel,.buybox,.onway-card,.rt-card,.ward .preview,.jent,.ps-turn-card,.gd-say,.gd-lesson{--fa:1.34%;--fb:2.25%;--frx:4%;--fry:6%;
+#trainPanel,.buybox,.onway-card,.rt-card,.ward .preview,.wd-tile,.wd-perks,.jent,.ps-turn-card,.gd-say,.gd-lesson{--fa:1.34%;--fb:2.25%;--frx:4%;--fry:6%;
   --wf:var(--hatch) center/calc(100% - 2 * (var(--fa) + var(--frx)) - 1px) calc(100% - 2 * var(--fb) - 1px) no-repeat,
     radial-gradient(var(--frx) var(--fry) at calc(var(--fa) + var(--frx) + .5px) calc(var(--fb) + var(--fry) + .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
     radial-gradient(var(--frx) var(--fry) at calc(100% - var(--fa) - var(--frx) - .5px) calc(var(--fb) + var(--fry) + .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
@@ -23,7 +23,7 @@
 .holdbtn{--fa:.41%;--fb:7.75%;--frx:1.5%;--fry:31%}
 .tray,.card,.sitem,.panel,.res,.confirm,.namebox,#devPanel,#status,.cover{--fr:var(--fr-card)}
 .iconbtn,.xbtn,.portrait,.heads button{--fr:var(--fr-round)}
-.tray,.card,.sitem,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover{border-radius:13px 9px 15px 8px}
+.tray,.card,.sitem,.wd-tile,.wd-perks,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover{border-radius:13px 9px 15px 8px}
 .iconbtn,.xbtn,.portrait,.heads button,.arrow{border-radius:50%}
 /* v2.5 FIXES A: round controls keep their crayon fill inside the pencil circle (the owner saw a cream blob top-left and a lip at the bottom of the round ">" at
    night). The drawn circle wobbles between 43.6% and 45.8% of the box around a point a hair up-left of the middle, so the wash is a circle of 42.5% around that

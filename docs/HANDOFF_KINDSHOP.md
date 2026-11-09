@@ -10,8 +10,8 @@ Live (9 Nov): live products, webhook, rk_live_ key and live SHOP_PRICES are in; 
 Managed Payments confirmed on live (SG card: liability stripe); HK buyers show `self` (domestic, no HK sales tax). No blocker.
 Launch: the owner launches it together with the Game Manager (9 Nov). The owner lives in Japan; the Stripe account is Hong Kong.
 Open:
-1. Merge origin/main into claude/kind-shop: conflicts in i18n json, packed.js, font subsets, CHANGELOG, HANDOFF_GM, 06_wardrobe,
-   49c_news, css ORDER, worker.js (keep both: FR_LIM houses 15 + DC_COAT I). Regenerate packed.js and fonts, rerun the suites.
+1. Done 9 Nov: origin/main (v2.23.1-v2.23.3) merged; the Feet slot is a Wardrobe tab (only with the shop on or shoes owned), a 7-tab row
+   keeps one line (`wd-t7`); v224_shop and wardrobe_tidy check either SHOP_LIVE state; merged worker.js = the deployed pawhaven-api.
 2. Launch (owner sets the date; never merge or deploy the game before it): live-mode products with tax_behavior inclusive,
    live webhook + rk_live_ key (owner pastes secrets into Cloudflare), live SHOP_PRICES, NEWS_V224 date, SHOP_LIVE = true,
    coordinate with the Game Manager, then itch.io push and the Marketing briefing.

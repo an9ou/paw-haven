@@ -146,7 +146,7 @@ function cpExpose() {
     meet: () => { const L = SR && SR.meet ? adLook(SR.meet.key) : null; return L ? { key: L.key, id: L.id, genes: L.genes } : null; },
     shelter: () => JSON.parse(JSON.stringify(shelterCoat)),
     // v2.23 review fix: a dog through the Dog Card / Friends wire and back (40_dogcards.js dcDogOf -> dcDog), and the same wire without e and p (an old card)
-    card: (id) => { const d = id ? dogById(id) : S.dog, x = dcDogOf(d), v = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [x] }, 0), old = Object.assign({}, x); delete old.e; delete old.p; const v0 = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [old] }, 0), own = dogSVG(d, { pose: 'sit' });
+    card: (id) => { const d = id && typeof id === 'object' ? id : id ? dogById(id) : S.dog, x = dcDogOf(d), v = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [x] }, 0), old = Object.assign({}, x); delete old.e; delete old.p; const v0 = dcDog({ id: 'cpTestCard', name: [0, 0], dogs: [old] }, 0), own = dogSVG(d, { pose: 'sit' });
       return { wire: x, fr: typeof frCardOf === 'function' ? frCardOf(d) : null, seed: hashId(d.id), id: v.id, eyes: eyesOf(v), coat: coatNameOf(v), same: dogSVG(v, { pose: 'sit' }) === own, oldId: v0.id, oldEyes: eyesOf(v0), oldSame: dogSVG(v0, { pose: 'sit' }) === own }; },
     dog: (id) => { const d = id ? dogById(id) : S.dog; return d ? { id: d.id, key: d.key, genes: d.genes, coat: d.coat, eyes: d.eyes, shown: coatNameOf(d), shownEyes: eyesOf(d) } : null; }
   };

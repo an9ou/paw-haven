@@ -119,6 +119,15 @@ const NEWS_V223 = { // v2.23 Coat colours (V223.md): the starter's coat and eye 
   ]
 };
 const nwV223Due = () => MS2_LIVE && jstISO() >= NEWS_V223.date;
+const NEWS_V2232 = { // v2.23.2 Cantonese (docs/i18n/yue.md): 廣東話, the 12th language, live with YUE_LIVE (owner, 9 Nov 2026)
+  id: '2.23.2', date: '2026-11-09', c: '#F9E0E6', d: 'heart', pic: 'dog',
+  title: () => tt('nw.v2232.title', 'Now in Cantonese!'),
+  items: [
+    { ic: () => nwSafe(() => ICON('settings')), tx: () => tt('nw.v2232.yue', 'Doodle Doggo now speaks 廣東話 (Cantonese). Pick it in Settings: that makes 12 languages') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2232.thanks', 'A big thank you to a native speaker from Hong Kong who checked every line') }
+  ]
+};
+const nwV2232Due = () => MS2_LIVE && jstISO() >= NEWS_V2232.date;
 /* v2.24 "Kind shop" (V224.md 7): added by nwSort only with SHOP_LIVE on (52_kindshop.js), so the news never mentions the shop before the release.
    LAUNCH DATE: the date below is a placeholder; the launch step must set it to the owner's date (V224.md, "Launch checklist"). */
 const NEWS_V224 = {
@@ -136,7 +145,7 @@ const NEWS_V224 = {
 const nwV224Due = () => SHOP_LIVE && jstISO() >= NEWS_V224.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

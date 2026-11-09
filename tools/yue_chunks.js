@@ -45,7 +45,7 @@ const LEAKS = [
   [/不要|不是|不會|不能|不用|不可以/u, 'Mandarin 不: say 唔好, 唔係, 唔會, 唔可以, 唔使'],
   [/喜歡|東西|現在|今天|明天|昨天|知道了|一下子/u, 'Mandarin word: say 鍾意, 嘢, 而家, 今日, 聽日, 琴日'],
   [/(?:[吧嗎喔]|(?<!摩)耶)(?=[！。？，、：」』）…\s]|$)/u, 'Mandarin particle: say 啦, 呀 / A唔A, 喎'],
-  [/飼料|存檔|帳號|毛孩|米克斯|米格魯|吉娃娃|柯基|巴哥|黃金獵犬|雪納瑞|貴賓|動物之家|動物醫院|衣櫥|項圈|牽繩|院子|澆水|才藝|拍照|卡片|遊行|園遊會|攤位|腳踏車|冰箱|冰淇淋|冰棒|馬鈴薯|地瓜|玉米|紅蘿蔔|草莓|葡萄|鳳梨|酪梨|巧克力|起司|優格|鮭魚|鮪魚|吐司|甜甜圈|餛飩|磁鐵|飛盤|肉球|麋鹿/u, 'Taiwan word: use the HK word (yue.md section 11)']
+  [/飼料|帳號|毛孩|米克斯|米格魯|吉娃娃|柯基|巴哥|黃金獵犬|雪納瑞|貴賓|動物之家|動物醫院|衣櫥|項圈|牽繩|院子|澆水|才藝|拍照|卡片|遊行|園遊會|攤位|腳踏車|冰箱|冰淇淋|冰棒|馬鈴薯|地瓜|玉米|紅蘿蔔|草莓|葡萄|鳳梨|酪梨|巧克力|起司|優格|鮭魚|鮪魚|吐司|甜甜圈|餛飩|磁鐵|飛盤|肉球|麋鹿/u, 'Taiwan word: use the HK word (yue.md section 11)']
 ];
 // soft: printed as "check", never fails (fixed words like 的士, 了解, 實在, 自在, 但是 in a quote are fine)
 const SOFT = [[/[的了是在]/u, 'Mandarin 的 / 了 / 是 / 在? Usually 嘅, 咗 / 喇, 係, 喺']];
@@ -54,6 +54,20 @@ const area = (k) => { const p = k.split('.'); return p[0] === 'data' || p[0] ===
 // words as a translator meets them: HTML tags dropped, each {var} or ICU block counted as one word
 const words = (s) => String(s).replace(/<[^>]+>/g, ' ').replace(/\{[^{}]*\}/g, ' x ').replace(/[{}]/g, ' ').split(/\s+/).filter(Boolean).length;
 const readBatch = (f) => { const b = JSON.parse(fs.readFileSync(f, 'utf8')); if (!b || typeof b !== 'object' || Array.isArray(b)) throw new Error(f + ': not a { key: text } object'); return b; };
+
+// the leak check needs no chunk map, so it runs even when en.json has areas the chunk table does not list yet
+if (opt('--leaks')) {
+  const f = opt('--leaks'), b = readBatch(f);
+  let hard = 0, soft = 0;
+  for (const [k, v] of Object.entries(b)) {
+    if (typeof v !== 'string') continue;
+    const text = v.replace(/\{[A-Za-z_$][\w$]*\}/g, ' ').replace(/<[^>]+>/g, ' ');
+    for (const [re, why] of LEAKS) { const m = re.exec(text); if (m) { hard++; console.log(`LEAK ${k}: "${m[0]}" ${why}\n     ${v.slice(0, 100)}`); } }
+    for (const [re, why] of SOFT) { const m = re.exec(text); if (m) { soft++; console.log(`check ${k}: "${m[0]}" ${why}\n     ${v.slice(0, 100)}`); } }
+  }
+  console.log(`${Object.keys(b).length} keys: ${hard} leak(s), ${soft} to check by hand`);
+  process.exit(hard ? 1 : 0);
+}
 
 /* ---- the map: every game key in exactly one chunk ---- */
 let bad = 0;
@@ -83,18 +97,6 @@ const chunkArg = (v) => { if (!/^[1-7]$/.test(String(v))) { console.error('chunk
 const ledgerFile = (n) => path.join(LEDGER, n + '.txt');
 const ledger = (n) => new Set(fs.existsSync(ledgerFile(n)) ? fs.readFileSync(ledgerFile(n), 'utf8').split('\n').filter(Boolean) : []);
 
-if (opt('--leaks')) {
-  const f = opt('--leaks'), b = readBatch(f);
-  let hard = 0, soft = 0;
-  for (const [k, v] of Object.entries(b)) {
-    if (typeof v !== 'string') continue;
-    const text = v.replace(/\{[A-Za-z_$][\w$]*\}/g, ' ').replace(/<[^>]+>/g, ' ');
-    for (const [re, why] of LEAKS) { const m = re.exec(text); if (m) { hard++; console.log(`LEAK ${k}: "${m[0]}" ${why}\n     ${v.slice(0, 100)}`); } }
-    for (const [re, why] of SOFT) { const m = re.exec(text); if (m) { soft++; console.log(`check ${k}: "${m[0]}" ${why}\n     ${v.slice(0, 100)}`); } }
-  }
-  console.log(`${Object.keys(b).length} keys: ${hard} leak(s), ${soft} to check by hand`);
-  process.exit(hard ? 1 : 0);
-}
 
 if (opt('--done')) {
   const n = chunkArg(opt('--done')), f = argv[argv.indexOf('--done') + 2];

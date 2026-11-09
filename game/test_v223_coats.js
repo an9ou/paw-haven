@@ -19,7 +19,7 @@ run('v223_coats', async (t) => {
   sec('1. the table: every breed, every option (in the page, with the real PawGenes)');
   await t.boot({ pupStart: true });
   const R = await ev(() => {
-    const G = window.PawGenes, C = window.__paw.cp, out = { bad: [], counts: {}, eyes: {} };
+    const G = window.PawGenes, C = window.__paw.cp, out = { bad: [], counts: {}, eyes: {} }, ONLY = { corgi: ['Black-headed tricolour'], lab: ['Fox red'], golden: ['Dark golden'] };
     G.BREEDS.forEach((k) => {
       const cs = C.coats(k), f = G.FREQ[k], cat = G.coatCatalog(k).map((x) => x.coat);
       out.counts[k] = cs.length;
@@ -29,7 +29,7 @@ run('v223_coats', async (t) => {
         const ph = G.phenotype(c.genes, k, 'x');
         if (ph.coatName !== c.coat) out.bad.push(`${k} ${i}: named ${c.coat}, draws ${ph.coatName}`);
         if (names.has(ph.coatName)) out.bad.push(`${k}: ${ph.coatName} twice`); names.add(ph.coatName);
-        if (!cat.includes(ph.coatName)) out.bad.push(`${k}: ${ph.coatName} is not in the breed's coat catalog`);
+        if (!cat.includes(ph.coatName) && !(ONLY[k] || []).includes(ph.coatName)) out.bad.push(`${k}: ${ph.coatName} is not in the breed's coat catalog`); // ONLY: starter-only coats (tan points, deep red), outside FREQ on purpose
         const lock = (loc, rec, dom, p) => { const pr = c.genes[loc]; if (p === 0 && pr.includes(rec)) out.bad.push(`${k} ${c.coat}: ${rec} at ${loc} (FREQ 0)`); if (p === 1 && pr.includes(dom)) out.bad.push(`${k} ${c.coat}: ${dom} at ${loc} (FREQ 1)`); };
         lock('B', 'b', 'B', f.b); lock('D', 'd', 'D', f.d); lock('E', 'e', 'E', f.e); lock('S', 'sp', 'S', f.sp);
         if (c.genes.M[0] === 'M' && c.genes.M[1] === 'M') out.bad.push(`${k} ${c.coat}: M/M`);
@@ -62,14 +62,44 @@ run('v223_coats', async (t) => {
   });
   ok(Object.keys(R.counts).length === 40, '40 breeds have colour options: ' + Object.keys(R.counts).length);
   ok(!R.bad.length, 'every option draws the coat it names, keeps to FREQ, no M/M, option 1 = the old starter, eye picks land: ' + R.bad.slice(0, 6).join(' | '));
-  ok(R.counts.lab === 3 && R.counts.collie === 4 && R.counts.husky === 3 && R.counts.westie === 1 && R.counts.dalmatian === 2, 'lab 3, border collie 4 (no tricolour: drawn as black and white), husky 3, westie 1, dalmatian 2: ' + JSON.stringify({ lab: R.counts.lab, collie: R.counts.collie, husky: R.counts.husky }));
-  ok(R.counts.samoyed === 1 && R.counts.bichon === 1 && R.counts.corgi === 2 && R.counts.pug === 3 && R.counts.frenchie === 3 && R.counts.pom === 4 && R.counts.dane === 4 && R.counts.mastiff === 2 && R.counts.corso === 3 && R.counts.pitbull === 4, 'review fix: the b/b stand-ins and the corgi black and white are gone: ' + ['samoyed', 'bichon', 'corgi', 'pug', 'frenchie', 'pom', 'dane', 'mastiff', 'corso', 'pitbull'].map((k) => k + ' ' + R.counts[k]).join(', '));
+  ok(R.counts.lab === 4 && R.counts.collie === 5 && R.counts.husky === 3 && R.counts.westie === 1 && R.counts.dalmatian === 2 && R.counts.golden === 3, 'lab 4 (fox red), border collie 5 (tricolour, with tan points), husky 3, westie 1, dalmatian 2, golden 3 (dark golden): ' + JSON.stringify({ lab: R.counts.lab, collie: R.counts.collie, husky: R.counts.husky }));
+  ok(R.counts.samoyed === 1 && R.counts.bichon === 1 && R.counts.corgi === 3 && R.counts.pug === 3 && R.counts.frenchie === 3 && R.counts.pom === 4 && R.counts.dane === 4 && R.counts.mastiff === 2 && R.counts.corso === 3 && R.counts.pitbull === 4, 'review fix: the b/b stand-ins and the corgi black and white are gone: ' + ['samoyed', 'bichon', 'corgi', 'pug', 'frenchie', 'pom', 'dane', 'mastiff', 'corso', 'pitbull'].map((k) => k + ' ' + R.counts[k]).join(', '));
   const names = await ev(() => { const C = window.__paw.cp; return ['pug', 'samoyed', 'frenchie', 'pom', 'dane', 'mastiff', 'corso', 'bichon', 'corgi', 'pitbull'].map((k) => k + ':' + C.coats(k).map((c) => c.coat).join('/')).join(' '); });
   ok(!/pug:[^ ]*Apricot|samoyed:[^ ]*Cream|frenchie:[^ ]*Cream|pom:[^ ]*White|dane:[^ ]*Brindle|mastiff:[^ ]*Apricot|corso:[^ ]*(brindle|Red)|bichon:[^ ]*Cream|corgi:[^ ]*Black and white|pitbull:[^ ]*Brindle/.test(names), 'none of the dropped options is offered: ' + names);
-  ok(R.eyes.husky === 3 && R.eyes.aussie === 4 && R.eyes.collie === 4 && !R.eyes.lab, 'eye choices: every husky, Aussie and Border Collie coat (the owner\'s example), none for the lab: ' + JSON.stringify(R.eyes));
+  ok(R.eyes.husky === 3 && R.eyes.aussie === 4 && R.eyes.collie === 5 && !R.eyes.lab, 'eye choices: every husky, Aussie and Border Collie coat (the owner\'s example), none for the lab: ' + JSON.stringify(R.eyes));
   const colB = await ev(() => { const G = window.PawGenes, C = window.__paw.cp, out = []; for (let n = 0; n < 300; n++) { const g = G.randomGenotype('collie'); if (g.Bl.includes('Bl')) out.push('random'); } return { f: G.FREQ.collie.Bl, n: out.length, blue: C.pick('collie', 0, 1), odd: C.pick('collie', 1, 2) }; });
   ok(colB.f === 0 && colB.n === 0, 'random and rescue collies never get Bl (FREQ 0, 300 draws)');
   ok(colB.blue && colB.blue.eyes === 'blue' && colB.blue.coat === 'Black and white' && colB.odd && colB.odd.eyes === 'odd' && colB.odd.coat === 'Chocolate and white', 'a black and white collie with blue eyes, a chocolate and white one with odd eyes: ' + JSON.stringify([colB.blue && colB.blue.eyes, colB.odd && colB.odd.eyes]));
+  // tan points and the deep red (owner, 8 Nov 2026): the collie tricolour and the corgi black-headed tricolour carry A at/at and draw coat.tan; the lab fox red
+  // and the golden dark golden carry I/I. Both loci only through these presets: random and rescue dogs never get them, and no dog without them changes.
+  const TP = await ev(() => {
+    const G = window.PawGenes, C = window.__paw.cp, o = {}, last = (k) => C.coats(k).length - 1;
+    const tri = C.pick('collie', last('collie'), 0), tri2 = C.pick('collie', last('collie'), 2), cg = C.pick('corgi', last('corgi'), 0), fox = C.pick('lab', last('lab'), 0), dg = C.pick('golden', last('golden'), 0);
+    o.tri = tri && [tri.coat, tri.genes.A && tri.genes.A.join('/'), G.phenotype(tri.genes, 'collie', tri.id).coat.tan, tri.eyes];
+    o.tri2 = tri2 && [tri2.coat, tri2.eyes, G.phenotype(tri2.genes, 'collie', tri2.id).eyes];
+    o.cg = cg && [cg.coat, cg.genes.A && cg.genes.A.join('/'), cg.genes.E.join('/'), G.phenotype(cg.genes, 'corgi', cg.id).coat.tan];
+    o.fox = fox && [fox.coat, fox.genes.I && fox.genes.I.join('/'), G.phenotype(fox.genes, 'lab', fox.id).coat.base];
+    o.dg = dg && [dg.coat, dg.genes.I && dg.genes.I.join('/')];
+    o.plain = ['collie', 'corgi', 'lab', 'golden'].map((k) => { const p = G.phenotype(C.starter(k), k, 'x'); return 'tan' in p.coat || /Fox|Dark golden|tricolour/i.test(p.coatName); }).some(Boolean);
+    let rnd = 0; ['collie', 'corgi', 'lab', 'golden'].forEach((k) => { for (let n = 0; n < 300; n++) { const g = G.randomGenotype(k); if (g.A || g.I) rnd++; } }); o.rnd = rnd;
+    const kid = (a, b) => { const r = {}; for (let n = 0; n < 400; n++) { const g = G.inherit(a, b); const v = (g.I || ['i', 'i']).slice().sort().join('/'); r[v] = (r[v] || 0) + 1; } return r; };
+    const yel = Object.assign({}, C.starter('lab')); delete yel.coat; delete yel.eyes;
+    o.foxfox = kid(fox.genes, fox.genes); o.foxyel = kid(fox.genes, yel);
+    o.half = G.phenotype(Object.assign({}, fox.genes, { I: ['I', 'i'] }), 'lab', 'x');
+    o.half = [o.half.coatName, o.half.coat.base];
+    o.pupTri = G.inherit(tri.genes, C.starter('collie')).A;
+    // the Dog Card / Friends wire carries A and I: the card dog draws as the dog at home (40_dogcards.js dcCoat, DC_RED; the Worker's DC_COAT)
+    o.wire = [['collie', tri], ['corgi', cg], ['lab', fox], ['golden', dg]].map(([k, p]) => { const d = Object.assign({ name: 'Wire', sex: 'female' }, C.fields(k, p)); d.key = k; const c = C.card(d); return [k, JSON.stringify(c.wire.c), c.same, c.coat]; }); // a tricolour x a black and white collie: the pup carries the tan locus
+    return o;
+  });
+  ok(TP.tri && TP.tri[0] === 'Tricolour' && TP.tri[1] === 'at/at' && /^#[0-9A-F]{6}$/i.test(TP.tri[2]) && TP.tri[3] === 'brown', 'the collie Tricolour is A at/at with tan points (coat.tan), brown eyes first: ' + JSON.stringify(TP.tri));
+  ok(TP.tri2 && TP.tri2[0] === 'Tricolour' && TP.tri2[1] === 'odd' && TP.tri2[2] === 'odd', 'the tricolour keeps the collie eye choice (odd eyes land): ' + JSON.stringify(TP.tri2));
+  ok(TP.cg && TP.cg[0] === 'Black-headed tricolour' && TP.cg[1] === 'at/at' && TP.cg[2] === 'E/e' && !!TP.cg[3], 'the corgi Black-headed tricolour is E/e with A at/at and tan points: ' + JSON.stringify(TP.cg));
+  ok(TP.fox && TP.fox[0] === 'Fox red' && TP.fox[1] === 'I/I' && TP.dg && TP.dg[0] === 'Dark golden' && TP.dg[1] === 'I/I', 'the lab Fox red and the golden Dark golden are I/I: ' + JSON.stringify([TP.fox, TP.dg]));
+  ok(!TP.plain && TP.rnd === 0, 'no starter, random or rescue collie, corgi, lab or golden gets the tan or red-intensity locus (1200 draws): ' + TP.rnd);
+  ok(TP.foxfox['I/I'] === 400 && TP.foxyel['I/i'] === 400 && TP.half[0] === 'Fox red' && TP.half[1] !== TP.fox[2], 'two fox reds give fox red pups, a fox red and a yellow give the shade in between (I/i): ' + JSON.stringify([TP.foxfox, TP.foxyel, TP.half]));
+  ok(TP.wire.every((w) => w[2]) && /"A":\["at","at"\]/.test(TP.wire[0][1]) && /"A":\["at","at"\]/.test(TP.wire[1][1]) && /"I":\["I","I"\]/.test(TP.wire[2][1]) && /"I":\["I","I"\]/.test(TP.wire[3][1]) && TP.wire.map((w) => w[3]).join() === 'Tricolour,Black-headed tricolour,Fox red,Dark golden', 'Dog Cards and friend yards carry the tan and red-intensity loci; the card dog draws as at home: ' + JSON.stringify(TP.wire));
+  ok(Array.isArray(TP.pupTri) && TP.pupTri.join('/') === 'at/at', 'a tricolour collie passes the tan locus on (inherit): ' + JSON.stringify(TP.pupTri));
   const total = Object.values(R.counts).reduce((a, b) => a + b, 0);
   console.log('  per-breed options: ' + Object.entries(R.counts).map(([k, n]) => k + ' ' + n).join(', ') + ' (total ' + total + ')');
 
@@ -79,9 +109,9 @@ run('v223_coats', async (t) => {
   ok(await pickDog('Labrador'), 'the Labrador');
   await t.until(() => window.__paw.sr && window.__paw.sr.meetKey === 'lab', null, 4000); await t.sleep(1600);
   const labels = await ev(() => [...document.querySelectorAll('.adopt-card [data-cp^="c|"]')].map((b) => b.getAttribute('aria-label')));
-  ok(labels.join() === 'Yellow,Black,Chocolate', 'the lab comes in Yellow, Black and Chocolate: ' + labels.join(', '));
+  ok(labels.join() === 'Yellow,Black,Chocolate,Fox red', 'the lab comes in Yellow, Black, Chocolate and Fox red: ' + labels.join(', '));
   ok(await ev(() => !document.querySelector('.adopt-card [data-cp^="e|"]')), 'no eye choice for a lab');
-  for (const [re, k] of [['Yorkshire', 'yorkie'], ['Greyhound', 'greyhound'], ['Border Collie', 'collie']]) { // review fix 5: the swatch is the whole sitting dog, cropped to it, and no two options look the same
+  for (const [re, k] of [['Yorkshire', 'yorkie'], ['Greyhound', 'greyhound'], ['Border Collie', 'collie'], ['Corgi', 'corgi'], ['Labrador', 'lab'], ['Golden', 'golden']]) { // review fix 5: the swatch is the whole sitting dog, cropped to it, and no two options look the same
     await pickDog(re); await t.until((kk) => window.__paw.sr.meetKey === kk, k, 4000);
     const sw = await ev(() => [...document.querySelectorAll('.adopt-card .cp-sw svg')].map((x) => ({ sit: x.classList.contains('pa-pose-sit'), vb: x.getAttribute('viewBox'), crop: x.hasAttribute('data-cpcrop'), h: x.innerHTML.length + ':' + [...x.querySelectorAll('[fill]')].map((n) => n.getAttribute('fill')).join() })));
     ok(sw.length > 1 && sw.every((x) => x.sit && !x.crop && x.vb && x.vb !== '0 0 240 200' && x.vb === sw[0].vb) && new Set(sw.map((x) => x.h)).size === sw.length, k + ': every swatch is the sitting dog, cropped (' + (sw[0] && sw[0].vb) + '), each option drawn differently');
@@ -154,7 +184,7 @@ run('v223_coats', async (t) => {
   for (const dev of [null, 'iPhone 13', 'Phone 360x740']) {
     await t.boot({ pupStart: true, device: dev || undefined }); await t.p.click('#tNew'); await t.p.waitForSelector('#aAdopt');
     const tag = dev ? (dev === 'Phone 360x740' ? 'phone360' : 'phone') : 'desktop';
-    for (const [re, key, c, e] of [['Labrador', 'lab', 0, 0], ['Border Collie', 'collie', 2, 2], ['Husky', 'husky', 2, 2]]) {
+    for (const [re, key, c, e] of [['Labrador', 'lab', 3, 0], ['Border Collie', 'collie', 4, 0], ['Corgi', 'corgi', 2, 0], ['Husky', 'husky', 2, 2]]) { // the lab fox red, the collie tricolour, the corgi black-headed tricolour
       await pickDog(re); await t.until((k) => window.__paw.sr.meetKey === k, key, 4000);
       if (c) await t.p.click(`[data-cp="c|${c}"]`); if (e) await t.p.click(`[data-cp="e|${e}"]`);
       await t.p.click('#aGirl'); await t.sleep(300);

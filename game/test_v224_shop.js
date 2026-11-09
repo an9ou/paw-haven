@@ -34,13 +34,15 @@ run('v224_shop', async (t) => {
   ok(m1.shop && JSON.stringify(m1.shop.owned) === '[]' && JSON.stringify(m1.shop.claimed) === '[]' && JSON.stringify(m1.shop.tools) === '{"robo":true,"sprinkler":true,"bowl":true}', 'S.shop = { owned: [], claimed: [], tools: all on }: ' + JSON.stringify(m1.shop));
   ok(m1.neck === 'Red Bandana' && m1.coins === base.coins && JSON.stringify(m1.inv) === JSON.stringify(base.inv) && m1.house === base.house, 'the outfit, coins, bag and house are as they were');
 
-  sec('2. SHOP_LIVE off (no test switch): nothing new for players');
+  sec('2. SHOP_LIVE as built (no test switch): off = nothing new for players; on (launch) = the shop is there');
   { const was = t.ctx; await t.newGame({ prefs: { shopTest: false } }); await was.close(); }
   const off = await ev(() => { const K = window.__paw.ks; return { live: K.live, on: K.on(), open: !!K.open() }; });
-  ok(off.live === false && off.on === false && !off.open, 'SHOP_LIVE is false, ksOn() is false, the sheet does not open: ' + JSON.stringify(off));
+  const LIVE = off.live === true; // v2.24 launch: the same section checks the switched-on shop once SHOP_LIVE is true
+  if (LIVE) { ok(off.on === true && off.open, 'SHOP_LIVE is true: ksOn() is true and the sheet opens: ' + JSON.stringify(off)); await ev(() => { const x = document.querySelector('#modal .panel .x'); if (x) x.click(); }); }
+  else ok(off.live === false && off.on === false && !off.open, 'SHOP_LIVE is false, ksOn() is false, the sheet does not open: ' + JSON.stringify(off));
   await t.home('market');
-  ok(await t.until(() => !!document.querySelector('#placeBtns [data-sh]'), null, 5000) && !(await ev(() => !!document.querySelector('[data-pb="kindshop"]'))), 'Market Street has its shop buttons and no Kind shop button');
-  ok(!(await ev(() => /Kind shop/.test(document.body.innerText))), 'no "Kind shop" anywhere on the page');
+  ok(await t.until(() => !!document.querySelector('#placeBtns [data-sh]'), null, 5000) && (await ev(() => !!document.querySelector('[data-pb="kindshop"]'))) === LIVE, LIVE ? 'Market Street has its shop buttons and the Kind shop button' : 'Market Street has its shop buttons and no Kind shop button');
+  if (!LIVE) ok(!(await ev(() => /Kind shop/.test(document.body.innerText))), 'no "Kind shop" anywhere on the page');
   const leak = await ev(async () => {
     const P = window.__paw, out = [], K = P.ks, all = K.tokyo.concat(K.cozy, ['Golden Name Tag', 'Golden Paw Cottage']);
     const look = (k, tabs) => { for (const tb of tabs || [null]) { P.shop.shop(k); if (tb) { const b = document.querySelector(`[data-btab="${tb}"],[data-tab="${tb}"]`); if (b) b.click(); } const txt = document.querySelector('#modal .panel') ? document.querySelector('#modal .panel').innerText : ''; all.forEach((n) => { if (txt.includes(n)) out.push(k + '/' + (tb || '') + ': ' + n); }); } };
@@ -49,12 +51,14 @@ run('v224_shop', async (t) => {
     return out;
   });
   ok(!leak.length, 'the Boutique, Barkitecture (houses, beds, decor, furniture) and Kibble Corner list no kind-shop item: ' + leak.join(' | '));
-  const rows = await ev(() => { const K = window.__paw.ks, all = K.tokyo.concat(K.cozy, ['Golden Name Tag', 'Golden Paw Cottage']); const lv = window.__paw.lv; let r = []; try { r = (lv && lv.rows ? lv.rows() : []).map((x) => x.id); } catch (e) { r = []; } return { lv: all.filter((n) => r.includes(n)), wardFeet: (() => { window.__paw.shop.wardrobe(); const f = [...document.querySelectorAll('#modal .ward .slot h4')].map((h) => h.textContent); document.querySelector('#modal .panel .x').click(); return f; })() }; });
+  const rows = await ev(() => { const K = window.__paw.ks, all = K.tokyo.concat(K.cozy, ['Golden Name Tag', 'Golden Paw Cottage']); const lv = window.__paw.lv; let r = []; try { r = (lv && lv.rows ? lv.rows() : []).map((x) => x.id); } catch (e) { r = []; } return { lv: all.filter((n) => r.includes(n)), wardFeet: (() => { window.__paw.shop.wardrobe(); const f = [...document.querySelectorAll('#modal .ward .slot[data-slot]')].map((h) => h.dataset.slot).concat([...document.querySelectorAll('#modal [data-wt="feet"]')].map(() => 'feet tab')); document.querySelector('#modal .panel .x').click(); return f; })() }; });
   ok(!rows.lv.length, 'no town level row unlocks a kind-shop item: ' + rows.lv.join(' '));
-  ok(rows.wardFeet.length === 5 && !rows.wardFeet.includes('Feet'), 'the Wardrobe has its four rows and the charm, no Feet row: ' + rows.wardFeet.join(', '));
+  if (LIVE) ok(rows.wardFeet.join() === 'head,eyes,neck,body,feet,charm,feet tab', 'the Wardrobe has a Feet tab and section with the shop on: ' + rows.wardFeet.join(', '));
+  else ok(rows.wardFeet.length === 5 && !rows.wardFeet.some((x) => /feet/.test(x)), 'the Wardrobe has its four slots and the charm, no Feet tab or section: ' + rows.wardFeet.join(', '));
   const menu = await ev(() => typeof window.__paw.ks.open === 'function' && !document.getElementById('mmKs'));
-  ok(menu, 'no kind shop in the menu');
-  ok(await ev(() => { const b = document.getElementById('ksPlus'); return !b || b.hidden || !b.offsetParent; }), 'no (+) by the coins while the shop is off');
+  if (!LIVE) { ok(menu, 'no kind shop in the menu');
+  ok(await ev(() => { const b = document.getElementById('ksPlus'); return !b || b.hidden || !b.offsetParent; }), 'no (+) by the coins while the shop is off'); }
+  else ok(await ev(() => { const b = document.getElementById('ksPlus'); return !!b && !b.hidden && !!b.offsetParent; }), 'the (+) by the coins shows with the shop on');
 
   sec('3. coin buys: every look for 600 coins, every tool for its price, owned once');
   { const was = t.ctx; await t.newGame({ prefs: ON }, { coins: 30000 }); await was.close(); }
@@ -86,7 +90,7 @@ run('v224_shop', async (t) => {
   await t.closeX();
   // the feet slot
   await ev(() => window.__paw.shop.wardrobe());
-  ok(await t.until(() => [...document.querySelectorAll('#modal .ward .slot h4')].some((h) => h.textContent === 'Feet'), null, 3000), 'the Wardrobe has a Feet row');
+  ok(await t.until(() => !!document.querySelector('#modal .ward .slot[data-slot="feet"] [data-eq="Little Sneakers"]') && !!document.querySelector('#modal [data-wt="feet"]'), null, 3000), 'the Wardrobe has a Feet tab and the sneakers as a tile in its section');
   await t.p.click('#modal [data-eq="Little Sneakers"]');
   ok(await t.until(() => window.__paw.S.outfit.feet === 'Little Sneakers', null, 3000), 'the Little Sneakers go on the feet slot');
   ok(await ev(() => window.__paw.shop.outfit('sleep').feet === null && window.__paw.shop.outfit('idle').feet === 'Little Sneakers'), 'shoes come off for naps (the sleep outfit has no feet), on again awake');

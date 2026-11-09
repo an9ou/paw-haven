@@ -6,7 +6,7 @@ Built from the site's About page (`site/i18n/en.json`, about.*). Two parts: the 
 
 Hi! I make Doodle Doggo, a cozy, free dog game drawn like a pencil sketchbook. Adopt a wobbly crayon dog, cuddle it, walk it through a little town under Mt. Fuji, grow a garden and cook dog-safe snacks. Nothing bad ever happens.
 
-It started as one crayon dog for my girlfriend, who loves dachshunds but can't have one yet. Now it's a whole little world, with 35 breeds in 11 languages, and still no ads or in-game purchases.
+It started as one crayon dog for my girlfriend, who loves dachshunds but can't have one yet. Now it's a whole little world, with 35 breeds in 12 languages, and still no ads or in-game purchases.
 
 Your coffees keep the game free and growing. Thank you for giving these crayon dogs a home. 🐾
 
@@ -32,7 +32,7 @@ I didn't want her to only wait, so I picked up a crayon and drew her a dog. It w
 
 It's for everyone who loves dogs but can't have one right now: a small apartment, a busy life, a landlord who says no. Here, nothing bad ever happens to your dogs.
 
-The game is completely free, with no ads and no in-game purchases, and it plays in 11 languages. If it brightens your day, a coffee here helps me keep building: new dogs, new places, little surprises with every update. And maybe one day it brings us a little closer to a real dachshund of our own.
+The game is completely free, with no ads and no in-game purchases, and it plays in 12 languages. If it brightens your day, a coffee here helps me keep building: new dogs, new places, little surprises with every update. And maybe one day it brings us a little closer to a real dachshund of our own.
 
 Thank you for playing. 💛
 
