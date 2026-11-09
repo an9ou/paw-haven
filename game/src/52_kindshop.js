@@ -1,7 +1,7 @@
 /* ======================= v2.24 KIND SHOP (V224.md; owner's decisions: docs/design/kind-shop.md) =======================
    "We sell coins and looks, never dogs, Bond, welfare or chances. No loot boxes or random paid rewards, and the game is complete without paying."
    Part 1 + the game half of part 4: the gate, the items, the save, the shop sheet and its confirm sheet, granting, the Supporter perks and the
-   comfort tools. No payments here yet: ksCheckout(id) and ksRestore() are the two functions the Worker part (/shop/*, Stripe Checkout) replaces.
+   comfort tools. Part 3: ksCheckout(id), ksRestore() and ksPoll() talk to the Worker's /shop/* routes (Stripe Checkout, Managed Payments).
    Gate: SHOP_LIVE (off until the owner's launch date). With it off players see nothing new: no button, no sheet, no Feet row, and the new items
    are sold nowhere else either (every one carries ks + reward: true, so the Boutique, Barkitecture, the stalls, the markets, the level and Bond lists
    and the journeys skip them). The test copy / dev override: window.__ddShopTest or prefs.shopTest (like __ddFrTest / prefs.frTest).
@@ -15,7 +15,7 @@
      every dog's outfit.feet (null): the feet slot (V224.md 2)
    Test hook: window.__paw.ks. */
 const SHOP_LIVE = false; // the Game Manager turns this on at the v2.24 release (owner's launch date)
-const KS_FR_FF = false; // the friend yard snapshot's ff field (the badge on a visited yard): on once the Worker's frYard takes it (cloudflare/worker.js dcKeys)
+const KS_FR_FF = true; // v2.24 part 3: the friend yard snapshot sends ff (the Worker takes it and then sets the badge itself from its purchases table, never from this field)
 function ksOn() { return SHOP_LIVE || (typeof window !== 'undefined' && !!window.__ddShopTest) || !!(typeof prefs !== 'undefined' && prefs && prefs.shopTest); }
 
 /* ---------------- the catalogue (V224.md 1). Prices are shown in USD; Stripe shows the local currency at checkout ---------------- */
@@ -376,10 +376,77 @@ function ksConfirm(panel, id) {
     setTimeout(() => { try { v.querySelector('.ks-no').focus({ preventScroll: true }); } catch (e) { /* gone */ } }, 30);
   });
 }
-/* The Worker part replaces these two: POST /shop/checkout { item } -> open its URL in a new tab; GET /shop/owned -> ksGrant(list) (on start and
-   when the tab is shown again). Until then: a kind toast. */
-function ksCheckout(id) { toast(tt('ks.soon', 'The shop opens soon. Thank you for looking!'), 'good'); return null; }
-function ksRestore() { toast(tt('ks.soon', 'The shop opens soon. Thank you for looking!'), 'good'); return null; }
+/* ---------------- payments (part 3: the Worker's /shop/*, cloudflare/worker.js; V224.md 4) ----------------
+   ksCheckout(id): POST /shop/checkout { item } -> { url }, opened in a new tab. The tab is opened blank in the tap itself (window.open must run
+   synchronously in the click, or a browser and the itch.io frame block it), then pointed at Stripe once the Worker answers, and closed again on
+   any error with a kind toast. ksRestore(): GET /shop/owned -> ksGrant(list). ksPoll() does the same quietly on start and whenever the tab is
+   shown again (the player comes back from Stripe's tab). The Worker answers shop_closed until the owner's Stripe keys are in. */
+const KS_SOON = () => tt('ks.soon', 'The shop opens soon. Thank you for looking!');
+let ksPollAt = 0, ksPollP = null;
+const ksWorker = () => typeof CL !== 'undefined' && !!CL.on && !!CL.uid; // the cloud is on and this device is signed in (otherwise there is no Worker to ask)
+function ksErrToast(code) {
+  if (code === 'shop_closed') toast(KS_SOON(), 'good');
+  else if (code === 'owned') toast(tt('ks.owned_already', 'This is yours already. Restoring your purchases now.'), 'good');
+  else if (code === 'no_account') toast(tt('ks.need_email', 'Add an email to your save first, so your purchases can come back on a new device.'), 'good');
+  else if (code === 'rate_limited') toast(tt('ks.slow_down', 'Lots of taps! Please wait a few minutes and try again.'), 'good');
+  else toast(tt('ks.no_reach', 'The shop could not be reached. Nothing was paid. Please try again soon.'), 'good');
+}
+// the blank tab could not be opened (a pop-up blocker): a real link the player taps opens Stripe instead
+function ksLinkSheet(url) {
+  const pp = $('.panel', modal) || document.body, old = pp.querySelector('.buyveil'); if (old) old.remove();
+  const v = document.createElement('div'); v.className = 'buyveil ks-veil';
+  v.innerHTML = `<div class="buybox pop ks-confirm ks-link" role="dialog" aria-modal="true"><p>${esc(tt('ks.stripe', "You'll pay on Stripe's secure page in a new tab."))}</p>
+    <div class="foot"><button class="btn no ks-no" type="button">${esc(tt('ks.not_now', 'Not now'))}</button><a class="btn yes big ks-go" href="${esc(url)}" target="_blank" rel="noopener">${esc(tt('ks.pay', 'Pay with Stripe'))}</a></div></div>`;
+  pp.appendChild(v);
+  const gone = () => v.remove();
+  v.querySelector('.ks-no').onclick = () => { SFX.click(); gone(); };
+  v.querySelector('.ks-go').addEventListener('click', () => setTimeout(gone, 50));
+  return v;
+}
+function ksCheckout(id) {
+  if (!KS_ITEMS[id]) return Promise.resolve(false);
+  const mode = ksCashMode();
+  if (mode !== 'ok' || !ksWorker()) { if (mode === 'guest') ksErrToast('no_account'); else toast(KS_SOON(), 'good'); return Promise.resolve(false); }
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (e) { w = null; } // now, inside the tap
+  if (w) { try { w.opener = null; w.document.title = 'Stripe'; w.document.body.innerHTML = '<p style="font:18px Georgia,serif;margin:40px;color:#5B3D32">Opening Stripe…</p>'; } catch (e) { /* another origin already */ } }
+  const shut = () => { try { if (w && !w.closed) w.close(); } catch (e) { /* gone */ } };
+  return clApi('POST', '/shop/checkout', { item: id }).then((r) => {
+    const url = r && r.ok && r.data && typeof r.data.url === 'string' && /^https:\/\//.test(r.data.url) ? r.data.url : null;
+    if (!url) { shut(); const code = r && r.data && r.data.error; ksErrToast(code); if (code === 'owned') ksRestore(false); return false; }
+    if (w && !w.closed) { try { w.location.href = url; } catch (e) { shut(); w = null; } }
+    if (!w) ksLinkSheet(url);
+    ksPollAt = 0; // the next time the tab is shown, look at once
+    return true;
+  }).catch(() => { shut(); ksErrToast('offline'); return false; });
+}
+function ksGrantToast(out) {
+  if (out.granted.length) toast(tt('ks.got', 'Thank you! Your purchase is here. Look in the shop for "Yours".'), 'gold');
+}
+// manual: the Restore purchases link (toasts every outcome); otherwise the quiet poll (toasts only a new purchase)
+async function ksRestore(manual) {
+  manual = manual !== false;
+  if (!S || !ksOn()) return null;
+  const mode = ksCashMode();
+  if (mode !== 'ok' || !ksWorker()) { if (manual) { if (mode === 'guest') ksErrToast('no_account'); else toast(KS_SOON(), 'good'); } return null; }
+  let r = null;
+  try { r = await clApi('GET', '/shop/owned'); } catch (e) { r = null; }
+  if (!r || !r.ok || !r.data || !Array.isArray(r.data.purchases)) { if (manual) ksErrToast(r && r.data && r.data.error ? r.data.error : 'offline'); return null; }
+  const out = ksGrant(r.data.purchases);
+  if (out.granted.length) { ksGrantToast(out); if ($('.panel.ks', modal)) ksOpen(); }
+  else if (manual) toast(tt('ks.restored_none', 'Your purchases are all here. Nothing new to restore.'), 'good');
+  return out;
+}
+// the quiet poll: on start, and when the tab is shown again; at most once every 20 s unless a checkout just opened
+function ksPoll(force) {
+  if (!S || !ksOn() || ksCashMode() !== 'ok' || !ksWorker()) return Promise.resolve(null);
+  if (ksPollP) return ksPollP;
+  if (!force && Date.now() - ksPollAt < 20000) return Promise.resolve(null);
+  ksPollAt = Date.now();
+  ksPollP = ksRestore(false).catch(() => null).finally(() => { ksPollP = null; });
+  return ksPollP;
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ksPoll(false); });
 // a coin buy: a look (600 coins) or a tool (its own price), through the same coin window as every shop. Never the Supporter Pack or coins
 async function ksCoinBuy(panel, n) {
   const tool = KS_TOOLS.includes(n), look = KS_TOKYO.includes(n) || KS_COZY.includes(n); if (!tool && !look) return false;
@@ -409,12 +476,12 @@ function ksExpose() {
     grant: (l, g) => ksGrant(l, g), cashMode: () => ksCashMode(), bowlWait: () => shWaterWait() + KS_BOWL_GRACE, fields: (s) => v224Fields(s), sup: () => ksSup(), tool: (t) => ksTool(t), toolOn: (t) => ksToolOn(t), owned: (id) => ksOwnedId(id), look: (n) => ksLookOwned(n),
     walkBonus: (n) => (ksSup() ? Math.floor(Math.max(0, +n || 0) * KS_WALK_K) : 0), growMul: () => ksGrowMul(), gift2: (ym, d) => ksGift2(ym, d), gift2Claim: () => ksGift2Claim(), gift2Can: () => ksGift2Can(),
     open: (t) => ksOpen(t), confirm: (id) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? (ksConfirm(p, id), true) : false; }, coinBuy: (n) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? ksCoinBuy(p, n) : false; },
-    tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id),
+    tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id), restore: (m) => ksRestore(m), poll: (f) => ksPoll(f),
     garden: (h, w) => gardenAdvance({ steps: h || 1, stepWeather: w || 'cloudy' }), rec: () => { KS_REC = []; return true; }, acts: () => (KS_REC || []).slice()
   };
 }
 let KS_REC = null; // tests: the act kinds seen since rec() (the tools must add none)
 on('act', (a) => { if (KS_REC && a && a.kind) KS_REC.push(a.kind); });
-on('game:ready', () => { if (S) v224Fields(S); setTimeout(ksExpose, 0); });
+on('game:ready', () => { if (S) v224Fields(S); setTimeout(ksExpose, 0); setTimeout(() => { if (!ksOn() || !S) return; Promise.resolve(typeof clStart === 'function' ? clStart() : null).then(() => ksPoll(true)).catch(() => {}); }, 1200); }); // part 3: purchases made on another device, or while the game was closed
 on('yard:enter', () => { if (S) v224Fields(S); if (window.__paw && !window.__paw.ks) ksExpose(); });
 setTimeout(ksExpose, 0);

@@ -33,7 +33,8 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Happi Coat', 'Cozy Hoodie', 'Knit Scarf', 'Leaf Beret', 'Autumn Scarf', 'Ghost Sheet', 'Pumpkin Suit', 'Parade Rosette', 'Witch Hat', 'Vampire Cape',
   'Candy Corn Bandana', 'Bat Wings', 'Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Ugly Sweater Rosette', 'Year of the Sheep Hood', 'Astronaut Helmet',
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
-  'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'];
+  'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume',
+  'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm']; // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
 /* v2.23 (review fix): a card dog's eyes and its coat pattern. phenotype() rolls Bl/bl and merle eyes from the dog's id and the art places merle smudges,
    white patches and spots from it (seed = hashId(id)), and a card dog has its own id, so the card sends both: e = the eyes (an index into DC_EYES, only
@@ -110,7 +111,7 @@ async function dcApi(method, path, body) { const r = await clApi(method, path, b
 /* ---------------- my card (the payload) ---------------- */
 function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return dcNameOk(i) ? i : -1; }
 function dcDefaultNm(d) { const own = dcOwnNameIdx(d); if (own >= 0) return own; const b = dcBreeds().indexOf(d.key); return b >= 0 && b < DC_BREED_WORDS.length ? DC_PET_NAMES.length + b : 0; }
-function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0) return i; } return -1; }
+function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes', 'feet']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0) return i; } return -1; }
 function dcCoat(d) {
   const g = d.genes; if (!g || typeof g !== 'object') return null;
   const out = {}; Object.keys(DC_LOCI).forEach((k) => { const v = g[k]; if (Array.isArray(v) && v.length === 2 && v.every((a) => DC_LOCI[k].includes(a))) out[k] = [v[0], v[1]]; });

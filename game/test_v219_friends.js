@@ -208,8 +208,8 @@ run('v219_friends', async (t) => {
   const order = await ev(() => window.__paw.fr.orderOk());
   const lim = await ev(() => window.__paw.fr.lim());
   ok(order.gifts && order.decor && order.houses && order.notes, 'FR_GIFTS, FR_DECOR, FR_HOUSES and FR_NOTES match the game tables: ' + JSON.stringify(order.n));
-  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 14, 'lengths are notes 12, gifts 47, decor 31, houses 14');
-  ok(workerLim === 'notes:12,gifts:47,decor:31,houses:14' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 14, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
+  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 31, houses 15 (v2.24: + the Golden Paw Cottage)');
+  ok(workerLim === 'notes:12,gifts:47,decor:31,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 31 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
 
   // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)

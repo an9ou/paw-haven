@@ -158,3 +158,19 @@ create unique index if not exists friend_events_pair on friend_events (from_id, 
 create unique index if not exists friend_events_gift on friend_events (from_id, kind, day) where kind = 'gift';
 create index if not exists friend_events_inbox on friend_events (to_id, claimed_at);
 create index if not exists friend_events_age on friend_events (created_at); -- inbox read: delete older than 30 days
+
+-- Kind shop (v2.24, V224.md 4). One row per paid Stripe Checkout Session, written only by the Stripe webhook (POST /shop/webhook),
+-- idempotent on the session id. refunded_at is set by charge.refunded (a full refund), matched on payment_intent.
+-- A deleted account's purchases go with it (tidy(): user_id not in users); Stripe, the merchant of record, keeps its own records.
+create table if not exists purchases (
+  id             text primary key,       -- the Checkout Session id (cs_...)
+  user_id        text not null,
+  item           text not null,          -- a SHOP_ITEMS id in cloudflare/worker.js
+  amount         integer,                -- amount_total in the smallest unit of currency
+  currency       text,                   -- lower case, as Stripe sends it (the buyer's currency with Adaptive Pricing)
+  payment_intent text,                   -- pi_..., for refunds
+  created_at     integer not null,       -- ms
+  refunded_at    integer                 -- ms; null unless refunded
+);
+create index if not exists purchases_user on purchases (user_id);
+create index if not exists purchases_pi on purchases (payment_intent);

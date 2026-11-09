@@ -37,7 +37,7 @@ const FR_DECOR = [
   'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair'
 ];
 /* append only, never reorder: the Worker validates indices */
-const FR_HOUSES = ['Cardboard Box', 'Classic Wooden Doghouse', 'Cozy Cottage', 'Snow Igloo', 'Treehouse Den', 'Royal Castle Kennel', 'Little Tea House', 'Beach Hut', 'Camper Van', 'Pumpkin Cottage', 'Lighthouse Kennel', 'Friendly Haunted Kennel', 'Gingerbread Kennel', 'Rocket Ship'];
+const FR_HOUSES = ['Cardboard Box', 'Classic Wooden Doghouse', 'Cozy Cottage', 'Snow Igloo', 'Treehouse Den', 'Royal Castle Kennel', 'Little Tea House', 'Beach Hut', 'Camper Van', 'Pumpkin Cottage', 'Lighthouse Kennel', 'Friendly Haunted Kennel', 'Gingerbread Kennel', 'Rocket Ship', 'Golden Paw Cottage']; // v2.24: + the Supporter House (the Worker's FR_LIM.houses 15)
 /* append only, never reorder: the Worker validates indices.
    FOOD in table order except Fresh Water, then Wild Berries and Duck's Picnic Sandwich, then the 6 seed packets, then the 6 crops. No Golden Bone. */
 const FR_GIFTS = [
@@ -149,7 +149,7 @@ function frYard() {
     x = Math.max(0, Math.min(1200, x)); y = Math.max(0, Math.min(800, y));
     decor.push({ i, x, y });
   });
-  const hi = FR_HOUSES.indexOf(S.house === 'Golden Paw Cottage' ? 'Cozy Cottage' : S.house); // v2.24: until the Worker's list has the Supporter House, a visit shows a cottage of the same size
+  const hi = FR_HOUSES.indexOf(S.house);
   const season = typeof seasonNow === 'function' ? seasonNow() : 'spring';
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
   const out = { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
@@ -1616,7 +1616,7 @@ function frExpose() {
       const seeds = CROPS_FB.map((c) => c.seedItem), crops = CROPS_FB.map((c) => c.item);
       const want = food.concat(['Wild Berries', "Duck's Picnic Sandwich"], seeds, crops);
       const decor = Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard');
-      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.filter((h) => !h.ks).map((h) => h.n).join('|'), /* v2.24: the Supporter House is not in the Worker's list yet (FR_HOUSES and FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
+      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
     yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },

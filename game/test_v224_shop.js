@@ -9,9 +9,10 @@
 //   5. perks: walk pay x1.2 rounded down after the half pay (and the walk result line), crops grow time x0.8, the second calendar gift never coins
 //   6. tools: no Bond, coins, scooped count or act (mission) from the Robo Scoop, the Sprinkler or the Auto Water Bowl; town messes stay; Settings
 //      switches them off
+//   7. payments wiring (part 3): ksCheckout, ksRestore and the poll against the real Worker on a local D1, Stripe faked, window.open recorded
 //   9. phone 360x640: the shop sheet and the confirm sheet with the phone bar, one column, 44 px taps, nothing covered (screenshots in test_logs/)
 // node game/run_tests.js v224_shop
-const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
+const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path'); const { makeServer, mockInit } = require('./cloud_mock');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
 const SAVE = 'pawhaven_proto_v1', LOGS = path.join(__dirname, 'test_logs');
 const ON = { shopTest: true, shopCash: 'ok' };
@@ -197,6 +198,73 @@ run('v224_shop', async (t) => {
   ok(gm.off.cash === 0 && !gm.off.rs && gm.off.txt && gm.off.coin > 0, 'cloud off: no cash buttons or Restore, "Shop payments are not open here", coin buys stay: ' + JSON.stringify(gm.off));
   ok(gm.ok.cash > 0 && gm.ok.rs && !gm.ok.txt, 'an account with an email: cash buttons and Restore');
   await ev(() => { document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); });
+
+  sec('7. payments wiring (part 3): the game against the real Worker (cloudflare/worker.js on a local D1), Stripe faked');
+  {
+    const srv = makeServer(), stripe = [];
+    const was = t.ctx; await t.mk({ prefs: { shopTest: true } });
+    await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a));
+    await t.ctx.addInitScript(mockInit, {});
+    await t.ctx.addInitScript(() => { // window.open recorded: a fake tab, or null when ksBlock is set (a pop-up blocker)
+      window.__ksTabs = []; window.__ksBlock = false;
+      window.open = function (u, n) { window.__ksTabs.push({ at: performance.now(), u, n }); if (window.__ksBlock) return null; const w = { closed: false, opener: 1, close() { this.closed = true; }, location: { href: '' }, document: { title: '', body: { innerHTML: '' } } }; window.__ksTabs[window.__ksTabs.length - 1].w = w; return w; };
+    });
+    await was.close();
+    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew'); if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
+    await t.adopt({}); await t.calm();
+    ok(await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.ks), null, 8000), 'a guest on the local Worker');
+    // the guest becomes an email account on the Worker (same user id), and this device takes the new login
+    const tok0 = await ev(() => JSON.parse(localStorage.getItem('pawhaven_cf_auth')).token);
+    const reg = srv.json((await srv.handle(null, 'POST', '/register', JSON.stringify({ email: 'shopper@example.com', password: 'pupper123' }), 'Bearer ' + tok0)).text);
+    await ev((r) => { localStorage.setItem('pawhaven_cf_auth', JSON.stringify({ token: r.token })); const C = window.__pawCloud.CL; C.email = r.user.email; C.anon = false; }, reg);
+    const uid = reg.user.id;
+    ok(reg.upgraded && (await ev(() => window.__paw.ks.cashMode())) === 'ok', 'an account with an email: cash mode ok');
+
+    // keys absent: the Worker answers shop_closed
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('supporter'); });
+    ok(await t.waitToast(/The shop opens soon/, 3000), 'checkout with no Stripe keys: "The shop opens soon"');
+    const tc = await ev(() => window.__ksTabs.map((x) => ({ n: x.n, closed: x.w && x.w.closed })));
+    ok(tc.length === 1 && tc[0].closed === true, 'the blank tab opened in the tap is closed again: ' + JSON.stringify(tc));
+    await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
+    ok(await t.waitToast(/The shop opens soon/, 3000), 'Restore purchases with no keys: "The shop opens soon"');
+
+    // keys in (test values only), Stripe faked in node
+    Object.assign(srv.env, { STRIPE_KEY: 'sk_test_fake_for_tests', STRIPE_WEBHOOK_SECRET: 'whsec_test_only', SHOP_PRICES: JSON.stringify({ supporter: 'price_sup123', tokyo: 'price_tok123', coins_1k: 'price_c1k123' }),
+      STRIPE_FETCH: async (url, o) => { stripe.push({ url, form: new URLSearchParams(o.body) }); const id = 'cs_test_game' + String(stripe.length).padStart(4, '0'); return new Response(JSON.stringify({ id, url: 'https://checkout.stripe.com/c/pay/' + id }), { status: 200 }); } });
+    const sync = await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; const p = window.__paw.ks.checkout('tokyo'); return { tabs: window.__ksTabs.length, p: !!p }; }); // window.open must already have run, before the Worker answered
+    ok(sync.tabs === 1, 'Pay opens the tab synchronously, in the tap');
+    ok(await t.until(() => window.__ksTabs[0] && window.__ksTabs[0].w && /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_game0001$/.test(window.__ksTabs[0].w.location.href), null, 4000), 'then points it at the Stripe Checkout URL');
+    ok(stripe.length === 1 && stripe[0].form.get('line_items[0][price]') === 'price_tok123' && stripe[0].form.get('client_reference_id') === uid && stripe[0].form.get('managed_payments[enabled]') === 'true', 'the Worker asked Stripe for Tokyo Street, for this account, Managed Payments on');
+    await ev(() => { window.__ksBlock = true; window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('coins_1k'); });
+    ok(await t.until(() => { const a = document.querySelector('.ks-link a.ks-go'); return !!a && a.target === '_blank' && /^https:\/\/checkout\.stripe\.com\//.test(a.href); }, null, 4000), 'a blocked pop-up: a "Pay with Stripe" link sheet opens Stripe from a real tap');
+    await ev(() => { window.__ksBlock = false; const n = document.querySelector('.ks-link .ks-no'); if (n) n.click(); });
+
+    // Stripe's webhook landed (the suite v224_worker checks the webhook itself): the tab is shown again -> the poll grants it once
+    const put = (id, item, refunded) => srv.env.DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 299, ?, ?, ?, ?) on conflict(id) do update set refunded_at = excluded.refunded_at').run(id, uid, item, 'usd', 'pi_' + id, Date.now(), refunded ? Date.now() : null);
+    put('cs_test_game0001', 'tokyo', false);
+    const c0 = await ev(() => window.__paw.S.coins);
+    await ev(() => { window.__toasts.length = 0; document.dispatchEvent(new Event('visibilitychange')); });
+    ok(await t.until(() => window.__paw.S.shop.claimed.includes('cs_test_game0001') && window.__paw.ks.owned('tokyo'), null, 5000), 'back on the game tab: the poll fetches /shop/owned and grants Tokyo Street');
+    ok(await t.waitToast(/Your purchase is here/, 3000), 'with a thank-you toast');
+    put('cs_test_game0002', 'coins_1k', false);
+    await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
+    ok(await t.until((c) => window.__paw.S.coins === c + 1000, c0, 4000), 'Restore purchases grants the coin pack once');
+    await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
+    ok(await t.waitToast(/Nothing new to restore/, 3000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'a second restore: nothing new, no coins twice');
+    // an owned one-time item: the Worker refuses it, the tab closes, the game restores
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('tokyo'); });
+    ok(await t.waitToast(/This is yours already/, 3000) && (await ev(() => window.__ksTabs[0] && window.__ksTabs[0].w.closed)), 'Tokyo Street again: "This is yours already", the blank tab closes');
+    // a refund: the next poll takes the pack back, the coins stay
+    put('cs_test_game0001', 'tokyo', true);
+    await ev(() => window.__paw.ks.poll(true));
+    ok(await t.until(() => !window.__paw.ks.owned('tokyo') && window.__paw.S.shop.refunded.includes('cs_test_game0001'), null, 4000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'refunded: Tokyo Street is taken back, coins kept');
+    // the Worker down: a kind toast, and the tab closes
+    delete srv.env.STRIPE_FETCH; srv.offline.add(t.p);
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('supporter'); });
+    ok(await t.waitToast(/could not be reached\. Nothing was paid/, 3000) && (await ev(() => window.__ksTabs[0].w.closed)), 'offline: "The shop could not be reached. Nothing was paid." and the tab closes');
+    srv.offline.delete(t.p);
+    ok(!stripe.some((s) => !/^https:\/\/api\.stripe\.com\/v1\/checkout\/sessions$/.test(s.url)), 'the fake Stripe was the only Stripe');
+  }
 
   sec('9. phone 360x640: the shop sheet and the confirm sheet');
   { const was = t.ctx; await t.newGame({ prefs: ON, device: 'Phone 360x640' }, { coins: 3000 }); await was.close(); }

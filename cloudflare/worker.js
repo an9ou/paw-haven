@@ -34,6 +34,14 @@
 //   GET  /friends/inbox                    -> { events }          120/h   at most 30: pets and notes first, then gifts and walks, oldest first in each
 //   POST /friends/inbox/claim { ids }      -> { ok }              120/h
 //   POST /friends/leave                    -> { ok }              30/h    V219.md gives leave no limit; same as remove and block
+//   Kind shop (v2.24, V224.md 4; Stripe Managed Payments, Stripe is the merchant of record). Every /shop/* route answers 503
+//   { error: 'shop_closed' } while STRIPE_KEY is unset (the webhook also needs STRIPE_WEBHOOK_SECRET). Prices come from SHOP_ITEMS
+//   below and the SHOP_PRICES secret (JSON), never from the game. Setup: docs/design/kind-shop-stripe-setup.md.
+//   GET  /shop/catalog                     -> { items: [{ id, usd, once, on }] }   no session; usd in US cents, on: a Stripe price is set
+//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 owned (a one-time item)
+//   POST /shop/webhook  (Stripe; raw body + Stripe-Signature) -> { received: true }   400 bad_signature / stale
+//   GET  /shop/owned                       -> { purchases: [{ id, item, at, refunded }] }   120/h
+//   A Founding Friend (a supporter purchase, not refunded) gets ff: 1 on its Dog Card and friend yard, set here from purchases.
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -76,6 +84,7 @@ async function route(req, env, ctx) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, '') || '/', m = req.method;
   const ip = req.headers.get('CF-Connecting-IP') || 'local';
   if (p === '/' && m === 'GET') return json({ ok: true, name: 'pawhaven-api' });
+  if (p === '/shop/webhook' && m === 'POST') return shopWebhook(req, env); // Stripe, server to server: the signature covers the raw body, so it is read before any JSON parsing
   const R = ROUTES[m + ' ' + p];
   if (!R) return fail('not_found', 404);
   let body = null;
@@ -126,7 +135,8 @@ async function tidy(env) {
     env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
     env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
-    env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)) // Dog Cards: paws only matter for today (index paws_day)
+    env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)), // Dog Cards: paws only matter for today (index paws_day)
+    env.DB.prepare('delete from purchases where user_id not in (select id from users)') // v2.24: a deleted account's purchases go with it (Stripe keeps its own records)
   ]);
 }
 // Dog Cards: a deleted account's card and paws (both ways). Runs only from the card routes (about 1 in 50 of their requests), not on every route.
@@ -190,14 +200,14 @@ async function sendMail(env, to, m) {
 /* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
-const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch
+const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 57 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six)
 // v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
 //   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
 //             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
 //   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
-//   houses 14: every HOUSES row
-const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 };
+//   houses 15: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
+const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 15 };
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -236,7 +246,9 @@ function dcDog(d) {
 }
 // the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
 function dcCardOf(body) {
-  if (JSON.stringify(body).length > DC_MAX || !dcKeys(body, ['name', 'dogs'])) return null;
+  if (JSON.stringify(body).length > DC_MAX || !ffOk(body)) return null;
+  body = ffStrip(body); // v2.24: the game may send ff; the badge is the server's to give (from purchases)
+  if (!dcKeys(body, ['name', 'dogs'])) return null;
   const nm = body.name, ds = body.dogs;
   if (!Array.isArray(nm) || nm.length !== 2 || !dcInt(nm[0], 0, DC_LIM.a - 1) || !dcInt(nm[1], 0, DC_LIM.b - 1)) return null;
   if (!Array.isArray(ds) || ds.length < 1 || ds.length > DC_DOGS) return null;
@@ -248,10 +260,13 @@ function dcCardOf(body) {
 function dcPub(r, mine) {
   let dogs = []; try { dogs = JSON.parse(r.dogs); } catch (e) { dogs = []; }
   const o = { id: r.id, name: [r.name_a | 0, r.name_b | 0], dogs, paws: r.paws | 0 };
+  if (r.ff) o.ff = 1; // v2.24: a Founding Friend, from the purchases table (never from the client)
   if (mine) o.at = Number(r.updated_at) || 0; // a millisecond time. `| 0` keeps only 32 bits, so `at` was never a real clock and the game republished the card on every sync.
   return o;
 }
-const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
+// a Founding Friend: a supporter purchase that was not refunded (v2.24)
+const FF_SQL = (col) => `exists (select 1 from purchases fp where fp.user_id = ${col} and fp.item = 'supporter' and fp.refunded_at is null)`;
+const DC_COLS = `c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at, ${FF_SQL('c.user_id')} as ff`;
 
 /* ---------------- Friends (v2.19) ---------------- */
 // Codes skip 0, O, 1, I and L, so a crayon card is readable. 31 letters, about 28.6 million codes.
@@ -320,6 +335,8 @@ function frDogsOf(text) {
 function frYard(yard) {
   let raw; try { raw = JSON.stringify(yard); } catch (e) { return null; }
   if (!raw || raw.length > FR_YARD_MAX) return null;
+  if (!ffOk(yard)) return null;
+  yard = ffStrip(yard); // v2.24: the game may send ff; GET /friends/yard sets it from purchases
   if (!dcKeys(yard, ['v', 'name', 'house', 'season', 'dogs', 'decor'])) return null;
   if (yard.v !== 1) return null;
   const name = frName(yard.name);
@@ -460,6 +477,100 @@ async function frTidy(env) {
 function frTidySoon(env, ctx) {
   if (env.TIDY) return frTidy(env);
   if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(frTidy(env).catch(() => {}));
+}
+
+/* ---------------- Kind shop (v2.24, V224.md 4): Stripe Checkout with Managed Payments, through fetch (no SDK) ---------------- */
+// The catalogue. usd: US cents (Stripe shows the local currency at checkout). once: one per account (a full refund frees it again).
+// The Stripe price ids come from the SHOP_PRICES secret (JSON): { "supporter": "price_...", ... } or { "supporter": { "price": "price_...", "usd": 499 } }.
+// The game never sends a price: checkout looks the item up here.
+const SHOP_ITEMS = {
+  supporter: { usd: 499, once: true }, tokyo: { usd: 299, once: true }, cozy: { usd: 299, once: true },
+  robo: { usd: 199, once: true }, sprinkler: { usd: 99, once: true }, bowl: { usd: 99, once: true }, comfort: { usd: 299, once: true },
+  coins_1k: { usd: 99, once: false }, coins_3k: { usd: 199, once: false }, coins_8k: { usd: 499, once: false }
+};
+const SHOP_TOOLS = ['robo', 'sprinkler', 'bowl'];
+const SHOP_TOL = 300; // seconds: a webhook signed more than 5 minutes ago (or ahead) is refused
+const SHOP_OK_URL = 'https://doodledoggo.app/thanks?ok=1', SHOP_NO_URL = 'https://doodledoggo.app/thanks?ok=0';
+const SHOP_SID = /^cs_[A-Za-z0-9_]{6,250}$/, SHOP_PI = /^pi_[A-Za-z0-9_]{6,250}$/, SHOP_PRICE = /^price_[A-Za-z0-9_]{4,250}$/;
+const shopOpen = (env) => !!env.STRIPE_KEY;
+function shopPrices(env) {
+  let o = {}; try { o = env.SHOP_PRICES ? JSON.parse(env.SHOP_PRICES) : {}; } catch (e) { o = {}; }
+  return o && typeof o === 'object' && !Array.isArray(o) ? o : {};
+}
+// one catalogue row { id, usd, once, price } (price: the Stripe price id, or null while it is not set up), or null for an unknown id
+function shopItem(env, id) {
+  if (typeof id !== 'string' || !Object.hasOwn(SHOP_ITEMS, id)) return null;
+  const P = shopPrices(env), base = SHOP_ITEMS[id], c = Object.hasOwn(P, id) ? P[id] : null;
+  const price = typeof c === 'string' ? c : c && typeof c.price === 'string' ? c.price : null;
+  const usd = c && typeof c === 'object' && Number.isInteger(c.usd) && c.usd > 0 ? c.usd : base.usd;
+  return { id, usd, once: base.once, price: price && SHOP_PRICE.test(price) ? price : null };
+}
+const shopFF = async (env, uid) => { const r = await one(env, `select ${FF_SQL('?1')} as ff`, uid); return !!(r && r.ff); };
+// ff on a card or a yard from the game: a boolean (or 0 / 1) when present, then dropped (shopFF decides)
+const ffOk = (o) => !o || typeof o !== 'object' || Array.isArray(o) || !Object.hasOwn(o, 'ff') || [true, false, 0, 1].includes(o.ff);
+function ffStrip(o) { if (!o || typeof o !== 'object' || Array.isArray(o) || !Object.hasOwn(o, 'ff')) return o; const c = Object.assign({}, o); delete c.ff; return c; }
+// a one-time item this account owns already (not refunded); the Comfort Kit covers its three tools, and all three tools cover the Kit
+async function shopOwnsOnce(env, uid, id) {
+  const have = new Set((await all(env, 'select distinct item from purchases where user_id = ?1 and refunded_at is null', uid)).map((r) => r.item));
+  if (have.has(id)) return true;
+  if (SHOP_TOOLS.includes(id) && have.has('comfort')) return true;
+  return id === 'comfort' && SHOP_TOOLS.every((t) => have.has(t));
+}
+// form encoding for the Stripe API (nested keys written out, e.g. line_items[0][price]); undefined values are left out
+const shopForm = (o) => Object.keys(o).filter((k) => o[k] !== undefined && o[k] !== null).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(String(o[k]))).join('&');
+async function shopStripe(env, path, form) {
+  const f = env.STRIPE_FETCH || fetch; // tests pass a fake: they never reach the real Stripe
+  const h = { Authorization: 'Bearer ' + env.STRIPE_KEY, 'Content-Type': 'application/x-www-form-urlencoded' };
+  if (env.STRIPE_VERSION) h['Stripe-Version'] = env.STRIPE_VERSION; // else the account's default API version (Managed Payments: 2025-03-31.basil or later)
+  const r = await f('https://api.stripe.com/v1' + path, { method: 'POST', headers: h, body: shopForm(form) });
+  let data = null; try { data = await r.json(); } catch (e) { data = null; }
+  return { ok: r.ok, status: r.status, data };
+}
+// Stripe-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256 of `${t}.${raw}` with the endpoint's signing secret>[,v1=...]. -> true, 'stale' or false
+async function shopSigOk(env, raw, header) {
+  if (typeof header !== 'string' || header.length > 2000) return false;
+  let t = null; const v1 = [];
+  for (const part of header.split(',')) {
+    const i = part.indexOf('='); if (i < 0) continue;
+    const k = part.slice(0, i).trim(), v = part.slice(i + 1).trim();
+    if (k === 't' && /^\d{1,12}$/.test(v)) t = v; else if (k === 'v1' && /^[0-9a-f]{64}$/.test(v)) v1.push(v);
+  }
+  if (!t || !v1.length) return false;
+  const key = await crypto.subtle.importKey('raw', enc.encode(env.STRIPE_WEBHOOK_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const want = hex(await crypto.subtle.sign('HMAC', key, enc.encode(t + '.' + raw)));
+  let good = false; for (const s of v1) if (same(s, want)) good = true; // constant time, and every candidate is checked
+  if (!good) return false;
+  return Math.abs(Date.now() / 1000 - Number(t)) <= SHOP_TOL ? true : 'stale';
+}
+// POST /shop/webhook: no session, no CORS (Stripe calls it server to server). Always 200 for an event it does not need.
+async function shopWebhook(req, env) {
+  if (!shopOpen(env) || !env.STRIPE_WEBHOOK_SECRET) return fail('shop_closed', 503);
+  const raw = await req.text();
+  if (raw.length > MAX_BODY) return fail('too_big', 413);
+  const sig = await shopSigOk(env, raw, req.headers.get('Stripe-Signature'));
+  if (sig === 'stale') return fail('stale', 400);
+  if (sig !== true) return fail('bad_signature', 400);
+  let ev; try { ev = JSON.parse(raw); } catch (e) { return fail('bad_json', 400); }
+  const o = ev && ev.data && ev.data.object, type = String((ev && ev.type) || '');
+  if (!o || typeof o !== 'object') return json({ received: true });
+  if ((type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') && o.payment_status === 'paid') {
+    const md = o.metadata && typeof o.metadata === 'object' ? o.metadata : {}, uid = o.client_reference_id;
+    if (typeof o.id !== 'string' || !SHOP_SID.test(o.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) {
+      console.error('pawhaven-api shop: a paid session the Worker cannot place', typeof o.id === 'string' ? o.id.slice(0, 40) : '?');
+      return json({ received: true });
+    }
+    const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
+    // idempotent on the session id: Stripe retries, and completed and async_payment_succeeded can both arrive for one session
+    await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, null)
+      on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent)`,
+      o.id, uid, md.item, Number.isInteger(o.amount_total) ? o.amount_total : null, typeof o.currency === 'string' ? o.currency.slice(0, 8) : null, pi, Date.now());
+    return json({ received: true });
+  }
+  if (type === 'charge.refunded') { // a full refund only (charge.refunded true): a partial refund keeps the item
+    const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
+    if (pi && o.refunded === true) await run(env, 'update purchases set refunded_at = ?1 where payment_intent = ?2 and refunded_at is null', Date.now(), pi);
+  }
+  return json({ received: true });
 }
 
 /* ---------------- routes ---------------- */
@@ -651,6 +762,7 @@ const ROUTES = {
     const r = await one(env, `insert into cards (id, user_id, name_a, name_b, dogs, paws, updated_at) values (?1, ?2, ?3, ?4, ?5, 0, ?6)
       on conflict(user_id) do update set name_a = excluded.name_a, name_b = excluded.name_b, dogs = excluded.dogs, updated_at = excluded.updated_at
       returning id, name_a, name_b, dogs, paws, updated_at`, b64url(rnd(16)), me.id, c.a, c.b, JSON.stringify(c.dogs), Date.now());
+    if (await shopFF(env, me.id)) r.ff = 1;
     return json(dcPub(r, true));
   } },
 
@@ -815,6 +927,7 @@ const ROUTES = {
     const row = await one(env, 'select data from yards where user_id = ?1', them.user_id);
     if (!row) return json({ yard: null });
     let yard = null; try { yard = frYard(JSON.parse(row.data)); } catch (e) { yard = null; }
+    if (yard && (await shopFF(env, them.user_id))) yard.ff = 1; // v2.24: the Founding Friend badge, from purchases
     return json({ yard });
   } },
 
@@ -887,6 +1000,43 @@ const ROUTES = {
       env.DB.prepare('delete from friend_ids where user_id = ?1').bind(me.id)
     ]);
     return json({ ok: true });
+  } },
+
+  /* ---------- Kind shop (v2.24) ---------- */
+  'GET /shop/catalog': { auth: false, async fn({ env, ip }) {
+    if (!shopOpen(env)) return fail('shop_closed', 503);
+    if (await limited(env, 'shop:cat:' + ip, 300, 3600)) return fail('rate_limited', 429);
+    return json({ items: Object.keys(SHOP_ITEMS).map((id) => { const it = shopItem(env, id); return { id, usd: it.usd, once: it.once, on: !!it.price }; }) });
+  } },
+
+  'POST /shop/checkout': { auth: true, async fn({ env, body, me }) {
+    if (!shopOpen(env)) return fail('shop_closed', 503);
+    if (me.guest || !me.email) return fail('no_account', 403); // purchases live on an email account, so they come back on a new device
+    if (!frOnly(body, ['item'])) return fail('bad_item', 400);
+    const it = shopItem(env, body.item);
+    if (!it) return fail('bad_item', 400);
+    if (!it.price) return fail('shop_closed', 503); // no Stripe price set up for this item yet
+    if (await limited(env, 'shop:co:' + me.id, 20, 3600)) return fail('rate_limited', 429);
+    if (it.once && (await shopOwnsOnce(env, me.id, it.id))) return fail('owned', 409);
+    const r = await shopStripe(env, '/checkout/sessions', {
+      mode: 'payment', 'line_items[0][price]': it.price, 'line_items[0][quantity]': 1,
+      'managed_payments[enabled]': env.SHOP_MANAGED === '0' ? undefined : 'true', // Stripe as merchant of record (docs.stripe.com/payments/managed-payments/set-up)
+      client_reference_id: me.id, 'metadata[item]': it.id, 'metadata[user]': me.id, customer_email: me.email,
+      success_url: env.SHOP_SUCCESS_URL || SHOP_OK_URL, cancel_url: env.SHOP_CANCEL_URL || SHOP_NO_URL
+    });
+    const url = r.data && r.data.url;
+    if (!r.ok || typeof url !== 'string' || !/^https:\/\//.test(url)) {
+      console.error('pawhaven-api shop: checkout', r.status, (r.data && r.data.error && r.data.error.code) || '');
+      return fail('busy', 503);
+    }
+    return json({ url });
+  } },
+
+  'GET /shop/owned': { auth: true, async fn({ env, me }) {
+    if (!shopOpen(env)) return fail('shop_closed', 503);
+    if (await limited(env, 'shop:own:' + me.id, 120, 3600)) return fail('rate_limited', 429);
+    const rows = await all(env, 'select id, item, created_at, refunded_at from purchases where user_id = ?1 order by created_at asc, id asc limit 500', me.id);
+    return json({ purchases: rows.map((r) => ({ id: r.id, item: r.item, at: Number(r.created_at) || 0, refunded: r.refunded_at != null })) });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {
