@@ -56,3 +56,12 @@ table and the new house and outfit limits.
 ## 4. Launch
 Repeat steps 1.3, 1.4 and 2 in live mode (new live price ids, a live endpoint and its own `whsec_...`, the `sk_live_...` key), one live
 purchase and refund, then the Game Manager sets `SHOP_LIVE = true` on your launch date.
+
+## 5. Done so far (9 Nov 2026)
+Sandbox account `Doodle Doggo sandbox` (acct_1UXv1nIdJRrYdh73): the 10 products, each with its USD price and tax code `txcd_10201000`,
+metadata `ks_id` = the shop id. Sandbox `SHOP_PRICES` (not secret):
+```
+{"supporter":"price_1UZv02IdJRrYdh73LKLVqeBn","tokyo":"price_1UZv0GIdJRrYdh73eBKpmFQb","cozy":"price_1UZv0JIdJRrYdh73mpSMNVNI","robo":"price_1UZv0LIdJRrYdh73suyKlF8I","sprinkler":"price_1UZv0UIdJRrYdh73oY2DOnr7","bowl":"price_1UZv0XIdJRrYdh73Qs0qprma","comfort":"price_1UZv0aIdJRrYdh73qUtnLFVX","coins_1k":"price_1UZv0cIdJRrYdh73isFK94WB","coins_3k":"price_1UZv0fIdJRrYdh73KWCWNl1Y","coins_8k":"price_1UZv0jIdJRrYdh73NocCKIgV"}
+```
+The Worker on `claude/kind-shop` carries main's RED_I line (DC_COAT `I`) and passes test_worker (2309) and test_v224_worker (93); not deployed yet
+(it needs the owner's go-ahead for the production deploy). Live-mode products: not made yet.
