@@ -46,7 +46,7 @@
      On for a test copy only: window.__ddYueTest (tools/pages.js sets it on the GitHub Pages test copy; the test harness game/test_lib.js
      sets it unless a suite passes yue: false) or, in node (the site tools and tests), DD_YUE_TEST=1. The release: set YUE_LIVE = true here,
      rebuild (game/build.js publish, tools/itch.js, tools/site_i18n.js), deploy (docs/i18n/coord/yue_plan.md, "Release"). ---- */
-  const YUE_LIVE = false;
+  const YUE_LIVE = true;
   function yueOn() {
     if (YUE_LIVE) return true;
     try { if (typeof globalThis !== 'undefined' && globalThis.__ddYueTest) return true; } catch (e) { /* no global */ }

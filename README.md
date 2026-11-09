@@ -14,7 +14,7 @@ Your save lives in your browser's local storage. On the web version it is also s
 
 ## What's in the game
 
-- **11 languages**: English, 日本語, 简体中文, 繁體中文, 한국어, Español, Português (Brasil), Français, Deutsch, ไทย and Bahasa Indonesia, in the game and on doodledoggo.app. The game starts in your device's language; change it in Settings or with the chip on the title screen.
+- **12 languages**: English, 日本語, 简体中文, 繁體中文, 廣東話 (Cantonese), 한국어, Español, Português (Brasil), Français, Deutsch, ไทย and Bahasa Indonesia, in the game and on doodledoggo.app. The game starts in your device's language; change it in Settings or with the chip on the title screen.
 - **35 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, miniature poodle, border collie, samoyed, french bulldog, akita, japanese spitz, pomeranian, afghan hound, great dane, english mastiff, german shepherd, doberman, cane corso, pit bull, miniature pinscher, labrador retriever, alaskan malamute, chow chow, standard poodle, miniature schnauzer, west highland white terrier, yorkshire terrier, bichon frise, maltese and shih tzu. Each has its own voice, personality, size and joke, and 14 faces (sleepy, surprised, heart eyes, blep, zoomies, wink and more) that show by its personality.
 - **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 19 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes and three full costumes: a Pumpkin Patch Suit, a Trick-or-Treat Ghost and a Little Bat Costume), each with a "2026" tag and yours to keep.
 - **Winter and New Year**: Snow Days from December to February (snowdrifts to dive into, a snowdog, Baker Bea's Winter Stall), Winter Lights and an Ugly Sweater Contest in December, and a Japanese New Year (kadomatsu, kites, New Year cards, a Fortune box with only good fortunes).
@@ -62,8 +62,8 @@ NODE_PATH=$(npm root -g) node game/run_tests.js smoke    # about 30 seconds
 NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2     # desktop suites
 NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 15, Pixel 7), the mocked cloud-save suite, the title account choice (`account`) and the occlusion suites (`phone_occl_home`, `phone_occl_play`)
 NODE_PATH=$(npm root -g) node game/run_tests.js i18n_smoke       # every language: boot, adopt, popups, shops, a walk (PAW_LANGS=ja,de picks languages)
-NODE_PATH=$(npm root -g) node game/run_tests.js i18n_fit --jobs 3   # fit audit, the game: 11 languages x 5 sizes (about 45 min)
-NODE_PATH=$(npm root -g) node game/run_tests.js site_fit --jobs 3   # fit audit, doodledoggo.app: 11 languages x 5 widths (about 15 min)
+NODE_PATH=$(npm root -g) node game/run_tests.js i18n_fit --jobs 3   # fit audit, the game: 12 languages x 5 sizes (about 45 min)
+NODE_PATH=$(npm root -g) node game/run_tests.js site_fit --jobs 3   # fit audit, doodledoggo.app: 12 languages x 5 widths (about 15 min)
 ```
 
 `i18n` (node) is in `all` and `i18n_phone` in `phone`. The two fit audits form the group `fit` (`node game/run_tests.js fit`, not in `all` or `phone`); `PAW_LANGS`, `PAW_FIT_SIZES` and `PAW_FIT_REPORT_ONLY=1` narrow them, and their reports land in `game/test_logs/`. How they measure: `docs/i18n/coord/FIT.md`. Add `--minified` to run suites on a minified build.
@@ -84,7 +84,7 @@ game/i18n/        the language tables (en.json is generated, <lang>.json are the
 docs/i18n/        a style guide per language with its native-speaker checks, FONTS.md
 tools/            build helpers (GitHub Pages wrapper, Cloudflare deploys, worktree script)
 cloudflare/       the cloud save and login Worker (worker.js, schema.sql for D1, wrangler.toml)
-site/             the doodledoggo.app introduction site (home with the game, dogs, map, guide, about, privacy, reset; 11 languages in site/i18n/)
+site/             the doodledoggo.app introduction site (home with the game, dogs, map, guide, about, privacy, reset; 12 languages in site/i18n/)
 dashboard/        a small tooling dashboard
 *.md              design and build contracts for each version (see PIPELINE.md)
 docs/design/      game design documents (proposal, v2, garden and kitchen, v1.3 plan)
