@@ -250,10 +250,23 @@ run('v224_shop', async (t) => {
     const c0 = await ev(() => window.__paw.S.coins);
     await ev(() => { window.__toasts.length = 0; document.dispatchEvent(new Event('visibilitychange')); });
     ok(await t.until(() => window.__paw.S.shop.claimed.includes('cs_test_game0001') && window.__paw.ks.owned('tokyo'), null, 5000), 'back on the game tab: the poll fetches /shop/owned and grants Tokyo Street');
-    ok(await t.waitToast(/Your purchase is here/, 3000), 'with a thank-you toast');
+    // v2.24.1: the Delivered! card lists exactly what came and where it is; Gerald's letter lists it too; My purchases has it
+    ok(await t.until(() => !!document.querySelector('#modal .panel.ks-got'), null, 3000), 'a Delivered! card opens: ' + JSON.stringify(await ev(() => ({ hid: document.getElementById('modal').hidden, cls: (document.querySelector('#modal .panel') || {}).className, toasts: (window.__toasts || []).slice(-3) }))));
+    const got = await ev(() => { const p = document.querySelector('#modal .panel.ks-got'), m = window.__paw.S.mail.find((x) => x.id === 'ks_got_cs_test_game0001'); return { txt: p.innerText, rows: p.querySelectorAll('.ks-got-row').length, ok: !!p.querySelector('#ksGotOk'), letter: m ? m.text : '', log: window.__paw.S.shop.log.map((e) => e.id + ':' + e.item + ':' + (e.at > 0) + ':' + e.r) }; });
+    await t.sleep(800); await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_delivered.png') });
+    ok(got.rows === 1 && /Delivered!/.test(got.txt) && /Tokyo Street/.test(got.txt) && /Sukajan Jacket/.test(got.txt) && /Lucky Cat Charm/.test(got.txt) && /Wardrobe/.test(got.txt) && got.ok, 'it names Tokyo Street, its six things and where they are: ' + got.txt.replace(/\s+/g, ' ').slice(0, 200));
+    ok(/Tokyo Street: Sukajan Jacket/.test(got.letter) && /My purchases/.test(got.letter), "Gerald's delivery letter lists them: " + got.letter.replace(/\n/g, ' / ').slice(0, 160));
+    ok(got.log.join() === 'cs_test_game0001:tokyo:true:false', 'My purchases has it, with its date: ' + got.log.join());
+    await t.p.click('#ksGotOk'); ok(await t.until(() => document.getElementById('modal').hidden, null, 2000), 'Yay! closes the card');
+    await ev(() => window.__paw.ks.open('coins'));
+    const mine = await ev(() => { const d = document.querySelector('#modal .panel.ks .ks-mine'); return d ? d.textContent : ''; });
+    ok(/My purchases \(1\)/.test(mine) && /contact@doodledoggo\.app/.test(mine), 'the Kind shop shows My purchases (1) with the help email');
     put('cs_test_game0002', 'coins_1k', false);
     await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
     ok(await t.until((c) => window.__paw.S.coins === c + 1000, c0, 4000), 'Restore purchases grants the coin pack once');
+    ok(await t.until(() => { const p = document.querySelector('#modal .panel.ks-got'); return !!p && /1,000 coins/.test(p.innerText) && /Added to your Paw Coins/.test(p.innerText); }, null, 3000), 'over the open shop: a Delivered! card for the coins');
+    await t.p.click('#ksGotOk'); ok(await t.until(() => { const d = document.querySelector('#modal .panel.ks .ks-mine'); return !!d && /My purchases \(2\)/.test(d.innerText); }, null, 2000), 'Yay! goes back to the Kind shop, now My purchases (2)');
+    await ev(() => document.querySelector('#modal .panel .x').click()); await t.until(() => document.getElementById('modal').hidden, null, 2000);
     await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
     ok(await t.waitToast(/Nothing new to restore/, 3000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'a second restore: nothing new, no coins twice');
     // an owned one-time item: the Worker refuses it, the tab closes, the game restores
@@ -263,6 +276,7 @@ run('v224_shop', async (t) => {
     put('cs_test_game0001', 'tokyo', true);
     await ev(() => window.__paw.ks.poll(true));
     ok(await t.until(() => !window.__paw.ks.owned('tokyo') && window.__paw.S.shop.refunded.includes('cs_test_game0001'), null, 4000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'refunded: Tokyo Street is taken back, coins kept');
+    ok(await ev(() => window.__paw.S.shop.log.find((e) => e.id === 'cs_test_game0001').r === true), 'My purchases marks it refunded');
     // the Worker down: a kind toast, and the tab closes
     delete srv.env.STRIPE_FETCH; srv.offline.add(t.p);
     await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('supporter'); });

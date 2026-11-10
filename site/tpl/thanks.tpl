@@ -12,10 +12,22 @@
       <p class="center" style="font-size:22px" role="status">{{t thanks.ok}}</p>
       <p class="center" style="font-size:22px" role="status" hidden>{{t thanks.no}}</p>
     </div>
+    <div id="thMore">
+      <ul class="thlist">
+        <li>{{t thanks.list}}</li>
+        <li>{{t thanks.receipt}}</li>
+        <li>{{t thanks.restore}}</li>
+        <li>{{t thanks.help}}</li>
+      </ul>
+    </div>
+    <p class="cta"><button class="play thback" id="thBack" type="button">{{t thanks.back}}</button></p>
+    <p class="center small" id="thBackHint" hidden>{{t thanks.back_hint}}</p>
   </div>
   <footer class="foot"><a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a></footer>
 </main>
 <div class="petals" id="petals" aria-hidden="true"></div>
 <script src="/js/site.js" defer></script>
-<script>try { if (/[?&]ok=0\b/.test(location.search)) { var p = document.querySelectorAll('#thOk p'); p[0].hidden = true; p[1].hidden = false; } if (location.search || location.hash) history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ }</script>
+<script>try { if (/[?&]ok=0\b/.test(location.search)) { var p = document.querySelectorAll('#thOk p'); p[0].hidden = true; p[1].hidden = false; document.getElementById('thMore').hidden = true; } if (location.search || location.hash) history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ }
+// v2.24.1: Stripe opened in a tab the game made, so it can usually close itself; when the browser says no, say how to get back
+document.getElementById('thBack').onclick = function () { try { window.close(); } catch (e) { /* not allowed */ } setTimeout(function () { document.getElementById('thBackHint').hidden = false; }, 400); };</script>
 </body></html>

@@ -15,4 +15,4 @@ Open:
 2. Launch (owner sets the date; never merge or deploy the game before it): live-mode products with tax_behavior inclusive,
    live webhook + rk_live_ key (owner pastes secrets into Cloudflare), live SHOP_PRICES, NEWS_V224 date, SHOP_LIVE = true,
    coordinate with the Game Manager, then itch.io push and the Marketing briefing.
-3. Edge cases before launch: a refund that arrives before its completed webhook is lost; partial refunds keep the item.
+3. Edge cases: a refund that arrives before its completed webhook is handled since v2.24.1 (the Worker looks the session up); partial refunds keep the item (by design).
