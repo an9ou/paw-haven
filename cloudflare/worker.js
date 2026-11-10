@@ -518,11 +518,13 @@ async function shopOwnsOnce(env, uid, id) {
 }
 // form encoding for the Stripe API (nested keys written out, e.g. line_items[0][price]); undefined values are left out
 const shopForm = (o) => Object.keys(o).filter((k) => o[k] !== undefined && o[k] !== null).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(String(o[k]))).join('&');
+// form null: a GET (path carries its own query string)
 async function shopStripe(env, path, form) {
   const f = env.STRIPE_FETCH || fetch; // tests pass a fake: they never reach the real Stripe
-  const h = { Authorization: 'Bearer ' + env.STRIPE_KEY, 'Content-Type': 'application/x-www-form-urlencoded' };
+  const h = { Authorization: 'Bearer ' + env.STRIPE_KEY };
+  if (form) h['Content-Type'] = 'application/x-www-form-urlencoded';
   if (env.STRIPE_VERSION) h['Stripe-Version'] = env.STRIPE_VERSION; // else the account's default API version (Managed Payments: 2025-03-31.basil or later)
-  const r = await f('https://api.stripe.com/v1' + path, { method: 'POST', headers: h, body: shopForm(form) });
+  const r = await f('https://api.stripe.com/v1' + path, form ? { method: 'POST', headers: h, body: shopForm(form) } : { method: 'GET', headers: h });
   let data = null; try { data = await r.json(); } catch (e) { data = null; }
   return { ok: r.ok, status: r.status, data };
 }
@@ -568,7 +570,19 @@ async function shopWebhook(req, env) {
   }
   if (type === 'charge.refunded') { // a full refund only (charge.refunded true): a partial refund keeps the item
     const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
-    if (pi && o.refunded === true) await run(env, 'update purchases set refunded_at = ?1 where payment_intent = ?2 and refunded_at is null', Date.now(), pi);
+    if (!pi || o.refunded !== true) return json({ received: true });
+    const t = Date.now();
+    await run(env, 'update purchases set refunded_at = ?1 where payment_intent = ?2 and refunded_at is null', t, pi);
+    if (await one(env, 'select 1 as x from purchases where payment_intent = ?1', pi)) return json({ received: true });
+    // v2.24.1: the refund came before its checkout.session.completed (Stripe does not promise an order). Look the session up and
+    // write the purchase already refunded, so the completed event that follows (an upsert that keeps refunded_at) gives nothing.
+    const r = await shopStripe(env, '/checkout/sessions?limit=1&payment_intent=' + encodeURIComponent(pi), null);
+    if (!r.ok) { console.error('pawhaven-api shop: a refund before its purchase, and the session lookup failed', r.status); return fail('stripe_error', 502); } // Stripe retries
+    const cs = r.data && Array.isArray(r.data.data) ? r.data.data[0] : null, md = cs && cs.metadata && typeof cs.metadata === 'object' ? cs.metadata : {}, uid = cs && cs.client_reference_id;
+    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return json({ received: true }); // not a shop session
+    await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+      on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), refunded_at = coalesce(purchases.refunded_at, excluded.refunded_at)`,
+      cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t, t);
   }
   return json({ received: true });
 }

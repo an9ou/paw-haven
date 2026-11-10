@@ -46,7 +46,7 @@ function v224Fields(s) {
   (Array.isArray(s.dogs) ? s.dogs : []).forEach((d) => { if (d && d.outfit && typeof d.outfit === 'object' && !('feet' in d.outfit)) d.outfit.feet = null; });
   if (!s.shop || typeof s.shop !== 'object' || Array.isArray(s.shop)) s.shop = {};
   const sh = s.shop;
-  ['owned', 'claimed', 'refunded', 'coin'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; });
+  ['owned', 'claimed', 'refunded', 'coin', 'log'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; }); // log (v2.24.1): [{ id, item, at, r }] for My purchases
   if (!sh.tools || typeof sh.tools !== 'object' || Array.isArray(sh.tools)) sh.tools = {};
   KS_TOOLS.forEach((k) => { if (typeof sh.tools[k] !== 'boolean') sh.tools[k] = true; });
   if (typeof sh.roboAt !== 'number' || !isFinite(sh.roboAt)) sh.roboAt = -1e9;
@@ -132,12 +132,12 @@ function ksTakeBack(item) {
    the same list twice grants nothing more. Returns { granted: [ids], refunded: [ids], coins } */
 function ksGrant(purchases, give) {
   give = give || ksGive;
-  const sh = ksS(), out = { granted: [], refunded: [], coins: 0 }; if (!sh) return out;
+  const sh = ksS(), out = { granted: [], refunded: [], coins: 0, items: [] }; if (!sh) return out;
   const list = (Array.isArray(purchases) ? purchases : []).filter((p) => p && typeof p.id === 'string' && p.id && KS_ITEMS[p.item]);
   list.forEach((p) => {
     if (p.refunded || sh.claimed.includes(p.id)) return;
     try { out.coins += give(p.item); } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); return; } // unclaimed: the next poll retries
-    sh.claimed.push(p.id); out.granted.push(p.id);
+    sh.claimed.push(p.id); out.granted.push(p.id); out.items.push(p.item);
   });
   list.forEach((p) => {
     if (!p.refunded || sh.refunded.includes(p.id)) return;
@@ -146,8 +146,22 @@ function ksGrant(purchases, give) {
     const live = list.some((q) => q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
     if (!live) ksTakeBack(p.item); out.refunded.push(p.id);
   });
-  if (out.granted.length || out.refunded.length) { markDirty(); updateHUD(); saveNow(); }
+  const logged = ksLogSync(list);
+  if (out.granted.length || out.refunded.length || logged) { markDirty(); updateHUD(); saveNow(); }
   return out;
+}
+// My purchases (v2.24.1): every purchase this save got, from the server list (so purchases from before v2.24.1 show too). True when it changed
+const KS_LOG_MAX = 200;
+function ksLogSync(list) {
+  const sh = ksS(); let changed = false;
+  list.forEach((p) => {
+    if (!sh.claimed.includes(p.id)) return;
+    const at = Number.isFinite(p.at) && p.at > 0 ? p.at : 0, r = !!p.refunded, e = sh.log.find((x) => x && x.id === p.id);
+    if (!e) { sh.log.push({ id: p.id, item: p.item, at, r }); changed = true; }
+    else if (e.r !== r || (!e.at && at)) { e.r = r; if (at) e.at = at; changed = true; }
+  });
+  if (changed) { sh.log.sort((a, b) => (b.at || 0) - (a.at || 0)); if (sh.log.length > KS_LOG_MAX) sh.log.length = KS_LOG_MAX; }
+  return changed;
 }
 
 /* ---------------- the Supporter perks (V224.md 1) ---------------- */
@@ -296,6 +310,12 @@ function ksGets(id) {
 }
 
 /* ---------------- the sheet (V224.md 3) ---------------- */
+// My purchases (v2.24.1): newest first, with the date; a refunded one says so. Nothing while there are none
+function ksMineHTML() {
+  const sh = ksS(), L = sh ? sh.log.filter((e) => e && KS_ITEMS[e.item]) : []; if (!L.length) return '';
+  const rows = L.map((e) => `<li><b>${esc(ksName(e.item))}</b>${e.at ? ` <span class="ks-mine-d">${esc(tdate(new Date(e.at), { year: 'numeric', month: 'short', day: 'numeric' }))}</span>` : ''}${e.r ? ` <span class="ks-mine-r">${esc(tt('ks.mine_refunded', 'refunded'))}</span>` : ''}</li>`).join('');
+  return `<details class="ks-mine"><summary>${esc(tt('ks.mine', 'My purchases ({n})', { n: tnum(L.length) }))}</summary><ul>${rows}</ul><p class="small">${esc(tt('ks.mine_help', 'Stripe emailed a receipt for each one. Questions or a refund: {email}', { email: 'contact@doodledoggo.app' }))}</p></details>`;
+}
 let ksTab = 'supporter';
 function ksMenuBtn() { return ksOn() && S ? `<button class="btn big" id="mmKs" type="button"><span class="ic">${ICON('coin')}</span>${esc(tt('ks.btn', 'Kind shop'))}</button>` : ''; }
 const ksYours = () => `<span class="chip own ks-yours">${esc(tt('ks.yours', 'Yours'))}</span>`;
@@ -345,7 +365,7 @@ function ksOpen(tab) {
   const tabs = `<div class="tabs" role="tablist">${KS_TABS.map((t) => `<button class="btn" role="tab" type="button" aria-selected="${t === ksTab}" data-kstab="${t}">${esc(ksTabName(t))}</button>`).join('')}</div>`;
   const why = `<details class="ks-why"><summary>${esc(tt('ks.why', 'Why is there a shop?'))}</summary><div class="ks-whyb">${duck ? `<span class="ks-duck" aria-hidden="true">${duck}</span>` : ''}<p>${esc(tt('ks.why_text', 'Gerald: "Doodle Doggo is made by one person. The shop helps keep the crayons sharp. Everything here except the Supporter Pack and the coins can also be earned by playing, and the game is complete without paying. Dogs, Bond and chances are never in the shop."'))}</p></div></details>`;
   const body = `<p class="small ks-hi">${esc(tt('ks.hi', 'Looks, comfort tools and coins. You have {coins} Paw Coins.', { coins: tnum(S.coins) }))}</p>${why}${tabs}<div class="shopgrid ks-grid">${ksTabHTML(ksTab)}</div>
-    ${ksCashMode() === 'off' ? '' : `<p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p>`}<p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>`;
+    ${ksCashMode() === 'off' ? '' : `<p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p>`}<p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>${ksMineHTML()}`;
   const p = openModal(esc(tt('ks.title', 'Kind shop')), body, { cls: 'shop ks' });
   p.querySelectorAll('[data-kstab]').forEach((b) => { b.onclick = () => { SFX.click(); ksTab = b.dataset.kstab; ksOpen(); }; });
   p.querySelectorAll('[data-kscash]').forEach((b) => { b.onclick = () => { SFX.click(); if (ksCashMode() === 'guest') ksEmailSheet(p); else ksConfirm(p, b.dataset.kscash); }; });
@@ -421,8 +441,40 @@ function ksCheckout(id) {
     return true;
   }).catch(() => { shut(); ksErrToast('offline'); return false; });
 }
+// where a delivered item is (v2.24.1)
+function ksWhere(id) {
+  const I = KS_ITEMS[id];
+  if (id === 'supporter') return tt('ks.where_sup', "The perks are on now, and Gerald's letter is in your mailbox.");
+  if (I.pack) return tt('ks.where_coins', 'Added to your Paw Coins.');
+  if (id === 'tokyo') return tt('ks.where_tokyo', 'Find them in the Wardrobe.');
+  if (id === 'cozy') return tt('ks.where_cozy', 'Find them in your house, ready to place.');
+  return tt('ks.where_tool', 'Working at home now. You can switch it off in Settings.');
+}
+// one delivery's lines, as plain text: "Tokyo Street: Sukajan Jacket, Bucket Hat, ..." / "1,000 coins"
+function ksGotLine(id) { return KS_ITEMS[id].pack ? ksName(id) : ksName(id) + ': ' + tlist(ksGets(id)); }
+// Gerald's delivery letter: what arrived, kept to reread. The Supporter Pack has its own thank-you letter (ksLetter)
+function ksDeliveryLetter(out) {
+  const items = out.items.filter((id) => id !== 'supporter'); if (!items.length) return null;
+  return mailPush({ kind: 'news', id: 'ks_got_' + out.granted[0], from: tt('ks.letter_from', 'Gerald'), title: tt('ks.got_title', 'Your Kind shop delivery'),
+    text: tt('ks.got_letter', 'Dear friend,\nThank you for your purchase! This arrived in town for you:\n{list}\nYou can see every purchase under My purchases in the Kind shop.\nWith a happy waddle,\nGerald', { list: items.map((id) => '- ' + ksGotLine(id)).join('\n') }) });
+}
+// the Delivered! card: each item, exactly what came, and where it is. Over the Kind shop or an empty screen; elsewhere (a minigame, a walk) a toast
+function ksDelivered(out) { // true when it showed something
+  if (!out.items.length) return false;
+  const shopOpen = !!$('.panel.ks', modal);
+  if (!modal.hidden && !shopOpen) { toast(tt('ks.got_toast', 'Thank you! Delivered: {list}. Look in your mailbox.', { list: tlist(out.items.map(ksName)) }), 'gold'); return true; }
+  const rows = out.items.map((id) => { const I = KS_ITEMS[id], gets = I.pack ? [] : ksGets(id);
+    return `<div class="ks-got-row" data-ks="${id}"><span class="art">${ksArt(id)}</span><div><b>${esc(ksName(id))}</b>${gets.length ? `<ul class="ks-gets">${gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : ''}<p class="small ks-where">${esc(ksWhere(id))}</p></div></div>`; }).join('');
+  SFX.boop(880);
+  const p = openModal(esc(tt('ks.got_h', 'Delivered!')), `<p class="ks-got-hi">${esc(tt('ks.got_hi', 'Thank you! This is yours now:'))}</p>${rows}`,
+    { cls: 'ks ks-got', foot: `<button class="btn yes big" type="button" id="ksGotOk">${esc(tt('ks.got_ok', 'Yay!'))}</button>`, onClose: shopOpen ? () => setTimeout(() => ksOpen(), 0) : null });
+  $('#ksGotOk', p).onclick = () => { SFX.click(); closeModal(); };
+  return true;
+}
 function ksGrantToast(out) {
-  if (out.granted.length) toast(tt('ks.got', 'Thank you! Your purchase is here. Look in the shop for "Yours".'), 'gold');
+  if (!out.granted.length) return;
+  ksDeliveryLetter(out);
+  if (!ksDelivered(out)) toast(tt('ks.got', 'Thank you! Your purchase is here. Look in the shop for "Yours".'), 'gold');
 }
 // manual: the Restore purchases link (toasts every outcome); otherwise the quiet poll (toasts only a new purchase)
 async function ksRestore(manual) {
@@ -434,7 +486,7 @@ async function ksRestore(manual) {
   try { r = await clApi('GET', '/shop/owned'); } catch (e) { r = null; }
   if (!r || !r.ok || !r.data || !Array.isArray(r.data.purchases)) { if (manual) ksErrToast(r && r.data && r.data.error ? r.data.error : 'offline'); return null; }
   const out = ksGrant(r.data.purchases);
-  if (out.granted.length) { ksGrantToast(out); if ($('.panel.ks', modal)) ksOpen(); }
+  if (out.granted.length) ksGrantToast(out); // the Delivered! card, which opens the Kind shop again when it was open
   else if (manual) toast(tt('ks.restored_none', 'Your purchases are all here. Nothing new to restore.'), 'good');
   return out;
 }

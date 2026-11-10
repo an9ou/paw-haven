@@ -49,3 +49,23 @@ html[data-layout="phone"] .ks-confirm{max-height:calc(100% - 8px);overflow-y:aut
 /* phones: the four tabs wrap to a second line instead of scrolling sideways (Thai, Korean at 360-412 px) */
 html[data-layout="phone"] #modal .panel.ks .tabs{flex-wrap:wrap;overflow-x:visible;row-gap:8px}
 html[data-layout="phone"] #modal .panel.ks .tabs .btn{flex:1 1 auto}
+
+/* v2.24.1: the Delivered! card (ksDelivered) and My purchases (ksMineHTML) */
+.ks-got-hi{margin:0 0 8px;text-align:center;font-family:var(--font-hand);font-size:24px}
+.ks-got-row{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-top:2px dashed #CDBBA6}
+.ks-got-row:first-of-type{border-top:0}
+.ks-got-row .art{width:96px;height:82px;flex:none}
+.ks-got-row .art svg{width:100%;height:100%}
+.ks-got-row > div{min-width:0;flex:1}
+.ks-got-row b{font-family:var(--font-hand);font-size:22px}
+.ks-got-row .ks-gets{margin:4px 0 2px;padding:0 0 0 22px}
+.ks-where{margin:4px 0 0;color:#6B4A2E}
+.panel.ks-got .foot{display:flex;justify-content:center;margin-top:8px}
+.panel.ks-got .foot .btn{min-height:44px;min-width:120px}
+html[data-layout="phone"] .ks-got-row .art{width:72px;height:62px}
+.ks-mine{margin:0 0 8px;border:2px dashed #CDBBA6;border-radius:12px 9px 13px 8px;padding:0 10px}
+.ks-mine summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-family:var(--font-hand);font-size:22px}
+.ks-mine ul{margin:0 0 6px;padding:0 0 0 22px;font-size:17px;line-height:1.5}
+.ks-mine-d{opacity:.75}
+.ks-mine-r{color:#8A5A2E;font-style:italic}
+.ks-mine p{margin:0 0 10px;overflow-wrap:anywhere}

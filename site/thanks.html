@@ -15,10 +15,22 @@
       <p class="center" style="font-size:22px" role="status">Thank you! Your purchase is on its way to your game. Go back to the game tab.</p>
       <p class="center" style="font-size:22px" role="status" hidden>No payment was made. You can close this tab.</p>
     </div>
+    <div id="thMore">
+      <ul class="thlist">
+        <li>In the game, a Delivered! card lists everything you got, and Gerald sends a letter with the same list.</li>
+        <li>Stripe has emailed your receipt, with your order number.</li>
+        <li>Not in your game after a minute? Open the Kind shop and tap Restore purchases. Use the same save email you paid with.</li>
+        <li>Questions or a refund: write to <b>contact@doodledoggo.app</b>.</li>
+      </ul>
+    </div>
+    <p class="cta"><button class="play thback" id="thBack" type="button">Back to the game</button></p>
+    <p class="center small" id="thBackHint" hidden>Switch back to the game tab. You can close this one.</p>
   </div>
   <footer class="foot"><a href="/">Home</a> · <a href="/privacy">Privacy</a></footer>
 </main>
 <div class="petals" id="petals" aria-hidden="true"></div>
 <script src="/js/site.js" defer></script>
-<script>try { if (/[?&]ok=0\b/.test(location.search)) { var p = document.querySelectorAll('#thOk p'); p[0].hidden = true; p[1].hidden = false; } if (location.search || location.hash) history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ }</script>
+<script>try { if (/[?&]ok=0\b/.test(location.search)) { var p = document.querySelectorAll('#thOk p'); p[0].hidden = true; p[1].hidden = false; document.getElementById('thMore').hidden = true; } if (location.search || location.hash) history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ }
+// v2.24.1: Stripe opened in a tab the game made, so it can usually close itself; when the browser says no, say how to get back
+document.getElementById('thBack').onclick = function () { try { window.close(); } catch (e) { /* not allowed */ } setTimeout(function () { document.getElementById('thBackHint').hidden = false; }, 400); };</script>
 </body></html>

@@ -20,10 +20,14 @@ const now = () => Math.floor(Date.now() / 1000);
     const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
     const DB = d1();
     DB.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // safe to re-run
-    const stripe = { calls: [], n: 0, fail: false };
+    const stripe = { calls: [], n: 0, fail: false, sessions: {} };
     const STRIPE_FETCH = async (url, o) => {
       stripe.calls.push({ url, o, form: new URLSearchParams(o.body) });
       if (stripe.fail) return new Response(JSON.stringify({ error: { code: 'resource_missing' } }), { status: 400 });
+      if (o.method === 'GET') { // GET /checkout/sessions?payment_intent=...: the list API, from stripe.sessions
+        const pi = new URL(url).searchParams.get('payment_intent'), cs = stripe.sessions[pi];
+        return new Response(JSON.stringify({ object: 'list', data: cs ? [cs] : [], has_more: false }), { status: 200 });
+      }
       const id = 'cs_test_' + (++stripe.n).toString().padStart(8, '0');
       return new Response(JSON.stringify({ id, object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/' + id }), { status: 200 });
     };
@@ -156,6 +160,35 @@ const now = () => Math.floor(Date.now() / 1000);
     ok(P.find((p) => p.id === 'cs_test_wait0001').refunded === true && P.find((p) => p.id === 'cs_test_sup0001').refunded === false, 'the refunded flag');
     r = await call('GET', '/shop/owned', null, B.token); ok(r.status === 200 && r.json.purchases.length === 0, 'another account sees none of them');
     r = await call('GET', '/shop/owned', null, G.token); ok(r.status === 200 && r.json.purchases.length === 0, 'a guest: an empty list');
+
+    sec('6b. a refund that comes before its purchase (v2.24.1)');
+    const early = paid('cs_test_early001', B.id, 'cozy', 'pi_test_early001').data.object;
+    stripe.sessions.pi_test_early001 = early;
+    const gets = () => stripe.calls.filter((c) => c.o.method === 'GET').length, g0 = gets();
+    r = await hook({ id: 'evt_e1', type: 'charge.refunded', data: { object: { id: 'ch_e', payment_intent: 'pi_test_early001', refunded: true } } });
+    row = q('select * from purchases where id = ?', 'cs_test_early001');
+    ok(r.status === 200 && gets() === g0 + 1 && /\/checkout\/sessions\?limit=1&payment_intent=pi_test_early001$/.test(stripe.calls[stripe.calls.length - 1].url), 'it looks the session up by payment_intent');
+    ok(row && row.user_id === B.id && row.item === 'cozy' && row.payment_intent === 'pi_test_early001' && row.refunded_at > 0, 'the purchase is written already refunded: ' + JSON.stringify(row));
+    const era = row.refunded_at;
+    r = await hook(paid('cs_test_early001', B.id, 'cozy', 'pi_test_early001'));
+    ok(r.status === 200 && q('select refunded_at from purchases where id = ?', 'cs_test_early001').refunded_at === era && n('select count(*) as n from purchases where id = ?', 'cs_test_early001') === 1, 'then checkout.session.completed: one row, still refunded');
+    r = await call('GET', '/shop/owned', null, B.token); ok(r.status === 200 && r.json.purchases.length === 1 && r.json.purchases[0].refunded === true, 'B owns nothing: the one purchase shows refunded');
+    r = await call('POST', '/shop/checkout', { item: 'cozy' }, B.token); ok(r.status === 200, 'and can buy it again');
+    const g1 = gets();
+    r = await hook({ id: 'evt_e2', type: 'charge.refunded', data: { object: { id: 'ch_e', payment_intent: 'pi_test_early001', refunded: true } } });
+    ok(r.status === 200 && gets() === g1, 'the refund again: no lookup (the row is there)');
+    r = await hook({ id: 'evt_e3', type: 'charge.refunded', data: { object: { id: 'ch_o', payment_intent: 'pi_test_other001', refunded: true } } });
+    ok(r.status === 200 && !q('select * from purchases where payment_intent = ?', 'pi_test_other001'), 'a refund for a payment that is not a shop session: 200, nothing stored');
+    r = await hook({ id: 'evt_e4', type: 'charge.refunded', data: { object: { id: 'ch_p', payment_intent: 'pi_test_early002', refunded: false } } });
+    ok(r.status === 200 && gets() === g1 + 1, 'a partial refund with no purchase: no lookup');
+    const bad = paid('cs_test_early002', B.id, 'puppy', 'pi_test_early002').data.object; stripe.sessions.pi_test_early002 = bad;
+    r = await hook({ id: 'evt_e5', type: 'charge.refunded', data: { object: { id: 'ch_q', payment_intent: 'pi_test_early002', refunded: true } } });
+    ok(r.status === 200 && !q('select * from purchases where id = ?', 'cs_test_early002'), 'a looked-up session with an unknown item: nothing stored');
+    stripe.fail = true;
+    r = await hook({ id: 'evt_e6', type: 'charge.refunded', data: { object: { id: 'ch_r', payment_intent: 'pi_test_early003', refunded: true } } });
+    stripe.fail = false;
+    ok(r.status === 502 && r.json.error === 'stripe_error', 'the lookup fails: 502, so Stripe sends the refund again');
+    DB.raw.prepare('delete from purchases where user_id = ?').run(B.id); stripe.sessions = {};
 
     sec('7. one-time items owned are refused');
     const before = stripe.calls.length;

@@ -631,3 +631,9 @@ dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size
   .invite h1{font-size:34px}
   .invitecode{font-size:38px}
 }
+/* v2.24.1 /thanks: what happens next, and the Back to the game button (not the full width of button.play) */
+.thlist{max-width:640px;margin:.6em auto 0;padding:0 0 0 1.3em;font-size:19px;line-height:1.45;text-align:left}
+.thlist li{margin:.35em 0}
+.thlist b{overflow-wrap:anywhere}
+button.play.thback{width:auto;min-width:260px}
+@media (max-width:640px){button.play.thback{width:100%;min-width:0}}
