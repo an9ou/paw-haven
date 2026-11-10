@@ -143,9 +143,18 @@ const NEWS_V224 = {
   ]
 };
 const nwV224Due = () => SHOP_LIVE && jstISO() >= NEWS_V224.date;
+const NEWS_V2241 = { // v2.24.1 "Delivered!" (V224.md): the delivery card, Gerald's letter and My purchases
+  id: '2.24.1', date: '2026-11-10', c: '#E3F1DC', d: 'heart', pic: 'dog',
+  title: () => tt('ks.got_h', 'Delivered!'),
+  items: [
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2241.card', 'After a Kind shop purchase, a Delivered! card and a letter from Gerald show what arrived and where to find it') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2241.mine', 'My purchases in the Kind shop lists everything you have bought, with an email for help') }
+  ]
+};
+const nwV2241Due = () => SHOP_LIVE && jstISO() >= NEWS_V2241.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
