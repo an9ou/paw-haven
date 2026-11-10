@@ -286,17 +286,18 @@ function starburst(cx,cy,r,s,size,rot){ let d=''; for(let i=0;i<24;i++){ const a
   return '<g transform="rotate('+rot+' '+cx+' '+cy+')"><g data-box><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="none"/><path d="'+d+'" fill="${YEL}" stroke="${PEN}" stroke-width="6" stroke-linejoin="round"/>'+centred([{s,size:fitS(s,size,r*1.35),fill:'${PEN}'}],cx,cy,F).svg+'</g></g>'; }
 function bigText(lines,cx,cy){ const c=centred(lines,cx,cy,F).svg; return '<g stroke="${CREAM}" stroke-width="22" stroke-linejoin="round" stroke-linecap="round">'+c.replace(/fill="[^"]*"/g,'fill="${CREAM}"')+'</g>'+c; }
 window.cover=function(){ const Y0=RN?240:420, Y1=RN?1680:1500, h=Y1-Y0, cx=540;
-  const ncy=Y0+h*(RN?0.585:0.62); let bg='<rect width="${W}" height="${H}" fill="#F48CA6"/><rect width="${W}" height="${H}" fill="url(#hatch)"/>', art='', ov='';
+  const ncy=Y0+h*(RN?0.585:0.648); let bg='<rect width="${W}" height="${H}" fill="#F48CA6"/><rect width="${W}" height="${H}" fill="url(#hatch)"/>', art='', ov='';
   let rays=''; for(let i=0;i<20;i++){ const a0=i/20*2*Math.PI, a1=a0+Math.PI/20; rays+='M'+cx+' '+f2(ncy)+'L'+f2(cx+Math.cos(a0)*1700)+' '+f2(ncy+Math.sin(a0)*1700)+'L'+f2(cx+Math.cos(a1)*1700)+' '+f2(ncy+Math.sin(a1)*1700)+'Z'; }
-  bg+='<path d="'+rays+'" fill="#FBB9C9" opacity=".85"/>'+sticker(cx,ncy,RN?320:300,'#FFE27A',31,0.92);
+  const BR=RN?420:372; // owner, 10 Nov 2026: Noodle and every item sit inside the yellow bubble
+  bg+='<path d="'+rays+'" fill="#FBB9C9" opacity=".85"/>'+sticker(cx,ncy,BR,'#FFE27A',31,0.97);
   // the shop's own pictures around Noodle, each on a white sticker
-  const dy=RN?1.18:1;
-  const ring=[['Golden Paw Cottage',915,ncy-(RN?295:210),-6],['Doggy Snow Globe',140,ncy+20*dy,5],['Robo Scoop',RN?928:922,ncy+30*dy,-4],['lampLit',175,ncy+(RN?340:275),6],['Golden Name Tag',905,ncy+(RN?340:275),-7]];
-  ring.forEach(([id,x,y,r],i)=>{ art+='<g transform="rotate('+r+' '+f2(x)+' '+f2(y)+')">'+sticker(x,y,108,'${CREAM}',50+i,0.95)+place(id,x,y+86,175,160,1.35,0)+'</g>'; });
-  art+=place('dressHappy',cx-(RN?0:4),ncy+(RN?165:150),RN?450:420,RN?385:350,1,0,{apart:'noodle'}); // owner, 10 Nov 2026: Noodle (tail, hearts, sneakers) sits wholly inside the yellow bubble
-  art+=starburst(165,ncy-(RN?295:215),100,TX.coverTag,RN?64:60,-12);
+  const k=BR/390, SR=70*k; // item stickers in a ring inside the bubble, clear of Noodle in the middle
+  const ring=[['lampLit',cx,ncy-300*k,4],['Golden Paw Cottage',cx-205*k,ncy-215*k,-6],['Robo Scoop',cx+205*k,ncy-215*k,5],['Doggy Snow Globe',cx-225*k,ncy+205*k,6],['Golden Name Tag',cx+225*k,ncy+205*k,-7]];
+  ring.forEach(([id,x,y,r],i)=>{ art+='<g transform="rotate('+r+' '+f2(x)+' '+f2(y)+')">'+sticker(x,y,SR,'${CREAM}',50+i,0.95)+place(id,x,y+SR*0.8,SR*1.62,SR*1.48,1.35,0)+'</g>'; });
+  art+=place('dressHappy',cx-(RN?0:4),ncy+105*k,400*k,330*k,1,0,{apart:'noodle'});
+  art+=RN?starburst(cx-BR*0.86,ncy-BR*0.78,92,TX.coverTag,60,-12):starburst(cx-BR*0.93,ncy+BR*0.06,84,TX.coverTag,52,-12);
   // the hook: two lines, the second one huge
-  const hy=Y0+(RN?190:182), l0=TX.cover[0], l1=TX.cover[1];
+  const hy=Y0+(RN?190:176), l0=TX.cover[0], l1=TX.cover[1];
   ov+=bigText([{s:l0,size:fitS(l0,RN?110:112,900),pitch:RN?150:158},{s:l1,size:fitS(l1,RN?170:210,960),fill:'#C7334B'}],cx,hy);
   const lw=RN?440:400, lh=lw*280/900, ly=RN?Y1-118:1567; ov+='<g>'+sticker(cx,ly,lw*0.6,'${CREAM}',77,RN?0.36:0.42)+'</g><svg data-safe x="'+f2(cx-lw/2)+'" y="'+f2(ly-lh/2)+'" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>';
   $('bg').innerHTML=bg; $('art').innerHTML=art; $('ov').innerHTML=ov; $('foot').setAttribute('opacity',0);
