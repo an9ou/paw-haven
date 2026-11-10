@@ -293,7 +293,7 @@ window.cover=function(){ const Y0=RN?240:420, Y1=RN?1680:1500, h=Y1-Y0, cx=540;
   const dy=RN?1.18:1;
   const ring=[['Golden Paw Cottage',915,ncy-(RN?295:210),-6],['Doggy Snow Globe',140,ncy+20*dy,5],['Robo Scoop',RN?928:922,ncy+30*dy,-4],['lampLit',175,ncy+(RN?340:275),6],['Golden Name Tag',905,ncy+(RN?340:275),-7]];
   ring.forEach(([id,x,y,r],i)=>{ art+='<g transform="rotate('+r+' '+f2(x)+' '+f2(y)+')">'+sticker(x,y,108,'${CREAM}',50+i,0.95)+place(id,x,y+86,175,160,1.35,0)+'</g>'; });
-  art+=place('dressHappy',cx-(RN?0:4),ncy+(RN?250:222),RN?540:505,RN?460:420,1,0,{apart:'noodle'});
+  art+=place('dressHappy',cx-(RN?0:4),ncy+(RN?165:150),RN?450:420,RN?385:350,1,0,{apart:'noodle'}); // owner, 10 Nov 2026: Noodle (tail, hearts, sneakers) sits wholly inside the yellow bubble
   art+=starburst(165,ncy-(RN?295:215),100,TX.coverTag,RN?64:60,-12);
   // the hook: two lines, the second one huge
   const hy=Y0+(RN?190:182), l0=TX.cover[0], l1=TX.cover[1];
