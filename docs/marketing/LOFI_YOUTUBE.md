@@ -57,7 +57,6 @@ I made the beat for them: slow lofi at 80 bpm, warm keys, a soft bass, a bit of 
 Pickle, Scone, the living room and the bed are all from Doodle Doggo, our free cozy dog game that runs in your browser. You adopt wobbly crayon dogs, take them for walks around a pencil-drawn town and tuck them in at night. Nothing bad ever happens there, we promise.
 
 🎮 Play free: https://doodledoggo.app
-🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
 ☕ Ko-fi: https://ko-fi.com/doodledoggoapp
 📷 Instagram: https://www.instagram.com/doodledoggo.app/
 

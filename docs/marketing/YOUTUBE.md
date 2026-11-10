@@ -11,7 +11,6 @@ It started as one crayon dog for my girlfriend, who loves dachshunds but can't h
 Here you'll find gameplay, new dogs, update news and little moments from the town.
 
 🎮 Play free: https://doodledoggo.app
-🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
 ☕ Support us: https://ko-fi.com/doodledoggoapp
 📷 Instagram: https://www.instagram.com/doodledoggo.app/
 
@@ -26,7 +25,6 @@ Doodle Doggo is a cozy, free dog game in a pencil sketchbook. Adopt one of 40 de
 💻📱 Plays in your browser on computer and phone
 
 🎮 Play free: https://doodledoggo.app
-🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
 ☕ Support us on Ko-fi: https://ko-fi.com/doodledoggoapp
 📷 Instagram: https://www.instagram.com/doodledoggo.app/
 

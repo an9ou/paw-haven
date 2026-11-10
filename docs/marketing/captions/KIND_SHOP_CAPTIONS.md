@@ -55,8 +55,7 @@ Doodle Doggo is a free cozy browser game about crayon dogs, made by one person. 
 
 Which would you get first? 👇
 
-Play free: https://an9ou.itch.io/doodle-doggo
-More: https://doodledoggo.app
+Play free: https://doodledoggo.app
 
 #DoodleDoggo #CozyGames #IndieGame
 ```
@@ -70,7 +69,7 @@ No loot boxes, never dogs, and the looks packs and helpers can also be earned by
 
 Which would you get first? 👇
 
-https://an9ou.itch.io/doodle-doggo
+https://doodledoggo.app
 #DoodleDoggo #CozyGames #IndieGame
 ```
 

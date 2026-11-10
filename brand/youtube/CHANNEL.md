@@ -11,7 +11,7 @@ It's a little town drawn in pencil, where every dog drew themselves (and it show
 
 On this channel: trailers, dog introductions, seasonal updates and little stories from Noodle the dachshund, who is sure he's the star.
 
-🎮 Play free on itch.io (phone or computer, no download): https://an9ou.itch.io/doodle-doggo
+🎮 Play free (phone or computer, no download): https://doodledoggo.app
 📷 Instagram: @doodledoggo.app
 
 ゆるいクレヨン犬と暮らす、無料のブラウザゲームです🐾
@@ -21,10 +21,9 @@ On this channel: trailers, dog introductions, seasonal updates and little storie
 
 | Title | URL |
 |---|---|
-| Play free on itch.io | https://an9ou.itch.io/doodle-doggo |
 | Instagram | https://www.instagram.com/doodledoggo.app |
 | Website | https://doodledoggo.app |
 
 ## Channel keywords (YouTube Studio → Settings → Channel)
 
-`doodle doggo, cozy games, cozy game, dog game, browser game, free game, indie game, itch.io, dachshund, crayon art, wholesome games`
+`doodle doggo, cozy games, cozy game, dog game, browser game, free game, indie game, dachshund, crayon art, wholesome games`

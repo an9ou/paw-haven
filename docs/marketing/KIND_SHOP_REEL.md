@@ -88,7 +88,7 @@ The Kokoro model files (`kokoro-v1.0.int8.onnx`, `voices-v1.0.bin`) are never co
   US$1.99; Garden Sprinkler and Auto Water Bowl US$0.99; Comfort Kit US$2.99; coins from US$0.99) are the owner's 8 Nov decisions. If the owner wants a
   price in the YouTube or X text, add "from US$0.99" only after checking the live Stripe prices on launch day.
 - **"Free to play" and "made by one person"** stay true (the About / FAQ pages say "free to play with an optional shop" from v2.24).
-- **Where to play.** The YouTube and X texts link the itch.io page and doodledoggo.app; check both have v2.24 live before posting.
+- **Where to play.** The YouTube and X texts link doodledoggo.app only (owner, 10 Nov 2026: no itch.io in captions).
 - The shop needs a cloud account (email) to buy with money; the captions do not promise anything about that, so nothing to change.
 
 ## RedNote cut

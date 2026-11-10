@@ -53,7 +53,6 @@ New in Doodle Doggo: almost every dog comes in different coats, and you pick one
 Which number would you pick? Tell us in the comments.
 
 🎮 Play free: https://doodledoggo.app
-🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
 ☕ Support us on Ko-fi: https://ko-fi.com/doodledoggoapp
 📷 Instagram: https://www.instagram.com/doodledoggo.app/
 
