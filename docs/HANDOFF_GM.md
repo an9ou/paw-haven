@@ -1,4 +1,15 @@
-# Game Manager handoff — CURRENT (4 Nov 2026, ~10:00 UTC)
+# Game Manager handoff — CURRENT (10 Nov 2026)
+
+**Start here (handover from GM session_01D6KLY6QbtZ2YkSVej5r1gh, 10 Nov).** Everything older below is history.
+- **Live:** v2.24 "Kind shop" (9 Nov) on main 83b038a8, doodledoggo.app (/play/ md5 = dist/itch/index.html) and itch.io build #2342344 (2.24). All gates on: FR_LIVE, MS2_LIVE, YUE_LIVE, SHOP_LIVE. pawhaven-api runs with the live Stripe keys; never touch Stripe secrets or money actions (the owner does refunds in the Stripe Dashboard).
+- **This week shipped:** v2.22.4 Puppy legs, v2.23 Coat colours, v2.23.1 More colours (tan points, fox red Lab, I locus), v2.23.2 Cantonese, v2.23.3 Tidy wardrobe, v2.24 Kind shop. Marketing briefed for all.
+- **Sessions:** Marketing = session_01D6KLY4Gxx78VuyjbRFaSgb (tag team:marketing): doing the Kind shop reels first, then a carousel post (owner's order; don't tell them to drop either). KIND SHOP lead = session_01D6KLY2Goy5dDEpMAAXbEKD (branch claude/kind-shop, may push again): open bug = a refund arriving before its checkout.completed webhook is lost; ships as a small fix through the GM. Rewarded ads come later (V224.md 9), owner decides.
+- **Release recipe:** Worker first only if cloudflare/ changed (`bash tools/cf_api_deploy.sh`); `git push origin HEAD:main` + the dev branch; `node tools/itch.js` + `bash tools/itch_push.sh <ver>`; site `SITE_GAME=$PWD/dist/itch bash tools/cf_pages_deploy.sh`; live check /play/ md5 vs dist/itch/index.html (can lag ~15 min, the token can't purge cache); add a NEWS entry (game/src/49c_news.js; v2182_news pins the newest id); CHANGELOG + CLAUDE.md version line; brief Marketing.
+- **Tests:** `NODE_PATH=$(npm root -g) PAW_ARGS=--ignore-certificate-errors node game/run_tests.js <suite> --jobs 1`. Flaky: v2182_news, i18n_smoke reloads. Known red on main: i18n_phone (Feed tap), phone_v29_pack (Tug position). v224_worker prints 0 checks in the runner but passes 93 directly.
+- **Owner asked (pending, owner's job):** set `CLAUDE_CODE_AUTO_COMPACT_WINDOW=200000` in the "Doodle Doggo" environment settings (sessions can't set it).
+- **No open GM job.** Wait for the owner. Special/festival updates (incl. ads) need the owner's explicit go-ahead and date.
+
+# Game Manager handoff — 4-9 Nov 2026 (history)
 
 **9 Nov: v2.24 "Kind shop" RELEASED** (owner: "launch the shop once tests pass"): SHOP_LIVE = true, NEWS_V224.date 2026-11-09, on main, site and itch.io; pawhaven-api already live with the live Stripe keys (not redeployed, same worker.js). Marketing (session_01D6KLY4Gxx78VuyjbRFaSgb) briefed with the final names and prices (reels first, then the carousel; no ads mentioned). KIND SHOP session told it can push again; open: refund arriving before its completed webhook is lost.
 
