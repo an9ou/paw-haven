@@ -62,3 +62,13 @@ html:not([data-layout="phone"]) .panel.sm-pop{width:min(640px,100%);max-width:mi
 .sm-mt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
 .sm-mt b{font-family:var(--font-hand);font-size:22px;line-height:1.15;overflow-wrap:anywhere}
 .sm-play{flex:0 0 auto;min-height:44px}
+/* part 2: "Opens at level N", the chapter that waits, the end of the book, the pinned Story line on the Missions tab */
+.sm-lvchip{display:inline-block;padding:0 8px;border:2px solid var(--ink);border-radius:8px 10px 7px 9px;background:var(--w-yellow,#FFE3A1);font-size:15px;line-height:1.5;white-space:nowrap}
+.sm-task.gated .sm-tt b,.sm-task.gated .sm-n{opacity:.6}
+.sm-waitlv{margin:0 0 8px;overflow-wrap:anywhere}
+.sm-fin p{margin:0;overflow-wrap:anywhere}
+.sm-msline{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin:0 0 10px;padding:6px 12px;font:inherit;color:inherit;text-align:left;cursor:pointer;background:var(--w-cream,#FFF4DF);border:2px dashed rgba(91,61,50,.55);border-radius:10px 14px 9px 12px;box-sizing:border-box}
+.sm-msline:hover,.sm-msline:focus-visible{background:var(--w-yellow,#FFE3A1)}
+.sm-msic{flex:0 0 30px;width:30px;height:34px}
+.sm-msic svg{width:100%;height:100%;display:block}
+.sm-mstx{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.25}

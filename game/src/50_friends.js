@@ -1402,6 +1402,7 @@ async function frGiftSend(fid, i, p, from) {
     if (typeof lvGain === 'function') lvGain('fr', 5); // v2.22: town XP (the server said yes)
     frGiftAfter(from); try { SFX.pop(); } catch (e) { /* audio off */ } frWrapFx(i % 3);
     toast(tt('fr.gift_sent', 'Your gift is on its way!'), 'good');
+    trackAct('gift', { fid }); // v2.29: the story's chapter 8 (57b_story.js)
     return true;
   }
   if (frErr(r) === 'limit') { frDay(); S.fr.gift = true; markDirty(); frGiftLimit(); frGiftAfter(from); return false; } // today's gift went out (another device). The bag stays

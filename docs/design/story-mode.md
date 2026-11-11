@@ -44,11 +44,11 @@ that needs a place or a feature waits, without a timer, until the town level ope
 
 Totals: 8 chapters, 32 tasks. Coins: 80 + 120 + 160 + 170 + 170 + 180 + 220 + 270 = **1,370** over the whole story, paid once, spread over
 weeks (chapters 4-8 wait for town levels 2-10, about day 3 to day 20 for a regular player). Even a keen player who finishes chapters 1-3 on
-day one earns 360 story coins once, against 100+ a day from walks forever: walks stay the main income (economy-review.md). XP: 960 in all,
-about 6 days of the daily cap, so the story speeds the level climb a little without skipping it. Bond: about 340 points, a few walks' worth.
+day one earns 360 story coins once, against 100+ a day from walks forever: walks stay the main income (economy-review.md). XP: 1,170 in all
+(the table's own numbers: 70 + 100 + 130 + 140 + 140 + 170 + 180 + 240; an earlier draft said 960, a sum slip), about 8 days of the daily
+cap, so the story speeds the level climb a little without skipping it. Bond: 342 points, a few walks' worth.
 
-Part 1 (this branch) builds chapters 1-2 in full. Chapters 3-8 are specified here; the Story page lists their titles and says that Gerald
-is still writing the next one ("it comes in an update, and nothing you do in the meantime is lost").
+Part 1 built chapters 1-2; part 2 builds chapters 3-8 as in the table (V229.md 7 has the task-by-task list).
 
 ## 3. Scenes
 
@@ -107,7 +107,19 @@ seen go in too, and **one** catch-up scene plays. Gerald sends one letter, "The 
 (capped at 150) as a Collect gift; the XP is given at once; no Bond. The story then goes on from the first chapter not earned. An old save that
 has earned nothing yet starts at chapter 1 with the prologue, like a new one.
 
-## 7. Open questions for the owner
+## 7. Decided (owner, 11 Nov 2026, in the choice window)
+
+1. **Catch-up pay: kept.** Old saves get the XP of the chapters they have earned and up to 150 coins in one Gerald letter, with one
+   catch-up scene. Part 2 extends the catch-up to chapters 3-8 without a flood: still one scene and one letter, the coins capped at 150
+   for the whole book, the earned chapters' scenes, the first visits and the big moments the save has already reached go into Memories
+   unwatched.
+2. **Big-moment scenes play automatically**, once each (Skip after 3 s), after their own Bond or level card, then live in Memories:
+   Bond 5 and Bond 10 (with any dog), the first puppies, town levels 5, 10, 15 and 20.
+3. **Chapter 7 waits for town level 6.** The Story page and the Missions line show "Opens at level 6"; no task of the chapter moves
+   until then, and it goes on by itself once Tokyo opens. Nothing else is blocked: free play, the other places and the big moments go on.
+4. **One keepsake:** the photo frame "Gerald's Big Book" for finishing chapter 8. The chapters themselves give XP, Bond and coins.
+
+## 8. Open questions for the owner (asked 11 Nov; answers in section 7)
 
 1. Catch-up pay: old saves get the XP of the chapters they earned and up to 150 coins in one letter. Recommended: keep it (a thank-you, once).
    Alternative: no coins, only the scenes.
