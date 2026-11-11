@@ -6,7 +6,7 @@
 // (cooked, no skin, no bones), plain green beans, plain cooked pumpkin (not pie filling), carrots; small amounts, nothing added. Then
 // "Ate something it shouldn't? Call your vet right away.", "In Doodle Doggo you can't cook or feed anything toxic", and our standard end card
 // (brand/kids/endcard.js: the logo, doodledoggo.app, Instagram, X and YouTube with icons) for 2.5 s with the music fading under it.
-// The art is the game's (main): Noodle (PawArt.dog 'dachs'), an empty room in the colours of the game's house scene (no props: nothing overlaps), the paw-stop icon,
+// The art is the game's (main): Noodle (PawArt.dog 'dachs') big on a festive marigold background (decorations only in the margins), the paw-stop icon,
 // Turkey & Cranberry Bites, Pumpkin Purée and Carrot Sticks. Drawn here in the game's own item builder (injected into
 // world/pawart_world_b.js, so the same crayon washes stay inside the same pencil lines): turkey skin, cooked bones, gravy boat, stuffing,
 // plain turkey (the game's own torn-turkey pieces without the cranberries) and green beans. The facts follow the game's own tips
@@ -129,18 +129,34 @@ const LOOK = { beg: { pose: 'beg', facing: 'right' }, sit: { pose: 'sit', facing
 const dogSvg = (id, kf) => inner(PA.dog('dachs', Object.assign({ anim: false }, LOOK[id], { kf: ((kf % 3) + 3) % 3 })));
 const dogSyms = Object.keys(LOOK).map((id) => `<symbol id="${id}_0" overflow="visible">${dogSvg(id, 0)}</symbol>`).join('');
 // the kitchen corner with no words in it (as in the Safe Reel), winter
-// the room (coordinator for the owner, 11 Nov 2026: NO overlapping, not even a badge over a kitchen pot): the game's kitchen props sat behind the
-// cards, badges and food, so the background is now the game's room with nothing in it: its striped wallpaper with the little pink flowers, the
-// baseboard and the floorboards, in the scene's own colours (PawArt.scene 'house'). With no props, nothing we draw can sit on one.
-const ROOM = (() => { let s = `<rect width="${W}" height="1290" fill="#FBEBDC"/>`, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for (let x = 60; x < W; x += 180) s += `<rect x="${x}" y="0" width="90" height="1240" fill="#F6E0C9" opacity=".75"/>`;
-  for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) { const x = 130 + c * 270 + (r % 2) * 135, y = 120 + r * 205;
-    s += `<g opacity=".55" fill="#F2B8C2">${[[0, -7], [7, 0], [0, 7], [-7, 0]].map(([a, b]) => `<circle cx="${x + a}" cy="${y + b}" r="6.5"/>`).join('')}<circle cx="${x}" cy="${y}" r="3.5" fill="#F7D3D9"/></g>`; }
-  s += `<rect x="0" y="1290" width="${W}" height="${H - 1290}" fill="#EBCFA6"/>`;
-  for (let y = 1380, k = 0; y < H; y += 92, k++) { s += `<path d="M0 ${y} Q270 ${y - 3} 540 ${y + 1} T1080 ${y - 1}" fill="none" stroke="#D3AE7E" stroke-width="3"/>`;
-    for (let x = (k % 2) * 210 + 120; x < W; x += 420) s += `<path d="M${x} ${y} L${x + 1} ${y + 92}" stroke="#D3AE7E" stroke-width="3"/>`; }
-  s += `<rect x="-10" y="1236" width="${W + 20}" height="54" fill="#E6C99F" stroke="${PEN}" stroke-width="6"/><path d="M0 1250 L${W} 1248" stroke="#F3DDB9" stroke-width="5" opacity=".8"/>`;
-  for (let n = 0; n < 900; n++) s += `<circle cx="${(rnd() * W).toFixed(1)}" cy="${(rnd() * H).toFixed(1)}" r="${(1 + rnd() * 1.6).toFixed(1)}" fill="#B9A08A" opacity="${(0.25 + rnd() * 0.3).toFixed(2)}"/>`;
+// the background (owner, 11 Nov 2026: "a bit plain, make it more eye-catching"): a warm marigold holiday colour, plain behind every card, badge,
+// food and Noodle; the decorations live only in the margins and are checked against everything else on every frame (data-deco): crayon
+// bunting along the top edge above the cards, a cranberry plaid tablecloth along the bottom under Noodle's feet, autumn leaves and sparkles
+// down the right margin and a few sparkles on the left. Every fill sits inside its own pencil line (the plaid is clipped to the cloth).
+const FEST = (() => { let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.48" r="0.75"><stop offset="0" stop-color="#FFE7A8"/><stop offset="0.6" stop-color="#FFD27A"/><stop offset="1" stop-color="#F7B65A"/></radialGradient>
+  <clipPath id="cloth"><path d="${(() => { let d = 'M-10 1478'; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} 1508 ${x + 60} 1478`; return d + ` L${W + 10} ${H + 10} L-10 ${H + 10} Z`; })()}"/></clipPath></defs>`;
+  s += `<rect width="${W}" height="${H}" fill="url(#glow)"/>`;
+  // bunting: three swags of crayon flags along the top edge (y 40..250, above the cards)
+  const SW = [[-20, 360], [340, 720], [700, 1100]], COL = ['#C8323C', '#FFF3DA', '#5E9E5A', '#F28A3C'];
+  s += '<g data-deco="bunting">'; let n = 0;
+  SW.forEach(([a, z]) => { const y0 = 70, sag = 70, P = (x) => y0 + sag * Math.sin(Math.PI * (x - a) / (z - a));
+    s += `<path d="M${a} ${y0} Q${(a + z) / 2} ${y0 + sag * 2} ${z} ${y0}" fill="none" stroke="${PEN}" stroke-width="5" stroke-linecap="round"/>`;
+    for (let x = a + 45; x < z - 30; x += 78) { const y = P(x), c = COL[n++ % 4];
+      s += `<path d="M${(x - 28).toFixed(1)} ${(y - 2).toFixed(1)} L${(x + 28).toFixed(1)} ${(y + 2).toFixed(1)} L${(x + 2).toFixed(1)} ${(y + 66).toFixed(1)} Z" fill="${c}" stroke="${PEN}" stroke-width="4.5" stroke-linejoin="round"/>`
+        + `<path d="M${(x - 14).toFixed(1)} ${(y + 10).toFixed(1)} L${(x + 4).toFixed(1)} ${(y + 44).toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45"/>`; } });
+  s += '</g>';
+  // the tablecloth: cranberry plaid on cream, a scalloped top edge
+  s += `<g data-deco="cloth"><g clip-path="url(#cloth)"><rect x="-10" y="1460" width="${W + 20}" height="480" fill="#FFF3DE"/>`;
+  for (let x = 20; x < W; x += 130) s += `<rect x="${x}" y="1460" width="62" height="480" fill="#D9464F" opacity=".55"/>`;
+  for (let y = 1530; y < H; y += 130) s += `<rect x="-10" y="${y}" width="${W + 20}" height="62" fill="#D9464F" opacity=".55"/>`;
+  for (let x = 51; x < W; x += 130) s += `<path d="M${x} 1460 L${x} ${H}" stroke="#9E2430" stroke-width="3" opacity=".5"/>`;
+  s += `</g><path d="${(() => { let d = 'M-10 1478'; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} 1508 ${x + 60} 1478`; return d; })()}" fill="none" stroke="${PEN}" stroke-width="6" stroke-linejoin="round"/></g>`;
+  // leaves and sparkles in the side margins
+  const leaf = (x, y, r, a, c) => `<g data-deco="leaf" transform="translate(${x} ${y}) rotate(${a}) scale(${r / 30})"><path d="M0 -30 C14 -22 24 -6 18 12 C12 26 4 30 0 34 C-4 30 -12 26 -18 12 C-24 -6 -14 -22 0 -30 Z" fill="${c}" stroke="${PEN}" stroke-width="4.5" stroke-linejoin="round"/><path d="M0 -22 L0 30 M0 -2 L10 -12 M0 10 L-10 0 M0 20 L9 12" stroke="${PEN}" stroke-width="2.6" stroke-linecap="round" opacity=".7" fill="none"/><path d="M0 34 L0 46" stroke="${PEN}" stroke-width="4" stroke-linecap="round"/></g>`;
+  const spark = (x, y, r, c) => `<path data-deco="spark" d="M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z" fill="${c || '#FFF6DC'}" stroke="${PEN}" stroke-width="3.4" stroke-linejoin="round"/>`;
+  s += leaf(975, 360, 34, 20, '#E8663A') + spark(1010, 470, 18) + leaf(955, 600, 30, -25, '#C8323C') + leaf(1020, 760, 28, 40, '#F2A93B') + spark(950, 880, 14)
+    + leaf(990, 1010, 34, -10, '#E8663A') + spark(1030, 1140, 20) + leaf(950, 1260, 30, 30, '#C8323C') + leaf(1015, 1380, 26, -35, '#F2A93B');
+  s += spark(28, 800, 12);
   return s; })();
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
@@ -169,7 +185,7 @@ const allText = BEATS.map((b) => [b.title || '', ...b.lines, b.sub || '', b.smal
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-dog *{animation:none!important}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}</defs>
-<g id="bg">${ROOM}</g>
+<g id="bg">${FEST}</g>
 <g id="art"></g><g id="ov"></g></svg>
 <script>
 ${CENTRE_JS}
@@ -182,8 +198,8 @@ const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.po
 const BOX={};
 function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NSV,'use'); u.setAttribute('href','#'+id+'_0'); $('art').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }
 // Noodle, standing on (cx, feet), at most hh tall and ww wide
-function noodle(pose, svg, cx, feet, hh, ww, dy, op){ const b=box(pose), s=Math.min(hh/b[3], ww/b[2]), w=b[2]*s, h=b[3]*s;
-  return '<g data-apart="Noodle" opacity="'+f2(op)+'"><ellipse cx="'+f2(cx)+'" cy="'+(feet-3)+'" rx="'+f2(w*0.36)+'" ry="13" fill="${PEN}" opacity=".16"/><g transform="translate('+f2(cx-w/2)+' '+f2(feet-h+(dy||0))+') scale('+s.toFixed(4)+') translate('+f2(-b[0])+' '+f2(-b[1])+')">'+svg+'</g></g>'; }
+function noodle(pose, svg, cx, feet, hh, ww, dy, op, flip){ const b=box(pose), s=Math.min(hh/b[3], ww/b[2]), w=b[2]*s, h=b[3]*s;
+  return '<g data-apart="Noodle" opacity="'+f2(op)+'"><ellipse cx="'+f2(cx)+'" cy="'+(feet-3)+'" rx="'+f2(w*0.36)+'" ry="14" fill="${PEN}" opacity=".18"/><g'+(flip?' transform="translate('+f2(2*cx)+' 0) scale(-1 1)"':'')+'><g transform="translate('+f2(cx-w/2)+' '+f2(feet-h+(dy||0))+') scale('+s.toFixed(4)+') translate('+f2(-b[0])+' '+f2(-b[1])+')">'+svg+'</g></g></g>'; }
 // a food on its own (the 64 x 64 game art), centred on (cx, cy), size px, popping in
 function food(id, cx, cy, size, u, tag){ const s=size*(0.82+0.18*back(u)); return '<g data-apart="'+(tag||id)+'" opacity="'+f2(sm(u*2.5))+'"><use href="#it_'+id+'" x="'+f2(cx-s/2)+'" y="'+f2(cy-s/2)+'" width="'+f2(s)+'" height="'+f2(s)+'"/></g>'; }
 // the crayon red cross (drawn on, two rough strokes) or the green tick, in a round badge
@@ -208,7 +224,7 @@ function card(b, top, op, border){ const W0=790, x0=CX-W0/2, L=[];
   const hh=L.reduce((a,l,i)=>a+(i<L.length-1?l.pitch:l.size*0.75),0)+ (b.kind==='hook'?120:96);
   const c=centred(L, CX, top+hh/2, F);
   return { h: hh, svg: '<g data-box data-apart="card" opacity="'+f2(op)+'"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+f2(hh)+'" rx="38" fill="${CREAM}" stroke="'+(border||'${PEN}')+'" stroke-width="7"/>'+c.svg+'</g>' }; }
-const CARD_TOP=300, FEET=1420, FOOD_Y=1225, FOOD_X=632, FOOD_S=340, BADGE_Y=865;
+const CARD_TOP=300, FEET=1425;
 // one frame: returns '' or the first rule it breaks
 window.frame=function(t, D){
   let art='', ov='';
@@ -220,17 +236,20 @@ window.frame=function(t, D){
     const border=b.kind===NO?'${RED}':b.kind===YES?'${GREEN}':'${PEN}';
     const c=card(b, CARD_TOP, fade*(i===0?1:sm(u*3)), border); ov+=c.svg;
     let below=CARD_TOP+c.h;
-    if(b.pill){ const py=below+82; ov+=pill(b.pill, CX, py, 58, F, { fill:'${YEL}', padX:34, op: fade*sm((lt-0.5)/0.25) }).replace('<g data-box','<g data-box data-apart="pill"'); below=py+40; }
-    // Noodle: begs at the "no" foods (sits politely once the cross is on), delighted by the "share instead" ones
-    const pose=b.kind===YES||b.kind==='game'?'yay':b.kind==='vet'?'sit':(i===0||lt<0.55)?'beg':'sit';
-    const solo=b.food.length===0, two=b.food.length===2, nx=solo?CX:two?175:pose==='yay'?225:205, nh=pose==='yay'?400:pose==='beg'?470:430;
-    art+=noodle(pose, D.n[pose], nx, FEET, nh, solo?440:two?230:pose==='yay'?340:270, pose==='yay'?-Math.abs(Math.sin(t*8))*14:0, fade);
-    // the food(s) and the badge
-    if(b.food.length===1) art+=food(b.food[0], FOOD_X, FOOD_Y, FOOD_S, i<=1?1:u);
-    if(b.food.length===2){ art+=food(b.food[0], 432, FOOD_Y+10, 170, u, 'food1'); art+=food(b.food[1], 722, FOOD_Y+10, 200, cl(u*1.2-0.15), 'food2'); }
-    if(b.kind===NO||b.kind==='hook'){ const bu=i<=1?cl((t-0.1)/0.5):cl((lt-0.15)/0.5); art+=badge('no', FOOD_X, BADGE_Y, 74, bu); }
-    if(b.kind===YES){ art+=badge('yes', FOOD_X, BADGE_Y, 70, cl((lt-0.1)/0.3)); }
-    if(b.kind==='game'){ art+=badge('yes', FOOD_X, BADGE_Y, 70, cl((lt-0.3)/0.3)); }
+    if(b.pill){ const py=below+82; ov+=pill(b.pill, CX, py, 58, F, { fill:'#C8323C', color:'#FFF8EC', padX:34, op: fade*sm((lt-0.5)/0.25) }).replace('<g data-box','<g data-box data-apart="pill"'); below=py+40; }
+    // owner, 11 Nov 2026: Noodle is the star, about 1.5 to 1.8 times as big as before.
+    // the "no" beats (and the hook): the badge over the food in a left column, Noodle big on the right, turned to the food;
+    // the "share instead" beats: the food and the badge in a row under the card, Noodle long and big along the bottom; the vet line: Noodle alone, big
+    const pose=b.kind===YES||b.kind==='game'?'yay':b.kind==='vet'?'sit':(i===0||lt<0.55)?'beg':'sit', bob=pose==='yay'?-Math.abs(Math.sin(t*8))*14:0;
+    const fu=(k)=>i<=1?1:k;
+    if(b.kind==='vet') art+=noodle(pose, D.n[pose], CX, FEET, 700, 640, 0, fade);
+    else if(pose==='yay'){ const S=300, fy=Math.max(860, below+70+S*0.63), nh=Math.min(380, FEET-(fy+S*0.63)-50);
+      art+=noodle(pose, D.n[pose], CX, FEET, nh, 720, bob, fade);
+      art+=food(b.food[0], 300, fy, S, u); art+=badge('yes', 640, fy, 70, cl((lt-(b.kind==='game'?0.3:0.1))/0.3)); }
+    else { art+=noodle(pose, D.n[pose], 650, FEET, pose==='beg'?690:620, 400, 0, fade, true);
+      const bu=i<=1?cl((t-0.1)/0.5):cl((lt-0.15)/0.5); art+=badge('no', 225, 800, 70, bu);
+      if(b.food.length===1) art+=food(b.food[0], 225, 1150, 300, fu(u));
+      else { art+=food(b.food[0], 225, 1030, 190, u, 'food1'); art+=food(b.food[1], 225, 1290, 210, cl(u*1.2-0.15), 'food2'); } }
   }
   // the end card: paper and the card fade in once the scene has gone
   if(end){ ov+='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
@@ -238,6 +257,9 @@ window.frame=function(t, D){
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
+  // the decorations (margins only) never touch anything: 20 px clear of every card, pill, badge, food and Noodle
+  { const deco=[...$('bg').querySelectorAll('[data-deco]')].map((e)=>e.getBoundingClientRect()), things=[...$('st').querySelectorAll('#art [data-apart],#ov [data-apart],#ov [data-box]')].filter((e)=>+(e.getAttribute('opacity')||1)>0.05);
+    if($('bg').getAttribute('opacity')!=='0') for(const e of things){ const r=e.getBoundingClientRect(); if(!r.width) continue; for(const d of deco){ const g=Math.max(d.left-r.right,r.left-d.right,d.top-r.bottom,r.top-d.bottom); if(g<20) return 'touches a decoration: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(g)+' px'; } } }
   // the brief's tighter right edge for words and key art (x 850): every card, pill, food and dog
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(r.width&&r.right>854&&+(e.getAttribute('opacity')||1)>0.05) return 'past x 850: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(r.right); }
   return ''; };

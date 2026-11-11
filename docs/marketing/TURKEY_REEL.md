@@ -11,7 +11,7 @@ Owner, 9 to 11 Nov 2026: one English Reel for the holidays, food safety, in the 
 
 ## Shots
 
-An empty room in the game's house colours (striped wallpaper with little pink flowers, baseboard, floorboards; 11 Nov fix: the kitchen props sat behind the badges and cards, so the room now has no props and nothing overlaps anything), Noodle the dachshund on the left, the food on the right, a crayon red cross (drawn on, with a crayon scratch) or a green tick (with a tick) above it, the card at the top. Music: the game's own kitchen music (`mods/pawaudio.js`) about 11 dB under the voice (~30%), loudness -16 LUFS.
+A festive marigold background (owner, 11 Nov: "more eye-catching, Noodle larger"): crayon bunting along the top above the cards, a cranberry plaid tablecloth along the bottom, autumn leaves and sparkles in the side margins; plain colour behind every card, badge, food and Noodle, and every decoration is checked on every frame to stay 20 px clear of them. Noodle is the star, about 1.5 to 1.8 times his first size: on the "no" beats he stands big on the right, turned to the food, with the crayon red cross (drawn on, with a crayon scratch) above the food on the left; on the "share instead" beats the food and the green tick (with a tick) sit in a row under the card and Noodle runs long along the bottom; on the vet line he sits alone, big. The card is at the top. Music: the game's own kitchen music (`mods/pawaudio.js`) about 11 dB under the voice (~30%), loudness -16 LUFS.
 
 | Starts | Beat | Noodle says | On screen |
 |---|---|---|---|
