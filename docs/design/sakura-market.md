@@ -70,4 +70,14 @@ side, still under `prefers-reduced-motion`).
 
 ## Status
 
-See the bottom of this file (filled in as the parts land).
+Built on `claude/sakura-market` (11 Nov 2026), English only, not merged:
+
+- [x] Data: rows in `FOOD`, `TOYS`, `CLOTHES` (`game/src/00_core.js`) and `HM_DECOR` (`game/src/03_yard.js`), all `fest: 'sakura', fm: true`, no `ed`;
+  the `sakura` entry in `FM_MARKETS` filled (no `todo`); the Petal Ball in `FM_BALLS`; the Squeaky Dango and Plush Koi in `HM_TOY_GAME` (`mods/toys.js`) with their own hints.
+- [x] Art: world B (5 props `skblanket`, `sklanterns` (lit), `sktree`, `skbento`, `skkoi`, 18 item cards, 2 dog bowls, `PA.SAKURA_MARKET`);
+  dogs (`HAT2`/`NECK2`/`BODY2`/`BACK2`, `SK_OWN` hands back the random stream); world E (`fmDressSk`, `fmFrontSk`); falling petals `fmPetals` + `.fm-petal` in `50_market.css`.
+- [x] Checks: suite `sakura_market` (window, items, buying, caps, scene, costume renders on every breed, phone 360x640); the 8 costumes added to
+  `dogs/connect_check.js` OUTFITS and `dogs/fill_sweep.js`.
+- [ ] Left for the release: the art review (owner/top model) and the phone review; `dogs/fill_sweep.js` with OUTFITS=1 on the new costumes;
+  `check_identical` against the last release; translations (one batch, 12 languages); a `NEWS` entry and Gerald's market letter wording;
+  a Sakura music variant if the owner wants one; heavy props (`sklanterns`/`sktree` about 95 KB each, the many blossoms) could be made lighter.
