@@ -11,7 +11,7 @@ Owner, 9 to 11 Nov 2026: one English Reel for the holidays, food safety, in the 
 
 ## Shots
 
-The game's kitchen corner in winter (its words taken out), Noodle the dachshund on the left, the food on the right, a crayon red cross (drawn on, with a crayon scratch) or a green tick (with a tick) above it, the card at the top. Music: the game's own kitchen music (`mods/pawaudio.js`) about 11 dB under the voice (~30%), loudness -16 LUFS.
+An empty room in the game's house colours (striped wallpaper with little pink flowers, baseboard, floorboards; 11 Nov fix: the kitchen props sat behind the badges and cards, so the room now has no props and nothing overlaps anything), Noodle the dachshund on the left, the food on the right, a crayon red cross (drawn on, with a crayon scratch) or a green tick (with a tick) above it, the card at the top. Music: the game's own kitchen music (`mods/pawaudio.js`) about 11 dB under the voice (~30%), loudness -16 LUFS.
 
 | Starts | Beat | Noodle says | On screen |
 |---|---|---|---|
@@ -29,7 +29,7 @@ The game's kitchen corner in winter (its words taken out), Noodle the dachshund 
 
 The cards carry the spoken words (they work as the subtitles).
 
-**Art.** From main (v2.24.1): Noodle (`PawArt.dog('dachs')`, beg, sit and happy), the kitchen (`PawArt.scene('house', winter)`), the game's Pumpkin Purée, Carrot Sticks and Turkey & Cranberry Bites. The game has no turkey skin, cooked bones, gravy, stuffing, plain turkey or green beans icons, so `build_turkey.js` draws those six in the game's own item builder (injected into `world/pawart_world_b.js` for this render only, nothing in the game changes), so they share its crayon washes, inside-the-lines fills and pencil outlines. The plain turkey uses the game's own torn-turkey pieces from Turkey & Cranberry Bites, without the cranberries.
+**Art.** From main (v2.24.1): Noodle (`PawArt.dog('dachs')`, beg, sit and happy), the game's Pumpkin Purée, Carrot Sticks and Turkey & Cranberry Bites. The game has no turkey skin, cooked bones, gravy, stuffing, plain turkey or green beans icons, so `build_turkey.js` draws those six in the game's own item builder (injected into `world/pawart_world_b.js` for this render only, nothing in the game changes), so they share its crayon washes, inside-the-lines fills and pencil outlines. The plain turkey uses the game's own torn-turkey pieces from Turkey & Cranberry Bites, without the cranberries.
 
 ## Where the safety facts come from
 

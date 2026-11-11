@@ -6,7 +6,7 @@
 // (cooked, no skin, no bones), plain green beans, plain cooked pumpkin (not pie filling), carrots; small amounts, nothing added. Then
 // "Ate something it shouldn't? Call your vet right away.", "In Doodle Doggo you can't cook or feed anything toxic", and our standard end card
 // (brand/kids/endcard.js: the logo, doodledoggo.app, Instagram, X and YouTube with icons) for 2.5 s with the music fading under it.
-// The art is the game's (main): Noodle (PawArt.dog 'dachs'), the kitchen (PawArt.scene 'house', its words taken out), the paw-stop icon,
+// The art is the game's (main): Noodle (PawArt.dog 'dachs'), an empty room in the colours of the game's house scene (no props: nothing overlaps), the paw-stop icon,
 // Turkey & Cranberry Bites, Pumpkin Purée and Carrot Sticks. Drawn here in the game's own item builder (injected into
 // world/pawart_world_b.js, so the same crayon washes stay inside the same pencil lines): turkey skin, cooked bones, gravy boat, stuffing,
 // plain turkey (the game's own torn-turkey pieces without the cranberries) and green beans. The facts follow the game's own tips
@@ -129,7 +129,19 @@ const LOOK = { beg: { pose: 'beg', facing: 'right' }, sit: { pose: 'sit', facing
 const dogSvg = (id, kf) => inner(PA.dog('dachs', Object.assign({ anim: false }, LOOK[id], { kf: ((kf % 3) + 3) % 3 })));
 const dogSyms = Object.keys(LOOK).map((id) => `<symbol id="${id}_0" overflow="visible">${dogSvg(id, 0)}</symbol>`).join('');
 // the kitchen corner with no words in it (as in the Safe Reel), winter
-const scene = `<symbol id="sc" viewBox="662 0 337.5 600" preserveAspectRatio="xMidYMid slice">${inner(PA.scene('house', { time: 'day', weather: 'sunny', season: 'winter', jp: true })).replace(/<text\b[\s\S]*?<\/text>/g, '')}</symbol>`;
+// the room (coordinator for the owner, 11 Nov 2026: NO overlapping, not even a badge over a kitchen pot): the game's kitchen props sat behind the
+// cards, badges and food, so the background is now the game's room with nothing in it: its striped wallpaper with the little pink flowers, the
+// baseboard and the floorboards, in the scene's own colours (PawArt.scene 'house'). With no props, nothing we draw can sit on one.
+const ROOM = (() => { let s = `<rect width="${W}" height="1290" fill="#FBEBDC"/>`, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let x = 60; x < W; x += 180) s += `<rect x="${x}" y="0" width="90" height="1240" fill="#F6E0C9" opacity=".75"/>`;
+  for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) { const x = 130 + c * 270 + (r % 2) * 135, y = 120 + r * 205;
+    s += `<g opacity=".55" fill="#F2B8C2">${[[0, -7], [7, 0], [0, 7], [-7, 0]].map(([a, b]) => `<circle cx="${x + a}" cy="${y + b}" r="6.5"/>`).join('')}<circle cx="${x}" cy="${y}" r="3.5" fill="#F7D3D9"/></g>`; }
+  s += `<rect x="0" y="1290" width="${W}" height="${H - 1290}" fill="#EBCFA6"/>`;
+  for (let y = 1380, k = 0; y < H; y += 92, k++) { s += `<path d="M0 ${y} Q270 ${y - 3} 540 ${y + 1} T1080 ${y - 1}" fill="none" stroke="#D3AE7E" stroke-width="3"/>`;
+    for (let x = (k % 2) * 210 + 120; x < W; x += 420) s += `<path d="M${x} ${y} L${x + 1} ${y + 92}" stroke="#D3AE7E" stroke-width="3"/>`; }
+  s += `<rect x="-10" y="1236" width="${W + 20}" height="54" fill="#E6C99F" stroke="${PEN}" stroke-width="6"/><path d="M0 1250 L${W} 1248" stroke="#F3DDB9" stroke-width="5" opacity=".8"/>`;
+  for (let n = 0; n < 900; n++) s += `<circle cx="${(rnd() * W).toFixed(1)}" cy="${(rnd() * H).toFixed(1)}" r="${(1 + rnd() * 1.6).toFixed(1)}" fill="#B9A08A" opacity="${(0.25 + rnd() * 0.3).toFixed(2)}"/>`;
+  return s; })();
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
 // ---- the voice and the timeline (each beat as long as its line) ----
@@ -156,8 +168,8 @@ const allText = BEATS.map((b) => [b.title || '', ...b.lines, b.sub || '', b.smal
 
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-dog *{animation:none!important}</style>
-<svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${scene}${SYMS}${dogSyms}</defs>
-<g id="bg"><use href="#sc" x="0" y="0" width="${W}" height="${H}"/><rect width="${W}" height="${H}" fill="${PAPER}" opacity=".38"/></g>
+<svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}</defs>
+<g id="bg">${ROOM}</g>
 <g id="art"></g><g id="ov"></g></svg>
 <script>
 ${CENTRE_JS}
