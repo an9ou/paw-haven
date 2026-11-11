@@ -308,3 +308,11 @@ pick them up with the next store update. The paw-release skill gets an "app" sec
   Program and Google's 15% on the first 1M USD; Google Families policy and Data safety form; IARC ratings in Play Console.
 - Our side: `V224.md`, `docs/design/kind-shop.md`, `docs/design/kind-shop-stripe-setup.md`, `cloudflare/worker.js`, `site/privacy.html`,
   `V219.md` (invite links), `PERF.md`, `tools/itch.js`.
+
+## Decided (owner, 11 Nov 2026, choice window)
+
+1. Stores: both iOS (iPhone + iPad) and Google Play together, aiming for late January 2027.
+2. App payments: store billing only (StoreKit / Play Billing), the same items and USD tiers; Stripe stays on the web and itch.io; purchases shared through the cloud account. No US Stripe link in v1.
+3. Developer accounts: as the Hong Kong business (needs a free D-U-N-S number).
+4. iOS builds: Xcode on the owner's Mac (the owner installs Xcode; Claude prepares the project and step-by-step instructions).
+The other recommendations (Capacitor, all ages outside the Kids category, keep email login + add in-app account deletion, guest purchases, haptics / share sheet / Game Center / opt-in reminders, start after Sakura, Stories and stars and story mode) stand unless the owner says otherwise.
