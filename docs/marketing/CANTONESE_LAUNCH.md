@@ -47,3 +47,20 @@ Tags: #廣東話 #香港 #治愈系遊戲 #蠟筆畫 #狗狗 #獨立遊戲
 ```
 Doodle Doggo now speaks Cantonese 🐶 our 12th language, checked line by line by a friend from Hong Kong 💛 a free cozy dog game with 40 wobbly crayon dogs, in your browser. which language do you play in? doodledoggo.app/yue/
 ```
+
+## Poster (11 Nov 2026, draft: not posted until the owner approves)
+
+File: `brand/instagram/launch/cantonese_post/cantonese-launch.jpg` (1080 x 1350, Instagram). Build script: `brand/instagram/launch/cantonese_post/build_cantonese_post.js`.
+
+Headline 「Doodle Doggo 識講廣東話喇！」 with "now in Cantonese · our 12th language" under it; the pill 「多謝香港朋友逐句幫我哋睇過」; the logo and doodledoggo.app at the bottom. No flags, no other links. Dogs and logo are today's art from origin/main (913a3539). Chinese text is Iansui (the face the game uses for yue and zh-Hant), Latin text is Caveat.
+
+The three bubbles quote the game's Cantonese text exactly (`game/i18n/yue.json` on main; the build stops if a line no longer matches):
+- Noodle the Dachshund: 「扭呀扭。後面嗰半遲到咗。」 `data.sig.dachs.say` ("Wiggle wiggle. The back half is late.")
+- Peanut the Chihuahua: 「我係八號風球！！」 `data.sig.chihuahua.say` ("I AM A WEATHER EVENT.", here Typhoon Signal No. 8)
+- Sunny the Golden Retriever: 「睇下我搵到乜！」 `data.sr_lines.fetch.2` ("Look what I found!")
+
+Rebuild (checks: bubble and pill text ink-centred, headline centred, dogs apart, nothing closer than 20 px, 60 px margins):
+```
+git worktree add --detach <scratch>/main origin/main
+ART_ROOT=<scratch>/main NODE_PATH=$(npm root -g) node brand/instagram/launch/cantonese_post/build_cantonese_post.js
+```
