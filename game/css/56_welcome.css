@@ -1,0 +1,25 @@
+/* v2.25 Glad you're back (53_welcome.js): the While you were out page (a diary page from 49_dogdays.css, .dd-page) and the days-played line on the calendar */
+html:not([data-layout="phone"]) .panel.wb-pop{width:min(620px,100%);max-width:min(620px,calc(100% - 20px))}
+.wb-sheet{display:flex;flex-direction:column;gap:12px;min-width:0}
+.wb-page{transform:rotate(-.6deg)}
+.wb-page .dd-ptext p{overflow-wrap:anywhere}
+.wb-page .dd-pt .small{overflow-wrap:anywhere}
+.wb-page .dd-doodle{min-height:34px}
+.wb-page .dd-dpaw{width:30px;height:30px}
+.wb-gift{display:flex;align-items:center;gap:12px;min-width:0;padding:8px 12px;border:2px dashed rgba(91,61,50,.45);border-radius:10px 14px 9px 12px;background:var(--w-yellow,#FFE3A1)}
+.wb-gart{flex:0 0 56px;width:56px;height:56px;display:block}
+.wb-gart > svg{width:100%;height:100%;display:block}
+.wb-gt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+.wb-gt b{font-family:var(--font-hand);font-size:22px;line-height:1.15;overflow-wrap:anywhere}
+.wb-gt span{font-family:var(--font-read);font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.wb-pop .foot .wb-ok{min-width:180px;min-height:52px;font-size:24px}
+html[data-layout="phone"] .wb-pop .foot .wb-ok{width:100%}
+html[data-layout="phone"] .wb-gart{flex-basis:48px;width:48px;height:48px}
+html[data-layout="phone"] .wb-gt b{font-size:20px}
+html[data-layout="phone"] .wb-gt span{font-size:16px}
+/* the monthly calendar: days played, ever */
+.wb-life{margin:10px 0 0;padding:8px 10px;border-top:2px dashed rgba(91,61,50,.35)}
+.wb-lifen{margin:0;overflow-wrap:anywhere}
+.wb-lifen b{font-family:var(--font-hand);font-size:22px}
+.wb-spec{margin-top:6px}
+.wb-spec li{width:auto;min-width:44px;padding:0 6px;box-sizing:border-box;font-size:17px}

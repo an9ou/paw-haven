@@ -18,10 +18,10 @@ run('v2182_news', async (t) => {
   await t.newGame({ prefs: { nwTest: true } });
   ok(await t.until(() => !!(window.__paw && window.__paw.nw), null, 5000), 'the hook is there');
   const latest = await ev(() => window.__paw.nw.latest());
-  const jst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // v2.23.2 Cantonese news from 9 Nov 2026 (JST)
+  const jst = await ev(() => window.__paw.rh.jst()); // the page's Japan date (the harness pins the page clock to 10:00 local today, so near midnight in Japan it can differ from node's) // v2.23.2 Cantonese news from 9 Nov 2026 (JST)
   const ks = await ev(() => { const K = window.__paw.ks; return K ? { live: !!K.live, date: K.newsDate } : { live: false, date: '' }; }); // v2.24 Kind shop: its news leads once SHOP_LIVE is on and its date has come (JST)
-  const want = ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
-  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
+  const want = jst >= '2026-11-12' ? '2.25' : ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
+  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.25 Glad you\'re back from 12 Nov, 2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
   await t.home('yard'); ok(await noNews(5000), 'no news sheet on a new save');
 
   sec('2. an old save: S.newsSeen added by migrate(), the sheet shows once, not again after a reload');

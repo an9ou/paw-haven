@@ -1,12 +1,14 @@
 /* ======================= TIME LOOP ======================= */
 function applyAway() {
-  if (!S) return; const secs = clamp((Date.now() - (S.lastReal || Date.now())) / 1000, 0, 7 * 86400); const hrs = secs / 60 / GAME_SEC; // game hours (Daily rhythm: 2.5 real minutes each)
+  if (!S) return; const awayMs = Date.now() - Math.max(+S.lastReal || 0, +S.lastSeenAt || 0); // v2.25: real time away, against the high-water mark (53_welcome.js)
+  const secs = clamp((Date.now() - (S.lastReal || Date.now())) / 1000, 0, 7 * 86400); const hrs = secs / 60 / GAME_SEC; // game hours (Daily rhythm: 2.5 real minutes each)
+  const page = typeof wbAway === 'function' && wbAway(awayMs); // v2.25: 4+ real hours away: the While you were out page takes over from the toast (and the last-seen stamp moves on)
   if (secs < 5) return;
   S.gameMin += secs / GAME_SEC;
   const fl = (v, rate, floor) => (v > floor ? Math.max(floor, v - rate * hrs) : v);
   S.dogs.forEach((d) => { const s = d.stats; s.hunger = fl(s.hunger, 3, 30); s.happy = fl(s.happy, 2, 40); s.clean = fl(s.clean, 1, 40); s.energy = clamp(s.energy + 20 * hrs, 0, 100); });
   S.lastReal = Date.now(); dailyCheck(); markDirty();
-  if (secs > 120) setTimeout(() => { if (cur.mode === 'yard') toast(tt('time.away', 'While you were away, {name} napped for {hrs, plural, one {# game hour} other {# game hours}} and missed you a normal amount.', { name: NAME(), hrs: Math.round(hrs) }), 'gold'); }, 800);
+  if (secs > 120 && !page) setTimeout(() => { if (cur.mode === 'yard') toast(tt('time.away', 'While you were away, {name} napped for {hrs, plural, one {# game hour} other {# game hours}} and missed you a normal amount.', { name: NAME(), hrs: Math.round(hrs) }), 'gold'); }, 800);
 }
 let lastTick = performance.now(), saveClock = 0, voiceClock = 0, lastGameDay = 0;
 function tick() {

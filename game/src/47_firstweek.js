@@ -359,7 +359,7 @@ function fwCalHTML(morning) {
   const mon = `<section class="fw-page fw-monp" style="--fwc:${M.c}" aria-label="${esc(fwMonthName(ym))}">${border}<h3>${esc(fwMonthName(ym))}</h3><p class="fw-theme">${esc(fwTheme(fwMonthOf(ym)))}</p>
     <ol class="fw-mgrid" aria-label="${esc(tt('fw.mon_count', '{n, plural, one {# day played this month} other {# days played this month}}', { n: have }))}">${grid}</ol>
     ${special}<ul class="fw-rews">${FW_CAL_DAYS.map((n) => row('cal', n, have, f.cal.got, ym)).join('')}</ul>
-    <p class="small fw-cap">${esc(tt('fw.mon_sub', 'Any day you play stamps a paw. Coins from the calendar this month: {c} of {max}.', { c: f.cal.coins + (f.cal.dgc || 0), max: FW_CAL_COIN_CAP + FW_DG_COIN_CAP }))}</p></section>`;
+    <p class="small fw-cap">${esc(tt('fw.mon_sub', 'Any day you play stamps a paw. Coins from the calendar this month: {c} of {max}.', { c: f.cal.coins + (f.cal.dgc || 0), max: FW_CAL_COIN_CAP + FW_DG_COIN_CAP }))}</p>${typeof wbCalHTML === 'function' ? wbCalHTML() : ''}</section>`; // v2.25: days played, ever (53_welcome.js)
   let note = '';
   const wi = f.wish;
   if (wi && !wi.done && wi.for <= today) {
