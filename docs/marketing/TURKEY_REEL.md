@@ -4,10 +4,10 @@ Owner, 9 to 11 Nov 2026: one English Reel for the holidays, food safety, in the 
 
 | File | What |
 |---|---|
-| `doodle-doggo-turkey-skin.mp4` | Instagram Reels, TikTok, YouTube Shorts and X. 1080 x 1920, 30 fps, AAC stereo, 28.1 s: 25.6 s of Reel, then our standard end card for 2.5 s with the music fading under it. |
+| `doodle-doggo-turkey-skin.mp4` | Instagram Reels, TikTok, YouTube Shorts and X. 1080 x 1920, 30 fps, AAC stereo, 52.6 s: 49.6 s of Reel, then our standard end card for 3 s with the music fading under it. Slowed down for reading (owner, 11 Nov 2026: "let the audience read it"): each card stays up for at least 1.2 s + 0.35 s a word of its text and never less than its spoken line + 1 s, with a 0.3 s pause between beats; Noodle speaks at 1.0x. |
 | `turkey-cover.jpg` | The designed cover (not a frame): "Stop feeding your dog / the turkey skin" in a big card, the turkey leg with the red cross, Noodle begging, the four swaps with "share these instead" and the logo. Key content inside the 1:1 crop (y 420..1500), the logo inside 4:5. |
 | `build_turkey.js` | Remake (below). Every frame runs `centreCheck()`, `safeCheck()` and `apartCheck()` (`../centre_text.js`) plus a tighter x 850 edge: no two dogs, foods, cards or texts overlap or touch, every word sits in the centre of its box, words and key art stay in the safe area (x 60..850, y 270..1440). The build stops on the first miss. |
-| `vo_turkey.json` | Noodle's lines (Kokoro af_bella 1.1x). |
+| `vo_turkey.json` | Noodle's lines (Kokoro af_bella 1.0x). |
 
 ## Shots
 
@@ -15,17 +15,17 @@ A festive marigold background (owner, 11 Nov: "more eye-catching, Noodle larger"
 
 | Starts | Beat | Noodle says | On screen |
 |---|---|---|---|
-| 0.10 s | hook | "Stop feeding your dog the turkey skin. Here's what to share instead." (3.53 s) | Hook card: "Stop feeding your dog / the turkey skin." + red "Here's what to share instead." Noodle begs; a roast turkey leg with its skin peeling back; the red crayon cross draws on. |
-| 3.77 s | skin | "Very fatty. It can upset a dog's tummy." (2.35 s) | Red card "Turkey skin": "very fatty: it can upset / a dog's tummy", small "too much fat is linked to pancreatitis". Noodle sits politely. |
-| 6.22 s | bones | "Cooked bones can splinter." (1.29 s) | Red card "Cooked bones": "they can splinter". Two cooked drumstick bones snapped into splinters; red cross. |
-| 7.61 s | gravy | "Gravy and stuffing often have onion and garlic. Toxic to dogs!" (3.99 s) | Red card "Gravy & stuffing": "often made with onion and garlic, / which are toxic to dogs". A gravy boat and a bowl of stuffing (onion bits, herbs); red cross. |
-| 11.76 s | turkey | "Plain turkey, no skin or bones." (2.05 s) | Green card "Plain turkey": "a little, cooked, / no skin, no bones". The game's torn plain turkey (no cranberries); green tick; Noodle delighted. |
-| 13.89 s | beans | "Plain green beans." (1.16 s) | Green card "Green beans": "plain, nothing on them". Plain green beans on a plate; green tick. |
-| 15.13 s | pumpkin | "Plain pumpkin, not pie filling." (1.89 s) | Green card "Plain cooked pumpkin": "not pie filling". The game's Pumpkin Purée; green tick. |
-| 17.10 s | carrots | "Carrots! Small amounts, nothing added." (2.07 s) | Green card "Carrots": "small amounts, / nothing added". The game's Carrot Sticks; green tick. |
-| 19.32 s | vet | "Ate something it shouldn't? Call your vet right away." (2.45 s) | Card "Ate something it shouldn't? / Call your vet right away." Noodle sits, alone, calm. |
-| 21.92 s | game | "In Doodle Doggo, you can't cook or feed anything toxic." (3.3 s) | Card "In Doodle Doggo you can't cook / or feed anything toxic" + yellow pill "save this for the holidays". The game's Turkey & Cranberry Bites; green tick; the game's "cooked" sting. |
-| 25.57 s | end | (music fades) | Our standard end card (`brand/kids/endcard.js` `endCard('tall', handles(), LOGO_INNER)`): the logo, doodledoggo.app, Instagram @doodledoggo.app, X @doodledoggoapp, YouTube @DoodleDoggoApp with icons, 2.5 s. |
+| 0.10 s | hook | "Stop feeding your dog the turkey skin. Here's what to share instead." (3.78 s) | Hook card: "Stop feeding your dog / the turkey skin." + red "Here's what to share instead." Noodle begs; a roast turkey leg with its skin peeling back; the red crayon cross draws on. |
+| 5.80 s | skin | "Very fatty. It can upset a dog's tummy." (2.47 s) | Red card "Turkey skin": "very fatty: it can upset / a dog's tummy", small "too much fat is linked to pancreatitis". Noodle sits politely. |
+| 13.25 s | bones | "Cooked bones can splinter." (1.45 s) | Red card "Cooked bones": "they can splinter". Two cooked drumstick bones snapped into splinters; red cross. |
+| 16.50 s | gravy | "Gravy and stuffing often have onion and garlic. Toxic to dogs!" (4.23 s) | Red card "Gravy & stuffing": "often made with onion and garlic, / which are toxic to dogs". A gravy boat and a bowl of stuffing (onion bits, herbs); red cross. |
+| 22.90 s | turkey | "Plain turkey, no skin or bones." (2.1 s) | Green card "Plain turkey": "a little, cooked, / no skin, no bones". The game's torn plain turkey (no cranberries); green tick; Noodle delighted. |
+| 27.55 s | beans | "Plain green beans." (1.21 s) | Green card "Green beans": "plain, nothing on them". Plain green beans on a plate; green tick. |
+| 31.15 s | pumpkin | "Plain pumpkin, not pie filling." (1.98 s) | Green card "Plain cooked pumpkin": "not pie filling". The game's Pumpkin Purée; green tick. |
+| 34.75 s | carrots | "Carrots! Small amounts, nothing added." (2.22 s) | Green card "Carrots": "small amounts, / nothing added". The game's Carrot Sticks; green tick. |
+| 38.27 s | vet | "Ate something it shouldn't? Call your vet right away." (2.7 s) | Card "Ate something it shouldn't? / Call your vet right away." Noodle sits, alone, calm. |
+| 42.92 s | game | "In Doodle Doggo, you can't cook or feed anything toxic." (3.48 s) | Card "In Doodle Doggo you can't cook / or feed anything toxic" + yellow pill "save this for the holidays". The game's Turkey & Cranberry Bites; green tick; the game's "cooked" sting. |
+| 49.57 s | end | (music fades) | Our standard end card (`brand/kids/endcard.js` `endCard('tall', handles(), LOGO_INNER)`): the logo, doodledoggo.app, Instagram @doodledoggo.app, X @doodledoggoapp, YouTube @DoodleDoggoApp with icons, 3 s. |
 
 The cards carry the spoken words (they work as the subtitles).
 
@@ -52,7 +52,7 @@ Not in the game's text: "too much fat is linked to pancreatitis" (common veterin
 ## Remake
 
 ```
-VO_LINES=brand/instagram/launch/turkey_reel/vo_turkey.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro model dir> <vo dir>
+VO_LINES=brand/instagram/launch/turkey_reel/vo_turkey.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro model dir> <vo dir> af_bella 1.0
 ART_ROOT=<a checkout of main> NODE_PATH=$(npm root -g) node brand/instagram/launch/turkey_reel/build_turkey.js <workdir> <vo dir>
 ```
 `ONLY=stills` renders key frames (`<workdir>/stills`), `ONLY=cover` writes `turkey-cover.jpg`, `FRAMES=a-b` re-renders only frames a..b and encodes again with the same sound. The Kokoro model files are never committed.

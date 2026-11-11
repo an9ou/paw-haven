@@ -14,7 +14,7 @@
 // Carrot Sticks; data.people_food.onion / garlic) plus one conservative line (fat and pancreatitis) that is common vet guidance.
 // Every frame: centreCheck(), safeCheck() and apartCheck() (../centre_text.js): no two dogs, items, cards or texts overlap or touch; the
 // build stops on the first miss. 1080 x 1920, 30 fps.
-// Voice: Noodle (Kokoro af_bella 1.1x): VO_LINES=turkey_reel/vo_turkey.json python3 ../friends_reel/vo_friends.py <kokoro dir> <vo dir>.
+// Voice: Noodle (Kokoro af_bella 1.0x, owner 11 Nov 2026: slower): VO_LINES=turkey_reel/vo_turkey.json python3 ../friends_reel/vo_friends.py <kokoro dir> <vo dir> af_bella 1.0.
 // Music: the game's own kitchen music (mods/pawaudio.js) about 11 dB under the voice (~30%), a crayon scratch on each cross, a tick on each tick.
 //
 //   ART_ROOT=<main checkout> NODE_PATH=$(npm root -g) node brand/instagram/launch/turkey_reel/build_turkey.js <workdir> <vo dir>
@@ -161,10 +161,6 @@ const FEST = (() => { let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.4
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
 // ---- the voice and the timeline (each beat as long as its line) ----
-const VOAT = []; let at = 0.1;
-const say = (k, gap) => { VOAT.push({ k, at }); at += VOD[k] + (gap == null ? 0.1 : gap); return VOAT[VOAT.length - 1].at; };
-const B = {}; for (const [k, g] of [['hook', 0.14], ['skin', 0.1], ['bones', 0.1], ['gravy', 0.16], ['turkey', 0.08], ['beans', 0.08], ['pumpkin', 0.08], ['carrots', 0.15], ['vet', 0.15], ['game', 0.35]]) B[k] = say(k, g);
-const LOOP = at, T = LOOP + 2.5, NF = Math.round(T * FPS);
 // the words on the cards (each line follows the voice; the skin card adds the fat and pancreatitis line)
 const NO = 'no', YES = 'yes';
 const BEATS = [
@@ -178,7 +174,13 @@ const BEATS = [
   { k: 'carrots', kind: YES, food: ['carrots'], title: 'Carrots', lines: ['small amounts,', 'nothing added'] },
   { k: 'vet', kind: 'vet', food: [], lines: ["Ate something it shouldn't?", 'Call your vet right away.'] },
   { k: 'game', kind: 'game', food: ['bites'], lines: ["In Doodle Doggo you can't cook", 'or feed anything toxic'], pill: 'save this for the holidays' },
-].map((b) => Object.assign(b, { at: B[b.k] }));
+];
+// the timeline (owner, 11 Nov 2026: "the video can be slower, we need to let the audience read it"): each card stays up until a slow reader is
+// done, at least 1.2 s + 0.35 s a word of its text and never less than its spoken line + 1 s, then a short pause before the next beat
+const VOAT = []; let at = 0.1; const PAUSE = 0.3, B = {}, HOLD = {};
+for (const b of BEATS) { const words = [b.title || '', ...b.lines, b.small || '', b.sub || '', b.pill || ''].join(' ').split(/\s+/).filter(Boolean).length;
+  HOLD[b.k] = Math.max(1.2 + 0.35 * words, VOD[b.k] + 1.0); B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; at += HOLD[b.k] + PAUSE; }
+const LOOP = at - PAUSE + 0.2, T = LOOP + 3.0, NF = Math.round(T * FPS);
 const allText = BEATS.map((b) => [b.title || '', ...b.lines, b.sub || '', b.small || '', b.pill || '', 'share instead', 'not for dogs']).flat().join(' ')
   + ' Stop feeding your dog the turkey skin share these instead';
 
