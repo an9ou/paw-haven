@@ -1329,6 +1329,32 @@ function fmBare(b,th,x0,w,y0){const top=y0+88,hem=y0+124,n=7,P=[[x0-5,top-2],[x0
   [[-6,-30,-.6],[6,-28,.6]].forEach(([dx,dy,a])=>b.sh(rot(E(cx+dx,G+dy,5,2.4,10),a,cx+dx,G+dy),'#7FB86A',{k:.1,hatch:0,hl:0,lw:.6}));
   [[-9,-41],[0,-50],[9,-39]].forEach(([dx,dy],k)=>{b.sh(cloudP(cx+dx,G+dy,6.4,6.2,5,.32,25),k===1?th.b:th.a,{k:.2,hatch:0,hl:0,lw:.7,base:'#FFFFFF'});b.dot(cx+dx,G+dy,1.9,'#FFD56B')});
   b.sh([[cx-9,G],[cx-11,G-12],[cx-7,G-20],[cx+7,G-20],[cx+11,G-12],[cx+9,G]],th.b,{k:.15,hatch:0,hl:0,lw:.85,base:'#FFFFFF',marks:[{pts:[[cx-12,G-12],[cx+12,G-12],[cx+12,G-9],[cx-12,G-9]],fill:'#FFFFFF',op:.8,k:0}]})}
+/* Sakura Market (docs/design/sakura-market.md): the sakura stalls dressed with the real drawings (world B, PawArt.SAKURA_MARKET), like the winter ones:
+   the Sakura Paper Lanterns under the decor awning, the Bento Picnic Table on its counter, the Paper Sakura Tree beside it, the Koinobori Pole in front;
+   five costumes on little hangers and the Petal Crown on the counter; toys in baskets; a treats cart in front (no homes this market) and the picnic
+   blanket on the ground; petals on the roofs and the ground (the falling petals are the game's, 49_market.js, so the scene stays one memoised string).
+   o.lit (after dark): the lanterns glow. The same blank boards (FM_STALL_SIGNS): the game writes the stall names */
+function fmPetalE(b,x,y,r,a){b.sh(rot([[x,y-r],[x+r*.62,y-r*.2],[x+r*.4,y+r*.7],[x,y+r*.45],[x-r*.4,y+r*.7],[x-r*.62,y-r*.2]],a,x,y),'#F7B2C4',{k:.05,hatch:0,hl:0,lw:.5,base:'#FDE0E8'})}
+function fmDressSk(b,th,x0,w,i,lit){const y0=262,top=y0-70+(i===0?FM_LOW0:0),cy=y0+90;
+  if(i===0){
+    fmNest(b,fmPr('sklanterns',{lit}),x0+10,top+40,w-20,(w-20)*80/300,undefined,1);
+    fmNest(b,fmPr('skbento'),x0+w/2-56,cy-114*.7,160*.7,120*.7,undefined,1);
+    fmNest(b,fmPr('sktree'),x0-56,y0+186-194*.6,140*.6,200*.6,'top',1)}
+  else if(i===1){
+    b.ln([[x0+12,top+74],[x0+w-12,top+74]],{w:2.4,col:'#A97E5A'},1);
+    ['Sakura Haori','Sakura Mochi Suit','Butterfly Wings','Spring Knit Cardigan','Hanami Sun Hat'].forEach((n,k)=>{const x=x0+33+k*46;fmHanger(b,x,top+68);fmNest(b,fmIt(n),x-22,top+82,44,44,undefined,1)});
+    fmNest(b,fmIt('Sakura Petal Crown'),x0+w/2-20,cy-28,40,40,undefined,1)}
+  else{
+    fmBasket(b,x0+22,cy-26,92,26);fmBasket(b,x0+136,cy-26,92,26);
+    [['Petal Ball',x0+20,-40],['Squeaky Dango',x0+60,-48],['Plush Koi',x0+140,-44],['Petal Ball',x0+182,-38]].forEach(([n,x,dy])=>fmNest(b,fmIt(n),x,cy+dy,46,46,undefined,1))}
+  fmBoard(b,x0+w/2,y0+124,96)}
+function fmFrontSk(b,th,lit){
+  fmNest(b,fmPr('skblanket'),70,500,220*.62,96*.62,undefined,1);
+  b.sh([[632,512],[702,512],[700,556],[634,556]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});[[640,560],[694,560]].forEach(([x,y])=>b.sh(E(x,y,7,7,12),'#A97E5A',{hatch:0,hl:0,lw:.8}));
+  fmNest(b,fmIt('Sakura Pup Mochi'),642,466,48,48,undefined,1);fmBoard(b,667,428,70);
+  fmNest(b,fmPr('skkoi'),912,340,120*.64,220*.64,undefined,1);
+  [[318,470,.3],[420,540,1.2],[560,500,2],[780,560,.8],[860,470,1.6],[240,580,2.4],[600,590,.5],[980,540,1.1],[40,470,1.9],[700,600,2.6],[150,560,.2],[470,452,1.4]].forEach(([x,y,a])=>fmPetalE(b,x,y,4,a));
+  [[110,226,.5],[240,206,1.7],[560,214,.9],[700,226,2.2],[880,208,1.2],[400,232,.1]].forEach(([x,y,a])=>fmPetalE(b,x,y,3.4,a))}
 function fmStall(b,th,x0,w,theme,i,lit,plain,open){
   const y0=262,top=y0-70+(i===0?FM_LOW0:0);// Winter Market part 6: every theme's decor roof sits low, clear of the place chip
   [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
@@ -1336,7 +1362,7 @@ function fmStall(b,th,x0,w,theme,i,lit,plain,open){
   b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
   b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
   if(open===false){fmBare(b,th,x0,w,y0);return}
-  if(theme==='halloween'&&!plain)fmDressHw(b,th,x0,w,i);else if(theme==='winter'&&!plain)fmDressWm(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
+  if(theme==='halloween'&&!plain)fmDressHw(b,th,x0,w,i);else if(theme==='winter'&&!plain)fmDressWm(b,th,x0,w,i,!!lit);else if(theme==='sakura'&&!plain)fmDressSk(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
 }
 function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
 const FM_ART={
@@ -1356,6 +1382,7 @@ const FM_ART={
   if(theme==='halloween'){[[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s));if(!plain)fmFrontHw(b,th)}
   if(theme==='sakura'){[[90,200],[930,200]].forEach(([x,y])=>b.sh(cloudP(x,y,60,34,7,.18,48),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'}))}
   if(theme==='winter'&&!plain)fmFrontWm(b,th,!!o.lit);
+  if(theme==='sakura'&&!plain)fmFrontSk(b,th,!!o.lit);// Sakura Market
  }],
  fmtent:['-130 -130 260 230','prop',(b,o)=>{const th=fmTh(o);
   b.sh([[-96,40],[-96,-30],[96,-30],[96,40]],th.c,{k:0,hatch:0,hl:0,sh:'#E8C597'});

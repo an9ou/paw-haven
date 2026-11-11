@@ -50,6 +50,9 @@ const FOOD = [
   { n: 'Reindeer Crunch', fest: 'winter', fm: true, cold: true, price: 8, hunger: 10, happy: 10, clean: 5, snack: true, tip: 'Carrot and apple, cut small, with the core and every seed taken out. Apple seeds are not safe for dogs, so not one goes in the bag.', note: '+10 Hunger, +10 Happiness, clean teeth. Carrot sticks and apple pieces, a crunchy reindeer supper.' },
   { n: 'Turkey & Cranberry Bites', fest: 'winter', fm: true, price: 12, hunger: 20, happy: 15, snack: true, tip: 'Plain cooked turkey with no skin, bones, gravy or seasoning, and just a few fresh cranberries. Cranberry sauce is full of sugar, so only the fresh berries go in.', note: '+20 Hunger, +15 Happiness. Little turkey bites, each with a fresh cranberry on top.' },
   { n: 'Frozen Yoghurt Snowballs', fest: 'winter', fm: true, cold: true, price: 9, hunger: 5, happy: 15, bond: 1, snack: true, tip: 'Plain unsweetened yoghurt only, never a sweetened or light pot, which can hide xylitol. Dairy is a treat for dogs, so two or three little snowballs are plenty.', note: '+5 Hunger, +15 Happiness, a little Bond. Round frozen snowballs that crunch, then melt.' },
+  // Sakura Market (docs/design/sakura-market.md): sold only at the Sakura Market, every spring (fest 'sakura', fm, no ed). No real mochi, no salt, no cherry
+  { n: 'Sakura Pup Mochi', fest: 'sakura', fm: true, price: 10, hunger: 10, happy: 15, snack: true, tip: 'Mashed sweet potato tinted pink with a little beetroot, wrapped in a soft cabbage leaf. Real mochi is too sticky for a dog to swallow safely, and pickled sakura leaves are far too salty.', note: '+10 Hunger, +15 Happiness. A soft pink ball in a green leaf, made for dogs.' },
+  { n: 'Hanami Rice Ball', fest: 'sakura', fm: true, price: 12, hunger: 20, happy: 10, snack: true, tip: 'Plain cooked rice with flakes of plain cooked salmon, every bone taken out. No salt, soy sauce or pickled plum, which are all too salty for dogs.', note: '+20 Hunger, +10 Happiness. A little rice ball for the picnic blanket.' },
   // v2.11 Tokyo Trip (V211.md section 5.3): the Nakamise treats in Asakusa, served there like the café (tokyo + fest 'tokyo': never in a town shop or stall)
   { n: 'Sweet Potato Strip', fest: 'tokyo', tokyo: true, price: 15, hunger: 10, happy: 10, snack: true, v211: true, tip: 'Steamed and dried plain sweet potato, nothing added. Cut it into small strips so it is not a choking piece.', note: '+10 Hunger, +10 Happiness. A chewy Asakusa favourite, made for dogs.' },
   { n: 'Dog Senbei', fest: 'tokyo', tokyo: true, price: 12, hunger: 5, happy: 10, snack: true, v211: true, tip: 'A plain rice cracker made for dogs, with no salt and no soy sauce. The ones people eat are far too salty.', note: '+5 Hunger, +10 Happiness. A crunchy round rice cracker.' },
@@ -85,6 +88,10 @@ const TOYS = [
   { n: 'Plush Penguin', fest: 'winter', fm: true, price: 65, bond: 2, note: 'Nap buddy: a round soft penguin to tuck in with. +10% nap Energy.' },
   { n: 'Snowball Ball', fest: 'winter', fm: true, price: 45, bond: 1, note: 'Fetch: a fluffy white ball, a snowball that never melts. 2 coins per return.' },
   { n: 'Present Puzzle Box', fest: 'winter', fm: true, price: 75, bond: 2, note: 'Puzzle: lift the lids of a wrapped present to find the treats inside. +Happiness.' },
+  /* Sakura Market (docs/design/sakura-market.md): sold at the Sakura Market every spring (fm, no ed); HM_TOY_GAME in mods/toys.js, the Petal Ball is ball play (FM_BALLS) */
+  { n: 'Squeaky Dango', fest: 'sakura', fm: true, price: 50, bond: 1, note: 'Squeeze: three soft felt dango balls, pink, white and green, on a felt stick. It squeaks, and nobody eats it.' },
+  { n: 'Petal Ball', fest: 'sakura', fm: true, price: 45, bond: 1, note: 'Fetch: a soft pink ball with crayon petals. 2 coins per return.' },
+  { n: 'Plush Koi', fest: 'sakura', fm: true, price: 65, bond: 2, note: 'Nap buddy: a soft red-and-white carp to tuck in with. +10% nap Energy.' },
   /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
   { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
@@ -152,6 +159,15 @@ const CLOTHES = [
   { n: 'Nutcracker Jacket & Hat', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 3, perk: 'Attention: a red soldier jacket with gold buttons and a tall black hat with a red plume. Stands to attention for snacks.' },
   { n: 'Snowflake Wings', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 2, perk: 'Flutter: pale blue paper snowflakes on a soft strap. No two are the same.' },
   { n: 'Jingle Bell Collar', slot: 'neck', fest: 'winter', fm: true, price: 55, bond: 1, perk: 'Jingle: a soft red felt collar with three little gold bells. Everyone hears you coming.' },
+  /* Sakura Market (docs/design/sakura-market.md): eight costumes sold at the Sakura Market every spring (fm, no ed); perks are flavour only. Drawn in dogs/pawart_dogs.js (SK_OWN) */
+  { n: 'Sakura Petal Crown', slot: 'head', fest: 'sakura', fm: true, price: 55, bond: 1, perk: 'Blossom: a ring of pink paper blossoms on a soft green band.' },
+  { n: 'Hanami Sun Hat', slot: 'head', fest: 'sakura', fm: true, price: 60, bond: 1, perk: 'Shade: a straw hat with a sprig of paper blossom tucked in the band.' },
+  { n: 'Sakura Bandana', slot: 'neck', fest: 'sakura', fm: true, price: 50, bond: 1, perk: 'Spring: a pink bandana scattered with little white blossoms.' },
+  { n: 'Blossom Garland', slot: 'neck', fest: 'sakura', fm: true, price: 55, bond: 1, perk: 'Hanami: a string of paper blossoms, worn like a necklace.' },
+  { n: 'Sakura Haori', slot: 'body', fest: 'sakura', fm: true, price: 80, bond: 2, perk: 'Spring best: a pink haori jacket with white blossoms and a little white tie.' },
+  { n: 'Sakura Mochi Suit', slot: 'body', fest: 'sakura', fm: true, price: 75, bond: 2, perk: 'Squish: a round pink suit wrapped in a big green leaf. A look, not a snack.' },
+  { n: 'Butterfly Wings', slot: 'body', fest: 'sakura', fm: true, price: 70, bond: 1, perk: 'Flutter: yellow and pink felt wings on a soft strap. A hat still fits on top.' },
+  { n: 'Spring Knit Cardigan', slot: 'body', fest: 'sakura', fm: true, price: 65, bond: 1, perk: 'Mild: a soft mint cardigan with blossom buttons, for cool spring mornings.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },

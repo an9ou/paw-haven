@@ -1975,6 +1975,68 @@ NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{
 const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane',
   'Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']);// and the Winter Market 2026 costumes
 HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+/* ---------- Sakura Market costumes (docs/design/sakura-market.md, branch claude/sakura-market): sold at the Sakura Market every spring ----------
+   Two head pieces (HAT2), two neck pieces (NECK2), four body pieces (BODY2; the Butterfly Wings also in BACK2, the Snowflake Wings rig). Each hands
+   the dog back its random stream (SK_OWN below), so the dog under it is the plain dog line for line. Nothing covers the eyes or the nose; every fill
+   has its own ink line or sits inside one; points are kept above the ground line (hmCl). */
+const SKD_PK='#F7B2C4',SKD_PKD='#D9708E',SKD_PKL='#FDE0E8',SKD_WH='#FFF7F9',SKD_GR='#7FB86A',SKD_GRD='#4F8A44',SKD_ST='#F3D58A',SKD_STD='#C9A14E',SKD_MT='#A6DCC6',SKD_MTD='#5E9E84',SKD_YL='#FFD56B';
+// a five-petal paper blossom at c (canvas px), radius z: one shape with its own line, a deep pink dot in the middle
+function skdBloom(h,c,z,col,an,far){const p=[];for(let i=0;i<5;i++){const b=(an||0)*D2R+i*Math.PI*.4;[[.3,-.5],[.7,-.42],[1,-.16],[.84,0],[1,.16],[.7,.42],[.3,.5]].forEach(([u,v])=>{const t=b+v*.62;p.push(hmCl([c[0]+Math.cos(t)*z*u,c[1]+Math.sin(t)*z*u]))})}
+  h.shape(p,far?mix(col,PEN,.25):col,{w:Math.max(1.6,Math.min(2.2,z*.3)),step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2});h.dot(c[0],Math.min(c[1],GY-2),Math.max(1,z*.22),Math.max(1,z*.22),SKD_PKD)}
+/* 1. Sakura Petal Crown: a soft green band over the crown, five paper blossoms along it (pink and white) */
+HAT2['Sakura Petal Crown']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,pts=[];for(let i=0;i<=6;i++){const t=i/6,a=Math.PI*(1-t);pts.push([Math.cos(a)*hx*.84,-hy*.46-Math.sin(a)*hy*.52])}
+  const P=pts.map(HT).map(hmCl);h.line(P,6.4,INK);h.line(P,4,SKD_GR,.3);const z=Math.max(5,Math.min(8.4,hx*.24));
+  [1,2,3,4,5].forEach((i,j)=>skdBloom(h,P[i],z*(j%2?.9:1.05),j%2?SKD_WH:SKD_PK,j*23))};
+/* 2. Hanami Sun Hat: a straw hat (a wide brim, a round crown with weave lines), a pink band and a sprig of paper blossom tucked in it */
+HAT2['Hanami Sun Hat']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.02,-4),W2=hx*.6,H=hy*.5,cap=[];
+  for(let i=0;i<=10;i++){const an=Math.PI+i/10*Math.PI;cap.push([Math.cos(an)*W2*.8,Math.sin(an)*H])}
+  h.shape([[-W2*1.45,5],[-W2*1.1,-2],[W2*1.1,-2],[W2*1.45,5],[W2*1.05,9],[-W2*1.05,9]].map(P).map(hmCl),SKD_ST,{w:3.4,step:8});
+  h.shape(cap.map(P).map(hmCl),SKD_ST,{w:3.6,step:8});
+  h.line([[-W2*.6,-H*.42],[W2*.6,-H*.44]].map(P),1.4,SKD_STD,.2);h.line([[-W2*.72,-H*.15],[W2*.72,-H*.16]].map(P),1.4,SKD_STD,.2);
+  h.line([[-W2*.8,-3],[W2*.8,-3]].map(P),4.4,SKD_PK,.3);
+  const z=Math.max(4.2,Math.min(7,hx*.2)),a=P([W2*.55,-4]),b2=P([W2*.95,-H*.7]);h.line([a,b2],1.8,'#8A5A3A',.2);
+  skdBloom(h,b2,z,SKD_WH,10);skdBloom(h,P([W2*.5,-H*.55]),z*.85,SKD_PK,40)};
+/* 3. Sakura Bandana: a pink bandana with little white blossoms */
+NECK2['Sakura Bandana']=function(h,s,L,HT){const a=neckAnchor(s,HT),t=clampG(a.tip);h.shape([a.l,a.r,t].map(hmCl),SKD_PK,{w:4,step:9});
+  const at=(u,v)=>hmCl([a.l[0]+(a.r[0]-a.l[0])*u+(t[0]-(a.l[0]+a.r[0])/2)*v,a.l[1]+(a.r[1]-a.l[1])*u+(t[1]-(a.l[1]+a.r[1])/2)*v]),z=Math.max(2.6,Math.min(4.2,s.head.rx*.12));
+  [[.32,.28],[.62,.24],[.5,.58]].forEach(([u,v],i)=>skdBloom(h,at(u,v),z,SKD_WH,i*30))};
+/* 4. Blossom Garland: a green string sagging under the chin, paper blossoms all along it (lying down, it rests on the chest) */
+NECK2['Blossom Garland']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*9;return[x,Math.min(y,GY-14)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5,INK);h.line(pts,2.6,SKD_GR,.3);const z=Math.max(3.6,Math.min(5.6,s.head.rx*.16));
+  [0,.2,.4,.6,.8,1].forEach((t,i)=>skdBloom(h,sag(t),z*(i%2?.86:1),i%2?SKD_WH:SKD_PK,i*27))};
+/* 5. Sakura Haori: a pink haori jacket, a darker hem band, a white collar band down the front, white blossoms, a little white tie */
+BODY2['Sakura Haori']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,SKD_PK);h.line(p.slice(-7).map(B).map(hmCl),4.6,SKD_PKD,.4);
+  const a0=hmIn(s,.5,-.86),a1=hmIn(s,.6,.8);h.tube([a0,[(a0[0]+a1[0])/2+3,(a0[1]+a1[1])/2],a1].map(B).map(hmCl),Math.max(3.4,b.ry*.16),'#FFF6E6',{ow:3});
+  const z=Math.max(3.4,Math.min(5.6,b.ry*.2));[[-.5,-.42],[-.1,.3],[.24,-.5],[-.62,.34],[.2,.42]].forEach(([x,y],i)=>skdBloom(h,hmCl(B(hmIn(s,x,y))),z*(i%2?.85:1),SKD_WH,i*31));
+  const k=hmCl(B(hmIn(s,.62,.05)));h.line([[k[0]-4,k[1]-3],[k[0],k[1]],[k[0]-4,k[1]+3]],1.8,'#FFFFFF',.15);h.dot(k[0],k[1],2,2,'#FFFFFF')};
+/* 6. Sakura Mochi Suit: a soft round pale pink suit wrapped in a big green leaf (a look, not a snack: no real mochi for dogs) */
+BODY2['Sakura Mochi Suit']=function(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08,lp=p.map((q,i)=>[q[0]*1.03,q[1]*(i%4===2?1.06:1.03)]);
+  h.shape(lp.map(B).map(hmCl),'#F9C3D2',{w:4.6,step:9});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.25,q[1]]),'#F9C3D2',6);
+  const lf=[[-.78,-.05],[-.5,-.62],[0,-.82],[.5,-.7],[.76,-.32],[.5,.02],[0,.12],[-.5,.1]].map(([x,y])=>hmCl(B(hmIn(s,x,y,.86))));
+  h.shape(lf,SKD_GR,{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3});
+  const v=[[-.74,-.08],[0,-.38],[.72,-.32]].map(([x,y])=>hmCl(B(hmIn(s,x,y,.86))));h.line(v,1.8,SKD_GRD,.2);
+  [[-.3,-.24,-.18,-.56],[.24,-.34,.36,-.62],[-.2,-.26,-.12,.02],[.3,-.34,.34,-.04]].forEach(([x0,y0,x1,y1])=>h.line([hmIn(s,x0,y0,.86),hmIn(s,x1,y1,.86)].map(B).map(hmCl),1.4,SKD_GRD,.15))};
+/* 7. Butterfly Wings: yellow and pink felt wings (an upper and a lower lobe, a spot on each) on a soft strap; body only, so a hat goes on top */
+function skdWing(h,B,root,ang,z,far){const M=q=>{const r2=rot([q[0]*z,q[1]*z],ang);return hmCl(B([root[0]+r2[0],root[1]+r2[1]]))};
+  const up=[[0,0],[-.04,-.42],[-.3,-.84],[-.66,-.9],[-.8,-.62],[-.56,-.16]].map(M),lo=[[0,0],[-.6,-.06],[-.86,.12],[-.7,.36],[-.3,.3]].map(M);
+  h.shape(lo,far?mix(SKD_PK,PEN,.28):SKD_PK,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3});
+  h.shape(up,far?mix(SKD_YL,PEN,.28):SKD_YL,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3});
+  if(!far){const c1=M([-.44,-.6]),c2=M([-.56,.14]);h.dot(c1[0],c1[1],z*.09,z*.08,SKD_PKD);h.dot(c2[0],c2[1],z*.07,z*.06,'#FFFFFF')}}
+BACK2['Butterfly Wings']=function(h,s,L,B){const w=hwWingSet(s,L);skdWing(h,B,w.far,w.fang,w.z*.9,1)};
+BODY2['Butterfly Wings']=function(h,s,L,B){const b=s.body,w=hwWingSet(s,L);
+  const st=[[b.rx*.4,-b.ry*.98],[b.rx*.47,0],[b.rx*.42,b.ry*.95]];h.line(st.map(B).map(hmCl),6,INK,.4);h.line(st.map(B).map(hmCl),3.6,'#B58FD0',.4);
+  h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),2.8,'#B58FD0',.4);
+  wmNearWing(h,s,()=>skdWing(h,B,w.root,w.ang,w.z,0))};
+WING_OVER['Butterfly Wings']=1;
+/* 8. Spring Knit Cardigan: a mint knit with a ribbed hem, a button band down the front with three blossom buttons, little knit v marks */
+BODY2['Spring Knit Cardigan']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,SKD_MT);h.line(p.slice(-7).map(B).map(hmCl),4.6,SKD_MTD,.4);
+  [[-.5,-.3],[-.2,.24],[.1,-.36],[-.62,.3],[.2,.36]].forEach(([x,y])=>{const c=hmCl(B(hmIn(s,x,y)));h.line([[c[0]-2.4,c[1]-1.6],[c[0],c[1]+1.4],[c[0]+2.4,c[1]-1.6]],1.4,SKD_MTD,.1)});
+  const bb=[[.5,-.82],[.56,0],[.5,.8]].map(([x,y])=>hmCl(B(hmIn(s,x,y,.86))));h.line(bb,2,SKD_MTD,.3);
+  const z=Math.max(3.2,Math.min(4.8,b.ry*.17));[[.5,-.5],[.56,0],[.52,.46]].forEach(([x,y],i)=>skdBloom(h,hmCl(B(hmIn(s,x,y))),z,i%2?SKD_WH:SKD_PK,i*25))};
+// the v2.18.1 rule: each draw hands the dog back its random stream
+const SK_OWN=['Sakura Petal Crown','Hanami Sun Hat','Sakura Bandana','Blossom Garland','Sakura Haori','Sakura Mochi Suit','Butterfly Wings','Spring Knit Cardigan'];
+[HAT2,NECK2,BODY2,BACK2].forEach(R=>SK_OWN.forEach(n=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+OUT.head.push('Sakura Petal Crown','Hanami Sun Hat');OUT.neck.push('Sakura Bandana','Blossom Garland');OUT.body.push('Sakura Haori','Sakura Mochi Suit','Butterfly Wings','Spring Knit Cardigan');
 
 // draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
 function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.cy=h.cy;if(h.wet)g.wet=1;plain(g);const e=h.r.st();h.r.st(st);draw(h);h.r.st(e)}

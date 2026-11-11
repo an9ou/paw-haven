@@ -2908,7 +2908,9 @@
   /* v2.17.1 Halloween Market toys: each plays an older toy's game with its own look (the game asks A.itemSVG for the old toy's picture and gets the new one) */
   var HM_TOY_GAME = { 'Squeaky Bat': 'Squeaky Duck', 'Pumpkin Ball': 'Tennis Ball', 'Rope Mummy': 'Rubber Chicken', 'Glow-in-the-Dark Bone': 'Glow Ball', 'Soft Spider Plush': 'Plush Bone',
     /* Winter Market 2026 (docs/design/winter-market.md part 3): sold every December */
-    'Squeaky Snowman': 'Squeaky Duck', 'Candy-Cane Rope': 'Rope Tug', 'Plush Penguin': 'Plush Bone', 'Snowball Ball': 'Tennis Ball', 'Present Puzzle Box': 'Puzzle Feeder' };
+    'Squeaky Snowman': 'Squeaky Duck', 'Candy-Cane Rope': 'Rope Tug', 'Plush Penguin': 'Plush Bone', 'Snowball Ball': 'Tennis Ball', 'Present Puzzle Box': 'Puzzle Feeder',
+    /* Sakura Market (docs/design/sakura-market.md): sold every spring; the Petal Ball is ball play (49_market.js FM_BALLS), like the Snowball Ball */
+    'Squeaky Dango': 'Squeaky Duck', 'Petal Ball': 'Tennis Ball', 'Plush Koi': 'Plush Bone' };
   // the games that draw their toy themselves get their look here: the tug rope's colours (Rope Tug drawFx), the puzzle's board and lids (props in world_b)
   var HM_TOY_LOOK = {
     'Candy-Cane Rope': { tug: { rope: '#FFFDF8', stripe: '#E2403A', dash: [11, 11], cap: 'butt', knot: '#4FA548', end: '#E2403A' } },
@@ -2922,7 +2924,10 @@
     'Soft Spider Plush': { hint: function (A) { return LT('mod.toys.wm_spider_hint', 'Drag the Soft Spider Plush over to {dn}.', { dn: A.DN }); } },
     // Winter Market
     'Squeaky Snowman': { hint: function (A) { return LT('mod.toys.wm_snowman_hint', '{touch, select, yes {Tap the snowman to squeak it. {dn} might have opinions.} other {Click the snowman to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: A.DN }); } },
-    'Plush Penguin': { hint: function (A) { return LT('mod.toys.wm_penguin_hint', 'Drag the Plush Penguin over to {dn}.', { dn: A.DN }); } }
+    'Plush Penguin': { hint: function (A) { return LT('mod.toys.wm_penguin_hint', 'Drag the Plush Penguin over to {dn}.', { dn: A.DN }); } },
+    // Sakura Market
+    'Squeaky Dango': { hint: function (A) { return LT('mod.toys.sk_dango_hint', '{touch, select, yes {Tap the dango to squeak it. {dn} might have opinions.} other {Click the dango to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: A.DN }); } },
+    'Plush Koi': { hint: function (A) { return LT('mod.toys.sk_koi_hint', 'Drag the Plush Koi over to {dn}.', { dn: A.DN }); } }
   };
   Object.keys(HM_TOY_GAME).forEach(function (n) {
     var base = HM_TOY_GAME[n], lk = HM_TOY_LOOK[n] || {}, f = function (A) {

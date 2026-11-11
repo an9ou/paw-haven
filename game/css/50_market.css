@@ -14,3 +14,14 @@ html[data-layout="phone"] .panel.fm-pop .fm-foot{font-size:15px;margin-bottom:12
 html[data-layout="phone"] .fm-pop .fm-grid{max-height:none}
 html[data-layout="phone"] .fm-pop .fm-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 html[data-layout="phone"] .fm-pop .fm-tabs .btn{flex:none;font-size:16px}
+
+/* Sakura Market (docs/design/sakura-market.md): petals drifting down over the market scene (49_market.js fmPetals) */
+.fm-petal { transform-box: fill-box; transform-origin: 50% 50%; animation: fmPetal 12s linear infinite; opacity: 0; }
+@keyframes fmPetal {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: .95; }
+  50% { transform: translate(34px, 300px) rotate(200deg); }
+  92% { opacity: .9; }
+  100% { transform: translate(-10px, 600px) rotate(420deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .fm-petal { animation: none; opacity: 0; } }

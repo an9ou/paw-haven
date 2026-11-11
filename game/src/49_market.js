@@ -37,7 +37,10 @@ const FM_MARKETS = [
       toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs'] } },
   { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
-  { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], todo: true, items: {} }
+  { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], // Sakura Market (docs/design/sakura-market.md): every spring, no edition
+    items: { decor: ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Koinobori Pole'],
+      clothes: ['Sakura Petal Crown', 'Hanami Sun Hat', 'Sakura Bandana', 'Blossom Garland', 'Sakura Haori', 'Sakura Mochi Suit', 'Butterfly Wings', 'Spring Knit Cardigan'],
+      toys: ['Squeaky Dango', 'Petal Ball', 'Plush Koi'], treats: ['Sakura Pup Mochi', 'Hanami Rice Ball'] } }
 ];
 const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // the Harvest Market alone: the Halloween colours, plain (fmSceneArt). TODO (V2171.md 8): a harvest stall re-colour
 const FM_SPOT = [1010, 720]; // the tent on the v2.15 town map (2400 x 1500), beside the Town Square
@@ -125,19 +128,19 @@ function fmSync() {
 const FM_SVG = new Map();
 function fmSceneSvg(th, phase, lit, plain, open) {
   const key = th + '|' + phase + '|' + (lit ? 1 : 0) + (plain ? '|plain|' + open.map((x) => (x ? 1 : 0)).join('') : ''); if (FM_SVG.has(key)) return FM_SVG.get(key);
-  let sv = artReal('prop', 'fmscene', Object.assign({ theme: th }, th === 'winter' ? { lit } : {}, plain ? { plain: true, open } : {}));
-  if (th === 'winter' && sv && window.PawArt && typeof PawArt.tint === 'function') sv = PawArt.tint(sv, { time: phase, lit });
+  let sv = artReal('prop', 'fmscene', Object.assign({ theme: th }, th === 'winter' || th === 'sakura' ? { lit } : {}, plain ? { plain: true, open } : {}));
+  if ((th === 'winter' || th === 'sakura') && sv && window.PawArt && typeof PawArt.tint === 'function') sv = PawArt.tint(sv, { time: phase, lit });
   sv = sv ? place(sv, 0, 0, 1000, 600) : '';
   if (sv) { if (FM_SVG.size >= 4) FM_SVG.delete(FM_SVG.keys().next().value); FM_SVG.set(key, sv); }
   return sv;
 }
 // the scene: the themed stalls, the sign with the market's name and closing date, the three stalls as buttons
 function fmSceneArt() {
-  const o = fmMain(), mt = o ? o.m.theme : 'halloween', th = FM_THEME_ART[mt] || 'halloween', W = th === 'winter', lit = W && isNight(), cats = fmCats();
+  const o = fmMain(), mt = o ? o.m.theme : 'halloween', th = FM_THEME_ART[mt] || 'halloween', W = th === 'winter' || th === 'sakura', lit = W && isNight(), cats = fmCats();
   // Winter Market review: a market drawn in another market's art (the Harvest Market on its own, 16 to 30 Nov: the Halloween colours) is plain:
   // plain goods, no dressing, boards or front stands. Its three stalls sell what the market has: a stall's own kind first, the other kinds fill the
   // empty stalls from the right (New Year: decor, then treats on the third), and a stall with nothing to sell is a bare counter and no button
-  const plain = th !== mt || !(th === 'halloween' || W), pick = FM_STALLS.map(([c]) => (cats.includes(c) ? c : null));
+  const plain = th !== mt || !(th === 'halloween' || W || th === 'sakura'), pick = FM_STALLS.map(([c]) => (cats.includes(c) ? c : null));
   if (plain) { const rest = cats.filter((c) => !pick.includes(c)); for (let i = pick.length - 1; i >= 0 && rest.length; i--) if (!pick[i]) pick[i] = rest.shift(); }
   // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
   const sv = fmSceneSvg(th, W ? timePhase() : '', lit, plain, pick.map(Boolean));
@@ -152,7 +155,13 @@ function fmSceneArt() {
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
   return (sv || '<rect width="1000" height="600" fill="#FFFBF3"/>')
-    + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${stalls}${front}`;
+    + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${th === 'sakura' && !plain ? fmPetals() : ''}${stalls}${front}`;
+}
+// Sakura Market (docs/design/sakura-market.md): petals drifting down over the scene, a CSS animation (50_market.css .fm-petal; still under
+// prefers-reduced-motion). Outside the memoised scene string, no taps (pointer-events none). Each petal has its own ink line round its pink fill
+const FM_PETALS = [[60, 0, 11], [170, -4, 13], [290, -8, 10], [420, -2, 12], [530, -6, 14], [640, -9, 11], [760, -1, 13], [870, -5, 10], [960, -7, 12], [350, -11, 15], [700, -12, 12], [120, -10, 14]];
+function fmPetals() {
+  return '<g class="fm-petals" pointer-events="none" aria-hidden="true">' + FM_PETALS.map(([x, d, t], i) => `<g transform="translate(${x} -16)"><path class="fm-petal" style="animation-delay:${d}s;animation-duration:${t}s" d="M0 -5Q4 -3 3 2L0 1L-3 2Q-4 -3 0 -5Z" fill="${i % 3 ? '#F7B2C4' : '#FFF3F6'}" stroke="#C97A90" stroke-width=".8" stroke-linejoin="round"/></g>`).join('') + '</g>';
 }
 function fmPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return; pb.querySelectorAll('[data-fmb]').forEach((b) => b.remove());
@@ -245,7 +254,8 @@ async function fmBuy(p, it) {
 const FM_BALLS = {
   'Squeaky Ghost': { g: 1700, bounce: 0.45, fric: 3, spin: 0.6, vzK: 0.95 },
   'Pumpkin Ball': { g: 1850, bounce: 0.5, fric: 2.6, spin: 0.9, vzK: 1 }, // a squishy pumpkin: bounces a bit wonky
-  'Snowball Ball': { g: 1800, bounce: 0.38, fric: 3.2, spin: 0.4, vzK: 0.95 } // fluffy: a softer bounce
+  'Snowball Ball': { g: 1800, bounce: 0.38, fric: 3.2, spin: 0.4, vzK: 0.95 }, // fluffy: a softer bounce
+  'Petal Ball': { g: 1800, bounce: 0.46, fric: 2.8, spin: 0.7, vzK: 1 } // Sakura Market: a soft rubber ball
 };
 Object.keys(FM_BALLS).forEach((n) => {
   if (!BL_TOYS[n]) BL_TOYS[n] = Object.assign({ prop: ['item', n], coin: 2, hap: 15, en: 1 }, FM_BALLS[n]);
