@@ -27,9 +27,9 @@ bank account in HKD; the prices stay in USD. Buyers in China, Russia and a few o
    | `sprinkler` | Garden Sprinkler | 0.99 |
    | `bowl` | Auto Water Bowl | 0.99 |
    | `comfort` | Comfort Kit | 2.99 |
-   | `coins_1k` | 1,000 coins | 0.99 |
-   | `coins_3k` | 3,000 coins | 1.99 |
-   | `coins_8k` | 8,000 coins | 4.99 |
+   | `coins_1k` | 2,000 coins (1,000 until v2.24.2) | 0.99 |
+   | `coins_3k` | 5,000 coins (3,000 until v2.24.2) | 1.99 |
+   | `coins_8k` | 14,000 coins (8,000 until v2.24.2) | 4.99 |
 
    Turn on Adaptive Pricing if you want local currencies at checkout. Note each price id (`price_...`).
 4. Add a webhook endpoint (Developers > Webhooks): URL `https://<the API Worker's address>/shop/webhook`, events
