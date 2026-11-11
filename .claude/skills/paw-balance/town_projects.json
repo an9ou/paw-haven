@@ -1,0 +1,10 @@
+{
+  "note": "Town projects (improvement-plan.md release C, economy-review.md rec. 3): pay in any amount on a board; level 1 = open from the start",
+  "sinks": [
+    { "n": "Town project: Fountain", "price": 5000, "level": 1, "cat": "project" },
+    { "n": "Town project: Bandstand", "price": 10000, "level": 1, "cat": "project" },
+    { "n": "Town project: Sakura Avenue", "price": 15000, "level": 1, "cat": "project" },
+    { "n": "Town project: Lighthouse", "price": 25000, "level": 1, "cat": "project" }
+  ],
+  "sources": []
+}
