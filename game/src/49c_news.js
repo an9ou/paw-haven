@@ -152,9 +152,20 @@ const NEWS_V2241 = { // v2.24.1 "Delivered!" (V224.md): the delivery card, Geral
   ]
 };
 const nwV2241Due = () => SHOP_LIVE && jstISO() >= NEWS_V2241.date;
+const NEWS_V225 = { // v2.25 "Glad you're back" (V225.md): the While you were out page, days played forever, the welcome-back letter, the tomorrow line
+  id: '2.25', date: '2026-11-12', c: '#FCE6C8', d: 'heart', pic: 'dog',
+  title: () => tt('nw.v225.title', "Glad you're back!"),
+  items: [
+    { ic: () => nwSafe(() => ICON('sleep')), tx: () => tt('nw.v225.away', 'Back after a few hours? Your dog greets you with a diary page of what it got up to, and once a day a small gift') },
+    { ic: () => fwCalIcon(), tx: () => tt('nw.v225.days', 'The calendar counts every day you play, forever. A missed day costs nothing, and Gerald has gifts at 7, 30, 100 and 365 days') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v225.letter', 'Away for a few days? Gerald keeps your spot warm and sends a letter with a treat bag and coins') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v225.tmrw', 'Finish the day\'s little jobs and you get a hint of what tomorrow brings') }
+  ]
+};
+const nwV225Due = () => jstISO() >= NEWS_V225.date;
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

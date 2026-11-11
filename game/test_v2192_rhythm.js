@@ -195,9 +195,10 @@ require('./test_lib').run('v2192_rhythm', async (t) => {
 
   sec('7f. the news order with FR_LIVE on (2.19.2 shipped 4 Nov, Friends 7 Nov, so Friends is the newest): newest date first, a newer version first on the same date');
   {
-    const nl = await ev(() => { const N = window.__paw.nw; const a = N.v219(); N.add({ id: '9.9.10' }); N.add({ id: '9.9.9' }); const b = N.list(); N.drop(); N.drop(); return { a: a.slice(0, 3).join(), b: b.slice(0, 4).join(), c: N.list().slice(0, 2).join(), latest: N.latest() }; });
+    // later releases (2.20 on) sit above these entries, so the check reads the relative order of 2.19 / 2.19.3 / 2.19.2 and the two test entries on top
+    const nl = await ev(() => { const N = window.__paw.nw; const a = N.v219(), top = a[0]; N.add({ id: '9.9.10' }); N.add({ id: '9.9.9' }); const b = N.list(); N.drop(); N.drop(); const f = a.filter((x) => ['2.19', '2.19.3', '2.19.2'].includes(x)); return { a: f.join(), top, b: b.slice(0, 3).join(), c: N.list()[0], latest: N.latest() }; });
     ok(nl.a === '2.19,2.19.3,2.19.2', 'with Friends live (v2.19.3 Puppy start sits between, 5 Nov): ' + nl.a);
-    ok(nl.b === '9.9.10,9.9.9,2.19,2.19.3' && nl.c === '2.19,2.19.3' && nl.latest === '2.19', 'same date: the newer version first; drop takes the newest: ' + JSON.stringify(nl));
+    ok(nl.b === '9.9.10,9.9.9,' + nl.top && nl.c === nl.top && nl.latest === nl.top, 'same date: the newer version first; drop takes the newest: ' + JSON.stringify(nl));
   }
 
   sec('7g. the nap line counts a real minute; no "new day" toast on the first run after the update');
