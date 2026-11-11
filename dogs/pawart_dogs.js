@@ -1547,6 +1547,16 @@ NECK2['Golden Collar']=function(h,s,L,HT){// a shiny gold collar (a gold line in
   h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.8,INK,.1);
   h.shape(circ(c[0],c[1],R,R*.96,10),'#F2B83A',{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});
   h.heart(c[0],c[1]+.6,R*.62,'#F28FA5')};
+/* v2.28 Stories and stars (V228.md 2): the Star Collar, the 10 Bond stars keepsake (a new name only: old renders never reach it).
+   The Golden Collar's shape: a blue crayon collar (a blue line inside its own ink), a pale shine, and a gold star tag with a little ring */
+NECK2['Star Collar']=function(h,s,L,HT){
+  const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.4,INK);h.line(pts,5,'#4F8FD6',.4);h.line(pts.slice(1,5).map(q=>[q[0],q[1]-1]),1.4,'#CFE3F7',.3);
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c0=sag(lie?.2:.56),R=Math.max(7,Math.min(9.5,s.head.rx*.3)),c=[c0[0]+(lie?-2:0),Math.min(c0[1]+(lie?2:R+3),GY-R-1)];
+  if(lie)return;// lying down, the tag is tucked under the chin
+  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.8,INK,.1);
+  star5(h,c,R,'#FFD23A',2.2)};
+OUT.neck.push('Star Collar');
 /* ---------- v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece ----------
    TOP2 holds the costume's head piece, drawn after the neck item in place of the hat (frame drops the head-slot hat while one is worn).
    Neck items: the Pumpkin Patch Suit's leaf collar and the Little Bat Costume's ruffle sit over the neck item (it peeks out under them);

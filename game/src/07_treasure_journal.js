@@ -33,6 +33,7 @@ function openJournal(tab) {
   const ddJ = typeof ddOn === 'function' && ddOn(); if (ddJ) tabs.push(['diary', tt('dd.tab_diary', 'Diary')], ['stickers', tt('dd.tab_stickers', 'Stickers')]); // v2.17 (48_dogdays.js)
   if (jTab === 'calendar' && !(typeof fwOn === 'function' && fwOn())) jTab = 'profile';
   if ((jTab === 'diary' || jTab === 'stickers') && !ddJ) jTab = 'profile';
+  const stJ = typeof stOn === 'function' && stOn(); if (stJ) tabs.push(['stories', tt('st.tab', 'Stories')]); else if (jTab === 'stories') jTab = 'profile'; // v2.28 (56_stories.js)
   let body = '';
   if (jTab === 'family') body = journalFamily();
   else if (jTab === 'coats') body = journalCoats();
@@ -40,6 +41,7 @@ function openJournal(tab) {
   else if (jTab === 'calendar') body = fwCalHTML(); // v2.16 (47_firstweek.js)
   else if (jTab === 'diary') body = ddDiaryHTML(); // v2.17 (48_dogdays.js)
   else if (jTab === 'stickers') body = ddBookHTML();
+  else if (jTab === 'stories') body = stJournalHTML(); // v2.28 (56_stories.js)
   else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : `<p class="small">${tt('journal.guide_soon', 'Gerald is still writing the guide.')}</p>`; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');

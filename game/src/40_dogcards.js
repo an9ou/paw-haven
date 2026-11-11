@@ -413,7 +413,7 @@ function dcSettings(force) {
     <p class="small">${esc(tt('cards.privacy', "Other players see your card name, your dogs' drawings, breeds, coats, outfits, card names and paws. Never your email. Turning it off deletes the card."))}</p>
     <div class="dc-name">${dcSel('dcA', DC_WORDS_A, ed.name[0], tt('cards.card_name', 'Card name'), (i) => dcWordA(i))}${dcSel('dcB', DC_WORDS_B, ed.name[1], tt('cards.and', 'and'), (i) => dcWordB(i))}<button class="btn" data-dcset="rand">${esc(tt('cards.pick_for_me', 'Pick for me'))}</button></div>
     <p class="small">${esc(tt('cards.up_to', '{n, plural, one {Up to # dog.} other {Up to # dogs.}} A dog shows its own name when the list has it.', { n: DC_MAX_DOGS }))}</p><div class="dc-pick">${rows}</div>
-    <h4 class="clh">${esc(tt('cards.preview', 'Preview'))}</h4><div id="dcPrev"></div><p class="clmsg" id="dcMsg" role="status"></p></div>`,
+    <h4 class="clh">${esc(tt('cards.preview', 'Preview'))}</h4><div id="dcPrev"></div>${typeof stPcBtnHTML === 'function' ? `<div class="st-pcrow">${stPcBtnHTML('card')}</div>` : ''}<p class="clmsg" id="dcMsg" role="status"></p></div>`,
   { cls: 'dcpop dcsetpop', foot: `<button class="btn" id="dcSetBack">${esc(tt('cards.back', 'Back'))}</button><button class="btn yes big" id="dcSave">${esc(tt('cards.save', 'Save'))}</button>` });
   const msg = (t) => { const m = $('#dcMsg', p); if (m) m.textContent = t || ''; };
   const read = () => {

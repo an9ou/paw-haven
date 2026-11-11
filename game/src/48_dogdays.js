@@ -145,6 +145,7 @@ function ddFrameName(f) {
   if (f === 'b5') return tt('dd.fr_b5', 'Bond 5: stars');
   if (f === 'b7') return tt('dd.fr_b7', 'Bond 7: flowers');
   if (f === 'nbw') return tt('ms2n.frame', 'First week together'); // v2.20: the notebook's day 7 (24e_notebook.js)
+  if (/^k_/.test(f) && typeof stFrameName === 'function' && stFrameName(f)) return stFrameName(f); // v2.28: the story keepsakes (56_stories.js)
   return tt('dd.fr_page', 'Stickers: {page}', { page: ddPageTitle(+f.slice(1)) });
 }
 function ddGiftLabel(L) { return L === 10 ? tlist(DD_B10.map((n) => shNameAny(n))) : tt('dd.fr_label', 'a photo frame ({name})', { name: ddFrameName(DD_BT[L]) }); }
@@ -197,7 +198,7 @@ function ddTrackHTML(d) {
   }
   const pts = d.bond ? d.bond.pts : 0, nx = BOND_TH[lv] || 0;
   const sub = lv >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('dd.tr_sub', '{pts} of {max} Bond points to Bond {n}. Bond grows with care, play, walks and wishes.', { pts: tnum(pts), max: tnum(nx), n: lv + 1 });
-  return `<div class="dd-track"><p class="small dd-trsub">${esc(sub)}</p><ol class="dd-ladder">${rows.join('')}</ol></div>`;
+  return `<div class="dd-track"><p class="small dd-trsub">${esc(sub)}</p><ol class="dd-ladder">${rows.join('')}</ol>${lv >= 10 && typeof stTrackHTML === 'function' ? stTrackHTML(d) : ''}</div>`; // v2.28: the Bond stars at Bond 10 (56_stories.js)
 }
 function ddTrackOpen(id) {
   if (!ddReady()) return; const d = (id && dogById(id)) || D(); SFX.click();
@@ -326,7 +327,7 @@ function ddDiaryHTML() {
   const date = p.now ? tt('dd.d_today', 'Today so far') : tdate(new Date(p.d + 'T12:00:00'), { day: 'numeric', month: 'long' });
   return `<div class="dd-book"><article class="dd-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: p.n }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${dog ? headSVG(dog) : art('dogHead', p.k)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: p.n }))}</b><span class="small">${esc(tt('core.status_day', 'Day {day}', { day: p.g }))} · ${esc(date)}</span></span></header>
     <div class="dd-ptext">${ddPageLines(p).map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true">${ddDoodle(p)}</div></article>
-    ${ddFlip('ddpg', i, P.length, tt('dd.d_page', 'Page {i} of {n}', { i: i + 1, n: P.length }))}</div>`;
+    ${ddFlip('ddpg', i, P.length, tt('dd.d_page', 'Page {i} of {n}', { i: i + 1, n: P.length }))}${typeof stPcBtnHTML === 'function' ? `<div class="st-pcrow">${stPcBtnHTML('diary', p.id, p.g)}</div>` : ''}</div>`; // v2.28: the postcard (56_stories.js)
 }
 function ddFlip(attr, i, n, label) {
   return `<div class="dd-flip"><button class="btn" type="button" data-${attr}="${i - 1}"${i <= 0 ? ' disabled' : ''}><span aria-hidden="true">‹</span> ${esc(tt('dd.prev', 'Back'))}</button><span class="dd-pgn">${esc(label)}</span><button class="btn" type="button" data-${attr}="${i + 1}"${i >= n - 1 ? ' disabled' : ''}>${esc(tt('dd.next', 'Next'))} <span aria-hidden="true">›</span></button></div>`;
