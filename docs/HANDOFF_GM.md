@@ -1,4 +1,14 @@
-# Game Manager handoff — CURRENT (10 Nov 2026)
+# Game Manager handoff — CURRENT (12 Nov 2026, GM session_01D6KLY5GYw9NHBp7zSgPZ6Z)
+
+- **Live:** v2.25 "Glad you're back" (12 Nov JST) on main 1987a7bd, itch.io #2357606 (2.25), doodledoggo.app (/play/ md5 = dist/itch). Before it: v2.24.2 "Better deals" (KIND SHOP; coin prices x2.5, packs x2; Stripe product rename done by KIND SHOP after /play/ went live), v2.24.1 "Delivered!".
+- **Owner decisions 11 Nov:** improvement plan docs/design/improvement-plan.md (releases A-E); models = Opus + Sonnet mix (paw-fixer on Sonnet, no Fable for now; BUILDING.md); up to 5+ agents in parallel is fine ("speed up more"); all dog pictures redrawn from current art, old screenshots deleted (913a3539). Site deploys need the owner to approve the prompt each time (the classifier blocks it): ask in the choice window.
+- **Built, waiting (each on its own branch, NOT on main):** B v2.26 Yard visitors `claude/yard-visitors` 6ed2a579 (V226.md; to do: translate yv.* + 4 toy names, NEWS, hook `visitors:arrived` into v2.25's While-you-were-out page, 3 reviews, owner go-ahead+date). C v2.27 Town projects `claude/town-projects` e3ce2a25 (V227.md; art review must fix: the new Fountain sits under the Square's existing dog-statue fountain = two fountains, the Bandstand crowds the right building; then translate pr.*, NEWS, reviews, owner OK on prices 5k/10k/15k/25k). Merge order B then C, then one translation batch (paw-i18n skill).
+- **Still building (agents of the old GM; results on their branches):** D Sakura Market `claude/sakura-market` (festival update: owner's go-ahead AND date, no 5-minute default; window 25 Mar-10 Apr), E v2.28 Stories and stars `claude/stories-stars` (V228.md), skills `claude/skills-play` (paw-balance + paw-playtest, first runs in docs/design/balance-2026-11-11.md and docs/reviews/playtest-2026-11-11.md). Skills paw-release, paw-i18n, paw-fit are on main.
+- **Open:** Cloudflare token needs "Workers Routes: Edit" (owner) to enable the site split deploy (site 9.86 of 10 MB). Branch wip/v225-backup could not be deleted through the proxy; delete it on GitHub. Docs out of date (from the skills agent): docs/i18n/coord/FIT.md (11 languages), docs/i18n/FONTS.md (old budget), docs/FILES.md (yue still "hidden"), BUILDING.md release checklist (artifact steps).
+- **Sessions:** Marketing session_01D6KLY4Gxx78VuyjbRFaSgb (briefed for 2.24.1, 2.24.2, 2.25 and the art refresh). KIND SHOP session_01D6KLY2Goy5dDEpMAAXbEKD.
+- **Recipe:** .claude/skills/paw-release/SKILL.md. Run releases from a separate `git worktree` when agents have uncommitted work in the main tree.
+
+# Game Manager handoff — 10 Nov 2026 (history)
 
 **Start here (handover from GM session_01D6KLY6QbtZ2YkSVej5r1gh, 10 Nov).** Everything older below is history.
 - **Live:** v2.24 "Kind shop" (9 Nov) on main 83b038a8, doodledoggo.app (/play/ md5 = dist/itch/index.html) and itch.io build #2342344 (2.24). All gates on: FR_LIVE, MS2_LIVE, YUE_LIVE, SHOP_LIVE. pawhaven-api runs with the live Stripe keys; never touch Stripe secrets or money actions (the owner does refunds in the Stripe Dashboard).
