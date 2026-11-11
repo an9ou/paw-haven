@@ -20,18 +20,26 @@
 //   ART_ROOT=<main checkout> NODE_PATH=$(npm root -g) node brand/instagram/launch/turkey_reel/build_turkey.js <workdir> <vo dir>
 //   ONLY=stills: key frames only (WORK/stills). ONLY=cover: turkey-cover.jpg. FRAMES=a-b: re-render only frames a..b, then encode again.
 //   Output next to this file: doodle-doggo-turkey-skin.mp4
+// REDNOTE=1 (owner, 11 Nov 2026, after approving the English cut): the RedNote cut, doodle-doggo-turkey-skin-rednote.mp4. Every word in Simplified
+// Chinese (the game's own zh-Hans food words: 火鸡, 肉汁, 煮过的骨头容易碎成尖片, 四季豆, 南瓜派馅料, 洋葱和大蒜), Noodle's Mandarin voice
+// (../friends_reel/vo_friends_zh.py with VO_LINES=turkey_reel/vo_turkey_zh.json, zf_073 1.0x), subtitles of at most 14 characters, LXGW WenKai.
+// The owner: "normal version of video, no need to follow the safe zone": the content is centred on the frame (x 540) with ~60 px margins; the
+// centring, no-overlap and decoration checks stay. It ends on the RedNote end card (brand/kids/endcard.js endCardRN) with the logo, 治愈系蜡笔狗狗游戏
+// and only "搜 Doodle Doggo App": no QR, no link, no domain, no handles (docs/marketing/README.md, the RedNote rule). ONLY=cover writes the 3:4
+// RedNote cover brand/rednote/rednote-14-turkey.jpg.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'turkey_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', YEL = '#FFE3A1', RED = '#D2473C', GREEN = '#4E9A54';
-const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_turkey.json'), 'utf8'));
-for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from vo_turkey.json: ' + k);
+const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
+const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur, VOFILE = RN ? 'vo_turkey_zh.json' : 'vo_turkey.json';
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from ' + VOFILE + ': ' + k);
 
 // ---- the facts, checked against the game's own text (main) so the Reel says what the game teaches ----
 const EN = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'en.json'), 'utf8'));
@@ -45,6 +53,11 @@ must('data.people_food.onion.why', /Onions \(and garlic/);
 must('data.food.pumpkin_puree.tip', /Plain cooked pumpkin only, never pie filling/);
 must('data.food.carrot_sticks.tip', /safe raw or cooked/);
 must('data.gd_steps.garden.t', /Nothing toxic can be planted/);
+// the RedNote cut: the same facts in the game's own zh-Hans words
+const ZH = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8'));
+const mustZ = (k, w) => { if (!(ZH[k] || '').includes(w)) throw new Error('the zh-Hans game text changed: ' + k + ' no longer says ' + w); };
+if (RN) { mustZ('data.food.turkey_cranberry_bites.tip', '不带皮、骨头、肉汁'); mustZ('data.food.warm_bone_broth.tip', '煮过的骨头容易碎成尖片'); mustZ('data.food.snow_day_stew.note', '四季豆');
+  mustZ('data.food.snow_day_stew.tip', '肉汁和油腻的剩菜'); mustZ('data.food.turkey_meatballs.tip', '不放洋葱和大蒜'); mustZ('data.food.pumpkin_puree.tip', '绝对不用南瓜派馅料'); }
 
 // ---- the game's art (main), with the poses gliding between the game's drawings (the same patch as safe_reel/build_safe.js) ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -133,8 +146,8 @@ const dogSyms = Object.keys(LOOK).map((id) => `<symbol id="${id}_0" overflow="vi
 // food and Noodle; the decorations live only in the margins and are checked against everything else on every frame (data-deco): crayon
 // bunting along the top edge above the cards, a cranberry plaid tablecloth along the bottom under Noodle's feet, autumn leaves and sparkles
 // down the right margin and a few sparkles on the left. Every fill sits inside its own pencil line (the plaid is clipped to the cloth).
-const FEST = (() => { let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.48" r="0.75"><stop offset="0" stop-color="#FFE7A8"/><stop offset="0.6" stop-color="#FFD27A"/><stop offset="1" stop-color="#F7B65A"/></radialGradient>
-  <clipPath id="cloth"><path d="${(() => { let d = 'M-10 1478'; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} 1508 ${x + 60} 1478`; return d + ` L${W + 10} ${H + 10} L-10 ${H + 10} Z`; })()}"/></clipPath></defs>`;
+const CLOTH = RN ? 1650 : 1478, FEST = (() => { let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.48" r="0.75"><stop offset="0" stop-color="#FFE7A8"/><stop offset="0.6" stop-color="#FFD27A"/><stop offset="1" stop-color="#F7B65A"/></radialGradient>
+  <clipPath id="cloth"><path d="${(() => { let d = `M-10 ${CLOTH}`; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} ${CLOTH + 30} ${x + 60} ${CLOTH}`; return d + ` L${W + 10} ${H + 10} L-10 ${H + 10} Z`; })()}"/></clipPath></defs>`;
   s += `<rect width="${W}" height="${H}" fill="url(#glow)"/>`;
   // bunting: three swags of crayon flags along the top edge (y 40..250, above the cards)
   const SW = [[-20, 360], [340, 720], [700, 1100]], COL = ['#C8323C', '#FFF3DA', '#5E9E5A', '#F28A3C'];
@@ -146,24 +159,38 @@ const FEST = (() => { let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.4
         + `<path d="M${(x - 14).toFixed(1)} ${(y + 10).toFixed(1)} L${(x + 4).toFixed(1)} ${(y + 44).toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45"/>`; } });
   s += '</g>';
   // the tablecloth: cranberry plaid on cream, a scalloped top edge
-  s += `<g data-deco="cloth"><g clip-path="url(#cloth)"><rect x="-10" y="1460" width="${W + 20}" height="480" fill="#FFF3DE"/>`;
-  for (let x = 20; x < W; x += 130) s += `<rect x="${x}" y="1460" width="62" height="480" fill="#D9464F" opacity=".55"/>`;
-  for (let y = 1530; y < H; y += 130) s += `<rect x="-10" y="${y}" width="${W + 20}" height="62" fill="#D9464F" opacity=".55"/>`;
-  for (let x = 51; x < W; x += 130) s += `<path d="M${x} 1460 L${x} ${H}" stroke="#9E2430" stroke-width="3" opacity=".5"/>`;
-  s += `</g><path d="${(() => { let d = 'M-10 1478'; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} 1508 ${x + 60} 1478`; return d; })()}" fill="none" stroke="${PEN}" stroke-width="6" stroke-linejoin="round"/></g>`;
+  s += `<g data-deco="cloth"><g clip-path="url(#cloth)"><rect x="-10" y="${CLOTH - 18}" width="${W + 20}" height="${H - CLOTH + 30}" fill="#FFF3DE"/>`;
+  for (let x = 20; x < W; x += 130) s += `<rect x="${x}" y="${CLOTH - 18}" width="62" height="${H - CLOTH + 30}" fill="#D9464F" opacity=".55"/>`;
+  for (let y = CLOTH + 52; y < H; y += 130) s += `<rect x="-10" y="${y}" width="${W + 20}" height="62" fill="#D9464F" opacity=".55"/>`;
+  for (let x = 51; x < W; x += 130) s += `<path d="M${x} ${CLOTH - 18} L${x} ${H}" stroke="#9E2430" stroke-width="3" opacity=".5"/>`;
+  s += `</g><path d="${(() => { let d = `M-10 ${CLOTH}`; for (let x = -10; x < W + 10; x += 60) d += ` Q${x + 30} ${CLOTH + 30} ${x + 60} ${CLOTH}`; return d; })()}" fill="none" stroke="${PEN}" stroke-width="6" stroke-linejoin="round"/></g>`;
   // leaves and sparkles in the side margins
   const leaf = (x, y, r, a, c) => `<g data-deco="leaf" transform="translate(${x} ${y}) rotate(${a}) scale(${r / 30})"><path d="M0 -30 C14 -22 24 -6 18 12 C12 26 4 30 0 34 C-4 30 -12 26 -18 12 C-24 -6 -14 -22 0 -30 Z" fill="${c}" stroke="${PEN}" stroke-width="4.5" stroke-linejoin="round"/><path d="M0 -22 L0 30 M0 -2 L10 -12 M0 10 L-10 0 M0 20 L9 12" stroke="${PEN}" stroke-width="2.6" stroke-linecap="round" opacity=".7" fill="none"/><path d="M0 34 L0 46" stroke="${PEN}" stroke-width="4" stroke-linecap="round"/></g>`;
   const spark = (x, y, r, c) => `<path data-deco="spark" d="M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z" fill="${c || '#FFF6DC'}" stroke="${PEN}" stroke-width="3.4" stroke-linejoin="round"/>`;
-  s += leaf(975, 360, 34, 20, '#E8663A') + spark(1010, 470, 18) + leaf(955, 600, 30, -25, '#C8323C') + leaf(1020, 760, 28, 40, '#F2A93B') + spark(950, 880, 14)
+  if (!RN) { s += leaf(975, 360, 34, 20, '#E8663A') + spark(1010, 470, 18) + leaf(955, 600, 30, -25, '#C8323C') + leaf(1020, 760, 28, 40, '#F2A93B') + spark(950, 880, 14)
     + leaf(990, 1010, 34, -10, '#E8663A') + spark(1030, 1140, 20) + leaf(950, 1260, 30, 30, '#C8323C') + leaf(1015, 1380, 26, -35, '#F2A93B');
-  s += spark(28, 800, 12);
+    s += spark(28, 800, 12); }
+  // the RedNote cut is centred on the frame, so its leaves sit in the narrow side margins, small
+  else s += leaf(1050, 420, 22, 20, '#E8663A') + spark(1052, 640, 12) + leaf(1050, 860, 20, -25, '#C8323C') + leaf(1048, 1120, 22, 35, '#F2A93B') + spark(1052, 1360, 12)
+    + leaf(30, 470, 20, -20, '#F2A93B') + spark(28, 700, 11) + leaf(30, 1460, 20, 25, '#C8323C');
   return s; })();
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
 // ---- the voice and the timeline (each beat as long as its line) ----
 // the words on the cards (each line follows the voice; the skin card adds the fat and pancreatitis line)
 const NO = 'no', YES = 'yes';
-const BEATS = [
+const BEATS = RN ? [
+  { k: 'hook', kind: 'hook', food: ['skin'], lines: ['别再喂狗狗', '火鸡皮了！'], sub: '这些才可以分给它' },
+  { k: 'skin', kind: NO, food: ['skin'], title: '火鸡皮', lines: ['太油了，会让狗狗', '肚子不舒服'], small: '油脂太多与胰腺炎有关' },
+  { k: 'bones', kind: NO, food: ['bones'], title: '煮过的骨头', lines: ['容易碎成尖片'] },
+  { k: 'gravy', kind: NO, food: ['gravy', 'stuff'], title: '肉汁和火鸡馅料', lines: ['常用洋葱和大蒜来做，', '对狗狗有毒'] },
+  { k: 'turkey', kind: YES, food: ['turkey'], title: '原味火鸡肉', lines: ['少量，煮熟，', '去皮去骨'] },
+  { k: 'beans', kind: YES, food: ['beans'], title: '四季豆', lines: ['原味，什么都不放'] },
+  { k: 'pumpkin', kind: YES, food: ['pumpkin'], title: '原味熟南瓜', lines: ['不是南瓜派馅料'] },
+  { k: 'carrots', kind: YES, food: ['carrots'], title: '胡萝卜', lines: ['少量，', '什么都不加'] },
+  { k: 'vet', kind: 'vet', food: [], lines: ['误吃了不该吃的？', '马上联系兽医。'] },
+  { k: 'game', kind: 'game', food: ['bites'], lines: ['在 Doodle Doggo 里，', '有毒的食物做不出来，也喂不了'], pill: '收藏起来，节日用得上' },
+] : [
   { k: 'hook', kind: 'hook', food: ['skin'], lines: ['Stop feeding your dog', 'the turkey skin.'], sub: "Here's what to share instead." },
   { k: 'skin', kind: NO, food: ['skin'], title: 'Turkey skin', lines: ["very fatty: it can upset", "a dog's tummy"], small: 'too much fat is linked to pancreatitis' },
   { k: 'bones', kind: NO, food: ['bones'], title: 'Cooked bones', lines: ['they can splinter'] },
@@ -178,13 +205,24 @@ const BEATS = [
 // the timeline (owner, 11 Nov 2026: "the video can be slower, we need to let the audience read it"): each card stays up until a slow reader is
 // done, at least 1.2 s + 0.35 s a word of its text and never less than its spoken line + 1 s, then a short pause before the next beat
 const VOAT = []; let at = 0.1; const PAUSE = 0.3, B = {}, HOLD = {};
-for (const b of BEATS) { const words = [b.title || '', ...b.lines, b.small || '', b.sub || '', b.pill || ''].join(' ').split(/\s+/).filter(Boolean).length;
-  HOLD[b.k] = Math.max(1.2 + 0.35 * words, VOD[b.k] + 1.0); B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; at += HOLD[b.k] + PAUSE; }
+// Chinese: a slow reader takes about 0.18 s a character (Latin words in it still count 0.35 s each)
+for (const b of BEATS) { const txt = [b.title || '', ...b.lines, b.small || '', b.sub || '', b.pill || ''].join(' '), cjk = (txt.match(/[\u4e00-\u9fff]/g) || []).length;
+  const words = txt.replace(/[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]/g, ' ').split(/\s+/).filter(Boolean).length;
+  HOLD[b.k] = Math.max(1.2 + 0.35 * words + 0.18 * cjk, VOD[b.k] + 1.0); B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; at += HOLD[b.k] + PAUSE; }
 const LOOP = at - PAUSE + 0.2, T = LOOP + 3.0, NF = Math.round(T * FPS);
+// RedNote subtitles: Noodle's line in chunks of at most 14 characters, each as long as its share of the line
+const SUBS_ZH = { hook: ['别再喂狗狗火鸡皮了！', '这些才可以分给它。'], skin: ['火鸡皮太油了，', '会让狗狗肚子不舒服。'], bones: ['煮过的骨头容易碎成尖片。'],
+  gravy: ['肉汁和火鸡馅料', '常用洋葱和大蒜来做，', '对狗狗有毒！'], turkey: ['原味火鸡肉，去皮去骨。'], beans: ['原味四季豆。'], pumpkin: ['原味煮熟的南瓜，', '不是南瓜派馅料。'],
+  carrots: ['胡萝卜！少量，什么都不加。'], vet: ['误吃了不该吃的？', '马上联系兽医。'], game: ['在这个游戏里，有毒的食物', '做不出来，也喂不了。'] };
+const SUBS = [];
+if (RN) for (const v of VOAT) { const parts = SUBS_ZH[v.k]; if (parts.join('') !== VOJ.text[v.k]) throw new Error('subtitles differ from the voice: ' + v.k);
+  parts.forEach((x) => { if ([...x].length > 14) throw new Error('subtitle over 14 characters: ' + x); });
+  const wt = parts.map((x) => x.replace(/[，。！？：、]/g, '').length + 1), sum = wt.reduce((a, c) => a + c, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: x.replace(/[，。]$/, '') }); t0 += d; }); }
 const allText = BEATS.map((b) => [b.title || '', ...b.lines, b.sub || '', b.small || '', b.pill || '', 'share instead', 'not for dogs']).flat().join(' ')
-  + ' Stop feeding your dog the turkey skin share these instead';
+  + ' Stop feeding your dog the turkey skin share these instead' + (RN ? Object.values(SUBS_ZH).flat().join('') + '这些才可以分给它别再喂狗狗火鸡皮了！治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '');
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-dog *{animation:none!important}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}</defs>
 <g id="bg">${FEST}</g>
@@ -193,7 +231,9 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455, NO='no', YES='yes';
+const RN=${RN}, NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F=RN?"'LXGW WenKai'":'Caveat', CX=RN?540:455, NO='no', YES='yes', SUBS=${JSON.stringify(SUBS)};
+// the layout: English inside the Reels safe area (centred on x 455); RedNote on the whole frame (centred on x 540, ~60 px margins)
+const LY=RN?{cardW:900, nX:775, nW:430, col:285, rowF:375, rowB:725}:{cardW:790, nX:650, nW:400, col:225, rowF:300, rowB:640};
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);}, eo=(x)=>1-Math.pow(1-cl(x),3);
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -218,7 +258,7 @@ function badge(kind, cx, cy, r, u, tag){ if(u<=0) return ''; const k=0.85+0.15*b
 // the largest size up to max at which s is no wider than w
 function fitS(s,max,w){ let z=max; while(z>20){ const k=inkOf(s,z,F); if(k.L+k.R<=w) return z; z-=2; } return z; }
 // a card: optional title, lines, a small line; text block centred in the card (centreCheck)
-function card(b, top, op, border){ const W0=790, x0=CX-W0/2, L=[];
+function card(b, top, op, border){ const W0=LY.cardW, x0=CX-W0/2, L=[];
   if(b.title) L.push({s:b.title, size:fitS(b.title,84,W0-90), fill: border, pitch: 82});
   b.lines.forEach((s,i)=>L.push({s, size:fitS(s, b.kind==='hook'?96:b.title?68:74, W0-80), pitch: b.kind==='hook'?104:b.title?74:82}));
   if(b.small) L.push({s:b.small, size:fitS(b.small,44,W0-90), fill:'#8A7468', pitch: 52});
@@ -247,29 +287,34 @@ window.frame=function(t, D){
     if(b.kind==='vet') art+=noodle(pose, D.n[pose], CX, FEET, 700, 640, 0, fade);
     else if(pose==='yay'){ const S=300, fy=Math.max(860, below+70+S*0.63), nh=Math.min(380, FEET-(fy+S*0.63)-50);
       art+=noodle(pose, D.n[pose], CX, FEET, nh, 720, bob, fade);
-      art+=food(b.food[0], 300, fy, S, u); art+=badge('yes', 640, fy, 70, cl((lt-(b.kind==='game'?0.3:0.1))/0.3)); }
-    else { art+=noodle(pose, D.n[pose], 650, FEET, pose==='beg'?690:620, 400, 0, fade, true);
-      const bu=i<=1?cl((t-0.1)/0.5):cl((lt-0.15)/0.5); art+=badge('no', 225, 800, 70, bu);
-      if(b.food.length===1) art+=food(b.food[0], 225, 1150, 300, fu(u));
-      else { art+=food(b.food[0], 225, 1030, 190, u, 'food1'); art+=food(b.food[1], 225, 1290, 210, cl(u*1.2-0.15), 'food2'); } }
+      art+=food(b.food[0], LY.rowF, fy, S, u); art+=badge('yes', LY.rowB, fy, 70, cl((lt-(b.kind==='game'?0.3:0.1))/0.3)); }
+    else { art+=noodle(pose, D.n[pose], LY.nX, FEET, pose==='beg'?690:620, LY.nW, 0, fade, true);
+      const bu=i<=1?cl((t-0.1)/0.5):cl((lt-0.15)/0.5); art+=badge('no', LY.col, 800, 70, bu);
+      if(b.food.length===1) art+=food(b.food[0], LY.col, 1150, 300, fu(u));
+      else { art+=food(b.food[0], LY.col, 1030, 190, u, 'food1'); art+=food(b.food[1], LY.col, 1290, 210, cl(u*1.2-0.15), 'food2'); } }
+    // RedNote: Noodle's words as subtitles, in a pill between his feet and the tablecloth
+    if(RN){ const su=SUBS.find((x)=>t>=x.a&&t<x.b); if(su){ const o=Math.min(sm((t-su.a)/0.08),sm((su.b-t)/0.08)); ov+=pill(su.s, CX, 1560, fitS(su.s,58,900), F, { fill:'${CREAM}', padX:30, op:fade*o }).replace('<g data-box','<g data-box data-apart="sub"'); } }
   }
   // the end card: paper and the card fade in once the scene has gone
-  if(end){ ov+='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
+  // RedNote: the RedNote card (logo, 治愈系蜡笔狗狗游戏, only "搜 Doodle Doggo App"; no QR, no link, owner 9 Nov 2026), as shop_reel/build_shop.js
+  if(end){ ov+='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g>'; }
   $('art').innerHTML=art; $('ov').innerHTML=ov;
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
   // the decorations (margins only) never touch anything: 20 px clear of every card, pill, badge, food and Noodle
   { const deco=[...$('bg').querySelectorAll('[data-deco]')].map((e)=>e.getBoundingClientRect()), things=[...$('st').querySelectorAll('#art [data-apart],#ov [data-apart],#ov [data-box]')].filter((e)=>+(e.getAttribute('opacity')||1)>0.05);
     if($('bg').getAttribute('opacity')!=='0') for(const e of things){ const r=e.getBoundingClientRect(); if(!r.width) continue; for(const d of deco){ const g=Math.max(d.left-r.right,r.left-d.right,d.top-r.bottom,r.top-d.bottom); if(g<20) return 'touches a decoration: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(g)+' px'; } } }
   // the brief's tighter right edge for words and key art (x 850): every card, pill, food and dog
-  for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(r.width&&r.right>854&&+(e.getAttribute('opacity')||1)>0.05) return 'past x 850: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(r.right); }
+  for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
+    if(!RN&&r.right>854) return 'past x 850: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(r.right);
+    if(RN&&(r.left<50||r.right>1030||r.top<40||r.bottom>1880)) return 'in the margin: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   return ''; };
 // the cover: its own design, hook-led; key content inside the 1:1 crop (y 420..1500), the logo inside 4:5 (y 285..1635)
 window.cover=function(D){
   let s='<rect width="${W}" height="${H}" fill="${PAPER}"/>';
   s+='<g data-box data-apart="title"><rect x="70" y="430" width="940" height="290" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'
-    +centred([{s:'Stop feeding your dog',size:fitS('Stop feeding your dog',104,860),pitch:112},{s:'the turkey skin',size:fitS('the turkey skin',124,860),fill:'${RED}'}],540,575,F).svg+'</g>';
+    +centred(RN?[{s:'别再喂狗狗',size:fitS('别再喂狗狗',100,860),pitch:118},{s:'火鸡皮了！',size:fitS('火鸡皮了！',118,860),fill:'${RED}'}]:[{s:'Stop feeding your dog',size:fitS('Stop feeding your dog',104,860),pitch:112},{s:'the turkey skin',size:fitS('the turkey skin',124,860),fill:'${RED}'}],540,575,F).svg+'</g>';
   // left: the turkey skin with the red cross; right: Noodle
   s+=badge('no', 125, 905, 58, 1, 'x');
   s+=food('skin', 425, 915, 270, 1, 'skin');
@@ -277,7 +322,7 @@ window.cover=function(D){
   // the swaps: four small plates and a green pill
   const sw=[['turkey',150],['beans',400],['pumpkin',650],['carrots',900]];
   sw.forEach(([id,x])=>{ s+=food(id, x, 1225, 200, 1, 'sw_'+id); });
-  s+=pill('share these instead', 560, 1408, 70, F, { fill:'#CFE8C2', padX:40, color:'${GREEN}' }).replace('<g data-box','<g data-box data-apart="pill"');
+  s+=pill(RN?'这些才可以分给它':'share these instead', 560, 1408, RN?62:70, F, { fill:'#CFE8C2', padX:40, color:'${GREEN}' }).replace('<g data-box','<g data-box data-apart="pill"');
   s+=badge('yes', 150, 1408, 46, 1, 'tick');
   const lw=380, lh=lw*280/900; s+='<svg data-apart="logo" x="'+(540-lw/2)+'" y="1505" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>';
   $('bg').setAttribute('opacity',0); $('art').innerHTML=''; $('ov').innerHTML=s;
@@ -295,15 +340,17 @@ const drawFor = (t) => ({ n: { beg: dogSvg('beg', t * 1.8), sit: dogSvg('sit', t
   const p = await b.newPage({ viewport: { width: W, height: H } });
   const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html);
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
-  const ht = Object.values(handles()).join('') + 'doodledoggo.app';
-  await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [allText, ht]);
-  if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [allText, ht]))) throw new Error('Caveat or Andika did not load');
+  const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
+  await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
+  if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
   console.log('T =', T.toFixed(2), 's (', LOOP.toFixed(2), 's before the end card ),', NF, 'frames; voice at', VOAT.map((v) => v.k + ' ' + v.at.toFixed(2)).join(', '));
   const render = async (t, file) => { const err = await p.evaluate(([t, D]) => window.frame(t, D), [t, drawFor(t)]); if (err) throw new Error(err + ' at ' + t.toFixed(2)); await p.screenshot({ path: file }); };
   if (process.env.ONLY === 'cover') {
     const err = await p.evaluate((D) => window.cover(D), drawFor(0.6)); if (err) throw new Error(err);
-    const f = path.join(OUT, 'turkey-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f); await b.close(); return; }
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-14-turkey.jpg') : path.join(OUT, 'turkey-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = [0, 0.7, ...BEATS.slice(1).map((x) => x.at + 0.9), LOOP + 0.15, LOOP + 1.2, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -342,7 +389,7 @@ const drawFor = (t) => ({ n: { beg: dogSvg('beg', t * 1.8), sit: dogSvg('sit', t
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-turkey-skin.mp4');
+  const mp4 = path.join(OUT, `doodle-doggo-turkey-skin${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
