@@ -2,7 +2,7 @@
 //   1. migration: an old save loads with every dog's outfit.feet = null and the S.shop defaults; nothing else changes
 //   2. SHOP_LIVE off: no Kind shop button (Market Street, the phone menu), no Feet row, the sheet does not open, and no other shop, list or level row
 //      carries a kind-shop item
-//   3. coin buys: every look for 600 coins and every tool for its price, owned once; the Wardrobe wears and removes the sneakers (feet slot), the house
+//   3. coin buys: every look for 1,500 coins and every tool for its price, owned once; the Wardrobe wears and removes the sneakers (feet slot), the house
 //      shows a Cozy Winter decoration once placed; the Supporter Pack and coins are never for coins
 //   4. granting: a fake /shop/owned list grants once; the same list again, and the synced save after a reload, grant nothing more; a refund takes back
 //      the one-time items (worn ones go back to nothing, the house moves back), never coins, and keeps what was bought with coins
@@ -60,8 +60,8 @@ run('v224_shop', async (t) => {
   ok(await ev(() => { const b = document.getElementById('ksPlus'); return !b || b.hidden || !b.offsetParent; }), 'no (+) by the coins while the shop is off'); }
   else ok(await ev(() => { const b = document.getElementById('ksPlus'); return !!b && !b.hidden && !!b.offsetParent; }), 'the (+) by the coins shows with the shop on');
 
-  sec('3. coin buys: every look for 600 coins, every tool for its price, owned once');
-  { const was = t.ctx; await t.newGame({ prefs: ON }, { coins: 30000 }); await was.close(); }
+  sec('3. coin buys: every look for 1,500 coins, every tool for its price, owned once');
+  { const was = t.ctx; await t.newGame({ prefs: ON }, { coins: 50000 }); await was.close(); }
   await t.home('market');
   ok(await t.until(() => !!document.querySelector('[data-pb="kindshop"]'), null, 5000), 'with the kind shop on, Market Street shows a Kind shop button');
   await t.p.click('[data-pb="kindshop"]');
@@ -76,14 +76,14 @@ run('v224_shop', async (t) => {
   for (const n of looks) { await ev((n) => { window.__paw.ks.coinBuy(n); }, n); await t.win(); await later(); }
   const got = await ev((L) => L.filter((n) => window.__paw.ks.look(n)), looks);
   const c1 = await ev(() => window.__paw.S.coins);
-  ok(got.length === 12 && coins0 - c1 === 12 * 600, `all 12 looks owned for 600 coins each (${got.length}, spent ${coins0 - c1})`);
+  ok(got.length === 12 && coins0 - c1 === 12 * 1500, `all 12 looks owned for 1,500 coins each (${got.length}, spent ${coins0 - c1})`);
   ok(await ev(() => window.__paw.ks.owned('tokyo') && window.__paw.ks.owned('cozy')), 'both packs show as owned once every piece is');
   await ev(() => { window.__paw.ks.coinBuy('Bucket Hat'); }); await t.p.waitForSelector('.buyveil .bb-yes');
   ok(await ev(() => document.querySelector('.buyveil .bb-yes').disabled), 'a second buy of an owned look is refused (the coin window is disabled)');
   await t.p.click('.buyveil .bb-no'); await t.until(() => !document.querySelector('.buyveil'), null, 2000);
   for (const n of ['robo', 'sprinkler', 'bowl']) { await ev((n) => { window.__paw.ks.coinBuy(n); }, n); await t.win(); }
   const c2 = await ev(() => window.__paw.S.coins), tl = await ev(() => ['robo', 'sprinkler', 'bowl'].map((k) => window.__paw.ks.tool(k)));
-  ok(tl.every(Boolean) && c1 - c2 === 9000, `the three tools for 4,000 + 2,500 + 2,500 coins (spent ${c1 - c2})`);
+  ok(tl.every(Boolean) && c1 - c2 === 22000, `the three tools for 10,000 + 6,000 + 6,000 coins (spent ${c1 - c2})`);
   await ev(() => window.__paw.ks.open('tools'));
   ok(await ev(() => !document.querySelector('[data-ks="comfort"]') && document.querySelectorAll('.panel.ks .ks-yours').length === 3), 'all tools owned: three "Yours" and the Comfort Kit is not offered');
   ok(await ev(async () => (await window.__paw.ks.coinBuy('supporter')) === false && (await window.__paw.ks.coinBuy('coins_1k')) === false), 'the Supporter Pack and coin packs cannot be bought with coins');
@@ -105,7 +105,7 @@ run('v224_shop', async (t) => {
   await t.home('yard');
   const L1 = [{ id: 'cs_test_sup', item: 'supporter', refunded: false }, { id: 'cs_test_3k', item: 'coins_3k', refunded: false }, { id: 'cs_test_tokyo', item: 'tokyo', refunded: false }, { id: 'cs_test_kit', item: 'comfort', refunded: false }];
   const g1 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { r, d: P.S.coins - c, sup: P.ks.sup(), house: P.S.inv.houses.includes('Golden Paw Cottage'), tag: P.S.inv.clothes.includes('Golden Name Tag'), mail: (P.S.mail || []).find((m) => m.id === 'ks_thanks'), kit: P.S.shop.owned.includes('comfort') }; }, L1);
-  ok(g1.r.granted.length === 4 && g1.d === 5000, `four purchases granted: 2,000 Supporter coins + 3,000 (got ${g1.d})`);
+  ok(g1.r.granted.length === 4 && g1.d === 7000, `four purchases granted: 2,000 Supporter coins + 5,000 (coins_3k; got ${g1.d})`);
   ok(g1.sup && g1.house && g1.tag && g1.kit, 'the Supporter Pack: perks on, the Golden Paw Cottage, the Golden Name Tag; the Comfort Kit owned');
   ok(g1.mail && g1.mail.keep === true && /Gerald/.test(g1.mail.from), "Gerald's thank-you letter is in the mailbox, kept to reread");
   const g2 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { n: r.granted.length, d: P.S.coins - c, letters: P.S.mail.filter((m) => m.id === 'ks_thanks').length }; }, L1);
@@ -263,19 +263,19 @@ run('v224_shop', async (t) => {
     ok(/My purchases \(1\)/.test(mine) && /contact@doodledoggo\.app/.test(mine), 'the Kind shop shows My purchases (1) with the help email');
     put('cs_test_game0002', 'coins_1k', false);
     await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
-    ok(await t.until((c) => window.__paw.S.coins === c + 1000, c0, 4000), 'Restore purchases grants the coin pack once');
-    ok(await t.until(() => { const p = document.querySelector('#modal .panel.ks-got'); return !!p && /1,000 coins/.test(p.innerText) && /Added to your Paw Coins/.test(p.innerText); }, null, 3000), 'over the open shop: a Delivered! card for the coins');
+    ok(await t.until((c) => window.__paw.S.coins === c + 2000, c0, 4000), 'Restore purchases grants the coin pack once');
+    ok(await t.until(() => { const p = document.querySelector('#modal .panel.ks-got'); return !!p && /2,000 coins/.test(p.innerText) && /Added to your Paw Coins/.test(p.innerText); }, null, 3000), 'over the open shop: a Delivered! card for the coins');
     await t.p.click('#ksGotOk'); ok(await t.until(() => { const d = document.querySelector('#modal .panel.ks .ks-mine'); return !!d && /My purchases \(2\)/.test(d.innerText); }, null, 2000), 'Yay! goes back to the Kind shop, now My purchases (2)');
     await ev(() => document.querySelector('#modal .panel .x').click()); await t.until(() => document.getElementById('modal').hidden, null, 2000);
     await ev(() => { window.__toasts.length = 0; return window.__paw.ks.restore(true); });
-    ok(await t.waitToast(/Nothing new to restore/, 3000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'a second restore: nothing new, no coins twice');
+    ok(await t.waitToast(/Nothing new to restore/, 3000) && (await ev(() => window.__paw.S.coins)) === c0 + 2000, 'a second restore: nothing new, no coins twice');
     // an owned one-time item: the Worker refuses it, the tab closes, the game restores
     await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('tokyo'); });
     ok(await t.waitToast(/This is yours already/, 3000) && (await ev(() => window.__ksTabs[0] && window.__ksTabs[0].w.closed)), 'Tokyo Street again: "This is yours already", the blank tab closes');
     // a refund: the next poll takes the pack back, the coins stay
     put('cs_test_game0001', 'tokyo', true);
     await ev(() => window.__paw.ks.poll(true));
-    ok(await t.until(() => !window.__paw.ks.owned('tokyo') && window.__paw.S.shop.refunded.includes('cs_test_game0001'), null, 4000) && (await ev(() => window.__paw.S.coins)) === c0 + 1000, 'refunded: Tokyo Street is taken back, coins kept');
+    ok(await t.until(() => !window.__paw.ks.owned('tokyo') && window.__paw.S.shop.refunded.includes('cs_test_game0001'), null, 4000) && (await ev(() => window.__paw.S.coins)) === c0 + 2000, 'refunded: Tokyo Street is taken back, coins kept');
     ok(await ev(() => window.__paw.S.shop.log.find((e) => e.id === 'cs_test_game0001').r === true), 'My purchases marks it refunded');
     // the Worker down: a kind toast, and the tab closes
     delete srv.env.STRIPE_FETCH; srv.offline.add(t.p);
