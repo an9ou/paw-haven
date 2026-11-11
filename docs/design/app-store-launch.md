@@ -114,7 +114,7 @@ them). Later packs: one new store product each, created by the owner in App Stor
   `/shop/owned` grant path (`ksGrant`, the Delivered! card, Gerald's letter) works untouched.
 - **Refunds:** Apple App Store Server Notifications v2 (`REFUND`) and Google Real-time developer notifications (`voidedPurchases`, via a Pub/Sub
   push) hit the Worker and mark the row refunded: one-time items are taken back, coins already given stay (our current rule). The owner cannot
-  refund App Store purchases himself; players ask Apple or Google. Google consumables must be "consumed" after the grant so they can be bought again.
+  refund store purchases; players ask Apple or Google. Google consumables must be "consumed" after the grant so they can be bought again.
 - **Secrets:** an App Store Connect API key and a Google service account key go in as Worker secrets (like the Stripe keys), never in the repo.
 - No third-party payment SDK (for example RevenueCat): it would mean another company in the privacy answers. Our Worker already does the job.
 
