@@ -9,34 +9,34 @@ const YV_AWAY = 20 * 60e3, YV_BACK = 48 * 3600e3, YV_SLOTS = [10, 15, 20], YV_Q 
 // the four yard toys (V226.md 5): HM_DECOR entries like every v2.7 yard decoration, sold at Barkitecture "For the yard"
 Object.assign(HM_DECOR, {
   'Tug Post': { prop: 'yvtugpost', at: [180, 410, 72, 96], vb: [120, 160], price: 300, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A sturdy wooden post with a rope to pull. It never lets go first, and nobody minds.' },
-  'Paddling Pool': { prop: 'yvpool', at: [620, 506, 140, 84], vb: [200, 120], price: 600, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A round blue pool, ankle deep, with a rubber duck. Splashing is the whole point.' },
-  'Play Tunnel': { prop: 'yvtunnel', at: [700, 430, 154, 84], vb: [220, 120], price: 900, bond: 2, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A crinkly striped tunnel. Dogs go in one end very fast and come out the other end very proud.' },
-  'Bubble Machine': { prop: 'yvbubbles', at: [470, 410, 72, 96], vb: [120, 160], price: 1500, bond: 2, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A little box that blows bubbles all afternoon. Dog-safe bubbles, so catching them is allowed.' }
+  'Puddle Pool': { prop: 'yvpool', at: [620, 506, 140, 84], vb: [200, 120], price: 600, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A round blue pool, ankle deep, with a rubber duck. Splashing is the whole point.' },
+  'Play Tunnel': { prop: 'yvtunnel', at: [700, 430, 154, 84], vb: [220, 120], price: 900, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A crinkly striped tunnel. Dogs go in one end very fast and come out the other end very proud.' },
+  'Bubble Fountain': { prop: 'yvbubbles', at: [470, 410, 72, 96], vb: [120, 160], price: 1500, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A little box that blows bubbles all afternoon. Dog-safe bubbles, so catching them is allowed.' }
 });
-const YV_TOYS = ['Tug Post', 'Paddling Pool', 'Play Tunnel', 'Bubble Machine'];
+const YV_TOYS = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'];
 const YV_OLD = ['Sandbox', 'Bird Bath', 'Stepping Stones', 'Hammock', 'Garden Bench', 'Doggy Ramp']; // older yard items that pull a little
 // the visitors (V226.md 3): [id, name, breed, coat option, age in months, family, favourite toy, rare condition]
 const YV_DOGS = [
   ['biscuit', 'Biscuit', 'beagle', 0, 26, 'the Okafors on Elm Row', 'Tug Post'],
-  ['dumpling', 'Dumpling', 'pug', 0, 40, 'Mrs Plum', 'Paddling Pool'],
+  ['dumpling', 'Dumpling', 'pug', 0, 40, 'Mrs Plum', 'Puddle Pool'],
   ['noodle', 'Noodle', 'dachs', 0, 22, 'the Novaks', 'Play Tunnel'],
-  ['coco', 'Coco', 'poodle', 0, 33, 'Mr Ferreira', 'Bubble Machine'],
+  ['coco', 'Coco', 'poodle', 0, 33, 'Mr Ferreira', 'Bubble Fountain'],
   ['pepper', 'Pepper', 'chihuahua', 0, 18, 'the Tanakas', 'Sandbox'],
-  ['gus', 'Gus', 'frenchie', 0, 30, 'Ana from the café', 'Paddling Pool'],
+  ['gus', 'Gus', 'frenchie', 0, 30, 'Ana from the café', 'Puddle Pool'],
   ['muffin', 'Muffin', 'westie', 0, 44, 'the Lindqvists', 'Play Tunnel'],
-  ['sunny', 'Sunny', 'golden', 0, 20, 'the Patels', 'Paddling Pool'],
+  ['sunny', 'Sunny', 'golden', 0, 20, 'the Patels', 'Puddle Pool'],
   ['patches', 'Patches', 'mutt', 0, 52, 'the Nguyen kids', 'Tug Post'],
-  ['pompom', 'Pom-Pom', 'pom', 0, 28, 'Grandpa Joe', 'Bubble Machine'],
+  ['pompom', 'Pom-Pom', 'pom', 0, 28, 'Grandpa Joe', 'Bubble Fountain'],
   ['tilly', 'Tilly', 'yorkie', 0, 36, 'the Moreaus', 'Sandbox'],
-  ['cloud', 'Cloud', 'bichon', 0, 24, 'Mrs Achebe', 'Bubble Machine'],
-  ['yuki', 'Yuki', 'samoyed', 0, 30, 'the Satos', 'Paddling Pool', { weather: 'snow' }],
+  ['cloud', 'Cloud', 'bichon', 0, 24, 'Mrs Achebe', 'Bubble Fountain'],
+  ['yuki', 'Yuki', 'samoyed', 0, 30, 'the Satos', 'Puddle Pool', { weather: 'snow' }],
   ['momiji', 'Momiji', 'shiba', 0, 26, 'Mr Kimura', 'Play Tunnel', { season: 'autumn' }],
   ['dash', 'Dash', 'collie', 0, 34, 'the Training Ground coach', 'Play Tunnel', { agility: 1 }],
-  ['puddles', 'Puddles', 'lab', 0, 22, 'the O\'Briens', 'Paddling Pool', { weather: 'rain', toy: 'Paddling Pool' }],
+  ['puddles', 'Puddles', 'lab', 0, 22, 'the O\'Briens', 'Puddle Pool', { weather: 'rain', toy: 'Puddle Pool' }],
   ['nanuk', 'Nanuk', 'husky', 0, 38, 'the Larsens', 'Tug Post', { season: 'winter', toy: 'Tug Post' }],
-  ['waddles', 'Sir Waddles', 'corgi', 0, 48, 'Lady Pemberton', 'Bubble Machine', { toy: 'Bubble Machine' }],
+  ['waddles', 'Sir Waddles', 'corgi', 0, 48, 'Lady Pemberton', 'Bubble Fountain', { toy: 'Bubble Fountain' }],
   ['zoom', 'Zoom', 'greyhound', 0, 42, 'Ms Reyes', 'Play Tunnel', { evening: 1, toy: 'Play Tunnel' }],
-  ['rapunzel', 'Rapunzel', 'afghan', 0, 60, 'Madame Dubois', 'Bubble Machine', { pool: 1 }]
+  ['rapunzel', 'Rapunzel', 'afghan', 0, 60, 'Madame Dubois', 'Bubble Fountain', { pool: 1 }]
 ].map(([id, name, key, coat, age, fam, fav, rare]) => ({ id, name, key, coat, age, fam, fav, rare: rare || null }));
 const yvDog = (id) => YV_DOGS.find((v) => v.id === id) || null;
 function yvFam(v) { return tt('yv.fam_' + v.id, v.fam); }
@@ -45,7 +45,7 @@ function yvHint(v) {
   if (r.weather === 'snow') return tt('yv.hint_snow', 'Comes on snowy days.');
   if (r.season === 'autumn') return tt('yv.hint_autumn', 'Comes when the leaves turn.');
   if (r.agility) return tt('yv.hint_agility', 'Comes after an agility run at the Training Ground.');
-  if (r.weather === 'rain') return tt('yv.hint_rain', 'Comes on rainy days, if there is a Paddling Pool.');
+  if (r.weather === 'rain') return tt('yv.hint_rain', 'Comes on rainy days, if there is a Puddle Pool.');
   if (r.season === 'winter') return tt('yv.hint_winter', 'Comes in winter, for a good pull on a Tug Post.');
   if (r.evening) return tt('yv.hint_evening', 'Comes in the evening, if there is a Play Tunnel.');
   if (r.pool) return tt('yv.hint_pool', 'Comes after a paddle at the Splash Pool.');

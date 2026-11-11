@@ -1,7 +1,7 @@
 // v2.26 "Yard visitors" (V226.md section 7): neighbourhood dogs visit the yard while you are away.
 //   1. migration: an old save without S.visitors loads with the defaults, v 1, nothing dropped, no visitor on the first load
 //   2. a visit after time away (a reload after 30 h away): visits recorded and met, one #visitorG.yv in the yard, its card, Pet once a day, Wave bye
-//   3. gates: no toys = 1 visit a day and no rare one; snow -> Yuki, autumn -> Momiji, the Bubble Machine -> Sir Waddles, an agility best -> Dash,
+//   3. gates: no toys = 1 visit a day and no rare one; snow -> Yuki, autumn -> Momiji, the Bubble Fountain -> Sir Waddles, an agility best -> Dash,
 //      a paddle -> Rapunzel; never more than 3 a day, never the same dog twice in a day
 //   4. the Visitors Book: 20 pages, met ones named with their visits, the rest silhouettes; the Journal tab and the Care card open it
 //   5. gifts: 40 simulated days, at most one gift a JST day, coins at most 10 in any 7 days
@@ -11,7 +11,7 @@
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path'); const fs = require('fs');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
 const SAVE = 'pawhaven_proto_v1', ON = { yvTest: true }, SHOTS = process.env.YV_SHOTS || '';
-const TOYS = ['Tug Post', 'Paddling Pool', 'Play Tunnel', 'Bubble Machine'];
+const TOYS = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'];
 
 run('v226_visitors', async (t) => {
   const { ok, sec, ev } = t;
@@ -35,7 +35,7 @@ run('v226_visitors', async (t) => {
   ok(await ev(() => window.__paw.yv.on() === true), 'yvOn() with prefs.yvTest');
 
   sec('2. a visit after time away (a reload 30 h later)');
-  await putOut(['Tug Post', 'Paddling Pool']);
+  await putOut(['Tug Post', 'Puddle Pool']);
   ok((await ev(() => window.__paw.yv.pull())) === 4 && (await ev(() => window.__paw.yv.open())) === 3, 'two new toys out: pull 4, 3 slots a day');
   const away = await ev((k) => { const P = window.__paw; P.S.visitors.seen = Date.now() - 30 * 3600e3; P.saveNow(); const s = JSON.parse(localStorage.getItem(k)); return s; }, SAVE);
   await continueWith(away);
@@ -78,10 +78,10 @@ run('v226_visitors', async (t) => {
   let P = await plan(40);
   ok(P.every((d) => d.length === 1), 'no toys out: one visit a day');
   ok(!P.flat().some((id) => RARE.includes(id)), 'summer, cloudy, no toys, no agility: no rare visitor in 40 days');
-  await setToys(['Bubble Machine']);
+  await setToys(['Bubble Fountain']);
   P = await plan(40);
-  ok(P.every((d) => d.length === 2), 'the Bubble Machine (pull 2): two visits a day');
-  ok(P.flat().includes('waddles') && !P.flat().some((id) => RARE.filter((r) => r !== 'waddles').includes(id)), 'the Bubble Machine brings Sir Waddles (and no other rare one)');
+  ok(P.every((d) => d.length === 2), 'the Bubble Fountain (pull 2): two visits a day');
+  ok(P.flat().includes('waddles') && !P.flat().some((id) => RARE.filter((r) => r !== 'waddles').includes(id)), 'the Bubble Fountain brings Sir Waddles (and no other rare one)');
   await setToys(TOYS.concat(['Sandbox', 'Hammock']));
   P = await plan(40);
   ok(P.every((d) => d.length === 3 && new Set(d).size === 3), 'everything out: three a day, never the same dog twice');
@@ -89,7 +89,7 @@ run('v226_visitors', async (t) => {
   await ev(() => window.__paw.yv.env('weather', 'snow')); P = await plan(40);
   ok(P.flat().includes('yuki'), 'snow: Yuki comes');
   await ev(() => window.__paw.yv.env('weather', 'rain')); P = await plan(40);
-  ok(P.flat().includes('puddles') && !P.flat().includes('yuki'), 'rain with the Paddling Pool: Puddles comes, Yuki does not');
+  ok(P.flat().includes('puddles') && !P.flat().includes('yuki'), 'rain with the Puddle Pool: Puddles comes, Yuki does not');
   await ev(() => window.__paw.yv.env('weather', 'cloudy')); await ev(() => window.__paw.yv.env('season', 'autumn')); P = await plan(40);
   ok(P.flat().includes('momiji') && !P.flat().includes('nanuk'), 'autumn: Momiji comes, Nanuk does not');
   await ev(() => window.__paw.yv.env('season', 'winter')); P = await plan(40);
@@ -157,7 +157,7 @@ run('v226_visitors', async (t) => {
 
   sec('7. phone 360x640');
   { const was = t.ctx; await t.newGame({ device: 'Phone 360x640', prefs: ON }); await was.close(); }
-  await putOut(['Tug Post', 'Paddling Pool']);
+  await putOut(['Tug Post', 'Puddle Pool']);
   await ev(() => { const P = window.__paw; P.S.visitors.seen = Date.now() - 30 * 3600e3; P.yv.back(); });
   await t.home();
   ok(await t.until(() => !!document.querySelector('#visitorG.yv'), null, 5000), 'the visitor is in the phone yard');

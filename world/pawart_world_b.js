@@ -7553,7 +7553,7 @@ PA.LEVELS={star:(n,frac,o)=>{const q=Math.round(Math.max(0,Math.min(1,+frac||0))
    yvtunnel 220x120, yvbubbles 120x160; their 64 item cards draw the same shapes scaled (yvDrawToy(b, prop, k, ox, oy)).
    PawArt.YARD_VISITORS.book(): a 64 open sketchbook with a crayon dog and a paw (the Care card, the Journal tab, the book's head).
    Every fill is a b.sh shape with its own outline; stripes and spots are marks clipped to their shape (fills stay inside the lines). */
-const YV_LBL={yvtugpost:'Tug Post',yvpool:'Paddling Pool',yvtunnel:'Play Tunnel',yvbubbles:'Bubble Machine'};
+const YV_LBL={yvtugpost:'Tug Post',yvpool:'Puddle Pool',yvtunnel:'Play Tunnel',yvbubbles:'Bubble Fountain'};
 Object.assign(PROP_VB,{yvtugpost:'0 0 120 160',yvpool:'0 0 200 120',yvtunnel:'0 0 220 120',yvbubbles:'0 0 120 160'});
 function yvDrawToy(b,name,k,ox,oy){
   const P=pts=>pts.map(([x,y])=>[ox+x*k,oy+y*k]),X=x=>ox+x*k,Y=y=>oy+y*k,sm=k<1;
@@ -7609,9 +7609,9 @@ PROPS.yvtugpost=b=>yvDrawToy(b,'yvtugpost',1,0,0);PROPS.yvpool=b=>yvDrawToy(b,'y
 // the item cards: the toy scaled into the 64 box (bottom at y 58)
 Object.assign(ITEMS,{
  'Tug Post'(b){yvDrawToy(b,'yvtugpost',.38,9.2,-2);b.ex('spark',8,10,3)},
- 'Paddling Pool'(b){yvDrawToy(b,'yvpool',.3,2,22);b.ex('spark',56,12,3.2)},
+ 'Puddle Pool'(b){yvDrawToy(b,'yvpool',.3,2,22);b.ex('spark',56,12,3.2)},
  'Play Tunnel'(b){yvDrawToy(b,'yvtunnel',.27,2.3,24);b.ex('spark',56,12,3.2)},
- 'Bubble Machine'(b){yvDrawToy(b,'yvbubbles',.38,9.2,-2)}
+ 'Bubble Fountain'(b){yvDrawToy(b,'yvbubbles',.38,9.2,-2)}
 });
 // the Visitors Book: an open sketchbook, a crayon dog on the left page, a paw and a star on the right, the spiral down the middle
 function yvBook(){const b=mk('item','yv:book');
