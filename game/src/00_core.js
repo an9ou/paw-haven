@@ -846,6 +846,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
   v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
+  v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
   return linkDogs(st);
 }
 let S = null;
@@ -917,6 +918,7 @@ function migrate(s) {
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
   v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
+  v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save

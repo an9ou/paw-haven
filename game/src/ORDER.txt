@@ -71,4 +71,6 @@
 51_levels.js
 51b_habits.js
 52_kindshop.js
+55_projects.js
+55b_projects_art.js
 23_boot.js
