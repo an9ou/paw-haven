@@ -299,6 +299,9 @@ window.frame=function(t, D){
   // RedNote: the RedNote card (logo, 治愈系蜡笔狗狗游戏, only "搜 Doodle Doggo App"; no QR, no link, owner 9 Nov 2026), as shop_reel/build_shop.js
   if(end){ ov+='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g>'; }
   $('art').innerHTML=art; $('ov').innerHTML=ov;
+  // RedNote (owner, 12 Nov 2026: "the end card of the rednote reels is slightly went left, please make it in the middle"): endCardRN('tall') is centred
+  // on the Reels safe area (x 475); this cut has no safe zone, so the card is moved to the middle of the frame, across and up and down (this cut only)
+  if(RN&&end){ const g=$('ov').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')'); }
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
