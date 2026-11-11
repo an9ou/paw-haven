@@ -24,7 +24,7 @@ const LV_FLOOR = [1, 1, 8, 8, 11, 13, 15, 17, 19, 20, 20];
 const LV_WALK = { park: 8, town: 8, sunflower: 10, river: 10, hilltop: 11, bamboo: 11, woods: 12, pier: 12, cliffs: 13, beach: 14 };
 // daily sources: XP per event and events a Japan day (V222.md 2.1)
 const LV_SRC = { care: [2, 15], walk: [0, WALK_FULL], ms: [20, 1], help: [10, 2], wish: [10, 2], ff: [5, 4], home: [3, 5], fr: [5, 2] };
-const LV_MILE = { visit: 15, bond: 20, board: 40, badge: 15, nb: 10 }; // milestones: outside the cap, each once
+const LV_MILE = { visit: 15, bond: 20, board: 40, badge: 15, nb: 10, story: 10 }; // v2.29: story tasks and chapters (57b_story.js) pay their own XP, once each // milestones: outside the cap, each once
 const LV_CARE = ['feed', 'pet', 'fetch', 'toy', 'bath', 'nap', 'trick', 'scoop', 'photo'];
 const LV_TITLES = { 10: 'Friendly Neighbour', 20: 'Town Favourite' };
 // the unlock table (V222.md 3.2). Level 1 = every Bond 1 row today, so those need no entry

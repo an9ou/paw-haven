@@ -72,4 +72,6 @@
 51b_habits.js
 52_kindshop.js
 53_welcome.js
+57_scenes.js
+57b_story.js
 23_boot.js
