@@ -31,6 +31,8 @@ function openJournal(tab) {
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
   const tabs = [['profile', tt('journal.tab_profile', 'Profile')], ['family', tt('journal.tab_family', 'Family')], ['coats', tt('journal.tab_coats', 'Coats')], ['treasures', tt('journal.tab_treasures', 'Treasures {n}/{total}', { n: foundN, total: TREASURES.length })], ['food', tt('journal.tab_food', 'Food')], ['toys', tt('journal.tab_toys', 'Toys')], ['clothes', tt('journal.tab_clothes', 'Clothes')], ['missions', tt('journal.tab_missions', 'Missions')], ['garden', gkOn() ? tt('journal.tab_garden', 'Garden') : tt('journal.tab_garden_soon', 'Garden (soon)')], ['recipes', kOn() ? tt('journal.tab_recipes', 'Recipes') : tt('journal.tab_recipes_soon', 'Recipes (soon)')], ['howto', tt('journal.tab_howto', 'How to play')]].concat(typeof fwOn === 'function' && fwOn() ? [['calendar', tt('fw.tab_calendar', 'Calendar')]] : []); // v2.16: the calendars (47_firstweek.js)
   const ddJ = typeof ddOn === 'function' && ddOn(); if (ddJ) tabs.push(['diary', tt('dd.tab_diary', 'Diary')], ['stickers', tt('dd.tab_stickers', 'Stickers')]); // v2.17 (48_dogdays.js)
+  if (typeof yvJournalTab === 'function') yvJournalTab(tabs); // v2.26 Yard visitors (54_visitors.js): the Visitors tab
+  if (jTab === 'visitors' && !tabs.some((x) => x[0] === 'visitors')) jTab = 'profile';
   if (jTab === 'calendar' && !(typeof fwOn === 'function' && fwOn())) jTab = 'profile';
   if ((jTab === 'diary' || jTab === 'stickers') && !ddJ) jTab = 'profile';
   let body = '';
@@ -40,6 +42,7 @@ function openJournal(tab) {
   else if (jTab === 'calendar') body = fwCalHTML(); // v2.16 (47_firstweek.js)
   else if (jTab === 'diary') body = ddDiaryHTML(); // v2.17 (48_dogdays.js)
   else if (jTab === 'stickers') body = ddBookHTML();
+  else if (jTab === 'visitors') body = yvBookHTML(); // v2.26 (54_visitors.js)
   else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : `<p class="small">${tt('journal.guide_soon', 'Gerald is still writing the guide.')}</p>`; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
