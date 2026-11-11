@@ -1,4 +1,4 @@
-// Sakura Market (docs/design/sakura-market.md): the window (25 Mar to 10 Apr, Japan date, every year), the 18 items (only at the market, every year,
+// Sakura Market (docs/design/sakura-market.md): the window (25 Mar to 10 Apr, Japan date, every year), the 22 items (only at the market, every year,
 // food-safe), buying there, owned things kept after it packs up, the caps (toy games share FF_CAPS.toys, the Petal Ball is ball play under its caps),
 // the dressed scene with falling petals, the costumes on every breed (art) and the decorations in the yard.
 // node game/run_tests.js sakura_market   (SK_SHOTS=dir also writes screenshots there)
@@ -8,7 +8,8 @@ const PREFS = { fmTest: true, fmDate: '2027-03-28' };
 const DECOR = ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Blossom Swing'];
 const CLOTHES = ['Sakura Petal Crown', 'Hanami Sun Hat', 'Sakura Bandana', 'Blossom Garland', 'Sakura Haori', 'Sakura Mochi Suit', 'Butterfly Wings', 'Spring Knit Cardigan'];
 const TOYS = ['Squeaky Dango', 'Petal Ball', 'Plush Koi'], TREATS = ['Sakura Pup Mochi', 'Hanami Rice Ball'];
-const ALL = DECOR.concat(CLOTHES, TOYS, TREATS);
+const HOMES = ['Blossom Kennel', 'Picnic Basket Bed', 'Paper Parasol Bed', 'Petal Nest']; // part 2: the homes stall
+const ALL = DECOR.concat(CLOTHES, HOMES, TOYS, TREATS);
 
 run('sakura_market', async (t) => {
   const { ok, sec, ev } = t; const errs = [];
@@ -29,7 +30,7 @@ run('sakura_market', async (t) => {
     ok(W.d.every(([d, v]) => want[d] === v), 'closed on 24 Mar and 11 Apr, open from 25 Mar to 10 Apr, again the next year: ' + W.d.map(([d, v]) => d + (v ? '+' : '-')).join(' '));
     const C = await ev((d) => { const P = window.__paw; P.fm.date(d); return { main: P.fm.main(), name: P.fm.name(), sign: P.fm.sign(), place: !!P.fm.tent(), cats: P.fm.cats() }; }, '2027-04-10');
     ok(C.main === 'sakura' && C.name === 'Sakura Market' && /Sakura Market · open until/.test(C.sign) && C.place, 'the Sakura Market names the place and the sign: ' + C.sign);
-    ok(JSON.stringify(C.cats) === JSON.stringify(['decor', 'clothes', 'toys', 'treats']), 'four stalls (no homes): ' + C.cats.join());
+    ok(JSON.stringify(C.cats) === JSON.stringify(['decor', 'clothes', 'homes', 'toys', 'treats']), 'five stalls (homes since part 2): ' + C.cats.join());
     await ev((d) => window.__paw.fm.date(d), '2027-04-11');
     ok(await ev(() => !window.__paw.fm.tent() && window.__paw.fm.main() === null), 'on 11 Apr the place is gone');
     await ev((d) => window.__paw.fm.date(d), '2027-03-24');
@@ -39,9 +40,17 @@ run('sakura_market', async (t) => {
   sec('2. the items: 5 decorations, 8 costumes, 3 toys, 2 treats, every year, festive (fm), only at the market, food-safe lessons');
   {
     await ev((d) => window.__paw.fm.date(d), '2027-03-28');
-    const R = await ev((all) => { const P = window.__paw; return { rows: all.map((n) => P.fm.row(n)), items: ['decor', 'clothes', 'toys', 'treats'].map((c) => P.fm.items(c).map((x) => x.n)) }; }, ALL);
-    ok(R.rows.every((r) => r && r.price > 0 && !r.ed), 'all 18 have a table row with a price and no edition year (back every spring)');
-    ok(JSON.stringify(R.items) === JSON.stringify([DECOR, CLOTHES, TOYS, TREATS]), 'the stalls list them in order');
+    const R = await ev((all) => { const P = window.__paw; return { rows: all.map((n) => P.fm.row(n)), items: ['decor', 'clothes', 'homes', 'toys', 'treats'].map((c) => P.fm.items(c).map((x) => x.n)) }; }, ALL);
+    ok(R.rows.every((r) => r && r.price > 0 && !r.ed), 'all 22 have a table row with a price and no edition year (back every spring)');
+    ok(JSON.stringify(R.items) === JSON.stringify([DECOR, CLOTHES, HOMES, TOYS, TREATS]), 'the stalls list them in order');
+    const stock = R.rows.reduce((s, r) => s + r.price, 0);
+    ok(stock >= 2800 && stock <= 3200, 'about 3,000 coins of stock in all (owner, 11 Nov): ' + stock);
+    // part 2: the homes stall, like the Winter Market's (a 900-coin kennel at Bond 3, beds 250 to 450), each with its art and card
+    ok(await ev((H) => { const P = window.PawArt, F = window.__paw.fm; return H.every((n) => { const r = F.row(n), house = n === 'Blossom Kennel', svg = house ? P.house(n) : P.bed(n);
+      return r && r.kind === (house ? 'houses' : 'beds') && r.bond >= 1 && r.bond <= 3 && (house ? r.price === 900 && r.bond === 3 : r.price >= 250 && r.price <= 450)
+        && (house ? P.SAKURA_MARKET.house === n && P.WORLD_B.houses.includes(n) && svg.includes('pa-wb-glow') : P.SAKURA_MARKET.beds.includes(n) && P.WORLD_B.beds.includes(n) && /pa-bed-front/.test(svg) && svg.includes('data-bed="' + n + '"'))
+        && /<svg/.test(svg) && !/NaN/.test(svg) && /<svg/.test(P.item(n)); }); }, HOMES), 'the Blossom Kennel and three beds: prices and Bond gates like the winter ones, their art (bed front lips, the kennel windows glow at night) and item cards');
+    ok(await ev(() => { const P = window.PawArt; return P.prop('sklanterns', {}).length < 70000 && P.prop('sktree', {}).length < 70000; }), 'the lanterns and the paper tree are lighter (under 70 KB each)');
     const tips = await ev((tr) => tr.map((n) => window.__paw.fm.row(n).tip), TREATS);
     ok(tips.every((x) => x && x.split(/[.!?] /).length >= 2), 'each treat has a two-sentence lesson');
     ok(/mochi/i.test(tips[0]) && /salt/i.test(tips[0]) && /salt/i.test(tips[1]), 'the lessons: no real mochi, no salted leaf, no salt in the rice ball');
@@ -58,7 +67,7 @@ run('sakura_market', async (t) => {
     await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
     const sc = await ev(() => { const g = document.querySelector('#view svg.world'); return { petals: g ? g.querySelectorAll('.fm-petal').length : 0, stalls: g ? [...g.querySelectorAll('#sceneG [data-fmstall]')].map((x) => x.dataset.fmstall) : [], boards: g ? g.querySelectorAll('.fm-stall-sign').length : 0 }; });
     ok(sc.petals >= 10, 'petals fall over the scene: ' + sc.petals);
-    ok(['decor', 'clothes', 'toys', 'treats'].every((c) => sc.stalls.includes(c)) && !sc.stalls.includes('homes') && sc.boards === 4, 'four stall buttons with boards, no homes stand: ' + sc.stalls.join());
+    ok(['decor', 'clothes', 'homes', 'toys', 'treats'].every((c) => sc.stalls.includes(c)) && sc.boards === 5, 'five stall buttons with boards, the homes stand in front: ' + sc.stalls.join());
     ok(await ev(() => /fmPetal/.test([...document.styleSheets].map((s) => { try { return [...s.cssRules].map((r) => r.cssText).join(''); } catch (e) { return ''; } }).join(''))), 'the petal animation is in the CSS (and off under prefers-reduced-motion)');
     await shot('sakura_scene_desktop');
     const buy = async (cat, n) => {
@@ -69,10 +78,10 @@ run('sakura_market', async (t) => {
       await t.sleep(400); await ev(() => { const l = [...document.querySelectorAll('#modal button')].find((b) => /Later/.test(b.textContent)); if (l) l.click(); }); await t.sleep(200);
     };
     const c0 = (await t.S()).coins;
-    await buy('decor', 'Paper Sakura Tree'); await buy('clothes', 'Sakura Haori'); await buy('clothes', 'Sakura Petal Crown'); await buy('toys', 'Plush Koi'); await buy('toys', 'Petal Ball'); await buy('treats', 'Hanami Rice Ball');
+    await buy('decor', 'Paper Sakura Tree'); await buy('clothes', 'Sakura Haori'); await buy('clothes', 'Sakura Petal Crown'); await buy('homes', 'Petal Nest'); await buy('toys', 'Plush Koi'); await buy('toys', 'Petal Ball'); await buy('treats', 'Hanami Rice Ball');
     const s = await t.S();
-    ok(s.decor['Paper Sakura Tree'] && s.inv.clothes.includes('Sakura Haori') && s.inv.clothes.includes('Sakura Petal Crown') && s.inv.toys.includes('Plush Koi') && s.inv.toys.includes('Petal Ball') && (s.inv.food['Hanami Rice Ball'] || 0) >= 1, 'bought from every stall');
-    ok(c0 - s.coins === 140 + 80 + 55 + 65 + 45 + 12, 'coins only, the table prices: -' + (c0 - s.coins));
+    ok(s.decor['Paper Sakura Tree'] && s.inv.clothes.includes('Sakura Haori') && s.inv.clothes.includes('Sakura Petal Crown') && s.inv.toys.includes('Plush Koi') && s.inv.toys.includes('Petal Ball') && s.beds.includes('Petal Nest') && (s.inv.food['Hanami Rice Ball'] || 0) >= 1, 'bought from every stall');
+    ok(c0 - s.coins === 140 + 80 + 55 + 250 + 65 + 45 + 12, 'coins only, the table prices: -' + (c0 - s.coins));
         if (await ev(() => !document.getElementById('modal').hidden)) { await t.closeX(); await t.modalGone(); }
     // a Bond gate: at Bond 1 the Bond 2 things are locked
     await ev(() => { const P = window.__paw; P.S.dogs.forEach((d) => { d.bond = { level: 1, pts: 0 }; }); });
@@ -108,6 +117,7 @@ run('sakura_market', async (t) => {
     ok(await ev(() => !!document.querySelector('#dogArt svg.pa-dog, #view svg.pa-dog')), 'the haori and crown are worn in the yard');
     ok(await ev(() => !!document.querySelector('#view [data-decor="Paper Sakura Tree"], #view [data-decor-name="Paper Sakura Tree"]') || !!window.__paw.S.decor['Paper Sakura Tree'].out), 'the Paper Sakura Tree stands in the yard');
     await shot('sakura_yard_desktop');
+    if (SHOTS) { await ev(() => { const P = window.__paw, S = P.S; if (!S.inv.houses.includes('Blossom Kennel')) S.inv.houses.push('Blossom Kennel'); S.house = 'Blossom Kennel'; S.place = 'yard'; P.go('yard'); }); await t.calm(); await shot('sakura_kennel_desktop'); }
   }
 
   sec('6. the art: every item has its card, the decorations their props, the treats their bowls; the costumes on every breed and age');
@@ -123,7 +133,7 @@ run('sakura_market', async (t) => {
         try { const s = PA.dog(k, { pose, outfit: o, age, anim: false }), s0 = PA.dog(k, { pose, age, anim: false }); if (!ok1(s) || s === s0 || /NaN/.test(s)) bad.push(k + ' ' + pose + ' ' + JSON.stringify(o)); } catch (e) { bad.push(k + ' ' + pose + ' ' + e.message); } })));
       return { cards, props, lit, bowls, bad, n, keys: keys.length }; },
     { all: ALL, tr: TREATS, of: CLOTHES.map((n, i) => (i < 2 ? { head: n } : i < 4 ? { neck: n } : { body: n })) });
-    ok(!A.cards.length, '18 item cards: ' + (A.cards.join(', ') || 'all there'));
+    ok(!A.cards.length, '22 item cards: ' + (A.cards.join(', ') || 'all there'));
     ok(!A.props.length && A.lit, '5 decoration props, the lanterns glow when lit');
     ok(!A.bowls.length, 'the two treats have their dog bowls');
     ok(A.keys >= 35 && !A.bad.length, `the 8 costumes on ${A.keys} breeds, 4 poses, adults and puppies: ${A.n} renders, all drawn and different from the plain dog ${A.bad.slice(0, 4).join('; ')}`);
@@ -141,6 +151,7 @@ run('sakura_market', async (t) => {
     const W = await ev(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, cards: document.querySelectorAll('#modal .fm-card').length }));
     ok(W.cards === 8 && W.sw <= W.cw + 1, 'the clothes stall: 8 cards, no sideways page scroll');
     await shot('sakura_sheet_phone');
+    if (SHOTS) { await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fm.sheet('homes')); await t.p.waitForSelector('#modal .fm-card'); await shot('sakura_homes_phone'); await t.closeX(); await t.modalGone(); await ev(() => { const P = window.__paw, S = P.S; if (!S.inv.houses.includes('Blossom Kennel')) S.inv.houses.push('Blossom Kennel'); S.house = 'Blossom Kennel'; S.place = 'yard'; P.go('yard'); }); await t.calm(); await shot('sakura_kennel_phone'); }
   }
   ok(!errs.length, 'no page errors: ' + errs.slice(0, 3).join(' | '));
   await t.ctx.close();

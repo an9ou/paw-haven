@@ -83,10 +83,10 @@ const log = (...a) => console.log('[audio]', ...a);
   await p.screenshot({ path: path.join(__dirname, 'test_bench.png') });
 
   // v2.22.1: the Festive Market is a place (market music), its Winter Market variant comes only with fest 'winter', and setContext keeps the key
-  const fm = await p.evaluate(() => { const A = window.PawAudio, r = {}; r.place = A.PLACES.includes('fmarket'); r.plain = A.describe({ place: 'fmarket' }).label; r.win = A.describe({ place: 'fmarket', fest: 'winter' }).label;
+  const fm = await p.evaluate(() => { const A = window.PawAudio, r = {}; r.place = A.PLACES.includes('fmarket'); r.plain = A.describe({ place: 'fmarket' }).label; r.win = A.describe({ place: 'fmarket', fest: 'winter' }).label; r.sak = A.describe({ place: 'fmarket', fest: 'sakura' }).label;
     A.setContext({ place: 'fmarket', time: 'day', weather: 'snow', fest: 'winter' }); r.kept = A.contexts[A.contexts.length - 1].fest; A.setContext({ place: 'yard' }); r.cleared = A.contexts[A.contexts.length - 1].fest; return r; });
   log('fmarket:', JSON.stringify(fm));
-  if (!fm.place || !/→  market/.test(fm.plain) || !/→  wmarket/.test(fm.win) || fm.kept !== 'winter' || fm.cleared !== null) throw new Error('fmarket / Winter Market music check failed: ' + JSON.stringify(fm));
+  if (!fm.place || !/→  market/.test(fm.plain) || !/→  wmarket/.test(fm.win) || !/→  smarket/.test(fm.sak) || fm.kept !== 'winter' || fm.cleared !== null) throw new Error('fmarket / Winter and Sakura Market music check failed: ' + JSON.stringify(fm));
 
   // offline renders
   log('defaults', JSON.stringify(await p.evaluate(() => { const v = window.PawAudio.getVolumes(); return v; })));

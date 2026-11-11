@@ -15,7 +15,8 @@
   var HANGOUTS = { park: 1, river: 1, woods: 1, beach: 1, hilltop: 1, pier: 1 };   // v1.2.1 hub places: yard-style music + that area's ambience
   var TIMES = ['dawn', 'day', 'dusk', 'night'];
   var WEATHERS = ['sunny', 'cloudy', 'rain', 'snow'];
-  var FESTS = ['winter'];   // festival variants of a place (ctx.fest): 'winter' = the Winter Market at 'fmarket'
+  var FESTS = ['winter', 'sakura'];   // festival variants of a place (ctx.fest): 'winter' = the Winter Market, 'sakura' = the Sakura Market, both at 'fmarket'
+  var FEST_BASE = { winter: 'wmarket', sakura: 'smarket' };   // the music style of each festival variant at 'fmarket'
   var AREAS = ['park', 'river', 'woods', 'beach', 'town', 'hilltop', 'pier'];
   var STINGERS = ['treasure', 'levelup', 'adopt', 'harvest', 'cooked', 'discover'];
   var STINGS = ['birth', 'sparkle', 'playdate'];   // v2 sfx-bus stings (PawAudio.sting)
@@ -69,6 +70,7 @@
     glassy: ['F69', 'Bbmaj9', 'F69', 'Gm9', 'F69', 'Bbmaj9', 'Am9', 'C9sus'],
     lullaby: ['Fmaj9', 'Dm9', 'Bbmaj9', 'C9sus', 'Fmaj9', 'Am9', 'Bbmaj9', 'C13'],
     winter: ['Fmaj9', 'Bbmaj9', 'Am9', 'Dm9', 'Gm9', 'C9sus', 'F69', 'C13'],   // Winter Market: warm, a little wistful
+    spring: ['Fmaj9', 'Am9', 'Bbmaj9', 'F69', 'Dm9', 'Am9', 'Gm9', 'C9sus'],   // Sakura Market: light and open, a soft lift at the turn
     jazz: ['Gm9', 'C13', 'Fmaj9', 'Dm9', 'Gm9', 'C13', 'Am9', 'A7b13']   // ii-V-I cafe changes
   };
   var PENTA = [0, 2, 4, 7, 9];   // F pentatonic offsets from F
@@ -159,6 +161,9 @@
     market: V({ bpm: 84, swing: 0.58, prog: 'bright2', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', top: 'glock', dens: 0.6, cut: 8000 }),
     wmarket: V({ bpm: 76, swing: 0.6, prog: 'winter', keys: 'comp', bass: 'full', kick: 'lazy', snare: 'ghost', hats: 'sleigh', top: 'celesta', dens: 0.55,
       themeChance: 0.35, themeGap: 12, cut: 6200, brush: true, L: { keys: 0.85, pad: 0.4, bass: 0.8, kick: 0.6, snare: 0.45, hats: 0.75, top: 0.95 } }),
+    // Sakura Market (docs/design/sakura-market.md part 2): light spring lo-fi, plucked kalimba like a soft koto over bouncy keys, light brushed hats, spring birds
+    smarket: V({ bpm: 80, swing: 0.6, prog: 'spring', keys: 'bouncy', bass: 'bouncy', kick: 'lazy', snare: 'ghost', hats: 'light', top: 'kalimba', dens: 0.6,
+      themeChance: 0.35, themeGap: 12, cut: 7200, brush: true, L: { keys: 0.85, pad: 0.3, bass: 0.75, kick: 0.6, snare: 0.4, hats: 0.55, top: 1 } }),
     walk: V({ bpm: 82, prog: 'playful', bass: 'walk', hats: 'busy', top: 'flute', dens: 0.5, cut: 7000 }),
     play: V({ bpm: 86, swing: 0.66, prog: 'playful', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', dens: 0.7, cut: 8000 }),
     bath: V({ bpm: 78, keys: 'bouncy', bass: 'bouncy', kick: 'lazy', hats: 'light', top: 'bubble', dens: 0.85, themeChance: 0.2, cut: 6500, L: { kick: 0.5, snare: 0.4, hats: 0.45, top: 0.9 } }),
@@ -170,8 +175,8 @@
   var PLACE_BASE = { title: 'theme', yard: 'yard', house: 'house', garden: 'garden', kitchen: 'kitchen', park: 'yard', river: 'yard', woods: 'yard', beach: 'yard',
     square: 'square', cafe: 'cafe', dogpark: 'dogpark', vet: 'vet', salon: 'salon', hilltop: 'hill', pier: 'pier', map: 'yard', shelter: 'home', market: 'market', fmarket: 'market', shop: 'market', walk: 'walk',
     fetch: 'play', nursery: 'nursery', toy: 'play', bath: 'bath', sleep: 'sleep', journal: 'calm', wardrobe: 'calm' };
-  var KEEP_PROG = { wmarket: 1, nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
-  var STRONG = { wmarket: 1, market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
+  var KEEP_PROG = { wmarket: 1, smarket: 1, nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
+  var STRONG = { wmarket: 1, smarket: 1, market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
 
   function norm(c) {
     c = c || {};
@@ -188,7 +193,8 @@
 
   function resolve(c0) {
     var c = norm(c0), place = c.place, time = c.time, weather = c.weather, area = c.area;
-    var bn = PLACE_BASE[place] || 'yard'; if (place === 'fmarket' && c.fest === 'winter') bn = 'wmarket';
+    var bn = PLACE_BASE[place] || 'yard'; if (place === 'fmarket') bn = FEST_BASE[c.fest] || bn;
+    var FB = bn === 'wmarket' || bn === 'smarket';   // a festival market style keeps its own topline and keys in the snow
     var v = copy(BASE[bn]), L = v.L, indoor = !!INDOOR[place];
     var tags = [bn];
     if (place === 'map') { v.themeChance = 0.45; v.themeGap = 8; }
@@ -244,9 +250,9 @@
         if (v.top === 'bird') v.top = 'flute';
         tags.push('rain: mellow, muted drums');
       } else if (weather === 'snow') {
-        if (bn !== 'wmarket') v.top = 'glock'; v.dens *= bn === 'wmarket' ? 0.9 : 0.75; v.brush = true; v.cut *= 0.9;
-        scaleL(L, bn === 'wmarket' ? { kick: 0.8, hats: 0.85 } : { kick: 0.45, hats: 0.4 });
-        if (v.keys === 'comp' && bn !== 'wmarket') v.keys = 'sustain';
+        if (!FB) v.top = 'glock'; v.dens *= FB ? 0.9 : 0.75; v.brush = true; v.cut *= 0.9;
+        scaleL(L, FB ? { kick: 0.8, hats: 0.85 } : { kick: 0.45, hats: 0.4 });
+        if (v.keys === 'comp' && !FB) v.keys = 'sustain';
         if (!KEEP_PROG[bn] && time !== 'night') v.prog = 'glassy';
         tags.push('snow: glassy bells, sparse');
       }
@@ -266,6 +272,7 @@
     }
     if (place === 'market' || place === 'fmarket') a.market = 1;
     if (bn === 'wmarket') { a.market = 0.7; a.snowmkt = 0.8; a.wind = Math.min(a.wind, 0.3); }
+    if (bn === 'smarket') { a.market = 0.75; if (time !== 'night' && weather !== 'rain' && weather !== 'snow') a.birds = Math.max(a.birds, 0.5); }
     if (place === 'shop') a.market = 0.55;
     if (place === 'walk' || HANGOUTS[place]) {
       if (area === 'park') a.birds *= 1.3;

@@ -40,6 +40,7 @@ const FM_MARKETS = [
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], // Sakura Market (docs/design/sakura-market.md): every spring, no edition
     items: { decor: ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Blossom Swing'],
       clothes: ['Sakura Petal Crown', 'Hanami Sun Hat', 'Sakura Bandana', 'Blossom Garland', 'Sakura Haori', 'Sakura Mochi Suit', 'Butterfly Wings', 'Spring Knit Cardigan'],
+      homes: ['Blossom Kennel', 'Picnic Basket Bed', 'Paper Parasol Bed', 'Petal Nest'],
       toys: ['Squeaky Dango', 'Petal Ball', 'Plush Koi'], treats: ['Sakura Pup Mochi', 'Hanami Rice Ball'] } }
 ];
 const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // the Harvest Market alone: the Halloween colours, plain (fmSceneArt). TODO (V2171.md 8): a harvest stall re-colour

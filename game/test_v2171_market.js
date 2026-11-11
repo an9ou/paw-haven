@@ -43,14 +43,14 @@ run('v2171_market', async (t) => {
     const hw = M.find((m) => m.id === 'halloween');
     ok(['decor', 'clothes', 'homes', 'toys'].every((c) => (hw.items[c] || []).length >= 2 && hw.items[c].length <= 20), 'Halloween: 2 to 20 items in each of the four stalls (v2.17.2: the sheet grid scrolls): ' + ['decor', 'clothes', 'homes', 'toys'].map((c) => c + ' ' + hw.items[c].length).join(', '));
     ok(['Pumpkin Lantern', 'Paper Bat Bunting', 'Pumpkin Patch Suit', 'Little Bat Costume', 'Witch-Hat Bed', 'Pumpkin Cottage', 'Squeaky Ghost'].every((n) => all.includes(n)), 'the lantern, the bunting, the costumes, the pumpkin house, the witch-hat bed, the squeaky ghost');
-    ok(M.find((m) => m.id === 'sakura').todo, 'the sakura market waits for its art (todo, never opens)');
+    ok(!M.find((m) => m.id === 'sakura').todo, 'the sakura market has its art and opens every spring (docs/design/sakura-market.md; suite sakura_market)');
   }
 
   sec('2. the windows: Japan date, inclusive; overlapping markets share the place, the first to close names it');
   {
     const W = await ev(() => { const F = window.__paw.fm, o = (d) => F.open(d).map((x) => x.id).join('+'); return { a: o('2026-10-07'), b: o('2026-10-08'), c: o('2026-10-27'), d: o('2026-11-15'), e: o('2026-11-16'), d2: o('2026-11-02'), f: o('2026-11-30'), g: o('2026-12-01'), h: o('2026-12-26'), i: o('2026-12-27'), j: o('2027-01-07'), k: o('2027-01-08'), l: o('2027-03-30'), m: o('2027-10-23'), n: o('2027-10-24') }; });
     ok(W.a === 'harvest' && W.b === 'halloween+harvest' && W.c === 'halloween+harvest' && W.d === 'halloween+harvest' && W.d2 === 'halloween+harvest' && W.e === 'harvest' && W.f === 'harvest', 'Halloween 8 Oct to 15 Nov 2026 (open on 15 Nov, closed on 16 Nov), the Harvest Market 1 Oct to 30 Nov: ' + JSON.stringify(W));
-    ok(W.g === 'winter' && W.h === 'winter' && W.i === 'newyear' && W.j === 'newyear' && W.k === '' && W.l === '' && W.m === 'harvest' && W.n === 'halloween+harvest', 'Winter 1 to 26 Dec, New Year 27 Dec to 7 Jan, nothing in March (sakura todo), Halloween 2027 from 24 Oct');
+    ok(W.g === 'winter' && W.h === 'winter' && W.i === 'newyear' && W.j === 'newyear' && W.k === '' && W.l === 'sakura' && W.m === 'harvest' && W.n === 'halloween+harvest', 'Winter 1 to 26 Dec, New Year 27 Dec to 7 Jan, the Sakura Market on 30 Mar, Halloween 2027 from 24 Oct');
     ok(await ev(() => window.__paw.fm.sign() === 'Halloween Market · open until 15 Nov'), 'the sign: "Halloween Market · open until 15 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2026-11-16'); const s = F.sign(); F.date('2026-10-27'); return s === 'Harvest Market · open until 30 Nov'; }), 'after 15 Nov the sign says "Harvest Market · open until 30 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2027-10-27'); const c = F.items('clothes').map((x) => x.n), t = F.items('treats').map((x) => x.n); F.date('2026-10-27'); return !c.includes('Pumpkin Patch Suit') && c.includes('Ghost Sheet') && !t.includes('Pumpkin Patch Pupcake'); }), 'the 2026 edition items are sold in 2026 only');

@@ -7011,7 +7011,7 @@ PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Sui
 const SK_PK='#F7B2C4',SK_PKD='#D9708E',SK_PKL='#FDE0E8',SK_WH='#FFF7F9',SK_GR='#7FB86A',SK_GRD='#4F8A44',SK_RD='#E2403A',SK_RDD='#A82A2A',SK_BL='#5B8FD6',SK_BLD='#3A64A8',SK_GD='#F2C14E';
 // a notched five-petal paper blossom (one shape, its own line), a pink dot in the middle
 function skBloomP(x,y,r,a){const p=[];for(let i=0;i<5;i++){const b=a+i*Math.PI*.4;[[.28,-.5],[.62,-.44],[.98,-.2],[.82,0],[.98,.2],[.62,.44],[.28,.5]].forEach(([u,v])=>{const t=b+v*.62;p.push([x+Math.cos(t)*r*u,y+Math.sin(t)*r*u])})}return p}
-function skBloom(b,x,y,r,col,a,o={}){b.sh(skBloomP(x,y,r,a||0),col||SK_WH,{k:.04,hatch:0,hl:0,lw:o.lw||Math.max(.5,Math.min(.8,r/8)),base:'#FFFFFF',top:o.top?1:0});
+function skBloom(b,x,y,r,col,a,o={}){b.sh(skBloomP(x,y,r,a||0),col||SK_WH,{k:.04,hatch:0,hl:0,lw:o.lw||Math.max(.5,Math.min(.8,r/8)),base:'#FFFFFF',top:o.top?1:0,step:o.step,amp:o.amp});
   b.dot(x,y,Math.max(.7,r*.2),SK_PKD,o.top?'top':undefined)}
 // a loose petal (a little teardrop with a notch)
 function skPetal(b,x,y,r,a,col){b.sh(rot([[x,y-r],[x+r*.62,y-r*.2],[x+r*.4,y+r*.7],[x,y+r*.45],[x-r*.4,y+r*.7],[x-r*.62,y-r*.2]],a,x,y),col||SK_PK,{k:.05,hatch:0,hl:0,lw:.5,base:SK_PKL})}
@@ -7086,12 +7086,26 @@ PROPS.skswing=function(b){const G=214;b.shadow(60,G,52,4.4);
   skBloom(b,46,156,3.4,SK_WH,.2);skPetal(b,60,190,3.4,.5);skPetal(b,96,200,3,1.6);
   b.ex('spark',112,12,3.6,'#FFE07A');b.ex('heart',8,60,3.2,SK_PK);
 };
+/* Sakura Market part 2: the props made lighter with the same look. Every path of plain absolute M/L/Q/C/Z steps in tenths (what b.sh and b.ln write)
+   is rewritten as relative steps from the same rounded points, so each point lands exactly where it was (lossless: the lanterns 96 -> 54 KB, the
+   tree 98 -> 59 KB). A path with anything else in it (arcs, H/V, finer numbers) is left as it is. Also used for the Blossom Kennel and the spring beds */
+function skRel(svg){const f=v=>String(v/10).replace(/^(-?)0\./,'$1.');
+  return svg.replace(/ d="([^"]+)"/g,(m,d)=>{if(/[^MLZQC\d\s.-]/.test(d))return m;
+    const t=d.match(/[MLZQC]|-?\d*\.?\d+/g);if(t.some(c=>!/^[MLZQC]$/.test(c)&&!/^-?\d*(\.\d)?$/.test(c)))return m;
+    let out='',cmd='',oc='',x=0,y=0,sx=0,sy=0,pv='';const T=c=>Math.round(+c*10);
+    const num=(v,first)=>{const n=f(v);out+=first||n[0]==='-'||(n[0]==='.'&&pv.includes('.'))?n:' '+n;pv=n};
+    const put=(c,v)=>{if(c!==oc){out+=c;oc=c;v.forEach((a,i)=>num(a,!i))}else v.forEach(a=>num(a))};
+    for(let i=0;i<t.length;){const c=t[i];if(/[MLZQC]/.test(c)){cmd=c;i++;if(c==='Z'){out+='z';oc='z';x=sx;y=sy}continue}
+      const k=cmd==='C'?6:cmd==='Q'?4:2,n=t.slice(i,i+k).map(T);i+=k;
+      if(cmd==='M'){oc='';put('M',[n[0],n[1]]);x=sx=n[0];y=sy=n[1];cmd='L';oc='M';continue}
+      put(cmd.toLowerCase(),n.map((v,j)=>v-(j%2?y:x)));x=n[k-2];y=n[k-1]}
+    return ' d="'+out+'"'})}
 Object.assign(PROP_VB,{skblanket:'0 0 220 96',sklanterns:'0 0 300 80',sktree:'0 0 140 200',skbento:'0 0 160 120',skswing:'0 0 120 220'});
 const SK_LBL={skblanket:'Hanami Picnic Blanket',sklanterns:'Sakura Paper Lanterns',sktree:'Paper Sakura Tree',skbento:'Bento Picnic Table',skswing:'Blossom Swing'},SK_LIT=['sklanterns'];
 {const _propSK=PA.prop;
  PA.prop=function(name,o){if(!SK_LBL[name])return _propSK.apply(this,arguments);
   const lt=SK_LIT.includes(name),opt=lt?{lit:!!(o&&o.lit)}:{};
-  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+SK_LBL[name])})}}
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return skRel(b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+SK_LBL[name]))})}}
 Object.assign(ITEMS,{
  'Hanami Picnic Blanket'(b){hmPropCard(b,'skblanket',false,[2,10,216,84])},'Sakura Paper Lanterns'(b){hmPropCard(b,'sklanterns',false,[80,6,140,64])},
  'Paper Sakura Tree'(b){hmPropCard(b,'sktree',false,[12,20,116,178])},'Bento Picnic Table'(b){hmPropCard(b,'skbento',false,[2,22,156,94])},'Blossom Swing'(b){hmPropCard(b,'skswing',false,[2,10,116,206])},
@@ -7145,7 +7159,110 @@ bowlFood=function(b,food){
   });
   b.tx(60,90,'DOG',17,{mid:1});
 };
-PA.SAKURA_MARKET={decor:Object.assign({},SK_LBL),costumes:['Sakura Petal Crown','Hanami Sun Hat','Sakura Bandana','Blossom Garland','Sakura Haori','Sakura Mochi Suit','Butterfly Wings','Spring Knit Cardigan'],
+/* Sakura Market part 2, the homes stall: one house 'Blossom Kennel' (240x200, ground y=190, the door opening centred at x=120 like every house) and
+   three beds 'Picnic Basket Bed', 'Paper Parasol Bed', 'Petal Nest' (260x160, floor y=152, the sleep area about (130,100), the front lip in
+   <g class="pa-bed-front">), and their 64 item cards (PA.SAKURA_MARKET.house, .beds). The blossoms are paper and felt (no real cherry flowers,
+   leaves or stones near a dog). At night the kennel's two paper windows glow (.pa-wb-glow, shown by #houseG.night). Every fill inside its own line. */
+const SKH_BL={lw:.4,step:1.6,amp:.35},SKH_W='#FFF6EA',SKH_WD='#E3CDB2',SKH_RF='#E58AA3',SKH_RFD='#B9566F',SKH_RFL='#FAD2DC';
+HOUSES['Blossom Kennel']=function(b){
+  ground(b,106);
+  // a paper blossom branch peeking over the roof from behind, on the left
+  b.ln([[18,92],[36,70],[52,58],[66,40]],{w:3.2,col:'#8A5A3C'});b.ln([[36,70],[24,52]],{w:2.2,col:'#8A5A3C'});
+  [[66,38,9,.1,SK_PK],[50,58,8,-.3,SK_WH],[24,50,8.4,.4,SK_PK],[40,40,7,0,SK_WH]].forEach(([x,y,r,a,c])=>skBloom(b,x,y,r,c,a,SKH_BL));
+  // the walls: cream paper-white plaster between wooden posts and a beam
+  b.sh([[44,190],[44,104],[120,46],[196,104],[196,190]],SKH_W,{k:.04,hl:0,sh:SKH_WD,ho:.3,base:'#FFFFFF',
+   marks:[[44,58],[182,196]].map(([x0,x1])=>({pts:[[x0,100],[x1,100],[x1,192],[x0,192]],fill:C.wood,k:0})).concat([{pts:[[40,104],[200,104],[200,114],[40,114]],fill:C.wood,k:0}]),
+   inner:b.st(b.jl(58,114,58,190,.4)+b.jl(182,114,182,190,.4)+b.jl(44,114,196,114,.4),C.woodD,1,.7)});
+  // the paper windows' glow at night (the yard shows it on #houseG.night only)
+  b.raw(`<g class="pa-wb-glow"><circle cx="80" cy="144" r="22" fill="#FFF3C2" opacity=".5"/><circle cx="160" cy="144" r="22" fill="#FFF3C2" opacity=".5"/></g>`);
+  // the roof: pink tiles with upturned eaves, rows of round tile ends, a wooden ridge with a blossom on top
+  b.sh([[6,116],[14,108],[30,104],[120,34],[210,104],[226,108],[234,116],[214,120],[120,52],[26,120]],SKH_RF,{k:.03,hl:0,sh:SKH_RFD,ho:.3,base:SKH_RFL,
+   inner:b.st(shingles(b,[24,108],[118,36],2,7,13)+shingles(b,[122,36],[216,108],2,7,13),SKH_RFD,1.4,.75)});
+  b.sh([[112,36],[120,28],[128,36],[124,40],[116,40]],C.woodD,{k:0,hatch:0,hl:0,lw:.9,base:C.wood});
+  skBloom(b,120,24,7.6,SK_WH,.2,SKH_BL);
+  // paper blossoms along the eaves
+  [[32,112,7,SK_WH],[64,88,6.4,SK_WH],[176,88,6.4,SK_WH],[208,112,7,SK_WH]].forEach(([x,y,r,c],i)=>skBloom(b,x,y,r,c,i*.6,SKH_BL));
+  // two round paper windows with a wooden lattice; at night the panes glow warm (the yard shows .pa-wb-glow on #houseG.night only)
+  const pane=(x,y,lit)=>b.sh(E(x,y,14,14,22),lit?'#FFC94A':'#FFFDF6',{k:.02,hatch:0,hl:0,lw:.85,base:lit?'#FFE27A':'#FFFFFF',marks:lit?[{pts:E(x-3,y-3,5,4,10),fill:'#FFF3C2',op:.9}]:[],
+   inner:b.st(`M${x-15} ${y-5}H${x+15}M${x-15} ${y+5}H${x+15}M${x-5} ${y-15}V${y+15}M${x+5} ${y-15}V${y+15}`,C.woodD,1.3,.9)});
+  [[80,144],[160,144]].forEach(([x,y])=>{b.sh(E(x,y,18,18,24),C.wood,{k:0,hatch:0,hl:0,lw:.9,base:'#F3DDB4'});pane(x,y,false)});
+  b.raw('<g class="pa-wb-glow">');[[80,144],[160,144]].forEach(([x,y])=>pane(x,y,true));b.raw('</g>');
+  // the door in a wooden frame, a short pink noren curtain at the top with a white blossom on each half
+  b.sh(arch(94,146,190,120),C.wood,{hatch:0,hl:0,lw:.9,base:'#F3DDB4'});b.sh(arch(101,139,190,128),C.door,DOOR_O);
+  [[101,119.4],[120.6,139]].forEach(([x0,x1],i)=>{b.sh([[x0,129],[x1,129],[x1,146],[x0+(x1-x0)/2,144],[x0,146]],SK_PK,{k:.04,hatch:0,hl:0,lw:.8,base:SK_PKL});skBloom(b,(x0+x1)/2,137,3.6,SK_WH,i*.7,{lw:.3,step:1.2,amp:.3})});
+  b.sh(RR(98,124,44,5,2),C.woodD,{k:0,hatch:0,hl:0,lw:.75,base:C.wood});
+  // a stone-look step (painted wood) and loose paper petals on the grass
+  b.sh(RR(96,186,48,6,2.5),'#D7CFC4',{k:0,hatch:0,hl:0,lw:.8,base:'#EEE8E0'});
+  [[30,186,.4],[206,184,1.6],[160,188,2.4],[70,188,1.1]].forEach(([x,y,a])=>skPetal(b,x,y,3.4,a));
+  b.ex('spark',222,64,5.4,'#FFE07A');b.ex('heart',206,40,4.6,SK_PK);tuft(b,36,190,3.4);tuft(b,204,190,3)};
+// the three beds
+BEDS['Picnic Basket Bed']=function(b){b.shadow(130,151,108,3.5);const WK='#E2B07E',WKD='#B07A48',WKL='#F6DDBE';
+  const weave=(x0,y0,x1,y1)=>{let d='';for(let y=y0;y<=y1;y+=7)d+=b.jl(x0,y,x1,y,.4);for(let x=x0+6,k=0;x<x1;x+=12,k++)d+=b.jl(x,y0,x+1,y1,.3);return b.st(d,WKD,1.1,.7)};
+  // the lid stood up behind like a headboard, with its handle
+  b.ln([[96,40],[100,18],[130,10],[160,18],[164,40]],{w:3,col:WKD});
+  b.sh(RR(48,36,164,46,8),WK,{k:.05,hl:0,sh:WKD,ho:.35,base:WKL,inner:weave(52,42,208,80)});
+  // the inside of the basket and the pink check cushion
+  b.sh([[38,114],[52,80],[208,80],[222,114]],WKD,{k:.02,hatch:0,hl:0,lw:.9,base:'#C99A6A'});
+  const ck=[];[66,98,130,162,194].forEach(x=>ck.push({pts:[[x-7,82],[x+7,82],[x+7,118],[x-7,118]],fill:SK_PK,op:.75,k:0}));[96,108].forEach(y=>ck.push({pts:[[40,y-3],[220,y-3],[220,y+3],[40,y+3]],fill:SK_PK,op:.6,k:0}));
+  b.sh(cloudP(130,101,86,15,12,.06,60),'#FFF8F2',{hl:0,sh:'#E9C7CF',ho:.3,base:'#FFFFFF',marks:ck});
+  FRONT0(b);
+  // the low front of the basket: woven wicker, a pink ribbon bow and a paper blossom
+  b.sh([[36,112],[224,112],[218,150],[42,150]],WK,{k:.03,hl:0,sh:WKD,ho:.3,base:WKL,inner:weave(40,118,220,146)});
+  b.sh([[34,107],[226,107],[226,116],[34,116]],WKD,{k:0,hatch:0,hl:0,lw:.9,base:WK});
+  [-1,1].forEach(d=>b.sh([[176,124],[176+d*16,114],[176+d*18,132]],SK_PK,{k:.06,hatch:0,hl:0,lw:.8,base:SK_PKL}));
+  b.sh(E(176,124,4.4,4,10),SK_PKD,{k:0,hatch:0,hl:0,lw:.7,base:SK_PK});
+  skBloom(b,84,130,8,SK_WH,.3,SKH_BL);
+  FRONT1(b);b.ex('spark',22,50,3.6,'#FFE07A');b.ex('heart',236,40,3.4,SK_PK)};
+BEDS['Paper Parasol Bed']=function(b){b.shadow(130,151,110,3.5);
+  // a pink paper parasol (wagasa) on a bamboo pole at the back, over a round cushion
+  b.sh(RR(126,22,6,92,2.4),'#C8B26A',{k:0,hatch:0,hl:0,lw:.8,base:'#EADFA8',inner:b.st(b.jl(126,52,132,52,.2)+b.jl(126,82,132,82,.2),'#8E7A3A',1,.8)});
+  // the canopy: a low dome, its rim scalloped between the ribs (each rib tip a little lower), a white band round the rim
+  const can=[];for(let i=0;i<=40;i++){const a=Math.PI+i/40*Math.PI;can.push([129+Math.cos(a)*102,48+Math.sin(a)*40])}
+  for(let i=12;i>=0;i--){const x=27+i*17;can.push([x,i%2?47:51])}
+  let rb='';for(let i=1;i<12;i++){const x=27+i*17;rb+=`M129 9Q${R1(129+(x-129)*.6)} ${R1(18)} ${R1(x)} ${i%2?47:51}`}
+  const band=[];for(let i=0;i<=40;i++){const a=Math.PI+i/40*Math.PI;band.push([129+Math.cos(a)*110,52+Math.sin(a)*14])}for(let i=40;i>=0;i--){const a=Math.PI+i/40*Math.PI;band.push([129+Math.cos(a)*110,60+Math.sin(a)*14])}
+  b.sh(can,SK_PK,{k:.04,hl:0,sh:SK_PKD,ho:.3,base:SK_PKL,marks:[{pts:band,fill:SK_WH,op:.9,k:0}],inner:b.st(rb,SK_PKD,1.1,.7)});
+  b.sh(E(129,8,4.6,4,10),SK_RD,{k:0,hatch:0,hl:0,lw:.7,base:'#F6A8A0'});
+  [[66,30,6.4,.2],[192,30,6.4,1]].forEach(([x,y,r,a])=>skBloom(b,x,y,r+1,SK_WH,a,SKH_BL));
+  // the round cushion: the far rim, the soft middle
+  b.sh(E(130,104,104,26,32),'#E9D6B8',{hatch:0,hl:0,lw:.9,base:'#F6EBDA'});
+  b.sh(cloudP(130,102,88,17,12,.06,60),'#FFF2F5',{hl:0,sh:'#E9B9C6',ho:.3,base:'#FFFFFF',marks:[{pts:E(114,98,40,6,16),fill:'#FFFFFF',op:.85}]});
+  FRONT0(b);
+  // the near rim: a soft roll in pale green with paper blossoms
+  const fr=[];for(let i=0;i<=40;i++){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*112,112+Math.sin(a)*34])}for(let i=40;i>=0;i--){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*92,110+Math.sin(a)*16])}
+  b.sh(fr,'#CFE6BE',{k:.08,hl:0,sh:SK_GRD,ho:.3,base:'#EAF5E0',inner:b.st(b.jl(40,132,90,142,.5)+b.jl(170,142,220,132,.5),SK_GRD,1,.5)});
+  [[58,134,5.6,SK_PK],[104,144,5,SK_WH],[156,144,5,SK_PK],[202,134,5.6,SK_WH]].forEach(([x,y,r,c],i)=>skBloom(b,x,y,r+1,c,i*.5,SKH_BL));
+  FRONT1(b);b.ex('spark',16,64,3.6,'#FFE07A');b.ex('heart',246,70,3.4,SK_PK)};
+BEDS['Petal Nest']=function(b){b.shadow(130,151,114,3.5);
+  // a round nest of big soft felt petals: the far petals stand up behind, the dip with a cream cushion, the near petals in front
+  const petal=(x,y,w,h,a,col)=>b.sh(rot([[x,y],[x-w*.5,y-h*.4],[x-w*.42,y-h*.85],[x-w*.12,y-h],[x,y-h*.9],[x+w*.12,y-h],[x+w*.42,y-h*.85],[x+w*.5,y-h*.4]],a,x,y),col,
+    {k:.08,hl:0,sh:SK_PKD,ho:.3,base:col===SK_PK?SK_PKL:'#FFFFFF',inner:b.st(b.jl(x,y-4,x,y-h*.7,.3),SK_PKD,.9,.5)});
+  [[50,110,46,52,-.7,SK_PK],[90,100,48,62,-.3,SK_WH],[130,98,50,68,0,SK_PK],[170,100,48,62,.3,SK_WH],[210,110,46,52,.7,SK_PK]].forEach(p=>petal(...p));
+  b.sh(E(130,104,84,22,30),'#E9B9C6',{hatch:0,hl:0,lw:.9,base:'#F4D3DB',dr:.3});
+  b.sh(cloudP(130,104,78,16,10,.06,60),'#FFF8EC',{hl:0,sh:'#D9C3A8',ho:.3,base:'#FFFFFF',marks:[{pts:E(114,100,38,6,16),fill:'#FFFFFF',op:.9}]});
+  FRONT0(b);
+  // the near petals, lying forward round the front of the ring (low, so a sleeping dog still shows)
+  const fr=[];for(let i=0;i<=60;i++){const a=i/60*Math.PI,f=1+.12*(Math.abs(Math.sin(a*6))-.6);fr.push([130+Math.cos(a)*118*f,112+Math.sin(a)*40*f])}
+  for(let i=60;i>=0;i--){const a=i/60*Math.PI;fr.push([130+Math.cos(a)*82,110+Math.sin(a)*14])}
+  let vn='';for(let i=1;i<6;i++){const a=i/6*Math.PI;vn+=`M${R1(130+Math.cos(a)*86)} ${R1(112+Math.sin(a)*16)}L${R1(130+Math.cos(a)*108)} ${R1(114+Math.sin(a)*34)}`}
+  b.sh(fr,SK_PK,{k:.1,hl:0,sh:SK_PKD,ho:.35,base:SK_PKL,inner:b.st(vn,SK_PKD,1.2,.6)});
+  skBloom(b,130,141,7.4,SK_WH,.4,SKH_BL);
+  FRONT1(b);b.ex('spark',22,50,3.6,'#FFE07A');b.ex('spark',240,56,3,'#FFE07A')};
+Object.assign(BED_CROP,{'Picnic Basket Bed':[30,4,200,152],'Paper Parasol Bed':[20,6,224,150],'Petal Nest':[8,26,244,130]});
+Object.assign(BED_ICON_H,{'Picnic Basket Bed':46,'Paper Parasol Bed':50,'Petal Nest':40});
+// their templates (the bed and its card) in short relative steps, the same points (skRel), made once on first use
+const SK_BEDS=['Picnic Basket Bed','Paper Parasol Bed','Petal Nest'];
+function skBedTpl(name,icon){const k=(icon?'bi:':'b:')+name;if(CACHE[k]===undefined){bedTpl(name,icon);CACHE[k]=skRel(CACHE[k])}}
+{const _bedSK=PA.bed;PA.bed=function(name){if(SK_BEDS.includes(name))skBedTpl(name,false);return _bedSK.apply(this,arguments)}}
+SK_BEDS.forEach(name=>{ITEMS[name]=function(b){skBedTpl(name,true);
+  const [x,y,w,h]=BED_CROP[name],H=BED_ICON_H[name],W=Math.min(62,H*w/h);
+  const t=bedTpl(name,true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')}});
+ITEMS['Blossom Kennel']=function(b){const t=PA.house('Blossom Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(4 4) scale(.233)">${t}</g>`)};
+// the kennel is a big drawing: its paths in short relative steps, the same points (skRel)
+{const _houseSK=PA.house;PA.house=function(name){if(name!=='Blossom Kennel')return _houseSK.apply(this,arguments);
+  return serve('h:'+name,()=>{const b=mk('house',name);HOUSES[name](b);return skRel(b.svg('0 0 240 200','',lab(name),true))})}}
+PA.SAKURA_MARKET={house:'Blossom Kennel',beds:['Picnic Basket Bed','Paper Parasol Bed','Petal Nest'],decor:Object.assign({},SK_LBL),costumes:['Sakura Petal Crown','Hanami Sun Hat','Sakura Bandana','Blossom Garland','Sakura Haori','Sakura Mochi Suit','Butterfly Wings','Spring Knit Cardigan'],
   toys:['Squeaky Dango','Petal Ball','Plush Koi'],treats:BOWL_SK.slice()};
 
 /* ---------- v2.19 "Friends first": the friends art (V219.md 9; used in sections 3 to 6). PA.FRIENDS groups it; each call is an SVG string.
