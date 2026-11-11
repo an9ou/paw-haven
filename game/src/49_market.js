@@ -38,7 +38,7 @@ const FM_MARKETS = [
   { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], // Sakura Market (docs/design/sakura-market.md): every spring, no edition
-    items: { decor: ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Koinobori Pole'],
+    items: { decor: ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Blossom Swing'],
       clothes: ['Sakura Petal Crown', 'Hanami Sun Hat', 'Sakura Bandana', 'Blossom Garland', 'Sakura Haori', 'Sakura Mochi Suit', 'Butterfly Wings', 'Spring Knit Cardigan'],
       toys: ['Squeaky Dango', 'Petal Ball', 'Plush Koi'], treats: ['Sakura Pup Mochi', 'Hanami Rice Ball'] } }
 ];

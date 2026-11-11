@@ -5,7 +5,7 @@
 const { run } = require('./test_lib'); const path = require('path'); const fs = require('fs');
 const SHOTS = process.env.SK_SHOTS || null;
 const PREFS = { fmTest: true, fmDate: '2027-03-28' };
-const DECOR = ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Koinobori Pole'];
+const DECOR = ['Sakura Paper Lanterns', 'Hanami Picnic Blanket', 'Bento Picnic Table', 'Paper Sakura Tree', 'Blossom Swing'];
 const CLOTHES = ['Sakura Petal Crown', 'Hanami Sun Hat', 'Sakura Bandana', 'Blossom Garland', 'Sakura Haori', 'Sakura Mochi Suit', 'Butterfly Wings', 'Spring Knit Cardigan'];
 const TOYS = ['Squeaky Dango', 'Petal Ball', 'Plush Koi'], TREATS = ['Sakura Pup Mochi', 'Hanami Rice Ball'];
 const ALL = DECOR.concat(CLOTHES, TOYS, TREATS);
@@ -77,7 +77,7 @@ run('sakura_market', async (t) => {
     // a Bond gate: at Bond 1 the Bond 2 things are locked
     await ev(() => { const P = window.__paw; P.S.dogs.forEach((d) => { d.bond = { level: 1, pts: 0 }; }); });
     await ev(() => window.__paw.fm.sheet('decor')); await t.p.waitForSelector('#modal .fm-card');
-    ok(await ev(() => !!document.querySelector('#modal .fm-card[data-n="Koinobori Pole"] [aria-disabled="true"]')), 'the Koinobori Pole opens at Bond 2');
+    ok(await ev(() => !!document.querySelector('#modal .fm-card[data-n="Blossom Swing"] [aria-disabled="true"]')), 'the Blossom Swing opens at Bond 2');
     await shot('sakura_sheet_desktop');
     await t.closeX(); await t.modalGone();
   }
@@ -114,7 +114,7 @@ run('sakura_market', async (t) => {
   {
     const A = await ev((x) => { const PA = window.PawArt, ok1 = (s) => typeof s === 'string' && s.length > 200 && /<svg/.test(s);
       const cards = x.all.filter((n) => !ok1(PA.item(n)));
-      const props = ['skblanket', 'sklanterns', 'sktree', 'skbento', 'skkoi'].filter((p) => !ok1(PA.prop(p, {})));
+      const props = ['skblanket', 'sklanterns', 'sktree', 'skbento', 'skswing'].filter((p) => !ok1(PA.prop(p, {})));
       const lit = /pa-wb-glow/.test(PA.prop('sklanterns', { lit: true }));
       const bowls = x.tr.filter((n) => !ok1(PA.prop('bowl', { food: n })));
       const keys = (PA.DOGS || []).map((d) => d.key);

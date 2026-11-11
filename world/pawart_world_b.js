@@ -7005,7 +7005,7 @@ PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Sui
      sklanterns {lit} 300x80       'Sakura Paper Lanterns': round pink paper lanterns on a wire, black caps, a blossom on each. Lit: they glow
      sktree 140x200                'Paper Sakura Tree': paper blossoms on a wooden tree in a pot (real cherry leaves, stems and stones are not safe for dogs). Ground y=194
      skbento 160x120               'Bento Picnic Table': a low wooden table, a red bento box (wood and paint) and two tea cups. Ground y=114
-     skkoi 120x220                 'Koinobori Pole': three cloth carp streamers on a wooden pole with a gold ball on top. Ground y=214
+     skswing 120x220               'Blossom Swing': a wooden A-frame swing with a pink seat and a garland of paper blossoms. Ground y=214
    The 18 item cards (5 decorations, 8 costumes, 3 toys, 2 treats) and the two treats' dog bowls; PA.SAKURA_MARKET groups the set.
    Every fill sits inside its own line (marks are clipped to their shape); lit parts sit in <g class="pa-wb-glow"> so the night tint keeps them bright. */
 const SK_PK='#F7B2C4',SK_PKD='#D9708E',SK_PKL='#FDE0E8',SK_WH='#FFF7F9',SK_GR='#7FB86A',SK_GRD='#4F8A44',SK_RD='#E2403A',SK_RDD='#A82A2A',SK_BL='#5B8FD6',SK_BLD='#3A64A8',SK_GD='#F2C14E';
@@ -7074,22 +7074,27 @@ function skCarp(b,x,y,L,h,col,colD,a){const P=(u,v)=>{const w=Math.sin(u*Math.PI
   const sc=[];for(let i=1;i<5;i++){const [sx,sy]=P(.14+i*.15,-.12),[tx,ty]=P(.14+i*.15,.22);sc.push(`M${R1(sx)} ${R1(sy)}Q${R1(sx+h*.26)} ${R1((sy+ty)/2)} ${R1(tx)} ${R1(ty)}`)}
   b.sh(out,col,{k:.06,hatch:0,hl:0,lw:.9,base:mix(col,'#FFFFFF',.5),marks:[{pts:[P(0,.18),P(.7,.2),P(.7,.5),P(0,.5)],fill:'#FFFFFF',k:0,op:.7},{pts:[P(0,-.5),P(.06,-.5),P(.06,.5),P(0,.5)],fill:'#FFFFFF',k:0}],inner:b.st(sc.join(''),colD,.9,.75)});
   const e=P(.14,-.08);b.sh(E(e[0],e[1],h*.18,h*.18,12),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.6});b.dot(e[0]+.6,e[1],h*.08,INK)}
-PROPS.skkoi=function(b){const G=214;b.shadow(36,G,26,3.6);
-  b.sh(RR(20,G-10,32,10,3),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood});
-  b.sh([[33,G-9],[33.6,26],[38.4,26],[39,G-9]],C.wood,{k:0,hatch:0,hl:0,lw:.95,base:'#F3DDB4',det:[[[35.6,60],[35.8,180]]],dw:.6,dcol:C.woodD});
-  b.sh(E(36,20,6,6,12),SK_GD,{k:0,hatch:0,hl:0,lw:.8,base:'#FFE9A8'});b.dot(34,18,1.4,'#FFF7D6');
-  skCarp(b,39,42,76,22,'#4E5866','#2E3440',.2);skCarp(b,39,76,62,19,SK_RD,SK_RDD,.9);skCarp(b,39,106,48,16,SK_BL,SK_BLD,1.6);
-  b.ex('spark',110,20,3.6,'#FFE07A');skPetal(b,96,150,3.4,.5);skPetal(b,14,170,3,1.6);
+PROPS.skswing=function(b){const G=214;b.shadow(60,G,52,4.4);
+  // a wooden A-frame with a crossbar, a garland of paper blossoms along the bar, two ropes and a pink seat (a swing for people; the dogs sit underneath)
+  [[14,G,30,30],[106,G,90,30]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-4,y0],[x1-3,y1],[x1+3,y1],[x0+4,y0]],C.wood,{k:0,hatch:0,hl:0,lw:.95,base:'#F3DDB4'}));
+  [[26,G,34,30],[94,G,86,30]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-3,y0],[x1-2.4,y1],[x1+2.4,y1],[x0+3,y0]],C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood}));
+  b.sh(RR(18,22,84,10,3),C.wood,{k:0,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[26,27],[94,27]]],dw:.6,dcol:C.woodD});
+  [42,78].forEach(x=>b.ln([[x,32],[x+1,150]],{w:1.4,col:'#A97E5A'}));
+  b.sh([[34,150],[88,150],[86,160],[36,160]],SK_PK,{k:.05,hatch:0,hl:0,lw:.9,base:SK_PKL,marks:[{pts:[[34,150],[88,150],[88,153],[34,153]],fill:SK_PKD,k:0,op:.6}]});
+  const sag=t=>[20+80*t,30+Math.sin(Math.PI*t)*10];b.ln([0,.25,.5,.75,1].map(sag),{w:1.2,col:SK_GRD});
+  [0,.2,.4,.6,.8,1].forEach((t,i)=>{const [x,y]=sag(t);skBloom(b,x,y,i%2?4.4:5.2,i%2?SK_WH:SK_PK,i*.5)});
+  skBloom(b,46,156,3.4,SK_WH,.2);skPetal(b,60,190,3.4,.5);skPetal(b,96,200,3,1.6);
+  b.ex('spark',112,12,3.6,'#FFE07A');b.ex('heart',8,60,3.2,SK_PK);
 };
-Object.assign(PROP_VB,{skblanket:'0 0 220 96',sklanterns:'0 0 300 80',sktree:'0 0 140 200',skbento:'0 0 160 120',skkoi:'0 0 120 220'});
-const SK_LBL={skblanket:'Hanami Picnic Blanket',sklanterns:'Sakura Paper Lanterns',sktree:'Paper Sakura Tree',skbento:'Bento Picnic Table',skkoi:'Koinobori Pole'},SK_LIT=['sklanterns'];
+Object.assign(PROP_VB,{skblanket:'0 0 220 96',sklanterns:'0 0 300 80',sktree:'0 0 140 200',skbento:'0 0 160 120',skswing:'0 0 120 220'});
+const SK_LBL={skblanket:'Hanami Picnic Blanket',sklanterns:'Sakura Paper Lanterns',sktree:'Paper Sakura Tree',skbento:'Bento Picnic Table',skswing:'Blossom Swing'},SK_LIT=['sklanterns'];
 {const _propSK=PA.prop;
  PA.prop=function(name,o){if(!SK_LBL[name])return _propSK.apply(this,arguments);
   const lt=SK_LIT.includes(name),opt=lt?{lit:!!(o&&o.lit)}:{};
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+SK_LBL[name])})}}
 Object.assign(ITEMS,{
  'Hanami Picnic Blanket'(b){hmPropCard(b,'skblanket',false,[2,10,216,84])},'Sakura Paper Lanterns'(b){hmPropCard(b,'sklanterns',false,[80,6,140,64])},
- 'Paper Sakura Tree'(b){hmPropCard(b,'sktree',false,[12,20,116,178])},'Bento Picnic Table'(b){hmPropCard(b,'skbento',false,[2,22,156,94])},'Koinobori Pole'(b){hmPropCard(b,'skkoi',false,[4,8,114,210])},
+ 'Paper Sakura Tree'(b){hmPropCard(b,'sktree',false,[12,20,116,178])},'Bento Picnic Table'(b){hmPropCard(b,'skbento',false,[2,22,156,94])},'Blossom Swing'(b){hmPropCard(b,'skswing',false,[2,10,116,206])},
  /* the eight costume cards: the garment on its own, like the winter cards */
  'Sakura Petal Crown'(b){b.sh(ribbon([[8,40],[20,32],[32,30],[44,32],[56,40]],[5,5,5,5,5]),SK_GR,{k:1/6,hatch:0,hl:0,lw:.8,base:'#C6E4B6'});
   [[12,36,7,.1,SK_PK],[23,30,7.6,-.2,SK_WH],[34,28,8,.3,SK_PK],[45,30,7.6,0,SK_WH],[54,36,7,.4,SK_PK]].forEach(([x,y,r,a,c])=>skBloom(b,x,y,r,c,a));

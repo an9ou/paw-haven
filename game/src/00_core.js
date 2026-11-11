@@ -167,7 +167,7 @@ const CLOTHES = [
   { n: 'Sakura Haori', slot: 'body', fest: 'sakura', fm: true, price: 80, bond: 2, perk: 'Spring best: a pink haori jacket with white blossoms and a little white tie.' },
   { n: 'Sakura Mochi Suit', slot: 'body', fest: 'sakura', fm: true, price: 75, bond: 2, perk: 'Squish: a round pink suit wrapped in a big green leaf. A look, not a snack.' },
   { n: 'Butterfly Wings', slot: 'body', fest: 'sakura', fm: true, price: 70, bond: 1, perk: 'Flutter: yellow and pink felt wings on a soft strap. A hat still fits on top.' },
-  { n: 'Spring Knit Cardigan', slot: 'body', fest: 'sakura', fm: true, price: 65, bond: 1, perk: 'Mild: a soft mint cardigan with blossom buttons, for cool spring mornings.' },
+  { n: 'Spring Knit Cardigan', slot: 'body', fest: 'sakura', fm: true, price: 65, bond: 1, perk: 'Warm: no shivering in a late snow. A soft mint cardigan with blossom buttons, for cool spring mornings.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
@@ -1295,7 +1295,7 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood', 'Puffer Jacket', 'Polar Bear Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three; Winter Market 2026 (owner): the Puffer Jacket and the Polar Bear Hood
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood', 'Puffer Jacket', 'Polar Bear Hood', 'Spring Knit Cardigan']; // Sakura Market (owner, 11 Nov 2026): the cardigan is warm wear // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three; Winter Market 2026 (owner): the Puffer Jacket and the Polar Bear Hood
 const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);

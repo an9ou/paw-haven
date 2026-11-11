@@ -1330,7 +1330,7 @@ function fmBare(b,th,x0,w,y0){const top=y0+88,hem=y0+124,n=7,P=[[x0-5,top-2],[x0
   [[-9,-41],[0,-50],[9,-39]].forEach(([dx,dy],k)=>{b.sh(cloudP(cx+dx,G+dy,6.4,6.2,5,.32,25),k===1?th.b:th.a,{k:.2,hatch:0,hl:0,lw:.7,base:'#FFFFFF'});b.dot(cx+dx,G+dy,1.9,'#FFD56B')});
   b.sh([[cx-9,G],[cx-11,G-12],[cx-7,G-20],[cx+7,G-20],[cx+11,G-12],[cx+9,G]],th.b,{k:.15,hatch:0,hl:0,lw:.85,base:'#FFFFFF',marks:[{pts:[[cx-12,G-12],[cx+12,G-12],[cx+12,G-9],[cx-12,G-9]],fill:'#FFFFFF',op:.8,k:0}]})}
 /* Sakura Market (docs/design/sakura-market.md): the sakura stalls dressed with the real drawings (world B, PawArt.SAKURA_MARKET), like the winter ones:
-   the Sakura Paper Lanterns under the decor awning, the Bento Picnic Table on its counter, the Paper Sakura Tree beside it, the Koinobori Pole in front;
+   the Sakura Paper Lanterns under the decor awning, the Bento Picnic Table on its counter, the Paper Sakura Tree beside it, the Blossom Swing in front;
    five costumes on little hangers and the Petal Crown on the counter; toys in baskets; a treats cart in front (no homes this market) and the picnic
    blanket on the ground; petals on the roofs and the ground (the falling petals are the game's, 49_market.js, so the scene stays one memoised string).
    o.lit (after dark): the lanterns glow. The same blank boards (FM_STALL_SIGNS): the game writes the stall names */
@@ -1352,7 +1352,7 @@ function fmFrontSk(b,th,lit){
   fmNest(b,fmPr('skblanket'),70,500,220*.62,96*.62,undefined,1);
   b.sh([[632,512],[702,512],[700,556],[634,556]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});[[640,560],[694,560]].forEach(([x,y])=>b.sh(E(x,y,7,7,12),'#A97E5A',{hatch:0,hl:0,lw:.8}));
   fmNest(b,fmIt('Sakura Pup Mochi'),642,466,48,48,undefined,1);fmBoard(b,667,428,70);
-  fmNest(b,fmPr('skkoi'),912,340,120*.64,220*.64,undefined,1);
+  fmNest(b,fmPr('skswing'),934,384,120*.5,220*.5,undefined,1);
   [[318,470,.3],[420,540,1.2],[560,500,2],[780,560,.8],[860,470,1.6],[240,580,2.4],[600,590,.5],[980,540,1.1],[40,470,1.9],[700,600,2.6],[150,560,.2],[470,452,1.4]].forEach(([x,y,a])=>fmPetalE(b,x,y,4,a));
   [[110,226,.5],[240,206,1.7],[560,214,.9],[700,226,2.2],[880,208,1.2],[400,232,.1]].forEach(([x,y,a])=>fmPetalE(b,x,y,3.4,a))}
 function fmStall(b,th,x0,w,theme,i,lit,plain,open){

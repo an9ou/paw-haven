@@ -26,7 +26,7 @@ English only (`tt('key', 'English')`; the one translation batch comes with the r
 | Decor | Sakura Paper Lanterns | yard wall, `lit` | 110 | 1 | round pink paper lanterns on a string; glow after dark |
 | Decor | Paper Sakura Tree | yard floor | 140 | 2 | paper blossoms on a wooden tree in a pot (real cherry is not dog-safe) |
 | Decor | Bento Picnic Table | yard floor | 100 | 1 | a low table, a wooden bento box, two tea cups (all wood and paint) |
-| Decor | Koinobori Pole | yard floor | 130 | 2 | three cloth carp streamers on a pole |
+| Decor | Blossom Swing | yard floor | 130 | 2 | a wooden A-frame swing, a pink seat, a garland of paper blossoms (replaces the Koinobori Pole) |
 | Clothes | Sakura Petal Crown | head | 55 | 1 | pink paper blossoms on a soft green band |
 | Clothes | Hanami Sun Hat | head | 60 | 1 | a straw hat with a blossom sprig in its band |
 | Clothes | Sakura Bandana | neck | 50 | 1 | pink bandana with white five-petal flowers |
@@ -34,7 +34,7 @@ English only (`tt('key', 'English')`; the one translation batch comes with the r
 | Clothes | Sakura Haori | body | 80 | 2 | a pink haori jacket, white blossoms, a white tie, a darker hem band |
 | Clothes | Sakura Mochi Suit | body | 75 | 2 | a pink round suit wrapped in a big green leaf (a look, not a snack) |
 | Clothes | Butterfly Wings | body | 70 | 1 | yellow and pink felt wings on a soft strap (the Snowflake Wings rig) |
-| Clothes | Spring Knit Cardigan | body | 65 | 1 | a mint knit with blossom buttons |
+| Clothes | Spring Knit Cardigan | body | 65 | 1 | a mint knit with blossom buttons; warm wear (`WARM_WEAR`) |
 | Toys | Squeaky Dango | toy (Squeaky Duck game) | 50 | 1 | three felt dango balls on a felt stick |
 | Toys | Petal Ball | ball play (2 coins a return) | 45 | 1 | a pink ball with petals; ball-play caps 16 a session, 40 a day |
 | Toys | Plush Koi | toy (Plush Bone game, nap buddy) | 65 | 2 | a soft red-and-white carp; +10% nap Energy once |
@@ -44,12 +44,12 @@ English only (`tt('key', 'English')`; the one translation batch comes with the r
 One of each: 570 decor + 510 clothes + 160 toys = 1,240 coins, plus treats (the winter set was about 2,700 with homes). Toy-game coins come under the
 one toy-game cap (`FF_CAPS.toys`, 30 a Japan day); the Petal Ball pays through ball play's own caps, like the Snowball Ball.
 
-Wear: nothing here is warm wear (spring) and nothing is a raincoat; the dogs still look wet in the rain in every costume except the old raincoats.
+Wear: the Spring Knit Cardigan is warm wear (owner, 11 Nov); nothing else is and nothing is a raincoat; the dogs still look wet in the rain in every costume except the old raincoats.
 
 ## The market scene
 
 The `sakura` scene (`fmscene` theme `sakura`, world E) is dressed like the winter one: the Sakura Paper Lanterns under the decor awning, the Bento
-Picnic Table and the blanket on its counter, the Paper Sakura Tree beside it and the Koinobori Pole at the right edge; four costumes on hangers and the
+Picnic Table and the blanket on its counter, the Paper Sakura Tree beside it and the Blossom Swing at the right edge; four costumes on hangers and the
 crown and bandana on the counter; toys in baskets; a treats cart in front (no homes this market, so no homes stand); the same blank boards (the game
 writes the stall names); pink blossom clouds at both edges, petals lying on the ground, and petals falling in the air (a CSS animation on the game's
 side, still under `prefers-reduced-motion`).
@@ -59,9 +59,16 @@ side, still under `prefers-reduced-motion`).
 - Every year, no edition (owner rule: markets come back every year).
 - Eight costumes, not ten: two head, two neck, four body; the Butterfly Wings and the head pieces leave room for a hat (the wings) or a body piece.
 - No homes in this market (the winter homes set was the big art cost; the plan asks for about one market per release).
-- The koinobori is Children's Day (5 May), a little after the window; it is a spring look and the owner's plan lists it, so it stays.
+- Koinobori belong to Children's Day (5 May), so the pole is out (owner, 11 Nov): an idea for a later Golden Week market (the `skCarp` drawing is kept, the Plush Koi uses it).
 
-## Open questions for the owner
+## Decided (owner, 11 Nov 2026, choice window)
+
+1. Add a homes stall: a Blossom Kennel and 2 to 3 spring beds, about 3,000 coins of stock in all (part 2, to do).
+2. Own music: a light spring Sakura Market variant in PawAudio, like the Winter Market's (part 2, to do; `paw-music` skill).
+3. The Koinobori Pole is swapped for the Blossom Swing (done); koinobori kept as a Golden Week market idea.
+4. The Spring Knit Cardigan counts as warm wear (done).
+
+## Open questions for the owner (answered above, kept for the record)
 
 1. Launch date and go-ahead (the window opens 25 Mar 2027).
 2. Stock is about 1,240 coins (the plan said about 3,000): add a homes stall (a Blossom Kennel and two beds) in a later part?
@@ -78,6 +85,8 @@ Built on `claude/sakura-market` (11 Nov 2026), English only, not merged:
   dogs (`HAT2`/`NECK2`/`BODY2`/`BACK2`, `SK_OWN` hands back the random stream); world E (`fmDressSk`, `fmFrontSk`); falling petals `fmPetals` + `.fm-petal` in `50_market.css`.
 - [x] Checks: suite `sakura_market` (window, items, buying, caps, scene, costume renders on every breed, phone 360x640); the 8 costumes added to
   `dogs/connect_check.js` OUTFITS and `dogs/fill_sweep.js`.
+- [x] Part 2 started (11 Nov): Blossom Swing in place of the Koinobori Pole (prop `skswing`), the cardigan in `WARM_WEAR`; `sakura_market` 36, `wm_review` 73, `smoke` 35, `copy` pass.
+- [ ] Part 2 left (a fresh session; this one reached its context limit): the homes stall (Blossom Kennel in `HOUSES`, 2 to 3 `BEDS` rows, art in world B like `PA.WINTER_MARKET.house/.beds`, a homes stand in `fmFrontSk`, the suite's stall list then has homes; `v2183_connect` only if dog drawing changes); the Sakura music variant (`mods/pawaudio.js`, `audioPlace()` `fest: 'sakura'`, like `wmarket`, a sample clip for the owner); lighter `sklanterns`/`sktree` (about 95 KB each: fewer blossom points or batch the blossoms into one path).
 - [ ] Left for the release: the art review (owner/top model) and the phone review; `dogs/fill_sweep.js` with OUTFITS=1 on the new costumes;
   `check_identical` against the last release; translations (one batch, 12 languages); a `NEWS` entry and Gerald's market letter wording;
   a Sakura music variant if the owner wants one; heavy props (`sklanterns`/`sktree` about 95 KB each, the many blossoms) could be made lighter.
