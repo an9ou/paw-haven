@@ -190,9 +190,14 @@ run('v229_story', async (t) => {
       for (const id of await ev(() => window.__paw.sc.ids())) {
         const ds = await ev((id) => window.__paw.sc.sd(id), id); await ev((id) => window.__paw.sc.play(id), id); let acc = 0;
         for (let i = 0; i < ds.length; i++) {
-          await ev((ms) => window.__paw.sc.seek(ms), (acc + ds[i] * (still ? 0.5 : 0.96)) * 1000); acc += ds[i];
+          // the scene clock keeps running after the seek: under load the two frames can carry it past the last 4% into the next shot.
+          // That is the clock, not the fit, so the same moment is measured again (up to 3 times) before it counts as a failure
+          const at = (acc + ds[i] * (still ? 0.5 : 0.96)) * 1000; acc += ds[i];
+          let o = null;
+          for (let tries = 0; tries < 3 && (!o || o.shot !== i); tries++) {
+          if (!(await ev((ms) => window.__paw.sc.seek(ms), at))) { await ev((id) => window.__paw.sc.play(id), id); await ev((ms) => window.__paw.sc.seek(ms), at); } // the last shot ran out: play it again
           await t.p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-          const o = await ev(() => {
+          o = await ev(() => {
             const c = window.__paw.sc.cur(), f = document.querySelector('#scLayer .sc-film').getBoundingClientRect(), out = [];
             document.querySelectorAll('#scLayer .sc-a').forEach((g) => {
               const k = +g.dataset.a; if (!c || c.off[k]) return; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -201,6 +206,7 @@ run('v229_story', async (t) => {
             });
             return { shot: c && c.shot, out, film: [f.left, f.top, f.right, f.bottom].map(Math.round) };
           });
+          }
           if (o.shot !== i) bad.push(`${id}#${i} measured shot ${o.shot}`); else if (o.out.length) bad.push(`${id}#${i} ${o.out.join(' ')} film ${o.film}`);
         }
         await ev(() => window.__paw.sc.skip());
