@@ -215,11 +215,23 @@ function yvBookHTML() {
   const V = yvS(), met = YV_DOGS.filter((v) => V.met[v.id]).length;
   const page = (v) => {
     const m = V.met[v.id], d = yvVisDog(v);
-    if (!m) return `<div class="yv-page unk"><span class="yv-dog yv-sil">${dogSVG(d, { pose: 'sit' })}</span><b>???</b><span class="small">${esc(yvHint(v))}</span></div>`;
+    if (!m) return `<div class="yv-page unk"><span class="yv-dog yv-sil">${yvSil(v.id, dogSVG(d, { pose: 'sit' }))}</span><b>???</b><span class="small">${esc(yvHint(v))}</span></div>`;
     return `<button class="yv-page" data-yvpage="${esc(v.id)}"><span class="yv-dog">${dogSVG(d, { pose: 'sit' })}</span>${m.stk ? `<span class="yv-stk" aria-label="${esc(tt('yv.stk', 'Paw sticker'))}">${yvPawStk()}</span>` : ''}<b>${esc(v.name)}${v.rare ? ' <span class="yv-star">★</span>' : ''}</b><span class="small">${esc(tbreed(v.key))}</span><span class="small">${esc(tt('yv.n_visits', '{n, plural, one {# visit} other {# visits}}', { n: m.n }))}</span></button>`;
   };
   return `<div class="yv-book"><div class="yv-head"><span class="yv-bookart">${yvBookArt()}</span><div><b>${esc(tt('yv.met_n', 'Met {n} of {total}', { n: met, total: YV_DOGS.length }))}</b><p class="small">${esc(tt('yv.book_intro', 'Neighbourhood dogs come by while you are out. Put toys in the yard and see who visits.'))}</p>${V.flowers ? `<p class="small">${esc(tt('yv.flowers', '{n, plural, one {# pressed flower} other {# pressed flowers}} between the pages.', { n: V.flowers }))}</p>` : ''}</div></div>
     <div class="yv-grid">${YV_DOGS.map(page).join('')}</div></div>`;
+}
+// fix batch (art 11): a visitor not met yet is a pencil silhouette, as V226.md says: a graphite outline round the dog's shape and pencil hatching
+// inside it (the dog drawn once in <defs>, used as the hatching's mask and for the outline), not a flat grey dog
+function yvSil(id, svg) {
+  const m = /^<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(svg || ''), vb = m && /viewBox="([^"]+)"/.exec(m[1]); if (!m || !vb) return svg || '';
+  const k = 'yvs' + id.replace(/[^a-z0-9]/gi, ''), [x, y, w, h] = vb[1].split(/[\s,]+/).map(Number), g = '#7A6E64';
+  return `<svg viewBox="${vb[1]}" aria-hidden="true"><defs><g id="${k}d">${m[2]}</g>`
+    + `<filter id="${k}w" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"/></filter>`
+    + `<filter id="${k}e" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceAlpha" operator="dilate" radius="${(w / 95).toFixed(2)}" result="a"/><feComposite in="a" in2="SourceAlpha" operator="out" result="r"/><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.9" result="nm"/><feComposite in="r" in2="nm" operator="in" result="rr"/><feFlood flood-color="${g}"/><feComposite in2="rr" operator="in"/></filter>`
+    + `<pattern id="${k}h" patternUnits="userSpaceOnUse" width="${(w / 34).toFixed(1)}" height="${(w / 34).toFixed(1)}" patternTransform="rotate(-38)"><path d="M0 1H${(w / 34).toFixed(1)}" stroke="${g}" stroke-width="${(w / 150).toFixed(2)}" stroke-opacity=".6"/></pattern>`
+    + `<mask id="${k}m" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}"><use href="#${k}d" filter="url(#${k}w)"/></mask></defs>`
+    + `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${k}h)" mask="url(#${k}m)"/><use href="#${k}d" filter="url(#${k}e)"/></svg>`;
 }
 function yvPawStk() { return '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#FFE59A" stroke="#5B3D32" stroke-width="2.4"/><ellipse cx="20" cy="25" rx="7" ry="5.6" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"/><circle cx="12" cy="17" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="17" cy="12" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="23" cy="12" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="28" cy="17" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/></svg>'; }
 function yvOpenBook() {
