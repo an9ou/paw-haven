@@ -249,9 +249,11 @@ run('v229_story', async (t) => {
   ok(!(await st()).t.c3_buy, 'a Tokyo souvenir is not a Market Street shop');
   await A([['buy', { name: 'Kibble', cat: 'food', qty: 1, shop: 'market' }], ['travel', { place: 'square' }], ['travel', { place: 'cafe' }]]);
   s = await st(); ok(s.ch === 3 && !!s.t.c3_buy && !!s.t.c3_square && !!s.t.c3_cafe && !s.t.c3_mission, 'chapter 3: a shop, the Square and the café; the mission still open');
-  await A([['msdone']]);
-  s = await st(); ok(s.ch === 4 && !!s.c[3] && s.q.includes('ch3') && (await coins()) - k0 === 160, `chapter 3 done: +${(await coins()) - k0} coins (4 x 20 + 80), its scene waits`);
-  k0 = await coins(); await lvTo(2); await ev(() => window.__paw.sm.states());
+  // the act and the coin count in one evaluate: chapter 3's XP already reaches town level 2, so the story's 1 s tick may pay chapter 4's
+  // "Reach town level 2" (+20) at any moment after it. Counted here, before the tick can run, that 20 always lands in chapter 4's +170
+  const ch3c = await ev(() => { const P = window.__paw; P.sm.act('msdone', {}); return P.S.coins; });
+  s = await st(); ok(s.ch === 4 && !!s.c[3] && s.q.includes('ch3') && ch3c - k0 === 160, `chapter 3 done: +${ch3c - k0} coins (4 x 20 + 80), its scene waits`);
+  k0 = ch3c; await lvTo(2); await ev(() => window.__paw.sm.states());
   await A([['travel', { place: 'dogpark' }], ['fetch', { name: 'Tennis Ball' }], ['fetch', { name: 'Tennis Ball' }]]);
   s = await st(); ok(!!s.t.c4_level && !!s.t.c4_dogpark && s.p.c4_ball === 2 && !s.t.c4_ball && s.q.includes('visit_dogpark'), 'chapter 4: level 2 (a state), the Dog Park (and its first-visit scene), two balls of three');
   await A([['fetch', { name: 'Tennis Ball' }], ['pet', { dogs: 2 }]]);

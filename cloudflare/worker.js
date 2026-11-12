@@ -205,9 +205,11 @@ const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 57 }; // v2.12: 35 bre
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
 //   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
 //             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
-//   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
+//   decor 35: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included. v2.26: + the four yard toys
+//             (Tug Post, Puddle Pool, Play Tunnel, Bubble Fountain); deployed with the v2.26 launch. A game copy that meets an older Worker (31)
+//             sends its yard again without them (game/src/50_friends.js FR_DECOR_OLD).
 //   houses 15: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
-const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 15 };
+const FR_LIM = { notes: 12, gifts: 47, decor: 35, houses: 15 };
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'], I: ['I', 'i'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE; I = RED_I, the fox red Lab and dark golden, optional)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

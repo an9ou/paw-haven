@@ -319,7 +319,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 31, houses 15 (v2.24: + the Golden Paw Cottage), next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 35, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys), next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);
@@ -483,7 +483,7 @@ async function checks(label, call, sql, mail) {
       ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 15 })],
       ['6 dogs', yard({ dogs: [dog(), dog(), dog(), dog(), dog(), dog()] })],
       ['41 decor', yard({ decor: Array.from({ length: 41 }, (_, i) => ({ i: 0, x: i, y: 0 })) })],
-      ['decor index past the list', yard({ decor: [{ i: 31, x: 0, y: 0 }] })],
+      ['decor index past the list', yard({ decor: [{ i: 35, x: 0, y: 0 }] })],
       ['x past 1200', yard({ decor: [{ i: 0, x: 1201, y: 0 }] })], ['y past 800', yard({ decor: [{ i: 0, x: 0, y: 801 }] })],
       ['x negative', yard({ decor: [{ i: 0, x: -1, y: 0 }] })], ['x not an integer', yard({ decor: [{ i: 0, x: 1.5, y: 0 }] })],
       ['x as text', yard({ decor: [{ i: 0, x: '10', y: 0 }] })], ['an extra decor key', yard({ decor: [{ i: 0, x: 0, y: 0, z: 1 }] })],
@@ -497,7 +497,7 @@ async function checks(label, call, sql, mail) {
     ok(!yardFails.length, `anything outside the snapshot rules is bad ${yardFails.join(', ')}`);
     ok(!(await sql('select user_id from yards where user_id = ?', yB.user.id)), 'no junk yard was stored');
     const goodDogs = [dog({ b: 3 }), dog({ b: 39, o: 49, n: 119, c: '#AABBCC' }), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ e: 2, p: 123456789 }), dog({ b: 1, c: null })]; // v2.23: the fourth carries eyes and a pattern seed
-    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 30, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 31, x: i, y: i })));
+    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 34, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 35, x: i, y: i }))); // v2.26: 34 = the Bubble Fountain, the last yard toy
     const good = { v: 1, name: [9, 9], house: 13, season: 'winter', dogs: goodDogs, decor: goodDecor };
     ok(good.dogs.length === 5 && good.decor.length === 40 && JSON.stringify(good).length < 16384, 'the accepted snapshot is 5 dogs, 40 decor and under 16 KB');
     res = await frCall('PUT', '/friends/yard', { yard: good }, yB.token);
@@ -506,7 +506,7 @@ async function checks(label, call, sql, mail) {
     ok(res.status === 200 && res.json.yard.house === 13 && res.json.yard.season === 'winter' && res.json.yard.name.join() === '9,9', 'GET /friends/yard returns the snapshot');
     ok(res.json.yard.dogs[3].e === 2 && res.json.yard.dogs[3].p === 123456789 && !('e' in res.json.yard.dogs[0]) && !('p' in res.json.yard.dogs[0]), 'v2.23: a yard dog keeps its eyes and pattern seed; a dog without them has none');
     ok(res.json.yard.dogs.length === 5 && res.json.yard.dogs[0].b === 3 && res.json.yard.dogs[1].c === '#aabbcc' && res.json.yard.dogs[2].c === null && res.json.yard.dogs[2].o === -1, 'dogs come back in the Dog Card shape, leader first, colour lower case');
-    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 30, 'decor keeps integer coordinates up to 1200 and 800');
+    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 34, 'decor keeps integer coordinates up to 1200 and 800, and the v2.26 yard toys (index 31-34)');
     ok(!res.text.includes(yB.user.id) && !/"updated_at"|"created_at"/.test(res.text), 'the yard answer has no user id and no timestamp');
     const zero = await frCall('PUT', '/friends/yard', { yard: yard({ dogs: [], decor: [], season: 'summer', house: 0 }) }, yA.token);
     ok(zero.status === 200, 'a yard may have no dogs and no decor (at most 5, at most 40)');
