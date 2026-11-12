@@ -109,3 +109,6 @@ Built on `claude/sakura-market` (11 Nov 2026), English only, not merged:
 - [ ] Left for the release: the owner hears the music clip (`smarket`) and says yes; the art review (owner/top model) and the phone review;
   `dogs/fill_sweep.js` with OUTFITS=1 on the new costumes; `check_identical` against the last release; translations (one batch, 12 languages,
   the 4 new homes too); a `NEWS` entry and Gerald's market letter wording; a `V*.md` music note for the release.
+
+
+**Music approved (owner, 12 Nov 2026):** "The music of sakura market is good, can ship it." The spring variant ships with the market.
