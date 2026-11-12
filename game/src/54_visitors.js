@@ -39,7 +39,7 @@ const YV_DOGS = [
   ['rapunzel', 'Rapunzel', 'afghan', 0, 60, 'Madame Dubois', 'Bubble Fountain', { pool: 1 }]
 ].map(([id, name, key, coat, age, fam, fav, rare]) => ({ id, name, key, coat, age, fam, fav, rare: rare || null }));
 const yvDog = (id) => YV_DOGS.find((v) => v.id === id) || null;
-function yvFam(v) { return tt('yv.fam_' + v.id, v.fam); }
+function yvFam(v) { return tdata('yv_dogs.' + v.id + '.5', v.fam); } // data.yv_dogs.<id>.5 (TABLES.txt)
 function yvHint(v) {
   const r = v.rare; if (!r) return tt('yv.hint_common', 'A neighbour\'s dog. Put a toy out!');
   if (r.weather === 'snow') return tt('yv.hint_snow', 'Comes on snowy days.');
@@ -224,7 +224,7 @@ function yvBookHTML() {
 // fix batch (art 11): a visitor not met yet is a pencil silhouette, as V226.md says: a graphite outline round the dog's shape and pencil hatching
 // inside it (the dog drawn once in <defs>, used as the hatching's mask and for the outline), not a flat grey dog
 function yvSil(id, svg) {
-  const m = /^<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(svg || ''), vb = m && /viewBox="([^"]+)"/.exec(m[1]); if (!m || !vb) return svg || '';
+  const m = /^<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(svg || ''), vb = m && /viewBox=\x22([^\x22]+)\x22/.exec(m[1]); if (!m || !vb) return svg || '';
   const k = 'yvs' + id.replace(/[^a-z0-9]/gi, ''), [x, y, w, h] = vb[1].split(/[\s,]+/).map(Number), g = '#7A6E64';
   return `<svg viewBox="${vb[1]}" aria-hidden="true"><defs><g id="${k}d">${m[2]}</g>`
     + `<filter id="${k}w" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"/></filter>`

@@ -17,7 +17,7 @@
 .st-jintro,.st-more{margin:0}
 .st-card{position:relative;padding:10px 14px 8px;background:var(--paper);border:2.5px solid var(--ink);border-radius:18px 14px 20px 14px;box-shadow:2px 3px 0 rgba(91,61,50,.14)}
 .st-card.fin{background:#FFFBEA}
-.st-card .st-who{margin:0;font-size:14px;color:#7A6358}
+.st-card .st-who{margin:0;font-size:15px;color:#7A6358}
 .st-card .st-tt{margin:0 0 4px;font-family:var(--font-hand);font-size:22px;line-height:1.1}
 .st-card .st-line{margin:6px 0 4px}
 .st-card.fin .st-tt,.st-card.fin .st-who{padding-right:64px}
@@ -27,7 +27,7 @@
 .st-dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:#fff;display:block}
 .st-dots i.open{background:#FFE08A}
 .st-dots i.on{background:#F28FA5}
-.st-lets summary{cursor:pointer;min-height:32px;display:flex;align-items:center;font-weight:700}
+.st-lets summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700}
 .st-lets ol{margin:4px 0 0;padding-left:20px;font-size:14px}
 .st-lets li{margin:4px 0}
 

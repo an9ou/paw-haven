@@ -124,7 +124,7 @@ async function worker(job) {
     await t.launch();
     const phone = size !== 'desktop';
     const cfg = { phone, stage: '#stage', skip: '#devPanel, #devBtn', captions: CAPTIONS, layers: LAYERS, svgText: '#mapInner [data-area] text, #view [data-area] text' };
-    const p0 = await t.mk({ lang, device: dev, prefs: { gdTest: true, tkTest: true, jpTest: true, exTest: true } });
+    const p0 = await t.mk({ lang, device: dev, prefs: { gdTest: true, tkTest: true, jpTest: true, exTest: true, prTest: true } });
     let p = p0;
     const ev = (f, a) => t.p.evaluate(f, a);
     const sleep = (ms) => t.sleep(ms);
@@ -347,6 +347,35 @@ async function worker(job) {
     });
     // v2.20 Missions v2: the sheet and each of its tabs (Today, Week, Badges, and the Notebook while a new player has one)
     await step('missions', async () => { await ev(() => window.__paw.ms.open()); await modalUp(); await measure('missions'); await eachTab('missions', '#modal .ms-pop .ms-tab', 4); await closeAll(); });
+    // v2.25-v2.29 (welcome back, yard visitors, town projects, stories and stars, story mode): each new screen once, through the test hooks
+    await step('wb', async () => {
+      await ev(() => { const P = window.__paw; P.wb.test(true); P.wb.open({ at: Date.now(), h: 30 }); }); await modalUp(); await measure('wb: while you were out'); await closeAll();
+      await ev(() => window.__paw.wb.test(false));
+    }, 30000);
+    await step('yv', async () => {
+      await ev(() => { const P = window.__paw, V = P.S.visitors, now = Date.now(); P.yv.test(true);
+        Object.assign(V.met, { biscuit: { n: 3, d: '2026-11-01' }, waddles: { n: 1, d: '2026-11-05', stk: 1 }, rapunzel: { n: 2, d: '2026-11-06' } });
+        V.q = [{ id: 'biscuit', t: now - 60000, toy: 'Tug Post' }, { id: 'rapunzel', t: now, toy: 'Bubble Fountain' }]; P.yv.card(); });
+      await modalUp(); await measure('yv: visitor card'); await closeAll();
+      await ev(() => window.__paw.yv.book()); await modalUp(); await measure('yv: Visitors Book');
+      await ev(() => window.__paw.yv.page('rapunzel')); await modalUp(); await measure('yv: a page'); await closeAll();
+      await ev(() => { const V = window.__paw.S.visitors; V.q = []; window.__paw.yv.test(false); window.__paw.yv.draw(); });
+    }, 40000);
+    await step('pr', async () => {
+      await ev(() => window.__paw.pr.open()); await modalUp(); await measure('pr: town projects'); await closeAll();
+    }, 30000);
+    await step('st', async () => {
+      await ev(() => { const P = window.__paw; P.st.test(true); P.st.letters(true); P.dd.journal('stories'); }); await modalUp(); await measure('st: journal stories'); await closeAll();
+      await ev(() => window.__paw.st.pc('yard')); await modalUp(); await sleep(800); await measure('st: postcard'); await closeAll();
+      await ev(() => window.__paw.st.test(false));
+    }, 40000);
+    await step('sm', async () => {
+      await ev(() => { const P = window.__paw; P.sm.test(true); P.sc.test(true); P.sm.start(); P.sm.goto(3); }); await closeAll();
+      await ev(() => window.__paw.sm.open('story')); await modalUp(); await measure('sm: story book');
+      await ev(() => window.__paw.sm.open('mem')); await modalUp(); await measure('sm: memories'); await closeAll();
+      await ev(() => window.__paw.sc.play('ch1', { replay: true })); await sleep(2500); await measure('sc: scene'); await ev(() => window.__paw.sc.skip());
+      await sleep(400); await closeAll(); await ev(() => { window.__paw.sm.test(false); window.__paw.sc.test(false); });
+    }, 50000);
     await step('dog card settings', async () => { await ev(() => window.__paw.dc.settings(true)); await modalUp(); await measure('dog cards: my card settings'); await closeAll(); });
     // ---------------------------------------------------------------- photo, training, ball ----------------------------------------------------------------
     await step('photo mode', async () => { await ev(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.active(), null, 5000); await sleep(600); await measure('photo mode'); await ev(() => window.__paw.ph.close()); await t.until(() => !window.__paw.ph.active(), null, 4000); });

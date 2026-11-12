@@ -12,7 +12,7 @@
 .yv-page:focus-visible{outline:3px solid #F28FA5;outline-offset:2px}
 .yv-page.unk{cursor:default;border-style:dashed;border-color:#A39788;background-color:#F7F3EA}
 .yv-page b{font-size:17px;line-height:1.1}
-.yv-page .small{line-height:1.2}
+.yv-page .small{line-height:1.2;overflow-wrap:anywhere;hyphens:auto}
 .yv-dog{display:block;width:112px;height:93px}
 .yv-dog svg{width:100%;height:100%}
 .yv-sil svg{opacity:.85} /* the pencil silhouette is drawn by yvSil (54_visitors.js) */
@@ -20,7 +20,7 @@
 .yv-stk.in{position:static;display:inline-block;width:22px;height:22px;vertical-align:middle}
 .yv-stk svg{width:100%;height:100%}
 html[data-layout="phone"] .yv-grid{grid-template-columns:1fr 1fr;gap:8px}
-html[data-layout="phone"] .yv-page{min-height:148px;padding:6px 4px}
+html[data-layout="phone"] .yv-page{min-height:148px;padding:6px}
 html[data-layout="phone"] .yv-dog{width:96px;height:80px}
 html[data-layout="phone"] .yv-head{gap:8px}
 html[data-layout="phone"] .yv-bookart{width:52px;height:52px}

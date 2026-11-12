@@ -27,7 +27,7 @@
 .pr-ic{flex:0 0 38px;height:42px}.pr-ic svg{width:100%;height:100%;display:block}
 .pr-ln{flex:1;min-width:0;line-height:1.15;overflow-wrap:anywhere}
 .pr-ln .small{display:block}
-.pr-chip{flex:0 0 auto;font-size:13px;padding:1px 7px;border-radius:9px;background:#FFF3DA;border:1.5px solid #CFA77C}
+.pr-chip{flex:0 0 auto;font-size:15px;line-height:1.2;padding:1px 7px;border-radius:9px;background:#FFF3DA;border:1.5px solid #CFA77C}
 .pr-list li[data-st="built"] .pr-chip{background:#DDEFD8;border-color:#93C276}
 /* the scene: falling petals in spring; the lighthouse beam sweeps at night; a tap flashes the light */
 #view svg.world .pr-petal{animation:pr-fall 9s linear infinite;transform-box:fill-box}
@@ -42,7 +42,7 @@ html[data-motion="off"] #view svg.world .pr-petal,html[data-motion="off"] #view 
 html[data-layout="phone"] .pr-cur{gap:10px}
 html[data-layout="phone"] .pr-art{flex-basis:108px;height:118px}
 html[data-layout="phone"] .pr-info h3{font-size:20px}
-html[data-layout="phone"] .pr-intro{font-size:14px}
+html[data-layout="phone"] .pr-intro{font-size:15px}
 html[data-layout="phone"] .pr-pay{grid-template-columns:repeat(2,1fr)}
 html[data-layout="phone"] .pr-list{grid-template-columns:1fr}
 html[data-layout="phone"] .pr-list li{padding:2px 6px}
