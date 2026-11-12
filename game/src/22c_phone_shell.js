@@ -63,6 +63,9 @@ function openMore() {
   const mf = $('#mmFr', p); if (mf) mf.onclick = () => { closeModal(); setTimeout(frOpen, 60); }; // v2.19: Friends, next to Daily missions (50_friends.js)
   const mk = $('#mmKs', p); if (mk) mk.onclick = () => { closeModal(); setTimeout(() => ksOpen(), 60); }; // v2.24: the kind shop (52_kindshop.js), only while it is on
   const cb = $('#mmCloud', p); if (cb) cb.onclick = () => { closeModal(); if (typeof cloudOpen === 'function') cloudOpen(); else openSettings(); };
+  // fix batch (phone 13): with 9-10 rows the menu scrolls at 360x640; the list fades out at the bottom while there is more below, so the scroll is plain
+  const bd = p.querySelector('.panel-body') || p, fade = () => { const r = bd.scrollHeight - bd.clientHeight; bd.classList.toggle('mm-below', r > 4 && bd.scrollTop < r - 4); };
+  bd.addEventListener('scroll', fade, { passive: true }); setTimeout(fade, 0); setTimeout(fade, 400);
 }
 
 /* ---------- HUD: a tap on the ring meters expands them (22_input.js); a tap anywhere else folds them again ---------- */
