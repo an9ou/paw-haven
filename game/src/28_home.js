@@ -515,9 +515,12 @@ function hoBedsCard(b, inHouse) {
 }
 
 /* ---------------- shop (Barkitecture Decor and Furniture tabs) ---------------- */
+// v2.26 fix batch (code review 1): a decoration of a feature that is not live yet (the four v2.26 yard toys, v226) is not sold or offered anywhere
+// until its launch (yvOn, 54_visitors.js). One already owned still draws as before.
+function hmLive(d) { return !d || !d.v226 || (typeof yvOn === 'function' && yvOn()); }
 function hoShopItems(kind) {
   const it = (n) => { const D = HM_DECOR[n]; return { cat: kind, n, price: D.price, bond: D.bond || 1, desc: tdata('hm_decor.' + tid(n) + '.story', D.story) }; };
-  const names = Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].v27 && !HM_DECOR[n].fest && HM_DECOR[n].kind === kind); // v2.8: festival decorations are sold at their stall only
+  const names = Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].v27 && !HM_DECOR[n].fest && HM_DECOR[n].kind === kind && hmLive(HM_DECOR[n])); // v2.8: festival decorations are sold at their stall only
   if (kind === 'furniture') return names.map(it);
   return [{ head: tt('home.for_yard', 'For the yard') }].concat(names.filter((n) => hoRoomOf(n) === 'yard').map(it), [{ head: tt('home.for_house', 'For the house') }], names.filter((n) => hoRoomOf(n) === 'house').map(it));
 }

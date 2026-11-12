@@ -252,7 +252,7 @@ function yvExpose() {
     plan: (day) => yvPlan(day || jstISO()), slotT: yvSlotT, can: (id, t) => yvCan(yvDog(id), t || Date.now()),
     catchUp: (now) => yvCatchUp(now), back: yvBack, draw: () => yvDraw(false), card: () => { const q = yvS().q; if (q.length) yvCard(q[q.length - 1].t); },
     book: yvOpenBook, page: yvOpenPage, away: (ms) => { yvS().seen = Date.now() - ms; }, fields: v226Fields,
-    env: (k, v) => { ENV[k] = v; }, journal: () => openJournal('visitors'), care: () => openCareTray(), gift: (id, day, k) => yvGift({ id, day, k, t: Date.now() })
+    env: (k, v) => { ENV[k] = v; }, test: (v) => { prefs.yvTest = !!v; }, get date() { return NEWS_V226.date; }, journal: () => openJournal('visitors'), care: () => openCareTray(), gift: (id, day, k) => yvGift({ id, day, k, t: Date.now() })
   };
 }
 setTimeout(yvExpose, 0);

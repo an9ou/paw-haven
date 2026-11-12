@@ -168,8 +168,11 @@ function nbFinish(n) {
 }
 const nbSeedName = () => (typeof fwDgSeedName === 'function' ? fwDgSeedName() : 'Carrot Seeds');
 // day 14: the first Bond 1-2 shop decoration not owned (a yard or house decoration, not a festival one), else three biscuits
+function nbDecorPick() {
+  return Object.keys(HM_DECOR).find((k) => { const x = HM_DECOR[k]; return x.v27 && x.kind === 'decor' && (typeof hmLive !== 'function' || hmLive(x)) && !x.fest && !x.ed && !x.fm && !x.reward && (x.bond || 1) <= 2 && !(S.decor && S.decor[k]); }) || '';
+}
 function nbDecorGift() {
-  const n = Object.keys(HM_DECOR).find((k) => { const x = HM_DECOR[k]; return x.v27 && x.kind === 'decor' && !x.fest && !x.ed && !x.fm && !x.reward && (x.bond || 1) <= 2 && !(S.decor && S.decor[k]); });
+  const n = nbDecorPick();
   if (n) { if (typeof hmDecorFields === 'function') hmDecorFields(); S.decor = S.decor || {}; S.decor[n] = { got: localISO(), out: false }; markDirty(); emit('decor:new', { name: n }); return n; } // as jrDecor: the room redraw and its "New for the house" line
   S.inv.food['Bone-shaped Biscuit'] = (S.inv.food['Bone-shaped Biscuit'] || 0) + 3; markDirty(); return '';
 }
@@ -285,7 +288,7 @@ function nbExpose() {
   window.__paw.msn = {
     pages: () => MS_NB.map((p) => p.id), shown: () => msNbShown(), tick: () => msNbTick(), day: () => nbDay(), nb: () => S.missions.nb, html: (all) => msNbHTML(all), doneHtml: () => msNbDoneHTML(), dot: () => msNbDot(),
     mark: (n, i) => nbMark(n, i), finish: (n) => { const p = nbPage(n); p.steps.forEach((s, i) => nbMark(n, i)); return nbFinished(n); }, lock: (n, i) => nbLockOf(nbPage(n).steps[i]), page: (n) => { NB.pg = n; msRefresh(); return n; },
-    get pg() { return NB.pg; }, stickers: NB_STICKERS.slice(), title: NB_TITLE, frame: NB_FRAME, popTick: () => nbPopTick(), sync: () => nbPagesSync(), how: (k) => nbHowTitle(k), gift: () => nbDecorGift()
+    get pg() { return NB.pg; }, stickers: NB_STICKERS.slice(), title: NB_TITLE, frame: NB_FRAME, popTick: () => nbPopTick(), sync: () => nbPagesSync(), how: (k) => nbHowTitle(k), gift: () => nbDecorGift(), pick: () => nbDecorPick()
   };
 }
 ms2OnSwap(() => { NB.pg = 0; NB.dot = false; NB.fold = false; });
