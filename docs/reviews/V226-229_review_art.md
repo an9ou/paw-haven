@@ -8,19 +8,25 @@ Branch claude/release-26-29 at 6d499671. 2 must-fix, 8 should-fix, 5 nice. Statu
 
 ## Should-fix
 3. **54_visitors.js (yard):** the visitor stands on the mailbox; the mail badge sits on its head (worst: Rapunzel, Zoom, Yuki). Give yard visitors their own spot clear of the mailbox.
+   Status: fixed (76040f60): yard visitors have their own spot (feet 592,452, right of the dog), clear of the mailbox; visitorSpot() answers it while one is drawn.
 4. **57b_story.js:410, scene ch6:** the rosette and "10" sign sit at fixed positions; the rosette lands on Mochi's ear (desktop) or forehead (phone), the sign floats above Gerald. Tie them to the actors.
 5. **57_scenes.js `scFit` (phone), ch4:** the dogs are pushed together until the beagle's head covers Mochi's face; the stick lies across their chests. Keep a minimum head gap or shrink the cast instead.
 6. **world/pawart_world_b.js, the 4 toy shop icons:** line weight not scaled at k .27-.38 (rope, duck, bubbles turn to solid ink); toys sit smaller in the box than older icons. Scale line width with k, draw bigger.
+   Status: fixed (6a46fd9b): icons drawn bigger (k .31-.40), a part's outline thins with its size on item cards (rope, duck, bubbles keep their fill).
 7. **Framed Paw Print** (03_yard.js `at: [404,206]`, 56_stories.js `stPawFrameSVG`): hangs over the living-room window; clean vector look (no wobble or wood grain), clean pink paw though the story calls it muddy. Move to bare wall, redraw with the world kit.
+   Status: fixed (1ad641e1): at [700,304] on bare wall under the quilt, award spot via hoFreeSpot; redrawn in world_b (wobble, wood grain and knots, muddy paw, mud splats); item card added.
 8. **Bandstand:** the shop window's toy duck shows through its open sides, reads as a birdcage. Back panel/floor, or nudge off the window.
 9. **Winter sakura:** a thin Y stick with snow discs like lollipops. Thicker forked branches, snow along the tops.
 10. **Lighthouse:** stacked capsules, unlike the pier's own lighthouse; at night the big old one is dark while the tiny new one beams; grey beam. Tapered tower, warm pale beam, consider lighting the old one.
 
 ## Nice
 11. Visitors Book silhouettes: flat grey at 42% opacity, page lines show through; the contract says "pencil silhouette".
+   Status: fixed (99b55250): pencil silhouettes (graphite outline with a little grain, hatching inside), yvSil in 54_visitors.js.
 12. The fountain's new bowl reads as a separate dish: join it to the basin, add a trickle.
 13. Star Collar crosses the face in sleep/crouch/bow/eat and the tag sits among a puppy's paws; the Golden Collar has the same geometry (fix both together; changes existing renders, so needs check_identical sign-off).
+   Status: deferred (changes existing Golden Collar renders; needs owner/art sign-off).
 14. Toys get no snow caps in snow.
+   Status: skipped (no snow layer for yard decorations exists; not cheap: it needs a new decor snow pass, not just toy art).
 15. The ch8 Square scene background does not show the built projects.
 
 ## Checks
