@@ -209,7 +209,7 @@ function msWeekHTML() {
   const ba = ms2Art('board'), h3 = `<h3>${esc(tt('ms2w.title', "Gerald's help-wanted board"))}</h3>`;
   const head = `<div class="msw-head${ba ? ' art' : ''}">${ba ? `<div class="msw-board"><span class="msw-art art" aria-hidden="true">${ba}</span>${h3}</div>` : `<span class="msw-art" aria-hidden="true">${mswBoardFB()}</span>`}<div class="msw-headtxt">${ba ? '' : h3}`
     + `<p class="msw-count"><b>${esc(tt('ms2w.count', '{n} of {total}', { n: Math.min(nd, MSW_NEED), total: MSW_NEED }))}</b></p><p class="msw-intro">${esc(status)}</p></div></div>`;
-  return `<div class="msw${full ? ' full' : ''}">${head}<ul class="msw-notes">${L.map(mswNoteHTML).join('')}</ul>${mswCardHTML()}</div>`;
+  return `<div class="msw${full ? ' full' : ''}">${head}<ul class="msw-notes">${L.map(mswNoteHTML).join('')}</ul>${mswCardHTML()}${typeof stWeekHTML === 'function' ? stWeekHTML() : ''}</div>`; // v2.28: the open story requests (56_stories.js)
 }
 // the desktop right column of Today: the board in two lines and a way to it (phones have the Week tab one tap away)
 function msWeekSummaryHTML() {

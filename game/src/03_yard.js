@@ -1006,7 +1006,9 @@ const HM_DECOR = {
   'Cocoa Mug Lamp': { prop: 'kslamp', at: [236, 436, 60, 84], vb: [100, 140], room: 'house', zone: 'floor', kind: 'decor', lit: true, ks: 'cozy', reward: true, story: 'A lamp shaped like a mug of cocoa with a marshmallow on top. After dark it glows warm and brown. Not for drinking.' },
   'Doggy Snow Globe': { prop: 'ksglobe', at: [312, 454, 60, 70], vb: [120, 140], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A glass globe with a tiny dog and a tiny house inside. Shake it and it snows, indoors, on purpose.' },
   'Cardboard Fireplace': { prop: 'ksfireplace', at: [388, 300, 120, 120], vb: [160, 160], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fireplace made of painted cardboard with paper flames. All the cosy, none of the heat, so noses stay safe.' },
-  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' }
+  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' },
+  // v2.28 Stories and stars (V228.md 2, 56_stories.js): the 5 Bond stars keepsake, a reward never sold (prop drawn in 56_stories.js)
+  'Framed Paw Print': { prop: 'stpawframe', at: [404, 206, 72, 84], vb: [120, 140], room: 'house', zone: 'wall', kind: 'decor', reward: true, v228: true, story: 'One muddy paw print in a wooden frame, with two gold stars. It took five Bond stars and a lot of mud.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }

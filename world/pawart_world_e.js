@@ -1074,7 +1074,15 @@ const ITEMS_V217={
   b.raw(b.st('M15 27q8 5 15 6',  '#FFF6C8',1.6,.8));
   b.sh(E(32,49,9,9,14),'#FFD23A',{ink:GINK215,sh:'#E9A93B',hl:0});
   b.ex('heart',32,49,4,'#F28FA5');
-  gold215(b,[[56,44,4.2],[8,44,3.4],[48,6,3]]);b.ex('glint',25,45,2.6)}
+  gold215(b,[[56,44,4.2],[8,44,3.4],[48,6,3]]);b.ex('glint',25,45,2.6)},
+ // v2.28 Stories and stars (V228.md 2): the Star Collar, the 10 Bond stars keepsake (the Golden Collar's style: a blue collar, a gold star tag)
+ 'Star Collar'(b){
+  b.sh(ribbon([[7,20],[18,12],[32,10],[46,12],[57,20]],[4.4,4.4,4.4,4.4,4.4]),'#3D6FB0',{hatch:0,hl:0,lw:.8});
+  b.sh(ribbon([[6,19],[13,29],[32,35],[51,29],[58,19]],[8,8,8,8,8]),'#4F8FD6',{sh:'#3D6FB0'});
+  b.raw(b.st('M15 27q8 5 15 6','#CFE3F7',1.6,.8));
+  const st=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?4.6:10.5;st.push([32+Math.cos(a)*r,49+Math.sin(a)*r])}
+  b.sh(st,'#FFD23A',{ink:GINK215,sh:'#E9A93B',hl:0,hatch:0});
+  b.ex('spark',55,44,3.6);b.ex('glint',27,46,2.4)}
 };
 const PC_M=14,PC_SH=60,PC_FONT_R="'Patrick Hand',cursive",TK_C={c:'#F4B183',d:'#D98A5A'};let PC_UID=0;
 // the Tokyo photo frame: world B's postcard with a torii-orange frame and the seven stamps round the edge (same window, so the photo fits)

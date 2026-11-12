@@ -1,0 +1,60 @@
+/* v2.28 Stories and stars (tag st, 56_stories.js, V228.md): the Bond stars, the Stories tab, the board's story notes, the postcard. Phone rules under html[data-layout="phone"]. */
+
+/* ---- Bond stars: the Bond track block and the profile badge ---- */
+.st-track{margin:8px 0 10px;padding:8px 12px 6px;background:#FFF6D8;border:2px solid var(--ink);border-radius:14px 12px 16px 12px;box-shadow:2px 3px 0 rgba(91,61,50,.12)}
+.st-track p{margin:2px 0}
+.st-trh{font-family:var(--font-hand);font-size:20px}
+.st-stars{color:#E9A93B;letter-spacing:1px;-webkit-text-stroke:.6px #5B3D32;font-size:20px}
+.st-trks{list-style:none;margin:4px 0 2px;padding:0;font-size:14px}
+.st-trks li{margin:2px 0;opacity:.75}
+.st-trks li.got{opacity:1;font-weight:700}
+.st-trks li span{color:#E9A93B}
+.st-badge{display:inline-flex;align-items:center;gap:2px;padding:0 8px;border:2px solid var(--ink);border-radius:12px;background:#FFF0A8;font-size:14px;vertical-align:middle;white-space:nowrap}
+.st-badge span{color:#E9A93B;-webkit-text-stroke:.5px #5B3D32}
+
+/* ---- the journal's Stories tab ---- */
+.st-j{display:flex;flex-direction:column;gap:10px}
+.st-jintro,.st-more{margin:0}
+.st-card{position:relative;padding:10px 14px 8px;background:var(--paper);border:2.5px solid var(--ink);border-radius:18px 14px 20px 14px;box-shadow:2px 3px 0 rgba(91,61,50,.14)}
+.st-card.fin{background:#FFFBEA}
+.st-card .st-who{margin:0;font-size:14px;color:#7A6358}
+.st-card .st-tt{margin:0 0 4px;font-family:var(--font-hand);font-size:22px;line-height:1.1}
+.st-card .st-line{margin:6px 0 4px}
+.st-card.fin .st-tt,.st-card.fin .st-who{padding-right:64px}
+.st-ks{position:absolute;right:10px;top:8px;width:56px;height:56px;transform:rotate(4deg)}
+.st-ks svg{width:100%;height:100%;display:block}
+.st-dots{display:inline-flex;gap:6px}
+.st-dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:#fff;display:block}
+.st-dots i.open{background:#FFE08A}
+.st-dots i.on{background:#F28FA5}
+.st-lets summary{cursor:pointer;min-height:32px;display:flex;align-items:center;font-weight:700}
+.st-lets ol{margin:4px 0 0;padding-left:20px;font-size:14px}
+.st-lets li{margin:4px 0}
+
+/* ---- the help-wanted board: story notes under the five board notes ---- */
+.st-wk{margin-top:12px;padding-top:6px;border-top:2px dashed rgba(91,61,50,.35)}
+.st-wk h4{margin:0 0 6px;font-family:var(--font-hand);font-size:20px}
+.st-wk ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.st-wkn{position:relative;padding:8px 12px 6px 30px;background:#F7D0DA;border:2px solid var(--ink);border-radius:6px;transform:rotate(-.6deg)}
+.st-wkn:nth-child(2n){background:#D6EDC9;transform:rotate(.5deg)}
+.st-wkn p{margin:0}
+.st-wkn .st-who{font-size:13px;color:#5B3D32;opacity:.85}
+.st-pin{position:absolute;left:9px;top:10px;width:12px;height:12px;border-radius:50%;background:#F28FA5;border:2px solid var(--ink)}
+
+/* ---- the postcard: the buttons, the top bar icon, the sheet ---- */
+.st-pcrow{display:flex;justify-content:center;margin-top:8px}
+.st-pcb{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.st-pcic{width:28px;height:21px;display:inline-block}
+.st-pcic svg,#stPcBtn svg,#mmPc .ic svg{width:100%;height:100%;display:block}
+#stPcBtn[hidden]{display:none}
+#stPcBtn{padding:6px}
+@media (max-aspect-ratio: 4/5){html:not([data-layout="phone"]) #stPcBtn{order:4}}
+#stage.slimhud #stPcBtn,#stage.frvisit #stPcBtn{display:none}
+html[data-layout="phone"] #stPcBtn{display:none}
+.st-pc{display:flex;flex-direction:column;align-items:center;gap:6px}
+.st-pcprev{width:min(270px,62vw);aspect-ratio:9/16;max-height:52vh;display:flex;align-items:center;justify-content:center;background:#FFFBF3;border:2.5px solid var(--ink);border-radius:10px;overflow:hidden;box-shadow:2px 3px 0 rgba(91,61,50,.14)}
+.st-pcimg{width:100%;height:100%;object-fit:contain;display:block}
+.st-pcwait{font-family:var(--font-hand);font-size:18px;padding:12px;text-align:center}
+.st-pcnote{margin:0;text-align:center;max-width:360px}
+html[data-layout="phone"] .st-pcprev{max-height:44vh;width:auto;height:44vh}
+html[data-layout="phone"] .st-card .st-tt{font-size:20px}

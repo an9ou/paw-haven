@@ -168,6 +168,8 @@ const CLOTHES = [
   // v2.17 Dog Days (V217.md 2): the Bond 10 gifts on the Bond track (48_dogdays.js), never sold; bond 1 so no level-up card lists them as a shop unlock
   { n: 'Crayon Crown', slot: 'head', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift.' },
   { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' },
+  // v2.28 Stories and stars (V228.md 2, 56_stories.js): the 10 Bond stars keepsake, never sold
+  { n: 'Star Collar', slot: 'neck', price: 0, bond: 1, v228: true, reward: true, perk: 'Ten Bond stars: a blue crayon collar with a little gold star tag.' },
   // v2.24 Kind shop (V224.md 1, 52_kindshop.js): sold only in the kind shop (ks: the pack it belongs to), never in the Boutique, a stall, a market, a level list or a journey.
   // reward: true keeps every older shop list off them, bond 1 keeps them off every Bond and level-up card. Looks only: the perks are flavour
   { n: 'Golden Name Tag', slot: 'neck', price: 0, bond: 1, ks: 'supporter', reward: true, perk: 'Thank you: a gold bone tag on a blue collar. From the Supporter Pack.' },
@@ -849,6 +851,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v225Fields(st, true); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): days played from 0, the last-seen stamp now
   v226Fields(st); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): S.visitors
   v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
+  v228Fields(st); // v2.28 Stories and stars (V228.md 1, 56_stories.js): S.st
   return linkDogs(st);
 }
 let S = null;
@@ -923,6 +926,7 @@ function migrate(s) {
   v225Fields(s, false); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): additive; an old save's days played start from what it already knows
   v226Fields(s); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): additive, S.visitors (seen = now, so no flood on the first load)
   v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
+  v228Fields(s); // v2.28 Stories and stars (V228.md 1, 56_stories.js): additive, S.st; an old Bond 10+ save gets its stars counted once
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
