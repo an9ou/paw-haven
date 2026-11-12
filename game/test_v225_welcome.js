@@ -187,16 +187,18 @@ run('v225_welcome', async (t) => {
   sec('7. it fits: phone 360x640 and desktop 1280x720');
   for (const [dev, name] of [['Phone 360x640', 'phone'], [null, 'desktop']]) {
     await t.newGame(Object.assign({ prefs: ON }, dev ? { device: dev } : {}));
-    await ev(() => { const P = window.__paw, S = P.S; S.awayGiftISO = ''; S.wbPend = { at: 777, h: 14 }; if (S.visitors && P.yv) S.visitors.log = P.yv.dogs.slice(0, 4).map((v, i) => ({ id: v.id, t: 777 - 1000 * (i + 1), toy: '', g: i ? '' : 'bone' })); const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; });
+    await ev(() => { const P = window.__paw, S = P.S; S.awayGiftISO = ''; const now = Date.now(); S.wbVisSeen = 0; S.wbPend = { at: now, h: 14 }; if (S.visitors && P.yv) S.visitors.log = P.yv.dogs.slice(0, 4).map((v, i) => ({ id: v.id, t: now - 600e3 * (i + 1), toy: i ? 'Tug Post' : '', g: i ? '' : 'bone' })); const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; });
     ok(await waitWb(10000), `${name}: the page opens`); await t.sleep(600);
     const Lt = await ev(() => {
       const vw = document.documentElement.clientWidth, vh = window.innerHeight, p = document.querySelector('#modal .panel').getBoundingClientRect(), b = document.getElementById('wbOk').getBoundingClientRect();
       const over = [...document.querySelectorAll('#modal .wb-page p, #modal .wb-gt b, #modal .wb-gt span, #modal .wb-vis p')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
       const body = document.querySelector('#modal .panel-body'), gift = document.querySelector('#modal .wb-gift').getBoundingClientRect(), page = document.querySelector('#modal .wb-page').getBoundingClientRect();
-      return { vw, vh, p: [p.left, p.top, p.right, p.bottom].map(Math.round), b: [b.left, b.top, b.right, b.bottom, b.height].map(Math.round), over, scroll: body.scrollHeight - body.clientHeight, gap: Math.round(gift.top - page.bottom), lines: document.querySelectorAll('#modal .wb-page .dd-ptext p').length };
+      const vis = document.querySelector('#modal .wb-vis'), vr = vis && vis.getBoundingClientRect(), vp = vis && vis.querySelector('p'), foot = (document.querySelector('#modal .foot, #modal .mfoot') || document.getElementById('wbOk')).getBoundingClientRect();
+      return { vis: vr ? Math.round(foot.top - (vp ? vp.getBoundingClientRect().bottom : vr.bottom)) : null, vw, vh, p: [p.left, p.top, p.right, p.bottom].map(Math.round), b: [b.left, b.top, b.right, b.bottom, b.height].map(Math.round), over, scroll: body.scrollHeight - body.clientHeight, gap: Math.round(gift.top - page.bottom), lines: document.querySelectorAll('#modal .wb-page .dd-ptext p').length };
     });
     ok(Lt.p[0] >= 0 && Lt.p[2] <= Lt.vw && Lt.p[1] >= 0 && Lt.p[3] <= Lt.vh + 1, `${name}: the sheet is inside the screen ${JSON.stringify(Lt.p)} in ${Lt.vw}x${Lt.vh}`);
     ok(Lt.b[4] >= 44 && Lt.b[3] <= Lt.vh && Lt.b[1] >= 0, `${name}: the Hello button is a 44 px tap on screen ${JSON.stringify(Lt.b)}`);
+    ok(Lt.vis !== null && Lt.vis >= 0, `${name}: the Visitors card's heading and first line show without scrolling (phone 10; ${Lt.vis} px above the foot)`);
     ok(Lt.over === 0 && Lt.gap >= 0 && Lt.lines === 3, `${name}: three lines, no text runs out of its box, the gift card below the page (scroll ${Lt.scroll})`);
     await ev(() => { const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; }); await t.sleep(200); // a first-day hint toast is not part of the sheet
     await t.p.screenshot({ path: path.join(SHOTS, `v225_welcome_${name}.png`) });

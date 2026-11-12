@@ -30,3 +30,9 @@ html[data-layout="phone"] .wb-gt span{font-size:16px}
 .wb-vg{opacity:.8}
 html[data-layout="phone"] .wb-vis b{font-size:20px}
 html[data-layout="phone"] .wb-vis p{font-size:15px}
+/* fix batch (phone 10): at 360x640 the Visitors card started below the fold. With visitors on the page a phone drops the diary's doodle row and
+   lists the visitors right under the diary page, before the gift card, so its heading and first line show without scrolling */
+html[data-layout="phone"] .wb-hasvis .wb-page .dd-doodle{display:none}
+html[data-layout="phone"] .wb-hasvis .wb-vis{order:1;padding:6px 10px}
+html[data-layout="phone"] .wb-hasvis .wb-gift{order:2;padding:6px 10px}
+html[data-layout="phone"] .wb-hasvis{gap:8px}
