@@ -4,7 +4,7 @@
    silhouettes for those not met yet. Thank-you gifts: one a day at most, coins rare and small. Never a dog to keep or buy.
    Save: S.visitors (v226Fields, called from freshState and migrate). Toys: four HM_DECOR yard decorations (v27, so Barkitecture sells them).
    Art: PawArt.YARD_VISITORS (world_b, the props yvtugpost / yvpool / yvtunnel / yvbubbles and the book). */
-function yvOn() { return !navigator.webdriver || !!prefs.yvTest; }
+function yvOn() { return (!navigator.webdriver && nwDue(NEWS_V226)) || !!prefs.yvTest; }
 const YV_AWAY = 20 * 60e3, YV_BACK = 48 * 3600e3, YV_SLOTS = [10, 15, 20], YV_Q = 3, YV_LOG = 20, YV_GIFT = 0.4, YV_COIN = 10, YV_COIN_GAP = 7 * 86400e3;
 // the four yard toys (V226.md 5): HM_DECOR entries like every v2.7 yard decoration, sold at Barkitecture "For the yard"
 Object.assign(HM_DECOR, {

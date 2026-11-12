@@ -367,4 +367,31 @@ run('v229_story', async (t) => {
   await skipNow();
   await ev(() => window.__paw.sc.gap(0)); await t.sleep(5000);
   ok(!(await playing()) && (await st()).q.length === 0, 'nothing else plays after it');
+
+  sec('11. launch gates: each release opens on its own NEWS date (nwDue); before it nothing shows');
+  {
+    const dates = await ev(() => window.__paw.nw.dates());
+    ok(dates.length === 4 && dates.every((d, i) => /^\d{4}-\d\d-\d\d$/.test(d) && (!i || d >= dates[i - 1])), 'four ISO launch dates, in release order: ' + dates.join(' '));
+    // a fake clock one day before each date, and on it (nwDue reads Date.now through jstISO; the page's __ddNextTest is not set here)
+    const at = async (iso, shift) => ev(([iso, shift]) => { const real = Date.now, t0 = Date.parse(iso + 'T12:00:00+09:00') + shift * 864e5; Date.now = () => t0; try { return ['2.26', '2.27', '2.28', '2.29'].map((v) => window.__paw.nw.due(v)); } finally { Date.now = real; } }, [iso, shift]);
+    ok((await at(dates[0], -1)).join() === 'false,false,false,false', 'the day before the first date, all four are off');
+    for (let i = 0; i < 4; i++) {
+      const on = await at(dates[i], 0), off = await at(dates[i], -1);
+      ok(on[i] === true && on.every((v, j) => j <= i ? true : dates[j] > dates[i] ? !v : true), `on ${dates[i]} v2.2${6 + i} is on (${on.join()})`);
+      ok(off[i] === false, `the day before ${dates[i]} v2.2${6 + i} is still off`);
+    }
+    ok(await ev(() => window.__paw.sm.on() === true && window.__paw.yv.on() === false), 'under the harness smTest opens Story mode and Yard visitors stay off without yvTest');
+    ok(await ev(() => { const p = window.__paw; return typeof p.pr === 'object'; }), 'the projects hook exists');
+  }
+
+  sec('12. no toast or hint bubble over a scene: they wait and come in after it');
+  await ev(() => { window.__paw.sc.gap(0); window.__paw.sc.test(true); document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); });
+  await ev(() => window.__paw.sc.play('ch2', { replay: true }));
+  ok(await waitPlay('ch2', 4000), 'a scene plays');
+  await ev(() => { window.__paw.toast('New mail from Gerald', 'good'); window.__paw.home && window.__paw.home.say && window.__paw.home.say('Rub Mochi to pet', 300, 300); });
+  await t.sleep(600);
+  const during = await ev(() => ({ live: [...document.querySelectorAll('#toasts .toast:not(.tq)')].length, queued: [...document.querySelectorAll('#toasts .toast.tq')].length, bubble: !document.getElementById('bubble').hidden }));
+  ok(during.live === 0 && during.queued === 1 && !during.bubble, `during the scene: no live toast, one waiting, no hint bubble (${JSON.stringify(during)})`);
+  await skipNow(); await t.sleep(500);
+  ok(await ev(() => [...document.querySelectorAll('#toasts .toast:not(.tq)')].some((e) => /New mail/.test(e.textContent))), 'after the scene ends the waiting toast shows');
 }, { timeout: 580000 });

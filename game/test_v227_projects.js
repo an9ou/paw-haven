@@ -25,7 +25,7 @@ run('v227_projects', async (t) => {
   });
 
   sec('1. migration: an old save with no S.projects loads with the defaults');
-  await t.newGame({ map215: true, ground: true }, { coins: 1000 });
+  await t.newGame({ map215: true, ground: true, prTest: true, prTest: true }, { coins: 1000 });
   ok(await ev(() => { const p = window.__paw.S.projects; return !!p && p.i === 0 && p.paid === 0 && Array.isArray(p.built) && !p.built.length && Array.isArray(p.building) && Array.isArray(p.letters); }), 'a new save starts with S.projects { i: 0, paid: 0, built: [], building: [], letters: [] }');
   await ev(() => { const S = window.__paw.S; delete S.projects; window.__paw.saveNow(); });
   ok(await ev(() => !JSON.parse(localStorage.getItem('pawhaven_proto_v1')).projects), 'the stored save has no projects field (an old save)');
@@ -119,7 +119,7 @@ run('v227_projects', async (t) => {
   await t.ctx.close();
 
   sec('7. night: the lighthouse lights up');
-  await t.newGame({ map215: true, ground: true, time: 'night' }, { coins: 100 });
+  await t.newGame({ map215: true, ground: true, prTest: true, time: 'night' }, { coins: 100 });
   await ev((a) => { const p = window.__paw.S.projects; p.built = a; p.i = 4; }, ALL);
   await t.home('pier'); await t.until(() => !!document.querySelector('[data-pr-hot="lighthouse"]'));
   ok(await ev(() => !!document.querySelector('.pr-glow .pr-beam') && !document.querySelector('[data-pr-hot="lighthouse"] .pr-glow')), 'at night the lamp glows and the beam reaches out (outside the tap box)');
@@ -128,7 +128,7 @@ run('v227_projects', async (t) => {
   await t.ctx.close();
 
   sec('8. phone 360x640: the board, the builds and the sheet fit');
-  await t.newGame({ map215: true, ground: true, device: 'Phone 360x640' }, { coins: 3000 });
+  await t.newGame({ map215: true, ground: true, prTest: true, device: 'Phone 360x640' }, { coins: 3000 });
   await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain']; p.i = 1; p.paid = 4000; });
   await t.home('square'); await t.until(() => !!document.querySelector('[data-pr-hot="board"]'));
   const ph = await noOverlap(); ok(ph.bad.length === 0, 'phone square: no build covers another tap target' + (ph.bad.length ? ' (' + ph.bad.join(', ') + ')' : ''));
@@ -158,7 +158,7 @@ run('v227_projects', async (t) => {
   ok(await toastSeen(/band plays a little tune/), 'phone: tapping the Bandstand plays a tune');
 
   sec('9. phone 390x844 (a narrower crop): "Look right" shows the Bandstand, then "Look left" the whole fountain');
-  await t.newGame({ map215: true, ground: true, device: 'Phone 390x844' }, { coins: 3000 });
+  await t.newGame({ map215: true, ground: true, prTest: true, device: 'Phone 390x844' }, { coins: 3000 });
   await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain', 'bandstand']; p.building = []; p.i = 2; p.paid = 0; });
   await t.home('square'); await t.until(() => !!document.querySelector('[data-pr-hot="bandstand"]') && !!document.getElementById('phPeek'));
   ok(await inView('board'), '390: the project board is in view at home');

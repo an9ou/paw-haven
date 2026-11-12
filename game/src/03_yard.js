@@ -313,7 +313,7 @@ function phCamPan(svg) {
 function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
   const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return S.place === 'market' ? 800 : 750;
   if ($('#houseG')) return 715; // the yard: the Crayon Box, Doggy Ramp, nursery basket and the whole dog house share one crop (525-871)
-  if (S.place === 'square') return 1000; // v2.27: the Square looks all the way right (camApply stops at the edge): the notice board, the Bandstand and the third sakura tree
+  if (S.place === 'square' && typeof prOn === 'function' && prOn()) return 1000; // v2.27: the Square looks all the way right (camApply stops at the edge): the notice board, the Bandstand and the third sakura tree
   const r = el.getBoundingClientRect(), a = toWorld(svg, r.left, r.top), c = toWorld(svg, r.right, r.bottom), m = (a.x + c.x) / 2;
   return m > phCamHome + 80 ? m : 750;
 }
@@ -323,7 +323,7 @@ function phPeek() {
   b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
   const right = () => camCx > phCamHome + 80, left = () => camCx < phCamHome - 80;
   // v2.27: in the Square a narrow crop (390 x 844) leaves the fountain cut at the left edge: the button then goes right, then left (the fountain), then home
-  const lookL = () => { if (S.place !== 'square' || cur.mode !== 'yard') return false; const vb = svg0.viewBox && svg0.viewBox.baseVal; return !!vb && vb.width > 0 && phCamHome - vb.width / 2 > 40; };
+  const lookL = () => { if (!(typeof prOn === 'function' && prOn()) || S.place !== 'square' || cur.mode !== 'yard') return false; const vb = svg0.viewBox && svg0.viewBox.baseVal; return !!vb && vb.width > 0 && phCamHome - vb.width / 2 > 40; };
   const sync = () => { const r = right(), l = left(), toL = r && lookL(); b.classList.toggle('back', r); b.setAttribute('aria-label', toL ? tt('yard.label_look_left', 'Look left') : r || l ? tt('yard.label_look_back_at_the_dog', 'Look back at the dog') : tt('yard.label_look_right', 'Look right')); };
   const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
   b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right() && lookL()) { phPeekOn = true; camTo(0, 0.9); } else if (right() || left()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };

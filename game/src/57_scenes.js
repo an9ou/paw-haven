@@ -105,6 +105,7 @@ function scPlay(id, o) {
   L.hidden = false; L.classList.toggle('sc-still', SC.on.still);
   try { if (typeof rmPause === 'function') rmPause('scene'); } catch (e) { /* no roaming */ }
   try { if (typeof hideBubble === 'function') hideBubble(); } catch (e) { /* no bubble */ }
+  try { if (typeof toastPark === 'function') toastPark(); } catch (e) { /* no toasts */ } // toasts wait until the scene ends
   try { if (sc.sting && window.PawAudio && typeof PawAudio.stinger === 'function') PawAudio.stinger(sc.sting); } catch (e) { /* audio off */ }
   emit('sc:start', { id, replay: !!o.replay });
   cancelAnimationFrame(SC.raf); SC.raf = requestAnimationFrame(scFrame);
@@ -241,6 +242,7 @@ function scEnd(skipped) {
   const L = scLayer(); L.hidden = true; $('.sc-cam', L).innerHTML = ''; SC.lastEnd = Date.now(); SC.calm = 0;
   try { lastTick = performance.now(); } catch (e) { /* the loop has its own clock */ }
   try { if (typeof rmResume === 'function') rmResume('scene'); } catch (e) { /* no roaming */ }
+  try { if (typeof toastNext === 'function') toastNext(); } catch (e) { /* no toasts */ }
   emit('sc:end', { id: P.id, skipped: !!skipped, replay: !!P.o.replay });
   if (P.o.onEnd) { try { P.o.onEnd(!!skipped); } catch (e) { console.warn('sc end', e); } }
 }

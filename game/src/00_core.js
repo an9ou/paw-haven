@@ -1347,7 +1347,9 @@ const toastLive = () => [...toasts.children].filter((e) => !e.classList.contains
 function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = setTimeout(() => t.remove(), TOAST_MS); }
 // v2.22 phone review: while a celebration card (.panel.celebrate: a Bond card, the Bond 2 party, a town level or star card) is open on a phone,
 // toasts wait in the queue (and the live one steps back into it), so none lands on the card; they come in when it closes.
-const toastHold = () => isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate');
+// v2.29: and on every device while a story scene plays (scPlaying, 57_scenes.js): toasts wait in the queue and come in after it (scEnd calls toastNext)
+const toastScene = () => typeof scPlaying === 'function' && scPlaying();
+const toastHold = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
 // a "Nope" toast belongs to the screen it came from (o.scr: 's:<sheet number>' or 'v:<mode>'); phones drop it when that screen closes (toastDrop)
 let modalSeq = 0;
 const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
@@ -1357,7 +1359,7 @@ function toastPark() { toastLive().forEach((e) => { clearTimeout(e._tt); e.class
 // mini-game clears the whole queue as it opens (toastClearQ, from go()), so old Bond-gift toasts never land on its header or its Done button
 function toastStale() { if (!toasts) return; [...toasts.querySelectorAll('.toast.tq[data-arr]')].forEach((e) => { if (!S || e.dataset.arr !== S.place || !['yard', 'market'].includes(cur.mode)) e.remove(); }); }
 function toastClearQ() { if (toasts) toasts.querySelectorAll('.toast.tq').forEach((e) => e.remove()); }
-function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (toastScene()) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
 if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
@@ -1373,7 +1375,7 @@ function toast(text, kind = '', o = {}) {
     if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
     const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
   } else {
-    toasts.appendChild(t); toastRun(t);
+    toasts.appendChild(t); if (toastScene()) t.classList.add('tq'); else toastRun(t);
     while (toasts.children.length > 3) toasts.firstChild.remove();
   }
   toastPlace();
@@ -1504,6 +1506,7 @@ function sayPlace(p, o) {
 }
 function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking dog's drawn box in stage px (else found near the anchor), avoid: [stage boxes to keep clear when there is room] }
   const svg = $('svg.world', view); if (!svg) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // v2.29: no hint bubble over a story scene
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
   bubble.classList.remove('below', 'tail-r'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');

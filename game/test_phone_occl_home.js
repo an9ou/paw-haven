@@ -157,6 +157,7 @@ const SCAN = (sels) => {
           if (pt) await t.p.touchscreen.tap(pt[0], pt[1]);
           ok(await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right', null, 5000), `${tag} ${label}: a tap on the empty scene brings the view back to the dog`);
         }
+        // v2.27: with Town projects on, a narrow Square crop cycles Look right -> Look left -> the dog (prOn in 03_yard.js phPeek); with them off (the harness default, prefs.prTest) the button is the plain right-then-back pair this check expects
         ok(await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right'), `${tag} ${label}: the button looks back again`);
       };
       // a speech bubble never sits on the location chip (the dog talks when petted)

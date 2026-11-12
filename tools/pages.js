@@ -29,8 +29,8 @@ fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(phot
 // check 廣東話 on the test copy before it goes live. Same rule: never itch.io, /play/ or the artifact.
 // v2.20 "Little Helps" (owner, 4 Nov 2026): and Missions v2 on (window.__ddMs2Test: game/src/24b_missions2.js ms2On(), while MS2_LIVE is off; its What's new
 // entry stays off). Same rule: never itch.io, /play/ or the artifact.
-const FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>', YUE_TEST_FLAG = '<script>window.__ddYueTest=1</script>', MS2_TEST_FLAG = '<script>window.__ddMs2Test=1</script>';
-let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG + YUE_TEST_FLAG + MS2_TEST_FLAG) + rest + '</body></html>';
+const NEXT_TEST_FLAG = '<script>window.__ddNextTest=1</script>', FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>', YUE_TEST_FLAG = '<script>window.__ddYueTest=1</script>', MS2_TEST_FLAG = '<script>window.__ddMs2Test=1</script>';
+let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG + YUE_TEST_FLAG + MS2_TEST_FLAG + NEXT_TEST_FLAG) + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');

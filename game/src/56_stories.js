@@ -8,7 +8,7 @@
    3. Share postcard: the yard, the diary page and My Dog Card, through the v2.19 Share poster path (50_friends.js). Game words only.
    Under the test harness everything that shows needs prefs.stTest. Nothing is ever taken away. */
 const ST_LIVE = true;
-function stOn() { return (ST_LIVE && !navigator.webdriver) || !!prefs.stTest; }
+function stOn() { return (ST_LIVE && !navigator.webdriver && nwDue(NEWS_V228)) || !!prefs.stTest; } // goes live on NEWS_V228.date
 const ST = { n: 0, pc: null, pcBusy: false, pcHow: '', pcErr: '', pcForce: '' };
 const ST_STAR = 5000, ST_GAP = 3, ST_STEPS = 5;
 const ST_PAW = 'Framed Paw Print', ST_COLLAR = 'Star Collar';

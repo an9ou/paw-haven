@@ -257,7 +257,7 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { due: (v) => nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229 }[v]), dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)

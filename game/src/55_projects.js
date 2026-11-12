@@ -26,6 +26,8 @@ const PR_AT = {
 };
 const PR_FT_HOT = [20, 296, 174, 204]; // the fountain's tap box (world): the whole old fountain and its new bowl, clear of the phone's festival stall (x 196) and of the dogs' drinking spot (110, 512)
 const PR_BS_HOT = [860, 276, 80, 108]; // the bandstand's tap box (world): right of the notice board's tap group (to x 859 with its shadow), above the festival stall (y 384 on), 80 wide so it is 44 px even on a 360 x 640 phone (its right edge, invisible, reaches over the shop door's left side)
+// goes live on NEWS_V227.date (49c_news.js nwDue); under the test harness it needs prefs.prTest. v227Fields stays always on (additive save)
+function prOn() { return (!navigator.webdriver && nwDue(NEWS_V227)) || !!(typeof prefs !== 'undefined' && prefs && prefs.prTest); }
 const PRJ = { skip: 0, tune: 0, tod: '' }; // skip: test-only extra days on the Japan date (window.__paw.pr.skip)
 function v227Fields(s) {
   if (!s) return s;
@@ -38,7 +40,7 @@ function v227Fields(s) {
   if (typeof p.treatAt !== 'number' || !isFinite(p.treatAt)) p.treatAt = -1e9;
   return s;
 }
-const prS = () => (S ? (v227Fields(S), S.projects) : null);
+const prS = () => (S && prOn() ? (v227Fields(S), S.projects) : null);
 const prToday = () => (PRJ.skip ? prAddDays(jstISO(), PRJ.skip) : jstISO());
 function prAddDays(iso, n) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); if (!m) return iso; return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n)).toISOString().slice(0, 10); }
 function prDaysTo(iso) { const a = /^(\d{4})-(\d{2})-(\d{2})/.exec(prToday()), b = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); if (!a || !b) return 0; return Math.round((Date.UTC(+b[1], +b[2] - 1, +b[3]) - Date.UTC(+a[1], +a[2] - 1, +a[3])) / 864e5); }
@@ -113,7 +115,7 @@ function prSquareSVG() {
 // tap box in #prG under it. Just after a scene redraw the new drawing is still in #floorG (grLayer wraps it on the next depth sort): that one wins
 function prFtProp() { const svg = $('svg.world', view); return svg && (svg.querySelector('#sceneG #floorG > [data-prop="fountain"]') || svg.querySelector('#pack .gr-prop > [data-prop="fountain"]')); }
 function prFtAttach(tint) {
-  const svg = $('svg.world', view); if (!svg) return; svg.querySelectorAll('.pr-ft-art').forEach((e) => e.remove());
+  const svg = $('svg.world', view); if (!svg) return; if (!prOn()) { svg.querySelectorAll('.pr-ft-art').forEach((e) => e.remove()); return; } svg.querySelectorAll('.pr-ft-art').forEach((e) => e.remove());
   const fs = S.place === 'square' && prStage('fountain'), el = fs && prFtProp(); if (!el) return;
   const wrap = PR_AT.fountain, inner = `<g class="pr-ft-art" pointer-events="none">${prWrap(wrap, 192, 230, praFountainAdd(fs))}</g>`;
   el.insertAdjacentHTML('beforeend', tint ? tint(inner) : inner);
@@ -129,7 +131,7 @@ function prPetalsSVG() {
   return `<g id="prPetals" pointer-events="none">${ps.join('')}</g>`;
 }
 function prDraw() {
-  if (!S || cur.mode !== 'yard') return; const svg = $('svg.world', view); if (!svg) return;
+  if (!S || !prOn() || cur.mode !== 'yard') return; const svg = $('svg.world', view); if (!svg) return;
   ['#prG', '#prPetals'].forEach((q) => { const o = $(q, svg); if (o) o.remove(); });
   const pack = $('#pack', svg); if (!pack) return;
   const tint = (h) => (h && window.PawArt && typeof PawArt.tint === 'function' ? PawArt.tint(h, { time: timePhase(), lit: true }) : h); // the scene's time of day; lit keeps the lamp's light
@@ -140,6 +142,7 @@ function prDraw() {
   svg.querySelectorAll('[data-pr-hot]').forEach((g) => { const go = () => prTap(g.dataset.prHot); g.onclick = go; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
 }
 function prTap(id) {
+  if (!prOn()) return;
   if (typeof blOn === 'function' && blOn()) return; SFX.click();
   if (id === 'board') { prOpen(); return; }
   const st = prStage(id);
@@ -198,6 +201,7 @@ function prSheetHTML() {
   return `<div class="pr">${parts.join('')}</div>`;
 }
 function prOpen() {
+  if (!prOn()) return null;
   prTick();
   const p = openModal(tt('pr.title', 'Town projects'), prSheetHTML(), { cls: 'pr-sheet' });
   prBind(p); return p;

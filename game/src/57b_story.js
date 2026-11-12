@@ -8,7 +8,7 @@
    Free play is unchanged: nothing is locked behind the story, nothing runs out, a task only moves forward.
    Save field S.story (V229.md 2, additive; S.v stays 1). Under the harness everything that shows or pays needs prefs.smTest (scenes: prefs.scTest). */
 const SM_LIVE = true, SM_CATCH_CAP = 150;
-function smOn() { return SM_LIVE && (!navigator.webdriver || !!(typeof prefs !== 'undefined' && prefs && prefs.smTest)); }
+function smOn() { return SM_LIVE && ((!navigator.webdriver && nwDue(NEWS_V229)) || !!(typeof prefs !== 'undefined' && prefs && prefs.smTest)); } // goes live on NEWS_V229.date
 const SM_N = 8; // chapters in the whole story (all built since part 2)
 
 /* ---------------- save (additive) ---------------- */
@@ -461,5 +461,5 @@ function smExpose() {
     states: () => smStates(), big: () => smBig(), waits: () => smWaits(smChap(S.story.ch)), lv: () => smLv(), frames: () => smFrameList().map((f) => f.k), msline: () => smMsLine(), BIG: SM_BIG.map((b) => b.id), VISITS: Object.assign({}, SM_VISITS),
     act: (kind, d) => trackAct(kind, d || {}), titles: () => Array.from({ length: SM_N }, (_, i) => smPlanTitle(i + 1)), mem: () => smMemList(), replay: (id) => smReplay(id), CAP: SM_CATCH_CAP };
   window.__paw.sc = { test: (v) => { prefs.scTest = !!v; }, play: (id) => scPlay(id, { replay: true }), auto: (id) => scPlayAuto(id), queue: (id) => scQueue(id), on: () => (SC.on ? SC.on.id : null), skip: () => scEnd(true), calm: () => scCalmNow(),
-    ids: () => Object.keys(SC_SCRIPTS), dur: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).reduce((n, x) => n + (x.d || 4), 0) : 0; }, SKIP: SC_SKIP_MS, sd: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).map((x) => x.d || 4) : []; }, seek: (ms) => { if (SC.on) SC.on.t0 = performance.now() - ms; return !!SC.on; }, cur: () => { const P = SC.on; if (!P || P.shot < 0) return null; const off = (a) => { const pt = a.to || a.at || [500, 500]; return a.fit === false || a.fade === 'out' || pt[0] < 0 || pt[0] > 1000; }; return { shot: P.shot, off: P.shots[P.shot].actors.map(off), f: P.fit ? P.fit.f : 1 }; }, gap: (v) => { if (typeof v === 'number') SC.lastEnd = v; return SC.lastEnd; } };
+    play: (id, o) => scPlay(id, o), ids: () => Object.keys(SC_SCRIPTS), dur: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).reduce((n, x) => n + (x.d || 4), 0) : 0; }, SKIP: SC_SKIP_MS, sd: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).map((x) => x.d || 4) : []; }, seek: (ms) => { if (SC.on) SC.on.t0 = performance.now() - ms; return !!SC.on; }, cur: () => { const P = SC.on; if (!P || P.shot < 0) return null; const off = (a) => { const pt = a.to || a.at || [500, 500]; return a.fit === false || a.fade === 'out' || pt[0] < 0 || pt[0] > 1000; }; return { shot: P.shot, off: P.shots[P.shot].actors.map(off), f: P.fit ? P.fit.f : 1 }; }, gap: (v) => { if (typeof v === 'number') SC.lastEnd = v; return SC.lastEnd; } };
 }
