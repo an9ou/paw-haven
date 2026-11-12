@@ -44,6 +44,7 @@ run('v227_projects', async (t) => {
   await t.p.click('#modal [data-pr-pay="100"]');
   ok(await t.until(() => window.__paw.S.projects.paid === 100 && window.__paw.S.coins === 900), '+100 puts 100 coins in (1,000 -> 900)');
   ok(await toastSeen(/100 coins into the Fountain/), 'a thank-you toast');
+  ok(await ev(() => { const j = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); return j.coins === 900 && j.projects.paid === 100; }), 'the payment is saved at once (saveNow), not 3 s later');
   ok(await ev(() => /100 of 5,000/.test(document.querySelector('#modal .pr-num').textContent) && document.querySelector('#modal .pr-bar').getAttribute('aria-valuenow') === '2'), 'the sheet redraws in place: 100 of 5,000, the bar at 2%');
   await t.p.fill('#modal #prAmt', '123'); await t.p.click('#modal #prPut');
   ok(await t.until(() => window.__paw.S.projects.paid === 223 && window.__paw.S.coins === 777), 'a typed 123 goes in (777 left)');

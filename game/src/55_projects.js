@@ -79,7 +79,7 @@ function prPay(n) {
   n = Math.min(n, Math.max(0, Math.floor(S.coins)), c.price - p.paid); if (n <= 0) return 0;
   S.coins -= n; p.paid += n; trackAct('project_pay', { id: c.id, n });
   if (p.paid >= c.price) { p.building.push({ id: c.id, ready: prAddDays(prToday(), PR_BUILD_DAYS), paid: prToday() }); p.i++; p.paid = 0; trackAct('project_paid', { id: c.id }); }
-  markDirty(); updateHUD(); prDraw(); return n;
+  markDirty(); saveNow(); updateHUD(); prDraw(); return n; // coins paid in are saved at once, like the Kind shop (never lost to a page closed inside the 3 s save tick)
 }
 // how much a quick button puts in now ('keep' = everything but PR_KEEP); 0 = the button is off
 function prAmount(kind) {
@@ -92,7 +92,7 @@ function prAmount(kind) {
 function prTick() {
   const p = prS(); if (!p) return false; let ch = false; const today = prToday();
   p.building.slice().forEach((b) => { if (today >= b.ready) { p.building = p.building.filter((x) => x !== b); if (!p.built.includes(b.id)) p.built.push(b.id); ch = true; prLetter(b.id); } });
-  if (ch) { markDirty(); prDraw(); }
+  if (ch) { markDirty(); saveNow(); prDraw(); } // a finished build and its letter are saved at once
   return ch;
 }
 function prLetter(id) {
