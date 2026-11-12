@@ -7548,6 +7548,84 @@ PA.LEVELS={star:(n,frac,o)=>{const q=Math.round(Math.max(0,Math.min(1,+frac||0))
   sticker:i=>{const k=((i|0)%8+8)%8;return serve('lv:stk:'+k,()=>lvSticker(k))},
   cats:LV_CATS.slice(),stickers:LV_STK.slice(),numberAt:{cx:24,cy:26}};
 
+/* ---------- v2.26 "Yard visitors" (V226.md 5): four yard toys and the Visitors Book ----------
+   Props (ground line at the bottom of the box, drawn at about 0.6-0.7 of the viewBox in the yard): yvtugpost 120x160, yvpool 200x120,
+   yvtunnel 220x120, yvbubbles 120x160; their 64 item cards draw the same shapes scaled (yvDrawToy(b, prop, k, ox, oy)).
+   PawArt.YARD_VISITORS.book(): a 64 open sketchbook with a crayon dog and a paw (the Care card, the Journal tab, the book's head).
+   Every fill is a b.sh shape with its own outline; stripes and spots are marks clipped to their shape (fills stay inside the lines). */
+const YV_LBL={yvtugpost:'Tug Post',yvpool:'Puddle Pool',yvtunnel:'Play Tunnel',yvbubbles:'Bubble Fountain'};
+Object.assign(PROP_VB,{yvtugpost:'0 0 120 160',yvpool:'0 0 200 120',yvtunnel:'0 0 220 120',yvbubbles:'0 0 120 160'});
+function yvDrawToy(b,name,k,ox,oy){
+  const P=pts=>pts.map(([x,y])=>[ox+x*k,oy+y*k]),X=x=>ox+x*k,Y=y=>oy+y*k,sm=k<1;
+  const sh=(pts,fill,o)=>b.sh(P(pts),fill,Object.assign({},o||{},o&&o.marks?{marks:o.marks.map(m=>Object.assign({},m,{pts:P(m.pts)}))}:{},o&&o.det?{det:o.det.map(P)}:{}));
+  const ln=(pts,o)=>b.ln(P(pts),o);
+  if(name==='yvtugpost'){
+    if(!sm)b.shadow(X(60),Y(155),40*k,4*k);
+    sh([[20,156],[34,146],[86,146],[100,156]],C.leaf,{k:.2,hatch:0,hl:0,lw:.9,base:'#D6EDC4'});
+    sh([[46,150],[46,34],[50,26],[70,26],[74,34],[74,150]],C.wood,{k:.05,sh:C.woodD,base:'#F3DDB4',det:[[[54,46],[55,140]],[[66,60],[65,132]]],dw:.6,dcol:C.woodD});
+    sh([[42,30],[60,16],[78,30]],C.redD,{k:.1,hatch:0,hl:0,lw:.9});
+    sh(E(60,44,9,9,14),'#C9C2BA',{hatch:0,hl:0,lw:.9,base:'#ECE7E1',marks:[{pts:E(60,44,4.2,4.2,10),fill:C.wood}]});
+    const R=[[64,50],[78,66],[88,86],[94,104],[96,118]],w=[6,6.4,6.6,6.6,6.4];
+    sh(ribbon(R,w),'#FFF2DA',{k:1/6,hatch:0,hl:0,lw:.9,base:'#FFFFFF',marks:[[66,56],[76,68],[84,80],[89,92],[93,104],[96,114]].filter((_,i)=>i%2===0).map(([x,y])=>({pts:[[x-8,y-1],[x+8,y-6],[x+8,y+1],[x-8,y+6]],fill:C.red,k:0}))});
+    sh(E(96,122,8,7,14),C.red,{hatch:0,hl:0,lw:.9,base:'#F9C1BF'});
+    [[90,128,86,140],[96,129,96,142],[102,128,106,140]].forEach(([a,c,d,e])=>ln([[a,c],[d,e]],{w:1.3*(sm?.8:1)}));
+    paw(b,X(60),Y(104),5.4*k,'#F7B2C4',{noline:1,a:.2});
+    if(!sm){b.ex('spark',22,40,4);tuft(b,30,154,3);tuft(b,92,154,3)}
+  }else if(name==='yvpool'){
+    if(!sm)b.shadow(X(100),Y(113),94*k,5*k);
+    const body=[[8,58],[192,58],[192,92],[180,104],[150,111],[100,113],[50,111],[20,104],[8,92]];
+    sh(body,'#6FB7E8',{k:.15,sh:'#4E93C6',base:'#BFE0F6',marks:[[30,86],[62,94],[100,96],[138,94],[170,86]].map(([x,y])=>({pts:E(x,y,6,5,10),fill:'#FFFFFF',k:.1}))});
+    sh(E(100,58,92,26,26),'#8FCBF0',{k:.1,hatch:0,hl:0,lw:1,base:'#D6EEFB'});
+    sh(E(100,59,78,17,24),'#BFE6FA',{k:.1,hatch:0,lw:.8,base:'#E6F6FD',marks:[{pts:E(70,60,16,3.4,12),fill:'#E6F6FD',k:.2},{pts:E(140,56,12,3,12),fill:'#E6F6FD',k:.2}]});
+    sh([[112,60],[114,52],[124,49],[134,52],[136,58],[126,62]],C.yel,{k:.2,hatch:0,hl:0,lw:.8,base:'#FFF2C4'});
+    sh(E(132,45,6,6,12),C.yel,{hatch:0,hl:0,lw:.8,base:'#FFF2C4'});
+    sh([[137,45],[143,46.6],[137,48.4]],'#F28A2E',{k:.05,hatch:0,hl:0,lw:.6});
+    b.dot(X(133.6),Y(43.4),1.2*k,INK,'top');
+    if(!sm){b.ex('spark',186,30,4.4);b.ex('heart',14,40,3.4,'#F7B2C4');[[60,62],[154,62]].forEach(([x,y])=>b.raw(b.st(`M${x-6} ${y}q6 -3 12 0`,'#FFFFFF',1.4,.9),'top'))}
+  }else if(name==='yvtunnel'){
+    if(!sm)b.shadow(X(118),Y(113),100*k,5*k);
+    const body=[[24,114],[24,78],[34,52],[58,36],[110,30],[162,36],[186,52],[196,78],[196,114]];
+    const bands=[48,82,116,150,184].map((x,i)=>({pts:[[x-9,0],[x+9,0],[x+9,130],[x-9,130]],fill:['#F08A86','#FFE08A','#8FC7EE','#F08A86','#FFE08A'][i],k:0}));
+    sh(body,'#B8DE9A',{k:.12,sh:'#7FA65E',base:'#E1F2D2',marks:bands,det:[[[48,45],[45,112]],[[82,36],[80,112]],[[116,34],[116,112]],[[150,38],[152,112]],[[184,57],[187,112]]],dw:.55,dcol:'#7FA65E'});
+    sh(E(26,84,18,30,18),'#7FA65E',{k:.1,hatch:0,hl:0,lw:1,base:'#B8DE9A'});
+    sh(E(28,86,11,22,16),'#5C4A44',{k:.1,hatch:0,hl:0,lw:.8,base:'#7A6058'});
+    sh([[12,114],[20,108],[36,108],[44,114]],'#7FA65E',{k:.1,hatch:0,hl:0,lw:.7});
+    if(!sm){[[70,118],[96,116]].forEach(([x,y],i)=>paw(b,X(x),Y(y),2.6*k,'#C9B79C',{noline:1,a:i?-.2:.2}));b.ex('spark',204,26,4);b.ex('dots',8,40,5)}
+  }else if(name==='yvbubbles'){
+    if(!sm)b.shadow(X(60),Y(155),42*k,4*k);
+    [[30,146],[90,146]].forEach(([x,y])=>sh(RR(x-5,y-6,10,14,3),C.woodD,{hatch:0,hl:0,lw:.8}));
+    sh(RR(18,92,84,56,10),C.teal,{k:.08,sh:'#5FA79E',base:'#D9F1EE',marks:[{pts:[[0,138],[120,138],[120,150],[0,150]],fill:'#5FA79E',k:0}]});
+    sh(E(60,118,17,17,18),'#FFFFFF',{hatch:0,hl:0,lw:.9,det:[[[46,118],[74,118]],[[60,104],[60,132]],[[50,108],[70,128]],[[70,108],[50,128]]],dw:.6,dcol:'#5FA79E'});
+    sh(E(60,118,4,4,10),C.yel,{hatch:0,hl:0,lw:.7});
+    sh(RR(52,78,16,16,4),C.pinkD,{hatch:0,hl:0,lw:.8,base:'#F9C9D4'});
+    [[60,60,11],[40,40,8],[78,30,9.5],[56,14,6.5],[90,58,6],[28,66,5.4],[98,12,5]].forEach(([x,y,r])=>{sh(E(x,y,r,r,16),'#DDF3FF',{k:.1,hatch:0,hl:0,lw:.7,base:'#F4FBFF',marks:[{pts:E(x-r*.35,y-r*.35,r*.28,r*.2,8),fill:'#FFFFFF',k:0},{pts:E(x+r*.3,y+r*.35,r*.35,r*.22,8),fill:'#F7D6EE',k:0,op:.7}]})});
+    if(!sm){b.ex('spark',14,22,3.6);b.ex('note',104,90,8)}
+  }
+}
+PROPS.yvtugpost=b=>yvDrawToy(b,'yvtugpost',1,0,0);PROPS.yvpool=b=>yvDrawToy(b,'yvpool',1,0,0);PROPS.yvtunnel=b=>yvDrawToy(b,'yvtunnel',1,0,0);PROPS.yvbubbles=b=>yvDrawToy(b,'yvbubbles',1,0,0);
+{const _propYV=PA.prop;
+ PA.prop=function(name,o){if(!YV_LBL[name])return _propYV.apply(this,arguments);
+  return serve('p:'+name,()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'',YV_LBL[name])})}}
+// the item cards: the toy scaled into the 64 box (bottom at y 58)
+Object.assign(ITEMS,{
+ 'Tug Post'(b){yvDrawToy(b,'yvtugpost',.38,9.2,-2);b.ex('spark',8,10,3)},
+ 'Puddle Pool'(b){yvDrawToy(b,'yvpool',.3,2,22);b.ex('spark',56,12,3.2)},
+ 'Play Tunnel'(b){yvDrawToy(b,'yvtunnel',.27,2.3,24);b.ex('spark',56,12,3.2)},
+ 'Bubble Fountain'(b){yvDrawToy(b,'yvbubbles',.38,9.2,-2)}
+});
+// the Visitors Book: an open sketchbook, a crayon dog on the left page, a paw and a star on the right, the spiral down the middle
+function yvBook(){const b=mk('item','yv:book');
+  b.shadow(32,58,28,3);
+  b.sh([[4,14],[30,10],[30,56],[4,58]],'#FFFBF0',{k:.05,hatch:0,hl:0,lw:.9,base:'#FFFFFF',det:[[[8,46],[27,45]],[[8,51],[27,50]]],dw:.45,dcol:GRAPH});
+  b.sh([[34,10],[60,14],[60,58],[34,56]],'#FFFBF0',{k:.05,hatch:0,hl:0,lw:.9,base:'#FFFFFF',det:[[[38,46],[57,47]],[[38,51],[57,52]]],dw:.45,dcol:GRAPH});
+  b.sh(E(12,23,3.4,6,10,.4),C.brown,{hatch:0,hl:0,lw:.6});b.sh(E(25,23,3.4,6,10,-.4),C.brown,{hatch:0,hl:0,lw:.6});
+  b.sh(E(18.5,29,8.4,8,14),C.tan,{hatch:0,hl:0,lw:.75,marks:[{pts:E(18.5,33,3.6,2.4,10),fill:'#FFE3B0'}]});
+  b.dot(15.4,27.6,1.1);b.dot(21.6,27,1.6);b.dot(18.6,31.6,1.2);
+  paw(b,47,28,4.2,PINK,{lw:.6});b.ex('spark',51,40,3.2);
+  [16,24,32,40,48].forEach(y=>b.sh(E(32,y,2.8,2.4,10),'#C9C2BA',{hatch:0,hl:0,lw:.55,base:'#ECE7E1'}));
+  return b.svg('0 0 64 64','','Visitors Book')}
+PA.YARD_VISITORS={props:Object.keys(YV_LBL),items:Object.values(YV_LBL),book:()=>serve('yv:book',yvBook)};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};
