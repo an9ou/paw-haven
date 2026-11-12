@@ -1,3 +1,10 @@
+# GM session_01D6KLY5RUSsrwWUZ5K8h4g9 (from 12 Nov 2026): release prep for B, C, E, story mode
+
+- **Combined branch `claude/release-26-29`** (worktree /home/user/paw-haven-rel) = main + yard-visitors + town-projects + stories-stars + story-mode, merged in that order. Each feature is gated by its NEWS date (`nwDue(NEWS_V226..V229)` in 49c_news.js; placeholder dates 19 Nov, 26 Nov, 3 Dec, 10 Dec marked LAUNCH DATE); `prOn()` new for projects; Pages copy opens all four with `window.__ddNextTest` (itch.js refuses it). So all four can go to main together and open one by one on the owner's dates.
+- Done: two fountains -> one (the project builds onto the old fountain), bandstand smaller + phone Look right/left, story scene fit (all 25 scenes inside on phones), visitors on While you were out (S.wbVisSeen), toasts held during scenes, FR_DECOR + the 4 toys (**Worker deploy needed with v2.26**: FR_LIM.decor 31->35), v229 test races fixed, NEWS entries (English).
+- Reviews: docs/reviews/V226-229_review_{code,phone,art}.md (on the branch). check_identical vs main: 0 differ. Fix batch lanes A (Square/pier), B (story/scenes/keys/top bar), C (visitors/stories/shop gate) on claude/fixA|B|C, then merge, then ONE translation batch (paw-i18n, 12 languages), then ask the owner for go-ahead + the four dates (no 5-minute default).
+- Deferred: Star Collar + Golden Collar cross the face in some poses (changes existing renders; owner/art sign-off).
+
 # Game Manager handoff — CURRENT (12 Nov 2026, GM session_01D6KLY5GYw9NHBp7zSgPZ6Z)
 
 - **Live:** v2.25 "Glad you're back" (12 Nov JST) on main 1987a7bd, itch.io #2357606 (2.25), doodledoggo.app (/play/ md5 = dist/itch). Before it: v2.24.2 "Better deals" (KIND SHOP; coin prices x2.5, packs x2; Stripe coin products renamed to 2,000 / 5,000 / 14,000 coins by KIND SHOP (names only)), v2.24.1 "Delivered!".
