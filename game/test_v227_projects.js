@@ -92,7 +92,7 @@ run('v227_projects', async (t) => {
   await ev(() => { window.__paw.S.stats.happy = 50; window.__paw.S.projects.treatAt = -1e9; });
   await t.p.click('[data-pr-hot="fountain"] > rect', { force: true });
   ok(await toastSeen(/long drink at the fountain\. \+5 Happiness/), 'the fountain: a drink, +5 Happiness');
-  ok(await ev(() => window.__paw.S.stats.happy === 55), 'Happiness 50 -> 55');
+  ok(await ev(() => Math.round(window.__paw.S.stats.happy) === 55), 'Happiness 50 -> 55'); // rounded: the 250 ms tick may take its tiny decay before the check
   const tAt = await ev(() => window.__paw.S.projects.treatAt); await ev(() => { window.__toasts.length = 0; });
   await ev(() => window.__paw.pr.tap('fountain')); // the dog may now stand in front of the fountain after its drink
   ok(await toastSeen(/long drink at the fountain\.$/) && await ev((a) => window.__paw.S.projects.treatAt === a && window.__paw.S.stats.happy <= 55, tAt), 'again within the game hour: still a drink, no extra Happiness (nothing is lost)');
