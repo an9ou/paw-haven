@@ -223,6 +223,16 @@ require('./test_lib').run('phone_shell', async (t) => {
     await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 393, height: dev === 'Pixel 7' ? 915 : 852 });
     ok(await t.until(() => !document.documentElement.hasAttribute('data-pslock') && document.getElementById('psTurn').hidden && document.documentElement.dataset.layout === 'phone'), `${dev}: upright again: the card goes, phone layout is back`);
     ok(await t.popVisible(), `${dev}: upright again: the Feed tray is still open`); await ev(() => { const x = document.getElementById('trayX'); if (x) x.click(); }); await t.waitPop(false);
+    // phone 8 (v2.26-29 review): the keyboard shrinks the page to a short landscape box while typing: no "Turn your phone upright" card over the sheet
+    await ev(() => { const i = document.createElement('input'); i.id = 'psTypeT'; i.type = 'text'; document.body.appendChild(i); i.focus(); });
+    await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 393, height: 300 });
+    await new Promise((r) => setTimeout(r, 400));
+    ok(await ev(() => !document.documentElement.hasAttribute('data-pslock')), `${dev}: typing with the keyboard up (a short landscape box): no portrait lock card`);
+    await ev(() => document.getElementById('psTypeT').blur());
+    ok(await t.until(() => document.documentElement.hasAttribute('data-pslock')), `${dev}: the field loses focus in that box: the card comes back`);
+    await ev(() => { const i = document.getElementById('psTypeT'); if (i) i.parentNode.removeChild(i); });
+    await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 393, height: dev === 'Pixel 7' ? 915 : 852 });
+    await t.until(() => !document.documentElement.hasAttribute('data-pslock'));
     await noHScroll('after rotate');
     await t.ctx.close();
   }

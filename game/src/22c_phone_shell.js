@@ -18,8 +18,12 @@ function psApplyLayout(rerender) {
 
 /* ---------- portrait lock: a touch-only device held sideways with a short screen ---------- */
 function psLockWanted() { return psMQ('(pointer: coarse)') && !psMQ('(any-pointer: fine)') && psMQ('(orientation: landscape)') && window.innerHeight <= 500; }
+// fix batch (phone 8): typing (any amount, a name, a note) can make the browser shrink the page for the keyboard to a short landscape box, so the
+// "Turn your phone upright" card would cover the sheet: it waits while a text field has focus (the layout itself still follows psLockWanted)
+function psTyping() { const a = document.activeElement; return !!a && (a.tagName === 'TEXTAREA' || a.isContentEditable || (a.tagName === 'INPUT' && !/^(button|checkbox|radio|range|submit|reset|file|color|image|hidden)$/i.test(a.type || 'text'))); }
+document.addEventListener('focusin', () => setTimeout(psLockCheck, 0)); document.addEventListener('focusout', () => setTimeout(psLockCheck, 60));
 function psLockCheck() {
-  const on = psLockWanted(), html = document.documentElement, was = html.hasAttribute('data-pslock');
+  const on = psLockWanted() && !psTyping(), html = document.documentElement, was = html.hasAttribute('data-pslock');
   if (on === was) return;
   let card = document.getElementById('psTurn');
   if (on && !card) {
