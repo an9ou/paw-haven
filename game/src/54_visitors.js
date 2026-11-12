@@ -146,6 +146,13 @@ function yvCatchUp(now) {
 
 /* ---------------- the visitor in the yard ---------------- */
 const YV = { tick: 0, greet: false };
+// fix batch (art 3, phone 4): the yard visitor has its own spot, right of the dog and clear of the mailbox (the pack's free spot stood it in front of
+// the mailbox, the mail badge on its head, and off the left edge at 390 px). Feet x 592: inside the phone crop at 360 and 390 (phHomeRefit widens the
+// crop to the right edge of visitorSpot(), which answers this spot while a yard visitor is drawn).
+const YV_SPOT = [592, 452, 'left', 0.58]; // [feet x, feet y, facing, scale] as PACK_SPOTS (0.57 at y 438)
+const yvSpot = () => YV_SPOT.slice();
+const yvTownSpot = visitorSpot; // 14b_vet_playboard.js: the town visitor's spot (the pack's next free spot)
+visitorSpot = function () { return S && S.place === 'yard' && $('#yvHost #visitorG', view) ? yvSpot() : yvTownSpot(); }; // eslint-disable-line no-func-assign
 function yvVisDog(v) { const cs = typeof starterCoats === 'function' ? starterCoats(v.key) : [], c = cs[v.coat] || cs[0]; return { id: 'yv_' + v.id, key: v.key, genes: c ? c.genes : {}, born: bornDaysAgo(v.age), mix: null, sparkle: false }; }
 function yvToyName(n) { return n ? homeName(n) : ''; }
 function yvLine(e) {
@@ -154,9 +161,9 @@ function yvLine(e) {
     : tt('yv.line_sniff', '{name} came by and had a good sniff round the garden.', { name: v.name });
 }
 function yvSVG(e) {
-  const v = yvDog(e.id), d = yvVisDog(v), [fx, fy, face, sc] = visitorSpot(), w = 264 * sc, h = 220 * sc, z = sizeK(d);
+  const v = yvDog(e.id), d = yvVisDog(v), [fx, fy, face, sc] = yvSpot(), tg = isPhone() ? [132, 31, 25, 21] : [92, 22, 17, 15], nm = v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name, w = 264 * sc, h = 220 * sc, z = sizeK(d);
   const ph = isPhone(), rw = Math.max((w - 52) * z, ph ? w - 52 : 0), up = Math.max((h * (205 / 220) - 26) * z, ph ? h * (205 / 220) - 26 : 0), dn = h * (15 / 220) * Math.max(z, ph ? 1 : 0);
-  return `<g id="visitorG" class="visitor yv hot" data-yv="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(tt('yv.aria', '{name} is visiting from {family}', { name: v.name, family: yvFam(v) }))}"><rect x="${(fx - rw / 2).toFixed(1)}" y="${(fy - up).toFixed(1)}" width="${rw.toFixed(1)}" height="${(up + dn).toFixed(1)}" fill="transparent"/>${place(dogSVG(d, wetOpt(d, { pose: 'happy', facing: face })), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="-46" y="-2" width="92" height="22" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="15" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="#5B3D32">${esc(v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name)}</text></g></g>`;
+  return `<g id="visitorG" class="visitor yv hot" data-yv="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(tt('yv.aria', '{name} is visiting from {family}', { name: v.name, family: yvFam(v) }))}"><rect x="${(fx - rw / 2).toFixed(1)}" y="${(fy - up).toFixed(1)}" width="${rw.toFixed(1)}" height="${(up + dn).toFixed(1)}" fill="transparent"/>${place(dogSVG(d, wetOpt(d, { pose: 'happy', facing: face })), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="${-tg[0] / 2}" y="-2" width="${tg[0]}" height="${tg[1]}" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${tg[3]}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${tg[2]}" fill="#5B3D32">${esc(nm)}</text></g></g>`; // phones: a tag of 12 px or more at 360 (phone 11)
 }
 function yvHere() { return !!(S && yvOn() && cur.mode === 'yard' && S.place === 'yard' && !(typeof HO !== 'undefined' && HO.pl)); }
 function yvDraw(greet) {
@@ -171,7 +178,7 @@ function yvDraw(greet) {
   if (typeof rmScan === 'function') try { rmScan(); } catch (er) { /* roam off */ }
   if (typeof dcRoom === 'function') dcRoom();
   if (greet) setTimeout(() => {
-    if (!yvHere() || !$('#visitorG.yv', view) || !modal.hidden) return; const [fx, fy, , sc] = visitorSpot(); say(yvLine(e), fx, fy - 200 * sc, 4200); SFX.bark(BARK[yvDog(e.id).key] || 1);
+    if (!yvHere() || !$('#visitorG.yv', view) || !modal.hidden) return; const [fx, fy, , sc] = yvSpot(); say(yvLine(e), fx, fy - 200 * sc, 4200); SFX.bark(BARK[yvDog(e.id).key] || 1);
     if (e.g) setTimeout(() => toast(yvGiftLine(e), 'gold'), 600);
   }, 900);
   return e;
@@ -195,7 +202,7 @@ function yvCard(t) {
     const mm = V.met[v.id]; if (!mm) return;
     if (mm.pet === localISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
     mm.pet = localISO(); addStat('happy', 3); markDirty(); SFX.boop(820); updateHUD(); closeModal();
-    const [fx, fy, , sc] = visitorSpot(); fxText('♥', fx, fy - 150 * sc); setTimeout(() => fxText('♥', fx + 20, fy - 170 * sc), 200);
+    const [fx, fy, , sc] = yvSpot(); fxText('♥', fx, fy - 150 * sc); setTimeout(() => fxText('♥', fx + 20, fy - 170 * sc), 200);
     toast(tt('yv.hello', '{name} and {friend} sniff hello. +3 Happiness.', { name: NAME(), friend: v.name }), 'good');
   };
   $('#yvBookB', p).onclick = () => { SFX.click(); yvOpenBook(); };

@@ -184,6 +184,10 @@ run('v226_visitors', async (t) => {
   ok(await t.until(() => !!document.querySelector('#visitorG.yv'), null, 5000), 'the visitor is in the phone yard');
   const vb = await ev(() => { const r = document.querySelector('#visitorG.yv > rect').getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); });
   ok(vb[2] >= 44 && vb[3] >= 44 && vb[0] + vb[2] > 0 && vb[0] < 360, 'its tap box is at least 44 px and on screen: ' + vb);
+  const clr = await ev(() => { const q = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, v = q('#visitorG.yv > rect'), m = q('#sceneG [data-hot="mailbox"]') || q('#mailboxG'), tg = q('#visitorG .vtag'), tx = document.querySelector('#visitorG .vtag text').getBoundingClientRect().height;
+    return { in: v[0] >= 0 && v[2] <= innerWidth && tg[0] >= 0 && tg[2] <= innerWidth, mail: !!m && !(v[0] < m[2] && m[0] < v[2] && v[1] < m[3] && m[1] < v[3]), tag: Math.round(tx) }; });
+  ok(clr.in && clr.mail, 'its own spot: wholly on screen at 360 (tap box and name tag) and clear of the mailbox (art 3, phone 4): ' + JSON.stringify(clr));
+  ok(clr.tag >= 12, 'the name tag text is at least 12 px at 360 (' + clr.tag + ')');
   await shot('phone_yard_visitor');
   await t.p.tap('#visitorG.yv > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#yvPet'), null, 4000), 'tap: the card opens');
