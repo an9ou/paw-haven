@@ -168,7 +168,7 @@ const nwV225Due = () => jstISO() >= NEWS_V225.date;
 const nwNext = () => typeof window !== 'undefined' && !!window.__ddNextTest;
 const nwDue = (e) => nwNext() || jstISO() >= e.date;
 const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
-  id: '2.26', date: '2026-11-19', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE
+  id: '2.26', date: '2026-11-19', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE (owner, 12 Nov: all four together)
   title: () => tt('nw.v226.title', 'Visitors in the yard!'),
   items: [
     { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v226.come', 'While you are away, neighbourhood dogs come round to play in your yard. The last one is still there when you come back') },
@@ -178,7 +178,7 @@ const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
   ]
 };
 const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
-  id: '2.27', date: '2026-11-26', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE
+  id: '2.27', date: '2026-11-19', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
   title: () => tt('nw.v227.title', 'Town projects'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v227.board', 'A project board in the Town Square: put in coins whenever you like to build something new for the whole town') },
@@ -188,7 +188,7 @@ const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
   ]
 };
 const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
-  id: '2.28', date: '2026-12-03', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE
+  id: '2.28', date: '2026-11-19', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE (owner, 12 Nov: all four together)
   title: () => tt('nw.v228.title', 'Stories and stars'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v228.stars', 'Past Bond 10 your dog keeps earning Bond stars, with a Framed Paw Print at 5 stars and a Star Collar at 10') },
@@ -198,7 +198,7 @@ const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
   ]
 };
 const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
-  id: '2.29', date: '2026-12-10', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE
+  id: '2.29', date: '2026-11-19', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
   title: () => tt('nw.v229.title', 'Story mode'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v229.book', 'Gerald has written a story for you and your dog: 8 chapters to play at your own pace, next to everything else') },
