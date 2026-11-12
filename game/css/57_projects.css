@@ -1,0 +1,50 @@
+/* v2.27 "Town projects" (V227.md; game/src/55_projects.js): the board's sheet, the petals, the lighthouse light */
+.pr-sheet .panel-body{display:block}
+.pr{display:flex;flex-direction:column;gap:10px}
+.pr-intro{margin:0;font-size:15px;line-height:1.35}
+.pr-cur{display:flex;gap:14px;align-items:center}
+.pr-art{flex:0 0 150px;height:160px;background:#FFFBF3;border:2px dashed #CFA77C;border-radius:12px;padding:6px;box-sizing:border-box}
+.pr-art svg{width:100%;height:100%;display:block}
+.pr-info{flex:1;min-width:0}
+.pr-info h3{margin:0 0 2px;font-size:24px}
+.pr-info .small{margin:0 0 8px}
+.pr-bar{height:16px;border:2px solid #5B3D32;border-radius:9px;background:#FFFDF8;overflow:hidden}
+.pr-bar i{display:block;height:100%;background:repeating-linear-gradient(-45deg,#FCE59A 0 7px,#F8C08A 7px 10px);border-radius:7px 0 0 7px}
+.pr-num{margin:4px 0 0;font-weight:700}
+.pr-pay{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pr-pay .btn,.pr-own .btn{min-height:44px;margin:0;padding:6px 8px;white-space:nowrap}
+.pr-pay .btn[aria-disabled="true"]{opacity:.45}
+.pr-own{display:flex;gap:8px;align-items:center}
+.pr-own label{font-weight:700;white-space:nowrap}
+.pr-own input{flex:1;min-width:0;min-height:44px;box-sizing:border-box;font:inherit;font-size:18px;padding:4px 10px;border:2px solid #5B3D32;border-radius:10px;background:#FFFDF8}
+.pr-all{margin:0;font-weight:700;font-size:17px}
+.pr-building{margin:0;padding:8px 12px;list-style:none;background:#FFF3DA;border:2px dashed #CFA77C;border-radius:10px}
+.pr-building li{margin:2px 0}
+.pr-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;padding:0;list-style:none}
+.pr-list li{display:flex;align-items:center;gap:6px;padding:4px 6px;border:2px solid #E3D2BA;border-radius:10px;background:#FFFBF3;min-width:0}
+.pr-list li[data-st="built"]{border-color:#93C276;background:#F1F8E6}
+.pr-list li[data-st="now"]{border-color:#F28FA5}
+.pr-ic{flex:0 0 38px;height:42px}.pr-ic svg{width:100%;height:100%;display:block}
+.pr-ln{flex:1;min-width:0;line-height:1.15;overflow-wrap:anywhere}
+.pr-ln .small{display:block}
+.pr-chip{flex:0 0 auto;font-size:13px;padding:1px 7px;border-radius:9px;background:#FFF3DA;border:1.5px solid #CFA77C}
+.pr-list li[data-st="built"] .pr-chip{background:#DDEFD8;border-color:#93C276}
+/* the scene: falling petals in spring; the lighthouse beam sweeps at night; a tap flashes the light */
+#view svg.world .pr-petal{animation:pr-fall 9s linear infinite;transform-box:fill-box}
+@keyframes pr-fall{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translate(-60px,330px) rotate(300deg);opacity:0}}
+#view svg.world .pr-beam{animation:pr-sweep 6s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 50%}
+@keyframes pr-sweep{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+#view svg.world .pr-flash{animation:pr-flash .9s ease-out}
+@keyframes pr-flash{0%{filter:brightness(1)}30%{filter:brightness(1.35) drop-shadow(0 0 8px #FCE59A)}100%{filter:brightness(1)}}
+html[data-motion="off"] #view svg.world .pr-petal,html[data-motion="off"] #view svg.world .pr-beam,html[data-motion="off"] #view svg.world .pr-flash{animation:none}
+@media (prefers-reduced-motion:reduce){#view svg.world .pr-petal,#view svg.world .pr-beam{animation:none}}
+/* phones: one column of buttons pairs, the drawing a little smaller */
+html[data-layout="phone"] .pr-cur{gap:10px}
+html[data-layout="phone"] .pr-art{flex-basis:108px;height:118px}
+html[data-layout="phone"] .pr-info h3{font-size:20px}
+html[data-layout="phone"] .pr-intro{font-size:14px}
+html[data-layout="phone"] .pr-pay{grid-template-columns:repeat(2,1fr)}
+html[data-layout="phone"] .pr-list{grid-template-columns:1fr}
+html[data-layout="phone"] .pr-list li{padding:2px 6px}
+html[data-layout="phone"] .pr-ic{flex-basis:30px;height:34px}
+html[data-layout="phone"] .pr-ln .small{display:inline}

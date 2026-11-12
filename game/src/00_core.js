@@ -848,6 +848,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
   v225Fields(st, true); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): days played from 0, the last-seen stamp now
   v226Fields(st); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): S.visitors
+  v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
   return linkDogs(st);
 }
 let S = null;
@@ -921,6 +922,7 @@ function migrate(s) {
   v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
   v225Fields(s, false); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): additive; an old save's days played start from what it already knows
   v226Fields(s); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): additive, S.visitors (seen = now, so no flood on the first load)
+  v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
