@@ -163,14 +163,35 @@ run('v225_welcome', async (t) => {
   ok(/Tomorrow: the carrots should be ready to pick\./.test(crop), 'with a crop due within a day: ' + crop);
   await t.ctx.close();
 
+  sec('6b. v2.26 visitors on the page: listed once, the order of events does not matter, none = unchanged');
+  await t.newGame({ prefs: ON });
+  const vp = await ev(() => {
+    const P = window.__paw, S = P.S, ids = P.yv.dogs.slice(0, 5).map((v) => v.id), now = Date.now();
+    S.awayGiftISO = '';
+    S.visitors.log = ids.slice(0, 4).map((id, i) => ({ id, t: now - (5 - i) * 600e3, toy: '', g: i === 0 ? 'flower' : '' }));
+    S.wbPend = { at: now, h: 5 }; return { n: S.visitors.log.length };
+  });
+  ok(await waitWb(10000), 'the page opens with visitors in the log'); await t.sleep(400);
+  const v1 = await ev(() => ({ head: (document.querySelector('#modal .wb-vis b') || {}).textContent, rows: document.querySelectorAll('#modal .wb-vis p').length, txt: (document.querySelector('#modal .wb-vis') || {}).textContent || '', seen: window.__paw.S.wbVisSeen }));
+  ok(v1.head === 'Visitors came by' && v1.rows === 4 && /came by/.test(v1.txt) && v1.seen > 0, 'a Visitors came by card: 3 rows and an "and 1 more" row: ' + JSON.stringify(v1));
+  await closeWb();
+  await ev(() => { window.__paw.S.awayGiftISO = ''; window.__paw.S.wbPend = { at: Date.now(), h: 6 }; });
+  ok(await waitWb(10000), 'a second page opens'); await t.sleep(300);
+  ok(!(await ev(() => !!document.querySelector('#modal .wb-vis'))), 'the same visitors are never listed twice (and a page with no new visitors has no card)');
+  await closeWb();
+  await ev(() => { const S = window.__paw.S; S.awayGiftISO = ''; S.visitors.log.push({ id: window.__paw.yv.dogs[5].id, t: Date.now() + 1, toy: '', g: '' }); S.wbPend = { at: Date.now(), h: 6 }; });
+  ok(await waitWb(10000), 'a third page opens'); await t.sleep(300);
+  const v3 = await ev(() => ({ n: document.querySelectorAll('#modal .wb-vis p').length, txt: (document.querySelector('#modal .wb-vis') || {}).textContent, seen: window.__paw.S.wbVisSeen, log: window.__paw.S.visitors.log.map((e) => e.t) })); ok(v3.n === 1, 'only the visitor who came since is listed ' + JSON.stringify(v3));
+  await closeWb(); await t.ctx.close();
+
   sec('7. it fits: phone 360x640 and desktop 1280x720');
   for (const [dev, name] of [['Phone 360x640', 'phone'], [null, 'desktop']]) {
     await t.newGame(Object.assign({ prefs: ON }, dev ? { device: dev } : {}));
-    await ev(() => { const P = window.__paw, S = P.S; S.awayGiftISO = ''; S.wbPend = { at: 777, h: 14 }; const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; });
+    await ev(() => { const P = window.__paw, S = P.S; S.awayGiftISO = ''; S.wbPend = { at: 777, h: 14 }; if (S.visitors && P.yv) S.visitors.log = P.yv.dogs.slice(0, 4).map((v, i) => ({ id: v.id, t: 777 - 1000 * (i + 1), toy: '', g: i ? '' : 'bone' })); const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; });
     ok(await waitWb(10000), `${name}: the page opens`); await t.sleep(600);
     const Lt = await ev(() => {
       const vw = document.documentElement.clientWidth, vh = window.innerHeight, p = document.querySelector('#modal .panel').getBoundingClientRect(), b = document.getElementById('wbOk').getBoundingClientRect();
-      const over = [...document.querySelectorAll('#modal .wb-page p, #modal .wb-gt b, #modal .wb-gt span')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
+      const over = [...document.querySelectorAll('#modal .wb-page p, #modal .wb-gt b, #modal .wb-gt span, #modal .wb-vis p')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
       const body = document.querySelector('#modal .panel-body'), gift = document.querySelector('#modal .wb-gift').getBoundingClientRect(), page = document.querySelector('#modal .wb-page').getBoundingClientRect();
       return { vw, vh, p: [p.left, p.top, p.right, p.bottom].map(Math.round), b: [b.left, b.top, b.right, b.bottom, b.height].map(Math.round), over, scroll: body.scrollHeight - body.clientHeight, gap: Math.round(gift.top - page.bottom), lines: document.querySelectorAll('#modal .wb-page .dd-ptext p').length };
     });

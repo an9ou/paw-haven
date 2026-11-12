@@ -29,6 +29,7 @@ function v225Fields(s, fresh) {
   const str = (k) => { if (typeof s[k] !== 'string') s[k] = ''; };
   if (typeof s.lastSeenAt !== 'number' || !isFinite(s.lastSeenAt) || s.lastSeenAt < 0) s.lastSeenAt = fresh ? Date.now() : 0;
   str('awayGiftISO'); str('backISO'); str('tmrwISO');
+  if (typeof s.wbVisSeen !== 'number' || !isFinite(s.wbVisSeen) || s.wbVisSeen < 0) s.wbVisSeen = 0; // v2.26 visitors already listed on a page
   if (!Array.isArray(s.daysGifts)) s.daysGifts = [];
   if (!s.wbPend || typeof s.wbPend !== 'object' || Array.isArray(s.wbPend)) s.wbPend = null;
   if (typeof s.daysPlayed !== 'number' || !isFinite(s.daysPlayed) || s.daysPlayed < 0) { if (fresh) { s.daysPlayed = 0; s.daysLastISO = ''; } else wbInfer(s); }
@@ -185,16 +186,27 @@ function wbGiftToday() {
   const g = wbGiftPick(j); S.awayGiftISO = j; wbGive(g); return g;
 }
 function wbAwayText(h) { return h >= 48 ? tt('wb.away_d', 'You were away for {n, plural, one {# day} other {# days}}', { n: Math.floor(h / 24) }) : tt('wb.away_h', 'You were away for {n, plural, one {# hour} other {# hours}}', { n: h }); }
-function wbHTML(pend, gift) {
+// v2.26 yard visitors that came during this absence and are not yet listed (read from S.visitors.log, so the order of the catch-up and the page does not matter)
+function wbVisitors(pend) {
+  const V = S && S.visitors; if (!V || !Array.isArray(V.log) || typeof yvDog !== 'function') return [];
+  const lo = Math.max(+S.wbVisSeen || 0, (pend && pend.at || Date.now()) - ((pend && pend.h || 4) + 1) * 3600e3);
+  return V.log.filter((e) => e && e.t > lo && yvDog(e.id)).sort((a, b) => a.t - b.t);
+}
+function wbVisHTML(list) {
+  if (!list || !list.length) return '';
+  const show = list.slice(-3), more = list.length - show.length;
+  return `<div class="wb-vis"><b>${esc(tt('yv.wb_head', 'Visitors came by'))}</b>${show.map((e) => `<p>${esc(yvLine(e))}${e.g && typeof yvGiftLine === 'function' ? ' <span class="wb-vg">' + esc(yvGiftLine(e)) + '</span>' : ''}</p>`).join('')}${more > 0 ? `<p class="small">${esc(tt('yv.wb_more', 'and {n} more', { n: more }))}</p>` : ''}</div>`;
+}
+function wbHTML(pend, gift, vis) {
   const d = D(), lines = wbLines(pend, d);
   const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift))}</span></span></div>` : '';
   return `<div class="wb-sheet"><article class="dd-page wb-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${headSVG(d)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}</b><span class="small">${esc(wbAwayText(pend.h))}</span></span></header>
-    <div class="dd-ptext">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true"><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('heart', 0, 2, 1.1, -8)}</svg><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg></div></article>${giftRow}</div>`;
+    <div class="dd-ptext">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true"><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('heart', 0, 2, 1.1, -8)}</svg><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg></div></article>${giftRow}${wbVisHTML(vis)}</div>`;
 }
 function wbOpen(pend) {
   if (!S) return null; pend = pend || S.wbPend || { at: Date.now(), h: 4 }; S.wbPend = null;
-  const gift = wbGiftToday(); markDirty();
-  const p = openModal(esc(tt('wb.title', 'While you were out')), wbHTML(pend, gift), { cls: 'wb-pop', foot: `<button class="btn yes big wb-ok" id="wbOk">${esc(tt('wb.ok', 'Hello, {name}!', { name: NAME() }))}</button>` });
+  const gift = wbGiftToday(), vis = wbVisitors(pend); S.wbVisSeen = Date.now(); markDirty();
+  const p = openModal(esc(tt('wb.title', 'While you were out')), wbHTML(pend, gift, vis), { cls: 'wb-pop', foot: `<button class="btn yes big wb-ok" id="wbOk">${esc(tt('wb.ok', 'Hello, {name}!', { name: NAME() }))}</button>` });
   $('#wbOk', p).onclick = () => { SFX.click(); closeModal(); };
   try { greetBark(); } catch (e) { /* no dog on screen */ }
   if (gift) { try { SFX.kaching(); } catch (e) { /* audio off */ } }
