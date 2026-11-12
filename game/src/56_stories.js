@@ -58,7 +58,7 @@ function stStarTick(quiet) {
     S.st.ks[L] = stToday(); markDirty();
     if (L === 5) {
       if (typeof hmDecorFields === 'function') hmDecorFields(); S.decor = S.decor || {};
-      if (!S.decor[ST_PAW]) S.decor[ST_PAW] = { got: stToday(), out: true };
+      if (!S.decor[ST_PAW]) { S.decor[ST_PAW] = { got: stToday(), out: true }; if (typeof hoFreeSpot === 'function') try { S.decor[ST_PAW].at = hoFreeSpot(ST_PAW); } catch (e) { /* its catalogue spot */ } } // a bare bit of wall, clear of what is already up (art 7)
       try { if (cur.mode === 'yard' && S.place === 'house' && typeof hmDecorRedraw === 'function') hmDecorRedraw(); } catch (e) { /* not in the house */ }
       if (!quiet) setTimeout(() => toast(tt('st.ks_5', '5 Bond stars! A {item} for the house. It is already on the wall.', { item: shNameAny(ST_PAW) }), 'gold'), 1200);
     } else {
@@ -382,33 +382,18 @@ if (typeof openMore === 'function') {
   };
 }
 
-/* ---------------- the Framed Paw Print (the 5-star keepsake): a house wall decoration, drawn here (fills inside their outlines) ---------------- */
-function stPawFrameSVG() {
-  const ink = '#5B3D32';
-  const star = (cx, cy, r) => { const p = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.45 : r; p.push((cx + Math.cos(a) * q).toFixed(1) + ' ' + (cy + Math.sin(a) * q).toFixed(1)); } return `<path d="M${p.join(' L')} Z" fill="#FFD23A" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>`; };
-  return `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg"><path d="M60 4 L52 16 M60 4 L68 16" stroke="${ink}" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="60" cy="5" r="3" fill="#E9A93B" stroke="${ink}" stroke-width="1.6"/>`
-    + `<path d="M10 17 Q60 12 110 17 L108 132 Q60 136 12 132 Z" fill="#C99A6B" stroke="${ink}" stroke-width="3.2" stroke-linejoin="round"/>`
-    + `<path d="M15 22 Q60 18 105 22 L103 127 Q60 130 17 127 Z" fill="#E2B985" stroke="${ink}" stroke-width="1.4" stroke-linejoin="round"/>`
-    + `<path d="M24 31 Q60 28 96 31 L95 118 Q60 121 25 118 Z" fill="#FFFBF3" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>`
-    + `<g fill="#F28FA5" stroke="${ink}" stroke-width="2"><ellipse cx="60" cy="86" rx="15" ry="13"/><ellipse cx="42" cy="66" rx="6" ry="7.5" transform="rotate(-18 42 66)"/><ellipse cx="54" cy="57" rx="6" ry="7.5" transform="rotate(-6 54 57)"/><ellipse cx="67" cy="57" rx="6" ry="7.5" transform="rotate(6 67 57)"/><ellipse cx="79" cy="66" rx="6" ry="7.5" transform="rotate(18 79 66)"/></g>`
-    + `<path d="M52 82 q8 -5 14 1" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="2" fill="none" stroke-linecap="round"/>${star(85, 105, 8)}${star(34, 107, 5)}</svg>`;
-}
-function stArtHook() {
-  const P = window.PawArt; if (!P || P.__stProp || typeof P.prop !== 'function') return;
-  const prev = P.prop; P.prop = function (name) { return name === 'stpawframe' ? stPawFrameSVG() : prev.apply(this, arguments); }; P.__stProp = 1;
-}
-stArtHook();
+/* the Framed Paw Print (the 5-star keepsake, a house wall decoration): drawn by the world kit, PawArt prop 'stpawframe' (world/pawart_world_b.js) */
 
 /* ---------------- the loop and hooks ---------------- */
 function stTick() {
-  stExpose(); stArtHook(); stPcTopSync();
+  stExpose(); stPcTopSync();
   if (!stReady() || ['title', 'adopt'].includes(cur.mode) || !titleEl.hidden) return;
   ST.n++;
   if (ST.n % 5 === 2) stStarTick(false);
   if (cur.mode === 'yard' && modal.hidden && !busy && ST.n % 5 === 4 && !ST.hold) stLetters(false); // ST.hold: a test drives the letters itself
 }
 setInterval(() => { try { stTick(); } catch (e) { console.warn('st tick', e); } }, 1000);
-on('game:ready', () => { ST.n = 0; stArtHook(); });
+on('game:ready', () => { ST.n = 0; });
 function stExpose() {
   if (!window.__paw || window.__paw.st) return;
   window.__paw.st = {

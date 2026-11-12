@@ -7627,6 +7627,30 @@ function yvBook(){const b=mk('item','yv:book');
   paw(b,47,28,4.2,PINK,{lw:.6});b.ex('spark',51,40,3.2);
   [16,24,32,40,48].forEach(y=>b.sh(E(32,y,2.8,2.4,10),'#C9C2BA',{hatch:0,hl:0,lw:.55,base:'#ECE7E1'}));
   return b.svg('0 0 64 64','','Visitors Book')}
+/* v2.28 fix batch (art 7): the Framed Paw Print (the 5 Bond stars keepsake, a house wall decoration, 120x140), in the world kit: a wobbly
+   wooden frame with its grain and knots on a string and a nail, a cream mat, ONE muddy paw print with mud splats, and two gold crayon stars.
+   stPawFrameDraw(b, k, ox, oy) draws it at k (1 = the prop; the 64 item card at .42). */
+function stPawFrameDraw(b,k,ox,oy){
+  const P=pts=>pts.map(([x,y])=>[ox+x*k,oy+y*k]),X=x=>ox+x*k,Y=y=>oy+y*k,sm=k<1,L=w=>w*(sm?.8:1);
+  b.ln(P([[30,27],[60,9],[90,27]]),{k:0,w:L(1.3),col:'#8E6446'});
+  hsNail(b,X(60),Y(9),sm?.6:1.1);
+  b.sh(P([[9,24],[60,21],[111,24],[110,133],[60,136],[10,133]]),C.wood,{k:.06,sh:C.woodD,base:'#F3DDB4',lw:L(1.1),
+    det:[[[15,30],[40,28.5],[72,30],[104,28.6]],[[15,127.5],[46,126.5],[80,128],[105,126.8]],[[16,38],[15.4,80],[16.4,122]],[[104.4,38],[105,84],[104,122]],[[20,26.4],[34,25.6]],[[86,131],[100,130.4]]].map(P),dw:L(.6),dcol:C.woodD,
+    marks:[{pts:P(E(18,104,2.6,4.4,10)),fill:C.woodD,k:0,op:.7},{pts:P(E(96,27.6,4.4,1.8,10)),fill:C.woodD,k:0,op:.7}]});
+  b.sh(P([[24,37],[60,35.5],[96,37],[95.5,119],[60,120.5],[24.5,119]]),'#FDF3DE',{k:.05,hatch:0,hl:0,lw:L(.75),base:'#FFF9EE',dr:.15});
+  paw(b,X(60),Y(76),15*k,HSMUD,{a:-.12,lw:sm?.42:.85});
+  b.raw(`<g fill="${HSMUD}">${[[83,52,2.6,.7],[38,96,2.1,.65],[78,99,1.5,.6],[36,54,1.3,.55],[66,104,1.1,.5],[88,64,1,.5]].map(([x,y,r,op])=>`<circle cx="${R1(X(x))}" cy="${R1(Y(y))}" r="${R1(r*k)}" opacity="${op}"/>`).join('')}</g>`);
+  b.raw(b.st(`M${R1(X(55))} ${R1(Y(92))}q${R1(1*k)} ${R1(5*k)} ${R1(.4*k)} ${R1(8*k)}M${R1(X(64))} ${R1(Y(92))}q${R1(.6*k)} ${R1(3.4*k)} 0 ${R1(5.4*k)}`,HSMUD,L(1.6),.75));
+  b.sh(P(starP(80,107,8.4,3.8)),'#FFD23A',{k:.04,hatch:0,hl:0,lw:sm?.32:.75,base:'#FFF0B0'});
+  b.sh(P(starP(40,108,6,2.7,5,-Math.PI/2+.2)),'#FFD23A',{k:.04,hatch:0,hl:0,lw:sm?.28:.7,base:'#FFF0B0'});
+  if(!sm)b.ex('spark',114,16,3.4);
+}
+PROPS.stpawframe=b=>stPawFrameDraw(b,1,0,0);
+PROP_VB.stpawframe='0 0 120 140';
+ITEMS['Framed Paw Print']=b=>{stPawFrameDraw(b,.42,6.8,2.6)};
+{const _propST=PA.prop;
+ PA.prop=function(name,o){if(name!=='stpawframe')return _propST.apply(this,arguments);
+  return serve('p:'+name,()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'','Framed Paw Print')})}}
 PA.YARD_VISITORS={props:Object.keys(YV_LBL),items:Object.values(YV_LBL),book:()=>serve('yv:book',yvBook)};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
