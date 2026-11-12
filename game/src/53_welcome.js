@@ -188,7 +188,7 @@ function wbGiftToday() {
 function wbAwayText(h) { return h >= 48 ? tt('wb.away_d', 'You were away for {n, plural, one {# day} other {# days}}', { n: Math.floor(h / 24) }) : tt('wb.away_h', 'You were away for {n, plural, one {# hour} other {# hours}}', { n: h }); }
 // v2.26 yard visitors that came during this absence and are not yet listed (read from S.visitors.log, so the order of the catch-up and the page does not matter)
 function wbVisitors(pend) {
-  const V = S && S.visitors; if (!V || !Array.isArray(V.log) || typeof yvDog !== 'function') return [];
+  const V = S && S.visitors; if (!V || !Array.isArray(V.log) || typeof yvDog !== 'function' || typeof yvOn !== 'function' || !yvOn()) return [];
   const lo = Math.max(+S.wbVisSeen || 0, (pend && pend.at || Date.now()) - ((pend && pend.h || 4) + 1) * 3600e3);
   return V.log.filter((e) => e && e.t > lo && yvDog(e.id)).sort((a, b) => a.t - b.t);
 }

@@ -11,7 +11,7 @@
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
 const SAVE = 'pawhaven_proto_v1', SHOTS = process.env.V225_SHOTS || path.join(__dirname, 'test_logs');
-const ON = { wbTest: true, msTest: true };
+const ON = { wbTest: true, msTest: true, yvTest: true };
 
 run('v225_welcome', async (t) => {
   const { ok, sec, ev } = t;
