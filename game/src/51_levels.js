@@ -448,6 +448,7 @@ function lvOpen() {
 /* the level-up card (V222.md 1.5): after any Bond card (levelQueue empty), on a calm screen; S.lv.shown keeps it over a reload */
 function lvCalm() {
   if (!S || !lvOn() || !S.lv || !modal.hidden || levelQueue.length || !titleEl.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return false;
+  if (typeof scPlaying === 'function' && scPlaying()) return false; // v2.29: a level card waits until the story scene ends
   if (typeof popOpen === 'function' && popOpen()) return false;
   if (typeof gdLive === 'function' && gdLive() && typeof gdAllowed === 'function' && gdAllowed()) return false; // Puppy's first day comes first
   if (typeof phActive === 'function' && phActive()) return false; if (typeof blOn === 'function' && blOn()) return false;

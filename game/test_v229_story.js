@@ -37,6 +37,17 @@ run('v229_story', async (t) => {
   ok(mg.v === 1 && mg.a.ch === 0 && mg.a.from === 'old' && mg.a.cu === 0 && Array.isArray(mg.a.q) && ['p', 't', 'c', 'm', 'w'].every((k) => mg.a[k] && typeof mg.a[k] === 'object'), 'an old save: chapter 0 (not started), from old, empty maps, v stays 1');
   ok(mg.b.ch === 2 && mg.b.p.c2_walk === 1 && mg.b.t.c1_feed && mg.b.c[1] && mg.b.w.ch1 === 1 && mg.b.q[0] === 'ch2' && mg.b.from === 'fresh' && mg.b.cu === 1, 'existing story fields are kept as they are');
   ok(mg.c.from === 'fresh' && mg.c.ch === 0, 'a broken story field is rebuilt (fresh)');
+  // code review 4: a new save started before the story date (smOn() false then) counts as an old one: on the story date it gets the catch-up,
+  // so the places it already knows go into the album instead of playing their first-visit scenes
+  const early = await ev(() => {
+    const P = window.__paw, S = P.S; P.sm.test(false); const off = P.sm.on(), a = P.sm.fields({ v: 1 }, true).story.from; P.sm.test(true);
+    const keep = JSON.stringify({ st: S.story, walks: S.walks, b: S.dogs.map((d) => [d.bond.level, d.bond.pts]), seen: S.lv.seen.dogpark });
+    S.story = P.sm.fields({ v: 1 }, false).story; S.story.from = a; S.walks = 0; S.dogs.forEach((d) => { d.bond.level = 1; d.bond.pts = 0; }); S.lv.seen.dogpark = 1; P.sm.start();
+    const r = { off, from: a, ch: S.story.ch, cu: S.story.cu, q: S.story.q.slice(), dp: !!S.story.m.visit_dogpark, fresh: P.sm.fields({ v: 1 }, true).story.from };
+    const k = JSON.parse(keep); S.story = k.st; S.walks = k.walks; S.dogs.forEach((d, i) => { d.bond.level = k.b[i][0]; d.bond.pts = k.b[i][1]; }); if (k.seen) S.lv.seen.dogpark = k.seen; else delete S.lv.seen.dogpark; return r;
+  });
+  ok(!early.off && early.from === 'old' && early.fresh === 'fresh', `a new save made while Story mode is off is 'old', made while it is on is 'fresh' (${JSON.stringify(early)})`);
+  ok(early.ch === 1 && early.cu === 1 && early.dp && early.q.join() === 'prologue', `on the story date that save starts at chapter 1 through the catch-up: the Dog Park it has seen is in the album, only the prologue plays (${JSON.stringify(early)})`);
   // an old save with nothing earned yet: chapter 1 and the prologue, no letter
   const plain = await ev(() => { const P = window.__paw, S = P.S; delete S.story; P.sm.fields(S, false); S.walks = 0; S.dogs.forEach((d) => { d.bond.level = 1; d.bond.pts = 0; }); S.found = {}; P.sm.start(); return { ch: S.story.ch, q: S.story.q.slice(), letter: S.mail.some((m) => m.id === 'sm_catchup') }; });
   ok(plain.ch === 1 && plain.q.join() === 'prologue' && !plain.letter, `an old save that has not walked yet starts at chapter 1 with the prologue, no catch-up letter (${JSON.stringify(plain)})`);
@@ -124,7 +135,7 @@ run('v229_story', async (t) => {
   await t.p.click('[data-smplay="ch2"]');
   ok(await waitPlay('ch2', 4000), 'Watch replays the scene');
   await skipNow();
-  ok(await t.until(() => !!document.querySelector('#modal .sm-pop.sm-mem'), null, 3000), 'and the album comes back after it');
+  ok(await t.until(() => !!document.querySelector('#modal .sm-pop.sm-t-mem'), null, 3000), 'and the album comes back after it');
   await t.closeX();
 
   sec('4. no stacking: a scene waits for sheets and What\'s new, and two never overlap');
@@ -139,7 +150,16 @@ run('v229_story', async (t) => {
   const stackOk = await ev(() => { const P = window.__paw; return P.sc.play('ch1') === false && P.sc.on() === 'visit_market'; });
   ok(stackOk, 'a second scene cannot start on top of one that plays');
   ok(await ev(() => !document.getElementById('modal').hidden === false), 'no sheet opened over the scene');
-  await skipNow(); await ev(() => window.__paw.nw.test(false));
+  await skipNow();
+  // review fixes (code 2 and 3): an automatic sheet (What's new) waits under a playing scene and opens after it; keys 1-7 and Space do nothing
+  await ev(() => { const P = window.__paw; P.S.newsSeen = 'x'; P.sc.play('ch1', { replay: true }); P.S.newsSeen = ''; });
+  await t.p.keyboard.press('4'); await t.p.keyboard.press(' ');
+  await t.sleep(4000);
+  const under = await ev(() => ({ on: window.__paw.sc.on(), modal: !document.getElementById('modal').hidden, mode: window.__paw.mode }));
+  ok(under.on === 'ch1' && !under.modal && under.mode === 'yard', `no What's new sheet and no key acts under a playing scene (${JSON.stringify(under)})`);
+  await skipNow();
+  ok(await t.until(() => !!document.querySelector('#modal .nw-pop'), null, 9000), "the What's new sheet opens once the scene ends");
+  await t.p.click('#nwOk'); await t.modalGone(); await ev(() => window.__paw.nw.test(false));
 
   sec('5. Motion off: nothing moves, the shots cross-fade');
   await t.freezeMotion(true);

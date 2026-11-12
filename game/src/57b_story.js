@@ -15,12 +15,13 @@ const SM_N = 8; // chapters in the whole story (all built since part 2)
 // fresh: a brand-new save. An old save starts with from 'old': its first quiet moment works out the chapters it has already earned (smCatchUp)
 function v229Fields(s, fresh) {
   if (!s) return s; const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
-  if (!obj(s.story)) s.story = { ch: 0, from: fresh ? 'fresh' : 'old' };
+  const fr = fresh && smOn() ? 'fresh' : 'old'; // a save started before the story date gets the catch-up (no first-visit scenes for places it knows)
+  if (!obj(s.story)) s.story = { ch: 0, from: fr };
   const T = s.story;
   if (typeof T.ch !== 'number' || !(T.ch >= 0) || !isFinite(T.ch)) T.ch = 0;
   ['p', 't', 'c', 'm', 'w', 'bm'].forEach((k) => { if (!obj(T[k])) T[k] = {}; }); // part 2: bm = big moments handled (id -> 1)
   if (!Array.isArray(T.q)) T.q = [];
-  if (T.from !== 'fresh' && T.from !== 'old') T.from = fresh ? 'fresh' : 'old';
+  if (T.from !== 'fresh' && T.from !== 'old') T.from = fr;
   if (typeof T.cu !== 'number') T.cu = 0;
   return s;
 }
@@ -241,10 +242,17 @@ document.addEventListener('click', (e) => { const b = e.target && e.target.close
 /* ---------------- the chapter 8 keepsake: one photo frame, "Gerald's Big Book" (35_photo.js lists it) ---------------- */
 const smFrameName = () => tt('sm.frame', "Gerald's Big Book");
 function smFrameList() { return S && S.story && S.story.c && S.story.c[SM_N] ? [{ k: 'smbook', n: smFrameName(), c: '#F28FA5' }] : []; }
+// art review 2: the name sits on a cream paper label in the middle of the top band (the stamp keeps the bottom right corner to itself);
+// the doodles step aside for it. The label is one path, filled and outlined from the same d, so its fill stays inside its line.
 function smPostcard(w, h, o) {
   const P = window.PawArt, svg = P.postcard(w, h, Object.assign({}, o, { color: 'rose' })), s = Math.max(w, h) / 450, n = 9, gap = (w - 60 * s) / n;
-  const g = Array.from({ length: n }, (_, i) => doodle(['heart', 'paw', 'spark'][i % 3], +(30 * s + gap * (i + 0.5)).toFixed(1), +(12 * s).toFixed(1), 0.7 * s, i % 2 ? 10 : -10)).join('')
-    + `<text x="${(w - 22 * s).toFixed(1)}" y="${(h - 9 * s).toFixed(1)}" text-anchor="end" font-family="Caveat,cursive" font-weight="700" font-size="${(13 * s).toFixed(1)}" fill="${INKG}">${esc(smFrameName())}</text>`;
+  const nm = smFrameName(), len = Math.max(4, [...nm].length), sz = Math.min(13, 150 / (len * 0.46)), half = (len * 0.46 * sz) / 2 + 9, cx = w / 2, cy = 13 * s;
+  const f = (v) => (+v).toFixed(1), X0 = cx - half * s, X1 = cx + half * s, T = cy - 9.5 * s, B = cy + 8.5 * s;
+  const lab = `M${f(X0)} ${f(T + 1.2 * s)} Q${f(cx)} ${f(T - 1.4 * s)} ${f(X1)} ${f(T)} L${f(X1 + 1.2 * s)} ${f(B - 1 * s)} Q${f(cx)} ${f(B + 1.4 * s)} ${f(X0 - 0.8 * s)} ${f(B)} Z`;
+  const g = Array.from({ length: n }, (_, i) => [30 * s + gap * (i + 0.5), i]).filter(([x]) => x < X0 - 14 * s || x > X1 + 14 * s)
+    .map(([x, i]) => doodle(['heart', 'paw', 'spark'][i % 3], +x.toFixed(1), +(12 * s).toFixed(1), 0.7 * s, i % 2 ? 10 : -10)).join('')
+    + `<g transform="rotate(-1.5 ${f(cx)} ${f(cy)})"><path d="${lab}" fill="#FFFBF3"/><path d="${lab}" fill="none" stroke="${INKG}" stroke-width="${f(1.6 * s)}" stroke-linejoin="round"/>`
+    + `<text x="${f(cx)}" y="${f(cy + sz * 0.34 * s)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f(sz * s)}" fill="${INKG}">${esc(nm)}</text></g>`;
   return svg.replace(/<\/svg>\s*$/, `<g class="sm-frame">${g}</g></svg>`);
 }
 
@@ -254,7 +262,7 @@ function smTaskRow(k) {
   const T = S.story, p = T.p[k.id] || 0, done = !!T.t[k.id], gate = !done && k.lv && smLv() < k.lv; // a task behind a town level: "Opens at level N" (part 2)
   return `<li class="sm-task${done ? ' done' : ''}${gate ? ' gated' : ''}"><span class="sm-tick" aria-hidden="true">${done ? doodleSVG('tick') : ''}</span><span class="sm-tt"><b>${esc(k.t())}</b><span class="small sm-rw">${gate ? `<span class="sm-lvchip">${esc(tt('sm.opens_at', 'Opens at level {n}', { n: k.lv }))}</span> ` : ''}${esc(smRwText(k.rw))}</span></span><span class="sm-n" aria-label="${esc(tt('sm.prog_aria', '{n} of {total}', { n: p, total: k.n }))}">${tnum(p)}/${tnum(k.n)}</span></li>`;
 }
-function doodleSVG(k) { return k === 'tick' ? `<svg viewBox="0 0 24 24"><path d="M4 13 L10 19 L20 5" fill="none" stroke="#5FA35A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<svg viewBox="-20 -20 40 40">${doodle(k, 0, 0, 1, 0)}</svg>`; }
+function doodleSVG(k) { return k === 'tick' ? `<svg viewBox="0 0 24 24"><path d="M4 13 L10 19 L20 5" fill="none" stroke="#5FA35A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<svg viewBox="-20 -20 40 40">${scDoodle(k, 0, 0, 1, 0)}</svg>`; }
 function smStoryHTML() {
   const T = S.story, ch = smChap(T.ch);
   const head = `<div class="sm-head"><span class="sm-duck" aria-hidden="true">${scGeraldSVG('point')}</span><span class="sm-ht"><b>${esc(tt('sm.book', "Gerald's Big Book of Town"))}</b><span class="small">${esc(T.ch > 0 && T.ch <= SM_N ? tt('sm.ch_of', 'Chapter {n} of {total}', { n: Math.min(T.ch, SM_N), total: SM_N }) : T.ch > SM_N ? tt('sm.all_done', 'The whole book is written. Thank you!') : tt('sm.not_yet', 'The story starts after your first day with Gerald.'))}</span></span></div>`;
@@ -277,7 +285,7 @@ function smOpen(tab) {
   if (!S) return null; if (!S.story) v229Fields(S, false); if (tab) smTab = tab;
   const n = smMemList().length;
   const tabs = `<div class="tabs sm-tabs" role="tablist"><button class="btn" role="tab" data-smt="story" aria-selected="${smTab === 'story'}">${esc(tt('sm.tab_story', 'Story'))}</button><button class="btn" role="tab" data-smt="mem" aria-selected="${smTab === 'mem'}">${esc(tt('sm.tab_mem', 'Memories ({n})', { n }))}</button></div>`;
-  const p = openModal(esc(tt('sm.title', 'Story')), `<div class="sm-sheet">${tabs}${smTab === 'mem' ? smMemHTML() : smStoryHTML()}</div>`, { cls: 'sm-pop sm-' + smTab });
+  const p = openModal(esc(tt('sm.title', 'Story')), `<div class="sm-sheet">${tabs}${smTab === 'mem' ? smMemHTML() : smStoryHTML()}</div>`, { cls: 'sm-pop sm-t-' + smTab });
   p.querySelectorAll('[data-smt]').forEach((b) => { b.onclick = () => { SFX.click(); smOpen(b.dataset.smt); }; });
   p.querySelectorAll('[data-smplay]').forEach((b) => { b.onclick = () => { SFX.click(); smReplay(b.dataset.smplay); }; });
   return p;
@@ -393,7 +401,7 @@ Object.assign(SC_SCRIPTS, {
     { d: 5, bg: 'dogpark', cam: [[500, 330, 1.2], [500, 360, 1.4]], cap: () => tt('sm.s_ch4a', '{name} made a friend at the Dog Park. They found the same stick at the same time.', { name: NAME() }),
       actors: [{ who: 'prop', k: 'stick', at: [500, 520], s: 0.8 }, { who: 'dog', pose: 'walk', pose2: 'sniff', at: [-60, 505], to: [380, 505], t1: 0.8, hop: 6 }, { who: 'dog', dog: 'other', face: 'left', pose: 'walk', pose2: 'sniff', at: [1060, 505], to: [620, 505], t1: 0.8, hop: 6 }] },
     { d: 4.5, bg: 'dogpark', cam: [[500, 400, 1.7], [500, 400, 1.9]], cap: () => tt('sm.s_ch4b', 'They shared it. Mostly.'),
-      actors: [{ who: 'dog', pose: 'sit', at: [400, 510] }, { who: 'dog', dog: 'other', face: 'left', pose: 'sit', at: [600, 510] }, { who: 'prop', k: 'stick', at: [500, 470], s: 0.7 }, { who: 'doodle', k: 'heart', at: [500, 330], to: [500, 250], fade: 'out', s: 0.8 }] },
+      actors: [{ who: 'dog', pose: 'sit', at: [400, 510] }, { who: 'dog', dog: 'other', face: 'left', pose: 'sit', at: [600, 510] }, { who: 'prop', k: 'stick', on: [[0, 'r', -0.07, 0.43], [1, 'l', 0.07, 0.43]], off: [0, 22], s: 0.8 }, { who: 'doodle', k: 'heart', at: [500, 330], to: [500, 250], fade: 'out', s: 0.8 }] },
     smDoneShot(4, smNext(5))
   ] },
   ch5: { title: () => tt('sm.s_ch5', 'Not a sandwich'), sting: 'levelup', icon: 'flower', shots: () => [
@@ -407,7 +415,7 @@ Object.assign(SC_SCRIPTS, {
     { d: 5, bg: 'training', cam: [[380, 340, 1.3], [620, 330, 1.3]], cap: () => tt('sm.s_ch6a', '{name} cleared the last jump in slow motion. Well, it felt like slow motion.', { name: NAME() }),
       actors: [{ who: 'dog', pose: 'jump', pose2: 'happy', at: [240, 505], to: [700, 505], t0: 0.1, t1: 0.9, hop: 60 }] },
     { d: 4.5, bg: 'training', cam: [[560, 380, 1.5], [560, 380, 1.65]], cap: () => tt('sm.s_ch6b', 'Gerald held up a 10. He drew it himself.'),
-      actors: [{ who: 'dog', pose: 'sit', at: [440, 510] }, { who: 'prop', k: 'rosette', at: [500, 420], s: 0.45 }, { who: 'gerald', pose: 'cheer', face: 'left', at: [700, 515], s: 0.9 }, { who: 'prop', k: 'sign10', at: [700, 400], s: 0.6 }] },
+      actors: [{ who: 'dog', pose: 'sit', at: [440, 510] }, { who: 'prop', k: 'rosette', on: [[0, 'r', -0.37, 0.58]], off: [0, 45], s: 0.45 }, { who: 'gerald', pose: 'cheer', face: 'left', at: [700, 515], s: 0.9 }, { who: 'prop', k: 'sign10', on: [[2, 'r', -0.12, 0.3]], s: 0.6 }] },
     smDoneShot(6, smNext(7), 3.5, [{ who: 'prop', k: 'rosette', at: [810, 560], s: 0.55 }])
   ] },
   ch7: { title: () => tt('sm.s_ch7', 'Postcard from Tokyo'), sting: 'levelup', icon: 'sun', shots: () => [
@@ -455,7 +463,7 @@ on('game:ready', () => { smExpose(); smSync(); });
 setInterval(() => { try { smExpose(); } catch (e) { /* not booted */ } }, 1000);
 function smExpose() {
   if (!window.__paw || window.__paw.sm) return;
-  window.__paw.sm = { on: () => smOn(), fields: (s, fresh) => v229Fields(s, !!fresh), start: () => smStart(), open: (t) => smOpen(t), chapters: () => SM_CH.map((c) => ({ n: c.n, lv: c.lv || 0, tasks: c.tasks.map((k) => ({ id: k.id, n: k.n, rw: k.rw, lv: k.lv || 0, state: !!k.chk })), rw: c.rw })),
+  window.__paw.sm = { on: () => smOn(), test: (v) => { prefs.smTest = !!v; }, fields: (s, fresh) => v229Fields(s, !!fresh), start: () => smStart(), open: (t) => smOpen(t), chapters: () => SM_CH.map((c) => ({ n: c.n, lv: c.lv || 0, tasks: c.tasks.map((k) => ({ id: k.id, n: k.n, rw: k.rw, lv: k.lv || 0, state: !!k.chk })), rw: c.rw })),
     // part 2 test hooks: jump to chapter n (the chapters before it marked done without pay), the state tasks and big moments now, the frames
     goto: (n) => { const T = S.story; SM_CH.forEach((c) => { if (c.n < n) { T.c[c.n] = T.c[c.n] || 'test'; c.tasks.forEach((k) => { T.t[k.id] = T.t[k.id] || 'test'; T.p[k.id] = k.n; }); } }); T.ch = n; markDirty(); smSync(); return T.ch; },
     states: () => smStates(), big: () => smBig(), waits: () => smWaits(smChap(S.story.ch)), lv: () => smLv(), frames: () => smFrameList().map((f) => f.k), msline: () => smMsLine(), BIG: SM_BIG.map((b) => b.id), VISITS: Object.assign({}, SM_VISITS),

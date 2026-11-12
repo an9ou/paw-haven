@@ -240,6 +240,7 @@ function nwOpen(auto) {
 // the automatic open: once per news id, on a calm yard, never on top of the guide, the calendar's daily page, a level-up or the Bond 2 party
 function nwCalmNow() {
   if (!S || cur.mode !== 'yard' || !modal.hidden || busy || levelQueue.length || !titleEl.hidden) return false;
+  if (typeof scPlaying === 'function' && scPlaying()) return false; // v2.29: never under a story scene; it waits until the scene ends
   if (typeof popOpen === 'function' && popOpen()) return false;
   if (typeof gdLive === 'function' && gdLive() && gdAllowed()) return false;
   if (typeof phActive === 'function' && phActive()) return false; if (typeof blOn === 'function' && blOn()) return false;

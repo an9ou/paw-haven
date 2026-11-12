@@ -21,6 +21,15 @@ html[data-layout="phone"] #smBtn{display:none}
 #smBtn{position:relative}
 #smBtn svg{width:32px;height:36px}
 #smBtn:not([data-left="0"])::after{content:"";position:absolute;right:6px;top:6px;width:10px;height:10px;border-radius:50%;background:#F28FA5;border:2px solid var(--ink)}
+/* v2.29 phone review 2: the desktop top bar keeps its pre-v2.28 room. The stage is min(viewport width, (height - 20) * 16/9) wide, so the queries
+   test both. A stage under 1280: the postcard icon (#stPcBtn, 56_stories.js) steps out (Send a postcard stays in the diary and My Dog Card).
+   A stage under 1230 with the Story button in: the top bar's gaps go 14 -> 8 px and its round buttons 48 -> 44 px, so the meters, coins and
+   the clipboard keep the room they had before (at 1024 nothing overlaps). */
+@media (max-width:1279px),(max-height:739px){html:not([data-layout="phone"]) #hud #stPcBtn{display:none}}
+@media (max-width:1229px),(max-height:711px){
+  html:not([data-layout="phone"]) #hud:has(> #smBtn:not([hidden])) > * + :not(#msBtn){margin-left:-6px}
+  html:not([data-layout="phone"]) #hud:has(> #smBtn:not([hidden])) > .iconbtn{width:44px;height:44px;padding:6px}
+}
 /* the Story page */
 html:not([data-layout="phone"]) .panel.sm-pop{width:min(640px,100%);max-width:min(640px,calc(100% - 20px))}
 .sm-sheet{display:flex;flex-direction:column;gap:12px;min-width:0}

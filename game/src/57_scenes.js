@@ -28,9 +28,17 @@ function scBookSVG(open) {
   if (!open) return `<svg viewBox="0 0 140 160" class="sc-book">${two('M18 12 Q70 6 122 12 L124 148 Q70 154 16 148 Z', '#F28FA5')}${two('M18 12 L30 8 L30 144 L16 148', '#E0708C', 2.4)}${two('M44 40 Q76 36 108 40 L108 92 Q76 96 44 92 Z', '#FFFBF3', 2.4)}<g transform="translate(76 66)">${doodle('paw', 0, 0, 1.1, -8)}</g></svg>`;
   return `<svg viewBox="0 0 240 150" class="sc-book">${two('M120 22 Q70 8 14 18 L12 138 Q70 128 120 142 Q170 128 228 138 L226 18 Q170 8 120 22 Z', '#FFFBF3')}${two('M120 22 L120 142', 'none', 2.4)}${lines(28, 108)}${lines(134, 214)}<g transform="translate(70 120)">${doodle('heart', 0, 0, 0.8, -6)}</g><g transform="translate(176 118)">${doodle('paw', 0, 0, 0.8, 10)}</g></svg>`;
 }
+// doodle() plus a crayon sun (phone review 9: doodle has no 'sun', so the sun icons and the scenes' sun doodles drew nothing). The disc is one
+// path, filled and outlined from the same d; the rays are lines outside it
+function scDoodle(kind, x, y, s, rot) {
+  if (kind !== 'sun') return doodle(kind, x, y, s, rot);
+  const d = 'M0 -8.6 Q6.4 -8.2 8.4 -1.4 Q8.8 6 2 8.4 Q-5.6 9.4 -8.2 2.6 Q-9.6 -4.6 -3.4 -7.8 Q-1.8 -8.6 0 -8.6 Z';
+  const rays = [0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => { const r = (a * Math.PI) / 180, r0 = 11.4, r1 = i % 2 ? 15 : 16.4; return `M${(Math.sin(r) * r0).toFixed(1)} ${(-Math.cos(r) * r0).toFixed(1)} L${(Math.sin(r) * r1).toFixed(1)} ${(-Math.cos(r) * r1).toFixed(1)}`; }).join(' ');
+  return `<g transform="translate(${x} ${y}) rotate(${rot || 0}) scale(${s == null ? 1 : s})"><path d="${d}" fill="#FFE3A1"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/><path d="M-3.4 -2 Q-2 -4.4 0.6 -4.6" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".8"/><path d="${rays}" fill="none" stroke="${INKG}" stroke-width="2" stroke-linecap="round"/></g>`;
+}
 // a sketchbook card: paper, a ruled margin and a few doodles in the corners
 function scCardSVG() {
-  const dd = [['heart', 90, 90, -10], ['paw', 910, 100, 12], ['sun', 880, 510, 0], ['paw', 120, 520, -14], ['heart', 760, 70, 8]].map(([k, x, y, r]) => doodle(k, x, y, 1.6, r)).join('');
+  const dd = [['heart', 90, 90, -10], ['paw', 910, 100, 12], ['sun', 880, 510, 0], ['paw', 120, 520, -14], ['heart', 760, 70, 8]].map(([k, x, y, r]) => scDoodle(k, x, y, 1.6, r)).join('');
   return `<g class="sc-card"><rect x="-200" y="-200" width="1400" height="1000" fill="#FFFBF3"/>${[150, 230, 310, 390, 470].map((y) => `<path d="M-200 ${y} L1200 ${y + 2}" stroke="#DCE7F2" stroke-width="2"/>`).join('')}<path d="M70 -200 L72 800" stroke="#F2B8C4" stroke-width="2.4"/>${dd}</g>`;
 }
 // the world art's Gerald looks right, the crayon fallback (gdDuck) looks left: face 'left' | 'right' turns him the way the shot needs
@@ -73,12 +81,25 @@ function scActor(a, pose) {
   if (a.who === 'prop') { const P = SC_PROPS[a.k] || SC_PROPS.ball; return [scPropSVG(a.k), P[0] * s, P[1] * s, a.k === 'ball' ? 0.5 : 0.96]; }
   if (a.who === 'gerald') return [scGeraldSVG(pose, a.face), 140 * s, 140 * s, 0.93];
   if (a.who === 'book') return a.open ? [scBookSVG(true), 300 * s, 188 * s, 0.9] : [scBookSVG(false), 140 * s, 160 * s, 0.93];
-  return [`<svg viewBox="-24 -24 48 48">${doodle(a.k || 'heart', 0, 0, 1.2, a.rot || 0)}</svg>`, 60 * s, 60 * s, 0.5];
+  return [`<svg viewBox="-24 -24 48 48">${scDoodle(a.k || 'heart', 0, 0, 1.2, a.rot || 0)}</svg>`, 60 * s, 60 * s, 0.5];
 }
 function scActorInner(a, pose) { const [svg, w, h, f] = scActor(a, pose); return [place(svg, -w / 2, 0, w, h), h, f]; }
 function scBg(bg) {
   if (bg === 'card') return scCardSVG();
-  try { return sceneArt(bg, envNow()); } catch (e) { return scCardSVG(); }
+  try { return sceneArt(bg, envNow()) + (bg === 'square' ? scSquareBuilt() : ''); } catch (e) { return scCardSVG(); }
+}
+// art review 15: the Square in a scene shows the town projects the player has finished (v2.27, 55_projects.js), at their own spots (PR_AT)
+function scSquareBuilt() {
+  try {
+    if (typeof prOn !== 'function' || !prOn() || typeof prBuilt !== 'function') return '';
+    const out = [];
+    if (prBuilt('sakura')) PR_AT.sakura.forEach((at, i) => out.push(prWrap(at, 140, 200, praSakura('done', seasonNow(), i))));
+    if (prBuilt('fountain')) out.push(prWrap(PR_AT.fountain, 192, 230, praFountainAdd('done')));
+    if (prBuilt('bandstand')) out.push(prWrap(PR_AT.bandstand, 140, 190, praBandstand('done')));
+    if (!out.length) return '';
+    const g = `<g class="sc-pr" pointer-events="none">${out.join('')}</g>`;
+    return window.PawArt && typeof PawArt.tint === 'function' ? PawArt.tint(g, { time: timePhase(), lit: true }) : g;
+  } catch (e) { return ''; }
 }
 
 /* ---------------- the player ---------------- */
@@ -99,7 +120,7 @@ function scPlay(id, o) {
   const L = scLayer(), d = D();
   const shots = sc.shots(d).map((x) => Object.assign({ d: 4, cam: [[500, 300, 1], [500, 300, 1]], actors: [] }, x));
   const total = shots.reduce((n, x) => n + x.d * 1000, 0);
-  SC.on = { id, sc, shots, total, t0: performance.now(), shot: -1, o, dog: d, skipAt: SC_SKIP_MS, still: scStill() };
+  SC.on = { id, sc, shots, total, t0: performance.now(), shot: -1, o, dog: d, skipAt: SC_SKIP_MS, still: scStill(), hid: document.hidden ? performance.now() : 0 };
   L.setAttribute('aria-label', sc.title ? sc.title() : id);
   $('.sc-skip', L).textContent = tt('sc.skip', 'Skip'); $('.sc-skip', L).hidden = true;
   L.hidden = false; L.classList.toggle('sc-still', SC.on.still);
@@ -159,9 +180,11 @@ function scFit(x, F) {
   // the cast's box at a keyframe (end: 1, start: 0), its on-stage spots closer by fx, the cast scaled by f about (gx, gy)
   const box = (end, f, gx, gy, fx) => {
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    const pts = x.actors.map((a) => { const pt = end ? (a.to || a.at || [500, 500]) : (a.at || [500, 500]); return [scSqueeze(pt[0], gx, fx), pt[1]]; });
+    x.actors.forEach((a, k) => { if (a.on) pts[k] = scHeld(a, bx, pts, end); });
     x.actors.forEach((a, k) => {
       if (a.fit === false || !bx[k] || (a.fade === (end ? 'out' : 'in'))) return;
-      const pt = end ? (a.to || a.at || [500, 500]) : (a.at || [500, 500]), b = end && bx[k].b ? bx[k].b : bx[k].a, px = scSqueeze(pt[0], gx, fx);
+      const pt = pts[k], b = end && bx[k].b ? bx[k].b : bx[k].a, px = pt[0];
       const X0 = gx + (px + b[0] - gx) * f, X1 = gx + (px + b[2] - gx) * f, Y0 = gy + (pt[1] + b[1] - gy) * f, Y1 = gy + (pt[1] + b[3] - gy) * f;
       y0 = Math.min(y0, Math.max(0, Y0)); y1 = Math.max(y1, Math.min(600, Y1));
       if (pt[0] >= 0 && pt[0] <= 1000) { x0 = Math.min(x0, Math.max(0, X0)); x1 = Math.max(x1, Math.min(1000, X1)); }
@@ -171,15 +194,21 @@ function scFit(x, F) {
   const zFit = (b) => Math.min(b[2] > b[0] ? W1 / (b[2] - b[0]) : 99, b[3] > b[1] ? H1 / (b[3] - b[1]) : 99);
   // the ground under the cast (the lowest feet) and the middle of its stage: the point the cast shrinks toward
   let gx = 500, gy = 0, n = 0, xs = [1e9, -1e9];
-  x.actors.forEach((a) => { if (a.fit === false) return; [a.at, a.to].forEach((pt) => { if (pt && pt[0] >= 0 && pt[0] <= 1000) { xs = [Math.min(xs[0], pt[0]), Math.max(xs[1], pt[0])]; gy = Math.max(gy, pt[1]); n++; } }); });
+  x.actors.forEach((a) => { if (a.fit === false || a.on) return; [a.at, a.to].forEach((pt) => { if (pt && pt[0] >= 0 && pt[0] <= 1000) { xs = [Math.min(xs[0], pt[0]), Math.max(xs[1], pt[0])]; gy = Math.max(gy, pt[1]); n++; } }); });
   if (n) gx = (xs[0] + xs[1]) / 2; else gy = 500;
-  // how close the characters may step: neighbours (dogs, Gerald, the book) overlap by at most a quarter of the narrower one
+  // how close the characters may step: neighbours (dogs, Gerald, the book) overlap by at most a quarter of the narrower one where their backs
+  // meet; a face toward the other keeps it clear (art review 5: two dogs face to face keep a gap, so a head never covers a face; past that
+  // the cast shrinks instead)
   let lo = 0.5;
   [false, true].forEach((end) => {
     const cs = [];
-    x.actors.forEach((a, k) => { if (a.fit === false || !bx[k] || !['dog', 'gerald', 'book'].includes(a.who)) return; const pt = end ? (a.to || a.at) : a.at, b = end && bx[k].b ? bx[k].b : bx[k].a; if (pt && pt[0] >= 0 && pt[0] <= 1000) cs.push([pt[0], b]); });
+    x.actors.forEach((a, k) => { if (a.fit === false || a.on || !bx[k] || !['dog', 'gerald', 'book'].includes(a.who)) return; const pt = end ? (a.to || a.at) : a.at, b = end && bx[k].b ? bx[k].b : bx[k].a; if (pt && pt[0] >= 0 && pt[0] <= 1000) cs.push([pt[0], b, a]); });
     cs.sort((p, q) => p[0] - q[0]);
-    for (let i = 1; i < cs.length; i++) { const [xa, ba] = cs[i - 1], [xb, bb] = cs[i], d = xb - xa; if (d > 1) lo = Math.max(lo, (ba[2] - bb[0] - 0.25 * Math.min(ba[2] - ba[0], bb[2] - bb[0])) / d); }
+    for (let i = 1; i < cs.length; i++) {
+      const [xa, ba, aa] = cs[i - 1], [xb, bb, ab] = cs[i], d = xb - xa, mw = Math.min(ba[2] - ba[0], bb[2] - bb[0]), mh = Math.min(ba[3] - ba[1], bb[3] - bb[1]);
+      const heads = (scLooks(aa) === 'right' ? 1 : 0) + (scLooks(ab) === 'left' ? 1 : 0), room = heads === 2 ? -0.1 * mh : heads === 1 ? 0.08 * mw : 0.25 * mw;
+      if (d > 1) lo = Math.max(lo, (ba[2] - bb[0] - room) / d);
+    }
   });
   lo = Math.min(1, lo);
   const wide = (fx) => [false, true].some((end) => { const b = box(end, 1, gx, gy, fx); return b[2] - b[0] > W1; });
@@ -199,6 +228,16 @@ function scFit(x, F) {
 }
 // an on-stage spot moved toward gx by fx; a spot off the stage (a walk-in's start, a pass-through) stays where it is
 function scSqueeze(v, gx, fx) { return fx == null || fx >= 1 || v < 0 || v > 1000 ? v : gx + (v - gx) * fx; }
+/* v2.29 art review 4/5: a prop held by an actor. a.on: [[k, edge, rx, ry], ...] anchors on the drawn box of actor k (edge 'r' | 'l': its right or
+   left side, rx and ry in units of that box's height, so a long tail does not move the spot), averaged (two mouths: the stick between them),
+   then a.off [dx, dy]. The prop follows its actors through the moves, the squeeze and the fit. pts[k] = actor k's feet point now. */
+function scHeld(a, bx, pts, end) {
+  let X = 0, Y = 0, n = 0;
+  a.on.forEach(([k, edge, rx, ry]) => { const B = bx[k], pt = pts[k]; if (!B || !pt) return; const b = (typeof end === 'function' ? end(k) : end) && B.b ? B.b : B.a, H = b[3] - b[1]; X += pt[0] + (edge === 'l' ? b[0] : b[2]) + rx * H; Y += pt[1] + b[1] + ry * H; n++; });
+  const o = a.off || [0, 0]; return n ? [X / n + o[0], Y / n + o[1]] : (a.at || [500, 500]);
+}
+// which way an actor looks (a dog looks right unless face says left); null: no face to keep clear
+const scLooks = (a) => a.face || (a.who === 'dog' ? 'right' : null);
 // the camera: a pan and zoom with easing between the fitted keyframes, kept inside the 1000x600 box
 function scCam(x, p) {
   const P = SC.on, F = scFilm();
@@ -214,18 +253,23 @@ function scCam(x, p) {
 }
 function scFrame(now) {
   const P = SC.on; if (!P) return;
+  if (P.hid) return; // hidden tab: wait (visibilitychange restarts the frames)
   const ms = now - P.t0, L = scLayer();
   if (ms >= P.total) { scEnd(false); return; }
   const [i, p] = scShotAt(ms); if (i !== P.shot) scEnterShot(i);
   const x = P.shots[i];
   $('.sc-cam', L).setAttribute('transform', scCam(x, p));
+  const F = P.fit, sq = (pt) => (F && F.fx < 1 ? [scSqueeze(pt[0], F.gx, F.fx), pt[1]] : pt), pts = [], qs = [];
   x.actors.forEach((a, k) => {
-    const g = L.querySelector(`.sc-a[data-a="${k}"]`); if (!g) return;
     const t0 = a.t0 || 0, t1 = a.t1 == null ? 1 : a.t1, q = P.still ? 1 : Math.min(1, Math.max(0, (p - t0) / Math.max(0.01, t1 - t0))), e = scEase(q);
-    const F = P.fit, sq = (pt) => (F && F.fx < 1 ? [scSqueeze(pt[0], F.gx, F.fx), pt[1]] : pt);
     const A = sq(a.at || [500, 500]), B = sq(a.to || a.at || [500, 500]), moving = q > 0 && q < 1 && (A[0] !== B[0] || A[1] !== B[1]);
     const hop = moving && a.hop && !P.still ? -Math.abs(Math.sin(q * Math.PI * 6)) * a.hop : 0;
-    const [hh, ff] = P.sz[k], ax = scLerp(A[0], B[0], e), ay = scLerp(A[1], B[1], e) + hop;
+    pts[k] = [scLerp(A[0], B[0], e), scLerp(A[1], B[1], e) + hop]; qs[k] = q;
+  });
+  x.actors.forEach((a, k) => { if (a.on && P.bx) pts[k] = scHeld(a, P.bx, pts, (j) => !!x.actors[j].pose2 && P.poses[j] === x.actors[j].pose2); });
+  x.actors.forEach((a, k) => {
+    const g = L.querySelector(`.sc-a[data-a="${k}"]`); if (!g) return;
+    const q = qs[k], [hh, ff] = P.sz[k], [ax, ay] = pts[k];
     g.setAttribute('transform', `translate(${ax.toFixed(1)} ${(ay - hh * ff).toFixed(1)})`);
     if (a.fade) g.setAttribute('opacity', (a.fade === 'in' ? Math.min(1, p * 3) : Math.max(0, 1 - p * 1.4)).toFixed(2));
     if (a.pose2 && q >= 1 && P.poses[k] !== a.pose2) { P.poses[k] = a.pose2; g.innerHTML = scActorInner(a, a.pose2)[0]; }
@@ -246,11 +290,18 @@ function scEnd(skipped) {
   emit('sc:end', { id: P.id, skipped: !!skipped, replay: !!P.o.replay });
   if (P.o.onEnd) { try { P.o.onEnd(!!skipped); } catch (e) { console.warn('sc end', e); } }
 }
+// v2.29 code review: a scene in a background tab waits (requestAnimationFrame stops but the clock does not): the hidden time is added back to
+// t0, so it goes on from where the player left it and is only marked watched once it is really seen
+document.addEventListener('visibilitychange', () => {
+  const P = SC.on; if (!P) return;
+  if (document.hidden) { P.hid = performance.now(); cancelAnimationFrame(SC.raf); }
+  else { if (P.hid) { P.t0 += performance.now() - P.hid; P.hid = 0; } cancelAnimationFrame(SC.raf); SC.raf = requestAnimationFrame(scFrame); }
+});
 document.addEventListener('keydown', (e) => { if (SC.on && e.key === 'Escape') { const sk = $('#scLayer .sc-skip'); if (sk && !sk.hidden) { e.preventDefault(); e.stopPropagation(); scEnd(true); } } }, true);
 
 /* ---------------- the automatic queue: never on top of anything ---------------- */
 function scCalmNow() {
-  if (!S || SC.on || !titleEl.hidden || !['yard', 'market'].includes(cur.mode) || !modal.hidden || busy) return false;
+  if (!S || SC.on || document.hidden || !titleEl.hidden || !['yard', 'market'].includes(cur.mode) || !modal.hidden || busy) return false;
   if (typeof levelQueue !== 'undefined' && levelQueue.length) return false;
   if (typeof lvQueue !== 'undefined' && lvQueue.length) return false;
   if (typeof popOpen === 'function' && popOpen()) return false;

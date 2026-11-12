@@ -4,6 +4,8 @@ function firstGesture() { SFX.init(); if (!audioReady) { audioReady = true; appl
 window.addEventListener('pointerdown', firstGesture, { capture: true });
 window.addEventListener('keydown', (e) => {
   firstGesture();
+  // v2.29: a story scene owns the keys (1-7, Space, the mode's own keys); Escape skips it once Skip shows (57_scenes.js, capture phase)
+  if (typeof scPlaying === 'function' && scPlaying()) { const a = document.activeElement, inSc = !!(a && a.closest && a.closest('#scLayer')); if (!inSc && (e.key === ' ' || e.key === 'Enter' || /^[1-7]$/.test(e.key))) e.preventDefault(); return; }
   if (cur.key && modal.hidden) { cur.key(e); if (e.defaultPrevented) return; }
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if (e.key === 'Escape') { if (buyOpen) return; if (!modal.hidden) { closeModal(); return; } if (!devPanel.hidden) { devPanel.hidden = true; return; } if (['map', 'shelter', 'routes'].includes(cur.mode)) go('yard'); else if (cur.mode === 'garden' || cur.mode === 'kitchen') return; /* the module handles Esc (pouch / book first, then onClose) */ else if (cur.mode === 'yard') { if (TRN) closeTraining(); else closeTray(); } return; }

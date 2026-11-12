@@ -848,11 +848,11 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
   v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
-  v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
   v225Fields(st, true); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): days played from 0, the last-seen stamp now
   v226Fields(st); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): S.visitors
   v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
   v228Fields(st); // v2.28 Stories and stars (V228.md 1, 56_stories.js): S.st
+  v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
   return linkDogs(st);
 }
 let S = null;
@@ -924,11 +924,11 @@ function migrate(s) {
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
   v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
-  v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
   v225Fields(s, false); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): additive; an old save's days played start from what it already knows
   v226Fields(s); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): additive, S.visitors (seen = now, so no flood on the first load)
   v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
   v228Fields(s); // v2.28 Stories and stars (V228.md 1, 56_stories.js): additive, S.st; an old Bond 10+ save gets its stars counted once
+  v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
@@ -1359,7 +1359,7 @@ function toastPark() { toastLive().forEach((e) => { clearTimeout(e._tt); e.class
 // mini-game clears the whole queue as it opens (toastClearQ, from go()), so old Bond-gift toasts never land on its header or its Done button
 function toastStale() { if (!toasts) return; [...toasts.querySelectorAll('.toast.tq[data-arr]')].forEach((e) => { if (!S || e.dataset.arr !== S.place || !['yard', 'market'].includes(cur.mode)) e.remove(); }); }
 function toastClearQ() { if (toasts) toasts.querySelectorAll('.toast.tq').forEach((e) => e.remove()); }
-function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (toastScene()) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (toastScene()) return; if (!isPhone()) q.slice(0, Math.max(0, 3 - toastLive().length)).forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
 if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
@@ -1376,7 +1376,10 @@ function toast(text, kind = '', o = {}) {
     const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
   } else {
     toasts.appendChild(t); if (toastScene()) t.classList.add('tq'); else toastRun(t);
-    while (toasts.children.length > 3) toasts.firstChild.remove();
+    // up to three show at once; v2.29 code review: the ones held during a scene are not dropped by that cap. At most 8 wait (the oldest
+    // plain one goes first, a gold one only when all are gold); after the scene they come in three at a time (toastNext)
+    const live = toastLive(); while (live.length > 3) live.shift().remove();
+    const q = [...toasts.querySelectorAll('.toast.tq')]; while (q.length > 8) { const i = Math.max(0, q.findIndex((e) => !e.classList.contains('gold'))); q.splice(i, 1)[0].remove(); }
   }
   toastPlace();
   return t;
