@@ -36,6 +36,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
      `#modal` is open with "While you were out" while `__paw.sc.on() === 'prologue'`.
    - Fix: add `if (typeof scPlaying === 'function' && scPlaying()) return false;` to `nwCalmNow` and `lvCalm`, and to any other automatic opener
      with its own calm check (the calendar page, the Gerald guide). A simpler alternative is one guard in `openModal` that holds automatic opens.
+   Status: fixed (5cf05bb9, lane B): nwCalmNow (so wbTry too) and lvCalm return false while scPlaying(); test in v229_story 4.
 
 3. **should-fix: desktop keys act on the game under a scene.** File: `game/src/22_input.js:5-14`.
    - What goes wrong: the global keydown handler still runs `doAct` for keys 1 to 7, and Space still pets, while a scene plays (the
@@ -44,6 +45,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
    - Repro: the probe `__paw.sc.play('ch2', { replay: true })`, then `keyboard.press('4')`. The mode is `routes` while `sc.on()` is still `'ch2'`.
    - Fix: at the top of the handler (after `firstGesture()`), add `if (typeof scPlaying === 'function' && scPlaying()) return;`. Escape keeps
      working because `57_scenes.js:249` handles it in the capture phase.
+   Status: fixed (5cf05bb9, lane B): the keydown handler returns while scPlaying() (1-7/Space/Enter prevented unless focus is in the scene); Escape still skips in the capture phase; test in v229_story 4.
 
 4. **should-fix: saves started between the merge and 10 Dec get no story catch-up.** Files: `game/src/00_core.js:851`, `game/src/57b_story.js:18,23`
    and `:191-197`.
@@ -53,6 +55,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
      result, "First day at Sunny Park" and similar scenes play the next time they go to places they have visited many times.
    - Fix: in `v229Fields`, use `fresh && smOn() ? 'fresh' : 'old'`. The catch-up path already handles a save with nothing earned (chapter 1, the
      prologue, no letter), so a real day-one player sees the same thing.
+   Status: fixed (5cf05bb9, lane B): `fresh && smOn() ? 'fresh' : 'old'`; test in v229_story 1 (a save made while Story is off gets the catch-up, a seen place goes into the album, only the prologue plays).
 
 5. **should-fix: the four launch dates are placeholders that go live by themselves.** File: `game/src/49c_news.js:170-210` (`date` fields
    marked `// LAUNCH DATE`).
@@ -70,10 +73,12 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
 7. **nice: a scene left in a background tab is marked watched.** `game/src/57_scenes.js:218`. `requestAnimationFrame` stops while the tab is
    hidden, but `t0` is wall time. On return, `ms >= total` ends the scene with `scEnd(false)`, and `scPlayAuto` marks it watched even though it
    was never seen. Fix: on `visibilitychange` hidden, note the time and add the hidden span to `SC.on.t0` on return.
+   Status: fixed (5cf05bb9, lane B): the scene pauses while the tab is hidden (the hidden span is added to t0), and no automatic scene starts in a hidden tab.
 
 8. **nice: on desktop, toasts held during a scene are capped at 3.** `game/src/00_core.js:1379`. During a scene, desktop toasts are queued
    (`tq`), but `while (toasts.children.length > 3) toasts.firstChild.remove()` still applies, so the oldest held toast, such as a chapter reward
    line, is dropped. Fix: count only live toasts there, or keep the newest 3 plus any `gold` toasts.
+   Status: fixed (5cf05bb9, lane B): desktop caps only live toasts at 3; up to 8 wait (plain ones dropped before gold), and after the scene they come in 3 at a time.
 
 9. **nice: two corrupt-save cases that never heal.** `game/src/56_stories.js:22`: an array `S.st` passes `typeof === 'object'`, and its keys are
    lost on every save, so the keepsake toasts come back each session. Use `Array.isArray` as the other `v22xFields` do.
@@ -82,6 +87,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
 
 10. **nice: field order.** `game/src/00_core.js:851,927`: `v229Fields` runs before `v225Fields` in both `freshState()` and `migrate()`. Nothing
     depends on that order today, but move it after `v228Fields` so the order follows the versions and a later dependency can't break silently.
+   Status: fixed (5cf05bb9, lane B): v229Fields runs after v228Fields in freshState and migrate (no v225-v228 field reads S.story).
 
 11. **nice: unescaped strings.** `game/src/54_visitors.js:190-193,219,229` and `game/src/55_projects.js:206`: `tt()` text goes into button and
     title HTML without `esc()`, unlike the rest of the code. A translation with `&` or `<` would break the markup. Wrap them in `esc()`.
