@@ -48,18 +48,20 @@ Tags: #廣東話 #香港 #治愈系遊戲 #蠟筆畫 #狗狗 #獨立遊戲
 Doodle Doggo now speaks Cantonese 🐶 our 12th language, checked line by line by a friend from Hong Kong 💛 a free cozy dog game with 40 wobbly crayon dogs, in your browser. which language do you play in? doodledoggo.app/yue/
 ```
 
-## Poster (11 Nov 2026, draft: not posted until the owner approves)
+## Poster (12 Nov 2026 redo, draft: not posted until the owner approves)
 
 File: `brand/instagram/launch/cantonese_post/cantonese-launch.jpg` (1080 x 1350, Instagram). Build script: `brand/instagram/launch/cantonese_post/build_cantonese_post.js`.
 
-Headline 「Doodle Doggo 識講廣東話喇！」 with "now in Cantonese · our 12th language" under it; the pill 「多謝香港朋友逐句幫我哋睇過」; the logo and doodledoggo.app at the bottom. No flags, no other links. Dogs and logo are today's art from origin/main (913a3539). Chinese text is Iansui (the face the game uses for yue and zh-Hant), Latin text is Caveat.
+Owner's changes (12 Nov): a hook headline and the game background. Line 1 is the hook 「勁正！」, big pink-red with a cream and an ink outline in a yellow crayon sticker burst. Line 2 is a cream card with 「Doodle Doggo 識講廣東話喇！」 and "now in Cantonese · our 12th language". **Before posting, the owner's Hong Kong friend should check 「勁正！」 as the hook.** Behind everything is the game's own Mt. Fuji Lookout on an autumn day (`PawArt.scene('fujihill', { season: 'autumn', v215: true })`, today's art from origin/main 7a85ce30, no game UI, the corner tapes left out). All text sits on solid cards, bubbles or pills. The dogs stand on the meadow in front of the torii, lanterns and bench, and their heads stay below those objects' feet. At the bottom are the thank-you pill 「多謝香港朋友逐句幫我哋睇過」 and a cream card with the logo and doodledoggo.app. No flags, no other links. Chinese text is Iansui (the face the game uses for yue and zh-Hant) and Latin text is Caveat.
 
-The three bubbles quote the game's Cantonese text exactly (`game/i18n/yue.json` on main; the build stops if a line no longer matches):
+The three bubbles quote the game's Cantonese text exactly (`game/i18n/yue.json` on main; the build stops if a line no longer matches; the line breaks are only for the bubbles):
 - Noodle the Dachshund: 「扭呀扭。後面嗰半遲到咗。」 `data.sig.dachs.say` ("Wiggle wiggle. The back half is late.")
 - Peanut the Chihuahua: 「我係八號風球！！」 `data.sig.chihuahua.say` ("I AM A WEATHER EVENT.", here Typhoon Signal No. 8)
 - Sunny the Golden Retriever: 「睇下我搵到乜！」 `data.sr_lines.fetch.2` ("Look what I found!")
 
-Rebuild (checks: bubble and pill text ink-centred, headline centred, dogs apart, nothing closer than 20 px, 60 px margins):
+Known small point: the tops of two stone lanterns and the end of the bench sit behind the bubbles. The dogs and the torii are clear.
+
+Rebuild (checks: text ink-centred in every burst, card, bubble and pill, logo row centred, dogs apart, nothing closer than 20 px, 60 px margins, dogs' heads below the scene objects' feet):
 ```
 git worktree add --detach <scratch>/main origin/main
 ART_ROOT=<scratch>/main NODE_PATH=$(npm root -g) node brand/instagram/launch/cantonese_post/build_cantonese_post.js
