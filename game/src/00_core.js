@@ -1510,7 +1510,10 @@ function nope(text) { SFX.nope(); toast(text, 'bad', { scr: toastScr() }); } // 
 /* ---------------- stats ---------------- */
 function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty(); }
 function addCoins(base, opts = {}) {
-  const n = Math.round(base * (opts.raw ? 1 : BOOST.coins)); S.coins += n; markDirty();
+  let n = Math.round(base * (opts.raw ? 1 : BOOST.coins));
+  // a refunded Kind shop purchase that was already spent leaves S.shop.coinDebt. Later coins pay it back before they can be spent again.
+  if (n > 0 && S && S.shop && S.shop.coinDebt > 0) { const owe = Math.max(0, Math.round(S.shop.coinDebt) || 0), d = Math.min(owe, n); S.shop.coinDebt = owe - d; n -= d; }
+  S.coins += n; markDirty();
   const c = $('#coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); updateHUD(); return n;
 }
 let levelQueue = [];

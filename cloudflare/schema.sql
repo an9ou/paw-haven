@@ -174,3 +174,15 @@ create table if not exists purchases (
 );
 create index if not exists purchases_user on purchases (user_id);
 create index if not exists purchases_pi on purchases (payment_intent);
+
+-- One open Stripe Checkout per account per item (v2.24 payment fix). A second Pay tap returns this url instead of starting
+-- another session. Cleared when that session is paid or refunded; a hold older than 24 hours is dropped (Checkout expires then).
+-- A one-time item that has any purchases row, refunded or not, is refused at checkout even after this row is gone.
+create table if not exists shop_holds (
+  user_id    text not null,
+  item       text not null,
+  session_id text,                 -- cs_... once Stripe answers; null while the first request is still in flight
+  url        text,                 -- the Checkout URL returned to every tap while this hold is fresh
+  created_at integer not null,     -- ms
+  primary key (user_id, item)
+);

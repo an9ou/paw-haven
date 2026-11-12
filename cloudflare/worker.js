@@ -38,9 +38,11 @@
 //   { error: 'shop_closed' } while STRIPE_KEY is unset (the webhook also needs STRIPE_WEBHOOK_SECRET). Prices come from SHOP_ITEMS
 //   below and the SHOP_PRICES secret (JSON), never from the game. Setup: docs/design/kind-shop-stripe-setup.md.
 //   GET  /shop/catalog                     -> { items: [{ id, usd, once, on }] }   no session; usd in US cents, on: a Stripe price is set
-//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 owned (a one-time item)
+//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 owned (a one-time item,
+//     including one that was refunded). A second tap while Checkout is open returns that same url and does not start another session.
 //   POST /shop/webhook  (Stripe; raw body + Stripe-Signature) -> { received: true }   400 bad_signature / stale
-//   GET  /shop/owned                       -> { purchases: [{ id, item, at, refunded }] }   120/h
+//   GET  /shop/owned                       -> { purchases: [{ id, item, at, refunded, coins }] }   120/h
+//     coins: Paw Coins that row grants (the client takes them back when the row is refunded). A second one-time row is 0.
 //   A Founding Friend (a supporter purchase, not refunded) gets ff: 1 on its Dog Card and friend yard, set here from purchases.
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
@@ -136,7 +138,9 @@ async function tidy(env) {
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
     env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
     env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)), // Dog Cards: paws only matter for today (index paws_day)
-    env.DB.prepare('delete from purchases where user_id not in (select id from users)') // v2.24: a deleted account's purchases go with it (Stripe keeps its own records)
+    env.DB.prepare('delete from purchases where user_id not in (select id from users)'), // v2.24: a deleted account's purchases go with it (Stripe keeps its own records)
+    env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
+    env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ]);
 }
 // Dog Cards: a deleted account's card and paws (both ways). Runs only from the card routes (about 1 in 50 of their requests), not on every route.
@@ -480,16 +484,20 @@ function frTidySoon(env, ctx) {
 }
 
 /* ---------------- Kind shop (v2.24, V224.md 4): Stripe Checkout with Managed Payments, through fetch (no SDK) ---------------- */
-// The catalogue. usd: US cents (Stripe shows the local currency at checkout). once: one per account (a full refund frees it again).
+// The catalogue. usd: US cents (Stripe shows the local currency at checkout). once: one per account, including after a full refund
+// (the items and coins come back, and the item is not for sale again). coins: Paw Coins that purchase grants. Must match
+// KS_SUP_COINS and KS_ITEMS pack sizes in game/src/52_kindshop.js (v2.24.2: 2,000 / 5,000 / 14,000).
 // The Stripe price ids come from the SHOP_PRICES secret (JSON): { "supporter": "price_...", ... } or { "supporter": { "price": "price_...", "usd": 499 } }.
 // The game never sends a price: checkout looks the item up here.
 const SHOP_ITEMS = {
-  supporter: { usd: 499, once: true }, tokyo: { usd: 299, once: true }, cozy: { usd: 299, once: true },
+  supporter: { usd: 499, once: true, coins: 2000 }, tokyo: { usd: 299, once: true }, cozy: { usd: 299, once: true },
   robo: { usd: 199, once: true }, sprinkler: { usd: 99, once: true }, bowl: { usd: 99, once: true }, comfort: { usd: 299, once: true },
-  coins_1k: { usd: 99, once: false }, coins_3k: { usd: 199, once: false }, coins_8k: { usd: 499, once: false }
+  coins_1k: { usd: 99, once: false, coins: 2000 }, coins_3k: { usd: 199, once: false, coins: 5000 }, coins_8k: { usd: 499, once: false, coins: 14000 }
 };
 const SHOP_TOOLS = ['robo', 'sprinkler', 'bowl'];
 const SHOP_TOL = 300; // seconds: a webhook signed more than 5 minutes ago (or ahead) is refused
+const SHOP_HOLD_MS = 24 * 60 * 60 * 1000; // a Checkout Session lives 24 hours; the hold does too
+const shopCoinBase = (id) => { const b = SHOP_ITEMS[id]; return b && Number.isInteger(b.coins) && b.coins > 0 ? b.coins : 0; };
 const SHOP_OK_URL = 'https://doodledoggo.app/thanks?ok=1', SHOP_NO_URL = 'https://doodledoggo.app/thanks?ok=0';
 const SHOP_SID = /^cs_[A-Za-z0-9_]{6,250}$/, SHOP_PI = /^pi_[A-Za-z0-9_]{6,250}$/, SHOP_PRICE = /^price_[A-Za-z0-9_]{4,250}$/;
 const shopOpen = (env) => !!env.STRIPE_KEY;
@@ -509,21 +517,54 @@ const shopFF = async (env, uid) => { const r = await one(env, `select ${FF_SQL('
 // ff on a card or a yard from the game: a boolean (or 0 / 1) when present, then dropped (shopFF decides)
 const ffOk = (o) => !o || typeof o !== 'object' || Array.isArray(o) || !Object.hasOwn(o, 'ff') || [true, false, 0, 1].includes(o.ff);
 function ffStrip(o) { if (!o || typeof o !== 'object' || Array.isArray(o) || !Object.hasOwn(o, 'ff')) return o; const c = Object.assign({}, o); delete c.ff; return c; }
-// a one-time item this account owns already (not refunded); the Comfort Kit covers its three tools, and all three tools cover the Kit
-async function shopOwnsOnce(env, uid, id) {
-  const have = new Set((await all(env, 'select distinct item from purchases where user_id = ?1 and refunded_at is null', uid)).map((r) => r.item));
-  if (have.has(id)) return true;
-  if (SHOP_TOOLS.includes(id) && have.has('comfort')) return true;
-  return id === 'comfort' && SHOP_TOOLS.every((t) => have.has(t));
+// one-time ownership. ever: bought at least once, refunded or not (it cannot be bought again). live: a purchase that was not refunded.
+// open: a Checkout still inside its 24 hours. The Comfort Kit covers its three tools, and all three tools cover the Kit; an open Checkout counts.
+async function shopSets(env, uid) {
+  const cut = Date.now() - SHOP_HOLD_MS;
+  const bought = await all(env, 'select distinct item from purchases where user_id = ?1', uid);
+  const live = await all(env, 'select distinct item from purchases where user_id = ?1 and refunded_at is null', uid);
+  const open = await all(env, 'select item from shop_holds where user_id = ?1 and created_at > ?2', uid, cut);
+  return { ever: new Set(bought.map((r) => r.item)), live: new Set(live.map((r) => r.item)), open: new Set(open.map((r) => r.item)) };
+}
+function shopCovered(sets, id) {
+  const has = (t) => sets.live.has(t) || sets.open.has(t);
+  if (SHOP_TOOLS.includes(id) && has('comfort')) return true;
+  return id === 'comfort' && SHOP_TOOLS.every(has);
+}
+async function shopFreshHold(env, uid, item) {
+  const row = await one(env, 'select session_id, url, created_at from shop_holds where user_id = ?1 and item = ?2', uid, item);
+  if (!row) return null;
+  if (Date.now() - Number(row.created_at) > SHOP_HOLD_MS) {
+    await run(env, 'delete from shop_holds where user_id = ?1 and item = ?2 and created_at = ?3', uid, item, row.created_at);
+    return null;
+  }
+  return row;
+}
+// drop the hold for this Checkout Session so a coin pack can be bought again, without touching a newer open Checkout of the same item
+async function shopRelease(env, uid, item, sid) {
+  if (typeof uid !== 'string' || !uid || typeof item !== 'string' || !item) return;
+  if (typeof sid === 'string' && sid) await run(env, 'delete from shop_holds where user_id = ?1 and item = ?2 and (session_id = ?3 or session_id is null)', uid, item, sid);
+}
+// GET /shop/owned rows, oldest first. coins is what that row grants. One-time coin grants (the Supporter Pack) stay on the oldest row,
+// so a second paid session adds none and a refund takes back the one grant. Each coin-pack row carries its own coins.
+function shopPurchaseView(rows) {
+  const carrier = {};
+  for (const r of rows) { if (shopCoinBase(r.item) > 0 && SHOP_ITEMS[r.item].once && !Object.hasOwn(carrier, r.item)) carrier[r.item] = r.id; }
+  return rows.map((r) => {
+    const base = shopCoinBase(r.item);
+    const coins = !base ? 0 : SHOP_ITEMS[r.item].once ? (carrier[r.item] === r.id ? base : 0) : base;
+    return { id: r.id, item: r.item, at: Number(r.created_at) || 0, refunded: r.refunded_at != null, coins };
+  });
 }
 // form encoding for the Stripe API (nested keys written out, e.g. line_items[0][price]); undefined values are left out
 const shopForm = (o) => Object.keys(o).filter((k) => o[k] !== undefined && o[k] !== null).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(String(o[k]))).join('&');
 // form null: a GET (path carries its own query string)
-async function shopStripe(env, path, form) {
+async function shopStripe(env, path, form, extra) {
   const f = env.STRIPE_FETCH || fetch; // tests pass a fake: they never reach the real Stripe
   const h = { Authorization: 'Bearer ' + env.STRIPE_KEY };
   if (form) h['Content-Type'] = 'application/x-www-form-urlencoded';
   if (env.STRIPE_VERSION) h['Stripe-Version'] = env.STRIPE_VERSION; // else the account's default API version (Managed Payments: 2025-03-31.basil or later)
+  if (extra) Object.keys(extra).forEach((k) => { if (extra[k]) h[k] = extra[k]; });
   const r = await f('https://api.stripe.com/v1' + path, form ? { method: 'POST', headers: h, body: shopForm(form) } : { method: 'GET', headers: h });
   let data = null; try { data = await r.json(); } catch (e) { data = null; }
   return { ok: r.ok, status: r.status, data };
@@ -566,14 +607,17 @@ async function shopWebhook(req, env) {
     await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, null)
       on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent)`,
       o.id, uid, md.item, Number.isInteger(o.amount_total) ? o.amount_total : null, typeof o.currency === 'string' ? o.currency.slice(0, 8) : null, pi, Date.now());
+    await shopRelease(env, uid, md.item, o.id); // this Checkout is finished; a coin pack can open another, a one-time item is now owned
     return json({ received: true });
   }
   if (type === 'charge.refunded') { // a full refund only (charge.refunded true): a partial refund keeps the item
     const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
     if (!pi || o.refunded !== true) return json({ received: true });
     const t = Date.now();
+    const had = await all(env, 'select id, user_id, item from purchases where payment_intent = ?1', pi);
     await run(env, 'update purchases set refunded_at = ?1 where payment_intent = ?2 and refunded_at is null', t, pi);
-    if (await one(env, 'select 1 as x from purchases where payment_intent = ?1', pi)) return json({ received: true });
+    for (const row of had) await shopRelease(env, row.user_id, row.item, row.id); // only this session's hold; a newer coin-pack Checkout stays
+    if (had.length) return json({ received: true });
     // v2.24.1: the refund came before its checkout.session.completed (Stripe does not promise an order). Look the session up and
     // write the purchase already refunded, so the completed event that follows (an upsert that keeps refunded_at) gives nothing.
     const r = await shopStripe(env, '/checkout/sessions?limit=1&payment_intent=' + encodeURIComponent(pi), null);
@@ -583,6 +627,7 @@ async function shopWebhook(req, env) {
     await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
       on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), refunded_at = coalesce(purchases.refunded_at, excluded.refunded_at)`,
       cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t, t);
+    await shopRelease(env, uid, md.item, cs.id);
   }
   return json({ received: true });
 }
@@ -1031,18 +1076,36 @@ const ROUTES = {
     if (!it) return fail('bad_item', 400);
     if (!it.price) return fail('shop_closed', 503); // no Stripe price set up for this item yet
     if (await limited(env, 'shop:co:' + me.id, 20, 3600)) return fail('rate_limited', 429);
-    if (it.once && (await shopOwnsOnce(env, me.id, it.id))) return fail('owned', 409);
+    if (it.once) {
+      const sets = await shopSets(env, me.id);
+      if (sets.ever.has(it.id) || shopCovered(sets, it.id)) return fail('owned', 409); // bought once, even if that purchase was refunded
+    }
+    let hold = await shopFreshHold(env, me.id, it.id);
+    if (hold && typeof hold.url === 'string' && /^https:\/\//.test(hold.url)) return json({ url: hold.url }); // the open Checkout, not a second one
+    if (hold) return fail('busy', 503); // the first tap is still talking to Stripe
+    const now = Date.now();
+    try {
+      await run(env, 'insert into shop_holds (user_id, item, session_id, url, created_at) values (?1, ?2, null, null, ?3)', me.id, it.id, now);
+    } catch (e) {
+      if (!/unique/i.test(String(e && e.message || e))) throw e;
+      hold = await shopFreshHold(env, me.id, it.id);
+      if (hold && typeof hold.url === 'string' && /^https:\/\//.test(hold.url)) return json({ url: hold.url });
+      return fail('busy', 503);
+    }
     const r = await shopStripe(env, '/checkout/sessions', {
       mode: 'payment', 'line_items[0][price]': it.price, 'line_items[0][quantity]': 1,
       'managed_payments[enabled]': env.SHOP_MANAGED === '0' ? undefined : 'true', // Stripe as merchant of record (docs.stripe.com/payments/managed-payments/set-up)
       client_reference_id: me.id, 'metadata[item]': it.id, 'metadata[user]': me.id, customer_email: me.email,
       success_url: env.SHOP_SUCCESS_URL || SHOP_OK_URL, cancel_url: env.SHOP_CANCEL_URL || SHOP_NO_URL
-    });
+    }, { 'Idempotency-Key': 'ks_' + me.id + '_' + it.id + '_' + now }); // one Stripe result for this hold; a failed hold is deleted and the next tap gets a new key
     const url = r.data && r.data.url;
+    const sid = r.data && typeof r.data.id === 'string' && SHOP_SID.test(r.data.id) ? r.data.id : null;
     if (!r.ok || typeof url !== 'string' || !/^https:\/\//.test(url)) {
+      await run(env, 'delete from shop_holds where user_id = ?1 and item = ?2 and created_at = ?3', me.id, it.id, now);
       console.error('pawhaven-api shop: checkout', r.status, (r.data && r.data.error && r.data.error.code) || '');
       return fail('busy', 503);
     }
+    await run(env, 'update shop_holds set session_id = ?1, url = ?2 where user_id = ?3 and item = ?4 and created_at = ?5', sid, url, me.id, it.id, now);
     return json({ url });
   } },
 
@@ -1050,7 +1113,7 @@ const ROUTES = {
     if (!shopOpen(env)) return fail('shop_closed', 503);
     if (await limited(env, 'shop:own:' + me.id, 120, 3600)) return fail('rate_limited', 429);
     const rows = await all(env, 'select id, item, created_at, refunded_at from purchases where user_id = ?1 order by created_at asc, id asc limit 500', me.id);
-    return json({ purchases: rows.map((r) => ({ id: r.id, item: r.item, at: Number(r.created_at) || 0, refunded: r.refunded_at != null })) });
+    return json({ purchases: shopPurchaseView(rows) });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {
