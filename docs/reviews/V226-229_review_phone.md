@@ -12,17 +12,22 @@ Status lines are added by the fix batch.
 ## Should-fix
 3. **Lighthouse on phones** is off screen on arrival at the pier (tap box x 369 at 360, x 482 at 390); the pier has no Look right; dragging works but the camera returns after 4 s. Tap box 41 px wide at 360 (< 44).
 4. **Yard visitor at 390x844** stands on the left edge (tap box from x -13), name tag cut. Clamp `visitorSpot()` to the phone crop.
+   Status: fixed (76040f60): own spot; tap box and tag on screen at 360 and 390 (big dogs too), checked in v226_visitors.
 5. **Fountain drink:** the dog faces away from the bowl and stands half out of frame (desktop x 25; 390 after Look left, x 0).
 6. **Project board:** the Square's street lamp crosses the paper (desktop and phones). The Square's buttons have no "Town projects" entry; the board is only reachable by tapping its picture.
 7. **Sakura Avenue:** no tree visible from the home view at 390; at 360 the treetops sit under the wish card.
 8. **Any amount typing:** if the browser shrinks the page for the keyboard (360x350), the "Turn your phone upright" card covers the sheet. Fix: skip `psLockWanted()` while an input has focus.
+   Status: fixed (dd1045c4): psLockCheck skips the card while a text field has focus (layout unchanged); test in phone_shell.
 
 ## Nice
 9. Two Memories rows (prologue, visit_park) have an empty icon.
    Status: fixed (5cf05bb9, lane B): doodle() has no 'sun'; scDoodle adds a crayon sun (Memories icons, the card corners and the scene sun doodles).
 10. While you were out at 360x640: the Visitors card starts below the fold (only a sliver shows).
+   Status: fixed (bf891696): on phones, with visitors, the diary drops its doodle row and the Visitors card comes before the gift; v225_welcome checks it shows without scrolling.
 11. The visitor's name tag is ~10 px at 360; the Visitors card is the 6th Care tray card (sideways scroll).
+   Status: fixed (76040f60): phone name tag 132x31 world units, text 16 px box at 360 (checked >= 12 px).
 12. Thai: sheets end at y 548, the phone bar starts at 545 (3 px under; may be older).
 13. The phone "..." menu has 9 rows; Send a postcard and Cloud save are below the fold at 360.
+   Status: fixed (499d40b7): tighter rows (48 px, gap 8) and a bottom fade while more rows wait; 10 rows, 8.5 visible at 360x640.
 
 Passed: no sideways scroll, every tap >= 44 px, text fits in de/ja/th/xx on the visitor card, Visitors Book, While you were out, projects sheet, Stories tab, letters, three postcards, Story page and scenes; Skip hidden at 1.2 s, shown by 3.8 s (96x44 phone, 96x48 desktop); Story is a 53 px row in "..."; no console errors.

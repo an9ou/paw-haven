@@ -155,6 +155,27 @@ run('v226_visitors', async (t) => {
   await shot('desk_yard_toys');
   ok(!t.errors.length, 'no console errors so far' + (t.errors.length ? ': ' + t.errors.slice(0, 3).join(' | ') : ''));
 
+  sec('6b. the toys wait for the v2.26 date (code review 1)');
+  { // the real gate: no test pref, navigator.webdriver off, the page clock before and after NEWS_V226.date
+    const date = await ev(() => window.__paw.yv.date);
+    const probe = () => ev((T) => {
+      const P = window.__paw, S = P.S, own = Object.assign({}, S.decor);
+      Object.keys(P.home.specs).forEach((n) => { const d = P.home.specs[n]; if (d.v27 && d.kind === 'decor' && !T.includes(n)) S.decor[n] = S.decor[n] || { got: '2026-11-01', out: false }; }); T.forEach((n) => { delete S.decor[n]; });
+      P.shop.shop('builder'); const b = document.querySelector('[data-btab="decor"],[data-tab="decor"]'); if (b) b.click();
+      const shop = (document.querySelector('#modal .panel') || {}).textContent || ''; const x = document.querySelector('#modal .panel .x'); if (x) x.click();
+      const rows = P.lv.rows().filter((r) => r.kind === 'item').map((r) => r.id), pick = P.msn.pick(); S.decor = own;
+      return { on: P.yv.on(), shop: T.filter((n) => shop.includes(n)), lv: T.filter((n) => rows.includes(n)), pick };
+    }, TOYS);
+    await ev(() => { window.__paw.yv.test(false); Object.defineProperty(navigator, 'webdriver', { get: () => false, configurable: true }); });
+    await t.p.clock.setFixedTime(new Date(Date.parse(date + 'T12:00:00+09:00') - 3 * 86400e3));
+    const pre = await probe();
+    ok(!pre.on && !pre.shop.length && !pre.lv.length && !TOYS.includes(pre.pick), 'before ' + date + ': no toy at Barkitecture, in the level list or as the notebook gift: ' + JSON.stringify(pre));
+    await t.p.clock.setFixedTime(new Date(Date.parse(date + 'T12:00:00+09:00') + 86400e3));
+    const post = await probe();
+    ok(post.on && post.shop.length === 4 && post.lv.length === 4 && post.pick === 'Tug Post', 'from ' + date + ': all four are sold, in the level list and the notebook gift: ' + JSON.stringify(post));
+    await ev(() => { delete navigator.webdriver; window.__paw.yv.test(true); });
+  }
+
   sec('7. phone 360x640');
   { const was = t.ctx; await t.newGame({ device: 'Phone 360x640', prefs: ON }); await was.close(); }
   await putOut(['Tug Post', 'Puddle Pool']);
@@ -163,6 +184,10 @@ run('v226_visitors', async (t) => {
   ok(await t.until(() => !!document.querySelector('#visitorG.yv'), null, 5000), 'the visitor is in the phone yard');
   const vb = await ev(() => { const r = document.querySelector('#visitorG.yv > rect').getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); });
   ok(vb[2] >= 44 && vb[3] >= 44 && vb[0] + vb[2] > 0 && vb[0] < 360, 'its tap box is at least 44 px and on screen: ' + vb);
+  const clr = await ev(() => { const q = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, v = q('#visitorG.yv > rect'), m = q('#sceneG [data-hot="mailbox"]') || q('#mailboxG'), tg = q('#visitorG .vtag'), tx = document.querySelector('#visitorG .vtag text').getBoundingClientRect().height;
+    return { in: v[0] >= 0 && v[2] <= innerWidth && tg[0] >= 0 && tg[2] <= innerWidth, mail: !!m && !(v[0] < m[2] && m[0] < v[2] && v[1] < m[3] && m[1] < v[3]), tag: Math.round(tx) }; });
+  ok(clr.in && clr.mail, 'its own spot: wholly on screen at 360 (tap box and name tag) and clear of the mailbox (art 3, phone 4): ' + JSON.stringify(clr));
+  ok(clr.tag >= 12, 'the name tag text is at least 12 px at 360 (' + clr.tag + ')');
   await shot('phone_yard_visitor');
   await t.p.tap('#visitorG.yv > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#yvPet'), null, 4000), 'tap: the card opens');

@@ -29,11 +29,14 @@ run('v228_stories', async (t) => {
   let s = await t.S();
   ok(s.v === 1 && s.st && s.st.stars && s.st.stars[s.dogs[0].id] === 7 && s.st.s.plum && s.st.s.plum.n === 0 && s.st.lt === '' && s.st.pc === 0, 'migrate() adds S.st, v stays 1, the old Bond 10 dog has its 7 stars: ' + JSON.stringify(s.st && s.st.stars));
   ok(await t.until(() => !!(window.__paw.S.st.ks[5] && window.__paw.S.decor['Framed Paw Print'] && window.__paw.S.decor['Framed Paw Print'].out), null, 9000), 'the 5-star keepsake comes on the first tick: the Framed Paw Print is out in the house');
+  { const at = await ev(() => { const r = window.__paw.S.decor['Framed Paw Print']; return r && r.at; }), win = [340, 147, 236, 114], ov = at && Math.max(0, Math.min(at[0] + 68, win[0] + win[2]) - Math.max(at[0], win[0])) * Math.max(0, Math.min(at[1] + 79, win[1] + win[3]) - Math.max(at[1], win[1]));
+    ok(Array.isArray(at) && ov === 0 && at[1] >= 150 && at[1] + 79 <= 384, 'it hangs on a bare bit of wall, clear of the living-room window (art 7): ' + JSON.stringify(at)); }
   s = await t.S();
   ok(!s.st.ks[10] && !s.inv.clothes.includes('Star Collar'), 'no 10-star keepsake at 7 stars');
   await t.sleep(1200); const tl = await t.toasts();
   ok(!tl.some((x) => /earned a Bond star/.test(x)), 'no star toasts for the stars an old save already had: ' + JSON.stringify(tl));
   ok(await ev(() => { const P = window.__paw, x = P.st.fields({ v: 1, dogs: [{ id: 'a', bond: { level: 10, pts: 13300 } }], st: { stars: { a: 9 }, ks: [], s: { plum: { n: 9, d: 'x', at: 3 } }, lt: 5, pc: -2 } }).st; return x.stars.a === 9 && !Array.isArray(x.ks) && x.s.plum.n === 5 && x.s.plum.d === 0 && x.s.plum.at === '' && x.s.rosa.n === 0 && x.lt === '' && x.pc === 0; }), 'junk in S.st is mended and a kept star count is never lowered (9 kept over 2 computed)');
+  ok(await ev(() => { const x = window.__paw.st.fields({ v: 1, dogs: [], st: [1, 2] }).st; return !Array.isArray(x) && typeof x === 'object' && typeof x.stars === 'object' && typeof x.s === 'object'; }), 'an array S.st (a corrupt save) is rebuilt as an object, so it keeps its keys (code review 9)');
   await t.ctx.close();
 
   sec('2. the star math and the keepsakes, once');

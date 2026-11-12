@@ -18,8 +18,12 @@ function psApplyLayout(rerender) {
 
 /* ---------- portrait lock: a touch-only device held sideways with a short screen ---------- */
 function psLockWanted() { return psMQ('(pointer: coarse)') && !psMQ('(any-pointer: fine)') && psMQ('(orientation: landscape)') && window.innerHeight <= 500; }
+// fix batch (phone 8): typing (any amount, a name, a note) can make the browser shrink the page for the keyboard to a short landscape box, so the
+// "Turn your phone upright" card would cover the sheet: it waits while a text field has focus (the layout itself still follows psLockWanted)
+function psTyping() { const a = document.activeElement; return !!a && (a.tagName === 'TEXTAREA' || a.isContentEditable || (a.tagName === 'INPUT' && !/^(button|checkbox|radio|range|submit|reset|file|color|image|hidden)$/i.test(a.type || 'text'))); }
+document.addEventListener('focusin', () => setTimeout(psLockCheck, 0)); document.addEventListener('focusout', () => setTimeout(psLockCheck, 60));
 function psLockCheck() {
-  const on = psLockWanted(), html = document.documentElement, was = html.hasAttribute('data-pslock');
+  const on = psLockWanted() && !psTyping(), html = document.documentElement, was = html.hasAttribute('data-pslock');
   if (on === was) return;
   let card = document.getElementById('psTurn');
   if (on && !card) {
@@ -59,6 +63,9 @@ function openMore() {
   const mf = $('#mmFr', p); if (mf) mf.onclick = () => { closeModal(); setTimeout(frOpen, 60); }; // v2.19: Friends, next to Daily missions (50_friends.js)
   const mk = $('#mmKs', p); if (mk) mk.onclick = () => { closeModal(); setTimeout(() => ksOpen(), 60); }; // v2.24: the kind shop (52_kindshop.js), only while it is on
   const cb = $('#mmCloud', p); if (cb) cb.onclick = () => { closeModal(); if (typeof cloudOpen === 'function') cloudOpen(); else openSettings(); };
+  // fix batch (phone 13): with 9-10 rows the menu scrolls at 360x640; the list fades out at the bottom while there is more below, so the scroll is plain
+  const bd = p.querySelector('.panel-body') || p, fade = () => { const r = bd.scrollHeight - bd.clientHeight; bd.classList.toggle('mm-below', r > 4 && bd.scrollTop < r - 4); };
+  bd.addEventListener('scroll', fade, { passive: true }); setTimeout(fade, 0); setTimeout(fade, 400);
 }
 
 /* ---------- HUD: a tap on the ring meters expands them (22_input.js); a tap anywhere else folds them again ---------- */

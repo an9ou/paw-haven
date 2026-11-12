@@ -93,7 +93,7 @@ function lvLiveRows() {
   CLOTHES.filter(shop).forEach((x) => add('item', x.n, x.bond));
   HOUSES.filter(shop).forEach((x) => add('item', x.n, x.bond));
   if (typeof BEDS !== 'undefined') BEDS.filter(shop).forEach((x) => add('item', x.n, x.bond));
-  if (typeof HM_DECOR === 'object') Object.keys(HM_DECOR).forEach((n) => { const d = HM_DECOR[n]; if (d.v27 && shop(d)) add('item', n, d.bond); });
+  if (typeof HM_DECOR === 'object') Object.keys(HM_DECOR).forEach((n) => { const d = HM_DECOR[n]; if (d.v27 && shop(d) && (typeof hmLive !== 'function' || hmLive(d))) add('item', n, d.bond); });
   return R;
 }
 /* ---------------- part B: the call sites' helpers (V222.md 3.3) ----------------

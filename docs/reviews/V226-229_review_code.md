@@ -22,6 +22,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
      The tab lists all four toys.
    - Fix: add one helper, `hmLive(d) = !d.v226 || yvOn()`, and use it in `hoShopItems`, in the town-level list (`51_levels.js:96`) and in the notebook
      pick (`24e_notebook.js:172`). A toy a player already owns still draws as it does now. Add a gate check for this to `v226_visitors`.
+   Status: fixed (d5971454): hmLive(d) = !d.v226 || yvOn() in hoShopItems, lvLiveRows and nbDecorPick; v226_visitors 6b fakes the date (webdriver off, page clock) before/after NEWS_V226.date.
 
 ## Should-fix
 
@@ -69,6 +70,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
 
 6. **nice: V228.md and the code disagree on when story 1 starts.** `game/src/56_stories.js:158` vs V228.md 3. The contract says story 1 starts
    at Bond 2. `stStartOk` uses `topBond() >= 3`, and the journal line `st.j_empty` says Bond 3. Pick one and align the other.
+   Status: fixed (7dbd6604): V228.md 3 now says Bond 3, as stStartOk and st.j_empty.
 
 7. **nice: a scene left in a background tab is marked watched.** `game/src/57_scenes.js:218`. `requestAnimationFrame` stops while the tab is
    hidden, but `t0` is wall time. On return, `ms >= total` ends the scene with `scEnd(false)`, and `scPlayAuto` marks it watched even though it
@@ -84,6 +86,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
    lost on every save, so the keepsake toasts come back each session. Use `Array.isArray` as the other `v22xFields` do.
    `game/src/55_projects.js:37`: `paid` is not capped at the price. With `paid >= price`, `prPay` returns 0 forever and the project is stuck.
    Cap it at `price - 1`, or move the project to `building`.
+   Status: fixed for S.st (7dbd6604, Array.isArray in v228Fields + test); S.projects paid cap skipped (55_projects.js is lane A).
 
 10. **nice: field order.** `game/src/00_core.js:851,927`: `v229Fields` runs before `v225Fields` in both `freshState()` and `migrate()`. Nothing
     depends on that order today, but move it after `v228Fields` so the order follows the versions and a later dependency can't break silently.
@@ -91,6 +94,7 @@ Counts: **1 must-fix, 4 should-fix, 7 nice.**
 
 11. **nice: unescaped strings.** `game/src/54_visitors.js:190-193,219,229` and `game/src/55_projects.js:206`: `tt()` text goes into button and
     title HTML without `esc()`, unlike the rest of the code. A translation with `&` or `<` would break the markup. Wrap them in `esc()`.
+   Status: fixed for 54_visitors.js (7dbd6604: title, buttons, care card wrapped in esc()); 55_projects.js:206 is lane A.
 
 12. **nice: the v229_story fit check fails on timing.** `game/test_v229_story.js:191-204`. "every actor inside the picture" failed on both
     attempts here, every time with "measured shot N+1". The seek lands at 96 % of a shot, and on a slow runner two `requestAnimationFrame` calls
