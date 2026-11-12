@@ -20,12 +20,12 @@ const PR_TREAT_MIN = 60; // game minutes between the small Happiness treats at t
 const PR_AT = {
   board: [302, 246, 0.96],
   fountain: [14, 290, 1], // built ONTO the old dog-statue fountain (one fountain): the art's box is world x 14..206, y 290..520, its new bowl at paw height in front
-  bandstand: [842.5, 278, 0.57], // back right, standing free on the paving in front of the toy shop's window: between the notice board (drawn to x 831) and the shop's door (x 927), its top under the shop's sign (y 258)
+  bandstand: [837, 272, 0.6], // back right, standing free on the paving in front of the toy shop's window: between the notice board (drawn to x 831) and the shop's door (x 927), its top under the shop's sign (y 258)
   sakura: [[-23, 167, 0.9], [564, 233, 0.6], [912, 167, 0.9]], // left, in the gap by the run gate, back right beside the bandstand
   lighthouse: [720, 157, 0.7] // far out at sea, on the horizon, above the pier's railing
 };
 const PR_FT_HOT = [20, 296, 174, 204]; // the fountain's tap box (world): the whole old fountain and its new bowl, clear of the phone's festival stall (x 196) and of the dogs' drinking spot (110, 512)
-const PR_BS_HOT = [862, 282, 61, 102]; // the bandstand's tap box (world): its drawing right of the notice board's tap group (to x 859 with its shadow), above the festival stall (y 384 on)
+const PR_BS_HOT = [860, 276, 80, 108]; // the bandstand's tap box (world): right of the notice board's tap group (to x 859 with its shadow), above the festival stall (y 384 on), 80 wide so it is 44 px even on a 360 x 640 phone (its right edge, invisible, reaches over the shop door's left side)
 const PRJ = { skip: 0, tune: 0, tod: '' }; // skip: test-only extra days on the Japan date (window.__paw.pr.skip)
 function v227Fields(s) {
   if (!s) return s;

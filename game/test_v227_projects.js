@@ -6,6 +6,7 @@
 // node game/run_tests.js v227_projects
 const { run } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
+devices['Phone 390x844'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 } });
 const URL = 'file://' + path.join(__dirname, 'test_merged.html');
 const ALL = ['fountain', 'bandstand', 'sakura', 'lighthouse'];
 
@@ -145,4 +146,28 @@ run('v227_projects', async (t) => {
   await t.p.click('#modal [data-pr-pay="keep"]');
   ok(await t.until(() => window.__paw.S.coins === 200 && window.__paw.S.projects.paid === 6800), 'phone: "All but 200" works (2,800 in, 200 kept)');
   ok(await ev(() => window.__paw.pr.stage('bandstand') === 'half'), 'past half: the bandstand gets its scaffolding');
+  await t.closeX();
+  // the art fix: "Look right" looks all the way right in the Square, so the Bandstand (back right) is in view and tappable on a phone
+  await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain', 'bandstand']; p.building = []; p.i = 2; p.paid = 0; });
+  await t.home('square'); await t.until(() => !!document.querySelector('[data-pr-hot="bandstand"]') && !!document.getElementById('phPeek'));
+  const inView = (id) => ev((q) => { const r = document.querySelector(`[data-pr-hot="${q}"] > rect`).getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= v.left - 1 && r.right <= v.right + 1; }, id);
+  await ev(() => document.getElementById('phPeek').click());
+  ok(await t.until(() => { const r = document.querySelector('[data-pr-hot="bandstand"] > rect').getBoundingClientRect(); return r.right <= innerWidth && r.left >= 0; }, null, 3000) && await inView('bandstand'), 'phone: after "Look right" the Bandstand is fully in view and at least 44 px');
+  ok((await noOverlap()).bad.length === 0, 'phone, looking right: no build covers another tap target');
+  await t.p.click('[data-pr-hot="bandstand"] > rect', { force: true });
+  ok(await toastSeen(/band plays a little tune/), 'phone: tapping the Bandstand plays a tune');
+
+  sec('9. phone 390x844 (a narrower crop): "Look right" shows the Bandstand, then "Look left" the whole fountain');
+  await t.newGame({ map215: true, ground: true, device: 'Phone 390x844' }, { coins: 3000 });
+  await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain', 'bandstand']; p.building = []; p.i = 2; p.paid = 0; });
+  await t.home('square'); await t.until(() => !!document.querySelector('[data-pr-hot="bandstand"]') && !!document.getElementById('phPeek'));
+  ok(await inView('board'), '390: the project board is in view at home');
+  await ev(() => document.getElementById('phPeek').click());
+  ok(await t.until(() => { const r = document.querySelector('[data-pr-hot="bandstand"] > rect').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }, null, 3000) && await inView('bandstand'), '390: after "Look right" the Bandstand is in view and at least 44 px');
+  ok(await ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look left'), '390: the button then offers "Look left"');
+  await ev(() => document.getElementById('phPeek').click());
+  ok(await t.until(() => document.querySelector('svg.world').viewBox.baseVal.x < 1, null, 3000) && await inView('fountain'), '390: after "Look left" the whole fountain is in view and at least 44 px');
+  ok((await noOverlap()).bad.length === 0, '390, looking left: no build covers another tap target');
+  await ev(() => document.getElementById('phPeek').click());
+  ok(await t.until(() => Math.abs(document.querySelector('svg.world').viewBox.baseVal.x - 142) < 30, null, 3000), '390: then back to the dog');
 });
