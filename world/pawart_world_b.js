@@ -7557,7 +7557,10 @@ const YV_LBL={yvtugpost:'Tug Post',yvpool:'Puddle Pool',yvtunnel:'Play Tunnel',y
 Object.assign(PROP_VB,{yvtugpost:'0 0 120 160',yvpool:'0 0 200 120',yvtunnel:'0 0 220 120',yvbubbles:'0 0 120 160'});
 function yvDrawToy(b,name,k,ox,oy){
   const P=pts=>pts.map(([x,y])=>[ox+x*k,oy+y*k]),X=x=>ox+x*k,Y=y=>oy+y*k,sm=k<1;
-  const sh=(pts,fill,o)=>b.sh(P(pts),fill,Object.assign({},o||{},o&&o.marks?{marks:o.marks.map(m=>Object.assign({},m,{pts:P(m.pts)}))}:{},o&&o.det?{det:o.det.map(P)}:{}));
+  // fix batch (art 6): on the 64 item cards (k under 1) a part's outline thins with the part's own size, so a rope, a duck or a bubble keeps its fill
+  // instead of turning to solid ink; the big outer shapes keep the item card's full line, like the older yard icons
+  const lwK=pts=>{if(!sm)return 1;const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]),m=Math.min(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys));return m>=16?1:m>=9?.72:m>=5?.52:.4};
+  const sh=(pts,fill,o)=>{const Q=P(pts),f=lwK(Q);return b.sh(Q,fill,Object.assign({},o||{},f<1?{lw:(o&&o.lw||1)*f,dw:(o&&o.dw||.6)*f}:{},o&&o.marks?{marks:o.marks.map(m=>Object.assign({},m,{pts:P(m.pts)}))}:{},o&&o.det?{det:o.det.map(P)}:{}))};
   const ln=(pts,o)=>b.ln(P(pts),o);
   if(name==='yvtugpost'){
     if(!sm)b.shadow(X(60),Y(155),40*k,4*k);
@@ -7565,10 +7568,10 @@ function yvDrawToy(b,name,k,ox,oy){
     sh([[46,150],[46,34],[50,26],[70,26],[74,34],[74,150]],C.wood,{k:.05,sh:C.woodD,base:'#F3DDB4',det:[[[54,46],[55,140]],[[66,60],[65,132]]],dw:.6,dcol:C.woodD});
     sh([[42,30],[60,16],[78,30]],C.redD,{k:.1,hatch:0,hl:0,lw:.9});
     sh(E(60,44,9,9,14),'#C9C2BA',{hatch:0,hl:0,lw:.9,base:'#ECE7E1',marks:[{pts:E(60,44,4.2,4.2,10),fill:C.wood}]});
-    const R=[[64,50],[78,66],[88,86],[94,104],[96,118]],w=[6,6.4,6.6,6.6,6.4];
+    const R=[[64,50],[78,66],[88,86],[94,104],[96,118]],w=[6,6.4,6.6,6.6,6.4].map(x=>sm?x*1.45:x);
     sh(ribbon(R,w),'#FFF2DA',{k:1/6,hatch:0,hl:0,lw:.9,base:'#FFFFFF',marks:[[66,56],[76,68],[84,80],[89,92],[93,104],[96,114]].filter((_,i)=>i%2===0).map(([x,y])=>({pts:[[x-8,y-1],[x+8,y-6],[x+8,y+1],[x-8,y+6]],fill:C.red,k:0}))});
     sh(E(96,122,8,7,14),C.red,{hatch:0,hl:0,lw:.9,base:'#F9C1BF'});
-    [[90,128,86,140],[96,129,96,142],[102,128,106,140]].forEach(([a,c,d,e])=>ln([[a,c],[d,e]],{w:1.3*(sm?.8:1)}));
+    [[90,128,86,140],[96,129,96,142],[102,128,106,140]].forEach(([a,c,d,e])=>ln([[a,c],[d,e]],{w:1.3*(sm?.6:1)}));
     paw(b,X(60),Y(104),5.4*k,'#F7B2C4',{noline:1,a:.2});
     if(!sm){b.ex('spark',22,40,4);tuft(b,30,154,3);tuft(b,92,154,3)}
   }else if(name==='yvpool'){
@@ -7608,10 +7611,10 @@ PROPS.yvtugpost=b=>yvDrawToy(b,'yvtugpost',1,0,0);PROPS.yvpool=b=>yvDrawToy(b,'y
   return serve('p:'+name,()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'',YV_LBL[name])})}}
 // the item cards: the toy scaled into the 64 box (bottom at y 58)
 Object.assign(ITEMS,{
- 'Tug Post'(b){yvDrawToy(b,'yvtugpost',.38,9.2,-2);b.ex('spark',8,10,3)},
- 'Puddle Pool'(b){yvDrawToy(b,'yvpool',.3,2,22);b.ex('spark',56,12,3.2)},
- 'Play Tunnel'(b){yvDrawToy(b,'yvtunnel',.27,2.3,24);b.ex('spark',56,12,3.2)},
- 'Bubble Fountain'(b){yvDrawToy(b,'yvbubbles',.38,9.2,-2)}
+ 'Tug Post'(b){yvDrawToy(b,'yvtugpost',.4,6.8,-4);b.ex('spark',8,10,3)},
+ 'Puddle Pool'(b){yvDrawToy(b,'yvpool',.32,0,22);b.ex('spark',56,12,3.2)},
+ 'Play Tunnel'(b){yvDrawToy(b,'yvtunnel',.31,.4,22.6);b.ex('spark',56,12,3.2)},
+ 'Bubble Fountain'(b){yvDrawToy(b,'yvbubbles',.39,8.6,-2.4)}
 });
 // the Visitors Book: an open sketchbook, a crayon dog on the left page, a paw and a star on the right, the spiral down the middle
 function yvBook(){const b=mk('item','yv:book');
