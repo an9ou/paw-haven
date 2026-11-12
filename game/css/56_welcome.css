@@ -23,3 +23,10 @@ html[data-layout="phone"] .wb-gt span{font-size:16px}
 .wb-lifen b{font-family:var(--font-hand);font-size:22px}
 .wb-spec{margin-top:6px}
 .wb-spec li{width:auto;min-width:44px;padding:0 6px;box-sizing:border-box;font-size:17px}
+
+.wb-vis{padding:8px 12px;border:2px dashed rgba(91,61,50,.45);border-radius:12px 9px 14px 10px;background:var(--w-yellow,#FFE3A1);min-width:0}
+.wb-vis b{display:block;font-family:var(--font-hand);font-size:22px;line-height:1.15}
+.wb-vis p{margin:2px 0 0;font-family:var(--font-read);font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.wb-vg{opacity:.8}
+html[data-layout="phone"] .wb-vis b{font-size:20px}
+html[data-layout="phone"] .wb-vis p{font-size:15px}
