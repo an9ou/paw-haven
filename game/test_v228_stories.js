@@ -115,6 +115,7 @@ run('v228_stories', async (t) => {
 
   sec('4. the postcard: the yard, the diary page, My Dog Card (no typed text leaves the device)');
   await fresh();
+  await t.p.setViewportSize({ width: 1440, height: 900 }); // the top-bar postcard icon shows only on a stage of 1280x740 or more (59_scenes.css, review phone 2); smaller desktops use the diary and My Dog Card
   await ev(() => { const S = window.__paw.S; S.dog.name = 'Zorbleflip'; window.__paw.st.pcForce('none'); });
   ok(await t.until(() => { const b = document.getElementById('stPcBtn'); return !!b && !b.hidden && b.getBoundingClientRect().width > 20; }, null, 4000), 'the yard has a postcard button in the top bar');
   ok(await ev(() => { const v = window.__paw.st.pcSVG('yard'); return /Greetings from our yard/.test(v) && !/Zorbleflip/.test(v) && /doodledoggo\.app/.test(v); }), 'the postcard has game words only: never the typed dog name');
