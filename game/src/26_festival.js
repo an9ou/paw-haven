@@ -109,7 +109,7 @@ function fsVisitorBox() { const v = $('#visitorG > rect'); if (!v) return null; 
 function fsStallBox() {
   if (!isPhone()) return FS_STALL.desk;
   const [c0, c1] = fsCrop(), dog = [DX + 30, DY + 40, DW - 60, DH - 40], vis = fsVisitorBox();
-  const ok = (b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis);
+  const pr = typeof prBoardBox === 'function' ? prBoardBox() : null, ok = (b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis) && !fsOver(b, pr); // v2.27: clear of the projects board
   return [FS_STALL.phone, FS_STALL.phoneV, [c1 - 104, 396, 92, 86]].find(ok) || FS_STALL.desk; // nothing fits: the desktop spot, seen with the look-right button
 }
 function fsBannerBox() {

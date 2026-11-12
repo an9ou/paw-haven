@@ -16,16 +16,28 @@ const PR_BUILD_DAYS = 2; // Japan days from the day it is fully paid
 const PR_KEEP = 200; // "All but 200" keeps this many coins in the pocket
 const PR_QUICK = [50, 100, 500];
 const PR_TREAT_MIN = 60; // game minutes between the small Happiness treats at the fountain and the bandstand (the fun never stops; only the +Happiness waits)
-// where the builds stand (world units; [x, y, scale] of the art's top-left corner). Square: world 1000 x 600; Pier: world 1600 x 600
+// where the builds stand (world units; [x, y, scale] of the art's top-left corner). Square: world 1000 x 600; Pier: world 1600 x 600.
+// The Square is the deep one (FLOOR square: its back line at y 346, the floor props on it at y 400 and more). v2.27 fix batch (art review 1, phone
+// review 6 and 7): the trees and the board stand ON the paving in front of the shops (their feet at y 410-470, each with a soft shadow), never in a
+// doorway, on a shop sign, on the easel or round a street lamp. The festival pop-ups keep their corner (x 196-326, front left)
 const PR_AT = {
-  board: [302, 246, 0.96],
+  board: [520, 385, 0.8], // feet at y 468: on the paving in front of the clock tower, below its door, between the dog's spot (to x 503) and the right street lamp (x 627); 80 x 83, 45 px on a 360 x 640 phone
   fountain: [14, 290, 1], // built ONTO the old dog-statue fountain (one fountain): the art's box is world x 14..206, y 290..520, its new bowl at paw height in front
   bandstand: [837, 272, 0.6], // back right, standing free on the paving in front of the toy shop's window: between the notice board (drawn to x 831) and the shop's door (x 927), its top under the shop's sign (y 258)
-  sakura: [[-23, 167, 0.9], [564, 233, 0.6], [912, 167, 0.9]], // left, in the gap by the run gate, back right beside the bandstand
-  lighthouse: [720, 157, 0.7] // far out at sea, on the horizon, above the pier's railing
+  // [trunk x, feet y, scale, leg]: leg = extra trunk (local units) under the crown. Left: in front of the bakery's window (clear of its sign, y 274, and
+  // door, x 106); the alley between the bakery and the bookshop (in view at home on a 390 x 844 phone); tall beside the clock tower's door, its crown
+  // above the door (y 285) and left of the right street lamp (x 627), the board at its feet
+  sakura: [[30, 414, 0.8, 0], [186, 410, 0.62, 0], [599, 412, 0.56, 155]],
+  lighthouse: [720, 157, 0.7], // far out at sea, on the horizon, above the pier's railing (desktop)
+  lighthousePh: [474, 157, 0.7] // phones: inside the crop the pier opens on (the dog at x 430), right of the dog's head, left of the street lamp (x 605)
 };
+const prTreeAt = (t) => [t[0] - 70 * t[2], t[1] - (198 + (t[3] || 0)) * t[2], t[2]]; // a tree's [x, y, scale] from its trunk x and feet y
+const prLhAt = () => (isPhone() ? PR_AT.lighthousePh : PR_AT.lighthouse);
+const PR_LH_HOT = (at) => [at[0] - 12, at[1] - 4, 90 * at[2] + 24, 160 * at[2] + 4]; // the lighthouse's tap box: wider than the slim tower (44 px on a 360 x 640 phone)
 const PR_FT_HOT = [20, 296, 174, 204]; // the fountain's tap box (world): the whole old fountain and its new bowl, clear of the phone's festival stall (x 196) and of the dogs' drinking spot (110, 512)
 const PR_BS_HOT = [860, 276, 80, 108]; // the bandstand's tap box (world): right of the notice board's tap group (to x 859 with its shadow), above the festival stall (y 384 on), 80 wide so it is 44 px even on a 360 x 640 phone (its right edge, invisible, reaches over the shop door's left side)
+// the board's world box in the Square (the phone festival stall keeps clear of it, 26_festival.js fsStallBox); null when it is not drawn
+function prBoardBox() { if (!S || S.place !== 'square' || !prOn()) return null; const a = PR_AT.board; return [a[0], a[1], 100 * a[2], 104 * a[2]]; }
 // goes live on NEWS_V227.date (49c_news.js nwDue); under the test harness it needs prefs.prTest. v227Fields stays always on (additive save)
 function prOn() { return (!navigator.webdriver && nwDue(NEWS_V227)) || !!(typeof prefs !== 'undefined' && prefs && prefs.prTest); }
 const PRJ = { skip: 0, tune: 0, tod: '' }; // skip: test-only extra days on the Japan date (window.__paw.pr.skip)
@@ -103,11 +115,11 @@ function prHot(id, at, w, h, inner, label, box) { // box: a tap box of its own (
 }
 function prSquareSVG() {
   const p = prS(), c = prCur(), season = seasonNow(), out = [];
-  const sk = prStage('sakura'); if (sk) PR_AT.sakura.forEach((at, i) => out.push(`<g class="pr-tree" pointer-events="none">${prWrap(at, 140, 200, sk === 'done' ? praSakura('done', season, i) : praSakura(sk, season, i))}</g>`));
+  const sk = prStage('sakura'); if (sk) PR_AT.sakura.forEach((t, i) => out.push(`<g class="pr-tree" pointer-events="none">${sk === 'plan' ? '' : praShade(t[0], t[1], 52 * t[2])}${prWrap(prTreeAt(t), 140, 200, praSakura(sk, season, i, t[3] || 0))}</g>`));
   const fs = prStage('fountain'); if (fs) out.push(prHot('fountain', PR_AT.fountain, 192, 230, prFtProp() ? '' : praFountainAdd(fs), prName('fountain'), PR_FT_HOT)); // only the new parts: the old fountain is in the backdrop (prFtAttach)
   const bs = prStage('bandstand'); if (bs) out.push(prHot('bandstand', PR_AT.bandstand, 140, 190, praBandstand(bs), prName('bandstand'), PR_BS_HOT));
   const frac = c ? p.paid / c.price : 1;
-  out.push(prHot('board', PR_AT.board, 100, 104, praBoard(c && c.id, frac, !c), tt('pr.board_aria', 'Town projects board')));
+  const ba = PR_AT.board; out.push(praShade(ba[0] + 50 * ba[2], ba[1] + 104 * ba[2], 48 * ba[2]) + prHot('board', ba, 100, 104, praBoard(c && c.id, frac, !c), tt('pr.board_aria', 'Town projects board')));
   return `<g id="prG" data-tod="${timePhase()}">${out.join('')}</g>`;
 }
 // the old fountain as a floor prop (a grOn Square: 43_ground.js moves it into #pack, sorted with the dogs by feet y, drawn over #prG). The new parts are
@@ -121,9 +133,9 @@ function prFtAttach(tint) {
   el.insertAdjacentHTML('beforeend', tint ? tint(inner) : inner);
 }
 function prPierSVG() {
-  const st = prStage('lighthouse'); if (!st) return '';
-  const glow = st === 'done' && isNight() ? prWrap(PR_AT.lighthouse, 90, 160, praLighthouseGlow()) : '';
-  return `<g id="prG" data-tod="${timePhase()}">${glow}${prHot('lighthouse',PR_AT.lighthouse, 90, 160, praLighthouse(st, st === 'done' && isNight()), prName('lighthouse'))}</g>`;
+  const st = prStage('lighthouse'); if (!st) return ''; const at = prLhAt(), lit = st === 'done' && isNight();
+  const glow = lit ? prWrap(at, 90, 160, praLighthouseGlow()) : '';
+  return `<g id="prG" data-tod="${timePhase()}">${lit ? praOldLight() : ''}${glow}${prHot('lighthouse', at, 90, 160, praLighthouse(st, lit), prName('lighthouse'), PR_LH_HOT(at))}</g>`;
 }
 function prPetalsSVG() {
   if (prStage('sakura') !== 'done' || seasonNow() !== 'spring') return '';
@@ -150,12 +162,29 @@ function prTap(id) {
   if (id === 'fountain') prDrink(); else if (id === 'bandstand') prTune(); else if (id === 'lighthouse') prLight();
 }
 function prTreat(k) { const p = prS(); if (S.gameMin - p.treatAt < PR_TREAT_MIN) return 0; p.treatAt = S.gameMin; addStat('happy', k); updateHUD(); return k; }
-// the dogs drink at the fountain: the leader goes over for a drink (when the idle system is free), splashes, +5 Happiness at most once a game hour
+// the dogs drink at the fountain: the leader walks over (when the idle system is free) and drinks from the new bowl, facing it, its head over
+// the bowl (fix batch, phone review 5: it used to stop left of the bowl, facing away, half out of the frame); a splash; +5 Happiness at most once a game hour
+function prDrinkSpot(d) {
+  const at = PR_AT.fountain, bx = at[0] + 96 * at[2], fy = 512, k = typeof rmKd === 'function' ? rmKd(d, fy) : 0.82; // the bowl's middle; the dogs' drinking row (FLOOR square spot 'fountain')
+  return [bx + 46 * k, fy]; // the feet right of the bowl: facing left, the head (rmHead: 43 x k ahead of the feet) dips into it
+}
 function prDrink() {
   const at = PR_AT.fountain, fx = at[0] + 96 * at[2], fy = at[1] + 206 * at[2]; // the new bowl
   try { SFX.splash(); } catch (e) { /* audio off */ }
   for (let i = 0; i < 4; i++) setTimeout(() => fxText('•', fx - 16 + i * 10, fy - 10 - (i % 2) * 8, '#9CCDE8', 30), i * 120);
-  try { if (typeof IDLE === 'object' && !busy && !IDLE.act) { IDLE.ask = { to: [fx - 44, fy + 18], pose: 'eat', line: tt('pr.drink_line', 'Slurp! Fountain water tastes fancier.') }; IDLE.force = 'ask'; IDLE.nextAt = 0; } } catch (e) { /* no idle system */ }
+  try {
+    if (typeof IDLE === 'object' && !busy && typeof rmTo === 'function' && rmScene()) {
+      const d = D(), to = prDrinkSpot(d), line = tt('pr.drink_line', 'Slurp! Fountain water tastes fancier.');
+      IDLE.force = null; if (IDLE.act) { IDLE.steps = []; idleEnd(); }
+      // the act is set before the walk starts, so a walk that ends at once (already there) still moves on to the drink
+      IDLE.act = { name: 'drink', until: Infinity, pose: 'walk', facing: rmSt(d).face };
+      IDLE.steps = [{ pose: 'eat', fb: 'sit', facing: 'left', ms: 2600 * IDLE.speed, say: line }, { pose: 'idle', facing: 'left', ms: 900 * IDLE.speed }];
+      rmTo(d, to[0], to[1], { anchor: true, done: () => { if (IDLE.act && IDLE.act.name === 'drink') IDLE.act.until = 0; } });
+      // a phone's crop that leaves the fountain out (390 x 844 at home) looks left with the dog, as the "Look left" button does (back on the next tap)
+      const svg = $('#view > svg.world'), vb = svg && svg.viewBox.baseVal;
+      if (isPhone() && !grWide() && vb && vb.width && to[0] - 90 < vb.x) { phPeekOn = true; clearTimeout(phPanT); hideBubble(); camTo(0, 0.9); }
+    }
+  } catch (e) { /* no idle system */ }
   const k = prTreat(5);
   toast(k ? tt('pr.drink_toast', '{name} has a long drink at the fountain. +{n} Happiness.', { name: NAME(), n: k }) : tt('pr.drink_toast2', '{name} has a long drink at the fountain.', { name: NAME() }), 'good');
   trackAct('project_fun', { id: 'fountain' });
@@ -222,7 +251,16 @@ function prPayUI(p, n, typed, kind) {
   else toast(tt('pr.put_toast', '{n} coins into the {name}. Thank you!', { n: tnum(got), name: prName(c.id) }), 'good');
 }
 
-on('yard:enter', () => { prTick(); prDraw(); prExpose(); });
+// the Square's row of buttons (Town notice, Family Portrait, Start the run...): a "Town projects" button before Go home (phone review 6), only while prOn()
+function prPlaceBtn() {
+  const pb = $('#placeBtns'); if (!pb) return; pb.querySelectorAll('[data-pr]').forEach((b) => b.remove());
+  if (cur.mode !== 'yard' || !S || S.place !== 'square' || !prOn()) return;
+  const html = `<button class="btn yes" type="button" data-pr="board">${esc(tt('pr.btn', 'Town projects'))}</button>`, home = pb.querySelector('[data-pb="yard"]');
+  if (home) home.insertAdjacentHTML('beforebegin', html); else pb.insertAdjacentHTML('beforeend', html);
+  pb.querySelector('[data-pr]').onclick = () => { if (typeof blOn === 'function' && blOn()) return; SFX.click(); prOpen(); };
+}
+on('yard:enter', () => { prTick(); prDraw(); prPlaceBtn(); prExpose(); });
+on('scene:redraw', () => { if (cur.mode === 'yard' && S && S.place === 'square' && prOn() && !$('#placeBtns [data-pr]')) prPlaceBtn(); });
 on('scene:redraw', () => { if (cur.mode === 'yard' && S && (S.place === 'square' || S.place === 'pier') && (!$('#prG') || PRJ.tod !== timePhase())) prDraw(); else if (cur.mode === 'yard' && S && S.place === 'square') prFtAttach((h) => (h && window.PawArt && typeof PawArt.tint === 'function' ? PawArt.tint(h, { time: timePhase(), lit: true }) : h)); }); // a new scene drawing has a new old fountain: the new parts go on it again
 on('env:season', () => { if (cur.mode === 'yard') prDraw(); });
 function prExpose() {

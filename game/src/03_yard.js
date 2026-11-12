@@ -313,7 +313,7 @@ function phCamPan(svg) {
 function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
   const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return S.place === 'market' ? 800 : 750;
   if ($('#houseG')) return 715; // the yard: the Crayon Box, Doggy Ramp, nursery basket and the whole dog house share one crop (525-871)
-  if (S.place === 'square' && typeof prOn === 'function' && prOn()) return 1000; // v2.27: the Square looks all the way right (camApply stops at the edge): the notice board, the Bandstand and the third sakura tree
+  if (S.place === 'square' && typeof prOn === 'function' && prOn()) return 734; // v2.27: the Square looks right to the projects board, the tall sakura by the clock tower, the notice board and the Bandstand (390 x 844: x 518-950)
   const r = el.getBoundingClientRect(), a = toWorld(svg, r.left, r.top), c = toWorld(svg, r.right, r.bottom), m = (a.x + c.x) / 2;
   return m > phCamHome + 80 ? m : 750;
 }

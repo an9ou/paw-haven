@@ -93,6 +93,7 @@ run('v227_projects', async (t) => {
   await ev(() => { window.__paw.S.stats.happy = 50; window.__paw.S.projects.treatAt = -1e9; });
   await t.p.click('[data-pr-hot="fountain"] > rect', { force: true });
   ok(await toastSeen(/long drink at the fountain\. \+5 Happiness/), 'the fountain: a drink, +5 Happiness');
+  ok(await t.until(() => { const q = window.__paw.rm.pos(window.__paw.S.dog); return q.pose === 'eat' && q.face === 'left' && q.x > 110 && q.x < 210; }, null, 6000), 'the dog drinks facing the bowl, right of it, inside the frame (phone review 5)');
   ok(await ev(() => Math.round(window.__paw.S.stats.happy) === 55), 'Happiness 50 -> 55'); // rounded: the 250 ms tick may take its tiny decay before the check
   const tAt = await ev(() => window.__paw.S.projects.treatAt); await ev(() => { window.__toasts.length = 0; });
   await ev(() => window.__paw.pr.tap('fountain')); // the dog may now stand in front of the fountain after its drink
@@ -161,13 +162,22 @@ run('v227_projects', async (t) => {
   await t.newGame({ map215: true, ground: true, prefs: { prTest: true }, device: 'Phone 390x844' }, { coins: 3000 });
   await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain', 'bandstand']; p.building = []; p.i = 2; p.paid = 0; });
   await t.home('square'); await t.until(() => !!document.querySelector('[data-pr-hot="bandstand"]') && !!document.getElementById('phPeek'));
-  ok(await inView('board'), '390: the project board is in view at home');
+  // fix batch (phone review 6, 7): the board is reached from the Square's buttons too; a sakura tree is in view at home (here the plans of Sakura Avenue)
+  ok(await ev(() => { const v = document.getElementById('view').getBoundingClientRect(); return [...document.querySelectorAll('svg.world .pr-tree')].some((g) => { const r = g.getBoundingClientRect(); return r.width > 20 && r.left >= v.left - 1 && r.right <= v.right + 1; }); }), '390: a sakura tree is in view at home');
+  ok(await ev(() => { const b = document.querySelector('#placeBtns [data-pr="board"]'); if (!b) return false; const r = b.getBoundingClientRect(); return r.height >= 44 && b.textContent.trim() === 'Town projects'; }), '390: the Square\'s buttons have "Town projects" (at least 44 px)');
+  await t.p.click('#placeBtns [data-pr="board"]'); ok(!!(await t.p.waitForSelector('#modal .pr-sheet', { timeout: 4000 }).catch(() => null)), '390: "Town projects" opens the board\'s sheet'); await t.closeX();
   await ev(() => document.getElementById('phPeek').click());
   ok(await t.until(() => { const r = document.querySelector('[data-pr-hot="bandstand"] > rect').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }, null, 3000) && await inView('bandstand'), '390: after "Look right" the Bandstand is in view and at least 44 px');
+  ok(await inView('board'), '390: after "Look right" the project board is in view too');
   ok(await ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look left'), '390: the button then offers "Look left"');
   await ev(() => document.getElementById('phPeek').click());
   ok(await t.until(() => document.querySelector('svg.world').viewBox.baseVal.x < 1, null, 3000) && await inView('fountain'), '390: after "Look left" the whole fountain is in view and at least 44 px');
   ok((await noOverlap()).bad.length === 0, '390, looking left: no build covers another tap target');
   await ev(() => document.getElementById('phPeek').click());
   ok(await t.until(() => Math.abs(document.querySelector('svg.world').viewBox.baseVal.x - 142) < 30, null, 3000), '390: then back to the dog');
+  // fix batch (phone review 3): on a phone the lighthouse stands inside the crop the pier opens on, its tap box at least 44 px
+  await ev(() => { const p = window.__paw.S.projects; p.built = ['fountain', 'bandstand', 'sakura', 'lighthouse']; p.i = 4; p.paid = 0; });
+  await t.home('pier'); await t.until(() => !!document.querySelector('[data-pr-hot="lighthouse"]')); await t.sleep(600);
+  ok(await inView('lighthouse'), '390: the lighthouse is in view on arrival at the pier and at least 44 px');
+  ok((await noOverlap()).bad.length === 0, '390 pier: the lighthouse covers no other tap target');
 });
