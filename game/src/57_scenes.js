@@ -115,15 +115,99 @@ function scEnterShot(i) {
   const P = SC.on, x = P.shots[i], L = scLayer(); P.shot = i; P.poses = x.actors.map((a) => (P.still && a.pose2 ? a.pose2 : a.pose || 'idle'));
   x.actors.forEach((a) => { if (a.who === 'dog' && (!a.dog || a.dog === 'other' || a.dog === 'pup')) a.dog = a.dog === 'other' ? scOtherDog(P.dog) : a.dog === 'pup' ? scPup() || scOtherDog(P.dog) : P.dog; });
   const parts = x.actors.map((a, k) => scActorInner(a, P.poses[k])); P.sz = parts.map((q) => [q[1], q[2]]);
-  $('.sc-cam', L).innerHTML = scBg(x.bg || 'card') + parts.map((q, k) => `<g class="sc-a" data-a="${k}">${q[0]}</g>`).join('');
+  $('.sc-cam', L).innerHTML = scBg(x.bg || 'card') + `<g class="sc-acts">${parts.map((q, k) => `<g class="sc-a" data-a="${k}">${q[0]}</g>`).join('')}</g>`;
   const T = $('.sc-title', L), tl = x.title ? x.title() : ''; T.hidden = !tl; T.textContent = tl;
+  P.bx = scMeasure(x, P.poses); P.fit = null;
   const c = $('.sc-cap', L); c.textContent = x.cap ? x.cap() : ''; c.classList.remove('sc-in'); void c.offsetWidth; c.classList.add('sc-in');
 }
-// the camera: a pan and zoom with easing, kept inside the 1000x600 box; a narrow (phone) film zooms less, so at least 360 scene units stay in view
-function scCam(x, p) {
+/* v2.29 fit (the phone crops fix): every actor of a shot stays inside the film, whatever its shape (a 360 px portrait phone shows only
+   about 450 of the 1000 scene units across, a wide desktop film only about 490 of the 600 down).
+   scMeasure: each actor's drawn box (getBBox, both poses) around its feet point. scFit, per film size: at each camera keyframe (the shot's
+   start and end) the box of the actors there (an actor walking in or passing through counts across only once its point is on the stage,
+   a doodle fading out is left out of the end), kept clear of the card title. The camera zooms out (never below 1, the place art always
+   fills the film) and slides until that box fits. If the box is still too wide at zoom 1, the cast first steps closer together (their
+   on-stage spots move toward the middle, a character overlapping its neighbour by at most a quarter; walk-ins still start off the stage),
+   then the whole cast shrinks together (one scale about the ground under them), so nobody leaves the picture and everybody keeps their
+   place. An actor with fit: false is set dressing and is not fitted. Motion off shows the end keyframe, fitted the same way. */
+const SC_FIT_PX = 8; // margin inside the film edge, in screen px
+function scMeasure(x, poses) {
+  const L = scLayer(), g = $('.sc-acts', L), out = [];
+  if (!g) return out;
+  const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'g'); tmp.setAttribute('visibility', 'hidden'); g.appendChild(tmp);
+  x.actors.forEach((a, k) => {
+    const one = (pose) => {
+      const q = scActorInner(a, pose), h = q[1], f = q[2], w = h ? scActor(a, pose)[1] : 0; let b = null;
+      try { tmp.innerHTML = q[0]; const r = tmp.getBBox(); if (r && r.width > 0 && r.height > 0) b = [r.x, r.y, r.x + r.width, r.y + r.height]; } catch (e) { b = null; }
+      if (!b) b = [-w / 2, 0, w / 2, h];
+      return [b[0], b[1] - h * f, b[2], b[3] - h * f]; // around the feet point
+    };
+    const p0 = poses[k], p1 = a.pose2 || p0;
+    out.push({ a: one(p0), b: p1 === p0 ? null : one(p1) });
+  });
+  tmp.remove();
+  return out;
+}
+function scFilm() {
   const L = scLayer(), svg = $('.sc-svg', L), r = svg.getBoundingClientRect(), k = Math.max(r.width / 1000, r.height / 600) || 1;
-  const W = r.width / k || 1000, H = r.height / k || 600, A = x.cam[0], B = x.cam[1] || A, e = SC.on.still ? 1 : scEase(p);
-  const z = Math.min(Math.max(1, scLerp(A[2] || 1, B[2] || 1, e)), Math.max(1, W / 360)), hw = W / 2 / z, hh = H / 2 / z;
+  const T = $('.sc-title', L), top = T && !T.hidden && r.height ? Math.max(0, T.getBoundingClientRect().bottom - r.top) : 0;
+  return { k, W: r.width / k || 1000, H: r.height / k || 600, top };
+}
+function scFit(x, F) {
+  const P = SC.on, bx = P.bx || [], m = SC_FIT_PX / F.k, zMax = Math.max(1, F.W / 360);
+  const W1 = F.W - 2 * m, H1 = F.H - 2 * m - F.top / F.k; // usable units at zoom 1
+  // the cast's box at a keyframe (end: 1, start: 0), its on-stage spots closer by fx, the cast scaled by f about (gx, gy)
+  const box = (end, f, gx, gy, fx) => {
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    x.actors.forEach((a, k) => {
+      if (a.fit === false || !bx[k] || (a.fade === (end ? 'out' : 'in'))) return;
+      const pt = end ? (a.to || a.at || [500, 500]) : (a.at || [500, 500]), b = end && bx[k].b ? bx[k].b : bx[k].a, px = scSqueeze(pt[0], gx, fx);
+      const X0 = gx + (px + b[0] - gx) * f, X1 = gx + (px + b[2] - gx) * f, Y0 = gy + (pt[1] + b[1] - gy) * f, Y1 = gy + (pt[1] + b[3] - gy) * f;
+      y0 = Math.min(y0, Math.max(0, Y0)); y1 = Math.max(y1, Math.min(600, Y1));
+      if (pt[0] >= 0 && pt[0] <= 1000) { x0 = Math.min(x0, Math.max(0, X0)); x1 = Math.max(x1, Math.min(1000, X1)); }
+    });
+    return [x0, y0, x1, y1];
+  };
+  const zFit = (b) => Math.min(b[2] > b[0] ? W1 / (b[2] - b[0]) : 99, b[3] > b[1] ? H1 / (b[3] - b[1]) : 99);
+  // the ground under the cast (the lowest feet) and the middle of its stage: the point the cast shrinks toward
+  let gx = 500, gy = 0, n = 0, xs = [1e9, -1e9];
+  x.actors.forEach((a) => { if (a.fit === false) return; [a.at, a.to].forEach((pt) => { if (pt && pt[0] >= 0 && pt[0] <= 1000) { xs = [Math.min(xs[0], pt[0]), Math.max(xs[1], pt[0])]; gy = Math.max(gy, pt[1]); n++; } }); });
+  if (n) gx = (xs[0] + xs[1]) / 2; else gy = 500;
+  // how close the characters may step: neighbours (dogs, Gerald, the book) overlap by at most a quarter of the narrower one
+  let lo = 0.5;
+  [false, true].forEach((end) => {
+    const cs = [];
+    x.actors.forEach((a, k) => { if (a.fit === false || !bx[k] || !['dog', 'gerald', 'book'].includes(a.who)) return; const pt = end ? (a.to || a.at) : a.at, b = end && bx[k].b ? bx[k].b : bx[k].a; if (pt && pt[0] >= 0 && pt[0] <= 1000) cs.push([pt[0], b]); });
+    cs.sort((p, q) => p[0] - q[0]);
+    for (let i = 1; i < cs.length; i++) { const [xa, ba] = cs[i - 1], [xb, bb] = cs[i], d = xb - xa; if (d > 1) lo = Math.max(lo, (ba[2] - bb[0] - 0.25 * Math.min(ba[2] - ba[0], bb[2] - bb[0])) / d); }
+  });
+  lo = Math.min(1, lo);
+  const wide = (fx) => [false, true].some((end) => { const b = box(end, 1, gx, gy, fx); return b[2] - b[0] > W1; });
+  let fx = 1;
+  if (wide(1)) { if (wide(lo)) fx = lo; else { let a = lo, b2 = 1; for (let i = 0; i < 12; i++) { const mid = (a + b2) / 2; if (wide(mid)) b2 = mid; else a = mid; } fx = a; } }
+  let f = Math.min(1, zFit(box(false, 1, gx, gy, fx)), zFit(box(true, 1, gx, gy, fx)));
+  f = Math.max(0.45, f);
+  const key = (end) => {
+    const C = x.cam[end ? 1 : 0] || x.cam[0], b = box(end, f, gx, gy, fx);
+    const z = Math.max(1, Math.min(Math.max(1, C[2] || 1), zMax, zFit(b))), hw = F.W / 2 / z, hh = F.H / 2 / z, mz = m / z, tz = F.top / F.k / z;
+    let cx = C[0], cy = C[1];
+    if (b[2] > b[0]) cx = Math.min(Math.max(cx, b[2] - hw + mz), b[0] + hw - mz);
+    if (b[3] > b[1]) cy = Math.min(Math.max(cy, b[3] - hh + mz), b[1] + hh - mz - tz);
+    return [Math.min(Math.max(cx, hw), 1000 - hw), Math.min(Math.max(cy, hh), 600 - hh), z];
+  };
+  return { A: key(false), B: key(true), f, fx, gx, gy, W: F.W, H: F.H, top: F.top };
+}
+// an on-stage spot moved toward gx by fx; a spot off the stage (a walk-in's start, a pass-through) stays where it is
+function scSqueeze(v, gx, fx) { return fx == null || fx >= 1 || v < 0 || v > 1000 ? v : gx + (v - gx) * fx; }
+// the camera: a pan and zoom with easing between the fitted keyframes, kept inside the 1000x600 box
+function scCam(x, p) {
+  const P = SC.on, F = scFilm();
+  if (!P.fit || Math.abs(P.fit.W - F.W) > 0.5 || Math.abs(P.fit.H - F.H) > 0.5 || Math.abs(P.fit.top - F.top) > 2) {
+    P.fit = scFit(x, F);
+    const g = $('.sc-acts', scLayer()), q = P.fit;
+    if (g) { if (q.f < 0.999) g.setAttribute('transform', `translate(${q.gx.toFixed(1)} ${q.gy.toFixed(1)}) scale(${q.f.toFixed(4)}) translate(${(-q.gx).toFixed(1)} ${(-q.gy).toFixed(1)})`); else g.removeAttribute('transform'); }
+  }
+  const A = P.fit.A, B = P.fit.B, e = P.still ? 1 : scEase(p);
+  const z = scLerp(A[2], B[2], e), hw = F.W / 2 / z, hh = F.H / 2 / z;
   const cx = Math.min(Math.max(scLerp(A[0], B[0], e), hw), 1000 - hw), cy = Math.min(Math.max(scLerp(A[1], B[1], e), hh), 600 - hh);
   return `translate(500 300) scale(${z.toFixed(4)}) translate(${(-cx).toFixed(1)} ${(-cy).toFixed(1)})`;
 }
@@ -137,7 +221,8 @@ function scFrame(now) {
   x.actors.forEach((a, k) => {
     const g = L.querySelector(`.sc-a[data-a="${k}"]`); if (!g) return;
     const t0 = a.t0 || 0, t1 = a.t1 == null ? 1 : a.t1, q = P.still ? 1 : Math.min(1, Math.max(0, (p - t0) / Math.max(0.01, t1 - t0))), e = scEase(q);
-    const A = a.at || [500, 500], B = a.to || A, moving = q > 0 && q < 1 && (A[0] !== B[0] || A[1] !== B[1]);
+    const F = P.fit, sq = (pt) => (F && F.fx < 1 ? [scSqueeze(pt[0], F.gx, F.fx), pt[1]] : pt);
+    const A = sq(a.at || [500, 500]), B = sq(a.to || a.at || [500, 500]), moving = q > 0 && q < 1 && (A[0] !== B[0] || A[1] !== B[1]);
     const hop = moving && a.hop && !P.still ? -Math.abs(Math.sin(q * Math.PI * 6)) * a.hop : 0;
     const [hh, ff] = P.sz[k], ax = scLerp(A[0], B[0], e), ay = scLerp(A[1], B[1], e) + hop;
     g.setAttribute('transform', `translate(${ax.toFixed(1)} ${(ay - hh * ff).toFixed(1)})`);

@@ -419,7 +419,7 @@ Object.assign(SC_SCRIPTS, {
   ] },
   ch8: { title: () => tt('sm.s_ch8', 'The end (for now)'), sting: 'levelup', icon: 'heart', shots: () => [
     { d: 5, bg: 'square', cam: [[500, 330, 1.15], [500, 360, 1.3]], cap: () => tt('sm.s_ch8a', 'The whole town came to the Square for the Big Book party.'),
-      actors: [{ who: 'prop', k: 'flags', at: [500, 160], s: 1.6 }, { who: 'dog', pose: 'happy', at: [420, 510] }, { who: 'dog', dog: 'other', face: 'left', pose: 'happy', at: [640, 510], s: 0.9 }, { who: 'gerald', pose: 'cheer', at: [-40, 515], to: [230, 515], t1: 0.6, hop: 6, s: 0.9 }] },
+      actors: [{ who: 'prop', k: 'flags', at: [500, 250], s: 1.1 }, { who: 'dog', pose: 'happy', at: [420, 510] }, { who: 'dog', dog: 'other', face: 'left', pose: 'happy', at: [640, 510], s: 0.9 }, { who: 'gerald', pose: 'cheer', at: [-40, 515], to: [230, 515], t1: 0.6, hop: 6, s: 0.9 }] },
     { d: 4.5, bg: 'card', cam: [[500, 320, 1.05], [500, 340, 1.15]], cap: () => tt('sm.s_ch8b', 'Gerald opened the book, and out fell... his sandwich! He had used it as a bookmark on page one.'),
       actors: [{ who: 'book', open: true, at: [500, 420], s: 1.1 }, { who: 'prop', k: 'sandwich', at: [500, 330], to: [520, 560], t0: 0.3, t1: 0.75, s: 0.8 }, { who: 'gerald', pose: 'wave', at: [220, 560], s: 1 }] },
     { d: 4, bg: 'card', cam: [[500, 300, 1], [500, 300, 1.06]], title: () => tt('sm.s_ch8', 'The end (for now)'),
@@ -461,5 +461,5 @@ function smExpose() {
     states: () => smStates(), big: () => smBig(), waits: () => smWaits(smChap(S.story.ch)), lv: () => smLv(), frames: () => smFrameList().map((f) => f.k), msline: () => smMsLine(), BIG: SM_BIG.map((b) => b.id), VISITS: Object.assign({}, SM_VISITS),
     act: (kind, d) => trackAct(kind, d || {}), titles: () => Array.from({ length: SM_N }, (_, i) => smPlanTitle(i + 1)), mem: () => smMemList(), replay: (id) => smReplay(id), CAP: SM_CATCH_CAP };
   window.__paw.sc = { test: (v) => { prefs.scTest = !!v; }, play: (id) => scPlay(id, { replay: true }), auto: (id) => scPlayAuto(id), queue: (id) => scQueue(id), on: () => (SC.on ? SC.on.id : null), skip: () => scEnd(true), calm: () => scCalmNow(),
-    ids: () => Object.keys(SC_SCRIPTS), dur: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).reduce((n, x) => n + (x.d || 4), 0) : 0; }, SKIP: SC_SKIP_MS, gap: (v) => { if (typeof v === 'number') SC.lastEnd = v; return SC.lastEnd; } };
+    ids: () => Object.keys(SC_SCRIPTS), dur: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).reduce((n, x) => n + (x.d || 4), 0) : 0; }, SKIP: SC_SKIP_MS, sd: (id) => { const s = SC_SCRIPTS[id]; return s ? s.shots(D()).map((x) => x.d || 4) : []; }, seek: (ms) => { if (SC.on) SC.on.t0 = performance.now() - ms; return !!SC.on; }, cur: () => { const P = SC.on; if (!P || P.shot < 0) return null; const off = (a) => { const pt = a.to || a.at || [500, 500]; return a.fit === false || a.fade === 'out' || pt[0] < 0 || pt[0] > 1000; }; return { shot: P.shot, off: P.shots[P.shot].actors.map(off), f: P.fit ? P.fit.f : 1 }; }, gap: (v) => { if (typeof v === 'number') SC.lastEnd = v; return SC.lastEnd; } };
 }
