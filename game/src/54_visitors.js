@@ -194,10 +194,10 @@ function yvCard(t) {
   const V = yvS(), e = V.q.find((x) => x.t === t) || V.q[V.q.length - 1]; if (!e) return;
   const v = yvDog(e.id), m = V.met[v.id] || { n: 1 }, d = yvVisDog(v), petted = m.pet === localISO(), more = V.q.length > 1;
   SFX.boop(700);
-  const p = openModal(tt('yv.title', '{name} is visiting!', { name: esc(v.name) }), `<div class="visitcard yv-card"><span class="vzdog">${dogSVG(d, { pose: 'sit' })}</span><div><p><b>${esc(v.name)}</b> · ${esc(tbreed(v.key))}${v.rare ? ` <span class="yv-star" title="${esc(tt('yv.rare', 'Rare visitor'))}">★</span>` : ''}</p>
+  const p = openModal(esc(tt('yv.title', '{name} is visiting!', { name: v.name })), `<div class="visitcard yv-card"><span class="vzdog">${dogSVG(d, { pose: 'sit' })}</span><div><p><b>${esc(v.name)}</b> · ${esc(tbreed(v.key))}${v.rare ? ` <span class="yv-star" title="${esc(tt('yv.rare', 'Rare visitor'))}">★</span>` : ''}</p>
     <p>${esc(tt('yv.family', 'Lives with {family}.', { family: yvFam(v) }))}</p><p class="small">${esc(yvLine(e))}</p>
     <p class="small">${esc(tt('yv.times', '{n, plural, one {First visit!} other {Visit number #.}}', { n: m.n }))}</p>${e.g ? `<p class="small yv-gift">${esc(yvGiftLine(e))}</p>` : ''}</div></div>`,
-  { cls: 'yv-pop', foot: `<button class="btn" id="yvBye">${more ? tt('yv.next', 'Wave bye, next!') : tt('yv.bye', 'Wave bye')}</button><button class="btn" id="yvBookB">${tt('yv.book', 'Visitors Book')}</button><button class="btn yes big" id="yvPet" ${petted ? 'aria-disabled="true"' : ''}>${petted ? tt('yv.petted', 'Petted today') : tt('yv.pet', 'Pet')}</button>` });
+  { cls: 'yv-pop', foot: `<button class="btn" id="yvBye">${esc(more ? tt('yv.next', 'Wave bye, next!') : tt('yv.bye', 'Wave bye'))}</button><button class="btn" id="yvBookB">${esc(tt('yv.book', 'Visitors Book'))}</button><button class="btn yes big" id="yvPet" ${petted ? 'aria-disabled="true"' : ''}>${esc(petted ? tt('yv.petted', 'Petted today') : tt('yv.pet', 'Pet'))}</button>` });
   $('#yvPet', p).onclick = () => {
     const mm = V.met[v.id]; if (!mm) return;
     if (mm.pet === localISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
@@ -235,7 +235,7 @@ function yvSil(id, svg) {
 }
 function yvPawStk() { return '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#FFE59A" stroke="#5B3D32" stroke-width="2.4"/><ellipse cx="20" cy="25" rx="7" ry="5.6" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"/><circle cx="12" cy="17" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="17" cy="12" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="23" cy="12" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/><circle cx="28" cy="17" r="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.4"/></svg>'; }
 function yvOpenBook() {
-  const p = openModal(tt('yv.book_title', 'Visitors Book'), yvBookHTML(), { cls: 'yv-bookpop' });
+  const p = openModal(esc(tt('yv.book_title', 'Visitors Book')), yvBookHTML(), { cls: 'yv-bookpop' });
   yvBindBook(p); return p;
 }
 function yvBindBook(root) { root.querySelectorAll('[data-yvpage]').forEach((b) => { b.onclick = () => { SFX.click(); yvOpenPage(b.dataset.yvpage); }; }); }
@@ -245,14 +245,14 @@ function yvOpenPage(id) {
   const p = openModal(esc(v.name), `<div class="visitcard yv-card"><span class="vzdog">${dogSVG(d, { pose: 'happy', facing: 'right' })}</span><div><p><b>${esc(v.name)}</b> · ${esc(tbreed(v.key))}${v.rare ? ` <span class="yv-star">★</span>` : ''}</p>
     <p>${esc(tt('yv.family', 'Lives with {family}.', { family: yvFam(v) }))}</p><p class="small">${esc(tt('yv.first', 'First met: {date}', { date: tdate(new Date(m.d + 'T12:00:00'), { day: 'numeric', month: 'long' }) }))}</p>
     <p class="small">${esc(tt('yv.n_visits', '{n, plural, one {# visit} other {# visits}}', { n: m.n }))} · ${esc(tt('yv.fav', 'Favourite: {toy}', { toy: fav }))}</p>${v.rare ? `<p class="small">${esc(yvHint(v))}</p>` : ''}${m.stk ? `<p class="small"><span class="yv-stk in">${yvPawStk()}</span> ${esc(tt('yv.stk_left', 'Left you a paw sticker.'))}</p>` : ''}</div></div>`,
-  { cls: 'yv-pop', foot: `<button class="btn yes" id="yvBack">${tt('yv.back', 'Back to the book')}</button>` });
+  { cls: 'yv-pop', foot: `<button class="btn yes" id="yvBack">${esc(tt('yv.back', 'Back to the book'))}</button>` });
   $('#yvBack', p).onclick = () => { SFX.click(); yvOpenBook(); };
 }
 // the Care tray card (yard) and the Journal tab (07_treasure_journal.js calls these)
 function yvCareCard() {
   if (!S || !yvOn() || S.place === 'house') return '';
   const V = yvS(), met = YV_DOGS.filter((v) => V.met[v.id]).length;
-  return `<button class="card" data-yvbook="1"><span class="art">${yvBookArt() || iconOr('star', '<circle r="12" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>${tt('yv.care', 'Visitors')}</b><span class="small">${esc(tt('yv.met_n', 'Met {n} of {total}', { n: met, total: YV_DOGS.length }))}</span></button>`;
+  return `<button class="card" data-yvbook="1"><span class="art">${yvBookArt() || iconOr('star', '<circle r="12" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>${esc(tt('yv.care', 'Visitors'))}</b><span class="small">${esc(tt('yv.met_n', 'Met {n} of {total}', { n: met, total: YV_DOGS.length }))}</span></button>`;
 }
 function yvJournalTab(tabs) { if (S && yvOn()) tabs.push(['visitors', tt('yv.tab', 'Visitors')]); }
 if (typeof dock !== 'undefined' && dock) dock.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('[data-yvbook]'); if (b) { SFX.click(); yvOpenBook(); } });

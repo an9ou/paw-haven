@@ -36,6 +36,7 @@ run('v228_stories', async (t) => {
   await t.sleep(1200); const tl = await t.toasts();
   ok(!tl.some((x) => /earned a Bond star/.test(x)), 'no star toasts for the stars an old save already had: ' + JSON.stringify(tl));
   ok(await ev(() => { const P = window.__paw, x = P.st.fields({ v: 1, dogs: [{ id: 'a', bond: { level: 10, pts: 13300 } }], st: { stars: { a: 9 }, ks: [], s: { plum: { n: 9, d: 'x', at: 3 } }, lt: 5, pc: -2 } }).st; return x.stars.a === 9 && !Array.isArray(x.ks) && x.s.plum.n === 5 && x.s.plum.d === 0 && x.s.plum.at === '' && x.s.rosa.n === 0 && x.lt === '' && x.pc === 0; }), 'junk in S.st is mended and a kept star count is never lowered (9 kept over 2 computed)');
+  ok(await ev(() => { const x = window.__paw.st.fields({ v: 1, dogs: [], st: [1, 2] }).st; return !Array.isArray(x) && typeof x === 'object' && typeof x.stars === 'object' && typeof x.s === 'object'; }), 'an array S.st (a corrupt save) is rebuilt as an object, so it keeps its keys (code review 9)');
   await t.ctx.close();
 
   sec('2. the star math and the keepsakes, once');

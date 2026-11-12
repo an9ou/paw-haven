@@ -19,7 +19,7 @@ const stReady = () => !!(S && S.st && S.dogs && S.dogs.length && stOn());
 /* ---------------- the save ---------------- */
 function v228Fields(s) {
   if (!s) return s;
-  if (!s.st || typeof s.st !== 'object') s.st = {};
+  if (!s.st || typeof s.st !== 'object' || Array.isArray(s.st)) s.st = {}; // code review 9: an array would lose its keys on every save
   const st = s.st, num = (v) => (Number.isFinite(+v) ? Math.max(0, Math.min(ST_STEPS, Math.floor(+v))) : 0), str = (v) => (typeof v === 'string' ? v : '');
   if (!st.stars || typeof st.stars !== 'object' || Array.isArray(st.stars)) st.stars = {};
   if (!st.ks || typeof st.ks !== 'object' || Array.isArray(st.ks)) st.ks = {};
