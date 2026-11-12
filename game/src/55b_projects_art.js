@@ -26,6 +26,8 @@ function praPath(P, closed, r, amp) {
 }
 const praEll = (cx, cy, rx, ry, n) => { const p = []; const k = n || 16; for (let i = 0; i < k; i++) { const t = (i / k) * Math.PI * 2; p.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]); } return p; };
 const praRect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+// crisp corners: two points close to every corner, so the smoothing of praPath keeps a tower a tower (not a capsule)
+const praSharp = (P, d) => { const out = [], e = d || 1.6; P.forEach((p, i) => { const q = P[(i + 1) % P.length], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, u = Math.min(e, L / 3) / L; out.push(p, [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u], [q[0] - (q[0] - p[0]) * u, q[1] - (q[1] - p[1]) * u]); }); return out; };
 // the kit: shape (fill + its own line), line, dashed sketch line. mode 'plan' turns every shape into a dashed pencil outline with no fill
 function praKit(seed, mode) {
   const r = praRng(seed), out = [];
@@ -51,6 +53,9 @@ function praScaffold(k, x0, x1, y0, y1, ladX) {
 // a pink planning flag on a stake (the 'plan' stage's marker)
 function praStake(x, y) { return `<g><path d="M${x} ${y} L${x} ${y - 34}" stroke="${PRA_C.ink}" stroke-width="2.2" stroke-linecap="round"/><path d="M${x} ${y - 34} L${x + 16} ${y - 29} L${x} ${y - 23} Z" fill="${PRA_C.pinkD}" stroke="${PRA_C.ink}" stroke-width="1.8" stroke-linejoin="round"/></g>`; }
 
+// a soft ground shadow under a build's feet (world units; as the scenes' own shadeA): the build stands ON the paving
+function praShade(x, y, rx, ry) { return `<ellipse cx="${praR1(x)}" cy="${praR1(y)}" rx="${praR1(rx)}" ry="${praR1(ry || rx * 0.18)}" fill="${PRA_C.ink}" opacity=".12" pointer-events="none"/>`; }
+
 /* ---- the fountain: the Square's old dog-statue fountain (Sir Splashington, world C's sqFountainB2) gains a low drinking bowl for dogs ----
    One fountain only: the project builds ONTO the old one. Local box 0 0 192 230 = world x 14..206, y 290..520 of the Town Square (PR_AT.fountain),
    so the scene draws only the new parts (praFountainAdd) right over the old fountain in the backdrop, and the sheet / board draw the whole
@@ -73,17 +78,20 @@ function praFountainAdd(stage) {
     s += k.svg();
   }
   const bowl = praKit(2274, stage === 'plan' ? 'plan' : 'ink'); // the bowl: drawn (filled) once half built
+  // a stone collar joins the bowl to the basin's front wall (fix batch, art review 12: the bowl read as a separate dish): the bowl hangs on the wall
+  bowl.shape(praFtP([[fx - 24, 478], [fx + 24, 478], [fx + 30, 496], [fx - 30, 496]]), PRA_C.stoneD, { w: 1.8 });
   bowl.shape(praFtP([[fx - 46, 495], [fx - 42, 507], [fx, 512], [fx + 42, 507], [fx + 46, 495]]), PRA_C.stone, { w: 2 });
   bowl.shape(praFtE(fx, 494, 46, 10, 18), PRA_C.stone, { w: 2 }); bowl.shape(praFtE(fx, 494, 38, 6.5, 16), done ? PRA_C.water : PRA_C.stoneD, { w: 1.6 });
-  const spout = praKit(2275, done ? 'ink' : 'plan'); // the spout: a little stone lip under the plaque
-  spout.shape(praFtP([[fx - 10, 468], [fx + 10, 468], [fx + 8, 484], [fx - 8, 484]]), PRA_C.stone, { w: 1.8 });
-  spout.shape(praFtE(fx, 484, 9, 3.6, 10), PRA_C.stoneD, { w: 1.6 });
+  const spout = praKit(2275, done ? 'ink' : 'plan'); // the spout: a little stone lip high on the basin's wall, under the rim
+  spout.shape(praFtP([[fx - 10, 456], [fx + 10, 456], [fx + 8, 470], [fx - 8, 470]]), PRA_C.stone, { w: 1.8 });
+  spout.shape(praFtE(fx, 470, 9, 3.6, 10), PRA_C.stoneD, { w: 1.6 });
   s += bowl.svg() + spout.svg();
-  if (done) { // the water falling from the spout into the bowl, a ripple, and a paw on the bowl's front
-    const w = praKit(2276, 'ink'), P = praFtP([[fx, 486], [fx + 1, 490], [fx, 494]]);
-    w.line(P, { c: PRA_C.waterD, w: 3.2 }); w.line(P, { c: PRA_C.white, w: 1.2 });
+  if (done) { // the trickle from the spout down the wall into the bowl, drops, a ripple, and a paw on the bowl's front
+    const w = praKit(2276, 'ink'), P = praFtP([[fx, 472], [fx + 2, 480], [fx - 1, 487], [fx + 1, 494]]);
+    w.line(P, { c: PRA_C.waterD, w: 3.6, amp: 0.3 }); w.line(P, { c: PRA_C.white, w: 1.3, amp: 0.3 });
     const q = praFtP([[fx - 26, 495], [fx - 16, 493], [fx - 8, 495]]), q2 = praFtP([[fx + 10, 496], [fx + 20, 494], [fx + 28, 496]]);
     w.line(q, { c: PRA_C.white, w: 1.4 }); w.line(q2, { c: PRA_C.white, w: 1.4 });
+    const dr = praFtP([[fx - 9, 489], [fx + 10, 487]]); dr.forEach(([x, y]) => w.raw(`<circle cx="${x}" cy="${y}" r="1.7" fill="${PRA_C.water}" stroke="${PRA_C.waterD}" stroke-width=".8"/>`));
     const pc = praFtP([[fx, 505]])[0];
     s += w.svg() + `<g transform="translate(${pc[0]} ${pc[1]}) scale(.8)" fill="${PRA_C.ink}"><ellipse cx="0" cy="2" rx="4" ry="3"/><circle cx="-5" cy="-3" r="1.6"/><circle cx="-1.8" cy="-5.4" r="1.6"/><circle cx="1.8" cy="-5.4" r="1.6"/><circle cx="5" cy="-3" r="1.6"/></g>`;
   }
@@ -116,6 +124,9 @@ function praFountain(stage) {
 function praBandstand(stage) {
   const done = stage === 'done', half = stage === 'half';
   const low = praKit(527, stage === 'plan' ? 'plan' : 'ink');
+  // a boarded back wall behind the band (fix batch, art review 8): the toy shop's window no longer shows through the open sides, so it reads as a bandstand, not a cage
+  low.shape([[16, 80], [124, 80], [124, 158], [16, 158]], PRA_C.paper, { w: 1.8 });
+  if (stage !== 'plan') [100, 118, 136].forEach((y) => low.line([[18, y], [122, y + 1]], { c: PRA_C.woodD, w: 1.2 }));
   low.shape([[8, 162], [132, 162], [126, 186], [14, 186]], PRA_C.wood); low.shape(praEll(70, 162, 62, 10), PRA_C.woodD, { w: 2 });
   [22, 52, 88, 118].forEach((x) => low.shape(praRect(x - 3.5, 80, 7, 82), PRA_C.white, { w: 2 }));
   low.line([[18, 132], [122, 132]], { c: PRA_C.ink, w: 2 }); // the railing
@@ -136,9 +147,12 @@ function praBandstand(stage) {
   if (stage === 'plan') s += praStake(4, 188) + praStake(136, 188);
   return s;
 }
-/* ---- a sakura tree: the trunk, branches and a blossom crown that follows the season ---- */
-function praSakura(stage, season, seed) {
-  const sd = 9300 + (seed || 0), done = stage === 'done', half = stage === 'half';
+/* ---- a sakura tree: the trunk, branches and a blossom crown that follows the season ----
+   leg: extra trunk (local units) under the crown, for a tall avenue tree; the box is then 140 x (200 + leg), the feet at y 198 + leg */
+function praSakura(stage, season, seed, leg) {
+  const L = leg || 0;
+  if (L && stage !== 'done') return `<g transform="translate(0 ${L})">${praSakura(stage, season, seed, 0)}</g>`; // the plan and the young tree stand on the ground
+  const sd = 9300 + (seed || 0), half = stage === 'half';
   if (stage === 'plan') { const k = praKit(sd, 'plan'); k.shape(praEll(70, 72, 60, 48, 12), ''); k.line([[70, 120], [70, 196]]); return k.svg() + praStake(70, 198); }
   const k = praKit(sd, 'ink');
   if (half) { // a young tree tied to two stakes, with a ring of new paving
@@ -150,36 +164,69 @@ function praSakura(stage, season, seed) {
     [48, 92].forEach((x) => { k.shape(praRect(x - 2.5, 130, 5, 64), PRA_C.wood, { w: 1.6 }); k.line([[x, 150], [70, 154]], { c: PRA_C.woodD, w: 1.6 }); });
     return k.svg();
   }
-  k.shape([[62, 198], [78, 198], [76, 130], [90, 96], [84, 92], [72, 118], [60, 90], [53, 95], [64, 130]], PRA_C.trunk, { w: 2.2 });
+  const B = 198 + L, wt = L ? 1.12 : 1; // a tall tree's trunk is a little thicker at the foot
+  k.shape([[70 - 8 * wt, B], [70 + 8 * wt, B], [76, 130], [90, 96], [84, 92], [72, 118], [60, 90], [53, 95], [64, 130]], PRA_C.trunk, { w: 2.2 });
+  if (L) k.line([[67, B - 18], [68, B - L * 0.6]], { c: PRA_C.trunkD, w: 1.4, op: 0.7 }); // bark
   const crown = season === 'winter' ? null : season === 'summer' ? [PRA_C.leaf, PRA_C.leafD] : season === 'autumn' ? [PRA_C.orange, PRA_C.red] : [PRA_C.pink, PRA_C.pinkD];
-  if (!crown) { // bare branches with a little snow on top
-    k.line([[60, 92], [34, 60]], { w: 2.2 }); k.line([[84, 94], [108, 56]], { w: 2.2 }); k.line([[72, 110], [72, 46]], { w: 2.2 }); k.line([[44, 72], [30, 74]], { w: 1.8 }); k.line([[100, 68], [116, 70]], { w: 1.8 });
-    [[34, 58, 9], [108, 54, 9], [72, 44, 8]].forEach(([x, y, r]) => k.shape([[x - r, y + 2], [x - r * 0.4, y - 3], [x + r * 0.5, y - 3], [x + r, y + 2]], PRA_C.snow, { w: 1.6, amp: 0.3 }));
-    return k.svg();
-  }
+  if (!crown) return k.svg() + praWinterBranches(sd);
   [[70, 58, 44, 30], [36, 78, 30, 22], [104, 76, 30, 22], [70, 92, 40, 18]].forEach(([x, y, rx, ry], i) => k.shape(praEll(x, y, rx, ry, 14).map((p, j) => [p[0] + (j % 2 ? 3 : -2) * (i % 2 ? 1 : -1), p[1] + (j % 3 ? 2 : -2)]), crown[0], { w: 2.2 }));
   const dots = praRng(sd + 7); for (let i = 0; i < 18; i++) { const x = 20 + dots() * 100, y = 36 + dots() * 64; if (Math.hypot((x - 70) / 56, (y - 66) / 36) < 1) k.raw(`<circle cx="${praR1(x)}" cy="${praR1(y)}" r="2.6" fill="${crown[1]}"/>`); }
   return k.svg();
 }
-/* ---- the lighthouse: on a little rock island far out at sea; lit = the lamp glows and a beam reaches out ---- */
+// winter (fix batch, art review 9): thick forked bare branches, each a tapered bark shape with its own line, and snow lying ALONG their tops
+// (a white strip on each branch's upper edge, its own pale outline, as the scenes' capLine), not round blobs at the tips
+function praWinterBranches(sd) {
+  const k = praKit(sd + 11, 'ink'), snow = praKit(sd + 12, 'ink');
+  // [x0, y0, x1, y1, width at the foot, width at the tip]: the two main limbs from the fork, the middle leader, then their forks and twigs
+  const BR = [[60, 94, 34, 58, 11, 6], [84, 96, 110, 56, 11, 6], [71, 114, 72, 46, 9, 5],
+    [40, 66, 18, 50, 5.5, 2.6], [36, 60, 40, 30, 5, 2.4], [104, 64, 124, 48, 5.5, 2.6], [108, 58, 102, 30, 5, 2.4], [72, 58, 56, 34, 4.6, 2.2], [72, 54, 90, 32, 4.6, 2.2], [50, 82, 28, 80, 4, 2], [96, 82, 118, 76, 4, 2]];
+  BR.forEach(([x0, y0, x1, y1, w0, w1]) => {
+    const dx = x1 - x0, dy = y1 - y0, n = Math.hypot(dx, dy) || 1, nx = -dy / n, ny = dx / n; // the normal
+    const P = [[x0 + nx * w0 / 2, y0 + ny * w0 / 2], [x1 + nx * w1 / 2, y1 + ny * w1 / 2], [x1 - nx * w1 / 2, y1 - ny * w1 / 2], [x0 - nx * w0 / 2, y0 - ny * w0 / 2]];
+    k.shape(P, PRA_C.trunk, { w: 1.8, amp: 0.5 });
+    const up = ny < 0 ? 1 : -1, ux = nx * up, uy = ny * up, flat = Math.abs(dx) / n, th = 2.2 + 3.6 * flat; // the upper edge; flatter branches hold more snow
+    const a = [x0 + ux * w0 / 2, y0 + uy * w0 / 2], b = [x1 + ux * w1 / 2, y1 + uy * w1 / 2], t0 = 0.18, t1 = 0.96;
+    const E0 = [a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0], E1 = [a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1], M = [(E0[0] + E1[0]) / 2, (E0[1] + E1[1]) / 2];
+    snow.shape([E0, [M[0] + ux * th * 0.2, M[1] - th * 0.9], [E1[0], E1[1] - th * 0.5], E1, [M[0], M[1] + 0.6]], PRA_C.snow, { w: 1.1, ink: '#8EA2B8', amp: 0.3 });
+  });
+  snow.shape([[65, 104], [72, 101], [79, 104], [72, 116]], PRA_C.snow, { w: 1.1, ink: '#8EA2B8', amp: 0.3 }); // snow in the fork
+  return k.svg() + snow.svg();
+}
+/* ---- the lighthouse: on a little rock island far out at sea; lit = the lamp glows and a beam reaches out ----
+   Drawn as a small copy of the Lighthouse Pier's own lighthouse (world C's lighthouse(): fix batch, art review 10): one tapered white tower with
+   two red bands, a door, a black gallery with a railing, a yellow lantern and a red cone roof with a knob */
 function praLighthouse(stage, lit) {
-  const done = stage === 'done', half = stage === 'half';
+  const done = stage === 'done', half = stage === 'half', cx = 45;
   const isl = praKit(7271, stage === 'plan' ? 'plan' : 'ink');
   isl.shape([[4, 158], [14, 140], [34, 134], [58, 136], [80, 142], [88, 158]], PRA_C.rock, { w: 2 });
-  isl.shape([[30, 140], [60, 140], [56, 92], [34, 92]], PRA_C.white, { w: 2 }); // the lower tower
-  isl.shape([[32, 126], [58, 126], [57, 112], [33, 112]], PRA_C.red, { w: 1.6 });
+  const tw = (y) => 15 - (140 - y) / 92 * 6; // the tower's half width at height y (15 at the foot, y 140; 9 at the gallery, y 48)
+  const seg = (a, b) => praSharp([[cx - tw(b), b], [cx - tw(a), a], [cx + tw(a), a], [cx + tw(b), b]]); // the tower between heights a (top) and b (foot)
+  const band = (k, a, b) => k.shape(seg(a, b), PRA_C.red, { w: 1.4, amp: 0.4 });
   const up = praKit(7272, done ? 'ink' : 'plan');
-  up.shape([[34, 92], [56, 92], [53, 50], [37, 50]], PRA_C.white, { w: 2 }); up.shape([[35, 80], [55, 80], [54, 66], [36, 66]], PRA_C.red, { w: 1.6 });
-  up.shape(praRect(31, 44, 28, 6), PRA_C.woodD, { w: 1.8 }); // the gallery
-  up.shape(praRect(36, 28, 18, 16), lit ? '#FFE59A' : PRA_C.glass, { w: 1.8 }); up.line([[45, 28], [45, 44]], { w: 1.4 });
-  up.shape([[33, 28], [57, 28], [45, 16]], PRA_C.red, { w: 1.8 });
+  if (done) isl.shape(seg(48, 140), PRA_C.white, { w: 2, amp: 0.5 }); // one tower, foot to gallery
+  else { isl.shape(seg(94, 140), PRA_C.white, { w: 2, amp: 0.5 }); up.shape(seg(48, 94), PRA_C.white, { w: 2, amp: 0.5 }); } // built up to half way; the rest a sketch
+  band(isl, 112, 124); isl.shape(praSharp(praRect(cx - 4, 127, 8, 13)), PRA_C.trunk, { w: 1.4, amp: 0.3 }); // a red band, the door
+  band(up, 64, 76);
+  up.shape(praSharp(praRect(cx - 3, 82, 6, 7), 1), PRA_C.glass, { w: 1.2, amp: 0.3 }); // a little window
+  up.shape(praSharp(praRect(cx - 13, 44, 26, 5), 1), PRA_C.ink, { w: 1.4, amp: 0.3 }); // the black gallery
+  [-11, -5.5, 0, 5.5, 11].forEach((dx) => up.line([[cx + dx, 44], [cx + dx, 38]], { w: 1.1 })); up.line([[cx - 13, 38], [cx + 13, 38]], { w: 1.4 }); // its railing
+  up.shape(praSharp(praRect(cx - 8, 25, 16, 13)), lit ? '#FFE59A' : PRA_C.yellow, { w: 1.8, amp: 0.4 }); up.line([[cx, 25], [cx, 38]], { w: 1.1 }); // the lantern
+  up.shape(praSharp([[cx - 12, 26], [cx, 12], [cx + 12, 26]]), PRA_C.red, { w: 1.8, amp: 0.4 }); // the cone roof
   let s = isl.svg() + up.svg();
+  if (done || half) s += `<circle cx="${cx}" cy="11" r="2.2" fill="${PRA_C.ink}"/>`;
   if (half) { const k = praKit(7273, 'ink'); praScaffold(k, 26, 64, 34, 136); k.line([[64, 40], [64, 8], [92, 8]], { c: PRA_C.woodD, w: 2.4 }); k.line([[88, 8], [88, 26]], { w: 1.4 }); s += k.svg(); } // a little crane
   if (stage === 'plan') s += praStake(12, 150) + praStake(80, 150);
   return s;
 }
-// the lit lamp's glow and the beam (the lighthouse's own local box), drawn behind the tower and kept out of its tap box; class pa-wb-glow: PawArt.tint keeps it bright at night
-function praLighthouseGlow() { return `<g class="pr-glow pa-wb-glow" pointer-events="none"><circle cx="45" cy="36" r="26" fill="#FFE59A" opacity=".35"/><circle cx="45" cy="36" r="15" fill="#FFE59A" opacity=".5"/><g class="pr-beam"><path d="M45 36 L-120 18 L-120 52 Z" fill="${PRA_C.yellow}" opacity=".32"/><path d="M45 36 L210 20 L210 50 Z" fill="${PRA_C.yellow}" opacity=".22"/></g></g>`; }
+// the lit lamp's glow and the beam (the lighthouse's own local box), drawn behind the tower and kept out of its tap box; class pa-wb-glow: PawArt.tint
+// keeps it bright at night. The beam is warm and pale and fades out (as the pier's own beams, world C beamGrad), not a flat grey wedge
+function praLighthouseGlow() {
+  const g = (id, x0, x1) => `<linearGradient id="${id}" x1="${x0}" y1="0" x2="${x1}" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFF0A8" stop-opacity=".85"/><stop offset=".5" stop-color="#FFE58A" stop-opacity=".38"/><stop offset="1" stop-color="#FFE58A" stop-opacity="0"/></linearGradient>`;
+  return `<g class="pr-glow pa-wb-glow" pointer-events="none"><defs>${g('prBeamR', 53, 230)}${g('prBeamL', 37, -140)}</defs><circle cx="45" cy="31" r="24" fill="#FFF0A8" opacity=".3"/><circle cx="45" cy="31" r="13" fill="#FFE59A" opacity=".55"/><g class="pr-beam"><path d="M53 31 L230 12 L230 52 Z" fill="url(#prBeamR)"/><path d="M37 31 L-140 16 L-140 46 Z" fill="url(#prBeamL)" opacity=".8"/></g></g>`;
+}
+// the pier's own big lighthouse (world C lighthouse(k, 190)) at night once the new one is built: its keeper's window is lit too (the pane inside
+// the window's frame, the cross bars drawn again on top); its lamp and beams, above the desktop's crop, are the scene's own
+function praOldLight() { return `<g class="pr-oldlight pa-wb-glow" pointer-events="none"><rect x="182.6" y="210.6" width="14.8" height="18.8" fill="#FFE59A" opacity=".9"/><path d="M190 210.6V229.4M182.6 220H197.4" stroke="${PRA_C.ink}" stroke-width="2" fill="none"/></g>`; }
 const PRA_DRAW = { fountain: (st, o) => praFountain(st), bandstand: (st, o) => praBandstand(st), sakura: (st, o) => praSakura(st, o.season, 0), lighthouse: (st, o) => praLighthouse(st, o.lit) };
 const PRA_BOX = { fountain: [192, 230], bandstand: [140, 190], sakura: [140, 200], lighthouse: [90, 160] };
 // one build as a standalone svg (the sheet and the board)

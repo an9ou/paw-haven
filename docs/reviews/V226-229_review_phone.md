@@ -11,11 +11,15 @@ Status lines are added by the fix batch.
 
 ## Should-fix
 3. **Lighthouse on phones** is off screen on arrival at the pier (tap box x 369 at 360, x 482 at 390); the pier has no Look right; dragging works but the camera returns after 4 s. Tap box 41 px wide at 360 (< 44).
+   Status: fixed (9a642d1f): on phones it stands at world x 474 (inside the crop the pier opens on, 390: css x 227-313), tap box 90 x 116 world (57 x 75 px at 360).
 4. **Yard visitor at 390x844** stands on the left edge (tap box from x -13), name tag cut. Clamp `visitorSpot()` to the phone crop.
    Status: fixed (76040f60): own spot; tap box and tag on screen at 360 and 390 (big dogs too), checked in v226_visitors.
 5. **Fountain drink:** the dog faces away from the bowl and stands half out of frame (desktop x 25; 390 after Look left, x 0).
+   Status: fixed (9a642d1f): the dog walks right of the bowl and drinks facing left, head over it (desktop x ~148); phones look left with it, so it stays in frame.
 6. **Project board:** the Square's street lamp crosses the paper (desktop and phones). The Square's buttons have no "Town projects" entry; the board is only reachable by tapping its picture.
+   Status: fixed (9a642d1f): the board moved off the lamp (x 520-600, feet y 468); "Town projects" button (`pr.btn`, English) before Go home while prOn().
 7. **Sakura Avenue:** no tree visible from the home view at 390; at 360 the treetops sit under the wish card.
+   Status: fixed (9a642d1f): the alley tree (x 146-226) is in view at home at 390 and 360, crown top y ~305 (below the wish card); the tall tree also shows at 360.
 8. **Any amount typing:** if the browser shrinks the page for the keyboard (360x350), the "Turn your phone upright" card covers the sheet. Fix: skip `psLockWanted()` while an input has focus.
    Status: fixed (dd1045c4): psLockCheck skips the card while a text field has focus (layout unchanged); test in phone_shell.
 
