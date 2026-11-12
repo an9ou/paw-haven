@@ -18,7 +18,8 @@ const OUTFITS = [{ head: 'Party Hat', neck: 'Red Bandana' }, { body: 'Superhero 
   { head: 'Astronaut Helmet' }, { neck: 'Lion Mane' }, { body: 'Pumpkin Patch Suit' }, { body: 'Little Bat Costume' },
   { body: 'Father Christmas Suit' }, { body: 'Little Elf Outfit' }, { body: 'Gingerbread Pup Suit' }, { body: 'Snowman Suit' }, { body: 'Polar Bear Hood' }, { body: 'Penguin Suit' }, { body: 'Puffer Jacket' }, { body: 'Nutcracker Jacket & Hat' }, { body: 'Snowflake Wings' }, { neck: 'Jingle Bell Collar' }, { charm: 'Crayon Medal' }, { neck: 'Knit Scarf', charm: 'Crayon Medal' },
   // v2.24 Kind shop: the Supporter Pack's Golden Name Tag and the Tokyo Street set, the Little Sneakers in the new feet slot (outfit.feet)
-  { neck: 'Golden Name Tag', feet: 'Little Sneakers' }, { body: 'Sukajan Jacket', head: 'Bucket Hat', neck: 'Paw Tote', eyes: 'Round Shades', feet: 'Little Sneakers' }, { neck: 'Lucky Cat Charm' }, { feet: 'Little Sneakers' }]; // the Winter Market 2026 costumes
+  { neck: 'Golden Name Tag', feet: 'Little Sneakers' }, { body: 'Sukajan Jacket', head: 'Bucket Hat', neck: 'Paw Tote', eyes: 'Round Shades', feet: 'Little Sneakers' }, { neck: 'Lucky Cat Charm' }, { feet: 'Little Sneakers' },
+  { neck: 'Golden Collar' }, { neck: 'Star Collar' }]; // the Winter Market 2026 costumes, the v2.24 Kind shop; the Bond collars (v2.29 art fix: they tuck behind a lowered head)
 const LOOSE = 3, DROP = 40, BIT = 15, TOUCH = 2, NOODLE = 1.35, NOODLE_MIN = 8; // canvas px^2, px^2 (a tear, a drop of drool), px^2 (a costume's own bit: a straw, a star), px^2, ratio, px (a stub this short is never a noodle)
 const MK = [// [anchor in frame(), part that starts there]
   ["  if(body==='Superhero Cape')drawCape(h,s,L,B);", 'outfit'], ['  drawTail(h,s,L,B);\n', 'tail'], ["  if(body==='Tutu'){h._legSkip", 'legs'],
