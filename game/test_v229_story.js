@@ -5,7 +5,7 @@
 //   3. scenes: a chapter's scene plays once automatically, Skip shows at 3 s, the game clock stops, then it lives in Memories (Watch replays it)
 //   4. no stacking: a scene waits behind a sheet and the What's new sheet, and two queued scenes never overlap
 //   5. Motion off: nothing moves, the shots only cross-fade
-//   6. fit: phone 360x640 and desktop 1280x720 (screenshots: V229_SHOTS=<dir>, else test_logs/)
+//   6. fit: phone 360x640 and desktop 1280x720 (screenshots: V229_SHOTS=<dir>, else test_logs/); every actor of all 25 scenes inside the picture
 // node game/run_tests.js v229_story
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
@@ -181,6 +181,32 @@ run('v229_story', async (t) => {
       ok(C.cap[0] >= 0 && C.cap[2] <= C.vw && C.cap[3] <= C.vh && !C.over && C.txt.length > 10 && C.actors >= 1 && (!C.title || (C.title[0] >= 0 && C.title[1] <= C.vw)), `${name}: ${id} fits (caption ${JSON.stringify(C.cap)}, ${C.actors} actors, "${C.txt.slice(0, 40)}...")`);
       await t.p.screenshot({ path: path.join(SHOTS, `v229_${id}_${name}.png`) });
       await skipNow();
+    }
+    // the crops fix: every actor of every shot of all 25 scenes is drawn inside the picture at the end of its shot (Motion on), and with
+    // Motion off (the end picture all the shot long); walk-ins mid-way, a train passing through and doodles fading out are not counted
+    for (const still of [false, true]) {
+      if (still) await t.freezeMotion(true);
+      const bad = [];
+      for (const id of await ev(() => window.__paw.sc.ids())) {
+        const ds = await ev((id) => window.__paw.sc.sd(id), id); await ev((id) => window.__paw.sc.play(id), id); let acc = 0;
+        for (let i = 0; i < ds.length; i++) {
+          await ev((ms) => window.__paw.sc.seek(ms), (acc + ds[i] * (still ? 0.5 : 0.96)) * 1000); acc += ds[i];
+          await t.p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          const o = await ev(() => {
+            const c = window.__paw.sc.cur(), f = document.querySelector('#scLayer .sc-film').getBoundingClientRect(), out = [];
+            document.querySelectorAll('#scLayer .sc-a').forEach((g) => {
+              const k = +g.dataset.a; if (!c || c.off[k]) return; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+              g.querySelectorAll('path,ellipse,circle,rect,polygon,polyline,line').forEach((e) => { if (e.closest('defs,clipPath,mask,pattern,symbol')) return; const r = e.getBoundingClientRect(); if (!r.width && !r.height) return; x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); });
+              if (x1 > x0 && (x0 < f.left - 1 || x1 > f.right + 1 || y0 < f.top - 1 || y1 > f.bottom + 1)) out.push(`${k}:${[x0, y0, x1, y1].map(Math.round)}`);
+            });
+            return { shot: c && c.shot, out, film: [f.left, f.top, f.right, f.bottom].map(Math.round) };
+          });
+          if (o.shot !== i) bad.push(`${id}#${i} measured shot ${o.shot}`); else if (o.out.length) bad.push(`${id}#${i} ${o.out.join(' ')} film ${o.film}`);
+        }
+        await ev(() => window.__paw.sc.skip());
+      }
+      if (still) await t.freezeMotion(false);
+      ok(!bad.length, `${name}: all 25 scenes, every actor inside the picture at the end of each shot${still ? ' (Motion off)' : ''}${bad.length ? ': ' + bad.slice(0, 6).join(' | ') : ''}`);
     }
     await ev(() => { const A = window.__paw.sm.act; A('feed', {}); A('toy', {}); });
     await ev(() => window.__paw.sm.open('story')); await t.sleep(500);
