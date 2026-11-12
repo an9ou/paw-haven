@@ -848,6 +848,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
   v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
+  v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
   v225Fields(st, true); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): days played from 0, the last-seen stamp now
   v226Fields(st); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): S.visitors
   v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
@@ -923,6 +924,7 @@ function migrate(s) {
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
   v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
+  v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
   v225Fields(s, false); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): additive; an old save's days played start from what it already knows
   v226Fields(s); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): additive, S.visitors (seen = now, so no flood on the first load)
   v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects

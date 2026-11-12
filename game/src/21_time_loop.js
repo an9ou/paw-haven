@@ -14,6 +14,7 @@ let lastTick = performance.now(), saveClock = 0, voiceClock = 0, lastGameDay = 0
 function tick() {
   const now = performance.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
   if (!S || !['yard', 'market', 'map', 'shelter', 'walk', 'fetch', 'bath', 'toy'].includes(cur.mode)) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // v2.29: a story scene holds the game clock (57_scenes.js)
   S.gameMin += dt / GAME_SEC; const h = dt / 60 / GAME_SEC; // Daily rhythm: game time runs at 1 game minute per GAME_SEC real seconds
   // the game day (the "Day N" chip, an hour of play) still tells the listeners; the daily bonuses and the mission follow the Japan day (dailyCheck)
   const gday = day(); if (gday !== lastGameDay) { const was = lastGameDay; lastGameDay = gday; if (was) emit('day:new', { day: gday }); }

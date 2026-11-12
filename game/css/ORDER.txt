@@ -72,5 +72,6 @@
 56_visitors.css
 57_projects.css
 58_stories.css
+59_scenes.css
 50_i18n.css
 51_i18n_room.css

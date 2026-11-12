@@ -226,7 +226,7 @@ function ms2TabBody(stampNew) {
   if (k === 'week') return typeof msWeekHTML === 'function' ? msWeekHTML() : ms2Soon(ms2Art('board') || iconOr('mail', doodle('heart', 0, 0, 1)), tt('ms2.week_soon', 'Gerald is pinning up a help-wanted board for the neighbours. It opens soon.'));
   if (k === 'badges') return typeof msBadgesHTML === 'function' ? msBadgesHTML() : ms2Soon(ms2Art('rosette', 'g') || ICON('star'), tt('ms2.badges_soon', 'Badges for walks, gardens, tricks and more are on their way.'));
   if (k === 'notebook' && typeof msNbHTML === 'function') return msNbHTML();
-  return msBodyHTML(stampNew);
+  return (typeof smMsLine === 'function' ? smMsLine() : '') + msBodyHTML(stampNew); // v2.29: the pinned Story line (57b_story.js)
 }
 // the whole sheet: the tab strip and the open tab. The popup (msOpen) and Journal > Missions (msTabHTML) both show it
 function ms2SheetHTML(stampNew) { ms2Mine(); return `<div class="ms-sheet" data-tab="${MS2.tab}">${ms2TabsHTML()}<div class="ms-tabbody" role="tabpanel">${ms2TabBody(stampNew)}</div></div>`; }
