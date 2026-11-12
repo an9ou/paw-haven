@@ -163,9 +163,53 @@ const NEWS_V225 = { // v2.25 "Glad you're back" (V225.md): the While you were ou
   ]
 };
 const nwV225Due = () => jstISO() >= NEWS_V225.date;
+// v2.26-v2.29 (GM, 12 Nov 2026): each release goes live on its NEWS date (LAUNCH DATE: set from the owner's go-ahead); the feature's On() reads
+// nwDue(NEWS_V22x) too, so all four can sit on main and open one by one. The GitHub Pages test copy opens all four early (window.__ddNextTest).
+const nwNext = () => typeof window !== 'undefined' && !!window.__ddNextTest;
+const nwDue = (e) => nwNext() || jstISO() >= e.date;
+const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
+  id: '2.26', date: '2026-11-19', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE
+  title: () => tt('nw.v226.title', 'Visitors in the yard!'),
+  items: [
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v226.come', 'While you are away, neighbourhood dogs come round to play in your yard. The last one is still there when you come back') },
+    { ic: () => nwItemArt('Puddle Pool'), tx: () => tt('nw.v226.toys', 'Four new yard toys, the Tug Post, Puddle Pool, Play Tunnel and Bubble Fountain, bring more visitors') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v226.book', 'Meet 20 visitors in the Visitors Book. Some only come on snowy days or in autumn, and every one comes back') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v226.gift', 'Pet a visitor once a day, and some leave a little thank-you gift') }
+  ]
+};
+const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
+  id: '2.27', date: '2026-11-26', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE
+  title: () => tt('nw.v227.title', 'Town projects'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v227.board', 'A project board in the Town Square: put in coins whenever you like to build something new for the whole town') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v227.four', 'Four builds, one after another: a dog fountain, a bandstand, Sakura Avenue and a lighthouse') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v227.ribbon', 'Each build takes two days, then Gerald cuts the ribbon and sends you a letter') },
+    { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v227.fun', 'Every build has something to do: a drink, a tune, blossom in spring and a light at night') }
+  ]
+};
+const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
+  id: '2.28', date: '2026-12-03', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE
+  title: () => tt('nw.v228.title', 'Stories and stars'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v228.stars', 'Past Bond 10 your dog keeps earning Bond stars, with a Framed Paw Print at 5 stars and a Star Collar at 10') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v228.stories', 'Four neighbours write to you with little stories: Plum, Rosa, the mail carrier and Pip') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v228.help', 'Help each neighbour with small requests, and their story unfolds a letter at a time') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v228.card', 'Make a postcard of your dog to keep or share') }
+  ]
+};
+const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
+  id: '2.29', date: '2026-12-10', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE
+  title: () => tt('nw.v229.title', 'Story mode'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v229.book', 'Gerald has written a story for you and your dog: 8 chapters to play at your own pace, next to everything else') },
+    { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v229.tasks', 'Each chapter has small tasks that give coins, Bond and level points') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v229.scenes', 'Finish a chapter and watch a little crayon scene. Rewatch them all in Memories') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
+  ]
+};
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
