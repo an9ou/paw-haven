@@ -5,7 +5,8 @@
 //   3. coin buys: every look for 1,500 coins and every tool for its price, owned once; the Wardrobe wears and removes the sneakers (feet slot), the house
 //      shows a Cozy Winter decoration once placed; the Supporter Pack and coins are never for coins
 //   4. granting: a fake /shop/owned list grants once; the same list again, and the synced save after a reload, grant nothing more; a refund takes back
-//      the one-time items (worn ones go back to nothing, the house moves back), never coins, and keeps what was bought with coins
+//      the one-time items (worn ones go back to nothing, the house moves back) and the coins that purchase added, and keeps what was bought with coins.
+//      A refunded one-time item is not granted again. Two Supporter sessions add 2,000 coins once. Spent refunded coins become a debt the next pack pays.
 //   5. perks: walk pay x1.2 rounded down after the half pay (and the walk result line), crops grow time x0.8, the second calendar gift never coins
 //   6. tools: no Bond, coins, scooped count or act (mission) from the Robo Scoop, the Sprinkler or the Auto Water Bowl; town messes stay; Settings
 //      switches them off
@@ -101,7 +102,7 @@ run('v224_shop', async (t) => {
   await ev(() => { const P = window.__paw, S = P.S, n = 'Cable-Knit Rug'; S.decor[n].at = P.ho.freeSpot(n); S.decor[n].out = true; S.place = 'house'; P.go('yard'); });
   ok(await t.until(() => !!document.querySelector('[data-decor="Cable-Knit Rug"]'), null, 6000), 'the Cable-Knit Rug, placed, stands in the house');
 
-  sec('4. granting: once, again nothing, a synced save nothing, a refund takes back items but never coins');
+  sec('4. granting: once, again nothing, a synced save nothing, a refund takes back items and the coins');
   await t.home('yard');
   const L1 = [{ id: 'cs_test_sup', item: 'supporter', refunded: false }, { id: 'cs_test_3k', item: 'coins_3k', refunded: false }, { id: 'cs_test_tokyo', item: 'tokyo', refunded: false }, { id: 'cs_test_kit', item: 'comfort', refunded: false }];
   const g1 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { r, d: P.S.coins - c, sup: P.ks.sup(), house: P.S.inv.houses.includes('Golden Paw Cottage'), tag: P.S.inv.clothes.includes('Golden Name Tag'), mail: (P.S.mail || []).find((m) => m.id === 'ks_thanks'), kit: P.S.shop.owned.includes('comfort') }; }, L1);
@@ -114,12 +115,20 @@ run('v224_shop', async (t) => {
   await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
   const g3 = await ev((L) => { const P = window.__paw, c = P.S.coins, r = P.ks.grant(L); return { n: r.granted.length, d: P.S.coins - c, sup: P.ks.sup() }; }, L1);
   ok(g3.n === 0 && g3.d === 0 && g3.sup, 'the saved (synced) copy carries claimed: after a reload the list grants nothing more');
+  const dup = await ev(() => {
+    const P = window.__paw, S = P.S, shop = JSON.parse(JSON.stringify(S.shop)), coins = S.coins, houses = S.inv.houses.slice(), clothes = S.inv.clothes.slice();
+    S.shop.owned = S.shop.owned.filter((x) => x !== 'supporter'); S.shop.onceBack = [];
+    const c = S.coins, r = P.ks.grant([{ id: 'cs_dup_a', item: 'supporter', coins: 2000 }, { id: 'cs_dup_b', item: 'supporter', coins: 0 }]);
+    const out = { n: r.granted.length, d: S.coins - c, items: r.items.join() };
+    S.shop = shop; S.coins = coins; S.inv.houses = houses; S.inv.clothes = clothes; P.saveNow(); return out;
+  });
+  ok(dup.n === 2 && dup.d === 2000 && dup.items === 'supporter', 'two Supporter sessions grant 2,000 coins once (' + dup.d + ', items ' + dup.items + ')');
   // wear the pack pieces and live in the cottage, then refund
   await ev(() => { const S = window.__paw.S; if (!S.inv.houses.includes('Cozy Cottage')) S.inv.houses.push('Cozy Cottage'); window.__paw.shop.equip('Golden Name Tag'); window.__paw.shop.equip('Little Sneakers'); window.__paw.shop.equip('Round Shades'); });
   await ev(() => { const P = window.__paw; P.S.shop.prevHouse = 'Cozy Cottage'; P.S.house = 'Golden Paw Cottage'; });
   const L2 = L1.map((p) => Object.assign({}, p, { refunded: true }));
   const g4 = await ev((L) => { const P = window.__paw, S = P.S, c = S.coins, r = P.ks.grant(L); return { r, d: S.coins - c, sup: P.ks.sup(), house: S.house, houses: S.inv.houses.includes('Golden Paw Cottage'), tag: S.inv.clothes.includes('Golden Name Tag'), neck: S.outfit.neck, feet: S.outfit.feet, eyes: S.outfit.eyes, sneakers: S.inv.clothes.includes('Little Sneakers'), kit: S.shop.owned.includes('comfort'), robo: P.ks.tool('robo') }; }, L2);
-  ok(g4.r.refunded.length === 4 && g4.d === 0, 'four refunds handled, no coins taken back (' + g4.d + ')');
+  ok(g4.r.refunded.length === 4 && g4.d === -7000, 'four refunds handled, the 2,000 Supporter coins and the 5,000 pack are taken back (' + g4.d + ')');
   ok(!g4.sup && !g4.houses && g4.house === 'Cozy Cottage', 'the Supporter perks end, the cottage is taken back and the dog moves back to the house before: ' + g4.house);
   ok(!g4.tag && g4.neck === null, 'the worn Golden Name Tag goes back to Nothing');
   ok(g4.sneakers && g4.feet === 'Little Sneakers' && g4.eyes === 'Round Shades', 'Tokyo Street pieces bought with coins stay, worn as they were');
@@ -128,9 +137,22 @@ run('v224_shop', async (t) => {
   ok(g5.n === 0 && g5.d === 0 && g5.keep, 'a refund is handled once: the same refunded list again takes nothing');
   const g6 = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_late', item: 'cozy', refunded: true }, { id: 'cs_bad', item: 'a_dog', refunded: false }, { id: '', item: 'coins_8k' }, null]); return { r, d: P.S.coins - c }; });
   ok(!g6.r.granted.length && !g6.r.refunded.length && g6.d === 0, 'a purchase refunded before it was granted, an unknown item and a bad row do nothing');
+  const debt = await ev(() => {
+    const P = window.__paw, S = P.S, c0 = S.coins, d0 = S.shop.coinDebt || 0;
+    S.coins = 100; P.ks.grant([{ id: 'cs_debt_pack', item: 'coins_1k' }]); S.coins = 50;
+    P.ks.grant([{ id: 'cs_debt_pack', item: 'coins_1k', refunded: true }]);
+    const mid = { coins: S.coins, debt: S.shop.coinDebt };
+    P.ks.grant([{ id: 'cs_debt_pack2', item: 'coins_1k' }]);
+    const after = { coins: S.coins, debt: S.shop.coinDebt };
+    S.coins = c0; S.shop.coinDebt = d0; P.saveNow(); return { mid, after };
+  });
+  ok(debt.mid.coins === 0 && debt.mid.debt === 1950, 'a refund takes the coins still there and remembers the ones already spent (' + JSON.stringify(debt.mid) + ')');
+  ok(debt.after.coins === 50 && debt.after.debt === 0, 'the next coin pack pays that debt before any coins are added (' + JSON.stringify(debt.after) + ')');
+  const again = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_sup_again', item: 'supporter' }]); return { d: P.S.coins - c, sup: P.ks.sup(), owned: P.S.shop.owned.includes('supporter'), items: r.items.length }; });
+  ok(again.d === 0 && !again.sup && !again.owned && again.items === 0, 'a refunded Supporter Pack is not granted again');
 
   sec('5. perks: walk pay x1.2 after half pay, crops x0.8 grow time, the second gift never coins');
-  await ev(() => window.__paw.ks.grant([{ id: 'cs_sup2', item: 'supporter' }]));
+  await ev(() => { const sh = window.__paw.S.shop; if (!sh.owned.includes('supporter')) sh.owned.push('supporter'); }); // perks under test; a refunded pack is not bought again
   const wp = await ev(() => { const P = window.__paw, h = P.rh.share(37, 0, 0.5), f = P.rh.share(37, 0, 1); return { half: h, full: f, bh: P.ks.walkBonus(P.rh.share(37, 0, 0.5)), bf: P.ks.walkBonus(f), b9: P.ks.walkBonus(9) }; });
   ok(wp.half === 19 && wp.bh === 3 && wp.bf === 7 && wp.b9 === 1, `+20% rounded down after the half pay: 37 half -> ${wp.half} +${wp.bh}, full 37 +${wp.bf}, 9 +${wp.b9}`);
   // a real walk after the 5th of the day: the result says "+N Supporter" and N is 20% of the pay, rounded down

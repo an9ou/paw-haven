@@ -9,6 +9,8 @@
      S.shop.owned    ids of one-time things owned through a purchase or a coin buy: 'supporter', 'tokyo', 'cozy', 'robo', 'sprinkler', 'bowl', 'comfort'
      S.shop.claimed  purchase ids (Stripe Checkout session ids) granted in this save, so a second poll or a synced save never grants twice
      S.shop.refunded purchase ids whose refund was handled (taken back once)
+     S.shop.onceBack one-time items a refund took back: not granted again. S.shop.coinGot purchase id -> coins that row added.
+     S.shop.coinDebt Paw Coins from a refund that were already spent; later coins pay this before they can be spent
      S.shop.coin     what was bought with coins (item names and tool ids): a refund never takes these back
      S.shop.tools    { robo, sprinkler, bowl }: the Settings switches (on by default)
      S.shop.roboAt   gameMin of the Robo Scoop's last tidy; S.shop.g2 { ym, days } the Supporter's second calendar gift; S.shop.prevHouse
@@ -46,7 +48,9 @@ function v224Fields(s) {
   (Array.isArray(s.dogs) ? s.dogs : []).forEach((d) => { if (d && d.outfit && typeof d.outfit === 'object' && !('feet' in d.outfit)) d.outfit.feet = null; });
   if (!s.shop || typeof s.shop !== 'object' || Array.isArray(s.shop)) s.shop = {};
   const sh = s.shop;
-  ['owned', 'claimed', 'refunded', 'coin', 'log'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; }); // log (v2.24.1): [{ id, item, at, r }] for My purchases
+  ['owned', 'claimed', 'refunded', 'coin', 'log', 'onceBack'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; }); // log (v2.24.1): [{ id, item, at, r }] for My purchases. onceBack: one-time items a refund took back; they are not granted again
+  if (!sh.coinGot || typeof sh.coinGot !== 'object' || Array.isArray(sh.coinGot)) sh.coinGot = {}; // purchase id -> { n: coins that purchase was for, a: how many landed in S.coins }
+  if (typeof sh.coinDebt !== 'number' || !isFinite(sh.coinDebt) || sh.coinDebt < 0) sh.coinDebt = 0; // refunded coins that had already been spent
   if (!sh.tools || typeof sh.tools !== 'object' || Array.isArray(sh.tools)) sh.tools = {};
   KS_TOOLS.forEach((k) => { if (typeof sh.tools[k] !== 'boolean') sh.tools[k] = true; });
   if (typeof sh.roboAt !== 'number' || !isFinite(sh.roboAt)) sh.roboAt = -1e9;
@@ -82,6 +86,35 @@ function ksHouseMove(n) {
 }
 
 /* ---------------- giving and taking back ---------------- */
+function ksShopReady() {
+  const sh = ksS(); if (!sh) return null;
+  if (!Array.isArray(sh.onceBack)) sh.onceBack = [];
+  if (!sh.coinGot || typeof sh.coinGot !== 'object' || Array.isArray(sh.coinGot)) sh.coinGot = {};
+  if (typeof sh.coinDebt !== 'number' || !isFinite(sh.coinDebt) || sh.coinDebt < 0) sh.coinDebt = 0;
+  return sh;
+}
+const ksCatalogueCoins = (item) => { const I = KS_ITEMS[item]; return !I ? 0 : I.pack ? I.pack : item === 'supporter' ? KS_SUP_COINS : 0; };
+// coins from the Worker row when it sent one, otherwise the catalogue. A second Supporter session is 0.
+function ksNominal(p) {
+  if (p && Number.isInteger(p.coins) && p.coins >= 0 && p.coins <= 1000000) return p.coins;
+  return ksCatalogueCoins(p && p.item);
+}
+let ksLastGrant = null; // the last ksApplyCoins result; not part of the save
+function ksApplyCoins(nominal) {
+  nominal = Math.max(0, Math.round(Number(nominal) || 0));
+  const added = nominal ? addCoins(nominal, { raw: true }) : 0; // addCoins pays coinDebt first and returns only what reached the balance
+  ksLastGrant = { n: nominal, a: added };
+  return added;
+}
+// take coins back. What is still in the balance leaves it; what was already spent becomes coinDebt (later coins pay it).
+function ksClawCoins(n) {
+  n = Math.max(0, Math.round(Number(n) || 0));
+  if (!n || !S) return 0;
+  const sh = ksShopReady(), have = Math.max(0, Math.round(Number(S.coins) || 0)), take = Math.min(have, n);
+  if (take) S.coins = have - take;
+  if (sh && n > take) sh.coinDebt += n - take;
+  return take;
+}
 function ksGiveLook(n) {
   if (ksLookOwned(n)) return false;
   if (n === KS_COZY_BED) { S.beds.push(n); return true; }
@@ -93,15 +126,19 @@ function ksLetter() {
   return mailPush({ kind: 'news', id: 'ks_thanks', keep: true, from: tt('ks.letter_from', 'Gerald'), title: tt('ks.letter_title', 'Thank you, Founding Friend'),
     text: tt('ks.letter_text', 'Dear friend,\nThank you for the Supporter Pack. Doodle Doggo is made by one person, and you just helped keep the crayons sharp.\nThe Golden Paw Cottage is yours, and so is the golden name tag. Walks pay a little more, the veggies grow a little faster, and the calendar has a second gift for you every day.\nEverything else in town can still be earned by playing, for everyone. That is a promise.\nWith a happy waddle,\nGerald') });
 }
-// one purchase's contents, once. Returns the coins it added (raw)
-function ksGive(item) {
-  const sh = ksS(), I = KS_ITEMS[item]; if (!I) return 0;
-  if (I.pack) return addCoins(I.pack, { raw: true });
-  let coins = 0;
-  if (!sh.owned.includes(item)) sh.owned.push(item);
-  if (item === 'supporter') { ksGiveLook(KS_HOUSE); ksGiveLook(KS_TAG); coins = addCoins(KS_SUP_COINS, { raw: true }); ksLetter(); }
+// one purchase's contents, once. coins (from GET /shop/owned) is how many Paw Coins this row grants; omit it and the catalogue is used.
+// A one-time item already in onceBack grants nothing. Supporter coins are added only the first time it becomes owned. Returns coins that reached the balance.
+function ksGive(item, coins) {
+  const sh = ksShopReady(), I = KS_ITEMS[item]; if (!sh || !I) return 0;
+  const passed = Number.isInteger(coins) && coins >= 0 && coins <= 1000000;
+  if (I.pack) return ksApplyCoins(passed ? coins : I.pack);
+  if (sh.onceBack.includes(item)) return ksApplyCoins(0);
+  const fresh = !sh.owned.includes(item);
+  if (fresh) sh.owned.push(item);
+  if (item === 'supporter') { ksGiveLook(KS_HOUSE); ksGiveLook(KS_TAG); ksLetter(); return ksApplyCoins(fresh ? (passed ? coins : KS_SUP_COINS) : 0); }
   if (I.looks) I.looks.forEach(ksGiveLook);
-  return coins;
+  ksLastGrant = { n: 0, a: 0 };
+  return 0;
 }
 function ksTakeLook(n) {
   const sh = ksS(); if (sh.coin.includes(n)) return; // bought with coins: it stays
@@ -122,29 +159,56 @@ function ksTakeLook(n) {
   S.dogs.forEach((d) => { if (d.outfit) Object.keys(d.outfit).forEach((k) => { if (d.outfit[k] === n) d.outfit[k] = null; }); }); // worn: back to "Nothing"
 }
 function ksTakeBack(item) {
-  const sh = ksS(), I = KS_ITEMS[item]; if (!I || I.pack) return; // coins are never taken back
+  const sh = ksShopReady(), I = KS_ITEMS[item]; if (!sh || !I || I.pack) return; // coin packs have no item to take; their coins are clawed in ksRefundCoins
   sh.owned = sh.owned.filter((x) => x !== item);
   if (item === 'supporter') { ksTakeLook(KS_HOUSE); ksTakeLook(KS_TAG); }
   if (I.looks) I.looks.forEach(ksTakeLook);
 }
-/* the future GET /shop/owned result: [{ id, item, refunded }]. Each unclaimed id is granted once and recorded in S.shop.claimed; a refunded id that
-   was granted here takes back its one-time items once (unless another live purchase of the same thing is owned), never coins. Pure on its input:
-   the same list twice grants nothing more. Returns { granted: [ids], refunded: [ids], coins } */
+// coins this refund removes from the balance. A live second purchase of the same one-time item keeps them (they were paid for twice and one charge came back).
+function ksRefundCoins(p, list) {
+  const sh = ksShopReady(); if (!sh) return 0;
+  const I = KS_ITEMS[p.item], rec = sh.coinGot[p.id];
+  let nominal, added;
+  if (rec && typeof rec.n === 'number') { nominal = rec.n; added = rec.a || 0; } else { nominal = ksNominal(p); added = nominal; }
+  delete sh.coinGot[p.id];
+  if (nominal <= 0 && added <= 0) return 0;
+  if (I && !I.pack) {
+    const heir = list.find((q) => q.id !== p.id && q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
+    if (heir && !(sh.coinGot[heir.id] && sh.coinGot[heir.id].n > 0)) { sh.coinGot[heir.id] = { n: nominal, a: added }; return 0; }
+  }
+  const debtPaid = Math.max(0, nominal - added);
+  if (debtPaid) sh.coinDebt += debtPaid; // this grant had repaid an older refund; that debt is back
+  return added > 0 ? ksClawCoins(added) : 0;
+}
+/* GET /shop/owned: [{ id, item, refunded, coins }]. Each unclaimed id is granted once and recorded in S.shop.claimed. A refunded id that was
+   granted here takes back its one-time items (unless another live purchase of the same thing is in the list) and the coins that row added.
+   A one-time item taken all the way back is remembered in onceBack, so a later row cannot grant it again. The same list twice changes nothing.
+   Returns { granted: [ids], refunded: [ids], coins } where coins is the net change in the balance. */
 function ksGrant(purchases, give) {
   give = give || ksGive;
-  const sh = ksS(), out = { granted: [], refunded: [], coins: 0, items: [] }; if (!sh) return out;
+  const sh = ksShopReady(), out = { granted: [], refunded: [], coins: 0, items: [] }; if (!sh) return out;
   const list = (Array.isArray(purchases) ? purchases : []).filter((p) => p && typeof p.id === 'string' && p.id && KS_ITEMS[p.item]);
   list.forEach((p) => {
     if (p.refunded || sh.claimed.includes(p.id)) return;
-    try { out.coins += give(p.item); } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); return; } // unclaimed: the next poll retries
-    sh.claimed.push(p.id); out.granted.push(p.id); out.items.push(p.item);
+    const I = KS_ITEMS[p.item], blocked = !I.pack && sh.onceBack.includes(p.item), had = sh.owned.includes(p.item);
+    let added = 0;
+    try {
+      if (!blocked) added = give(p.item, Number.isInteger(p.coins) ? p.coins : undefined);
+    } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); ksLastGrant = null; return; } // unclaimed: the next poll retries
+    const rec = !blocked && ksLastGrant && typeof ksLastGrant.n === 'number' ? ksLastGrant : { n: blocked ? 0 : added, a: blocked ? 0 : added };
+    ksLastGrant = null;
+    sh.coinGot[p.id] = { n: rec.n || 0, a: rec.a || 0 };
+    sh.claimed.push(p.id); out.granted.push(p.id); out.coins += added;
+    if (!blocked && (I.pack ? added > 0 : !had)) out.items.push(p.item);
   });
   list.forEach((p) => {
     if (!p.refunded || sh.refunded.includes(p.id)) return;
     sh.refunded.push(p.id);
-    if (!sh.claimed.includes(p.id)) return; // refunded before this save ever got it: nothing to take back
+    if (!sh.claimed.includes(p.id)) return; // refunded before this save ever got it: nothing was given, so nothing comes back
+    const I = KS_ITEMS[p.item];
     const live = list.some((q) => q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
-    if (!live) ksTakeBack(p.item); out.refunded.push(p.id);
+    if (!live && !I.pack) { if (!sh.onceBack.includes(p.item)) sh.onceBack.push(p.item); ksTakeBack(p.item); }
+    out.coins -= ksRefundCoins(p, list); out.refunded.push(p.id);
   });
   const logged = ksLogSync(list);
   if (out.granted.length || out.refunded.length || logged) { markDirty(); updateHUD(); saveNow(); }
