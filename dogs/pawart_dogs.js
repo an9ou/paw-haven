@@ -2004,9 +2004,10 @@ HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn
    the dog back its random stream (SK_OWN below), so the dog under it is the plain dog line for line. Nothing covers the eyes or the nose; every fill
    has its own ink line or sits inside one; points are kept above the ground line (hmCl). */
 const SKD_PK='#F7B2C4',SKD_PKD='#D9708E',SKD_PKL='#FDE0E8',SKD_WH='#FFF7F9',SKD_GR='#7FB86A',SKD_GRD='#4F8A44',SKD_ST='#F3D58A',SKD_STD='#C9A14E',SKD_MT='#A6DCC6',SKD_MTD='#5E9E84',SKD_YL='#FFD56B';
-// a five-petal paper blossom at c (canvas px), radius z: one shape with its own line, a deep pink dot in the middle
-function skdBloom(h,c,z,col,an,far){const p=[];for(let i=0;i<5;i++){const b=(an||0)*D2R+i*Math.PI*.4;[[.3,-.5],[.7,-.42],[1,-.16],[.84,0],[1,.16],[.7,.42],[.3,.5]].forEach(([u,v])=>{const t=b+v*.62;p.push(hmCl([c[0]+Math.cos(t)*z*u,c[1]+Math.sin(t)*z*u]))})}
-  h.shape(p,far?mix(col,PEN,.25):col,{w:Math.max(1.6,Math.min(2.2,z*.3)),step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2});h.dot(c[0],Math.min(c[1],GY-2),Math.max(1,z*.22),Math.max(1,z*.22),SKD_PKD)}
+// a five-petal paper blossom at c (canvas px), radius z: one shape with its own line, a deep pink dot in the middle. Art review 1: round, wide petals
+// (each nearly a fifth of the circle, from u .45 out) and a line tied to the size (at most z*.18), so the pink or white fill shows inside the ink
+function skdBloom(h,c,z,col,an,far){const p=[];for(let i=0;i<5;i++){const b=(an||0)*D2R+i*Math.PI*.4;[[.45,-.5],[.8,-.47],[1,-.24],[.86,0],[1,.24],[.8,.47],[.45,.5]].forEach(([u,v])=>{const t=b+v*1.15;p.push(hmCl([c[0]+Math.cos(t)*z*u,c[1]+Math.sin(t)*z*u]))})}
+  h.shape(p,far?mix(col,PEN,.25):col,{w:Math.max(.8,Math.min(1.5,z*.18)),step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15});h.dot(c[0],Math.min(c[1],GY-2),Math.max(.8,z*.18),Math.max(.8,z*.18),SKD_PKD)}
 /* 1. Sakura Petal Crown: a soft green band over the crown, five paper blossoms along it (pink and white) */
 HAT2['Sakura Petal Crown']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,pts=[];for(let i=0;i<=6;i++){const t=i/6,a=Math.PI*(1-t);pts.push([Math.cos(a)*hx*.84,-hy*.46-Math.sin(a)*hy*.52])}
   const P=pts.map(HT).map(hmCl);h.line(P,6.4,INK);h.line(P,4,SKD_GR,.3);const z=Math.max(5,Math.min(8.4,hx*.24));
@@ -2022,11 +2023,11 @@ HAT2['Hanami Sun Hat']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP
   skdBloom(h,b2,z,SKD_WH,10);skdBloom(h,P([W2*.5,-H*.55]),z*.85,SKD_PK,40)};
 /* 3. Sakura Bandana: a pink bandana with little white blossoms */
 NECK2['Sakura Bandana']=function(h,s,L,HT){const a=neckAnchor(s,HT),t=clampG(a.tip);h.shape([a.l,a.r,t].map(hmCl),SKD_PK,{w:4,step:9});
-  const at=(u,v)=>hmCl([a.l[0]+(a.r[0]-a.l[0])*u+(t[0]-(a.l[0]+a.r[0])/2)*v,a.l[1]+(a.r[1]-a.l[1])*u+(t[1]-(a.l[1]+a.r[1])/2)*v]),z=Math.max(2.6,Math.min(4.2,s.head.rx*.12));
+  const at=(u,v)=>hmCl([a.l[0]+(a.r[0]-a.l[0])*u+(t[0]-(a.l[0]+a.r[0])/2)*v,a.l[1]+(a.r[1]-a.l[1])*u+(t[1]-(a.l[1]+a.r[1])/2)*v]),z=Math.max(3.2,Math.min(4.8,s.head.rx*.14));
   [[.32,.28],[.62,.24],[.5,.58]].forEach(([u,v],i)=>skdBloom(h,at(u,v),z,SKD_WH,i*30))};
 /* 4. Blossom Garland: a green string sagging under the chin, paper blossoms all along it (lying down, it rests on the chest) */
 NECK2['Blossom Garland']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*9;return[x,Math.min(y,GY-14)]};
-  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5,INK);h.line(pts,2.6,SKD_GR,.3);const z=Math.max(3.6,Math.min(5.6,s.head.rx*.16));
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,5,INK);h.line(pts,2.6,SKD_GR,.3);const z=Math.max(4,Math.min(6.2,s.head.rx*.18));
   [0,.2,.4,.6,.8,1].forEach((t,i)=>skdBloom(h,sag(t),z*(i%2?.86:1),i%2?SKD_WH:SKD_PK,i*27))};
 /* 5. Sakura Haori: a pink haori jacket, a darker hem band, a white collar band down the front, white blossoms, a little white tie */
 BODY2['Sakura Haori']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,SKD_PK);h.line(p.slice(-7).map(B).map(hmCl),4.6,SKD_PKD,.4);

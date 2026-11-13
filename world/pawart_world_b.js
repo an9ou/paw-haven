@@ -7009,10 +7009,11 @@ PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Sui
    The 18 item cards (5 decorations, 8 costumes, 3 toys, 2 treats) and the two treats' dog bowls; PA.SAKURA_MARKET groups the set.
    Every fill sits inside its own line (marks are clipped to their shape); lit parts sit in <g class="pa-wb-glow"> so the night tint keeps them bright. */
 const SK_PK='#F7B2C4',SK_PKD='#D9708E',SK_PKL='#FDE0E8',SK_WH='#FFF7F9',SK_GR='#7FB86A',SK_GRD='#4F8A44',SK_RD='#E2403A',SK_RDD='#A82A2A',SK_BL='#5B8FD6',SK_BLD='#3A64A8',SK_GD='#F2C14E';
-// a notched five-petal paper blossom (one shape, its own line), a pink dot in the middle
-function skBloomP(x,y,r,a){const p=[];for(let i=0;i<5;i++){const b=a+i*Math.PI*.4;[[.28,-.5],[.62,-.44],[.98,-.2],[.82,0],[.98,.2],[.62,.44],[.28,.5]].forEach(([u,v])=>{const t=b+v*.62;p.push([x+Math.cos(t)*r*u,y+Math.sin(t)*r*u])})}return p}
-function skBloom(b,x,y,r,col,a,o={}){b.sh(skBloomP(x,y,r,a||0),col||SK_WH,{k:.04,hatch:0,hl:0,lw:o.lw||Math.max(.5,Math.min(.8,r/8)),base:'#FFFFFF',top:o.top?1:0,step:o.step,amp:o.amp});
-  b.dot(x,y,Math.max(.7,r*.2),SK_PKD,o.top?'top':undefined)}
+// a notched five-petal paper blossom (one shape, its own line), a pink dot in the middle. Art review 1: round, wide petals (each nearly a fifth of
+// the circle, from u .45 out) and a line tied to the size (at most r*.08), so the pink or white fill shows inside the ink
+function skBloomP(x,y,r,a){const p=[];for(let i=0;i<5;i++){const b=a+i*Math.PI*.4;[[.45,-.5],[.8,-.47],[1,-.24],[.86,0],[1,.24],[.8,.47],[.45,.5]].forEach(([u,v])=>{const t=b+v*1.15;p.push([x+Math.cos(t)*r*u,y+Math.sin(t)*r*u])})}return p}
+function skBloom(b,x,y,r,col,a,o={}){b.sh(skBloomP(x,y,r,a||0),col||SK_WH,{k:.04,hatch:0,hl:0,lw:Math.min(o.lw||1,Math.max(.3,Math.min(.6,r*.08))),base:'#FFFFFF',top:o.top?1:0,step:o.step,amp:o.amp});
+  b.dot(x,y,Math.max(.6,r*.17),SK_PKD,o.top?'top':undefined)}
 // a loose petal (a little teardrop with a notch)
 function skPetal(b,x,y,r,a,col){b.sh(rot([[x,y-r],[x+r*.62,y-r*.2],[x+r*.4,y+r*.7],[x,y+r*.45],[x-r*.4,y+r*.7],[x-r*.62,y-r*.2]],a,x,y),col||SK_PK,{k:.05,hatch:0,hl:0,lw:.5,base:SK_PKL})}
 PROPS.skblanket=function(b){
@@ -7074,17 +7075,25 @@ function skCarp(b,x,y,L,h,col,colD,a){const P=(u,v)=>{const w=Math.sin(u*Math.PI
   const sc=[];for(let i=1;i<5;i++){const [sx,sy]=P(.14+i*.15,-.12),[tx,ty]=P(.14+i*.15,.22);sc.push(`M${R1(sx)} ${R1(sy)}Q${R1(sx+h*.26)} ${R1((sy+ty)/2)} ${R1(tx)} ${R1(ty)}`)}
   b.sh(out,col,{k:.06,hatch:0,hl:0,lw:.9,base:mix(col,'#FFFFFF',.5),marks:[{pts:[P(0,.18),P(.7,.2),P(.7,.5),P(0,.5)],fill:'#FFFFFF',k:0,op:.7},{pts:[P(0,-.5),P(.06,-.5),P(.06,.5),P(0,.5)],fill:'#FFFFFF',k:0}],inner:b.st(sc.join(''),colD,.9,.75)});
   const e=P(.14,-.08);b.sh(E(e[0],e[1],h*.18,h*.18,12),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.6});b.dot(e[0]+.6,e[1],h*.08,INK)}
-PROPS.skswing=function(b){const G=214;b.shadow(60,G,52,4.4);
-  // a wooden A-frame with a crossbar, a garland of paper blossoms along the bar, two ropes and a pink seat (a swing for people; the dogs sit underneath)
-  [[14,G,30,30],[106,G,90,30]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-4,y0],[x1-3,y1],[x1+3,y1],[x0+4,y0]],C.wood,{k:0,hatch:0,hl:0,lw:.95,base:'#F3DDB4'}));
-  [[26,G,34,30],[94,G,86,30]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-3,y0],[x1-2.4,y1],[x1+2.4,y1],[x0+3,y0]],C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood}));
-  b.sh(RR(18,22,84,10,3),C.wood,{k:0,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[26,27],[94,27]]],dw:.6,dcol:C.woodD});
-  [42,78].forEach(x=>b.ln([[x,32],[x+1,150]],{w:1.4,col:'#A97E5A'}));
-  b.sh([[34,150],[88,150],[86,160],[36,160]],SK_PK,{k:.05,hatch:0,hl:0,lw:.9,base:SK_PKL,marks:[{pts:[[34,150],[88,150],[88,153],[34,153]],fill:SK_PKD,k:0,op:.6}]});
-  const sag=t=>[20+80*t,30+Math.sin(Math.PI*t)*10];b.ln([0,.25,.5,.75,1].map(sag),{w:1.2,col:SK_GRD});
-  [0,.2,.4,.6,.8,1].forEach((t,i)=>{const [x,y]=sag(t);skBloom(b,x,y,i%2?4.4:5.2,i%2?SK_WH:SK_PK,i*.5)});
-  skBloom(b,46,156,3.4,SK_WH,.2);skPetal(b,60,190,3.4,.5);skPetal(b,96,200,3,1.6);
-  b.ex('spark',112,12,3.6,'#FFE07A');b.ex('heart',8,60,3.2,SK_PK);
+PROPS.skswing=function(b){const G=214;b.shadow(60,G,58,4.6);
+  // a wooden A-frame swing (a swing for people; the dogs sit underneath). Art review 4: each end is a real splayed A (a front leg and a darker
+  // back leg from one top joint, a brace across), a thick crossbar, two thick ropes (each its own outlined shape), a pink seat and a big garland
+  const leg=(x0,y0,x1,y1,w0,w1,col,base,lw)=>b.sh([[x0-w0,y0],[x1-w1,y1],[x1+w1,y1],[x0+w0,y0]],col,{k:0,hatch:0,hl:0,lw,base});
+  leg(40,G-5,23,28,3.2,2.4,C.woodD,C.wood,.85);leg(80,G-5,97,28,3.2,2.4,C.woodD,C.wood,.85);// the back legs, a step behind
+  [[10,37],[83,110]].forEach(([x0,x1])=>b.sh(RR(x0,146,x1-x0,6,2),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood}));// the braces
+  leg(7,G,22,28,4.4,3,C.wood,'#F3DDB4',1);leg(113,G,98,28,4.4,3,C.wood,'#F3DDB4',1);// the front legs
+  b.sh(RR(10,17,100,12,3.4),C.wood,{k:0,hatch:0,hl:0,lw:1.05,base:'#F3DDB4',det:[[[18,23],[102,23]]],dw:.6,dcol:C.woodD});
+  // two thick ropes, a twist mark every few px
+  [46,74].forEach(x=>{let tw='';for(let y=36;y<148;y+=7)tw+='M'+(x-1.4)+' '+y+'l2.8 2.4';
+    b.sh([[x-1.8,29],[x+1.8,29],[x+1.8,151],[x-1.8,151]],'#E3C79A',{k:0,hatch:0,hl:0,lw:.75,base:'#F2E0C0',inner:b.st(tw,'#B08A5C',.6,.8)})});
+  b.sh([[34,150],[86,150],[84,162],[36,162]],SK_PK,{k:.05,hatch:0,hl:0,lw:.95,base:SK_PKL,marks:[{pts:[[34,150],[86,150],[86,153.4],[34,153.4]],fill:SK_PKD,k:0,op:.6}]});
+  skBloom(b,60,157,4.4,SK_WH,.2);
+  // the garland: a green string sagging along the bar, five big paper blossoms on it and a bunch over each top joint
+  const sag=t=>[16+88*t,31+Math.sin(Math.PI*t)*15];b.ln([0,.17,.33,.5,.67,.83,1].map(sag),{w:1.6,col:SK_GRD});
+  [.17,.33,.5,.67,.83].forEach((t,i)=>{const [x,y]=sag(t);skBloom(b,x,y,i%2?5.8:6.8,i%2?SK_WH:SK_PK,i*.5)});
+  [[14,22,7,SK_PK,.3],[24,30,5.6,SK_WH,1],[106,22,7,SK_PK,.8],[96,30,5.6,SK_WH,.1]].forEach(([x,y,r,c,a])=>skBloom(b,x,y,r,c,a));
+  skPetal(b,60,192,3.4,.5);skPetal(b,92,202,3,1.6);skPetal(b,30,198,2.8,2.4);
+  b.ex('spark',112,6,3.6,'#FFE07A');b.ex('heart',112,70,3.2,SK_PK);
 };
 /* Sakura Market part 2: the props made lighter with the same look. Every path of plain absolute M/L/Q/C/Z steps in tenths (what b.sh and b.ln write)
    is rewritten as relative steps from the same rounded points, so each point lands exactly where it was (lossless: the lanterns 96 -> 54 KB, the
@@ -7108,7 +7117,7 @@ const SK_LBL={skblanket:'Hanami Picnic Blanket',sklanterns:'Sakura Paper Lantern
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return skRel(b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+SK_LBL[name]))})}}
 Object.assign(ITEMS,{
  'Hanami Picnic Blanket'(b){hmPropCard(b,'skblanket',false,[2,10,216,84])},'Sakura Paper Lanterns'(b){hmPropCard(b,'sklanterns',false,[80,6,140,64])},
- 'Paper Sakura Tree'(b){hmPropCard(b,'sktree',false,[12,20,116,178])},'Bento Picnic Table'(b){hmPropCard(b,'skbento',false,[2,22,156,94])},'Blossom Swing'(b){hmPropCard(b,'skswing',false,[2,10,116,206])},
+ 'Paper Sakura Tree'(b){hmPropCard(b,'sktree',false,[12,20,116,178])},'Bento Picnic Table'(b){hmPropCard(b,'skbento',false,[2,22,156,94])},'Blossom Swing'(b){hmPropCard(b,'skswing',false,[1,4,118,212])},
  /* the eight costume cards: the garment on its own, like the winter cards */
  'Sakura Petal Crown'(b){b.sh(ribbon([[8,40],[20,32],[32,30],[44,32],[56,40]],[5,5,5,5,5]),SK_GR,{k:1/6,hatch:0,hl:0,lw:.8,base:'#C6E4B6'});
   [[12,36,7,.1,SK_PK],[23,30,7.6,-.2,SK_WH],[34,28,8,.3,SK_PK],[45,30,7.6,0,SK_WH],[54,36,7,.4,SK_PK]].forEach(([x,y,r,a,c])=>skBloom(b,x,y,r,c,a));
@@ -7133,7 +7142,8 @@ Object.assign(ITEMS,{
    inner:b.st('M18 22l2 2l2-2M26 30l2 2l2-2M40 22l2 2l2-2M44 36l2 2l2-2M18 40l2 2l2-2','#5E9E84',.8,.7)});
   b.ln([[32,14],[32,56]],{w:1.2,col:'#5E9E84',top:1});[[32,24],[32,36],[32,48]].forEach(([x,y],i)=>skBloom(b,x,y,3.6,i%2?SK_WH:SK_PK,i*.5,{top:1}));b.ex('spark',58,10,3)},
  /* the three toys: the card is the toy in the game */
- 'Squeaky Dango'(b){b.sh(RR(30,8,5,52,2.4),'#C9A07A',{k:0,hatch:0,hl:0,lw:.7,base:'#E9CFA8'});
+ 'Squeaky Dango'(b){b.sh(RR(29.6,7,5.8,54,2.8),'#8FC07C',{k:0,hatch:0,hl:0,lw:.75,base:'#D3EAC6',inner:b.st('M32.5 56.4v3','#5E9E52',.7,.8)});// art review 5: a soft felt stick (felt green, a stitch), not a wooden skewer
+ 
   [[32,18,SK_PK,SK_PKL],[32,32,'#FFFDF6','#FFFFFF'],[32,46,SK_GR,'#C6E4B6']].forEach(([x,y,c,l])=>{b.sh(E(x,y,11,9.4,16),c,{k:.06,sh:mix(c,INK,.2),ho:.35,base:l,hatch:0});b.dot(x-3.4,y-1,1.1,INK,'top');b.dot(x+3.4,y-1,1.1,INK,'top');b.raw(b.st(`M${x-2} ${y+2.4}q2 1.6 4 0`,INK,.8),'top')});
   b.ex('note',56,14,4.4)},
  'Petal Ball'(b){b.sh(E(32,34,22,22,28),SK_PK,{k:.06,sh:SK_PKD,ho:.4,base:SK_PKL,hatch:0});[[24,28,6,.2],[40,26,5.4,-.4],[34,42,6.4,.7],[20,42,4.6,0],[46,40,4.4,.3]].forEach(([x,y,r,a])=>skBloom(b,x,y,r,SK_WH,a,{top:1}));
@@ -7258,7 +7268,7 @@ SK_BEDS.forEach(name=>{ITEMS[name]=function(b){skBedTpl(name,true);
   const [x,y,w,h]=BED_CROP[name],H=BED_ICON_H[name],W=Math.min(62,H*w/h);
   const t=bedTpl(name,true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
   b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')}});
-ITEMS['Blossom Kennel']=function(b){const t=PA.house('Blossom Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(4 4) scale(.233)">${t}</g>`)};
+ITEMS['Blossom Kennel']=function(b){const t=PA.house('Blossom Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(.6 2) scale(.262)">${t}</g>`)};// art review 6: its roof and walls fill the card like the Gingerbread Kennel's
 // the kennel is a big drawing: its paths in short relative steps, the same points (skRel)
 {const _houseSK=PA.house;PA.house=function(name){if(name!=='Blossom Kennel')return _houseSK.apply(this,arguments);
   return serve('h:'+name,()=>{const b=mk('house',name);HOUSES[name](b);return skRel(b.svg('0 0 240 200','',lab(name),true))})}}

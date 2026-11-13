@@ -4,14 +4,19 @@ Reviewer: paw-reviewer (read-only), branch claude/sakura-market at dbd81d89 (Sak
 
 ## Must-fix
 1. Blossoms across the set read as dark brown shapes, not pink/white flowers: the petals are too thin for their outline, so ink covers the fill. On dogs: Petal Crown (a dark thorny band), Haori and Bandana blossoms, Cardigan buttons, Blossom Garland, Sun Hat sprig. On cards: Petal Crown (a brown blob), Garland, Bandana, Haori, Cardigan, Petal Ball. dogs/pawart_dogs.js:2008 `skdBloom`, world/pawart_world_b.js:7013-7014 `skBloomP`/`skBloom` (`t=b+v*.62` gives ~2 px petals; line 1.6-2.2 on dogs, .5-.8x scale on cards). Fix: rounder petals (v*1.1-1.2, inner radius u .28 -> ~.45), line width tied to size (dogs w <= z*.18, cards lw <= r*.08). Target: the kennel/bed/tree blossoms, which read fine. Re-run fill_sweep OUTFITS=1 and connect_check.
+   Status (art fix, 13 Nov 2026): fixed. `skdBloom` and `skBloomP`/`skBloom` draw round petals (v*1.15, inner radius .45) with a line tied to size (dogs w = z*.18 within .8-1.5, cards lw = r*.08 within .3-.6, never above a caller's own lw); the Bandana and Garland blossoms are a little bigger. Pink and white now show on every user (crown, sun hat sprig, bandana, garland, haori, cardigan buttons, petal ball, lanterns, bento cups, kennel, beds, tree). Checks below in item 1's commit.
 2. The Paper Sakura Tree's start spot covers the mailbox post and letters badge (desktop and phone) and can take its taps. game/src/03_yard.js:967 `at: [196, 282, ...]`; mailbox box game/src/07b_mailbox.js:236-238. Move it clear (near the Felt Fir Tree x 540, or left of the front path).
 
 ## Nice to have
 3. Sakura Paper Lanterns start spot (03_yard.js:966 [180,196]) strings across the house's right window and the clothesline shirt; put it along the fence like the Candy-Cane Fairy Lights ([620,258]).
 4. Blossom Swing (world/pawart_world_b.js:7077): near-upright posts and thread-thin ropes read as a bar stool. A real A-frame, thicker ropes, bigger garland.
+   Status (art fix): fixed. Each end is a splayed A (front leg, darker back leg from one top joint, a brace), a thicker crossbar, two outlined twisted ropes, five big blossoms on a deeper garland plus a bunch over each joint; the card crop follows.
 5. Squeaky Dango stick is wood tan #C9A07A (world/pawart_world_b.js:7136), reads as a wooden skewer; the design says a felt stick: felt green or cream.
+   Status (art fix): fixed. The stick is felt green (#8FC07C, a stitch at the end), not wood.
 6. Blossom Kennel item card is small (scale(.233), world/pawart_world_b.js:7261) next to the Gingerbread Kennel card; scale up.
+   Status (art fix): fixed. scale(.262) translate(.6 2): the roof and walls fill the card like the Gingerbread Kennel's.
 7. Falling petals stay full daytime pink at night; give .fm-petal the night tint or lower opacity. A petal sits over the "s" of the "Homes" board (desktop and phone).
+   Status (art fix): not art. The petals are drawn in game/src/49_market.js `fmPetals` (inline fill #F7B2C4/#FFF3F6) and animated by game/css/50_market.css `.fm-petal`; the art files have no petal colour. Left for the code agent: e.g. pass `isNight()` to fmPetals for a dusk fill (#C98FA6 / #D9C3CF) or lower `.fm-petal` opacity under the night class, and move the x=290 petal off the "Homes" board.
 8. Sakura Pup Mochi lesson (game/src/00_core.js:54): say *cooked* sweet potato, and a steamed/blanched cabbage leaf.
 
 ## OK
