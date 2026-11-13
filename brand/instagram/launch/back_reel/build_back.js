@@ -1,14 +1,14 @@
 // "Stop feeling bad about a week off" Reel for v2.25 "Glad you're back" (live 12 Nov 2026; shot table, facts and captions: docs/marketing/BACK_REEL.md).
-// Noodle the dachshund (PawArt.dog 'dachs', main's art) tells it, big in every beat, on a warm crayon colour block with bunting, a grass strip and
-// hearts, paws and sparkles in the margins (the turkey Reel's approach: turkey_reel/build_turkey.js). The game's own screens, captured clean from
+// Noodle the dachshund (PawArt.dog 'dachs', main's art) tells it, big in every beat, in the game's own scenes (owner, 13 Nov 2026: the Home Yard by
+// day, dusk, night and dawn, the Cozy House living room; autumn; see SC below), checks as in turkey_reel/build_turkey.js. The game's own screens, captured clean from
 // a main build by capture_back.js: the "While you were out" diary page (with today's gift) and Gerald's welcome-back letter ("We kept your spot
 // warm": a treat bag and 100 coins). The game's own art: Noodle, Gerald (PawArt.prop 'gerald'), the treat bag (fwBagSVG, 47_firstweek.js),
 // Carrot Sticks, Squeaky Duck, the coin icon and the Friends wrapped gift (PawArt.FRIENDS.wrap). Beats: hook, a week away (a crayon tear-off calendar flips day 1 to 7), the letter,
 // the diary page, the daily gift, days played forever (a month with gaps, "N days played, ever"), Gerald's gifts at 7 / 30 / 100 / 365 days,
 // "No streaks. No guilt. Just a happy dog." with "tag someone who needs a break", and our standard end card (brand/kids/endcard.js) for 3 s.
 // Every fact is checked against main's game text (game/i18n/en.json, game/src/53_welcome.js) and the build stops if one changed.
-// Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), the decorations kept 20 px clear of everything, x 850 for words and
-// key art. 1080 x 1920, 30 fps. Voice: Noodle, Kokoro af_bella 1.0x (vo_back.json via ../friends_reel/vo_friends.py). Music: the game's own yard
+// Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), standing things on the scene's floor and off the garden plot, x 850
+// for words and key art. 1080 x 1920, 30 fps. Voice: Noodle, Kokoro af_bella 1.0x (vo_back.json via ../friends_reel/vo_friends.py). Music: the game's own yard
 // music (mods/pawaudio.js) about 11 dB under the voice, the treasure sting on the gift, the level-up sting on Gerald's gifts.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/back_reel/capture_back.js <main checkout> <caps dir>
@@ -83,37 +83,24 @@ const LOOK = { beg: { pose: 'beg', facing: 'right' }, sit: { pose: 'sit', facing
 const dogSvg = (id, kf) => inner(PA.dog('dachs', Object.assign({ anim: false }, LOOK[id], { kf: ((kf % 3) + 3) % 3 })));
 const dogSyms = Object.keys(LOOK).map((id) => `<symbol id="${id}_0" overflow="visible">${dogSvg(id, 0)}</symbol>`).join('');
 
-// the background: a warm apricot-rose glow, plain behind every card, image, badge and Noodle; the decorations live only in the margins and are
-// checked against everything else on every frame (data-deco): crayon bunting along the top edge above the cards, a grass strip with little
-// flowers along the bottom under Noodle's feet, hearts, paw prints and sparkles down the right margin, a few sparkles on the left.
-const GRASS = 1478, FEST = (() => {
-  const edge = () => { let d = `M-10 ${GRASS}`; for (let x = -10; x < W + 10; x += 40) d += ` L${x + 20} ${GRASS - 16} L${x + 40} ${GRASS}`; return d; };
-  let s = `<defs><radialGradient id="glow" cx="0.42" cy="0.45" r="0.8"><stop offset="0" stop-color="#FFEBD2"/><stop offset="0.55" stop-color="#FFD0A8"/><stop offset="1" stop-color="#F7A98C"/></radialGradient>
-  <clipPath id="grass"><path d="${edge()} L${W + 10} ${H + 10} L-10 ${H + 10} Z"/></clipPath></defs>`;
-  s += `<rect width="${W}" height="${H}" fill="url(#glow)"/>`;
-  const SW = [[-20, 360], [340, 720], [700, 1100]], COL = ['#F28FA5', '#FFF3DA', '#7BC6B5', '#F2C744'];
-  s += '<g data-deco="bunting">'; let n = 0;
-  SW.forEach(([a, z]) => { const y0 = 70, sag = 70, P = (x) => y0 + sag * Math.sin(Math.PI * (x - a) / (z - a));
-    s += `<path d="M${a} ${y0} Q${(a + z) / 2} ${y0 + sag * 2} ${z} ${y0}" fill="none" stroke="${PEN}" stroke-width="5" stroke-linecap="round"/>`;
-    for (let x = a + 45; x < z - 30; x += 78) { const y = P(x), c = COL[n++ % 4];
-      s += `<path d="M${(x - 28).toFixed(1)} ${(y - 2).toFixed(1)} L${(x + 28).toFixed(1)} ${(y + 2).toFixed(1)} L${(x + 2).toFixed(1)} ${(y + 66).toFixed(1)} Z" fill="${c}" stroke="${PEN}" stroke-width="4.5" stroke-linejoin="round"/>`
-        + `<path d="M${(x - 14).toFixed(1)} ${(y + 10).toFixed(1)} L${(x + 4).toFixed(1)} ${(y + 44).toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45"/>`; } });
-  s += '</g>';
-  // the grass: two greens, crayon blades, little flowers, all clipped to the strip; a pencil zigzag on top
-  s += `<g data-deco="grass"><g clip-path="url(#grass)"><rect x="-10" y="${GRASS - 20}" width="${W + 20}" height="${H - GRASS + 30}" fill="#9CCB7A"/>`;
-  for (let y = GRASS + 70; y < H; y += 120) s += `<rect x="-10" y="${y}" width="${W + 20}" height="50" fill="#86BA66" opacity=".7"/>`;
-  for (let x = 30; x < W; x += 47) { const y = GRASS + 40 + ((x * 37) % 330); s += `<path d="M${x} ${y} l-6 -18 M${x} ${y} l2 -22 M${x} ${y} l9 -16" stroke="#5E9A47" stroke-width="3.2" stroke-linecap="round"/>`; }
-  [[120, 1600, '#F28FA5'], [330, 1720, '#FFF3DA'], [560, 1590, '#F2C744'], [780, 1700, '#F28FA5'], [990, 1610, '#FFF3DA'], [240, 1840, '#F2C744'], [690, 1850, '#FFF3DA']].forEach(([x, y, c]) => {
-    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5; s += `<circle cx="${(x + 11 * Math.cos(a)).toFixed(1)}" cy="${(y + 11 * Math.sin(a)).toFixed(1)}" r="8" fill="${c}" stroke="${PEN}" stroke-width="2.6"/>`; }
-    s += `<circle cx="${x}" cy="${y}" r="6" fill="#F2A93B" stroke="${PEN}" stroke-width="2.4"/>`; });
-  s += `</g><path d="${edge()}" fill="none" stroke="${PEN}" stroke-width="5" stroke-linejoin="round"/></g>`;
-  const heart = (x, y, r, a, c) => `<path data-deco="heart" transform="translate(${x} ${y}) rotate(${a}) scale(${r / 30})" d="M0 26 C-30 4 -34 -16 -20 -26 C-10 -32 -2 -26 0 -16 C2 -26 10 -32 20 -26 C34 -16 30 4 0 26 Z" fill="${c}" stroke="${PEN}" stroke-width="${(4.5 * 30 / r).toFixed(1)}" stroke-linejoin="round"/>`;
-  const paw = (x, y, r, a) => `<g data-deco="paw" transform="translate(${x} ${y}) rotate(${a}) scale(${r / 30})" fill="#FFF3DA" stroke="${PEN}" stroke-width="${(4 * 30 / r).toFixed(1)}"><ellipse cx="0" cy="8" rx="14" ry="12"/><circle cx="-15" cy="-10" r="6.5"/><circle cx="-5" cy="-19" r="6.5"/><circle cx="7" cy="-19" r="6.5"/><circle cx="16" cy="-9" r="6.5"/></g>`;
-  const spark = (x, y, r, c) => `<path data-deco="spark" d="M${x} ${y - r} Q${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y} Q${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r} Q${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y} Q${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r} Z" fill="${c || '#FFF6DC'}" stroke="${PEN}" stroke-width="3.4" stroke-linejoin="round"/>`;
-  s += heart(975, 360, 30, 12, '#F28FA5') + spark(1012, 470, 18) + paw(960, 590, 28, -20) + heart(1020, 740, 26, -14, '#E8665A') + spark(950, 870, 14)
-    + paw(1000, 1000, 30, 15) + spark(1035, 1135, 20) + heart(955, 1260, 28, 10, '#F28FA5') + paw(1020, 1385, 24, -10);
-  s += spark(28, 800, 12) + spark(24, 1330, 10, '#FFE3A1');
-  return s; })();
+// the backgrounds (owner, 13 Nov 2026: "change the background, coz last reels already using this, we can use the gaming assets"): the game's own
+// scenes from main (PawArt.scene, 1000 x 600, autumn), no game interface. Each is drawn at 3.2x so its full height fills the frame (1920 px) and a
+// 337-unit window of it shows: SC[k].x0 is the window's left edge in scene units. Our feet line (y 1425) is scene y 445: the grass in the yard (the
+// fence base is at ~y 400) and the floorboards in the living room (the floor starts at ~y 400, the sofa's front). Pre-rendered once per build to a
+// JPEG (WORK/bg_<key>.jpg) and shown as an image, so a frame stays cheap. Text never sits on the scene: every word is on a solid cream card, pill or
+// badge. Things that stand (Noodle, Gerald, the gift) are checked on every frame to stand on the scene's floor and off its keep-out boxes (the garden plot).
+const SCALE = 3.2, AUT = { season: 'autumn', weather: 'sunny' };
+const SC = {
+  yard: { name: 'yard', o: Object.assign({ time: 'day' }, AUT), x0: 600 },      // the yard by day: the fence and the hills (past the washing line)
+  dusk: { name: 'yard', o: Object.assign({ time: 'dusk' }, AUT), x0: 600 },     // the same view, evening
+  night: { name: 'yard', o: Object.assign({ time: 'night' }, AUT), x0: 600 },   // and night (the days pass)
+  door: { name: 'yard', o: Object.assign({ time: 'day' }, AUT), x0: 225 },      // the house corner and the mailbox, for Gerald's letter (the garden plot left out)
+  room: { name: 'house', o: Object.assign({ time: 'day' }, AUT), x0: 545 },     // the Cozy House living room: the lamp, the striped wall, Noodle's bed
+  sofa: { name: 'house', o: Object.assign({ time: 'day' }, AUT), x0: 300 },     // the living room's sofa and window
+  tree: { name: 'yard', o: Object.assign({ time: 'dawn' }, AUT), x0: 640 },     // the yard on a sunny morning, towards the autumn tree
+};
+// scene floors and keep-out boxes, in scene units: feet must be on the floor (y >= floor) and outside every keep-out box
+const FLOORS = { yard: { floor: 400, keep: [[0, 425, 220, 600]] }, house: { floor: 405, keep: [] } }; // the yard's garden plot (x 5..215, y 430..590)
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
 // ---- the beats (each card carries the spoken words, so it works as the subtitles) ----
@@ -141,8 +128,8 @@ const allText = BEATS.map((b) => [b.title || '', ...(b.lines || []), b.sub || ''
 
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-dog *{animation:none!important}</style>
-<svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}${IMGS}</defs>
-<g id="bg">${FEST}</g>
+<svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}${IMGS}__BGSYMS__</defs>
+<g id="bg"></g>
 <g id="art"></g><g id="ov"></g></svg>
 <script>
 ${CENTRE_JS}
@@ -150,14 +137,28 @@ ${SAFE_JS}
 ${ENDCARD_JS}
 const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455;
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, DAYS_ON=${JSON.stringify(DAYS_ON)};
-const PAGE_AR=${PAGE.h / PAGE.w}, LETTER_AR=${LETTER.h / LETTER.w};
+const PAGE_AR=${PAGE.h / PAGE.w}, LETTER_AR=${LETTER.h / LETTER.w}, SC=${JSON.stringify(SC)}, FLOORS=${JSON.stringify(FLOORS)}, SCALE=${SCALE};
+// which scene each beat shows; the away beat goes from day to evening to night as the days pass (cross-fades), each beat cross-fades in
+const BG={hook:'yard', away:'yard', letter:'door', diary:'room', gift:'sofa', days:'tree', mile:'tree', end:'tree'};
+function bgLayers(i, lt, b){ const L=[], prev=i>0?(BEATS[i-1].k==='away'?'night':BG[BEATS[i-1].k]):null, cur=BG[b.k], k=i===0?1:sm((lt+0.06)/0.4);
+  if(b.k==='away'){ const q=cl((lt-0.4)/(b.hold*0.75)); L.push(['yard',1]); L.push(['dusk',sm((q-0.3)/0.15)]); L.push(['night',sm((q-0.6)/0.15)]); return L; }
+  if(prev&&prev!==cur&&k<1) L.push([prev,1]);
+  L.push([cur,prev===cur?1:k]); return L; }
+// something standing at screen x0..x1 with its feet at screen y: on the floor of the beat's scene, off its keep-out boxes
+function groundOk(key, x0, x1, fy){ const s=SC[key], f=FLOORS[s.name], u0=s.x0+x0/SCALE, u1=s.x0+x1/SCALE, uy=fy/SCALE;
+  if(uy<f.floor) return 'stands above the floor ('+uy.toFixed(0)+' < '+f.floor+')';
+  for(const k of f.keep) if(uy>=k[1]&&uy<=k[3]&&u1>k[0]&&u0<k[2]) return 'stands on a keep-out box ('+k.join(',')+')';
+  return ''; }
+// a cream round chip holding a piece of the game's art (an item never sits on a scene object: it floats in its own chip)
+function chip(id, cx, cy, r, u, tag, op){ if(u<=0) return ''; const k=0.85+0.15*back(u*1.4), s=r*1.45;
+  return '<g data-apart="'+(tag||id)+'" opacity="'+f2(sm(u*3)*(op==null?1:op))+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(k)+') translate('+f2(-cx)+' '+f2(-cy)+')"><circle cx="'+f2(cx)+'" cy="'+f2(cy)+'" r="'+r+'" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><use href="#'+id+'" x="'+f2(cx-s/2)+'" y="'+f2(cy-s/2)+'" width="'+f2(s)+'" height="'+f2(s)+'"/></g>'; }
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const BOX={};
 function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NSV,'use'); u.setAttribute('href','#'+id+'_0'); $('art').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }
 // Noodle, standing on (cx, feet), at most hh tall and ww wide; flip: facing left
 function noodle(pose, svg, cx, feet, hh, ww, dy, op, flip){ const b=box(pose), s=Math.min(hh/b[3], ww/b[2]), w=b[2]*s, h=b[3]*s;
-  return '<g data-apart="Noodle" opacity="'+f2(op)+'"><ellipse cx="'+f2(cx)+'" cy="'+(feet-3)+'" rx="'+f2(w*0.36)+'" ry="14" fill="${PEN}" opacity=".18"/><g'+(flip?' transform="translate('+f2(2*cx)+' 0) scale(-1 1)"':'')+'><g transform="translate('+f2(cx-w/2)+' '+f2(feet-h+(dy||0))+') scale('+s.toFixed(4)+') translate('+f2(-b[0])+' '+f2(-b[1])+')">'+svg+'</g></g></g>'; }
+  return '<g data-apart="Noodle" data-feet="'+f2(feet)+'" opacity="'+f2(op)+'"><ellipse cx="'+f2(cx)+'" cy="'+(feet-3)+'" rx="'+f2(w*0.36)+'" ry="14" fill="${PEN}" opacity=".18"/><g'+(flip?' transform="translate('+f2(2*cx)+' 0) scale(-1 1)"':'')+'><g transform="translate('+f2(cx-w/2)+' '+f2(feet-h+(dy||0))+') scale('+s.toFixed(4)+') translate('+f2(-b[0])+' '+f2(-b[1])+')">'+svg+'</g></g></g>'; }
 // a piece of the game's art (a symbol), centred on (cx, cy), size px, popping in
 function art(id, cx, cy, size, u, tag, op){ const s=size*(0.82+0.18*back(u)); return '<g data-apart="'+(tag||id)+'" opacity="'+f2(sm(u*2.5)*(op==null?1:op))+'"><use href="#'+id+'" x="'+f2(cx-s/2)+'" y="'+f2(cy-s/2)+'" width="'+f2(s)+'" height="'+f2(s)+'"/></g>'; }
 // a captured game screen, w wide, top at y, sliding up a little as it comes in
@@ -207,6 +208,7 @@ window.frame=function(t, D){
   const b=BEATS[i], lt=t-b.at, p=cl(lt/b.hold);
   const u=i===0?1:cl((lt+0.06)/0.32); // the hook is there at frame 1
   const cop=fade*(i===0?1:sm(u*3));
+  $('bg').innerHTML=bgLayers(i, lt, b).filter((l)=>l[1]>0.001).map((l)=>'<use href="#bg_'+l[0]+'" opacity="'+f2(l[1])+'"/>').join('');
   if(fade>0){
     let below=CARD_TOP;
     if(b.pillTop) ov+=pillA(b.pillTop, CX, 345, 58, { fill:'#FFE3A1', padX:36, op: cop }, 'pilltop');
@@ -214,7 +216,7 @@ window.frame=function(t, D){
     if(b.pill){ const py=below+80; ov+=pillA(b.pill, CX, py, 56, { fill:'${RED}', color:'${PAPER}', padX:34, op: fade*sm((lt-0.5)/0.25) }); below=py+40; }
     if(b.kind==='hook'){
       art_+=noodle('beg', D.n.beg, 650, FEET, 690, 400, 0, fade, true);
-      art_+=art('ic_gift', 225, 1120, 300, 1, 'gift', fade);
+      art_+=art('ic_gift', 225, 1300, 280, 1, 'gift', fade).replace('<g data-apart="gift"','<g data-apart="gift" data-feet="1418"');
     } else if(b.kind==='away'){
       // seven days pass: the calendar flips once each 1/9 of the beat; Noodle sits and waits, then naps
       const d=Math.min(7, 1+Math.floor(cl((lt-0.4)/(b.hold*0.75))*7)), fl=((lt-0.4)/(b.hold*0.75)*7)%1;
@@ -223,19 +225,19 @@ window.frame=function(t, D){
     } else if(b.kind==='letter'){
       art_+=shot('img_letter', LETTER_AR, 60, 425, 790, u, fade);
       const ly=425+790*LETTER_AR;
-      ov+=pillA('a treat bag and 100 coins', CX, ly+75, 62, { fill:'#FFE3A1', padX:40, op: fade*sm((lt-0.6)/0.3) }, 'gift line');
-      art_+=art('bag', 175, ly+250, 240, cl((lt-0.8)/0.4), 'bag', fade);
-      art_+=art('ger_wave', 175, FEET-125, 260, cl((lt-0.2)/0.4), 'Gerald', fade);
-      art_+=noodle('yay', D.n.yay, 580, FEET, FEET-(ly+130)-40, 520, -Math.abs(Math.sin(t*7))*12, fade, true);
+      ov+=pillA('a treat bag and 100 coins', 530, ly+108, 58, { fill:'#FFE3A1', padX:36, op: fade*sm((lt-0.6)/0.3) }, 'gift line');
+      art_+=chip('bag', 135, ly+108, 66, cl((lt-0.8)/0.4), 'bag', fade);
+      art_+=art('ger_wave', 175, FEET-0.44*240, 240, cl((lt-0.2)/0.4), 'Gerald', fade).replace('<g data-apart="Gerald"','<g data-apart="Gerald" data-feet="'+FEET+'"');
+      art_+=noodle('yay', D.n.yay, 600, FEET, FEET-(ly+130)-40, 490, -Math.abs(Math.sin(t*7))*12, fade, true);
     } else if(b.kind==='diary'){
       // the game's own page, smaller, beside Noodle: the card above quotes its lines word for word
-      const pw=380, py=below+70; art_+=shot('img_page', PAGE_AR, 66, py, pw, cl((lt-0.4)/0.35), fade);
-      art_+=noodle('sit', D.n.sit, 662, FEET, FEET-below-60, 360, 0, fade, true);
+      const pw=380, py=below+70; art_+=shot('img_page', PAGE_AR, 466, py, pw, cl((lt-0.4)/0.35), fade);
+      art_+=noodle('sit', D.n.sit, 235, FEET, FEET-below-60, 390, 0, fade, false);
     } else if(b.kind==='gift'){
       const y=below+190;
-      art_+=art('it_duck', 160, y, 150, cl((lt-0.6)/0.4), 'duck', fade);
-      art_+=art('it_carrot', 450, y-10, 230, cl((lt-0.15)/0.4), 'carrot', fade);
-      art_+=art('ic_coin', 735, y, 140, cl((lt-1.0)/0.4), 'coin', fade);
+      art_+=chip('it_duck', 160, y, 82, cl((lt-0.6)/0.4), 'duck', fade);
+      art_+=chip('it_carrot', 440, y-6, 118, cl((lt-0.15)/0.4), 'carrot', fade);
+      art_+=chip('ic_coin', 725, y, 82, cl((lt-1.0)/0.4), 'coin', fade);
       art_+=noodle('paw', D.n.paw, CX, FEET, FEET-(y+125)-50, 700, 0, fade, false);
     } else if(b.kind==='days'){
       const n=Math.min(DAYS_ON.length, Math.floor(cl((lt-0.3)/(b.hold*0.55))*DAYS_ON.length+0.0001)), C=66, G=8, mw=7*C+6*G, x0=CX-mw/2, y0=below+64;
@@ -245,7 +247,7 @@ window.frame=function(t, D){
       art_+=noodle('idle', D.n.idle, CX, FEET, FEET-py-80, 720, 0, fade, true);
     } else if(b.kind==='mile'){
       const y=below+120; [7,30,100,365].forEach((n,j)=>{ art_+=medal(150+j*200, y, 74, n, cl((lt-0.3-j*0.45)/0.4)*fade); });
-      art_+=art('ger_cheer', 180, FEET-140, 300, cl((lt-0.2)/0.4), 'Gerald', fade);
+      art_+=art('ger_cheer', 180, FEET-0.44*280, 280, cl((lt-0.2)/0.4), 'Gerald', fade).replace('<g data-apart="Gerald"','<g data-apart="Gerald" data-feet="'+FEET+'"');
       art_+=noodle('yay', D.n.yay, 595, FEET, FEET-(y+74+60)-60, 500, -Math.abs(Math.sin(t*7))*12, fade, true);
     } else if(b.kind==='end'){
       art_+=noodle('yay', D.n.yay, CX, FEET, FEET-below-90, 720, -Math.abs(Math.sin(t*7))*14, fade, false);
@@ -257,24 +259,24 @@ window.frame=function(t, D){
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
-  // the decorations (margins only) never touch anything: 20 px clear of every card, pill, image, badge and Noodle
-  { const deco=[...$('bg').querySelectorAll('[data-deco]')].map((e)=>e.getBoundingClientRect()), things=[...$('st').querySelectorAll('#art [data-apart],#ov [data-apart],#ov [data-box]')].filter((e)=>+(e.getAttribute('opacity')||1)>0.05);
-    for(const e of things){ const r=e.getBoundingClientRect(); if(!r.width) continue; for(const d of deco){ const g=Math.max(d.left-r.right,r.left-d.right,d.top-r.bottom,r.top-d.bottom); if(g<20) return 'touches a decoration: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(g)+' px'; } } }
+  // standing things stand on the scene's floor (Noodle, Gerald, the gift): never above the fence base or the sofa's front, never on the garden plot
+  if(fade>0) for(const e of $('art').querySelectorAll('[data-feet]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(BG[b.k], r.left, r.right, +e.getAttribute('data-feet'));
+    if(why) return e.getAttribute('data-apart')+' '+why; }
   // the brief's tighter right edge for words and key art (x 850): every card, pill, image, item and Noodle
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
     if(r.right>854) return 'past x 850: '+(e.getAttribute('data-apart')||'box')+' '+Math.round(r.right); }
   return ''; };
 // the cover: its own design, hook-led; key content inside the 1:1 crop (y 420..1500), the logo inside 4:5 (y 285..1635)
 window.cover=function(D){
+  // the game's own yard by day (autumn) behind it all: the title card on the sky, Noodle and the wrapped gift on the grass, the logo on its own cream card
+  $('bg').innerHTML='<use href="#bg_yard"/>';
   let s='';
   s+='<g data-box data-apart="title"><rect x="70" y="430" width="940" height="300" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'
     +centred([{s:'Stop feeling bad',size:fitS('Stop feeling bad',112,860),pitch:120},{s:'about a week off',size:fitS('about a week off',112,860),fill:'${RED}'}],540,580,F).svg+'</g>';
-  s+=art('ic_gift', 225, 950, 270, 1, 'gift');
-  s+=noodle('beg', D.n.beg, 700, 1220, 440, 470, 0, 1, true);
-  s+=pillA('your dog saved you a gift', 540, 1385, 66, { fill:'#FFE3A1', padX:40 }, 'pill');
-  const lw=380, lh=lw*280/900; s+='<svg data-apart="logo" x="'+(540-lw/2)+'" y="1505" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>';
-  // the festive frame outside the crops: the bunting on top (above y 250), the grass strip moved down below the 4:5 crop (from y 1660); no side decorations
-  $('bg').querySelectorAll('[data-deco]').forEach((e)=>{ const k=e.getAttribute('data-deco'); if(k==='grass') e.setAttribute('transform','translate(0 190)'); else if(k!=='bunting') e.setAttribute('opacity',0); });
+  s+=pillA('your dog saved you a gift', 540, 815, 66, { fill:'#FFE3A1', padX:40 }, 'pill');
+  s+=art('ic_gift', 250, 1330, 280, 1, 'gift');
+  s+=noodle('beg', D.n.beg, 720, 1462, 560, 470, 0, 1, true);
+  const lw=340, lh=lw*280/900; s+='<g data-apart="logo"><rect x="'+(540-lw/2-30)+'" y="1505" width="'+(lw+60)+'" height="'+f2(lh+14)+'" rx="30" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(540-lw/2)+'" y="1512" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
   $('art').innerHTML=''; $('ov').innerHTML=s;
   const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
   const near=apartCheck($('st'),24); if(near.length) return 'cover too close: '+near.join('; ');
@@ -288,7 +290,16 @@ const drawFor = (t) => ({ n: Object.fromEntries(Object.keys(LOOK).map((k) => [k,
   const exe = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1243/chrome-linux/chrome'].find((f) => fs.existsSync(f));
   const b = await chromium.launch({ executablePath: exe });
   const p = await b.newPage({ viewport: { width: W, height: H } });
-  const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html);
+  // the game's scenes, each window rendered once at 1080 x 1920 (3.2x) and kept as a JPEG
+  let bgSyms = '';
+  for (const [k, sc] of Object.entries(SC)) {
+    const f = path.join(WORK, `bg_${k}.jpg`), svg = PA.scene(sc.name, sc.o);
+    if (!svg || !new RegExp('pa-wa-' + sc.name + '\\b').test(svg)) throw new Error('no scene art for ' + sc.name);
+    await p.setContent(`<html><body style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${sc.x0} 0 ${W / SCALE} ${H / SCALE}">${svg.replace('<svg', '<svg x="0" y="0" width="1000" height="600"')}</svg></body></html>`);
+    await p.screenshot({ path: f, type: 'jpeg', quality: 92 });
+    bgSyms += `<image id="bg_${k}" width="${W}" height="${H}" href="data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}"/>`;
+  }
+  const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html.replace('__BGSYMS__', bgSyms));
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
