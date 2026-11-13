@@ -337,6 +337,15 @@ async function worker(job) {
       for (const id of ['supporter', 'tokyo']) { await ev((id) => window.__paw.ks.confirm(id), id); await waitSel('.ks-confirm'); await sleep(250); await measure('kind shop: confirm ' + id); await jsClick('.ks-confirm .ks-no'); await sleep(150); }
       await closeAll();
     });
+    await step('kind shop refunds', async () => { // refund fix (13 Nov 2026): refunded cards, "Settling" in My purchases, a Delivered! pack that settled a refund
+      if (!(await ev(() => !!(window.__paw.ks && window.__paw.ks.on())))) return;
+      await ev(() => { const S = window.__paw.S; window.__fitKs = JSON.stringify(S.shop); S.shop.onceBack = ['supporter', 'tokyo', 'cozy', 'comfort']; S.shop.coinDebt = 1950; });
+      await ev(() => window.__paw.ks.open('supporter')); await modalUp(); await measure('kind shop: refunded');
+      await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = b.scrollHeight; }); await measure('kind shop: settling');
+      await eachTab('kind shop: refunded', '#modal .panel.ks [role=tab]', 6); await closeAll();
+      await ev(() => { window.__paw.ks.delivered({ items: ['coins_3k', 'coins_1k'], got: [{ n: 5000, a: 3050 }, { n: 1000, a: 0 }], granted: ['cs_fit'] }); }); await modalUp(); await measure('kind shop: delivered, settled');
+      await ev(() => { const S = window.__paw.S; S.shop = JSON.parse(window.__fitKs); }); await closeAll();
+    });
     await step('journal', async () => { await jsClick('[data-act=journal]'); await waitSel('.panel.journal'); await eachTab('journal', '#modal .jtabs [data-jt]', 14); await closeAll(); }, 90000);
     await step('mailbox', async () => {
       await ev(() => window.__paw.openMailbox()); await modalUp(); await measure('mailbox');

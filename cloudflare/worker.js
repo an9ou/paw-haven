@@ -563,7 +563,11 @@ async function shopRelease(env, uid, item, sid) {
 // each conflicting open hold is closed: its Stripe session is expired (POST /v1/checkout/sessions/:id/expire), then the hold goes.
 // Returns null when nothing blocks any more, 'pending' when the other Checkout was paid and its webhook has not landed yet, 'busy' otherwise.
 async function shopClearConflicts(env, uid, id, live) {
+  const openNow = async () => new Set((await all(env, 'select item from shop_holds where user_id = ?1 and created_at > ?2', uid, Date.now() - SHOP_HOLD_MS)).map((r) => r.item));
+  const open0 = await openNow();
+  if (!shopCovered((t) => live.has(t) || open0.has(t), id)) return null; // nothing blocks: an open Robo Scoop Checkout stays open when the Kit is tapped
   for (const t of shopCoverers(id)) {
+    if (!open0.has(t)) continue;
     if (live.has(t)) continue;
     const h = await shopFreshHold(env, uid, t); if (!h) continue;
     if (!h.session_id) {
@@ -581,8 +585,8 @@ async function shopClearConflicts(env, uid, id, live) {
     if (st === 'complete') return 'pending'; // paid: the purchase arrives with its webhook
     return 'busy';
   }
-  const holds = new Set((await all(env, 'select item from shop_holds where user_id = ?1 and created_at > ?2', uid, Date.now() - SHOP_HOLD_MS)).map((r) => r.item));
-  return shopCovered((t) => live.has(t) || holds.has(t), id) ? 'pending' : null;
+  const open1 = await openNow();
+  return shopCovered((t) => live.has(t) || open1.has(t), id) ? 'pending' : null;
 }
 // one Stripe Checkout for this hold. key: the hold's created_at, so a retry of a hold whose first request died gets the same session back
 // (Idempotency-Key). Any failure (Stripe says no, a network error, a timeout) deletes the hold, so the next tap starts clean.
