@@ -36,6 +36,16 @@ run('back_capture', async (t) => {
   await ev(() => { const m = document.getElementById('modal'); if (m && !m.hidden) { const x = m.querySelector('.x'); if (x) x.click(); } });
   // the diary lines: the game seeds them by the return; pick a return whose page has the sock line (wb.l1)
   const at = await ev((seed) => { if (seed) return +seed; for (let a = 1; a < 5000; a++) { const L = window.__paw.wb.lines({ at: a, h: 168 }); if (/found a sock/.test(L[0]) && L.some((l) => /sat by the gate/.test(l))) return a; } for (let a = 1; a < 5000; a++) if (/found a sock/.test(window.__paw.wb.lines({ at: a, h: 168 })[0])) return a; return 1; }, process.env.SEED || 0);
+  // PAW_LANG=zh-Hans (the RedNote cut, owner 13 Nov 2026): the same dog, return and gift, with the game switched to the language and reloaded with
+  // the save, so the diary page and the letter are the game's own Chinese screens (as friends_reel/capture_clean.js)
+  if (process.env.PAW_LANG) {
+    await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, process.env.PAW_LANG);
+    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm();
+    await ev(() => { const S = window.__paw.S; S.newsSeen = '9.99'; S.wbPend = null; S.awayGiftISO = ''; S.backISO = ''; });
+    await p().waitForTimeout(1500);
+    await ev(() => { const m = document.getElementById('modal'); if (m && !m.hidden) { const x = m.querySelector('.x'); if (x) x.click(); } });
+    console.log('language', await ev(() => document.documentElement.lang));
+  }
   const lines = await ev((a) => window.__paw.wb.lines({ at: a, h: 168 }), at);
   console.log('seed', at, JSON.stringify(lines));
   await p().addStyleTag({ content: CLEAN });
@@ -62,5 +72,5 @@ run('back_capture', async (t) => {
   await shoot('#modal .mb-read article.letter', 'gerald_letter');
   fs.writeFileSync(path.join(OUT, 'treat_bag.svg'), await ev(() => window.__fwBag()));
   fs.writeFileSync(path.join(OUT, 'facts.json'), JSON.stringify({ seed: at, lines, gift, letterId: id }, null, 1));
-  fs.unlinkSync(PAGE);
+  try { fs.unlinkSync(PAGE); } catch (e) { /* gone */ }
 }, { date: process.env.CAP_DATE || null, timeout: 180000 });
