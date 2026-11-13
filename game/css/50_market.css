@@ -28,3 +28,5 @@ html[data-layout="phone"] .fm-pop .fm-tabs .btn{flex:none;font-size:16px}
 html[data-motion="off"] .fm-petal{animation:none;opacity:0}
 /* after dark (fmPetals(lit)): the petals are dimmer, like the rest of the night scene */
 .fm-petals.nt{opacity:.45}
+/* Sakura Market (final fit check): on a phone a long item name ("Hanami Sun Hat", "Picnic Basket Bed") sat within 4 px of the card's pencil line, so the market cards keep 10 px each side and the name wraps instead of touching it */
+html[data-layout="phone"] .fm-pop .fm-card{padding-left:10px;padding-right:10px}

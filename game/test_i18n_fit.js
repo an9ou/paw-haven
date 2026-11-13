@@ -275,6 +275,12 @@ async function worker(job) {
       await ev(() => { const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; window.__paw.nw.open(); }); await modalUp(); await measure("nw: what's new");
       await jsClick('#nwAll'); await waitSel('#modal .nw-all', 3000); await measure('nw: all updates'); await closeAll();
     }, 30000);
+    // the Sakura Market news (49c_news.js NEWS_V230, dated 1 Mar 2027): window.__ddNextTest lets nwDue show it before its date, so it is the newest entry
+    await step('nw sakura', async () => {
+      await ev(() => { window.__ddNextTest = 1; const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; window.__paw.nw.open(); }); await modalUp(); await measure("nw sakura: what's new");
+      await ev(() => { if (window.__paw.nw.latest() !== '2.30') throw new Error('the Sakura Market news is not the newest page'); });
+      await closeAll(); await ev(() => { window.__ddNextTest = 0; });
+    }, 30000);
     // v2.17 Dog Days (V217.md): the wish chip, the Bond track, the diary, the sticker book, a letter, the phone More tray (prefs.ddTest through the test hook)
     await step('dd', async () => {
       await ev(() => { const P = window.__paw, S = P.S; P.dd.test(true); S.dogs[0].bond = { level: 4, pts: 500 }; S.dd.wish = { day: '', w: {}, coins: 0 }; P.dd.wish(); S.dd.wish.w[S.dog.id] = { k: 'walk', a: 'cliffs', done: 0 }; P.dd.chip(); });

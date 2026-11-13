@@ -112,3 +112,38 @@ Built on `claude/sakura-market` (11 Nov 2026), English only, not merged:
 
 
 **Music approved (owner, 12 Nov 2026):** "The music of sakura market is good, can ship it." The spring variant ships with the market.
+
+## Status, final stage (13 Nov 2026, branch `claude/sakura-market`, nothing pushed to `main`, nothing deployed)
+
+Done:
+
+- [x] Merge fallout: after merging Sakura + v2.26-v2.29 + the art and code fixes, `sakura_market` 47, `worker` pass, `wm_review` 73, `v226_visitors` 69 and `smoke` 35 are green;
+  `v219_friends` has one failing check, see "Open" below.
+- [x] Phone half B (360 x 640, the yard's Look right arrow): all five Sakura decorations plus the five Winter Market ones out in the yard, with and without a yard
+  visitor (Tilly): left and right half looked at by eye, nothing overlaps the mailbox, house, dog house, garden or the visitor, and nothing sits in half
+  across the view edge (the next half only peeks in at the edge, like the dog house does). The Paper Sakura Tree sits right under the visitor's name tag with about
+  2 px to spare, no overlap. No change to `03_yard.js` needed. Shots: `docs/` none; they were kept in the session scratchpad.
+- [x] NEWS: `NEWS_V230` in `game/src/49c_news.js`, id `2.30` (placeholder), date `2027-03-01`, 5 lines, shown by `nwSort` only once `nwDue` (Japan date from 1 Mar 2027,
+  or the Pages test copy's `__ddNextTest`), so it never leads before 1 Mar. It does not use the `minor` flag.
+- [x] Gerald's letter: the Festive Market's opening letter (`fmLetter`, once per market per year, on 25 Mar) has its own Sakura wording
+  (`fm.letter_text_sakura`, `fm.letter_ps_sakura`); other markets keep the generic text.
+- [x] Translations: 56 keys (22 item names, their notes, perks, stories and tips, the changed Pup Mochi lesson, the 2 toy hints, the letter and 6 NEWS keys) in all 11
+  other languages in one batch; yue style from `docs/i18n/yue.md`; the ja, zh-Hans, zh-Hant, yue, ko and th game font subsets and `packed.js` rebuilt.
+  `i18n`, `copy` and `i18n_smoke` (ja, de) pass.
+- [x] Fit: `test_i18n_fit.js` has the steps `fm sakura` (market scene, 5 stalls, map on 28 Mar 2027) and `nw sakura` (the Sakura news on top);
+  de ja th yue at small, iphone15 and desktop: 17 states per session (204 in all), 0 findings. On a phone the market cards keep 10 px each side (`50_market.css`):
+  "Hanami Sun Hat" and "Picnic Basket Bed" had 4 px to the pencil line, now they wrap.
+
+Left for the release day (1 Mar 2027):
+
+- [ ] Deploy the Worker first, with `FR_LIM { notes 12, gifts 49, decor 40, houses 16 }` (`cloudflare/worker.js`), so friends' yards take the Sakura decorations and the
+  Blossom Kennel. An older Worker is handled in the game (`FR.sakOld`), but the Worker comes first.
+- [ ] Merge `main` once v2.29.1 and the Kind shop fix have landed (the `minor` flag in `49c_news.js`, `nwSort`, `run_tests.js` are the likely conflicts), regenerate
+  `packed.js` and the font subsets instead of hand-merging, run `i18n_extract.js --en`, check for new untranslated keys, then the suites above and `i18n_fit` again.
+- [ ] The Game Manager picks the version: change the `NEWS_V230` id (`2.30`), `nw.v230.*` keys and `CHANGELOG.md`; date stays `2027-03-01` unless the owner moves it.
+- [ ] Owner's go-ahead and launch date (special update), then itch.io, Marketing briefing, `dogs/check_identical` against the last release.
+
+Open:
+
+- `v219_friends` (360x640, "three friend dogs: no dog drawn over another"): fails twice in a row on this branch (pom idle 940,432 against corgi sit 900,488, 17 x 17 px) and
+  passes (348 checks) on `claude/release-26-29`. Nothing the Sakura work touches draws or places friend dogs; see the final report for what was found.
