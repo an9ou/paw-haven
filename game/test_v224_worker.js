@@ -22,13 +22,15 @@ const now = () => Math.floor(Date.now() / 1000);
     DB.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // safe to re-run
     // throws: a network error (fetch rejects); delay: ms before answering (concurrent taps); status: session id -> open | complete | expired;
     // keys: Idempotency-Key -> session id (Stripe answers the same session for the same key)
-    const stripe = { calls: [], n: 0, fail: false, throws: false, delay: 0, sessions: {}, status: {}, keys: {} };
+    // conflict: n answers of 409 (the same Idempotency-Key still in flight at Stripe)
+    const stripe = { calls: [], n: 0, fail: false, throws: false, delay: 0, conflict: 0, sessions: {}, status: {}, keys: {} };
     const sres = (o, st) => new Response(JSON.stringify(o), { status: st || 200 });
     const STRIPE_FETCH = async (url, o) => {
       stripe.calls.push({ url, o, form: new URLSearchParams(o.body) });
       if (stripe.delay) await new Promise((r) => setTimeout(r, stripe.delay));
       if (stripe.throws) throw new Error('network down');
       if (stripe.fail) return sres({ error: { code: 'resource_missing' } }, 400);
+      if (stripe.conflict > 0 && o.method === 'POST' && /\/checkout\/sessions$/.test(url)) { stripe.conflict--; return sres({ error: { type: 'idempotency_error', message: 'in progress' } }, 409); }
       const u = new URL(url);
       let m = u.pathname.match(/\/checkout\/sessions\/(cs_[A-Za-z0-9_]+)\/expire$/);
       if (m && o.method === 'POST') { // only an open session can be expired
@@ -189,7 +191,7 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await hook(paid('cs_test_early001', B.id, 'cozy', 'pi_test_early001'));
     ok(r.status === 200 && q('select refunded_at from purchases where id = ?', 'cs_test_early001').refunded_at === era && n('select count(*) as n from purchases where id = ?', 'cs_test_early001') === 1, 'then checkout.session.completed: one row, still refunded');
     r = await call('GET', '/shop/owned', null, B.token); ok(r.status === 200 && r.json.purchases.length === 1 && r.json.purchases[0].refunded === true, 'B owns nothing: the one purchase shows refunded');
-    r = await call('POST', '/shop/checkout', { item: 'cozy' }, B.token); ok(r.status === 409 && r.json.error === 'refunded', 'a refunded one-time item cannot be bought again: 409 refunded (not owned)');
+    r = await call('POST', '/shop/checkout', { item: 'cozy' }, B.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'a refunded looks pack can be bought again (owner, 13 Nov: only the Supporter Pack is never for sale again): ' + r.status + ' ' + r.text);
     const g1 = gets();
     r = await hook({ id: 'evt_e2', type: 'charge.refunded', data: { object: { id: 'ch_e', payment_intent: 'pi_test_early001', refunded: true } } });
     ok(r.status === 200 && gets() === g1, 'the refund again: no lookup (the row is there)');
@@ -209,14 +211,21 @@ const now = () => Math.floor(Date.now() / 1000);
     sec('7. one-time items owned are refused');
     const before = stripe.calls.length;
     r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token); ok(r.status === 409 && r.json.error === 'owned', 'the Supporter Pack, owned: 409 owned');
-    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 409 && r.json.error === 'refunded', 'Tokyo Street, refunded: 409 refunded');
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'Tokyo Street, refunded: for sale again, a new Checkout (only the Supporter Pack is never for sale again)');
+    const tokAgain = r.json.url.split('/').pop();
     r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, A.token); ok(r.status === 200, 'coin packs are repeatable (an open Checkout is reused)');
     await hook(paid('cs_test_kit00001', B.id, 'comfort', 'pi_test_kit00001'));
     r = await call('POST', '/shop/checkout', { item: 'robo' }, B.token); ok(r.status === 409, 'the Comfort Kit covers the Robo Scoop');
     r = await call('POST', '/shop/checkout', { item: 'comfort' }, B.token); ok(r.status === 409, 'and the Kit itself');
     for (const t of ['robo', 'sprinkler', 'bowl']) await hook(paid('cs_test_tool_' + t, A.id, t, 'pi_test_tool_' + t));
     r = await call('POST', '/shop/checkout', { item: 'comfort' }, A.token); ok(r.status === 409, 'all three tools owned: the Comfort Kit is refused');
-    ok(stripe.calls.length === before, 'a refunded one-time item does not reach Stripe, and the open coin-pack Checkout is not opened twice');
+    ok(stripe.calls.length === before + 1, 'only the refunded Tokyo Street reached Stripe (once); owned items do not, and the open coin-pack Checkout is not opened twice');
+    await hook(paid(tokAgain, A.id, 'tokyo', 'pi_test_tokagain1'));
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 409 && r.json.error === 'owned', 'bought again: Tokyo Street is owned (409 owned)');
+    r = await call('GET', '/shop/owned', null, A.token);
+    const tokRows = (r.json.purchases || []).filter((p) => p.item === 'tokyo');
+    ok(tokRows.length === 2 && tokRows.filter((p) => p.refunded).length === 1 && tokRows.every((p) => p.coins === 0), 'two Tokyo Street rows, one refunded, one live, and neither carries coins: ' + JSON.stringify(tokRows));
+    ok((r.json.purchases || []).filter((p) => !['supporter', 'coins_1k', 'coins_3k', 'coins_8k'].includes(p.item)).every((p) => p.coins === 0), 'no looks pack or tool row ever carries coins');
 
     sec('8. Founding Friend (ff) from purchases, never from the client');
     const card = (extra) => Object.assign({ name: [1, 2], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }] }, extra || {});
@@ -424,6 +433,83 @@ const now = () => Math.floor(Date.now() / 1000);
     ok(creates(c0).length === 1 && urls.size === 1 && taps.every((t) => t.status === 200 || (t.status === 503 && t.json.error === 'busy')), 'one Stripe session, one url, the other taps busy or the same url: ' + taps.map((t) => t.status).join(','));
     r = await call('POST', '/shop/checkout', { item: 'supporter' }, T3.token);
     ok(r.status === 200 && urls.has(r.json.url) && creates(c0).length === 1, 'a later tap gets that same Checkout');
+
+    sec('18. the paid webhook lands between the ownership check and the hold read (review 13 Nov, round 2, 1)');
+    {
+      const R = await account('race@example.com');
+      const t1 = await call('POST', '/shop/checkout', { item: 'supporter' }, R.token), rsid = t1.json.url.split('/').pop();
+      let gate = null; const prep = DB.prepare;
+      const wrap = (st) => { const w = Object.assign({}, st); w.bind = (...a) => wrap(st.bind(...a)); w.first = async (c) => { if (gate && gate.match.test(st.sql)) { const g = gate; gate = null; await g.wait; } return st.first(c); }; return w; };
+      DB.prepare = (sql) => wrap(prep.call(DB, sql));
+      try {
+        let go; gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p2 = call('POST', '/shop/checkout', { item: 'supporter' }, R.token); // reads purchases (none), then waits before it reads the hold
+        await new Promise((res) => setTimeout(res, 30));
+        const h = await hook(paid(rsid, R.id, 'supporter', 'pi_test_race0001')); // the purchase lands, its hold goes
+        go(); const t2 = await p2;
+        ok(h.status === 200 && t2.status === 409 && t2.json.error === 'owned', 'the tap that raced the webhook gets 409 owned, not a second Checkout: ' + t2.status + ' ' + t2.text);
+        ok(creates(c0).length === 0 && n('select count(*) as n from shop_holds where user_id = ?', R.id) === 0, 'no new Stripe session, and the hold that tap made is gone');
+        // a Supporter Pack paid and fully refunded on another device while this tap was mid-flight: 409 refunded, no Checkout
+        const R3 = await account('race3@example.com');
+        gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p3 = call('POST', '/shop/checkout', { item: 'supporter' }, R3.token);
+        await new Promise((res) => setTimeout(res, 30));
+        await hook(paid('cs_test_race3sup', R3.id, 'supporter', 'pi_test_race3sup'));
+        await hook({ id: 'evt_race3_r', type: 'charge.refunded', data: { object: { id: 'ch_race3', payment_intent: 'pi_test_race3sup', refunded: true } } });
+        go(); const t3 = await p3;
+        ok(t3.status === 409 && t3.json.error === 'refunded' && creates(c0).length === 0 && n('select count(*) as n from shop_holds where user_id = ?', R3.id) === 0, 'a Supporter Pack paid and refunded mid-flight: 409 refunded, no Checkout, no hold left: ' + t3.text);
+        const R2 = await account('race2@example.com');
+        DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 499, ?, ?, ?, ?)').run('cs_test_race2old', R2.id, 'tokyo', 'usd', 'pi_test_race2old', Date.now() - 5000, Date.now() - 4000);
+        gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p4 = call('POST', '/shop/checkout', { item: 'tokyo' }, R2.token); // a refunded Tokyo Street is for sale; it is bought on another device mid-flight
+        await new Promise((res) => setTimeout(res, 30));
+        await hook(paid('cs_test_race2new', R2.id, 'tokyo', 'pi_test_race2new'));
+        go(); const t4 = await p4;
+        ok(t4.status === 409 && t4.json.error === 'owned' && creates(c0).length === 0, 'Tokyo Street bought again elsewhere while this tap was mid-flight: 409 owned, no second Checkout');
+      } finally { DB.prepare = prep; gate = null; }
+    }
+
+    sec('19. two holds of one item in the same millisecond never share an Idempotency-Key (review 13 Nov, round 2, 2)');
+    {
+      const Z = await account('samems@example.com'), realNow = Date.now, fixed = realNow();
+      Date.now = () => fixed;
+      try {
+        c0 = stripe.calls.length;
+        const a1 = await call('POST', '/shop/checkout', { item: 'coins_3k' }, Z.token), s1 = a1.json.url.split('/').pop();
+        const h1 = q('select nonce, created_at from shop_holds where user_id = ? and item = ?', Z.id, 'coins_3k');
+        await hook(paid(s1, Z.id, 'coins_3k', 'pi_test_samems01'));
+        const a2 = await call('POST', '/shop/checkout', { item: 'coins_3k' }, Z.token), s2 = a2.json.url.split('/').pop();
+        const h2 = q('select nonce, created_at from shop_holds where user_id = ? and item = ?', Z.id, 'coins_3k');
+        const made = creates(c0), k1 = made[0] && made[0].o.headers['Idempotency-Key'], k2 = made[1] && made[1].o.headers['Idempotency-Key'];
+        ok(a1.status === 200 && a2.status === 200 && s1 !== s2 && made.length === 2, 'a coin pack paid, then bought again in the same ms: a new Checkout, not the paid one: ' + s1 + ' ' + s2);
+        ok(h1 && h2 && /^[0-9a-f]{16}$/.test(h1.nonce) && /^[0-9a-f]{16}$/.test(h2.nonce) && h1.nonce !== h2.nonce && h1.created_at === h2.created_at, 'each hold has its own random nonce: ' + JSON.stringify([h1, h2]));
+        ok(k1 === 'ks_' + Z.id + '_coins_3k_' + fixed + '_' + h1.nonce && k2 === 'ks_' + Z.id + '_coins_3k_' + fixed + '_' + h2.nonce && k1 !== k2, 'the Idempotency-Key is ks_<user>_<item>_<created_at>_<nonce>: ' + k1);
+        const ex = Number(made[0].form.get('expires_at'));
+        ok(ex === Math.floor((fixed + 23.5 * 3600 * 1000) / 1000), 'expires_at is the hold\'s created_at + 23.5 hours, so the session ends before its 24-hour hold: ' + ex);
+      } finally { Date.now = realNow; }
+    }
+
+    sec('20. Stripe 409 (the same key still in flight) keeps the hold (review 13 Nov, round 2, 3)');
+    {
+      const Y = await account('inflight@example.com');
+      stripe.conflict = 1; c0 = stripe.calls.length;
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      const held = q('select session_id, url, created_at, tried_at, nonce from shop_holds where user_id = ? and item = ?', Y.id, 'cozy');
+      ok(r.status === 503 && r.json.error === 'busy' && held && held.url === null && /^[0-9a-f]{16}$/.test(held.nonce), 'Stripe answers 409: busy, and the hold stays (no second request can start a new key): ' + JSON.stringify(held));
+      const k0 = creates(c0)[0].o.headers['Idempotency-Key'], e0 = creates(c0)[0].form.get('expires_at');
+      c0 = stripe.calls.length;
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      ok(r.status === 503 && r.json.error === 'busy' && stripe.calls.length === c0, 'a tap inside the minute: busy, Stripe is not asked');
+      DB.raw.prepare('update shop_holds set tried_at = ? where user_id = ? and item = ?').run(Date.now() - 2 * 60 * 1000, Y.id, 'cozy');
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      const re2 = creates(c0);
+      ok(r.status === 200 && re2.length === 1 && re2[0].o.headers['Idempotency-Key'] === k0 && re2[0].form.get('expires_at') === e0, 'a minute later the retry sends the same key and the same expires_at, and gets the Checkout: ' + r.status);
+      ok(q('select url from shop_holds where user_id = ? and item = ?', Y.id, 'cozy').url === r.json.url, 'and the hold now has its url');
+      stripe.conflict = 0;
+    }
 
     sec('10. the source');
     const src = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');

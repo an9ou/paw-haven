@@ -184,7 +184,9 @@ create table if not exists shop_holds (
   item       text not null,
   session_id text,                 -- cs_... once Stripe answers; null while the first request is still in flight
   url        text,                 -- the Checkout URL returned to every tap while this hold is fresh
-  created_at integer not null,     -- ms; also the Idempotency-Key suffix (ks_<user>_<item>_<created_at>), so a retry gets the same session
+  created_at integer not null,     -- ms; with nonce the Idempotency-Key suffix (ks_<user>_<item>_<created_at>_<nonce>), so a retry gets the same session;
+                                   -- also the base of the Checkout's expires_at (created_at + 23.5 h)
   tried_at   integer,              -- ms of the last Stripe request for this hold: a null-url hold untouched for 60 s is retried once
+  nonce      text,                 -- random hex per hold (13 Nov 2026), so two holds made in the same ms never share a key; null on older holds
   primary key (user_id, item)
 );
