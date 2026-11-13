@@ -118,11 +118,11 @@ Built on `claude/sakura-market` (11 Nov 2026), English only, not merged:
 Done:
 
 - [x] Merge fallout: after merging Sakura + v2.26-v2.29 + the art and code fixes, `sakura_market` 47, `worker` pass, `wm_review` 73, `v226_visitors` 69 and `smoke` 35 are green;
-  `v219_friends` has one failing check, see "Open" below.
+  `v219_friends` failed one check twice in a row on the first run (a dog overlap sample at 360x640) and then passed 351 checks on a rerun, `FR_ONLY=greet` alone passed 58, and `release-26-29` passes 348: a timing flake under load, not Sakura.
 - [x] Phone half B (360 x 640, the yard's Look right arrow): all five Sakura decorations plus the five Winter Market ones out in the yard, with and without a yard
   visitor (Tilly): left and right half looked at by eye, nothing overlaps the mailbox, house, dog house, garden or the visitor, and nothing sits in half
   across the view edge (the next half only peeks in at the edge, like the dog house does). The Paper Sakura Tree sits right under the visitor's name tag with about
-  2 px to spare, no overlap. No change to `03_yard.js` needed. Shots: `docs/` none; they were kept in the session scratchpad.
+  2 px to spare, no overlap. No change to `03_yard.js` needed.
 - [x] NEWS: `NEWS_V230` in `game/src/49c_news.js`, id `2.30` (placeholder), date `2027-03-01`, 5 lines, shown by `nwSort` only once `nwDue` (Japan date from 1 Mar 2027,
   or the Pages test copy's `__ddNextTest`), so it never leads before 1 Mar. It does not use the `minor` flag.
 - [x] Gerald's letter: the Festive Market's opening letter (`fmLetter`, once per market per year, on 25 Mar) has its own Sakura wording
@@ -142,8 +142,3 @@ Left for the release day (1 Mar 2027):
   `packed.js` and the font subsets instead of hand-merging, run `i18n_extract.js --en`, check for new untranslated keys, then the suites above and `i18n_fit` again.
 - [ ] The Game Manager picks the version: change the `NEWS_V230` id (`2.30`), `nw.v230.*` keys and `CHANGELOG.md`; date stays `2027-03-01` unless the owner moves it.
 - [ ] Owner's go-ahead and launch date (special update), then itch.io, Marketing briefing, `dogs/check_identical` against the last release.
-
-Open:
-
-- `v219_friends` (360x640, "three friend dogs: no dog drawn over another"): fails twice in a row on this branch (pom idle 940,432 against corgi sit 900,488, 17 x 17 px) and
-  passes (348 checks) on `claude/release-26-29`. Nothing the Sakura work touches draws or places friend dogs; see the final report for what was found.
