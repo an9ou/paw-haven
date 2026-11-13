@@ -78,6 +78,8 @@ function hoKeepBoxes(room, skip) {
   // and the phone spots (PACK_SPOTS_PH, UI/UX): one save is played on both, so a spot keeps clear of both sets
   const sets = [typeof PACK_SPOTS === 'object' && PACK_SPOTS[room], typeof PACK_SPOTS_PH === 'object' && PACK_SPOTS_PH[room]].filter(Boolean);
   if (S.dogs.length > 1) sets.forEach((ps) => ps.slice(0, Math.min(3, S.dogs.length - 1)).forEach(([fx, fy, , sc]) => { const w = DW * sc, h = DH * sc; out.push([fx - w / 2 + 20 * sc, fy - h * 205 / 220 + 30 * sc, w - 40 * sc, h - 30 * sc]); }));
+  // the yard visitor (v2.26) stands at YV_SPOT: a new thing keeps clear of it (the same box as a pack dog's)
+  if (room === 'yard') { try { const [fx, fy, , sc] = YV_SPOT, w = DW * sc, h = DH * sc; out.push([fx - w / 2 + 20 * sc, fy - h * 205 / 220 + 30 * sc, w - 40 * sc, h - 30 * sc]); } catch (e) { /* visitors not loaded */ } }
   if (room === 'yard' && Array.isArray(S.litters) && S.litters.length && typeof NURSERY_AT !== 'undefined') out.push(NURSERY_AT.art);
   const svg = cur.mode === 'yard' && S.place === room && $('svg.world', view);
   if (svg) svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const a = toWorld(svg, r.left, r.top), b = toWorld(svg, r.right, r.bottom); out.push([a.x, a.y, b.x - a.x, b.y - a.y]); });

@@ -156,13 +156,13 @@ function fmSceneArt() {
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
   return (sv || '<rect width="1000" height="600" fill="#FFFBF3"/>')
-    + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${th === 'sakura' && !plain ? fmPetals() : ''}${stalls}${front}`;
+    + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${th === 'sakura' && !plain ? fmPetals(lit) : ''}${stalls}${front}`;
 }
 // Sakura Market (docs/design/sakura-market.md): petals drifting down over the scene, a CSS animation (50_market.css .fm-petal; still under
-// prefers-reduced-motion). Outside the memoised scene string, no taps (pointer-events none). Each petal has its own ink line round its pink fill
-const FM_PETALS = [[60, 0, 11], [170, -4, 13], [290, -8, 10], [420, -2, 12], [530, -6, 14], [640, -9, 11], [760, -1, 13], [870, -5, 10], [960, -7, 12], [350, -11, 15], [700, -12, 12], [120, -10, 14]];
-function fmPetals() {
-  return '<g class="fm-petals" pointer-events="none" aria-hidden="true">' + FM_PETALS.map(([x, d, t], i) => `<g transform="translate(${x} -16)"><path class="fm-petal" style="animation-delay:${d}s;animation-duration:${t}s" d="M0 -5Q4 -3 3 2L0 1L-3 2Q-4 -3 0 -5Z" fill="${i % 3 ? '#F7B2C4' : '#FFF3F6'}" stroke="#C97A90" stroke-width=".8" stroke-linejoin="round"/></g>`).join('') + '</g>';
+// prefers-reduced-motion and the game's own motion setting; dimmer after dark, class nt). The petal that fell over the Homes board is moved over. Outside the memoised scene string, no taps (pointer-events none). Each petal has its own ink line round its pink fill
+const FM_PETALS = [[60, 0, 11], [170, -4, 13], [290, -8, 10], [420, -2, 12], [530, -6, 14], [640, -9, 11], [760, -1, 13], [870, -5, 10], [960, -7, 12], [388, -11, 15], [700, -12, 12], [120, -10, 14]];
+function fmPetals(lit) {
+  return '<g class="fm-petals' + (lit ? ' nt' : '') + '" pointer-events="none" aria-hidden="true">' + FM_PETALS.map(([x, d, t], i) => `<g transform="translate(${x} -16)"><path class="fm-petal" style="animation-delay:${d}s;animation-duration:${t}s" d="M0 -5Q4 -3 3 2L0 1L-3 2Q-4 -3 0 -5Z" fill="${i % 3 ? '#F7B2C4' : '#FFF3F6'}" stroke="#C97A90" stroke-width=".8" stroke-linejoin="round"/></g>`).join('') + '</g>';
 }
 function fmPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return; pb.querySelectorAll('[data-fmb]').forEach((b) => b.remove());

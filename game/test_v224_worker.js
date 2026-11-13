@@ -221,7 +221,7 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await call('POST', '/friends/add', { code: pa.code }, B.token); ok(r.status === 200, 'B adds A as a friend');
     const yard = (extra) => ({ yard: Object.assign({ v: 1, name: [1, 1], house: 14, season: 'winter', dogs: [{ b: 0, c: null, o: 56, a: 'pup', s: 'm', sp: 0, n: 4 }], decor: [] }, extra || {}) });
     r = await call('PUT', '/friends/yard', yard({ ff: 1 }), A.token); ok(r.status === 200, 'A\'s yard with house 14 (Golden Paw Cottage), outfit 56 (the last v2.24 wearable) and ff 1 is taken');
-    r = await call('PUT', '/friends/yard', yard({ house: 15 }), A.token); ok(r.status === 400, 'house 15 is past FR_LIM.houses');
+    r = await call('PUT', '/friends/yard', yard({ house: 16 }), A.token); ok(r.status === 400, 'house 16 is past FR_LIM.houses');
     r = await call('PUT', '/friends/yard', yard({ dogs: [{ b: 0, c: null, o: 57, a: 'pup', s: 'm', sp: 0, n: 4 }] }), A.token); ok(r.status === 400, 'outfit 57 is past DC_LIM.outfit');
     r = await call('PUT', '/friends/yard', yard({ ff: 'x' }), A.token); ok(r.status === 400, 'a yard ff that is not a boolean: 400');
     r = await call('PUT', '/friends/yard', yard({ ff: true, name: [2, 2] }), B.token); ok(r.status === 200, 'B\'s yard with ff true is taken');
