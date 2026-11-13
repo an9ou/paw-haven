@@ -92,37 +92,40 @@ const IMGS = `<symbol id="img_letter" viewBox="0 0 ${LETTER.w} ${LETTER.h}"><ima
 const LOOK = { walk: { pose: 'walk', facing: 'right' }, proud: { pose: 'idle', facing: 'right', expr: 'proud' }, sit: { pose: 'sit', facing: 'right' },
   wet: { pose: 'idle', facing: 'right', wet: true }, wetshake: { pose: 'shake', facing: 'right', wet: true }, nap: { pose: 'sleep', facing: 'right' },
   bow: { pose: 'bow', facing: 'right' }, yay: { pose: 'happy', facing: 'right', expr: 'hearts' }, scratch: { pose: 'scratch', facing: 'right' },
-  curious: { pose: 'sit', facing: 'right', expr: 'curious' } };
+  curious: { pose: 'down', facing: 'right', expr: 'curious' } };
 const dogSvg = (id, kf) => inner(PA.dog('dachs', Object.assign({ anim: false }, LOOK[id], { kf: ((kf % 3) + 3) % 3 })));
 const dogSyms = Object.keys(LOOK).map((id) => `<symbol id="${id}_0" overflow="visible">${dogSvg(id, 0)}</symbol>`).join('');
 
-// ---- the backgrounds: the game's own scenes from main (PawArt.scene, 1000 x 600, autumn), no game interface. Each is drawn at 3.2x so its full
-// height fills the frame and a 337-unit window shows (x0 = the window's left edge in scene units). Our feet line (y 1425) is scene y 445. Text never
-// sits on the scene: every word is on a solid cream card, pill or badge. Standing things (Noodle, the log) are checked on every frame to stand on the
-// scene's floor and clear of its keep-out boxes (props at ground level: benches, tunnels, the fountain...).
-const SCALE = 3.2, AUT = { season: 'autumn', time: 'day' };
+// ---- the backgrounds: the game's own scenes from main (PawArt.scene, 1000 x 600, autumn), no game interface. Each beat shows the scene zoomed onto its
+// open ground (SC[k].s, 3.7x to 5.2x): the bottom of the scene sits at the bottom of the frame and the back row of props (fences, trunks, poles, the
+// sofa, the shops; FLOORS[name].back, scene y) ends above Noodle's head, so nothing that stands ever overlaps a prop (coordinator, 13 Nov 2026: "they
+// reject any overlap"). x0 = the window's left edge in scene units, y0 = 600 - 1920 / s. Text never sits on the scene: every word is on a solid cream
+// card, pill or badge. Every frame checks that Noodle, the log and every chip stand on the open ground: feet on the floor, top below the back row,
+// clear of the keep-out boxes (props in front: benches, tunnels, the fountain, the garden plot...).
+const AUT = { season: 'autumn', time: 'day' };
 const SC = {
-  hill: { name: 'hilltop', o: Object.assign({ weather: 'sunny' }, AUT), x0: 300 },      // Hilltop Meadow: the kites, the village, the river
-  woods: { name: 'woods', o: Object.assign({ weather: 'sunny' }, AUT), x0: 170 },       // the woods: the path and the pines (a walk)
-  parkrain: { name: 'park', o: Object.assign({ weather: 'rain' }, AUT), x0: 230, rain: true }, // Sunny Park on a rainy day
-  houserain: { name: 'house', o: Object.assign({ weather: 'rain' }, AUT), x0: 300 },    // the Cozy House: rain on the window, the sofa
-  square: { name: 'square', o: Object.assign({ weather: 'sunny' }, AUT), x0: 245 },     // Town Square: Paws & Pages, the clock tower (the Dog Show Pose)
-  door: { name: 'yard', o: Object.assign({ weather: 'sunny' }, AUT), x0: 225 },         // the Home Yard: the house corner and the mailbox
-  training: { name: 'training', o: Object.assign({ weather: 'sunny' }, AUT), x0: 0 },   // the Training Ground: the weave poles
-  sunflower: { name: 'sunflower', o: Object.assign({ weather: 'sunny' }, AUT), x0: 330 }, // the Sunflower Fields: the finish arch
-  dogpark: { name: 'dogpark', o: Object.assign({ weather: 'sunny' }, AUT), x0: 250 },   // the Dog Park: the sign and the fence
+  hill: { name: 'hilltop', o: Object.assign({ weather: 'sunny' }, AUT), x0: 364, s: 5.2 },     // Hilltop Meadow: the river, the village, the meadow
+  woods: { name: 'woods', o: Object.assign({ weather: 'sunny' }, AUT), x0: 222, s: 4.65 },      // the woods: the path and the pines (a walk)
+  parkrain: { name: 'park', o: Object.assign({ weather: 'rain' }, AUT), x0: 290, s: 5.0, rain: true }, // Sunny Park on a rainy day
+  houserain: { name: 'house', o: Object.assign({ weather: 'rain' }, AUT), x0: 357, s: 4.85 },   // the Cozy House: the sofa, the floorboards
+  square: { name: 'square', o: Object.assign({ weather: 'sunny' }, AUT), x0: 262, s: 4.6 },    // Town Square: Paws & Pages, the plaza paving (the Dog Show Pose)
+  door: { name: 'yard', o: Object.assign({ weather: 'sunny' }, AUT), x0: 280, s: 4.85 },       // the Home Yard: the fence and the grass
+  training: { name: 'training', o: Object.assign({ weather: 'sunny' }, AUT), x0: 49, s: 4.8 }, // the Training Ground: the weave poles, the sand
+  sunflower: { name: 'sunflower', o: Object.assign({ weather: 'sunny' }, AUT), x0: 352, s: 3.7 }, // the Sunflower Fields: the finish arch
+  dogpark: { name: 'dogpark', o: Object.assign({ weather: 'sunny' }, AUT), x0: 296, s: 4.4 },  // the Dog Park: the fence and the grass
 };
-// scene floors (feet at y >= floor) and keep-out boxes [x0, y0, x1, y1] in scene units: nothing that stands may overlap one
+for (const sc of Object.values(SC)) sc.y0 = 600 - H / sc.s;
+// scene floors (feet at y >= floor), the back row of props (a thing's top at y >= back) and keep-out boxes [x0, y0, x1, y1] in scene units
 const FLOORS = {
-  hilltop: { floor: 400, keep: [[670, 505, 815, 575]] },
-  woods: { floor: 400, keep: [[95, 500, 190, 565], [640, 455, 865, 515]] },
-  park: { floor: 405, keep: [[5, 455, 215, 580], [670, 410, 812, 515], [570, 290, 610, 452]] },
-  house: { floor: 405, keep: [[5, 350, 215, 500], [600, 455, 860, 520]] },
-  square: { floor: 395, keep: [[5, 380, 245, 495], [620, 315, 860, 520]] },
-  yard: { floor: 400, keep: [[0, 425, 220, 600]] },
-  training: { floor: 345, keep: [[375, 440, 620, 522], [160, 540, 415, 600]] },
-  sunflower: { floor: 360, keep: [[100, 420, 210, 485], [825, 315, 930, 445]] },
-  dogpark: { floor: 410, keep: [[20, 380, 215, 480], [10, 390, 115, 600], [610, 410, 855, 515]] },
+  hilltop: { floor: 400, back: 400, keep: [[670, 505, 815, 575], [5, 395, 180, 600]] },
+  woods: { floor: 400, back: 402, keep: [[95, 500, 190, 565], [640, 455, 865, 515], [930, 380, 970, 460]] },
+  park: { floor: 405, back: 410, keep: [[5, 455, 215, 580], [670, 410, 812, 515], [570, 290, 610, 452]] },
+  house: { floor: 405, back: 420, keep: [[5, 350, 215, 500], [600, 455, 860, 520]] },
+  square: { floor: 395, back: 432, keep: [[5, 380, 245, 495], [620, 315, 860, 520]] },
+  yard: { floor: 400, back: 420, keep: [[0, 425, 220, 600]] },
+  training: { floor: 345, back: 395, keep: [[375, 440, 620, 522], [160, 540, 415, 600]] },
+  sunflower: { floor: 360, back: 362, keep: [[100, 420, 210, 485], [825, 315, 930, 445]] },
+  dogpark: { floor: 410, back: 412, keep: [[20, 380, 215, 480], [10, 390, 115, 600], [610, 410, 855, 515]] },
 };
 const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8')).replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
@@ -160,7 +163,7 @@ ${SAFE_JS}
 ${ENDCARD_JS}
 const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455, DEBUG=${!!process.env.DEBUG};
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, COVER=${JSON.stringify(COVER)};
-const LETTER_AR=${LETTER.h / LETTER.w}, SC=${JSON.stringify(SC)}, FLOORS=${JSON.stringify(FLOORS)}, SCALE=${SCALE};
+const LETTER_AR=${LETTER.h / LETTER.w}, SC=${JSON.stringify(SC)}, FLOORS=${JSON.stringify(FLOORS)};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);}, lerp=(a,b,u)=>a+(b-a)*u;
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 // which scene a beat shows at local time lt (the rain beat goes from the park in the rain to the Cozy House)
@@ -171,8 +174,9 @@ function bgLayers(i, lt, b){ const L=[], prev=i>0?BEATS[i-1].bg[BEATS[i-1].bg.le
   if(b.split){ const q=sm((lt-(b.dur*b.split-0.25))/0.3); if(q>0) L.push([b.bg[1],q]); }
   return L; }
 // something standing at screen x0..x1, top y0, feet fy: on the floor of the scene, clear of its keep-out boxes
-function groundOk(key, x0, x1, y0, fy){ const s=SC[key], f=FLOORS[s.name], u0=s.x0+x0/SCALE, u1=s.x0+x1/SCALE, uy=fy/SCALE, ut=y0/SCALE;
-  if(uy<f.floor) return 'stands above the floor ('+uy.toFixed(0)+' < '+f.floor+')';
+function groundOk(key, x0, x1, y0, fy){ const s=SC[key], f=FLOORS[s.name], u0=s.x0+x0/s.s, u1=s.x0+x1/s.s, ut=s.y0+y0/s.s, uy=fy!=null?s.y0+fy/s.s:ut;
+  if(fy!=null&&uy<f.floor) return 'stands above the floor ('+uy.toFixed(0)+' < '+f.floor+')';
+  if(ut<f.back) return 'reaches up into the back row of props ('+ut.toFixed(0)+' < '+f.back+')';
   for(const k of f.keep) if(u1>k[0]&&u0<k[2]&&uy>k[1]&&ut<k[3]) return 'overlaps a scene prop ('+k.join(',')+')';
   return ''; }
 const BOX={};
@@ -261,15 +265,15 @@ window.frame=function(t, D){
       // the Dog Show Pose: Noodle bows; the blue Show Ribbon pops in its chip; Noodle cheers
       const vT=b.dur*b.vt, rb=cl((lt-vT-0.35)/0.4), hh=FEET-qb-40;
       art_+=noodle(rb>0.3?'yay':'bow', rb>0.3?D0.yay:D0.bow, 335, FEET, hh, 540, rb>0.3?-Math.abs(Math.sin(t*7))*12:0, fade, false);
-      art_+=chip('it_ribbon', 752, FEET-200, 86, rb, 'ribbon', fade);
+      art_+=chip('it_ribbon', 752, FEET-150, 80, rb, 'ribbon', fade);
     } else if(b.k==='away'){
       // a week away: Noodle naps; then Gerald's letter (the game's own, captured), the treat bag, and Noodle up and happy
       // the letter on the left, the treat bag in its chip beside it, Noodle big below
       const vT=b.dur*b.vt, lu=cl((lt-vT+0.1)/0.35), lw=560, ly=below+40;
       if(lu>0) art_+=shot('img_letter', LETTER_AR, 64, ly, lw, lu, fade);
       const lb=ly+lw*LETTER_AR, hh=FEET-lb-50, up=lt>vT+0.25;
-      art_+=chip('bag', 742, ly+lw*LETTER_AR/2, 78, cl((lt-vT-0.6)/0.4), 'bag', fade);
-      art_+=noodle(up?'yay':'nap', up?D0.yay:D0.nap, CX, FEET, Math.min(hh, up?hh:360), 700, up?-Math.abs(Math.sin(t*7))*12:0, fade, true);
+      art_+=chip('bag', 140, FEET-80, 64, cl((lt-vT-0.6)/0.4), 'bag', fade);
+      art_+=noodle(up?'yay':'nap', up?D0.yay:D0.nap, 555, FEET, Math.min(hh, up?hh:360), 560, up?-Math.abs(Math.sin(t*7))*12:0, fade, true);
     } else if(b.k==='trick'){
       // a lesson: Noodle sits for the cue, then does something else entirely (the game's miss line), very pleased about it
       const hh=FEET-qb-40, ph=lt<b.dur*0.25?'sit':lt<b.dur*0.72?'scratch':'yay';
@@ -277,18 +281,18 @@ window.frame=function(t, D){
     } else if(b.k==='payoff'){
       art_+=noodle('yay', D0.yay, CX, FEET, FEET-below-80, 740, -Math.abs(Math.sin(t*7))*14, fade, false);
     } else if(b.k==='ask'){
-      art_+=noodle('curious', D0.curious, CX, FEET, FEET-below-80, 740, 0, fade, true);
+      art_+=noodle('curious', D0.curious, CX, FEET, FEET-below-80, 760, 0, fade, true);
     }
   }
   // the end card: paper and the card fade in once the scene has gone
   let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
   $('art').innerHTML=art_; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
-  if(DEBUG){ const s=SC[scene], f=FLOORS[s.name]; $('dbg').innerHTML='<line x1="0" x2="1080" y1="'+f.floor*SCALE+'" y2="'+f.floor*SCALE+'" stroke="red" stroke-width="3"/>'+f.keep.map((k)=>'<rect x="'+(k[0]-s.x0)*SCALE+'" y="'+k[1]*SCALE+'" width="'+(k[2]-k[0])*SCALE+'" height="'+(k[3]-k[1])*SCALE+'" fill="red" opacity=".25"/>').join(''); }
+  if(DEBUG){ const s=SC[scene], f=FLOORS[s.name], Y=(y)=>(y-s.y0)*s.s; $('dbg').innerHTML='<line x1="0" x2="1080" y1="'+Y(f.floor)+'" y2="'+Y(f.floor)+'" stroke="red" stroke-width="3"/><line x1="0" x2="1080" y1="'+Y(f.back)+'" y2="'+Y(f.back)+'" stroke="blue" stroke-width="3"/>'+f.keep.map((k)=>'<rect x="'+(k[0]-s.x0)*s.s+'" y="'+Y(k[1])+'" width="'+(k[2]-k[0])*s.s+'" height="'+(k[3]-k[1])*s.s+'" fill="red" opacity=".25"/>').join(''); }
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
-  // standing things stand on the scene's floor and clear of its props (Noodle and the log)
-  if(fade>0) for(const e of $('art').querySelectorAll('[data-feet]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(scene, r.left, r.right, r.top, +e.getAttribute('data-feet'));
+  // Noodle, the log and every chip stand on the open ground: feet on the floor, top below the back row of props, clear of the keep-out boxes
+  if(fade>0) for(const e of $('art').querySelectorAll('[data-apart]')){ if(e.getAttribute('data-apart')==='img_letter'||+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(scene, r.left, r.right, r.top, e.hasAttribute('data-feet')?+e.getAttribute('data-feet'):null);
     if(why) return e.getAttribute('data-apart')+' '+why; }
   // the brief's safe area for words and key art: x 60..850, y 270..1440
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
@@ -326,7 +330,7 @@ const drawFor = (t) => ({ n: Object.fromEntries(Object.keys(LOOK).map((k) => [k,
   for (const [k, sc] of Object.entries(SC)) {
     const f = path.join(WORK, `bg_${k}.jpg`), svg = PA.scene(sc.name, sc.o);
     if (!svg || !new RegExp('pa-w[a-z]-' + sc.name + '\\b').test(svg)) throw new Error('no scene art for ' + sc.name);
-    await p.setContent(`<html><body style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${sc.x0} 0 ${W / SCALE} ${H / SCALE}">${svg.replace('<svg', '<svg x="0" y="0" width="1000" height="600"')}</svg></body></html>`);
+    await p.setContent(`<html><style>[class$="-hl"],[class*="-hl "]{display:none!important}</style><body style="margin:0"><svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${sc.x0} ${sc.y0} ${W / sc.s} ${H / sc.s}">${svg.replace('<svg', '<svg x="0" y="0" width="1000" height="600"')}</svg></body></html>`);
     await p.screenshot({ path: f, type: 'jpeg', quality: 92 });
     bgSyms += `<image id="bg_${k}" width="${W}" height="${H}" href="data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}"/>`;
   }
