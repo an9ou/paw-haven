@@ -208,12 +208,12 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
   ]
 };
 const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); the date is a placeholder, the Game Manager sets the real one
-  id: '2.29.1', date: '2026-11-20', c: '#E2F0D9', d: 'paw', pic: 'dog',
+  id: '2.29.1', date: '2026-11-20', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
   title: () => tt('nw.v2291.title', 'Little town tweaks'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2291.swap', 'The free mission swap now picks missions you can do at home or on a walk') },
     { ic: () => nwSafe(() => ICON('coin')), tx: () => tt('nw.v2291.goals', 'Gerald points out the Town projects board, and the Bow-Wow Boutique shows the Kind shop looks') },
-    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2291.tmrw', 'The evening line tells you how the town project is coming along') }
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2291.tmrw2', 'The note about tomorrow tells you how the town project is coming along') }
   ]
 };
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
@@ -235,11 +235,14 @@ function nwEntryHTML(e, big) {
 // the sheet: the newest entry; "See all updates" swaps in every entry, newest first
 function nwOpen(auto) {
   if (!S) return false;
-  if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   nwSort();
+  // the automatic sheet leads with the newest entry the player has not seen that is not minor (a small tweaks page never hides a bigger update); after it everything up to the newest id counts as seen
+  let lead = NEWS[0];
+  if (auto) { const seen = S.newsSeen || ''; lead = NEWS.find((e) => !e.minor && (!seen || nwVer(e.id, seen) > 0)) || NEWS[0]; }
+  if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`
-      : `<div class="nw-sheet">${nwEntryHTML(NEWS[0], true)}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
+      : `<div class="nw-sheet">${nwEntryHTML(lead, true)}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
     const p = openModal(esc(tt('nw.title', "What's new in town")), body, { cls: 'fw-calpop nw-pop', foot: `<button class="btn yes big nw-ok" id="nwOk">${esc(tt('nw.ok', 'OK!'))}</button>` });
     $('#nwOk', p).onclick = () => { SFX.click(); closeModal(); };
     const a = $('#nwAll', p); if (a) a.onclick = () => { SFX.click(); draw(true); };
@@ -267,7 +270,8 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { due: (v) => nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229, '2.29.1': NEWS_V2291 }[v]), dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), date2291: () => NEWS_V2291.date, on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { due: (v) => nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229, '2.29.1': NEWS_V2291 }[v]), dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), date2291: () => NEWS_V2291.date, setDates: (a, b) => { if (a) NEWS_V229.date = a; if (b) NEWS_V2291.date = b; return [NEWS_V229.date, NEWS_V2291.date]; }, auto: () => nwOpen(true), // test hooks: fix the two dates; the automatic sheet
+    on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)

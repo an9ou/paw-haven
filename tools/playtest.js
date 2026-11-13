@@ -120,10 +120,12 @@ async function walk(p, day, P) {
   }
   const btn = await ev(p, () => { const b = document.getElementById('rtStart'); return { dis: b.disabled || b.getAttribute('aria-disabled') === 'true', txt: b.textContent.trim(), why: (document.querySelector('.rt-block, .rt-why, .rt-lock') || {}).textContent || '' }; });
   if (btn.dis || /Locked/i.test(btn.txt)) { await clickJS(p, '#rtBack'); return `walk: blocked ("${btn.txt}" ${btn.why.trim().slice(0, 80)})`; }
+  const toasts0 = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); // v2.29.1: toasts already on screen before Start do not count
+  const newToast = (all) => (all.startsWith(toasts0) ? all.slice(toasts0.length) : all).trim();
   await clickJS(p, '#rtStart');
   // v2.29.1: read the toast right after Start (a block such as "Not for {name} yet" is gone after 3 s), then wait on for a slow start
   const quick = await L.until(p, () => window.__paw.mode === 'walk' && !!window.__ptOpts, null, 2500);
-  if (!quick) { const t = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); if (t.trim() && !(await ev(p, () => window.__paw.mode === 'walk'))) { await clear(p, day, 'walk start'); await home(p); return 'walk: blocked (' + t.trim().slice(-80) + ')'; } }
+  if (!quick) { const t = newToast(await ev(p, () => (document.querySelector('#toasts') || {}).textContent || '')); if (t && !(await ev(p, () => window.__paw.mode === 'walk'))) { await clear(p, day, 'walk start'); await home(p); return 'walk: blocked (' + t.slice(-80) + ')'; } }
   if (!quick && !(await L.until(p, () => window.__paw.mode === 'walk' && !!window.__ptOpts, null, 12500))) { const t = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); await clear(p, day, 'walk start'); await home(p); return 'walk: did not start ' + t.slice(-80); }
   const go = p.locator('.pw-ov [data-go]'); if (await go.count()) await go.first().click().catch(() => {});
   await L.sleep(400);

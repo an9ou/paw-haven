@@ -429,7 +429,7 @@ function lvSheetHTML() {
       + `<p class="lv-stcount">${esc(tt('lv.stars', '{n, plural, =0 {No star stickers yet. Every full star gives one.} one {# star sticker so far.} other {# star stickers so far.}}', { n: p.star }))}${p.star >= LV_STK_N ? ' ' + esc(tt('lv.stars_all', 'All eight found. Every new star adds one more.')) : ''}</p></div>`;
   }
   const full = L.today >= LV_CAP;
-  h += `<p class="lv-today${full ? ' full' : ''}">${esc(full ? tt('lv.today_full2', 'That is all the growing for today. The town projects and the Visitors Book never stop.') : tt('lv.today', 'Today: {n} of {cap}', { n: tnum(L.today), cap: tnum(LV_CAP) }))}</p>`;
+  h += `<p class="lv-today${full ? ' full' : ''}">${esc(full ? ((typeof prOn === 'function' && prOn()) || (typeof yvOn === 'function' && yvOn())) ? tt('lv.today_full2', 'That is all the growing for today. The town projects and the Visitors Book never stop.') : tt('lv.today_full', 'That is all the growing for today. More tomorrow.') : tt('lv.today', 'Today: {n} of {cap}', { n: tnum(L.today), cap: tnum(LV_CAP) }))}</p>`;
   if (p.top) h += lvStkPageHTML(); // part G: the sticker page, under today's line
   if (!p.top) {
     const nx = []; for (let n = p.lv; n < Math.min(LV_MAX, p.lv + 3); n++) nx.push(`<li>${esc(lvNextText(n))}</li>`);

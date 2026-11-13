@@ -444,7 +444,7 @@ run('v222_levels', async (t) => {
   ok(c2s && c2s.h2 === 'Town level 6' && c2s.togo === '230 to go for level 7' && c2s.today === 'Today: 0 of 150' && c2s.next.length === 3 && c2s.next[0] === 'Level 7: Sunflower Lanes + 2 new outfits' && c2s.open === 6 && c2s.how, 'the sheet: ' + JSON.stringify(c2s));
   await ev(() => { const L = window.__paw.lv; for (let i = 0; i < 20; i++) L.gain('care', 2); L.gain('walk', 99); L.gain('ms', 99); }); // 150 today
   const c2f = await ev(() => { window.__paw.lv.sheet(); const p = document.querySelector('#modal .panel.lv-pop'), r = (p.querySelector('.lv-today') || {}).textContent; document.querySelector('#modal .panel .x').click(); return [r, window.__paw.lv.today()]; });
-  ok(c2f[0] === 'That is all the growing for today. The town projects and the Visitors Book never stop.', 'at the cap the sheet points at the town projects and the Visitors Book: ' + JSON.stringify(c2f));
+  ok(c2f[0] === 'That is all the growing for today. More tomorrow.', 'at the cap the sheet says more tomorrow: ' + JSON.stringify(c2f));
   await ev(() => window.__paw.lv.gain('board', 8570 + 2400 - window.__paw.lv.xp())); // level 20 and 2 stars + 400
   await t.until(() => !!document.getElementById('lvOk'), null, 4000); await ev(() => { const b = document.getElementById('lvOk'); if (b) b.click(); });
   ok(await t.until(() => !!document.getElementById('lvStOk'), null, 4000), 'G: the star card follows the level 20 card');
