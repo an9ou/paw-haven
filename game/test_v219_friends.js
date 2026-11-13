@@ -75,7 +75,7 @@ function mockInit() {
       }
       if (method === 'POST' && path === '/friends/remove') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
       if (method === 'POST' && path === '/friends/block') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
-      if (method === 'PUT' && path === '/friends/yard') { if (srv.decorLim && body.yard.decor.some((d) => d.i >= srv.decorLim)) { srv.badYards = (srv.badYards || 0) + 1; return send(400, { error: 'bad' }); } srv.yards.push(body.yard); return send(200, { ok: true }); } // decorLim: an older Worker's FR_LIM.decor
+      if (method === 'PUT' && path === '/friends/yard') { if ((srv.decorLim && body.yard.decor.some((d) => d.i >= srv.decorLim)) || (srv.houseLim && body.yard.house >= srv.houseLim)) { srv.badYards = (srv.badYards || 0) + 1; return send(400, { error: 'bad' }); } srv.yards.push(body.yard); return send(200, { ok: true }); } // decorLim: an older Worker's FR_LIM.decor
       if (method === 'GET' && path === '/friends/inbox') return send(200, { events: srv.events.filter((e) => !e.claimed).map((e) => ({ id: e.id, from: e.from, kind: e.kind, data: e.data, day: e.day })) });
       if (method === 'POST' && path === '/friends/inbox/claim') { srv.claims = (srv.claims || 0) + 1; if (srv.failClaim) throw new TypeError('Failed to fetch'); (body.ids || []).forEach((id) => { const e = srv.events.find((x) => x.id === id); if (e) e.claimed = true; }); return send(200, { ok: true }); }
       if (method === 'GET' && path === '/friends/yard') {
@@ -89,13 +89,13 @@ function mockInit() {
         const f = srv.friends.find((x) => x.fid === body.fid);
         if (!f || !['pet', 'note', 'gift', 'walk'].includes(body.kind)) return send(400, { error: 'bad' });
         if (body.kind === 'note' && !(Number.isInteger(body.data && body.data.i) && body.data.i >= 0 && body.data.i < 12)) return send(400, { error: 'bad' });
-        if (body.kind === 'gift' && !(body.data && Number.isInteger(body.data.i) && body.data.i >= 0 && body.data.i < 47 && body.data.n === 1)) return send(400, { error: 'bad' });
+        if (body.kind === 'gift' && !(body.data && Number.isInteger(body.data.i) && body.data.i >= 0 && body.data.i < 49 && body.data.n === 1)) return send(400, { error: 'bad' });
         if (body.kind === 'gift' && srv.sent.some((s) => s.kind === 'gift')) return send(400, { error: 'limit' }); // one gift a day in all (from_id, kind, day)
         if (body.kind === 'walk') { // part 5, as the Worker's frWalk: { dog, mine, t? }, dog inside their snapshot, mine a card dog, t a gift index
           const d = body.data || {}, ks = Object.keys(d), snap = srv.yardOf[body.fid];
           if (!snap || !ks.includes('dog') || !ks.includes('mine') || ks.some((k) => !['dog', 'mine', 't'].includes(k)) || !Number.isInteger(d.dog) || d.dog < 0 || d.dog >= snap.dogs.length) return send(400, { error: 'bad' });
           if (!d.mine || typeof d.mine !== 'object' || !Number.isInteger(d.mine.b) || d.mine.b < 0 || !Number.isInteger(d.mine.n) || 'name' in d.mine) return send(400, { error: 'bad' });
-          if ('t' in d && !(Number.isInteger(d.t) && d.t >= 0 && d.t < 47)) return send(400, { error: 'bad' });
+          if ('t' in d && !(Number.isInteger(d.t) && d.t >= 0 && d.t < 49)) return send(400, { error: 'bad' });
         }
         if (srv.sent.some((s) => s.fid === body.fid && s.kind === body.kind)) return send(400, { error: 'limit' });
         srv.sent.push({ fid: body.fid, kind: body.kind, data: body.data }); f.sent[body.kind] = true;
@@ -208,8 +208,8 @@ run('v219_friends', async (t) => {
   const order = await ev(() => window.__paw.fr.orderOk());
   const lim = await ev(() => window.__paw.fr.lim());
   ok(order.gifts && order.decor && order.houses && order.notes, 'FR_GIFTS, FR_DECOR, FR_HOUSES and FR_NOTES match the game tables: ' + JSON.stringify(order.n));
-  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys)');
-  ok(workerLim === 'notes:12,gifts:47,decor:35,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
+  ok(lim.notes === 12 && lim.gifts === 49 && lim.decor === 40 && lim.houses === 16, 'lengths are notes 12, gifts 49, decor 40, houses 16 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; Sakura Market: + 5 decor, 1 house, 2 treats)');
+  ok(workerLim === 'notes:12,gifts:49,decor:40,houses:16' && lim.notes === 12 && lim.gifts === 49 && lim.decor === 40 && lim.houses === 16, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
 
   // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)
@@ -397,6 +397,26 @@ run('v219_friends', async (t) => {
   ok(!toys.off.includes('Tug Post') && toys.off.includes('Bird Bath') && JSON.stringify(toys.offSeen) === '["Bird Bath"]', 'before Yard visitors is live a toy is neither sent nor drawn in a friend\'s yard: ' + JSON.stringify({ off: toys.off, seen: toys.offSeen }));
   ok(toys.on.includes('Tug Post') && toys.on.includes('Bird Bath') && JSON.stringify(toys.onSeen) === '["Tug Post","Bird Bath"]', 'once live, the toy is sent and a friend\'s toy is drawn: ' + JSON.stringify({ on: toys.on, seen: toys.onSeen }));
   ok(toys.okOld === true && toys.bad === 1 && toys.oldPut === 1 && !toys.old1.includes('Tug Post') && toys.old1.includes('Bird Bath') && toys.flag === true && toys.bad2 === 0 && !toys.old2.includes('Tug Post'), 'an older Worker refuses the toy: the yard goes again without it, once, and later pushes skip it: ' + JSON.stringify(toys));
+
+  // Sakura Market: the five Sakura decorations (FR_DECOR 35-39) and the Blossom Kennel (FR_HOUSES 15) are appended; a Worker from before them (decor 35, houses 15) refuses
+  // the snapshot, so the yard goes again without them (FR.sakOld), once, and later pushes stay without
+  const sak = await ev(async () => {
+    const P = window.__paw, fr = P.fr, S = P.S, srv = window.__frSrv, L = fr.lists(), last = () => srv.yards[srv.yards.length - 1];
+    const idx = ['Hanami Picnic Blanket', 'Sakura Paper Lanterns', 'Paper Sakura Tree', 'Bento Picnic Table', 'Blossom Swing'].map((n) => L.decor.indexOf(n));
+    const r = { idx, house: L.houses.indexOf('Blossom Kennel'), gifts: [L.gifts.indexOf('Sakura Pup Mochi'), L.gifts.indexOf('Hanami Rice Ball')] };
+    S.decor['Bird Bath'] = S.decor['Bird Bath'] || { out: true, at: [24, 300] }; S.decor['Bird Bath'].out = true;
+    S.decor['Blossom Swing'] = { out: true, at: [770, 250] };
+    const prevHouse = S.house; S.house = 'Blossom Kennel';
+    fr.sakOld(false); fr.decorOld(false);
+    await fr.pushYard(true); r.new1 = last().decor.map((d) => L.decor[d.i]); r.newHouse = last().house;
+    srv.decorLim = 35; srv.houseLim = 15; const n0 = srv.yards.length; const b0 = srv.badYards || 0;
+    r.ok = await fr.pushYard(true); r.puts = srv.yards.length - n0; r.bad = (srv.badYards || 0) - b0; r.old1 = last().decor.map((d) => L.decor[d.i]); r.oldHouse = last().house; r.flag = fr.sakOld(); r.decorFlag = fr.decorOld();
+    delete srv.decorLim; delete srv.houseLim; fr.sakOld(false); S.house = prevHouse; delete S.decor['Blossom Swing']; await fr.pushYard(true);
+    return r;
+  });
+  ok(JSON.stringify(sak.idx) === '[35,36,37,38,39]' && sak.house === 15 && JSON.stringify(sak.gifts) === '[47,48]', 'Sakura Market: 5 decorations at 35-39, the Blossom Kennel at 15, the 2 treats at 47-48: ' + JSON.stringify(sak));
+  ok(sak.new1.includes('Blossom Swing') && sak.newHouse === 15, 'a Sakura decoration and the Blossom Kennel are sent to a current Worker: ' + JSON.stringify({ d: sak.new1, h: sak.newHouse }));
+  ok(sak.ok === true && sak.puts === 1 && sak.bad === 1 && !sak.old1.includes('Blossom Swing') && sak.old1.includes('Bird Bath') && sak.oldHouse === 0 && sak.flag === true && sak.decorFlag === false, 'a Worker from before Sakura refuses: the yard goes again once without them: ' + JSON.stringify(sak));
 
   await ev(() => { window.__frSrv.offline = true; window.__toasts.length = 0; });
   await t.closeX(); await t.modalGone();
@@ -717,7 +737,7 @@ run('v219_friends', async (t) => {
   await t.until(() => !!(window.__paw && window.__paw.fr), null, 8000);
   const refs = await ev(() => window.__paw.fr.giftRefs()), people = await ev(() => window.__paw.fr.people());
   const BAD = /chocolate|cocoa|grape|raisin|onion|garlic|leek|chive|xylitol|gum|macadamia|avocado|coffee|caffeine|alcohol|wine|beer|nutmeg|cherry|mushroom|rhubarb|tomato leaf|yew|holly|mistletoe|bone$/i;
-  ok(refs.length === 47 && refs.every((g) => ['food', 'seeds', 'crops'].includes(g.cat)), 'every FR_GIFTS entry is a FOOD row, a walk treasure food, a seed packet or a crop: ' + JSON.stringify(refs.filter((g) => !g.cat)));
+  ok(refs.length === 49 && refs.every((g) => ['food', 'seeds', 'crops'].includes(g.cat)), 'every FR_GIFTS entry is a FOOD row, a walk treasure food, a seed packet or a crop: ' + JSON.stringify(refs.filter((g) => !g.cat)));
   ok(refs.every((g) => !people.includes(g.n) && !BAD.test(g.n)), 'none is a people food the kitchen bounces (' + people.join(', ') + ') or anything toxic to dogs: ' + JSON.stringify(refs.filter((g) => people.includes(g.n) || BAD.test(g.n)).map((g) => g.n)));
   await befriend(t, ['DOG-4K7PM', 'DOG-9QRST']);
   await t.until(() => (window.__paw.S.mail || []).some((m) => m && m.id === 'fr_gift_3'), null, 5000);

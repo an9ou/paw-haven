@@ -13,7 +13,7 @@ function frOn() {
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
-const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
+const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, sakOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
 
 /* append only, never reorder: the Worker validates indices */
 const FR_NOTES = [
@@ -35,11 +35,15 @@ const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
   'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern',
   'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair',
-  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain' // v2.26 Yard visitors: the four yard toys (54_visitors.js; the Worker's FR_LIM.decor 35)
+  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain', // v2.26 Yard visitors: the four yard toys (54_visitors.js; the Worker's FR_LIM.decor 35)
+  'Hanami Picnic Blanket', 'Sakura Paper Lanterns', 'Paper Sakura Tree', 'Bento Picnic Table', 'Blossom Swing' // Sakura Market: the five yard decorations, appended (the Worker's FR_LIM.decor 40)
 ];
 // v2.26: the length of FR_DECOR that a Worker from before v2.26 takes (its FR_LIM.decor 31). It refuses the whole snapshot when one index is past it, so if
 // PUT /friends/yard says bad while newer items are out, frAfterPush sends the same yard once more without them (FR.decorOld) until the next load
 const FR_DECOR_OLD = 31;
+// Sakura Market: the lengths a Worker from before the Sakura release (v2.26 to now) takes: decor 35, houses 15, gifts 47. If PUT /friends/yard says bad with a
+// Sakura decoration or the Blossom Kennel in it, frAfterPush sends the yard once more without them (FR.sakOld) and the two Sakura treats are not offered as gifts
+const FR_SAK_DECOR = 35, FR_SAK_HOUSES = 15, FR_SAK_GIFTS = 47;
 // an item from a later release shows in friend yards (mine sent, theirs drawn) only once its feature is live here: before the v2.26 news date no toy
 function frDecorLive(n) {
   const c = typeof HM_DECOR !== 'undefined' ? HM_DECOR[n] : null; if (!c) return false;
@@ -47,7 +51,7 @@ function frDecorLive(n) {
   return true;
 }
 /* append only, never reorder: the Worker validates indices */
-const FR_HOUSES = ['Cardboard Box', 'Classic Wooden Doghouse', 'Cozy Cottage', 'Snow Igloo', 'Treehouse Den', 'Royal Castle Kennel', 'Little Tea House', 'Beach Hut', 'Camper Van', 'Pumpkin Cottage', 'Lighthouse Kennel', 'Friendly Haunted Kennel', 'Gingerbread Kennel', 'Rocket Ship', 'Golden Paw Cottage']; // v2.24: + the Supporter House (the Worker's FR_LIM.houses 15)
+const FR_HOUSES = ['Cardboard Box', 'Classic Wooden Doghouse', 'Cozy Cottage', 'Snow Igloo', 'Treehouse Den', 'Royal Castle Kennel', 'Little Tea House', 'Beach Hut', 'Camper Van', 'Pumpkin Cottage', 'Lighthouse Kennel', 'Friendly Haunted Kennel', 'Gingerbread Kennel', 'Rocket Ship', 'Golden Paw Cottage', 'Blossom Kennel']; // v2.24: + the Supporter House (FR_LIM.houses 15); Sakura Market: + the Blossom Kennel, appended (FR_LIM.houses 16)
 /* append only, never reorder: the Worker validates indices.
    FOOD in table order except Fresh Water, then Wild Berries and Duck's Picnic Sandwich, then the 6 seed packets, then the 6 crops. No Golden Bone. */
 const FR_GIFTS = [
@@ -55,7 +59,8 @@ const FR_GIFTS = [
   'Sweet Potato Chews', 'Pumpkin Purée', 'Turkey Meatballs', 'Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth', 'Ghost Biscuits', 'Candy Corn Carrots', 'Monster Meatball', 'Pumpkin Patch Pupcake',
   'Apple Monster Biscuits', 'Sweet Potato Bones', 'Frozen Yoghurt Ghosts', 'Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Pup Kinton', 'Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs',
   'Sweet Potato Strip', 'Dog Senbei', 'Frozen Pupsicle', 'Wild Berries', "Duck's Picnic Sandwich", 'Pea Seeds', 'Spinach Seeds', 'Carrot Seeds', 'Blueberry Seeds', 'Sweet Potato Seeds', 'Pumpkin Seeds',
-  'Peas', 'Spinach', 'Carrot', 'Blueberries', 'Sweet Potato', 'Pumpkin'
+  'Peas', 'Spinach', 'Carrot', 'Blueberries', 'Sweet Potato', 'Pumpkin',
+  'Sakura Pup Mochi', 'Hanami Rice Ball' // Sakura Market: the two treats, appended after the crops (FR_LIM.gifts 49)
 ];
 const FR_ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const FR_LINK = 'https://doodledoggo.app/f/';
@@ -150,7 +155,7 @@ function frYard() {
   Object.keys((S && S.decor) || {}).forEach((n) => {
     if (decor.length >= 40) return;
     const rec = S.decor[n]; if (!rec || !rec.out) return;
-    const i = FR_DECOR.indexOf(n); if (i < 0 || !frDecorLive(n) || (FR.decorOld && i >= FR_DECOR_OLD)) return;
+    const i = FR_DECOR.indexOf(n); if (i < 0 || !frDecorLive(n) || (FR.decorOld && i >= FR_DECOR_OLD) || (FR.sakOld && i >= FR_SAK_DECOR)) return;
     const cat = typeof HM_DECOR !== 'undefined' ? HM_DECOR[n] : null;
     const at = Array.isArray(rec.at) && rec.at.length >= 2 ? rec.at : (cat && cat.at) || null;
     if (!at) return;
@@ -162,7 +167,7 @@ function frYard() {
   const hi = FR_HOUSES.indexOf(S.house);
   const season = typeof seasonNow === 'function' ? seasonNow() : 'spring';
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
-  const out = { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
+  const out = { v: 1, name, house: hi >= 0 && !((FR.sakOld || FR.decorOld) && hi >= FR_SAK_HOUSES) ? hi : 0, season, dogs, decor };
   if (typeof KS_FR_FF !== 'undefined' && KS_FR_FF && typeof ksSup === 'function' && ksSup()) out.ff = 1; // v2.24: the Founding Friend badge, sent once the Worker takes the field (52_kindshop.js KS_FR_FF)
   return out;
 }
@@ -175,8 +180,18 @@ function frAfterPush() {
     const ids = frYardDogs().map((o) => o.d.id);
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
     return put(yard).then((r) => {
-      // an older Worker (FR_LIM.decor 31) refuses a snapshot with a v2.26 toy: send it again without the newer items, the rest of the yard still shows
-      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(Object.assign({}, yard, { decor: yard.decor.filter((d) => d.i < FR_DECOR_OLD) })); }
+      // an older Worker refuses a snapshot with an index past its limits: send it again without the newer items, the rest of the yard still shows.
+      // First without the Sakura items (a Worker with decor 35, houses 15), then without the v2.26 toys as well (decor 31)
+      const bad = (rr) => rr && !rr.ok && frErr(rr) === 'bad';
+      const cut = (y, nd, nh) => Object.assign({}, y, { house: y.house >= nh ? 0 : y.house, decor: y.decor.filter((d) => d.i < nd) });
+      if (bad(r) && !FR.sakOld && !FR.decorOld && (yard.house >= FR_SAK_HOUSES || yard.decor.some((d) => d.i >= FR_SAK_DECOR))) {
+        FR.sakOld = true;
+        return put(cut(yard, FR_SAK_DECOR, FR_SAK_HOUSES)).then((r2) => {
+          if (bad(r2) && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD && d.i < FR_SAK_DECOR)) { FR.decorOld = true; return put(cut(yard, FR_DECOR_OLD, FR_SAK_HOUSES)); }
+          return r2;
+        });
+      }
+      if (bad(r) && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(cut(yard, FR_DECOR_OLD, FR_SAK_HOUSES)); }
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
@@ -1345,7 +1360,7 @@ function frGiftTake(g) { // one from the bag. A crop goes from its lowest star f
   else { const b = S.inv[g.cat]; b[g.id]--; if (g.cat === 'food' && b[g.id] <= 0) delete b[g.id]; }
   markDirty(); return true;
 }
-const frGiftsOwned = () => FR_GIFTS.map((n, i) => frGiftRef(i)).filter((g) => g && frGiftHave(g) >= 1);
+const frGiftsOwned = () => FR_GIFTS.map((n, i) => ((FR.sakOld || FR.decorOld) && i >= FR_SAK_GIFTS ? null : frGiftRef(i))).filter((g) => g && frGiftHave(g) >= 1); // an older Worker (47 gifts) does not take the Sakura treats
 // today's one gift is used: sent from here (S.fr.gift), or today's list says one went out (from another device)
 function frGiftUsed() {
   if (!S || !S.fr) return false;
@@ -1628,13 +1643,18 @@ function frExpose() {
     news: () => NEWS_V219, open: () => frOpen(),
     lists: () => ({ notes: FR_NOTES.slice(), gifts: FR_GIFTS.slice(), decor: FR_DECOR.slice(), houses: FR_HOUSES.slice() }),
     orderOk: () => {
-      const food = FOOD.filter((f) => f.n !== 'Fresh Water').map((f) => f.n);
+      // a frozen prefix (the rows from before the Sakura Market, in table order) plus the Sakura rows appended after it: the Sakura rows sit mid-table in
+      // HM_DECOR / FOOD / HOUSES (next to the other festival rows) but at the END of the Friends lists, because the Worker validates by index
+      const sak = (r) => r.fest === 'sakura';
+      const food = FOOD.filter((f) => f.n !== 'Fresh Water' && !sak(f)).map((f) => f.n), foodSak = FOOD.filter(sak).map((f) => f.n);
       const seeds = CROPS_FB.map((c) => c.seedItem), crops = CROPS_FB.map((c) => c.item);
-      const want = food.concat(['Wild Berries', "Duck's Picnic Sandwich"], seeds, crops);
-      const decor = Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard');
-      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
+      const want = food.concat(['Wild Berries', "Duck's Picnic Sandwich"], seeds, crops, foodSak);
+      const yardNames = Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard');
+      const decor = yardNames.filter((n) => !sak(HM_DECOR[n])).concat(yardNames.filter((n) => sak(HM_DECOR[n])));
+      const houses = HOUSES.filter((h) => !sak(h)).concat(HOUSES.filter(sak)).map((h) => h.n);
+      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === houses.join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
-    decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
+    decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, sakOld: (v) => { if (v !== undefined) FR.sakOld = !!v; return FR.sakOld; }, sakOldN: { decor: FR_SAK_DECOR, houses: FR_SAK_HOUSES, gifts: FR_SAK_GIFTS }, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
     yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),

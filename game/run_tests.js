@@ -130,8 +130,8 @@ const SUITES = {
   v222_levels: { file: 'test_v222_levels.js', group: 'all', est: 120, timeout: 600 }, // v2.22 Town levels (V222.md): part A core: old saves start as in 5.2, the no-relock sweep, the floor proof, XP sources and caps, milestones, the stars past 20, the pace table
   v219_friends: { file: 'test_v219_friends.js', group: 'all', est: 180, timeout: 600 }, // v2.19 Friends parts 2-5 (V219.md 3-6, 8): codes, the sheet, the yard snapshot, visits, gifts, the walk together
   v2191_runner: { file: 'test_v2191_runner.js', group: 'all', est: 200, timeout: 480 }, // v2.19.1 the walk runner: followers duck, no sniff pause, the four power-ups (o._forcePower)
-  wm_review: { file: 'test_wm_review.js', group: 'all', est: 90, timeout: 600 },
-  sakura_market: { file: 'test_sakura_market.js', group: 'all', est: 120, timeout: 900 }, // Sakura Market (docs/design/sakura-market.md): window, items, buying, caps, scene, costume art, phone // Winter Market 2026 code review fixes (docs/design/winter-market.md): market roam, market balls, caps, buys, stalls, warm wear
+  wm_review: { file: 'test_wm_review.js', group: 'all', est: 90, timeout: 600 }, // Winter Market 2026 code review fixes (docs/design/winter-market.md): market roam, market balls, caps, buys, stalls, warm wear
+  sakura_market: { file: 'test_sakura_market.js', group: 'all', est: 120, timeout: 900 }, // Sakura Market (docs/design/sakura-market.md): window, items, buying, caps, scene, costume art, phone
   v2183_connect: { file: 'test_v2183_connect_node.js', group: 'all', est: 900, timeout: 1800 }, // v2.18.3 All in one piece: every dog one piece, every leg, ear, tail and head attached, no noodle legs (dogs/connect_check.js), 35 breeds, every pose, age, frame, dry, wet and outfits
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
   worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)

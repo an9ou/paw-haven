@@ -203,13 +203,15 @@ async function sendMail(env, to, m) {
 const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 57 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six)
 // v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
-//   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
+//   gifts 49: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
 //             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
-//   decor 35: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included. v2.26: + the four yard toys
+//   decor 40: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included. v2.26: + the four yard toys
 //             (Tug Post, Puddle Pool, Play Tunnel, Bubble Fountain); deployed with the v2.26 launch. A game copy that meets an older Worker (31)
-//             sends its yard again without them (game/src/50_friends.js FR_DECOR_OLD).
-//   houses 15: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
-const FR_LIM = { notes: 12, gifts: 47, decor: 35, houses: 15 };
+//             sends its yard again without them (game/src/50_friends.js FR_DECOR_OLD). Sakura Market: + the 5 Sakura yard decorations (decor 35 -> 40), the Blossom Kennel
+//             (houses 15 -> 16) and the 2 Sakura treats (gifts 47 -> 49), all appended at the end; deployed with the 1 Mar 2027 release. A game copy that meets a Worker
+//             from before it (35, 15, 47) sends its yard again without them (FR_SAK_DECOR, FR_SAK_HOUSES, FR_SAK_GIFTS in game/src/50_friends.js).
+//   houses 16: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
+const FR_LIM = { notes: 12, gifts: 49, decor: 40, houses: 16 };
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'], I: ['I', 'i'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE; I = RED_I, the fox red Lab and dark golden, optional)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

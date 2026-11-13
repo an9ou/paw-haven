@@ -319,7 +319,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 35, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys), next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 49, decor: 40, houses: 16 }'), 'FR_LIM is notes 12, gifts 49, decor 40, houses 16 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; Sakura Market: + 5 decor, 1 house, 2 treats), next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);
@@ -480,10 +480,10 @@ async function checks(label, call, sql, mail) {
     }
     ok(!junkBad.length, `yard dogs use the Dog Card checks (${junk.length} kinds) ${junkBad.join(', ')}`);
     const yardBad = [
-      ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 15 })],
+      ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 16 })],
       ['6 dogs', yard({ dogs: [dog(), dog(), dog(), dog(), dog(), dog()] })],
       ['41 decor', yard({ decor: Array.from({ length: 41 }, (_, i) => ({ i: 0, x: i, y: 0 })) })],
-      ['decor index past the list', yard({ decor: [{ i: 35, x: 0, y: 0 }] })],
+      ['decor index past the list', yard({ decor: [{ i: 40, x: 0, y: 0 }] })],
       ['x past 1200', yard({ decor: [{ i: 0, x: 1201, y: 0 }] })], ['y past 800', yard({ decor: [{ i: 0, x: 0, y: 801 }] })],
       ['x negative', yard({ decor: [{ i: 0, x: -1, y: 0 }] })], ['x not an integer', yard({ decor: [{ i: 0, x: 1.5, y: 0 }] })],
       ['x as text', yard({ decor: [{ i: 0, x: '10', y: 0 }] })], ['an extra decor key', yard({ decor: [{ i: 0, x: 0, y: 0, z: 1 }] })],
@@ -497,7 +497,7 @@ async function checks(label, call, sql, mail) {
     ok(!yardFails.length, `anything outside the snapshot rules is bad ${yardFails.join(', ')}`);
     ok(!(await sql('select user_id from yards where user_id = ?', yB.user.id)), 'no junk yard was stored');
     const goodDogs = [dog({ b: 3 }), dog({ b: 39, o: 49, n: 119, c: '#AABBCC' }), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ e: 2, p: 123456789 }), dog({ b: 1, c: null })]; // v2.23: the fourth carries eyes and a pattern seed
-    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 34, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 35, x: i, y: i }))); // v2.26: 34 = the Bubble Fountain, the last yard toy
+    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 39, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 40, x: i, y: i }))); // 39 = the Blossom Swing, the last Sakura decoration (v2.26: 34 = the Bubble Fountain)
     const good = { v: 1, name: [9, 9], house: 13, season: 'winter', dogs: goodDogs, decor: goodDecor };
     ok(good.dogs.length === 5 && good.decor.length === 40 && JSON.stringify(good).length < 16384, 'the accepted snapshot is 5 dogs, 40 decor and under 16 KB');
     res = await frCall('PUT', '/friends/yard', { yard: good }, yB.token);
@@ -506,7 +506,7 @@ async function checks(label, call, sql, mail) {
     ok(res.status === 200 && res.json.yard.house === 13 && res.json.yard.season === 'winter' && res.json.yard.name.join() === '9,9', 'GET /friends/yard returns the snapshot');
     ok(res.json.yard.dogs[3].e === 2 && res.json.yard.dogs[3].p === 123456789 && !('e' in res.json.yard.dogs[0]) && !('p' in res.json.yard.dogs[0]), 'v2.23: a yard dog keeps its eyes and pattern seed; a dog without them has none');
     ok(res.json.yard.dogs.length === 5 && res.json.yard.dogs[0].b === 3 && res.json.yard.dogs[1].c === '#aabbcc' && res.json.yard.dogs[2].c === null && res.json.yard.dogs[2].o === -1, 'dogs come back in the Dog Card shape, leader first, colour lower case');
-    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 34, 'decor keeps integer coordinates up to 1200 and 800, and the v2.26 yard toys (index 31-34)');
+    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 39, 'decor keeps integer coordinates up to 1200 and 800, and the v2.26 yard toys (index 31-34)');
     ok(!res.text.includes(yB.user.id) && !/"updated_at"|"created_at"/.test(res.text), 'the yard answer has no user id and no timestamp');
     const zero = await frCall('PUT', '/friends/yard', { yard: yard({ dogs: [], decor: [], season: 'summer', house: 0 }) }, yA.token);
     ok(zero.status === 200, 'a yard may have no dogs and no decor (at most 5, at most 40)');
@@ -517,12 +517,12 @@ async function checks(label, call, sql, mail) {
     // sends: per Japan day, friends only
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'note', data: { i: 12 } }, yA.token)).json.error === 'bad', 'a note past the 12 lines is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'note', data: { i: 0, text: 'hi' } }, yA.token)).json.error === 'bad', 'a note cannot carry typed text');
-    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 47, n: 1 } }, yA.token)).json.error === 'bad', 'a gift past the list is bad');
+    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 49, n: 1 } }, yA.token)).json.error === 'bad', 'a gift past the list is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'gift', data: { i: 0, n: 2 } }, yA.token)).json.error === 'bad', 'a gift sends exactly one');
     ok((await frCall('POST', '/friends/send', { fid: pyA.fid, kind: 'pet' }, yS.token)).json.error === 'not_found', 'only a friend can send');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'wave' }, yA.token)).json.error === 'bad', 'kind has to be pet, note, gift or walk');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 5, mine: dog() } }, yA.token)).json.error === 'bad', 'a walk dog index is 0 to 4');
-    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog(), t: 47 } }, yA.token)).json.error === 'bad', 'a walk treasure past the gift list is bad');
+    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog(), t: 49 } }, yA.token)).json.error === 'bad', 'a walk treasure past the gift list is bad');
     ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'walk', data: { dog: 0, mine: dog({ c: { M: ['M', 'M'] } }) } }, yA.token)).json.error === 'bad', 'the walking leader is checked like a Dog Card dog');
     res = await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'pet' }, yA.token);
     ok(res.status === 200 && res.json.ok === true, 'the first pet today is kept');

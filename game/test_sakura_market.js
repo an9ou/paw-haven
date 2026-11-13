@@ -120,6 +120,49 @@ run('sakura_market', async (t) => {
     if (SHOTS) { await ev(() => { const P = window.__paw, S = P.S; if (!S.inv.houses.includes('Blossom Kennel')) S.inv.houses.push('Blossom Kennel'); S.house = 'Blossom Kennel'; S.place = 'yard'; P.go('yard'); }); await t.calm(); await shot('sakura_kennel_desktop'); }
   }
 
+  sec('5b. placement: the five decorations clear of the dog house, the house wall, the mailbox and the yard visitor, each inside one phone half, where they are bought');
+  {
+    await t.ctx.close();
+    const ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+    const HOUSE = [640, 340, 204, 186], WALLKEEP = [40, 147, 345, 248], MAIL = [179, 258, 66, 88], VIS = [592, 452, 'left', 0.58];
+    const half = (b) => (b[0] >= 140 && b[0] + b[2] <= 534) || (b[0] >= 518 && b[0] + b[2] <= 912);
+    await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+    await t.until(() => !!(window.__paw && window.__paw.fm && window.__paw.ho), null, 8000);
+    const H = await ev((l) => { const D = window.__paw.home.specs; return Object.fromEntries(l.map((n) => [n, { at: D[n].at.slice(0, 4), zone: D[n].zone }])); }, DECOR);
+    ok(DECOR.every((n) => H[n].at.every(Number.isFinite) && half(H[n].at)), 'each catalogue spot is inside one phone half (x 140-534 or 518-912): ' + DECOR.map((n) => n + ' ' + H[n].at.join(',')).join('; '));
+    ok(DECOR.every((n) => !ov(H[n].at, HOUSE) && !ov(H[n].at, MAIL) && (H[n].zone !== 'wall' || !ov(H[n].at, WALLKEEP))), 'no catalogue spot touches the dog house, the mailbox or the house wall: ' + DECOR.filter((n) => ov(H[n].at, HOUSE) || ov(H[n].at, MAIL) || (H[n].zone === 'wall' && ov(H[n].at, WALLKEEP))).join());
+    const vis = await ev((l) => { const P = window.__paw; return Object.fromEntries(l.map((n) => [n, P.ho.keep('yard', n)])); }, DECOR);
+    const yv = await ev(() => { const [fx, fy, , sc] = [592, 452, 'left', 0.58]; const w = 264 * sc, h = 220 * sc; return [fx - w / 2 + 20 * sc, fy - h * 205 / 220 + 30 * sc, w - 40 * sc, h - 30 * sc]; });
+    ok(DECOR.every((n) => !ov(H[n].at, yv)) && DECOR.every((n) => vis[n].some((k) => Math.abs(k[0] - yv[0]) < 1 && Math.abs(k[1] - yv[1]) < 1)), 'clear of the yard visitor, and hoKeepBoxes lists the visitor box (YV_SPOT) ' + JSON.stringify({ yv, tree: vis['Paper Sakura Tree'], at: H['Paper Sakura Tree'].at }));
+    const buy = async (n) => {
+      await ev((c) => window.__paw.fm.sheet(c), 'decor'); await t.sleep(200);
+      await ev((n) => document.querySelector(`#modal .fm-card[data-n="${n}"] [data-fmbuy]`).click(), n);
+      await t.p.waitForSelector('.buybox .bb-yes', { timeout: 4000 }).catch(() => {});
+      await ev(() => { const b = document.querySelector('.buybox .bb-yes'); if (b) b.click(); });
+      await t.until((n) => !!(window.__paw.S.decor || {})[n], n, 4000);
+    };
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    for (const n of DECOR) await buy(n);
+    const X = await ev((l) => l.map((n) => ({ n, box: window.__paw.ho.box(n) })), DECOR);
+    ok(X.every((x) => x.box[0] >= 140 && x.box[0] + x.box[2] <= 912 && !ov(x.box, HOUSE)), 'bought in an empty yard: inside x 140-912, off the dog house: ' + X.map((x) => x.n + ' ' + x.box.join(',')).join('; '));
+    ok(X.every((x) => x.box[0] === H[x.n].at[0] && x.box[1] === H[x.n].at[1]), 'each one lands at its catalogue spot: ' + X.filter((x) => x.box[0] !== H[x.n].at[0] || x.box[1] !== H[x.n].at[1]).map((x) => x.n + ' ' + x.box.join(',')).join('; '));
+    const bad = []; X.forEach((a, i) => X.forEach((b, j) => { if (j > i && ov(a.box, b.box)) bad.push(a.n + '/' + b.n); }));
+    ok(!bad.length, 'none overlaps another: ' + bad.join(', '));
+    await ev(() => { const P = window.__paw; P.S.place = 'yard'; P.go('yard'); }); await t.calm();
+    const keep = await ev((l) => Object.fromEntries(l.map((n) => [n, window.__paw.ho.keep('yard', n)])), DECOR);
+    const hit = []; X.forEach((x) => keep[x.n].forEach((k) => { if (ov(x.box, k)) hit.push(x.n + '/' + k.join(' ')); }));
+    ok(!hit.length, 'clear of the yard furniture, the mailbox, the scene hotspots, the visitor and the dog at rest: ' + hit.join(', '));
+    // with the Candy-Cane Fairy Lights already out at their catalogue spot, the lanterns are bought at the market and land clear of them
+    await ev(() => { const S = window.__paw.S; S.decor = { 'Candy-Cane Fairy Lights': { got: '2026-12-01', out: true, at: [620, 258] } }; window.__paw.go('yard'); });
+    await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    await buy('Sakura Paper Lanterns');
+    const L = await ev(() => ({ a: window.__paw.ho.box('Sakura Paper Lanterns'), b: window.__paw.ho.box('Candy-Cane Fairy Lights') }));
+    ok(!ov(L.a, L.b) && !ov(L.a, HOUSE), 'the lanterns land clear of the Candy-Cane Fairy Lights when both are owned: ' + JSON.stringify(L));
+  }
+  await t.ctx.close();
+  await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000); await ev(() => window.__paw.fm.sync());
+
   sec('6. the art: every item has its card, the decorations their props, the treats their bowls; the costumes on every breed and age');
   {
     const A = await ev((x) => { const PA = window.PawArt, ok1 = (s) => typeof s === 'string' && s.length > 200 && /<svg/.test(s);

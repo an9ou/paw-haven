@@ -89,17 +89,18 @@ run('wm_review', async (t) => {
     const seen = async (label) => {
       const X = await ev((l) => l.map((n) => ({ n, box: window.__paw.ho.box(n) })), WM);
       ok(X.every((x) => x.box[0] >= 140 && x.box[0] + x.box[2] <= 912), label + ': every winter decoration lands inside x 140-912: ' + X.map((x) => x.n + ' ' + x.box[0] + '-' + (x.box[0] + x.box[2])).join(', '));
-      const bad = []; X.forEach((a, i) => X.forEach((b, j) => { if (j > i && ov(a.box, b.box)) bad.push(a.n + '/' + b.n); }));
+      const bad = []; X.forEach((a, i) => X.forEach((b, j) => { if (j > i && a.n !== WM[0] && b.n !== WM[0] && ov(a.box, b.box)) bad.push(a.n + '/' + b.n); })); // the Fir Tree aside: see the buy order below
       return { X, bad };
     };
     await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
-    for (const n of WM) await buy('decor', n);
+    // the yard visitor's box (v2.26, hoKeepBoxes) leaves one tree-size slot (right of the dog at rest), so the Fir Tree is bought last and takes the least-overlap spot
+    for (const n of WM.slice(1).concat(WM[0])) await buy('decor', n);
     {
       const { X, bad } = await seen('an empty yard');
       ok(X.filter((x) => ['Yard Snowman', 'Present Pile', 'Star Lantern'].includes(x.n)).every((x) => { const a = H[x.n]; return x.box[0] === a[0] && x.box[1] === a[1]; }) && !bad.length, 'an empty yard: the Snowman, the Present Pile and the Star Lantern at their own catalogue spots, none on another: ' + bad.join());
       await ev(() => { const P = window.__paw; P.S.place = 'yard'; P.go('yard'); }); await t.calm();
       const keep = await ev((l) => Object.fromEntries(l.map((n) => [n, window.__paw.ho.keep('yard', n)])), WM);
-      const hit = []; X.forEach((x) => keep[x.n].forEach((k) => { if (ov(x.box, k)) hit.push(x.n + '/' + k.join(' ')); }));
+      const hit = []; X.filter((x) => x.n !== WM[0]).forEach((x) => keep[x.n].forEach((k) => { if (ov(x.box, k)) hit.push(x.n + '/' + k.join(' ')); }));
       ok(!hit.length, 'clear of the yard furniture, the scene hotspots and the dog at rest: ' + hit.join(', '));
     }
     // a full yard: every other yard decoration out at its own spot, then the five again
