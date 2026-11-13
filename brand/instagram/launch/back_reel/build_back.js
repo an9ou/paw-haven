@@ -5,14 +5,14 @@
 // warm": a treat bag and 100 coins). The game's own art: Noodle, Gerald (PawArt.prop 'gerald'), the treat bag (fwBagSVG, 47_firstweek.js),
 // Carrot Sticks, Squeaky Duck, the coin icon and the Friends wrapped gift (PawArt.FRIENDS.wrap). Beats: hook, a week away (a crayon tear-off calendar flips day 1 to 7), the letter,
 // the diary page, the daily gift, days played forever (a month with gaps, "N days played, ever"), Gerald's gifts at 7 / 30 / 100 / 365 days,
-// "No streaks. No guilt. Just a happy dog." with "tag someone who needs a break", and our standard end card (brand/kids/endcard.js) for 3 s.
+// "No streaks. No guilt. Just a happy dog." with "tag someone who needs a break", and our standard end card (brand/kids/endcard.js) for 2.5 s.
 // Every fact is checked against main's game text (game/i18n/en.json, game/src/53_welcome.js) and the build stops if one changed.
 // Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), standing things on the scene's floor and off the garden plot, x 850
-// for words and key art. 1080 x 1920, 30 fps. Voice: Noodle, Kokoro af_bella 1.0x (vo_back.json via ../friends_reel/vo_friends.py). Music: the game's own yard
+// for words and key art. 1080 x 1920, 30 fps. Voice: Noodle, Kokoro af_bella 1.1x (vo_back.json via ../friends_reel/vo_friends.py). Music: the game's own yard
 // music (mods/pawaudio.js) about 11 dB under the voice, the treasure sting on the gift, the level-up sting on Gerald's gifts.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/back_reel/capture_back.js <main checkout> <caps dir>
-//   VO_LINES=brand/instagram/launch/back_reel/vo_back.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo dir> af_bella 1.0
+//   VO_LINES=brand/instagram/launch/back_reel/vo_back.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo dir> af_bella 1.1
 //   ART_ROOT=<main checkout> CAPS=<caps dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/back_reel/build_back.js <workdir> <vo dir>
 //   ONLY=stills: key frames (WORK/stills). ONLY=cover: back-cover.jpg. FRAMES=a-b: re-render only frames a..b, then encode again.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
@@ -115,13 +115,13 @@ const BEATS = [
   { k: 'mile', kind: 'mile', title: 'Gifts from Gerald', lines: ['at 7, 30, 100 and 365', 'days played'] },
   { k: 'end', kind: 'end', lines: ['No streaks. No guilt.', 'Just a happy dog.'], pill: 'tag someone who needs a break' },
 ];
-// the timeline (owner, 11 Nov 2026: "let the audience read it"): each card stays up until a slow reader is done, at least 1.2 s + 0.35 s a word
-// of its text and never less than its spoken line + 1 s, then a short pause before the next beat
-const VOAT = []; let at = 0.1; const PAUSE = 0.3, B = {}, HOLD = {};
+// the timeline (owner, 13 Nov 2026: "The reels speed can be faster less reading time is fine"): each card stays up for its spoken line + 0.4 s,
+// then a 0.15 s pause before the next beat (Noodle at 1.1x)
+const VOAT = []; let at = 0.1; const PAUSE = 0.15, B = {}, HOLD = {};
 for (const b of BEATS) { const txt = [b.title || '', ...(b.lines || []), b.small || '', b.sub || '', b.pill || '', b.pillTop || '', b.read || ''].join(' ');
   const words = txt.split(/\s+/).filter(Boolean).length;
-  HOLD[b.k] = Math.max(1.2 + 0.35 * words, VOD[b.k] + 1.0); B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; b.hold = HOLD[b.k]; at += HOLD[b.k] + PAUSE; }
-const LOOP = at - PAUSE + 0.2, T = LOOP + 3.0, NF = Math.round(T * FPS);
+  HOLD[b.k] = VOD[b.k] + 0.4 + 0 * words; B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; b.hold = HOLD[b.k]; at += HOLD[b.k] + PAUSE; }
+const LOOP = at - PAUSE + 0.2, T = LOOP + 2.5, NF = Math.round(T * FPS);
 const DAYS_ON = [1, 2, 4, 5, 8, 9, 10, 13, 16, 17, 20, 22]; // the days played this month: gaps in between, nothing lost
 const allText = BEATS.map((b) => [b.title || '', ...(b.lines || []), b.sub || '', b.small || '', b.pill || '', b.pillTop || '']).flat().join(' ')
   + ' days played, ever 0123456789 day Day Stop feeling bad about a week off. Your dog saved you a gift.';
