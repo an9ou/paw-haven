@@ -7080,7 +7080,7 @@ PROPS.skswing=function(b){const G=214;b.shadow(60,G,58,4.6);
   // back leg from one top joint, a brace across), a thick crossbar, two thick ropes (each its own outlined shape), a pink seat and a big garland
   const leg=(x0,y0,x1,y1,w0,w1,col,base,lw)=>b.sh([[x0-w0,y0],[x1-w1,y1],[x1+w1,y1],[x0+w0,y0]],col,{k:0,hatch:0,hl:0,lw,base});
   leg(40,G-5,23,28,3.2,2.4,C.woodD,C.wood,.85);leg(80,G-5,97,28,3.2,2.4,C.woodD,C.wood,.85);// the back legs, a step behind
-  [[10,37],[83,110]].forEach(([x0,x1])=>b.sh(RR(x0,146,x1-x0,6,2),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood}));// the braces
+  [[13,33],[87,107]].forEach(([x0,x1])=>b.sh(RR(x0,104,x1-x0,6,2),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood}));// the braces, well above the seat so they never read as part of it
   leg(7,G,22,28,4.4,3,C.wood,'#F3DDB4',1);leg(113,G,98,28,4.4,3,C.wood,'#F3DDB4',1);// the front legs
   b.sh(RR(10,17,100,12,3.4),C.wood,{k:0,hatch:0,hl:0,lw:1.05,base:'#F3DDB4',det:[[[18,23],[102,23]]],dw:.6,dcol:C.woodD});
   // two thick ropes, a twist mark every few px
