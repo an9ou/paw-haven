@@ -245,9 +245,22 @@ class T {
   popVisible() { return this.p.evaluate(() => { const d = document.getElementById('dock'); return !!d.querySelector('.tray:not(.dock-idle):not(.mini)') && getComputedStyle(d).display !== 'none'; }); }
   // reload with the save kept: Chromium can drop a localStorage write still in flight when the page reloads (about 1 in 25, worse under load), and the title then has no Continue.
   // A one-time init script puts the same JSON back only if the browser lost it. Each call has its own token, so later reloads are not touched by older scripts (v2.9)
+  // v2.27 fix (v227_projects section 4, about 1 run in 3 on file://): on a SECOND reload in one context Chromium can open the new document on a stale
+  // storage view, sessionStorage and localStorage both as they were one document back (or empty). The sessionStorage token then fails, so an older
+  // call's script put its older save back, and a stale non-empty save was never repaired. Now every script compares the save's lastReal (saveNow
+  // stamps it): it writes its snapshot (the whole localStorage of that moment) only when the stored save is missing or older than the snapshot, so the
+  // newest snapshot wins and an older script never rolls a newer save back. Over http the same reloads never went stale (32 of 32): a harness thing.
   async reloadKeepingSave() {
-    const key = 'pawhaven_proto_v1', json = await this.p.evaluate((k) => localStorage.getItem(k), key), tok = '__rs_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    if (json != null) await this.ctx.addInitScript(({ k, v, tok }) => { try { if (!sessionStorage.getItem(tok)) { sessionStorage.setItem(tok, '1'); if (localStorage.getItem(k) == null) localStorage.setItem(k, v); } } catch (e) { /* storage blocked */ } }, { k: key, v: json, tok });
+    const key = 'pawhaven_proto_v1', tok = '__rs_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const snap = await this.p.evaluate((k) => { const all = {}; for (let i = 0; i < localStorage.length; i++) { const n = localStorage.key(i); all[n] = localStorage.getItem(n); } return { v: localStorage.getItem(k), all }; }, key);
+    if (snap.v != null) await this.ctx.addInitScript(({ k, v, all, tok }) => {
+      try {
+        if (sessionStorage.getItem(tok)) return; sessionStorage.setItem(tok, '1');
+        const at = (j) => { try { const n = +JSON.parse(j).lastReal; return isFinite(n) ? n : -1; } catch (e) { return -1; } };
+        const cur = localStorage.getItem(k);
+        if (cur == null || at(cur) < at(v)) for (const n in all) localStorage.setItem(n, all[n]);
+      } catch (e) { /* storage blocked */ }
+    }, { k: key, v: snap.v, all: snap.all, tok });
     await this.p.reload();
   }
   async waitPop(on, ms) { return this.until((on) => { const d = document.getElementById('dock'); const v = !!d.querySelector('.tray:not(.dock-idle):not(.mini)') && getComputedStyle(d).display !== 'none'; return v === on; }, !!on, ms || 5000); }

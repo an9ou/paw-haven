@@ -71,4 +71,11 @@
 51_levels.js
 51b_habits.js
 52_kindshop.js
+53_welcome.js
+54_visitors.js
+55_projects.js
+55b_projects_art.js
+56_stories.js
+57_scenes.js
+57b_story.js
 23_boot.js

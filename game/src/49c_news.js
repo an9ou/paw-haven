@@ -152,9 +152,64 @@ const NEWS_V2241 = { // v2.24.1 "Delivered!" (V224.md): the delivery card, Geral
   ]
 };
 const nwV2241Due = () => SHOP_LIVE && jstISO() >= NEWS_V2241.date;
+const NEWS_V225 = { // v2.25 "Glad you're back" (V225.md): the While you were out page, days played forever, the welcome-back letter, the tomorrow line
+  id: '2.25', date: '2026-11-12', c: '#FCE6C8', d: 'heart', pic: 'dog',
+  title: () => tt('nw.v225.title', "Glad you're back!"),
+  items: [
+    { ic: () => nwSafe(() => ICON('sleep')), tx: () => tt('nw.v225.away', 'Back after a few hours? Your dog greets you with a diary page of what it got up to, and once a day a small gift') },
+    { ic: () => fwCalIcon(), tx: () => tt('nw.v225.days', 'The calendar counts every day you play, forever. A missed day costs nothing, and Gerald has gifts at 7, 30, 100 and 365 days') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v225.letter', 'Away for a few days? Gerald keeps your spot warm and sends a letter with a treat bag and coins') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v225.tmrw', 'Finish the day\'s little jobs and you get a hint of what tomorrow brings') }
+  ]
+};
+const nwV225Due = () => jstISO() >= NEWS_V225.date;
+// v2.26-v2.29 (GM, 12 Nov 2026): each release goes live on its NEWS date (LAUNCH DATE: set from the owner's go-ahead); the feature's On() reads
+// nwDue(NEWS_V22x) too, so all four can sit on main and open one by one. The GitHub Pages test copy opens all four early (window.__ddNextTest).
+const nwNext = () => typeof window !== 'undefined' && !!window.__ddNextTest;
+const nwDue = (e) => nwNext() || jstISO() >= e.date;
+const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
+  id: '2.26', date: '2026-11-19', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE (owner, 12 Nov: all four together)
+  title: () => tt('nw.v226.title', 'Visitors in the yard!'),
+  items: [
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v226.come', 'While you are away, neighbourhood dogs come round to play in your yard. The last one is still there when you come back') },
+    { ic: () => nwItemArt('Puddle Pool'), tx: () => tt('nw.v226.toys', 'Four new yard toys, the Tug Post, Puddle Pool, Play Tunnel and Bubble Fountain, bring more visitors') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v226.book', 'Meet 20 visitors in the Visitors Book. Some only come on snowy days or in autumn, and every one comes back') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v226.gift', 'Pet a visitor once a day, and some leave a little thank-you gift') }
+  ]
+};
+const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
+  id: '2.27', date: '2026-11-19', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
+  title: () => tt('nw.v227.title', 'Town projects'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v227.board', 'A project board in the Town Square: put in coins whenever you like to build something new for the whole town') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v227.four', 'Four builds, one after another: a dog fountain, a bandstand, Sakura Avenue and a lighthouse') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v227.ribbon', 'Each build takes two days, then Gerald cuts the ribbon and sends you a letter') },
+    { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v227.fun', 'Every build has something to do: a drink, a tune, blossom in spring and a light at night') }
+  ]
+};
+const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
+  id: '2.28', date: '2026-11-19', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE (owner, 12 Nov: all four together)
+  title: () => tt('nw.v228.title', 'Stories and stars'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v228.stars', 'Past Bond 10 your dog keeps earning Bond stars, with a Framed Paw Print at 5 stars and a Star Collar at 10') },
+    { ic: () => nwSafe(() => mailIcon()), tx: () => tt('nw.v228.stories', 'Four neighbours write to you with little stories: Plum, Rosa, the mail carrier and Pip') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v228.help', 'Help each neighbour with small requests, and their story unfolds a letter at a time') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v228.card', 'Make a postcard of your dog to keep or share') }
+  ]
+};
+const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
+  id: '2.29', date: '2026-11-19', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
+  title: () => tt('nw.v229.title', 'Story mode'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v229.book', 'Gerald has written a story for you and your dog: 8 chapters to play at your own pace, next to everything else') },
+    { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v229.tasks', 'Each chapter has small tasks that give coins, Bond and level points') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v229.scenes', 'Finish a chapter and watch a little crayon scene. Rewatch them all in Memories') },
+    { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
+  ]
+};
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
@@ -185,6 +240,7 @@ function nwOpen(auto) {
 // the automatic open: once per news id, on a calm yard, never on top of the guide, the calendar's daily page, a level-up or the Bond 2 party
 function nwCalmNow() {
   if (!S || cur.mode !== 'yard' || !modal.hidden || busy || levelQueue.length || !titleEl.hidden) return false;
+  if (typeof scPlaying === 'function' && scPlaying()) return false; // v2.29: never under a story scene; it waits until the scene ends
   if (typeof popOpen === 'function' && popOpen()) return false;
   if (typeof gdLive === 'function' && gdLive() && gdAllowed()) return false;
   if (typeof phActive === 'function' && phActive()) return false; if (typeof blOn === 'function' && blOn()) return false;
@@ -202,7 +258,7 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { due: (v) => nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229 }[v]), dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)

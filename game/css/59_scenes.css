@@ -1,0 +1,83 @@
+/* v2.29 Story mode (57_scenes.js, 57b_story.js): the scene player, the Story page and the Memories album */
+.sc-layer{position:absolute;inset:0;z-index:25;display:flex;flex-direction:column;background:var(--paper,#FFFBF3);overflow:hidden;color:var(--ink)}
+.sc-layer[hidden]{display:none}
+.sc-film{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
+.sc-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sc-fade{position:absolute;inset:0;background:var(--paper,#FFFBF3);opacity:1;pointer-events:none}
+.sc-title{position:absolute;left:50%;top:7%;transform:translateX(-50%) rotate(-1.2deg);width:max-content;max-width:88%;padding:6px 18px;font-family:var(--font-hand);font-weight:700;font-size:clamp(26px,4.6vw,46px);line-height:1.1;text-align:center;white-space:pre-line;overflow-wrap:anywhere;background:var(--w-yellow,#FFE3A1);border:2.5px solid var(--ink);border-radius:12px 18px 10px 16px;box-shadow:3px 4px 0 rgba(91,61,50,.2)}
+.sc-title[hidden]{display:none}
+.sc-foot{flex:0 0 auto;display:flex;align-items:center;gap:12px;min-height:88px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--paper,#FFFBF3);border-top:3px solid var(--ink);box-sizing:border-box}
+.sc-cap{flex:1 1 auto;min-width:0;margin:0;font-family:var(--font-hand);font-size:clamp(22px,2.6vw,30px);line-height:1.2;overflow-wrap:anywhere}
+.sc-cap.sc-in{animation:scCap .6s ease-out both}
+@keyframes scCap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sc-skip{flex:0 0 auto;min-width:96px;min-height:48px;font-size:20px}
+.sc-skip[hidden]{display:none}
+html[data-layout="phone"] .sc-foot{flex-direction:column;align-items:stretch;min-height:150px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] .sc-cap{font-size:22px;flex:1 1 auto}
+html[data-layout="phone"] .sc-skip{align-self:flex-end;min-height:44px}
+html[data-layout="phone"] .sc-title{font-size:28px;top:5%}
+html[data-layout="phone"] #smBtn{display:none}
+#smBtn[hidden]{display:none}
+#smBtn{position:relative}
+#smBtn svg{width:32px;height:36px}
+#smBtn:not([data-left="0"])::after{content:"";position:absolute;right:6px;top:6px;width:10px;height:10px;border-radius:50%;background:#F28FA5;border:2px solid var(--ink)}
+/* v2.29 phone review 2: the desktop top bar keeps its pre-v2.28 room. The stage is min(viewport width, (height - 20) * 16/9) wide, so the queries
+   test both. A stage under 1280: the postcard icon (#stPcBtn, 56_stories.js) steps out (Send a postcard stays in the diary and My Dog Card).
+   A stage under 1230 with the Story button in: the top bar's gaps go 14 -> 8 px and its round buttons 48 -> 44 px, so the meters, coins and
+   the clipboard keep the room they had before (at 1024 nothing overlaps). */
+@media (max-width:1279px),(max-height:739px){html:not([data-layout="phone"]) #hud #stPcBtn{display:none}}
+@media (max-width:1229px),(max-height:711px){
+  html:not([data-layout="phone"]) #hud:has(> #smBtn:not([hidden])) > * + :not(#msBtn){margin-left:-6px}
+  html:not([data-layout="phone"]) #hud:has(> #smBtn:not([hidden])) > .iconbtn{width:44px;height:44px;padding:6px}
+}
+/* the Story page */
+html:not([data-layout="phone"]) .panel.sm-pop{width:min(640px,100%);max-width:min(640px,calc(100% - 20px))}
+.sm-sheet{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sm-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.sm-tabs .btn{min-height:44px}
+.sm-tabs .btn[aria-selected="true"]{--wash:var(--w-yellow)}
+.sm-head{display:flex;align-items:center;gap:12px;min-width:0}
+.sm-duck{flex:0 0 64px;width:64px;height:64px}
+.sm-duck svg{width:100%;height:100%;display:block}
+.sm-ht{display:flex;flex-direction:column;min-width:0}
+.sm-ht b{font-family:var(--font-hand);font-size:28px;line-height:1.1;overflow-wrap:anywhere}
+.sm-ch{padding:10px 12px;border:2px dashed rgba(91,61,50,.45);border-radius:12px 16px 10px 14px;background:var(--w-cream,#FFF4DF)}
+.sm-ch h3{margin:0;font-family:var(--font-hand);font-size:26px;line-height:1.15;overflow-wrap:anywhere}
+.sm-where{margin:2px 0 8px}
+.sm-tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sm-task{display:flex;align-items:center;gap:10px;min-width:0}
+.sm-tick{flex:0 0 28px;width:28px;height:28px;border:2px solid var(--ink);border-radius:6px 8px 5px 7px;background:var(--paper,#FFFBF3);display:grid;place-items:center}
+.sm-tick svg{width:22px;height:22px}
+.sm-tt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.sm-tt b{font-weight:400;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.sm-rw{color:#7A5A4A;overflow-wrap:anywhere}
+.sm-task.done .sm-tt b{text-decoration:line-through;text-decoration-color:rgba(91,61,50,.5)}
+.sm-n{flex:0 0 auto;font-family:var(--font-hand);font-size:22px}
+.sm-end{margin:10px 0 0;overflow-wrap:anywhere}
+.sm-wait p{margin:0;overflow-wrap:anywhere}
+.sm-book{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.sm-book li{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 8px;border:2px solid rgba(91,61,50,.35);border-radius:8px 10px 7px 9px}
+.sm-book li.now{border-color:var(--ink);background:var(--w-yellow,#FFE3A1)}
+.sm-book li.later{opacity:.6}
+.sm-book .sm-tick{flex-basis:22px;width:22px;height:22px;border:none;background:none}
+.sm-cn{flex:0 0 auto;font-family:var(--font-hand);font-size:22px;font-weight:700}
+.sm-ct{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.2}
+.sm-empty{margin:4px 0;overflow-wrap:anywhere}
+.sm-mem{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sm-mcard{display:flex;align-items:center;gap:10px;min-width:0;padding:8px 10px;border:2px solid rgba(91,61,50,.4);border-radius:10px 14px 9px 12px;background:var(--w-cream,#FFF4DF)}
+.sm-mcard.new{background:var(--w-yellow,#FFE3A1)}
+.sm-mart{flex:0 0 44px;width:44px;height:44px}
+.sm-mart svg{width:100%;height:100%;display:block}
+.sm-mt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.sm-mt b{font-family:var(--font-hand);font-size:22px;line-height:1.15;overflow-wrap:anywhere}
+.sm-play{flex:0 0 auto;min-height:44px}
+/* part 2: "Opens at level N", the chapter that waits, the end of the book, the pinned Story line on the Missions tab */
+.sm-lvchip{display:inline-block;padding:0 8px;border:2px solid var(--ink);border-radius:8px 10px 7px 9px;background:var(--w-yellow,#FFE3A1);font-size:15px;line-height:1.5;white-space:nowrap}
+.sm-task.gated .sm-tt b,.sm-task.gated .sm-n{opacity:.6}
+.sm-waitlv{margin:0 0 8px;overflow-wrap:anywhere}
+.sm-fin p{margin:0;overflow-wrap:anywhere}
+.sm-msline{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin:0 0 10px;padding:6px 12px;font:inherit;color:inherit;text-align:left;cursor:pointer;background:var(--w-cream,#FFF4DF);border:2px dashed rgba(91,61,50,.55);border-radius:10px 14px 9px 12px;box-sizing:border-box}
+.sm-msline:hover,.sm-msline:focus-visible{background:var(--w-yellow,#FFE3A1)}
+.sm-msic{flex:0 0 30px;width:30px;height:34px}
+.sm-msic svg{width:100%;height:100%;display:block}
+.sm-mstx{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.25}

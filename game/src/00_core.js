@@ -184,6 +184,8 @@ const CLOTHES = [
   // v2.17 Dog Days (V217.md 2): the Bond 10 gifts on the Bond track (48_dogdays.js), never sold; bond 1 so no level-up card lists them as a shop unlock
   { n: 'Crayon Crown', slot: 'head', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift.' },
   { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' },
+  // v2.28 Stories and stars (V228.md 2, 56_stories.js): the 10 Bond stars keepsake, never sold
+  { n: 'Star Collar', slot: 'neck', price: 0, bond: 1, v228: true, reward: true, perk: 'Ten Bond stars: a blue crayon collar with a little gold star tag.' },
   // v2.24 Kind shop (V224.md 1, 52_kindshop.js): sold only in the kind shop (ks: the pack it belongs to), never in the Boutique, a stall, a market, a level list or a journey.
   // reward: true keeps every older shop list off them, bond 1 keeps them off every Bond and level-up card. Looks only: the perks are flavour
   { n: 'Golden Name Tag', slot: 'neck', price: 0, bond: 1, ks: 'supporter', reward: true, perk: 'Thank you: a gold bone tag on a blue collar. From the Supporter Pack.' },
@@ -863,6 +865,11 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v220Fields(st, true); // v2.20 Missions v2 (V220.md 1): helps, pouch, counters, week, badges, and the new-player notebook
   v222Fields(st, true); // v2.22 Town levels (V222.md 5.1, 51_levels.js): a fresh S.lv only while lvOn()
   v224Fields(st); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): S.shop
+  v225Fields(st, true); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): days played from 0, the last-seen stamp now
+  v226Fields(st); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): S.visitors
+  v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
+  v228Fields(st); // v2.28 Stories and stars (V228.md 1, 56_stories.js): S.st
+  v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
   return linkDogs(st);
 }
 let S = null;
@@ -934,6 +941,11 @@ function migrate(s) {
   v220Fields(s, false); // v2.20 Missions v2 (V220.md section 1, 24b_missions2.js): additive; an old save's counters are backfilled once, it gets no notebook
   v222Fields(s, false); // v2.22 Town levels (V222.md 5, 51_levels.js): additive; the first load with lvOn() starts an old save once (lvStart), every load syncs the floor (lvSync)
   v224Fields(s); // v2.24 Kind shop (V224.md 5, 52_kindshop.js): additive, S.shop and every dog's outfit.feet
+  v225Fields(s, false); // v2.25 Glad you're back (V225.md 2, 53_welcome.js): additive; an old save's days played start from what it already knows
+  v226Fields(s); // v2.26 Yard visitors (V226.md 6, 54_visitors.js): additive, S.visitors (seen = now, so no flood on the first load)
+  v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
+  v228Fields(s); // v2.28 Stories and stars (V228.md 1, 56_stories.js): additive, S.st; an old Bond 10+ save gets its stars counted once
+  v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
@@ -1352,7 +1364,9 @@ const toastLive = () => [...toasts.children].filter((e) => !e.classList.contains
 function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = setTimeout(() => t.remove(), TOAST_MS); }
 // v2.22 phone review: while a celebration card (.panel.celebrate: a Bond card, the Bond 2 party, a town level or star card) is open on a phone,
 // toasts wait in the queue (and the live one steps back into it), so none lands on the card; they come in when it closes.
-const toastHold = () => isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate');
+// v2.29: and on every device while a story scene plays (scPlaying, 57_scenes.js): toasts wait in the queue and come in after it (scEnd calls toastNext)
+const toastScene = () => typeof scPlaying === 'function' && scPlaying();
+const toastHold = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
 // a "Nope" toast belongs to the screen it came from (o.scr: 's:<sheet number>' or 'v:<mode>'); phones drop it when that screen closes (toastDrop)
 let modalSeq = 0;
 const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
@@ -1362,7 +1376,7 @@ function toastPark() { toastLive().forEach((e) => { clearTimeout(e._tt); e.class
 // mini-game clears the whole queue as it opens (toastClearQ, from go()), so old Bond-gift toasts never land on its header or its Done button
 function toastStale() { if (!toasts) return; [...toasts.querySelectorAll('.toast.tq[data-arr]')].forEach((e) => { if (!S || e.dataset.arr !== S.place || !['yard', 'market'].includes(cur.mode)) e.remove(); }); }
 function toastClearQ() { if (toasts) toasts.querySelectorAll('.toast.tq').forEach((e) => e.remove()); }
-function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (!isPhone()) q.forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
+function toastNext() { toastStale(); const q = [...toasts.querySelectorAll('.toast.tq')]; if (!q.length) return; if (toastScene()) return; if (!isPhone()) q.slice(0, Math.max(0, 3 - toastLive().length)).forEach(toastRun); else if (toastHold()) return; else if (!toastLive().length) toastRun(q[0]); else return; toastPlace(); }
 if (toasts) new MutationObserver(toastNext).observe(toasts, { childList: true }); // a toast that leaves (its time is up, an Undo tap, a screen that clears them) lets the next one in
 function toast(text, kind = '', o = {}) {
   let n = 1;
@@ -1378,8 +1392,11 @@ function toast(text, kind = '', o = {}) {
     if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
     const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
   } else {
-    toasts.appendChild(t); toastRun(t);
-    while (toasts.children.length > 3) toasts.firstChild.remove();
+    toasts.appendChild(t); if (toastScene()) t.classList.add('tq'); else toastRun(t);
+    // up to three show at once; v2.29 code review: the ones held during a scene are not dropped by that cap. At most 8 wait (the oldest
+    // plain one goes first, a gold one only when all are gold); after the scene they come in three at a time (toastNext)
+    const live = toastLive(); while (live.length > 3) live.shift().remove();
+    const q = [...toasts.querySelectorAll('.toast.tq')]; while (q.length > 8) { const i = Math.max(0, q.findIndex((e) => !e.classList.contains('gold'))); q.splice(i, 1)[0].remove(); }
   }
   toastPlace();
   return t;
@@ -1509,6 +1526,7 @@ function sayPlace(p, o) {
 }
 function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking dog's drawn box in stage px (else found near the anchor), avoid: [stage boxes to keep clear when there is room] }
   const svg = $('svg.world', view); if (!svg) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // v2.29: no hint bubble over a story scene
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
   bubble.classList.remove('below', 'tail-r'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');

@@ -23,19 +23,19 @@ const KS_TOKYO = ['Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote',
 const KS_COZY_DECOR = ['Cable-Knit Rug', 'Cocoa Mug Lamp', 'Doggy Snow Globe', 'Cardboard Fireplace', 'Woolly Armchair'];
 const KS_COZY_BED = 'Tea-Cosy Bed', KS_HOUSE = 'Golden Paw Cottage', KS_TAG = 'Golden Name Tag';
 const KS_COZY = KS_COZY_DECOR.concat([KS_COZY_BED]);
-const KS_LOOK_COINS = 600, KS_SUP_COINS = 2000, KS_WALK_K = 0.2, KS_GROW_MUL = 1.25; // grow time x0.8
+const KS_LOOK_COINS = 1500, KS_SUP_COINS = 2000, KS_WALK_K = 0.2, KS_GROW_MUL = 1.25; // grow time x0.8
 const KS_TOOLS = ['robo', 'sprinkler', 'bowl'];
 const KS_ITEMS = {
   supporter: { usd: '4.99', tab: 'supporter' },
   tokyo: { usd: '2.99', tab: 'looks', looks: KS_TOKYO },
   cozy: { usd: '2.99', tab: 'looks', looks: KS_COZY },
-  robo: { usd: '1.99', tab: 'tools', coins: 4000, prop: 'Robo Scoop' },
-  sprinkler: { usd: '0.99', tab: 'tools', coins: 2500, prop: 'Garden Sprinkler' },
-  bowl: { usd: '0.99', tab: 'tools', coins: 2500, prop: 'Auto Water Bowl' },
+  robo: { usd: '1.99', tab: 'tools', coins: 10000, prop: 'Robo Scoop' },
+  sprinkler: { usd: '0.99', tab: 'tools', coins: 6000, prop: 'Garden Sprinkler' },
+  bowl: { usd: '0.99', tab: 'tools', coins: 6000, prop: 'Auto Water Bowl' },
   comfort: { usd: '2.99', tab: 'tools', tools: KS_TOOLS },
-  coins_1k: { usd: '0.99', tab: 'coins', pack: 1000 },
-  coins_3k: { usd: '1.99', tab: 'coins', pack: 3000 },
-  coins_8k: { usd: '4.99', tab: 'coins', pack: 8000 }
+  coins_1k: { usd: '0.99', tab: 'coins', pack: 2000 }, // v2.24.2 (owner, 11 Nov): coin prices x2.5, packs about x2; the ids stay (Stripe metadata)
+  coins_3k: { usd: '1.99', tab: 'coins', pack: 5000 },
+  coins_8k: { usd: '4.99', tab: 'coins', pack: 14000 }
 };
 const KS_TABS = ['supporter', 'looks', 'tools', 'coins'];
 const ksUSD = (id) => tt('ks.usd', 'US${p}', { p: KS_ITEMS[id].usd });
@@ -267,7 +267,7 @@ function ksLookArt(n) {
 function ksArt(id) {
   const I = KS_ITEMS[id];
   if (id === 'supporter') return ksPA('house', KS_HOUSE) || art('house', KS_HOUSE);
-  if (I.pack) return ksIcon({ 1000: 'coins1', 3000: 'coins3', 8000: 'coins8' }[I.pack] || 'coins');
+  if (I.pack) return ksIcon({ coins_1k: 'coins1', coins_3k: 'coins3', coins_8k: 'coins8' }[id] || 'coins');
   if (I.prop) return ksToolArt(id);
   if (id === 'comfort') return `<span class="ks-trio" style="display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:100%">${KS_TOOLS.map((t) => `<span style="flex:1 1 0;min-width:0;height:62%">${ksToolArt(t)}</span>`).join('')}</span>`;
   if (id === 'cozy') return ksLookArt(KS_COZY_BED);
@@ -500,7 +500,7 @@ function ksPoll(force) {
   return ksPollP;
 }
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ksPoll(false); });
-// a coin buy: a look (600 coins) or a tool (its own price), through the same coin window as every shop. Never the Supporter Pack or coins
+// a coin buy: a look (KS_LOOK_COINS) or a tool (its own price), through the same coin window as every shop. Never the Supporter Pack or coins
 async function ksCoinBuy(panel, n) {
   const tool = KS_TOOLS.includes(n), look = KS_TOKYO.includes(n) || KS_COZY.includes(n); if (!tool && !look) return false;
   const price = tool ? KS_ITEMS[n].coins : KS_LOOK_COINS, owned = tool ? ksTool(n) : ksLookOwned(n), nm = tool ? ksName(n) : homeName(n);

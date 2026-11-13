@@ -229,9 +229,12 @@ function scanJs(code, fileOf, mode) {
 
   // the path of a data string inside its table: property names, row ids (an object's id / key / n / name, an array row's leading
   // key-like strings) or indices. data.<table>.<path> is stable as long as the table only grows (the tables are append only).
+  // v2.26: `Object.assign(HM_DECOR, { 'Tug Post': {...} })` adds rows to a table declared elsewhere: its rows key like the table's own
+  const assignTo = (p) => p && p.type === 'CallExpression' && p.callee.type === 'MemberExpression' && p.callee.object.type === 'Identifier' && p.callee.object.name === 'Object' && p.callee.property.name === 'assign'
+    && p.arguments.length === 2 && p.arguments[0].type === 'Identifier' && TABLES.has(p.arguments[0].name) && p.arguments[1].type === 'ObjectExpression' ? p.arguments[0].name : null;
   function dataPath(node, table) {
     let d = -1;
-    for (let i = parents.length - 1; i >= 0; i--) if (parents[i].type === 'VariableDeclarator' && parents[i].id.name === table) { d = i; break; }
+    for (let i = parents.length - 1; i >= 0; i--) if ((parents[i].type === 'VariableDeclarator' && parents[i].id.name === table) || assignTo(parents[i]) === table) { d = i; break; }
     if (d < 0) return slug(node.value || '');
     const seg = [];
     const idOf = (o) => {
@@ -309,6 +312,7 @@ function scanJs(code, fileOf, mode) {
       if (p.type === 'ConditionalExpression') { if (p.test === child) return; if (p.alternate === child) alt = true; } // the other branch: <path>_2
       if (p.type === 'VariableDeclarator' && p.init === child && p.id.type === 'Identifier' && (/^[A-Z][A-Z0-9_]+$/.test(p.id.name) || TABLES.has(p.id.name)) && /^(ArrayExpression|ObjectExpression|CallExpression)$/.test(child.type)) { table = p.id.name; break; }
       if (p.type === 'VariableDeclarator' && p.init === node && p.id.type === 'Identifier' && TABLES.has(p.id.name)) { table = p.id.name; one = true; break; } // a one-string table (HW_PLUM): data.<table>
+      if (assignTo(p) && p.arguments[1] === child) { table = assignTo(p); break; }
       child = p;
     }
     if (!table || !TABLES.has(table)) return;
@@ -366,11 +370,12 @@ function scanJs(code, fileOf, mode) {
     }
     if (EN && ((node.type === 'Literal' && typeof node.value === 'string') || (node.type === 'TemplateLiteral' && !node.expressions.length))) tableStr(node);
     // `@key:<field>` in TABLES.txt: a map keyed by the English name (HM_DECOR 'Giant Crayon Box': {...}) gives that name as <table>.<tid(key)>.<field>
-    if (EN && node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && TABLES.has(node.id.name) && node.init && node.init.type === 'ObjectExpression') {
-      const T = TABLES.get(node.id.name), kf = T.fields.find((f) => f.startsWith('@key:')), at = fileOf(node.start);
-      if (kf && at && !(T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only)) for (const q of node.init.properties) {
+    const keyTbl = EN && node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && TABLES.has(node.id.name) && node.init && node.init.type === 'ObjectExpression' ? [node.id.name, node.init] : EN && assignTo(node) ? [assignTo(node), node.arguments[1]] : null;
+    if (keyTbl) {
+      const [tn, init] = keyTbl, T = TABLES.get(tn), kf = T.fields.find((f) => f.startsWith('@key:')), at = fileOf(node.start);
+      if (kf && at && !(T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only)) for (const q of init.properties) {
         if (q.type !== 'Property' || q.computed) continue; const k = q.key.type === 'Literal' ? String(q.key.value) : q.key.name;
-        enStr.push({ key: 'data.' + tableKey(node.id.name) + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: node.id.name });
+        enStr.push({ key: 'data.' + tableKey(tn) + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: tn });
       }
     }
     if (node.type === 'Literal' && typeof node.value === 'string') {

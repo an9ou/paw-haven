@@ -313,6 +313,7 @@ function phCamPan(svg) {
 function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
   const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return S.place === 'market' ? 800 : 750;
   if ($('#houseG')) return 715; // the yard: the Crayon Box, Doggy Ramp, nursery basket and the whole dog house share one crop (525-871)
+  if (S.place === 'square' && typeof prOn === 'function' && prOn()) return 734; // v2.27: the Square looks right to the projects board, the tall sakura by the clock tower, the notice board and the Bandstand (390 x 844: x 518-950)
   const r = el.getBoundingClientRect(), a = toWorld(svg, r.left, r.top), c = toWorld(svg, r.right, r.bottom), m = (a.x + c.x) / 2;
   return m > phCamHome + 80 ? m : 750;
 }
@@ -320,10 +321,12 @@ function phPeek() {
   const svg0 = $('#view > svg.world'), vw = view.clientWidth, vh = view.clientHeight; if (!svg0 || !vw || !vh) return;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
   b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
-  const right = () => camCx > phCamHome + 80;
-  const sync = () => { const r = right(); b.classList.toggle('back', r); b.setAttribute('aria-label', r ? tt('yard.label_look_back_at_the_dog', 'Look back at the dog') : tt('yard.label_look_right', 'Look right')); };
+  const right = () => camCx > phCamHome + 80, left = () => camCx < phCamHome - 80;
+  // v2.27: in the Square a narrow crop (390 x 844) leaves the fountain cut at the left edge: the button then goes right, then left (the fountain), then home
+  const lookL = () => { if (!(typeof prOn === 'function' && prOn()) || S.place !== 'square' || cur.mode !== 'yard') return false; const vb = svg0.viewBox && svg0.viewBox.baseVal; return !!vb && vb.width > 0 && phCamHome - vb.width / 2 > 40; };
+  const sync = () => { const r = right(), l = left(), toL = r && lookL(); b.classList.toggle('back', r); b.setAttribute('aria-label', toL ? tt('yard.label_look_left', 'Look left') : r || l ? tt('yard.label_look_back_at_the_dog', 'Look back at the dog') : tt('yard.label_look_right', 'Look right')); };
   const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
-  b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };
+  b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right() && lookL()) { phPeekOn = true; camTo(0, 0.9); } else if (right() || left()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };
   // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo; v2.5: not its idle wander)
   svg0.addEventListener('pointerdown', (e) => { if (phPeekOn && !e.target.closest('.hot, [data-hot], [data-shop]')) back(); }, true);
   sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));
@@ -865,7 +868,7 @@ function openCareTray() {
     <button class="card ${home ? '' : 'off'}" data-care="bath" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('bath')}</span><b>${tt('yard.bath', 'Bath')}</b><span class="small">${esc(tt('yard.clean_n', 'Clean {n}', { n: Math.round(S.stats.clean) }))}</span></button>
     <button class="card ${home ? '' : 'off'}" data-care="sleep" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('sleep')}</span><b>${tt('yard.nap', 'Nap')}</b><span class="small">${esc(S.place === 'house' ? tt('yard.on_the_bed', 'on the {bed}', { bed: homeName(S.bed) }) : tt('yard.energy_n', 'Energy {n}', { n: Math.round(S.stats.energy) }))}</span></button>
     <button class="card" data-care="bed"><span class="art">${bedArt || ICON('sleep')}</span><b>${tt('yard.bed', 'Bed')}</b><span class="small">${esc(homeName(S.bed))}</span></button>
-    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>${tt('yard.houses', 'Houses')}</b><span class="small">${esc(tt('yard.n_owned', '{n} owned', { n: S.inv.houses.length }))}</span></button>${hmDecorCard()}
+    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>${tt('yard.houses', 'Houses')}</b><span class="small">${esc(tt('yard.n_owned', '{n} owned', { n: S.inv.houses.length }))}</span></button>${hmDecorCard()}${typeof yvCareCard === 'function' ? yvCareCard() : '' /* v2.26 Yard visitors (54_visitors.js) */}
     ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>${tt('yard.go_home', 'Go home')}</b><span class="small">${tt('yard.to_the_yard', 'to the yard')}</span></button>`}</div>`);
   dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(tt('yard.bath_and_naps_happen_at', 'Bath and naps happen at home. {name} insists.', { name: NAME() })); return; } if (c === 'bath') crBathGo(); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
   crBindChips(dock, openCareTray);
@@ -1012,7 +1015,9 @@ const HM_DECOR = {
   'Cocoa Mug Lamp': { prop: 'kslamp', at: [236, 436, 60, 84], vb: [100, 140], room: 'house', zone: 'floor', kind: 'decor', lit: true, ks: 'cozy', reward: true, story: 'A lamp shaped like a mug of cocoa with a marshmallow on top. After dark it glows warm and brown. Not for drinking.' },
   'Doggy Snow Globe': { prop: 'ksglobe', at: [312, 454, 60, 70], vb: [120, 140], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A glass globe with a tiny dog and a tiny house inside. Shake it and it snows, indoors, on purpose.' },
   'Cardboard Fireplace': { prop: 'ksfireplace', at: [388, 300, 120, 120], vb: [160, 160], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fireplace made of painted cardboard with paper flames. All the cosy, none of the heat, so noses stay safe.' },
-  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' }
+  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' },
+  // v2.28 Stories and stars (V228.md 2, 56_stories.js): the 5 Bond stars keepsake, a reward never sold (prop drawn in 56_stories.js)
+  'Framed Paw Print': { prop: 'stpawframe', at: [700, 304, 68, 79], vb: [120, 140], room: 'house', zone: 'wall', kind: 'decor', reward: true, v228: true, story: 'One muddy paw print in a wooden frame, with two gold stars. It took five Bond stars and a lot of mud.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }

@@ -49,7 +49,7 @@ function mailFields() {
 const mbOwed = (m) => !!(m && m.gift && !m.gift.claimed && (m.gift.coins || m.gift.item));
 function mbGiftLabel(g) {
   if (!g) return '';
-  if (g.coins) return tt('mail.coins', '{n, plural, one {# coin} other {# coins}}', { n: g.coins });
+  if (g.coins) return g.bag ? tt('fw.rew_bag_coins', 'A treat bag and {n, plural, one {# coin} other {# coins}}', { n: g.coins }) : tt('mail.coins', '{n, plural, one {# coin} other {# coins}}', { n: g.coins }); // v2.25: Gerald's welcome-back letter adds a treat bag (bag)
   const n = g.n || 1, it0 = g.item || '', it = !it0 ? tt('mail.surprise', 'surprise') : g.cat === 'seeds' ? tdata('crops.' + tid(g.id) + '.seeditem', it0) : g.cat === 'pantry' ? tdata('pantry.' + tid(g.id) + '.name', it0) : g.cat === 'crops' ? tdata('crops.' + tid(g.id) + '.item', it0) : shNameAny(it0);
   return n > 1 || ['food', 'seeds', 'crops'].includes(g.cat) ? tt('mail.n_times', '{n} × {item}', { n, item: it }) : tt('mail.one_item', '{art, select, an {an {item}} other {a {item}}}', { art: /^[aeiou]/i.test(String(it)) ? 'an' : 'other', item: it });
 }
@@ -57,7 +57,7 @@ const mbJoin = (a) => tlist(a);
 function mbGrant(m) { // pays one letter's gift once. Returns { coins, item } or null when there is nothing owed
   if (!mbOwed(m)) return null;
   const g = m.gift; g.claimed = true; g.got = localISO();
-  if (g.coins) { const n = addCoins(g.coins, { raw: true }); return { coins: n || g.coins }; }
+  if (g.coins) { const n = addCoins(g.coins, { raw: true }); if (g.bag && typeof FW_BAG !== 'undefined') { FW_BAG.forEach(([f, q]) => { S.inv.food[f] = (S.inv.food[f] || 0) + q; }); return { coins: n || g.coins, item: tt('fw.rew_bag', 'A treat bag') }; } return { coins: n || g.coins }; } // v2.25: bag, the welcome-back treat bag (53_welcome.js)
   if (g.cat === 'clothes' && g.item) { if (!owns('clothes', g.item)) S.inv.clothes.push(g.item); return { item: mbGiftLabel(g), ward: g.item }; } // v2.4: the Knit Scarf letter
   if (g.cat === 'crops' && g.id) { S.inv.crops = S.inv.crops || {}; const a = Array.isArray(S.inv.crops[g.id]) ? S.inv.crops[g.id] : (S.inv.crops[g.id] = [0, 0, 0]); a[0] += g.n || 1; return { item: mbGiftLabel(g) }; } // v2.19: a friend's crop (counts per star) arrives as 1★
   if (g.cat && g.id) { S.inv[g.cat] = S.inv[g.cat] || {}; S.inv[g.cat][g.id] = (S.inv[g.cat][g.id] || 0) + (g.n || 1); }

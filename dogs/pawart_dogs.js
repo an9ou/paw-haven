@@ -1539,14 +1539,38 @@ HAT2['Crayon Crown']=function(h,s,L,HT){// a wobbly paper crown coloured in with
   [[-.56,'#4F8FD6'],[0,'#6DBE5A'],[.56,'#8E63C7']].forEach(([x,c])=>{const q=P([W2*x,-H*.14]);h.shape(circ(q[0],q[1],3.3,2.9,7),c,{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.3})});
   [[-1.1,-1],[-.32,-1.12],[.36,-1.06],[1.08,-.96]].forEach(([x,y])=>{const q=P([W2*x,H*y]);h.shape(circ(q[0],q[1],2.8,2.6,7),'#F28FA5',{w:1.6,ox:0,oy:0,sc:1,closed:1,amp:.25})});
   h.line([[-W2*.5,-H*.42],[-W2*.4,-H*.82]].map(P),1.4,'#FFF3B0',.3)};
+/* v2.29 art fix (art review item 13, owner 12 Nov 2026): the Bond collars (the Golden Collar and the Star Collar) sit on the neck in every pose.
+   Head up, the band hangs under the chin as before; where the tag would hang down among the front paws (a puppy, a short-legged dog), it sits up on the band, a little smaller.
+   Head down or resting on the ground (eat, sleep, crouch, bow, sniff, dig, play dead, roll over, and any pose whose chin is near the ground),
+   the band goes round the neck where it leaves the head, drawn behind the head (NECKB, before the ears and the head) so it never crosses the face,
+   and the tag is tucked away. frame() hands the dog's random stream back after the tucked band, so the dog drawn over it is the plain dog. */
+const NECKB={},BC_TUCK=/^(eat|sleep|crouch|bow|sniff|dig|playdead|rollover)$/;
+function bcSag(s,HT){const a=neckAnchor(s,HT);return t=>[a.l[0]+(a.r[0]-a.l[0])*t,a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8]}
+function bcTuck(s,L,HT){if(BC_TUCK.test(L.pose))return true;const sg=bcSag(s,HT);for(let i=0;i<=8;i++)if(sg(i/8)[1]>GY-18)return true;return false}
+// head up: the band under the chin, then tag(c,R); a tag that would hang down among the front paws (its foot within 16 px of the ground) sits up on the band instead
+function bcFront(h,s,L,HT,col,shine,Rk,tag){if(bcTuck(s,L,HT))return;
+  const sag=bcSag(s,HT),pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.4,INK);h.line(pts,5,col,.4);h.line(pts.slice(1,5).map(q=>[q[0],q[1]-1]),1.4,shine,.3);
+  if(L.pose==='down')return;// lying down, head up: the tag is tucked under the chin (as before)
+  const c0=sag(.56),R=Math.max(Rk[0],Math.min(Rk[1],s.head.rx*Rk[2])),c=[c0[0],Math.min(c0[1]+R+3,GY-R-1)];
+  if(c[1]+R>GY-16){tag([c0[0],c0[1]+R*.36],R*.76);return}
+  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.8,INK,.1);tag(c,R)}
+// head down: a short band across the neck just past the head's outline, square to the neck (the head end to the chest), bowed a little round it
+function bcBehind(h,s,L,HT,col,shine){if(!bcTuck(s,L,HT))return;
+  const b=s.body,hx=s.head.rx,hy=s.head.ry,ht=L.hT,an=-(ht.a||0)*D2R,ca=Math.cos(an),sa=Math.sin(an),
+   loc=p=>{const dx=p[0]-ht.x,dy=p[1]-ht.y;return[(dx*ca-dy*sa)/(hx*(ht.sx||1)),(dx*sa+dy*ca)/(hy*(ht.sy||1))]},
+   nh=HT([-hx*.2,hy*.35]),nb=T(L.bT)([b.rx*.62,-b.ry*.3]),dx=nb[0]-nh[0],dy=nb[1]-nh[1],ln=Math.hypot(dx,dy)||1,u=[dx/ln,dy/ln],nv=[-u[1],u[0]];
+  let t=0;for(;t<1;t+=.04){const q=loc([nh[0]+dx*t,nh[1]+dy*t]);if(q[0]*q[0]+q[1]*q[1]>1)break}
+  t=Math.min(t,1);const c=[nh[0]+dx*t+u[0]*4,nh[1]+dy*t+u[1]*4],hl=Math.max(8,Math.min(16,hx*.5)),pts=[];
+  for(let i=0;i<=4;i++){const v=i/2-1,bw=(1-v*v)*2.6;pts.push([c[0]+nv[0]*hl*v-u[0]*bw,Math.min(c[1]+nv[1]*hl*v-u[1]*bw,GY-2)])}
+  h.line(pts,7.4,INK);h.line(pts,5,col,.4);h.line(pts.slice(1,3).map(q=>[q[0]-u[0]*1.2,q[1]-u[1]*1.2]),1.4,shine,.3)}
 NECK2['Golden Collar']=function(h,s,L,HT){// a shiny gold collar (a gold line in its own ink), a white shine, and a round gold tag with a pink crayon heart under the chin
-  const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
-  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.4,INK);h.line(pts,5,'#F2B83A',.4);h.line(pts.slice(1,5).map(q=>[q[0],q[1]-1]),1.4,'#FFF3B0',.3);
-  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c0=sag(lie?.2:.56),R=Math.max(6.5,Math.min(9,s.head.rx*.28)),c=[c0[0]+(lie?-2:0),Math.min(c0[1]+(lie?2:R+3),GY-R-1)];
-  if(lie)return;// lying down, the tag is tucked under the chin
-  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.8,INK,.1);
-  h.shape(circ(c[0],c[1],R,R*.96,10),'#F2B83A',{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});
-  h.heart(c[0],c[1]+.6,R*.62,'#F28FA5')};
+  bcFront(h,s,L,HT,'#F2B83A','#FFF3B0',[6.5,9,.28],(c,R)=>{h.shape(circ(c[0],c[1],R,R*.96,10),'#F2B83A',{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});h.heart(c[0],c[1]+.6,R*.62,'#F28FA5')})};
+NECKB['Golden Collar']=(h,s,L,HT)=>bcBehind(h,s,L,HT,'#F2B83A','#FFF3B0');
+/* v2.28 Stories and stars (V228.md 2): the Star Collar, the 10 Bond stars keepsake (a new name only: old renders never reach it).
+   The Golden Collar's shape: a blue crayon collar (a blue line inside its own ink), a pale shine, and a gold star tag with a little ring */
+NECK2['Star Collar']=function(h,s,L,HT){bcFront(h,s,L,HT,'#4F8FD6','#CFE3F7',[7,9.5,.3],(c,R)=>star5(h,c,R,'#FFD23A',2.2))};
+NECKB['Star Collar']=(h,s,L,HT)=>bcBehind(h,s,L,HT,'#4F8FD6','#CFE3F7');
+OUT.neck.push('Star Collar');
 /* ---------- v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece ----------
    TOP2 holds the costume's head piece, drawn after the neck item in place of the hat (frame drops the head-slot hat while one is worn).
    Neck items: the Pumpkin Patch Suit's leaf collar and the Little Bat Costume's ruffle sit over the neck item (it peeks out under them);
@@ -2436,6 +2460,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   if(s.ruff&&!sheet)drawRuff(h,s,L,HT);
   if(neck&&RUFF2[neck]&&!sheet&&top!=='Trick-or-Treat Ghost')RUFF2[neck](h,s,L,HT);// v2.17.1: a mane worn round the face (Lion Mane)
+  if(neck&&NECKB[neck]&&top!=='Trick-or-Treat Ghost'){const st=h.r.st();NECKB[neck](h,s,L,HT);h.r.st(st)}// v2.29: a Bond collar tucks behind a lowered head (the dog's stream handed back)
   if(s.ruff&&body&&WING_OVER[body])wingOver(h);// a back costume's near wing sits over the mane
   const hmk=top&&HM_OWN.has(top);if(hmk&&L.hood)L.hmHood=1;// v2.18.1: drawEars hands the stream on as the plain dog's ears would
   if(!sheet)drawEars(h,s,L,HT,false);

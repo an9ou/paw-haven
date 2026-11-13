@@ -30,7 +30,7 @@ function clDogId(d) { return d && d.dogs && d.dogs[0] ? d.dogs[0].id || null : n
 function clStrip(d) { return JSON.stringify(d, (k, v) => (k === 'lastReal' ? undefined : v)); }
 // what counts as a real change: the save without the fields the clock moves on its own (live check fix: a device where the
 // player only tapped through menus must not out-date another device's real progress)
-const CL_TICK_KEYS = new Set(['lastReal', 'gameMin', 'stats', 'lastOut', 'drainAt']); // drainAt: a per-page timer on yard messes
+const CL_TICK_KEYS = new Set(['lastReal', 'gameMin', 'stats', 'lastOut', 'drainAt', 'lastSeenAt']); // drainAt: a per-page timer on yard messes; v2.25: lastSeenAt, the last-seen high-water mark (53_welcome.js)
 function clFp(d) { try { return JSON.stringify(d, (k, v) => (CL_TICK_KEYS.has(k) ? undefined : v)); } catch (e) { return ''; } }
 function clSame(a, b) { try { return clStrip(a) === clStrip(b); } catch (e) { return false; } }
 function clDevice() {

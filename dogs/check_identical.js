@@ -80,26 +80,29 @@ const NEW_OUTS=[['body','Very Ugly Sweater'],['head','Reindeer Antlers'],['neck'
   // Winter Market 2026 costumes (docs/design/winter-market.md part 2)
   ['body','Father Christmas Suit'],['body','Little Elf Outfit'],['body','Gingerbread Pup Suit'],['body','Snowman Suit'],['body','Polar Bear Hood'],['body','Penguin Suit'],['body','Puffer Jacket'],['body','Nutcracker Jacket & Hat'],['body','Snowflake Wings'],['neck','Jingle Bell Collar'],
   // v2.24 Kind shop (the eyes and feet slots are not in this sweep: EYES2, FEET2)
-  ['neck','Golden Name Tag'],['body','Sukajan Jacket'],['head','Bucket Hat'],['neck','Paw Tote'],['neck','Lucky Cat Charm']];// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
-const ISRC=SRC.replace('PA.dog=dog;','PA.dog=dog;PA._sw={HAT2,BODY2,BACK2,NECK2,TOP2,RUFF2:typeof RUFF2==="object"?RUFF2:{},bodyPts,headPts,T,earList,earPose};');
+  ['neck','Golden Name Tag'],['body','Sukajan Jacket'],['head','Bucket Hat'],['neck','Paw Tote'],['neck','Lucky Cat Charm'],
+  ['neck','Star Collar']];// v2.28 the Star Collar (v2.29 art fix: the Bond collars tuck their band behind a lowered head, NECKB)// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
+const ISRC=SRC.replace('PA.dog=dog;','PA.dog=dog;PA._sw={HAT2,BODY2,BACK2,NECK2,TOP2,RUFF2:typeof RUFF2==="object"?RUFF2:{},NECKB:typeof NECKB==="object"?NECKB:{},bodyPts,headPts,T,earList,earPose};');
 if(ISRC.split('PA._sw').length!==2)throw new Error('sweep: the hook point moved, update ISRC');
 const IP=load(ISRC),SW=IP._sw;let probe=null;
 const box=(acc,from)=>{const b=[1e9,1e9,-1e9,-1e9],P=b.pts=[],add=(x,y)=>{P.push([x,y]);b[0]=Math.min(b[0],x);b[1]=Math.min(b[1],y);b[2]=Math.max(b[2],x);b[3]=Math.max(b[3],y)};
   acc.slice(from).forEach(e=>{const d=e.match(/ d="([^"]*)"/);if(d){const v=d[1].match(/-?[\d.]+(?:e-?\d+)?/g)||[];for(let i=0;i+1<v.length;i+=2)add(+v[i],+v[i+1])}
     const c=e.match(/cx="([^"]+)" cy="([^"]+)" rx="([^"]+)" ry="([^"]+)"/);if(c){add(c[1]-c[3],c[2]-c[4]);add(+c[1]+ +c[3],+c[2]+ +c[4])}});return b};
 const ptsBox=P=>{const b=[1e9,1e9,-1e9,-1e9];P.forEach(q=>{b[0]=Math.min(b[0],q[0]);b[1]=Math.min(b[1],q[1]);b[2]=Math.max(b[2],q[0]);b[3]=Math.max(b[3],q[1])});return b};
-const wrap=(fn,slot,name,part)=>function(h,s,L,a4,a5){const n0=h.acc.length,r=fn.apply(this,arguments);if(probe){
+// v2.29: a Bond collar draws its band behind a lowered head (NECKB, part 'tucked band') and then nothing in NECK2: a tucked band that drew is measured like the neck piece,
+// a NECKB that drew nothing (head up) is fine, and the neck piece may draw nothing once its band is tucked
+const wrap=(fn,slot,name,part)=>function(h,s,L,a4,a5){const n0=h.acc.length,r=fn.apply(this,arguments);if(probe){if(part==='tucked band'){if(h.acc.length===n0)return r;probe.tucked=1}
   const ob=box(h.acc,n0),hb=ptsBox(SW.headPts(s).map(SW.T(L.hT))),bb=ptsBox(SW.bodyPts(s).map(SW.T(L.bT))),db=[Math.min(hb[0],bb[0]),Math.min(hb[1],bb[1]),Math.max(hb[2],bb[2]),Math.max(hb[3],bb[3])];
   const hx=s.head.rx,hy=s.head.ry,ry=s.body.ry,M=slot==='head'?[hx*1.1+10,hy*2.6+12,hx*1.1+10,hy*.6+10]:slot==='neck'?[hx+10,hy+10,hx+10,hy*1.4+12]:[ry*2.2+16,ry*2.6+18,ry*2.2+16,ry*1.6+14],
-   tgt=slot==='head'?hb:slot==='neck'?[hb[0],hb[1],hb[2],Math.max(hb[3],bb[3])]:slot==='top'?db:bb,ov=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
+   tgt=slot==='head'?hb:part==='tucked band'?db:slot==='neck'?[hb[0],hb[1],hb[2],Math.max(hb[3],bb[3])]:slot==='top'?db:bb,ov=(a,b)=>a[0]<=b[2]&&b[0]<=a[2]&&a[1]<=b[3]&&b[1]<=a[3];
   probe.n++;const lab=`${probe.lab} ${part}`;
-  if(!(ob[0]<1e9))probe.bad.push(lab+': drew nothing');
+  if(!(ob[0]<1e9)){if(!(slot==='neck'&&probe.tucked))probe.bad.push(lab+': drew nothing')}
   else if(!ov(ob,tgt))probe.bad.push(lab+': does not touch the '+(slot==='head'?'head':'dog')+' '+ob.map(Math.round));
   else if(slot==='head'){const c=SW.T(L.hT)([0,0]),ear=Math.max(0,...SW.earList(s).filter(e=>!e.flop).map(e=>Math.max(...SW.earPose(s,L,e).map(q=>Math.hypot(q[0],q[1]))))),lim=Math.max(hx*1.5,hy*2.9,ear+6)+12,far=Math.max(...ob.pts.map(q=>Math.hypot(q[0]-c[0],q[1]-c[1])));if(far>lim)probe.bad.push(lab+': reaches '+far.toFixed(1)+' px from the head centre (limit '+lim.toFixed(1)+')');probe.hat=Math.max(probe.hat??-1e9,far-lim)}
   else if(ob[0]<db[0]-M[0]||ob[1]<db[1]-M[1]||ob[2]>db[2]+M[2]||ob[3]>db[3]+M[3])probe.bad.push(lab+': strays off the dog '+ob.map(Math.round)+' dog '+db.map(Math.round));
   if(slot!=='head')probe.ext.forEach((e,i)=>{const v=[db[0]-ob[0]-M[0],db[1]-ob[1]-M[1],ob[2]-db[2]-M[2],ob[3]-db[3]-M[3]][i];if(v>e[0])e.splice(0,2,v,lab)})}return r};
 // the tables are looked up at draw time, so wrapping their entries is enough
-NEW_OUTS.forEach(([sl,k])=>{if(sl==='head')SW.HAT2[k]=wrap(SW.HAT2[k],'head',k,'hat');else if(sl==='neck'){SW.NECK2[k]=wrap(SW.NECK2[k],'neck',k,'neck');if(SW.RUFF2[k])SW.RUFF2[k]=wrap(SW.RUFF2[k],'neck',k,'mane')}else{if(SW.BODY2[k])SW.BODY2[k]=wrap(SW.BODY2[k],'body',k,'front');if(SW.BACK2[k])SW.BACK2[k]=wrap(SW.BACK2[k],'body',k,'back');if(SW.TOP2[k])SW.TOP2[k]=wrap(SW.TOP2[k],'top',k,'top')}});
+NEW_OUTS.forEach(([sl,k])=>{if(sl==='head')SW.HAT2[k]=wrap(SW.HAT2[k],'head',k,'hat');else if(sl==='neck'){SW.NECK2[k]=wrap(SW.NECK2[k],'neck',k,'neck');if(SW.NECKB[k])SW.NECKB[k]=wrap(SW.NECKB[k],'neck',k,'tucked band');if(SW.RUFF2[k])SW.RUFF2[k]=wrap(SW.RUFF2[k],'neck',k,'mane')}else{if(SW.BODY2[k])SW.BODY2[k]=wrap(SW.BODY2[k],'body',k,'front');if(SW.BACK2[k])SW.BACK2[k]=wrap(SW.BACK2[k],'body',k,'back');if(SW.TOP2[k])SW.TOP2[k]=wrap(SW.TOP2[k],'top',k,'top')}});
 let swN=0,hatX=[-1e9,''];const swBad=[],ext=[[-1e9,''],[-1e9,''],[-1e9,''],[-1e9,'']];
 const sweep=(lab,k,o)=>{swN++;if(process.env.SWEEP_WET)o=Object.assign({wet:true},o);/* rainy days: SWEEP_WET=1 sweeps the wet dogs */let out;probe={lab,n:0,bad:swBad,ext};try{out=IP.dog(k,o)}catch(e){swBad.push(lab+': ERR '+e.message);probe=null;return}if(probe.hat!==undefined&&probe.hat>hatX[0])hatX=[probe.hat,lab];probe=null;if(/NaN|undefined/.test(out))swBad.push(lab+': NaN/undefined in the SVG')};
 const NK=NEW.DOGS.map(d=>d.key);
