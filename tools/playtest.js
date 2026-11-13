@@ -116,12 +116,15 @@ async function walk(p, day, P) {
   await clickJS(p, '[data-act=walk]'); if (!(await L.until(p, () => !!document.getElementById('rtStart'), null, 5000))) { await clear(p, day, 'walk'); return 'walk: no route screen'; }
   if (P.vary) { // regular and keen players try the routes they have open, in turn (the carousel opens on the current place's route)
     const n = await ev(p, () => document.querySelectorAll('.rt-card').length); const want = (day.walkN = (day.walkN || 0) + 1) + day.d;
-    for (let k = 0; k < n; k++) { const i = (want + k) % n; await clickJS(p, `.rt-card[data-i="${i}"]`); await L.sleep(120); if (await ev(p, () => { const b = document.getElementById('rtStart'); return !b.disabled && !/Locked/i.test(b.textContent); })) break; }
+    for (let k = 0; k < n; k++) { const i = (want + k) % n; await clickJS(p, `.rt-card[data-i="${i}"]`); await L.sleep(120); if (await ev(p, () => { const b = document.getElementById('rtStart'); return !b.disabled && b.getAttribute('aria-disabled') !== 'true' && !/Locked/i.test(b.textContent); })) break; }
   }
-  const btn = await ev(p, () => { const b = document.getElementById('rtStart'); return { dis: b.disabled, txt: b.textContent.trim(), why: (document.querySelector('.rt-block, .rt-why, .rt-lock') || {}).textContent || '' }; });
+  const btn = await ev(p, () => { const b = document.getElementById('rtStart'); return { dis: b.disabled || b.getAttribute('aria-disabled') === 'true', txt: b.textContent.trim(), why: (document.querySelector('.rt-block, .rt-why, .rt-lock') || {}).textContent || '' }; });
   if (btn.dis || /Locked/i.test(btn.txt)) { await clickJS(p, '#rtBack'); return `walk: blocked ("${btn.txt}" ${btn.why.trim().slice(0, 80)})`; }
   await clickJS(p, '#rtStart');
-  if (!(await L.until(p, () => window.__paw.mode === 'walk' && !!window.__ptOpts, null, 15000))) { const t = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); await clear(p, day, 'walk start'); await home(p); return 'walk: did not start ' + t.slice(-80); }
+  // v2.29.1: read the toast right after Start (a block such as "Not for {name} yet" is gone after 3 s), then wait on for a slow start
+  const quick = await L.until(p, () => window.__paw.mode === 'walk' && !!window.__ptOpts, null, 2500);
+  if (!quick) { const t = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); if (t.trim() && !(await ev(p, () => window.__paw.mode === 'walk'))) { await clear(p, day, 'walk start'); await home(p); return 'walk: blocked (' + t.trim().slice(-80) + ')'; } }
+  if (!quick && !(await L.until(p, () => window.__paw.mode === 'walk' && !!window.__ptOpts, null, 12500))) { const t = await ev(p, () => (document.querySelector('#toasts') || {}).textContent || ''); await clear(p, day, 'walk start'); await home(p); return 'walk: did not start ' + t.slice(-80); }
   const go = p.locator('.pw-ov [data-go]'); if (await go.count()) await go.first().click().catch(() => {});
   await L.sleep(400);
   const c0 = await ev(p, () => window.__paw.S.coins);

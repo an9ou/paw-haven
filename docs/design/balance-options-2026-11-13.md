@@ -97,3 +97,11 @@ change is needed. Optional polish: a small line under a puppy's Start button, "P
 
 Repro (`node tools/playtest.js --profile keen --days 3 --start 2026-11-11` on a scratch copy of this branch): "walk: did not start" on day 2 and day 3, once each, no toast and no console errors, exactly as the
 cause above predicts (none on day 1; from day 4 the puppy is 6 months, so it cannot recur). The same run also saw the day-3 free swap land on "Visit the Dog Park" (F4).
+
+## Decided (owner, 13 Nov 2026) - shipped as v2.29.1 (`V2291.md`)
+
+- **F1: option A.** No price changes; show the goals: Gerald's pointer to the Town projects board in Story chapter 3, a "Kind shop looks" row in the Boutique, and the project's progress in the tomorrow line.
+- **F2: option A.** `LV_CAP` stays 150; the cap line now points at the town projects and the Visitors Book.
+- **F3:** fix `tools/playtest.js` (an `aria-disabled` Start button is blocked; the toast is read right after Start).
+- **F4: option A.** The free swap draws home missions only (the day's first draw is unchanged).
+- **F5: option A.** No new letters now; re-check with a playtest after 19 Nov.
