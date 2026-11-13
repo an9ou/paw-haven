@@ -66,12 +66,12 @@ function mbGrant(m) { // pays one letter's gift once. Returns { coins, item } or
 function mbCollect(ids) { // collect the gifts of these letters (ids) in one go. One toast names everything
   if (!S) return ''; mailFields();
   const ms = S.mail.filter((m) => ids.includes(m.id) && mbOwed(m)); if (!ms.length) return '';
-  let coins = 0, ward = ''; const items = [];
+  let coins = 0, ward = ''; const items = [], s0 = coinSettleSum; // v2.24 refund fix: what these gifts settled, said in the toast
   ms.forEach((m) => { const r = mbGrant(m); if (!r) return; if (r.coins) coins += r.coins; if (r.item) items.push(r.item); if (r.ward) ward = r.ward; }); // read marks stay as they were (Read a letter missions count real reads)
   const parts = (coins ? [tt('mail.coins', '{n, plural, one {# coin} other {# coins}}', { n: coins })] : []).concat(items);
   const txt = tt('mail.collected', 'Collected {list}.{ward, select, none {} other { The {item} is in the Wardrobe.}}{who, select, many { Thank you, neighbours!} other { Thank you, {from}!}}', { list: mbJoin(parts), ward: ward ? 'yes' : 'none', item: ward ? shNameAny(ward) : '', who: ms.length === 1 ? 'one' : 'many', from: ms[0].from });
   try { if (coins) SFX.coin(); else SFX.pop(); } catch (e) { /* audio off */ }
-  markDirty(); toast(txt, 'good');
+  markDirty(); toast(txt + (coins ? ksSettleNote(s0) : ''), 'good');
   trackAct('collect', { n: ms.length, coins, items: items.length });
   return txt;
 }

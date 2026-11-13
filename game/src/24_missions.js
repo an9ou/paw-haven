@@ -170,7 +170,7 @@ function msOnAct(a) {
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
     if (it.p >= it.n) { // Daily rhythm: every finished mission pays 40 raw coins and stamps the card
       it.done = jstISO(); const c = addCoins(MS_PAY, { raw: true }); stamp = true; m.stamps++; m.stampDay = m.date; ms2Life('ms'); if (typeof lvGain === 'function') lvGain('ms', 20); // v2.20: the lifetime count (Mission pup badge). v2.22: town XP
-      msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
+      msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }) + ksSettleNote(), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
     }
   });
   if (!changed) return;

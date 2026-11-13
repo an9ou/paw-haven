@@ -137,6 +137,7 @@ run('v224_shop', async (t) => {
   ok(g5.n === 0 && g5.d === 0 && g5.keep, 'a refund is handled once: the same refunded list again takes nothing');
   const g6 = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_late', item: 'cozy', refunded: true }, { id: 'cs_bad', item: 'a_dog', refunded: false }, { id: '', item: 'coins_8k' }, null]); return { r, d: P.S.coins - c }; });
   ok(!g6.r.granted.length && !g6.r.refunded.length && g6.d === 0, 'a purchase refunded before it was granted, an unknown item and a bad row do nothing');
+  ok(await ev(() => window.__paw.S.shop.onceBack.includes('cozy')), 'a one-time item refunded before this save got it is remembered as refunded (onceBack), for the shop card');
   const debt = await ev(() => {
     const P = window.__paw, S = P.S, c0 = S.coins, d0 = S.shop.coinDebt || 0;
     S.coins = 100; P.ks.grant([{ id: 'cs_debt_pack', item: 'coins_1k' }]); S.coins = 50;
@@ -148,8 +149,73 @@ run('v224_shop', async (t) => {
   });
   ok(debt.mid.coins === 0 && debt.mid.debt === 1950, 'a refund takes the coins still there and remembers the ones already spent (' + JSON.stringify(debt.mid) + ')');
   ok(debt.after.coins === 50 && debt.after.debt === 0, 'the next coin pack pays that debt before any coins are added (' + JSON.stringify(debt.after) + ')');
-  const again = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_sup_again', item: 'supporter' }]); return { d: P.S.coins - c, sup: P.ks.sup(), owned: P.S.shop.owned.includes('supporter'), items: r.items.length }; });
-  ok(again.d === 0 && !again.sup && !again.owned && again.items === 0, 'a refunded Supporter Pack is not granted again');
+  // review 13 Nov, 4: the refund letter, the Delivered! split, My purchases, every coin text
+  const vis = await ev(() => {
+    const P = window.__paw, S = P.S, K = P.ks, c0 = S.coins, d0 = S.shop.coinDebt, mail0 = S.mail.length;
+    S.coins = 100; K.grant([{ id: 'cs_vis_pack', item: 'coins_1k', coins: 2000 }]); S.coins = 50;
+    const r1 = K.grant([{ id: 'cs_vis_pack', item: 'coins_1k', coins: 2000, refunded: true }]);
+    const letter = S.mail.find((m) => m.id === 'ks_refund_cs_vis_pack');
+    const debt1 = S.shop.coinDebt;
+    const r2 = K.grant([{ id: 'cs_vis_pack2', item: 'coins_3k', coins: 5000 }]); K.grantToast(r2);
+    const deliv = S.mail.find((m) => m.id === 'ks_got_cs_vis_pack2'), split = { items: r2.items.join(), got: r2.got[0], line: K.gotLine('coins_3k', r2.got[0]) };
+    const coinsAfter = S.coins, debt2 = S.shop.coinDebt;
+    S.shop.coinDebt = 40; const c1 = S.coins, earn = K.addCoins(25, true), note = K.settleNote(), c2 = S.coins, earn2 = K.addCoins(25, true), note2 = K.settleNote(), c3 = S.coins;
+    const out = { r1: { letter: r1.letter, refunded: r1.refunded.length, coins: r1.coins }, letter: letter ? { title: letter.title, text: letter.text, keep: letter.keep } : null, debt1, deliv: deliv ? deliv.text : '', split, coinsAfter, debt2,
+      earn, note, d1: c2 - c1, earn2, note2, d2: c3 - c2, debt3: S.shop.coinDebt };
+    S.coins = c0; S.shop.coinDebt = d0; S.mail.length = mail0; P.saveNow(); return out;
+  });
+  ok(vis.r1.refunded === 1 && vis.r1.letter && vis.letter && /refund/i.test(vis.letter.title) && /2,?000 Paw Coins/.test(vis.letter.text) && /next 1,?950 coins/.test(vis.letter.text) && vis.debt1 === 1950, "a refund that takes coins back sends Gerald's kind letter (coins went back, the next 1,950 settle the rest): " + JSON.stringify(vis.letter));
+  ok(vis.split.items === 'coins_3k' && vis.split.got.n === 5000 && vis.split.got.a === 3050 && vis.coinsAfter === 3050 && vis.debt2 === 0, 'a coin pack bought while settling is still delivered, and the split is known (5,000 = 1,950 settled + 3,050 added): ' + JSON.stringify(vis.split.got));
+  ok(/1,?950 settled the refund and 3,?050 coins were added/.test(vis.split.line) && /1,?950 settled the refund/.test(vis.deliv), "Delivered! and Gerald's delivery letter say how the pack split: " + vis.split.line);
+  ok(vis.earn === 25 && /25 coins go to settling the refund/.test(vis.note) && vis.d1 === 0, 'a coin gain while settling shows what happened: +25 earned, "(25 coins go to settling the refund)", the balance does not move: ' + vis.note);
+  ok(vis.earn2 === 25 && /15 coins go to settling/.test(vis.note2) && vis.d2 === 10 && vis.debt3 === 0, 'the last 15 settle it and 10 reach the balance; nothing goes negative: ' + vis.note2);
+  const lbl = await ev(async () => {
+    const P = window.__paw, S = P.S, K = P.ks, d0 = S.shop.coinDebt; S.shop.coinDebt = 1234;
+    K.open('supporter'); await new Promise((r) => setTimeout(r, 200));
+    const sup = document.querySelector('#modal [data-ks="supporter"]'), mine = document.querySelector('#modal .ks-mine'), settling = document.querySelector('#modal .ks-settling');
+    const o = { supRef: !!(sup && sup.querySelector('.ks-refunded')), supPay: !!(sup && sup.querySelector('[data-kscash]')), supText: sup && sup.querySelector('.ks-refunded') ? sup.querySelector('.ks-refunded').innerText : '', mineOpen: !!(mine && mine.open), settling: settling ? settling.innerText : '' };
+    K.open('looks'); await new Promise((r) => setTimeout(r, 200));
+    const tk = document.querySelector('#modal [data-ks="tokyo"]');
+    o.tokRef = !!tk && !tk.querySelector('[data-kscash]') && !!(tk.querySelector('.ks-refunded') || tk.querySelector('.ks-yours')); // Yours when every look was bought with coins (part 3)
+    o.lookCoins = document.querySelectorAll('#modal [data-kslook]').length + document.querySelectorAll('#modal [data-kslookcard] .ks-yours').length === 12;
+    K.open('tools'); await new Promise((r) => setTimeout(r, 200));
+    const kit = document.querySelector('#modal [data-ks="comfort"]');
+    o.kit = !kit || (!!kit.querySelector('.ks-refunded') && !kit.querySelector('[data-kscash]'));
+    o.toolPay = !!document.querySelector('#modal [data-kscash="sprinkler"]') || P.ks.tool('sprinkler');
+    S.shop.coinDebt = d0; return o;
+  });
+  ok(lbl.supRef && !lbl.supPay && /not for sale again/i.test(lbl.supText), 'the refunded Supporter Pack card says "' + lbl.supText + '" and has no Pay button');
+  ok(lbl.tokRef && lbl.lookCoins && lbl.kit && lbl.toolPay, 'refunded Tokyo Street and Comfort Kit cards say so too; each look still has its coin price, a tool never bought still has its Pay button');
+  ok(lbl.mineOpen && /Settling: 1,?234 coins/.test(lbl.settling), 'My purchases is open while settling and says "' + lbl.settling.slice(0, 60) + '"');
+  await t.home('yard');
+  // a paid Supporter row that arrives after its refund (paid before that refund, a race the Worker no longer allows) still delivers: the player paid
+  const again = await ev(() => { const P = window.__paw, c = P.S.coins, r = P.ks.grant([{ id: 'cs_sup_again', item: 'supporter', coins: 2000 }]); const o = { d: P.S.coins - c, sup: P.ks.sup(), items: r.items.join(), refunded: P.ks.refundedId('supporter') };
+    const b = P.ks.grant([{ id: 'cs_sup_again', item: 'supporter', coins: 2000, refunded: true }]); o.back = { sup: P.ks.sup(), refunded: P.ks.refundedId('supporter'), n: b.refunded.length }; return o; });
+  ok(again.d === 2000 && again.sup && again.items === 'supporter' && !again.refunded, 'a paid Supporter session after a refund still delivers (+2,000, perks on, the card is not "refunded")');
+  ok(again.back.n === 1 && !again.back.sup && again.back.refunded, 'and its own refund takes it back again');
+  // review 13 Nov, 5: a pack granted before the save recorded coinGot (before this fix) is taken back at the size the row was for
+  const leg = await ev(() => {
+    const P = window.__paw, S = P.S, K = P.ks, c0 = S.coins, d0 = S.shop.coinDebt, oldAt = Date.UTC(2026, 10, 10, 9), newAt = Date.UTC(2026, 10, 12, 9);
+    S.shop.claimed.push('cs_leg_a', 'cs_leg_b', 'cs_leg_c'); S.coins = 20000; S.shop.coinDebt = 0;
+    const a = -K.grant([{ id: 'cs_leg_a', item: 'coins_1k', at: oldAt, coins: 1000, refunded: true }]).coins;
+    const b = -K.grant([{ id: 'cs_leg_b', item: 'coins_8k', at: oldAt, refunded: true }]).coins; // an old Worker that sends no coins: the date decides
+    const c = -K.grant([{ id: 'cs_leg_c', item: 'coins_1k', at: newAt, refunded: true }]).coins;
+    S.coins = 300; S.shop.claimed.push('cs_leg_d');
+    K.grant([{ id: 'cs_leg_d', item: 'coins_3k', at: oldAt, coins: 3000, refunded: true }]);
+    const o = { a, b, c, d: { coins: S.coins, debt: S.shop.coinDebt }, nom: K.nominal({ item: 'coins_1k', coins: 99999 }) };
+    S.coins = c0; S.shop.coinDebt = d0; P.saveNow(); return o;
+  });
+  ok(leg.a === 1000 && leg.b === 8000 && leg.c === 2000, 'packs granted before this fix are taken back at the size the row was for: 1,000 / 8,000 (old, by date) and 2,000 (new): ' + JSON.stringify(leg));
+  ok(leg.d.coins === 0 && leg.d.debt === 2700 && leg.nom === 2000, 'the debt is never more than the row granted (3,000 - 300 = 2,700), and a row never counts for more than the pack is today');
+  // review 13 Nov, 6: a fresh device restores two Supporter rows, the older one refunded: the 2,000 come with the live one
+  const fresh = await ev(() => {
+    const P = window.__paw, S = P.S, keep = JSON.parse(JSON.stringify(S.shop)), coins = S.coins, houses = S.inv.houses.slice(), clothes = S.inv.clothes.slice(), mail = S.mail.length;
+    S.shop.owned = S.shop.owned.filter((x) => x !== 'supporter'); S.shop.onceBack = []; S.shop.claimed = []; S.shop.refunded = []; S.shop.coinGot = {};
+    const c = S.coins, r = P.ks.grant([{ id: 'cs_fd_a', item: 'supporter', at: 1, coins: 0, refunded: true }, { id: 'cs_fd_b', item: 'supporter', at: 2, coins: 2000 }]);
+    const o = { d: S.coins - c, sup: P.ks.sup(), granted: r.granted.join(), refunded: r.refunded.length, letter: !!r.letter, back: P.ks.refundedId('supporter') };
+    S.shop = keep; S.coins = coins; S.inv.houses = houses; S.inv.clothes = clothes; S.mail.length = mail; P.saveNow(); return o;
+  });
+  ok(fresh.d === 2000 && fresh.sup && fresh.granted === 'cs_fd_b' && !fresh.letter && !fresh.back, 'a fresh device: the live Supporter row brings its 2,000 and the perks; the refunded one takes nothing: ' + JSON.stringify(fresh));
 
   sec('5. perks: walk pay x1.2 after half pay, crops x0.8 grow time, the second gift never coins');
   await ev(() => { const sh = window.__paw.S.shop; if (!sh.owned.includes('supporter')) sh.owned.push('supporter'); }); // perks under test; a refunded pack is not bought again
@@ -159,9 +225,11 @@ run('v224_shop', async (t) => {
   await ev(() => { const S = window.__paw.S; window.__paw.rh.dailyCheck(); S.daily.walks = 5; S.stats.energy = 100; });
   await ev(() => { const s0 = window.PawWalk.start; window.PawWalk.start = (el, o) => { window.__ksWalk = o; return s0(el, o); }; }); // the runner's end, with a known pay: 47 raw coins, no pouch
   await t.startWalk(true); await t.sleep(1500);
+  await ev(() => { window.__ksC0 = window.__paw.S.coins; window.__paw.S.shop.coinDebt = 30; }); // review 13 Nov, 4: a walk while settling still shows its pay, and says where 30 of it went
   await ev(() => window.__ksWalk.onEnd({ coins: 47, distance: 12, early: false, happiness: 5, bond: 1, energy: 5, cleanliness: 2 }));
   await t.until(() => !!document.getElementById('resOk'), null, 8000);
-  const wr = await ev(() => { const l = document.querySelector('#modal .ks-walk'), tile = [...document.querySelectorAll('#modal .results .res')].map((r) => r.innerText).find((x) => /Paw Coins/.test(x)) || ''; return { line: l ? l.innerText : '', tired: !!document.querySelector('#modal .walk-tired'), tile }; });
+  const wr = await ev(() => { const l = document.querySelector('#modal .ks-walk'), st = document.querySelector('#modal .ks-settle'), tile = [...document.querySelectorAll('#modal .results .res')].map((r) => r.innerText).find((x) => /Paw Coins/.test(x)) || ''; return { line: l ? l.innerText : '', tired: !!document.querySelector('#modal .walk-tired'), tile, settle: st ? st.innerText : '', dc: window.__paw.S.coins - window.__ksC0, debt: window.__paw.S.shop.coinDebt }; });
+  ok(/30 coins went to settling the refund/.test(wr.settle) && /All settled/.test(wr.settle) && (wr.dc === 57 - 30 || wr.dc === 57 + 20 - 30) && wr.debt === 0, 'the walk result says "' + wr.settle + '" and the balance grew by the rest (' + wr.dc + ', with the daily play bonus)');
   const tot5 = +((/\+(\d+)/.exec(wr.tile) || [0, 0])[1]), m5 = /\+(\d+) Supporter/.exec(wr.line), n5 = m5 ? +m5[1] : 0;
   ok(wr.tired, 'the walk was the 6th today (half pay)');
   ok(tot5 - n5 === 48 && n5 === 9, `47 raw coins on the 6th walk: half pay 24, x2 = 48, the walk result shows +${n5} Supporter on ${tot5 - n5} coins of half pay (the tile says +${tot5}): 20% rounded down`);
@@ -299,6 +367,26 @@ run('v224_shop', async (t) => {
     await ev(() => window.__paw.ks.poll(true));
     ok(await t.until(() => !window.__paw.ks.owned('tokyo') && window.__paw.S.shop.refunded.includes('cs_test_game0001'), null, 4000) && (await ev(() => window.__paw.S.coins)) === c0 + 2000, 'refunded: Tokyo Street is taken back, coins kept');
     ok(await ev(() => window.__paw.S.shop.log.find((e) => e.id === 'cs_test_game0001').r === true), 'My purchases marks it refunded');
+    // review 13 Nov, 3: a refunded one-time item is not for sale again, and the game says so honestly (not "yours already")
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('tokyo'); });
+    ok(await t.waitToast(/refunded, so it is not for sale again/, 3000) && (await ev(() => window.__ksTabs[0] && window.__ksTabs[0].w.closed && !(window.__toasts || []).some((x) => /yours already/.test(x)))), 'Tokyo Street after its refund: the Worker says 409 refunded, the toast says so kindly, the tab closes, no "yours already"');
+    await ev(() => window.__paw.ks.open('looks'));
+    const rc = await ev(() => { const c = document.querySelector('#modal [data-ks="tokyo"]'); return { tag: c && c.querySelector('.ks-refunded') ? c.querySelector('.ks-refunded').innerText : '', pay: !!(c && c.querySelector('[data-kscash]')), looks: document.querySelectorAll('#modal [data-kslook]').length }; });
+    ok(/not for sale again/i.test(rc.tag) && !rc.pay && rc.looks >= 6, 'its card says "' + rc.tag + '" instead of a Pay button; each look still has its coin price');
+    await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_refunded_card.png') });
+    // review 13 Nov, 4: a coin pack refunded after most of it was spent: the balance goes to 0, the rest is settled by later coins, and Gerald writes
+    await ev(() => { window.__paw.S.coins = 500; window.__toasts.length = 0; });
+    put('cs_test_game0002', 'coins_1k', true);
+    await ev(() => window.__paw.ks.poll(true));
+    ok(await t.until(() => window.__paw.S.shop.refunded.includes('cs_test_game0002'), null, 4000), 'the coin pack refund lands');
+    const rf = await ev(() => { const S = window.__paw.S, m = S.mail.find((x) => x.id === 'ks_refund_cs_test_game0002'); return { coins: S.coins, debt: S.shop.coinDebt, letter: m ? m.text : '' }; });
+    ok(rf.coins === 0 && rf.debt === 1500 && /2,?000 Paw Coins/.test(rf.letter) && /next 1,?500 coins/.test(rf.letter), "500 coins leave the balance, 1,500 are settled by later coins, and Gerald's letter says so: " + rf.letter.replace(/\n/g, ' / '));
+    ok(await t.waitToast(/A refund came through/, 3000), 'a toast points to the letter');
+    const ms = await ev(() => { const s = document.querySelector('#modal .ks-settling'); return s ? s.innerText : ''; });
+    await ev(() => window.__paw.ks.open('coins'));
+    const ms2 = await ev(() => { const s = document.querySelector('#modal .ks-settling'); return s ? s.innerText : ''; });
+    ok(/Settling: 1,?500 coins/.test(ms || ms2), 'My purchases says "Settling: 1,500 coins": ' + (ms || ms2));
+    await ev(() => { window.__paw.S.shop.coinDebt = 0; document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); });
     // the Worker down: a kind toast, and the tab closes
     delete srv.env.STRIPE_FETCH; srv.offline.add(t.p);
     await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('supporter'); });

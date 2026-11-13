@@ -187,7 +187,7 @@ function wbGiftToday() {
 function wbAwayText(h) { return h >= 48 ? tt('wb.away_d', 'You were away for {n, plural, one {# day} other {# days}}', { n: Math.floor(h / 24) }) : tt('wb.away_h', 'You were away for {n, plural, one {# hour} other {# hours}}', { n: h }); }
 function wbHTML(pend, gift) {
   const d = D(), lines = wbLines(pend, d);
-  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift))}</span></span></div>` : '';
+  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift) + (typeof ksSettleNote === 'function' ? ksSettleNote() : ''))}</span></span></div>` : '';
   return `<div class="wb-sheet"><article class="dd-page wb-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${headSVG(d)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}</b><span class="small">${esc(wbAwayText(pend.h))}</span></span></header>
     <div class="dd-ptext">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true"><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('heart', 0, 2, 1.1, -8)}</svg><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg></div></article>${giftRow}</div>`;
 }

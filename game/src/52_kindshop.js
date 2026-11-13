@@ -35,10 +35,11 @@ const KS_ITEMS = {
   sprinkler: { usd: '0.99', tab: 'tools', coins: 6000, prop: 'Garden Sprinkler' },
   bowl: { usd: '0.99', tab: 'tools', coins: 6000, prop: 'Auto Water Bowl' },
   comfort: { usd: '2.99', tab: 'tools', tools: KS_TOOLS },
-  coins_1k: { usd: '0.99', tab: 'coins', pack: 2000 }, // v2.24.2 (owner, 11 Nov): coin prices x2.5, packs about x2; the ids stay (Stripe metadata)
-  coins_3k: { usd: '1.99', tab: 'coins', pack: 5000 },
-  coins_8k: { usd: '4.99', tab: 'coins', pack: 14000 }
+  coins_1k: { usd: '0.99', tab: 'coins', pack: 2000, old: 1000 }, // v2.24.2 (owner, 11 Nov): coin prices x2.5, packs about x2; the ids stay (Stripe metadata)
+  coins_3k: { usd: '1.99', tab: 'coins', pack: 5000, old: 3000 }, // old: the size of a pack bought before v2.24.2 (KS_PACKS_AT), what a refund of it takes back
+  coins_8k: { usd: '4.99', tab: 'coins', pack: 14000, old: 8000 }
 };
+const KS_PACKS_AT = Date.UTC(2026, 10, 11, 16, 0, 0); // v2.24.2 live everywhere (15:57 UTC, 11 Nov 2026); the Worker's SHOP_PACKS_AT
 const KS_TABS = ['supporter', 'looks', 'tools', 'coins'];
 const ksUSD = (id) => tt('ks.usd', 'US${p}', { p: KS_ITEMS[id].usd });
 
@@ -93,20 +94,25 @@ function ksShopReady() {
   if (typeof sh.coinDebt !== 'number' || !isFinite(sh.coinDebt) || sh.coinDebt < 0) sh.coinDebt = 0;
   return sh;
 }
-const ksCatalogueCoins = (item) => { const I = KS_ITEMS[item]; return !I ? 0 : I.pack ? I.pack : item === 'supporter' ? KS_SUP_COINS : 0; };
-// coins from the Worker row when it sent one, otherwise the catalogue. A second Supporter session is 0.
+// the coins one purchase row is for. The Worker sends coins (a pack from before v2.24.2 at its old size, a second Supporter session 0); without
+// it, the catalogue, and the old pack size for a row from before KS_PACKS_AT. Never more than the pack is today.
 function ksNominal(p) {
-  if (p && Number.isInteger(p.coins) && p.coins >= 0 && p.coins <= 1000000) return p.coins;
-  return ksCatalogueCoins(p && p.item);
+  const I = p && KS_ITEMS[p.item]; if (!I) return 0;
+  const cat = I.pack ? (I.old && Number(p.at) > 0 && Number(p.at) < KS_PACKS_AT ? I.old : I.pack) : p.item === 'supporter' ? KS_SUP_COINS : 0;
+  if (Number.isInteger(p.coins) && p.coins >= 0) return Math.min(p.coins, I.pack || KS_SUP_COINS);
+  return cat;
 }
 let ksLastGrant = null; // the last ksApplyCoins result; not part of the save
+// add a purchase's coins. addCoins settles coinDebt first: n is what the purchase was for, a what reached the balance. The Delivered! card
+// and Gerald's letter say how it split, so the settle note is taken here (no extra toast).
 function ksApplyCoins(nominal) {
   nominal = Math.max(0, Math.round(Number(nominal) || 0));
-  const added = nominal ? addCoins(nominal, { raw: true }) : 0; // addCoins pays coinDebt first and returns only what reached the balance
+  const added = nominal ? addCoins(nominal, { raw: true }) - coinSettled : 0;
+  if (nominal) { ksSettleTake(coinSettled); coinSettled = 0; }
   ksLastGrant = { n: nominal, a: added };
   return added;
 }
-// take coins back. What is still in the balance leaves it; what was already spent becomes coinDebt (later coins pay it).
+// take coins back. What is still in the balance leaves it; what was already spent becomes coinDebt (later coins settle it). Returns what left the balance
 function ksClawCoins(n) {
   n = Math.max(0, Math.round(Number(n) || 0));
   if (!n || !S) return 0;
@@ -115,6 +121,28 @@ function ksClawCoins(n) {
   if (sh && n > take) sh.coinDebt += n - take;
   return take;
 }
+/* the settle notes (owner, 13 Nov: take coins back kindly and visibly). addCoins queues each settled coin; a text that shows a coin amount takes
+   the queue with ksSettleNote() / ksSettleHTML(); whatever nobody took becomes one toast a moment later, so no coin income settles in silence. */
+function ksSettleQueue(d) {
+  coinSettleQ += Math.max(0, Math.round(d) || 0); clearTimeout(coinSettleT);
+  coinSettleT = setTimeout(() => { const n = ksSettleTake(); if (n > 0 && S) toast(ksSettleLine(n), 'good', { group: 'kssettle' }); }, 900);
+}
+// take settled coins out of the queue: all of them, or at most n (what one text is about), leaving the rest for its own text or the toast
+function ksSettleTake(n) {
+  const k = n === undefined ? coinSettleQ : Math.max(0, Math.min(coinSettleQ, Math.round(n) || 0));
+  coinSettleQ -= k; if (!coinSettleQ) clearTimeout(coinSettleT); return k;
+}
+const ksDebt = () => (S && S.shop ? Math.max(0, Math.round(S.shop.coinDebt) || 0) : 0);
+function ksSettleLine(n) {
+  return tt('ks.settle_line', '{n, plural, one {# coin} other {# coins}} went to settling the refund. {left, plural, =0 {All settled now. Thank you!} one {# coin to go.} other {# coins to go.}}', { n, left: ksDebt() });
+}
+// " (N coins go to settling the refund)" after a "+N coins" text, or '' when none did. It speaks for the last addCoins call, or, given since
+// (coinSettleSum before a few calls), for everything settled since then. The walk result (ksSettleHTML) speaks for everything not said yet.
+function ksSettleNote(since) {
+  const n = ksSettleTake(typeof since === 'number' ? coinSettleSum - since : coinSettled); coinSettled = 0;
+  return n > 0 ? ' ' + tt('ks.settle_note', '({n, plural, one {# coin goes} other {# coins go}} to settling the refund)', { n }) : '';
+}
+function ksSettleHTML() { const n = ksSettleTake(); coinSettled = 0; return n > 0 ? `<p class="small ks-settle">${esc(ksSettleLine(n))}</p>` : ''; }
 function ksGiveLook(n) {
   if (ksLookOwned(n)) return false;
   if (n === KS_COZY_BED) { S.beds.push(n); return true; }
@@ -126,13 +154,14 @@ function ksLetter() {
   return mailPush({ kind: 'news', id: 'ks_thanks', keep: true, from: tt('ks.letter_from', 'Gerald'), title: tt('ks.letter_title', 'Thank you, Founding Friend'),
     text: tt('ks.letter_text', 'Dear friend,\nThank you for the Supporter Pack. Doodle Doggo is made by one person, and you just helped keep the crayons sharp.\nThe Golden Paw Cottage is yours, and so is the golden name tag. Walks pay a little more, the veggies grow a little faster, and the calendar has a second gift for you every day.\nEverything else in town can still be earned by playing, for everyone. That is a promise.\nWith a happy waddle,\nGerald') });
 }
-// one purchase's contents, once. coins (from GET /shop/owned) is how many Paw Coins this row grants; omit it and the catalogue is used.
-// A one-time item already in onceBack grants nothing. Supporter coins are added only the first time it becomes owned. Returns coins that reached the balance.
+// one purchase's contents, once. coins (ksNominal of the GET /shop/owned row) is how many Paw Coins this row grants; omit it and the catalogue is used.
+// Supporter coins are added only the first time it becomes owned. A paid row always delivers, even for an item a refund took back before
+// (the Worker no longer sells it, so such a row was paid before that refund): it leaves onceBack. Returns coins that reached the balance.
 function ksGive(item, coins) {
   const sh = ksShopReady(), I = KS_ITEMS[item]; if (!sh || !I) return 0;
   const passed = Number.isInteger(coins) && coins >= 0 && coins <= 1000000;
-  if (I.pack) return ksApplyCoins(passed ? coins : I.pack);
-  if (sh.onceBack.includes(item)) return ksApplyCoins(0);
+  if (I.pack) return ksApplyCoins(passed ? Math.min(coins, I.pack) : I.pack);
+  sh.onceBack = sh.onceBack.filter((x) => x !== item);
   const fresh = !sh.owned.includes(item);
   if (fresh) sh.owned.push(item);
   if (item === 'supporter') { ksGiveLook(KS_HOUSE); ksGiveLook(KS_TAG); ksLetter(); return ksApplyCoins(fresh ? (passed ? coins : KS_SUP_COINS) : 0); }
@@ -164,52 +193,67 @@ function ksTakeBack(item) {
   if (item === 'supporter') { ksTakeLook(KS_HOUSE); ksTakeLook(KS_TAG); }
   if (I.looks) I.looks.forEach(ksTakeLook);
 }
-// coins this refund removes from the balance. A live second purchase of the same one-time item keeps them (they were paid for twice and one charge came back).
+// the coins a refund takes back: { n: what that purchase was for, took: what left the balance, debt: what was already spent and is now owed }.
+// Never more than the save recorded for that row (coinGot), or, for a row granted before coinGot existed, what the row was for (ksNominal: an
+// old pack size for a pack from before v2.24.2). A live second purchase of the same one-time item keeps them (paid twice, one charge came back).
 function ksRefundCoins(p, list) {
-  const sh = ksShopReady(); if (!sh) return 0;
+  const sh = ksShopReady(), none = { n: 0, took: 0, debt: 0 }; if (!sh) return none;
   const I = KS_ITEMS[p.item], rec = sh.coinGot[p.id];
   let nominal, added;
-  if (rec && typeof rec.n === 'number') { nominal = rec.n; added = rec.a || 0; } else { nominal = ksNominal(p); added = nominal; }
+  if (rec && typeof rec.n === 'number') { nominal = Math.max(0, rec.n); added = Math.max(0, Math.min(nominal, rec.a || 0)); } else { nominal = ksNominal(p); added = nominal; }
   delete sh.coinGot[p.id];
-  if (nominal <= 0 && added <= 0) return 0;
+  if (nominal <= 0) return none;
   if (I && !I.pack) {
     const heir = list.find((q) => q.id !== p.id && q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
-    if (heir && !(sh.coinGot[heir.id] && sh.coinGot[heir.id].n > 0)) { sh.coinGot[heir.id] = { n: nominal, a: added }; return 0; }
+    if (heir && !(sh.coinGot[heir.id] && sh.coinGot[heir.id].n > 0)) { sh.coinGot[heir.id] = { n: nominal, a: added }; return none; }
   }
-  const debtPaid = Math.max(0, nominal - added);
-  if (debtPaid) sh.coinDebt += debtPaid; // this grant had repaid an older refund; that debt is back
-  return added > 0 ? ksClawCoins(added) : 0;
+  const d0 = sh.coinDebt;
+  if (nominal > added) sh.coinDebt += nominal - added; // that grant had settled an older refund: that part is owed again
+  const took = added > 0 ? ksClawCoins(added) : 0;
+  return { n: nominal, took, debt: sh.coinDebt - d0 };
 }
-/* GET /shop/owned: [{ id, item, refunded, coins }]. Each unclaimed id is granted once and recorded in S.shop.claimed. A refunded id that was
-   granted here takes back its one-time items (unless another live purchase of the same thing is in the list) and the coins that row added.
-   A one-time item taken all the way back is remembered in onceBack, so a later row cannot grant it again. The same list twice changes nothing.
-   Returns { granted: [ids], refunded: [ids], coins } where coins is the net change in the balance. */
+// Gerald's letter when a refund takes coins back: two short kind sentences, no blame (owner, 13 Nov 2026)
+function ksRefundLetter(items, n, debt, id) {
+  return mailPush({ kind: 'news', id: 'ks_refund_' + id, keep: true, from: tt('ks.letter_from', 'Gerald'), title: tt('ks.refund_title', 'About your refund'),
+    text: tt('ks.refund_letter', 'Dear friend,\nYour refund for {list} came through, and the {n, plural, one {# Paw Coin} other {# Paw Coins}} it added went back with it. Everything you bought with coins stays yours{debt, plural, =0 {.} one {, and the next coin you earn settles the rest.} other {, and the next # coins you earn settle the rest.}}\nWith a happy waddle,\nGerald', { list: tlist(items.map(ksName)), n, debt }) });
+}
+/* GET /shop/owned: [{ id, item, at, refunded, coins }]. Each unclaimed id is granted once and recorded in S.shop.claimed. A refunded id that was
+   granted here takes back its one-time items (unless another live purchase of the same thing is in the list) and the coins that row added,
+   with Gerald's letter. A one-time item with no live purchase left is in onceBack: the Kind shop says "Refunded, not for sale again" (the Worker
+   answers 409 refunded). The same list twice changes nothing. Returns { granted: [ids], refunded: [ids], coins, items: [ids], got: [{ n, a } | null] }:
+   coins is the net change in the balance, got[i] how items[i]'s coins split (n the pack, a what was added; n - a settled an older refund). */
 function ksGrant(purchases, give) {
   give = give || ksGive;
-  const sh = ksShopReady(), out = { granted: [], refunded: [], coins: 0, items: [] }; if (!sh) return out;
+  const sh = ksShopReady(), out = { granted: [], refunded: [], coins: 0, items: [], got: [] }; if (!sh) return out;
   const list = (Array.isArray(purchases) ? purchases : []).filter((p) => p && typeof p.id === 'string' && p.id && KS_ITEMS[p.item]);
   list.forEach((p) => {
     if (p.refunded || sh.claimed.includes(p.id)) return;
-    const I = KS_ITEMS[p.item], blocked = !I.pack && sh.onceBack.includes(p.item), had = sh.owned.includes(p.item);
+    const I = KS_ITEMS[p.item], had = sh.owned.includes(p.item);
     let added = 0;
-    try {
-      if (!blocked) added = give(p.item, Number.isInteger(p.coins) ? p.coins : undefined);
-    } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); ksLastGrant = null; return; } // unclaimed: the next poll retries
-    const rec = !blocked && ksLastGrant && typeof ksLastGrant.n === 'number' ? ksLastGrant : { n: blocked ? 0 : added, a: blocked ? 0 : added };
+    ksLastGrant = null;
+    try { added = give(p.item, ksNominal(p)); } catch (e) { console.warn('kind shop: grant failed, will retry', p.id, e); ksLastGrant = null; return; } // unclaimed: the next poll retries
+    const rec = ksLastGrant && typeof ksLastGrant.n === 'number' ? ksLastGrant : { n: added, a: added };
     ksLastGrant = null;
     sh.coinGot[p.id] = { n: rec.n || 0, a: rec.a || 0 };
     sh.claimed.push(p.id); out.granted.push(p.id); out.coins += added;
-    if (!blocked && (I.pack ? added > 0 : !had)) out.items.push(p.item);
+    if (I.pack ? rec.n > 0 : !had) { out.items.push(p.item); out.got.push(I.pack ? { n: rec.n || 0, a: rec.a || 0 } : null); }
   });
+  const back = { items: [], n: 0, debt: 0, id: '' };
   list.forEach((p) => {
     if (!p.refunded || sh.refunded.includes(p.id)) return;
     sh.refunded.push(p.id);
-    if (!sh.claimed.includes(p.id)) return; // refunded before this save ever got it: nothing was given, so nothing comes back
     const I = KS_ITEMS[p.item];
+    if (!sh.claimed.includes(p.id)) { // refunded before this save ever got it: nothing was given, so nothing comes back. The card still says so
+      if (!I.pack && !list.some((q) => q.item === p.item && !q.refunded) && !sh.onceBack.includes(p.item)) sh.onceBack.push(p.item);
+      return;
+    }
     const live = list.some((q) => q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
     if (!live && !I.pack) { if (!sh.onceBack.includes(p.item)) sh.onceBack.push(p.item); ksTakeBack(p.item); }
-    out.coins -= ksRefundCoins(p, list); out.refunded.push(p.id);
+    const r = ksRefundCoins(p, list);
+    out.coins -= r.took; out.refunded.push(p.id);
+    if (r.n > 0) { if (!back.items.includes(p.item)) back.items.push(p.item); back.n += r.n; back.debt += r.debt; back.id = back.id || p.id; }
   });
+  if (back.n > 0) { ksRefundLetter(back.items, back.n, ksDebt(), back.id); out.letter = true; }
   const logged = ksLogSync(list);
   if (out.granted.length || out.refunded.length || logged) { markDirty(); updateHUD(); saveNow(); }
   return out;
@@ -375,19 +419,25 @@ function ksGets(id) {
 
 /* ---------------- the sheet (V224.md 3) ---------------- */
 // My purchases (v2.24.1): newest first, with the date; a refunded one says so. Nothing while there are none
+// While a refund is being settled (S.shop.coinDebt > 0) My purchases is open and says how many coins are still to go
 function ksMineHTML() {
-  const sh = ksS(), L = sh ? sh.log.filter((e) => e && KS_ITEMS[e.item]) : []; if (!L.length) return '';
+  const sh = ksS(), L = sh ? sh.log.filter((e) => e && KS_ITEMS[e.item]) : [], debt = ksDebt(); if (!L.length && !debt) return '';
   const rows = L.map((e) => `<li><b>${esc(ksName(e.item))}</b>${e.at ? ` <span class="ks-mine-d">${esc(tdate(new Date(e.at), { year: 'numeric', month: 'short', day: 'numeric' }))}</span>` : ''}${e.r ? ` <span class="ks-mine-r">${esc(tt('ks.mine_refunded', 'refunded'))}</span>` : ''}</li>`).join('');
-  return `<details class="ks-mine"><summary>${esc(tt('ks.mine', 'My purchases ({n})', { n: tnum(L.length) }))}</summary><ul>${rows}</ul><p class="small">${esc(tt('ks.mine_help', 'Stripe emailed a receipt for each one. Questions or a refund: {email}', { email: 'contact@doodledoggo.app' }))}</p></details>`;
+  const settling = debt ? `<p class="small ks-settling"><b>${esc(tt('ks.settling', 'Settling: {n, plural, one {# coin} other {# coins}}', { n: debt }))}</b> ${esc(tt('ks.settling_why', 'A refund took back coins that were already spent. Coins you earn settle it first, and everything you bought stays yours.'))}</p>` : '';
+  return `<details class="ks-mine"${debt ? ' open' : ''}><summary>${esc(tt('ks.mine', 'My purchases ({n})', { n: tnum(L.length) }))}</summary>${settling}${rows ? `<ul>${rows}</ul>` : ''}<p class="small">${esc(tt('ks.mine_help', 'Stripe emailed a receipt for each one. Questions or a refund: {email}', { email: 'contact@doodledoggo.app' }))}</p></details>`;
 }
 let ksTab = 'supporter';
 function ksMenuBtn() { return ksOn() && S ? `<button class="btn big" id="mmKs" type="button"><span class="ic">${ICON('coin')}</span>${esc(tt('ks.btn', 'Kind shop'))}</button>` : ''; }
 const ksYours = () => `<span class="chip own ks-yours">${esc(tt('ks.yours', 'Yours'))}</span>`;
+// a one-time item bought and fully refunded is never for sale again (owner, 13 Nov 2026): its card says so kindly instead of a Pay button.
+// What can be earned with coins (a tool, each look) still can.
+const ksRefundedId = (id) => { const sh = ksS(); return !!sh && Array.isArray(sh.onceBack) && sh.onceBack.includes(id) && !KS_ITEMS[id].pack && !ksOwnedId(id); };
+const ksRefundedTag = () => `<span class="small ks-refunded">${esc(tt('ks.refunded_card', 'Refunded, not for sale again'))}</span>`;
 function ksCardHTML(id) {
-  const I = KS_ITEMS[id], own = ksOwnedId(id);
+  const I = KS_ITEMS[id], own = ksOwnedId(id), back = ksRefundedId(id);
   const list = id === 'supporter' || I.looks || I.tools ? `<ul class="ks-gets">${ksGets(id).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : '';
   const or = I.looks ? `<span class="small ks-or">${esc(tt('ks.or_each', 'or {n} coins each', { n: tnum(KS_LOOK_COINS) }))}</span>` : '';
-  const off = ksCashMode() === 'off', act = own ? ksYours() : `${off ? (I.coins ? '' : `<span class="small ks-nopay-note">${esc(tt('ks.not_here', 'Not open here'))}</span>`) : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
+  const off = ksCashMode() === 'off', act = own ? ksYours() : `${back ? ksRefundedTag() : off ? (I.coins ? '' : `<span class="small ks-nopay-note">${esc(tt('ks.not_here', 'Not open here'))}</span>`) : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
   return `<div class="sitem ks-card ks-${I.tab}${list ? ' ks-wide' : ''}" data-ks="${id}"><span class="art">${ksArt(id)}</span><b>${esc(ksName(id))}</b><span class="desc">${esc(ksLine(id))}</span>${list}<span class="ks-acts">${act}</span></div>`;
 }
 function ksLookCardHTML(n) {
@@ -472,6 +522,8 @@ const ksWorker = () => typeof CL !== 'undefined' && !!CL.on && !!CL.uid; // the 
 function ksErrToast(code) {
   if (code === 'shop_closed') toast(KS_SOON(), 'good');
   else if (code === 'owned') toast(tt('ks.owned_already', 'This is yours already. Restoring your purchases now.'), 'good');
+  else if (code === 'refunded') toast(tt('ks.refunded_toast', 'This one was refunded, so it is not for sale again. Thank you for trying it!'), 'good');
+  else if (code === 'pending') toast(tt('ks.pending', 'A payment for this is still on its way. Please look again in a minute.'), 'good');
   else if (code === 'no_account') toast(tt('ks.need_email', 'Add an email to your save first, so your purchases can come back on a new device.'), 'good');
   else if (code === 'rate_limited') toast(tt('ks.slow_down', 'Lots of taps! Please wait a few minutes and try again.'), 'good');
   else toast(tt('ks.no_reach', 'The shop could not be reached. Nothing was paid. Please try again soon.'), 'good');
@@ -498,7 +550,12 @@ function ksCheckout(id) {
   const shut = () => { try { if (w && !w.closed) w.close(); } catch (e) { /* gone */ } };
   return clApi('POST', '/shop/checkout', { item: id }).then((r) => {
     const url = r && r.ok && r.data && typeof r.data.url === 'string' && /^https:\/\//.test(r.data.url) ? r.data.url : null;
-    if (!url) { shut(); const code = r && r.data && r.data.error; ksErrToast(code); if (code === 'owned') ksRestore(false); return false; }
+    if (!url) {
+      shut(); const code = r && r.data && r.data.error; ksErrToast(code);
+      if (code === 'refunded') { const sh = ksShopReady(); if (sh && !KS_ITEMS[id].pack && !sh.onceBack.includes(id)) { sh.onceBack.push(id); markDirty(); saveNow(); } if ($('.panel.ks', modal)) ksOpen(); }
+      if (code === 'owned' || code === 'refunded' || code === 'pending') ksRestore(false);
+      return false;
+    }
     if (w && !w.closed) { try { w.location.href = url; } catch (e) { shut(); w = null; } }
     if (!w) ksLinkSheet(url);
     ksPollAt = 0; // the next time the tab is shown, look at once
@@ -514,21 +571,25 @@ function ksWhere(id) {
   if (id === 'cozy') return tt('ks.where_cozy', 'Find them in your house, ready to place.');
   return tt('ks.where_tool', 'Working at home now. You can switch it off in Settings.');
 }
-// one delivery's lines, as plain text: "Tokyo Street: Sukajan Jacket, Bucket Hat, ..." / "1,000 coins"
-function ksGotLine(id) { return KS_ITEMS[id].pack ? ksName(id) : ksName(id) + ': ' + tlist(ksGets(id)); }
+// a coin pack in a delivery: its own size (an old pack restored on a new device is its old size), and how it split when it settled a refund
+const ksPackName = (id, g) => (g && g.n > 0 ? tt('ks.n_coins', '{n} coins', { n: tnum(g.n) }) : ksName(id));
+const ksPackSplit = (g) => (g && g.n > g.a ? tt('ks.got_settle', '{a, plural, =0 {All {s} coins settled the refund.} one {{s} settled the refund and # coin was added to your Paw Coins.} other {{s} settled the refund and # coins were added to your Paw Coins.}}', { s: tnum(g.n - g.a), a: g.a }) : '');
+// one delivery's lines, as plain text: "Tokyo Street: Sukajan Jacket, Bucket Hat, ..." / "2,000 coins" (+ how it split)
+function ksGotLine(id, g) { return KS_ITEMS[id].pack ? ksPackName(id, g) + (ksPackSplit(g) ? ' (' + ksPackSplit(g) + ')' : '') : ksName(id) + ': ' + tlist(ksGets(id)); }
 // Gerald's delivery letter: what arrived, kept to reread. The Supporter Pack has its own thank-you letter (ksLetter)
 function ksDeliveryLetter(out) {
-  const items = out.items.filter((id) => id !== 'supporter'); if (!items.length) return null;
+  const rows = out.items.map((id, i) => [id, (out.got || [])[i]]).filter(([id]) => id !== 'supporter'); if (!rows.length) return null;
   return mailPush({ kind: 'news', id: 'ks_got_' + out.granted[0], from: tt('ks.letter_from', 'Gerald'), title: tt('ks.got_title', 'Your Kind shop delivery'),
-    text: tt('ks.got_letter', 'Dear friend,\nThank you for your purchase! This arrived in town for you:\n{list}\nYou can see every purchase under My purchases in the Kind shop.\nWith a happy waddle,\nGerald', { list: items.map((id) => '- ' + ksGotLine(id)).join('\n') }) });
+    text: tt('ks.got_letter', 'Dear friend,\nThank you for your purchase! This arrived in town for you:\n{list}\nYou can see every purchase under My purchases in the Kind shop.\nWith a happy waddle,\nGerald', { list: rows.map(([id, g]) => '- ' + ksGotLine(id, g)).join('\n') }) });
 }
 // the Delivered! card: each item, exactly what came, and where it is. Over the Kind shop or an empty screen; elsewhere (a minigame, a walk) a toast
 function ksDelivered(out) { // true when it showed something
   if (!out.items.length) return false;
   const shopOpen = !!$('.panel.ks', modal);
-  if (!modal.hidden && !shopOpen) { toast(tt('ks.got_toast', 'Thank you! Delivered: {list}. Look in your mailbox.', { list: tlist(out.items.map(ksName)) }), 'gold'); return true; }
-  const rows = out.items.map((id) => { const I = KS_ITEMS[id], gets = I.pack ? [] : ksGets(id);
-    return `<div class="ks-got-row" data-ks="${id}"><span class="art">${ksArt(id)}</span><div><b>${esc(ksName(id))}</b>${gets.length ? `<ul class="ks-gets">${gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : ''}<p class="small ks-where">${esc(ksWhere(id))}</p></div></div>`; }).join('');
+  const got = out.got || [], nm = (id, i) => (KS_ITEMS[id].pack ? ksPackName(id, got[i]) : ksName(id));
+  if (!modal.hidden && !shopOpen) { toast(tt('ks.got_toast', 'Thank you! Delivered: {list}. Look in your mailbox.', { list: tlist(out.items.map(nm)) }), 'gold'); return true; }
+  const rows = out.items.map((id, i) => { const I = KS_ITEMS[id], gets = I.pack ? [] : ksGets(id), split = I.pack ? ksPackSplit(got[i]) : '';
+    return `<div class="ks-got-row" data-ks="${id}"><span class="art">${ksArt(id)}</span><div><b>${esc(nm(id, i))}</b>${gets.length ? `<ul class="ks-gets">${gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : ''}<p class="small ks-where">${esc(split || ksWhere(id))}</p></div></div>`; }).join('');
   SFX.boop(880);
   const p = openModal(esc(tt('ks.got_h', 'Delivered!')), `<p class="ks-got-hi">${esc(tt('ks.got_hi', 'Thank you! This is yours now:'))}</p>${rows}`,
     { cls: 'ks ks-got', foot: `<button class="btn yes big" type="button" id="ksGotOk">${esc(tt('ks.got_ok', 'Yay!'))}</button>`, onClose: shopOpen ? () => setTimeout(() => ksOpen(), 0) : null });
@@ -550,7 +611,9 @@ async function ksRestore(manual) {
   try { r = await clApi('GET', '/shop/owned'); } catch (e) { r = null; }
   if (!r || !r.ok || !r.data || !Array.isArray(r.data.purchases)) { if (manual) ksErrToast(r && r.data && r.data.error ? r.data.error : 'offline'); return null; }
   const out = ksGrant(r.data.purchases);
+  if (out.letter) toast(tt('ks.refund_toast', 'A refund came through. Gerald sent you a letter about it.'), 'good');
   if (out.granted.length) ksGrantToast(out); // the Delivered! card, which opens the Kind shop again when it was open
+  else if (out.refunded.length && $('.panel.ks', modal)) ksOpen(); // the open Kind shop shows the refunded card at once
   else if (manual) toast(tt('ks.restored_none', 'Your purchases are all here. Nothing new to restore.'), 'good');
   return out;
 }
@@ -594,7 +657,9 @@ function ksExpose() {
     walkBonus: (n) => (ksSup() ? Math.floor(Math.max(0, +n || 0) * KS_WALK_K) : 0), growMul: () => ksGrowMul(), gift2: (ym, d) => ksGift2(ym, d), gift2Claim: () => ksGift2Claim(), gift2Can: () => ksGift2Can(),
     open: (t) => ksOpen(t), confirm: (id) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? (ksConfirm(p, id), true) : false; }, coinBuy: (n) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? ksCoinBuy(p, n) : false; },
     tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id), restore: (m) => ksRestore(m), poll: (f) => ksPoll(f),
-    garden: (h, w) => gardenAdvance({ steps: h || 1, stepWeather: w || 'cloudy' }), rec: () => { KS_REC = []; return true; }, acts: () => (KS_REC || []).slice()
+    garden: (h, w) => gardenAdvance({ steps: h || 1, stepWeather: w || 'cloudy' }), rec: () => { KS_REC = []; return true; }, acts: () => (KS_REC || []).slice(),
+    debt: () => ksDebt(), settleNote: () => ksSettleNote(), settleTake: () => ksSettleTake(), refundedId: (id) => ksRefundedId(id), nominal: (p) => ksNominal(p), packsAt: KS_PACKS_AT,
+    addCoins: (n, raw) => addCoins(n, { raw: !!raw }), delivered: (out) => ksDelivered(out), grantToast: (out) => ksGrantToast(out), gotLine: (id, g) => ksGotLine(id, g), errToast: (c) => ksErrToast(c)
   };
 }
 let KS_REC = null; // tests: the act kinds seen since rec() (the tools must add none)

@@ -1509,11 +1509,17 @@ function nope(text) { SFX.nope(); toast(text, 'bad', { scr: toastScr() }); } // 
 
 /* ---------------- stats ---------------- */
 function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty(); }
+// Every coin the game gives goes through addCoins. It returns the coins earned (what the texts show). A refunded Kind shop purchase whose coins
+// were already spent leaves S.shop.coinDebt (52_kindshop.js): later coins settle it first, so the balance never goes below what was paid for.
+// coinSettled: how many of the last call's coins settled it. Each settled coin is said out loud: a text that shows the amount adds ksSettleNote()
+// (or the walk result ksSettleHTML()), and whatever no text took gets one kind toast a moment later (ksSettleQueue).
+let coinSettled = 0, coinSettleSum = 0, coinSettleQ = 0, coinSettleT = 0; // the last call's settled coins, all settled so far, settled and not said yet
 function addCoins(base, opts = {}) {
-  let n = Math.round(base * (opts.raw ? 1 : BOOST.coins));
-  // a refunded Kind shop purchase that was already spent leaves S.shop.coinDebt. Later coins pay it back before they can be spent again.
-  if (n > 0 && S && S.shop && S.shop.coinDebt > 0) { const owe = Math.max(0, Math.round(S.shop.coinDebt) || 0), d = Math.min(owe, n); S.shop.coinDebt = owe - d; n -= d; }
-  S.coins += n; markDirty();
+  const n = Math.max(0, Math.round(base * (opts.raw ? 1 : BOOST.coins)) || 0);
+  let d = 0;
+  if (n > 0 && S && S.shop && S.shop.coinDebt > 0) { const owe = Math.max(0, Math.round(S.shop.coinDebt) || 0); d = Math.min(owe, n); S.shop.coinDebt = owe - d; }
+  coinSettled = d; coinSettleSum += d; S.coins += n - d; markDirty();
+  if (d > 0 && typeof ksSettleQueue === 'function') ksSettleQueue(d);
   const c = $('#coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); updateHUD(); return n;
 }
 let levelQueue = [];
@@ -1539,7 +1545,7 @@ function walkTiredLine(w) {
 }
 function dailyCare(kind) {
   dailyCheck(); if (S.daily[kind]) return; S.daily[kind] = true;
-  const n = addCoins(10); toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }), 'gold');
+  const n = addCoins(10); toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }) + ksSettleNote(), 'gold');
 }
 
 /* ---------------- HUD ---------------- */
