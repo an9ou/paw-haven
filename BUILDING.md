@@ -75,19 +75,18 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
 
 ## Release checklist (Coordinator)
 
-1. Stub files and `ORDER.txt` entries on `main`.
-2. Lane branches pushed.
-3. Lanes started.
-4. Merge in the spec's order, with `smoke` and the lane's suite after each.
-5. Integration review.
-6. Fixes.
-7. `all` + `phone`.
-8. CHANGELOG, TODO, README, CLAUDE.md, and add a NEWS entry (`game/src/49c_news.js`, `V218.md` 14).
-9. Publish the claude.ai artifact (read it first).
-10. Log the release in Studio.
-11. Push `main` and check that the Pages deploy succeeded.
-12. Archive every session from this release.
-13. Send the final report to the Project manager.
+The full recipe, the go-ahead rules and the checks are in `.claude/skills/paw-release/SKILL.md`: follow it. The claude.ai artifact is frozen at v2.14 and is no longer published (`CLAUDE.md`, "Publishing"). The order:
+
+1. Merge the lanes in the spec's order with `smoke` and the lane's suite after each; integration review and fixes; `all` + `phone` green.
+2. Worker first, only if `cloudflare/` changed: `bash tools/cf_api_deploy.sh`, then `bash tools/cf_api_smoke.sh`.
+3. Push `main` and check the GitHub Pages deploy succeeded.
+4. `node tools/itch.js`, then `bash tools/itch_push.sh <version>`.
+5. Site deploy with the itch build: `SITE_GAME=$PWD/dist/itch bash tools/cf_pages_deploy.sh`.
+6. Live check: the md5 of the live `/play/` build matches `dist/itch`.
+7. The NEWS entry (`game/src/49c_news.js`, `V218.md` 14, translated in one batch), the `CHANGELOG.md` row and the version line in `CLAUDE.md`.
+8. Brief Marketing (version, what is new, links, `brand/itch/<ver>/`).
+9. Add the HANDOFF_GM note (`docs/HANDOFF_GM.md`).
+10. Archive every session from this release; send the final report to the Project manager.
 
 ## Project manager handoff (read this first if you're a new Project manager chat)
 

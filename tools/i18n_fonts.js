@@ -70,7 +70,7 @@ const LANGS = {
   'zh-Hans': { body: 'LXGWWenKai', base: CJKP + '“”‘’—·', feat: HFEAT },
   'zh-Hant': { body: 'Iansui', base: CJKP + '「」『』—·', feat: HFEAT },
   // yue shares zh-Hant's subset (same font, mostly the same characters): its CSS lists zh-Hant.woff2 first and its own yue.woff2 holds only the
-  // characters zh-Hant's subset lacks, so the site Worker (9 MB budget) and the itch.io zip carry Iansui once. Rebuild yue after zh-Hant.
+  // characters zh-Hant's subset lacks, so the site Worker (10 MB gzipped limit) and the itch.io zip carry Iansui once. Rebuild yue after zh-Hant.
   yue: { body: 'Iansui', base: CJKP + '「」『』—·' + YUE, feat: HFEAT, share: 'zh-Hant' },
   ko: { body: 'PoorStory', title: 'Jua', base: '', feat: HFEAT },
   th: { body: 'Mali', title: 'MaliBold', titleAll: true, base: rng(0x0E01, 0x0E3A) + rng(0x0E3F, 0x0E5B), feat: ['*'] },
