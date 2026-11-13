@@ -241,13 +241,15 @@ function wbSoonCrop() {
   const L = g.plots.filter((p) => p && p.crop && !(p.g >= 1)).map((p) => { const c = cropInfo(p.crop); return c && c.hours ? { id: p.crop, h: (1 - (+p.g || 0)) * c.hours } : null; }).filter((x) => x && x.h <= 24);
   return L.sort((a, b) => a.h - b.h)[0] || null;
 }
-function wbTmrwText() {
+function wbTmrwText(wdx) { // wdx: a test can fix tomorrow's weekday
   const c = wbSoonCrop();
   if (c) return tt('wb.t_crop', 'Tomorrow: the {crop} should be ready to pick.', { crop: (typeof gkCropPlural === 'function' && gkCropPlural(c.id)) || tt('garden.veggies', 'veggies') });
-  const t = new Date(); t.setDate(t.getDate() + 1); const wd = t.getDay();
+  const t = new Date(); t.setDate(t.getDate() + 1); const wd = typeof wdx === 'number' ? wdx : t.getDay();
   if (wd === 6) return tt('wb.t_sat', 'Tomorrow is Saturday: the market stall on Market Street is open.');
   if (wd === 5) return tt('wb.t_sat2', 'The Saturday market stall opens in {n} days.', { n: 2 });
   if (wd === 1 && typeof ms2On === 'function' && ms2On()) return tt('wb.t_mon', "Tomorrow is Monday: Gerald pins up a new help-wanted board.");
+  const pj = typeof prOn === 'function' && prOn() && typeof prCur === 'function' ? prCur() : null; // v2.29.1 (V2291.md B3): the town project being saved for
+  if (pj && prS() && pj.price > 0) return tt('wb.t_proj', 'The {name} is {pct}% there. Any coins help.', { name: prName(pj.id), pct: Math.min(99, Math.floor((prS().paid / pj.price) * 100)) });
   switch (hashId('wbt|' + jstISO()) % 4) {
     case 0: return tt('wb.t_g0', '{name} will be waiting by the gate tomorrow.', { name: NAME() });
     case 1: return tt('wb.t_g1', 'A new mission and two little helps come tomorrow.');
@@ -276,7 +278,7 @@ function wbExpose() {
   if (!window.__paw || window.__paw.wb) return;
   window.__paw.wb = {
     on: () => wbOn(), test: (v) => { prefs.wbTest = !!v; }, fields: (s, fresh) => v225Fields(s, !!fresh), away: (ms) => wbAway(ms), pend: () => S && S.wbPend, open: () => wbOpen(), lines: (p) => wbLines(p || { at: 1, h: 4 }),
-    gift: () => wbGiftToday(), pick: (j) => wbGiftPick(j || jstISO()), days: () => wbDaysTick(), mile: () => wbMilestones(), mileGift: (n) => wbMileGift(n), tmrw: () => wbTmrwTick(), tmrwText: () => wbTmrwText(), done: () => wbDailyDone(jstISO()),
+    gift: () => wbGiftToday(), pick: (j) => wbGiftPick(j || jstISO()), days: () => wbDaysTick(), mile: () => wbMilestones(), mileGift: (n) => wbMileGift(n), tmrw: () => wbTmrwTick(), tmrwText: (w) => wbTmrwText(w), done: () => wbDailyDone(jstISO()),
     cal: () => wbCalHTML(), frames: () => wbFrameList(), letter: () => wbBackLetter(), AWAY: WB_AWAY_MS, BACK: WB_BACK_MS, CAP: WB_COIN_CAP, COINS: WB_BACK_COINS, DAYS: WB_DAYS.slice(), doneAt: (v) => { if (typeof v === 'number') WB.doneAt = v; return WB.doneAt; }
   };
 }

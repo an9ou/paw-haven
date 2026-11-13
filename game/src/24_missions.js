@@ -134,10 +134,13 @@ function msToday() { const m = msRoll(); return m ? m.list : []; }
 // v2.20: the swap never draws a mission one of today's little helps stands for (24b_missions2.js ms2HelpX), so one act never ticks two rows
 const msSwapExcl = (m) => m.list.map((x) => x.id).concat(typeof ms2HelpX === 'function' ? ms2HelpX() : []);
 function msSwapFree() { const m = S && S.missions; return !!m && m.swap !== jstISO() && m.list.some((x) => !x.done) && msEligible(msSwapExcl(m)).length > 0; }
+// v2.29.1 (V2291.md A): the free swap draws only missions a light player can do at home or on a normal walk; with none left it falls back to the whole pool
+const MS_HOME = ['walk', 'walk_fresh', 'walk_dressed', 'toy', 'toy_new', 'bath', 'wear', 'photo', 'buy', 'buy_food_new', 'feed_new', 'treasure', 'wish', 'decorate', 'garden_plant', 'garden_water', 'harvest', 'cafe'];
+function msSwapPool(m) { const pool = msEligible(msSwapExcl(m)), home = pool.filter((d) => MS_HOME.includes(d.id)); return home.length ? home : pool; }
 function msSwap() {
   if (!S) return false; msRoll(); const m = S.missions, t = jstISO(), i = m.list.findIndex((x) => !x.done);
   if (m.swap === t || i < 0) return false;
-  const pool = msEligible(msSwapExcl(m)); if (!pool.length) return false;
+  const pool = msSwapPool(m); if (!pool.length) return false;
   const rnd = msSeed(t, '|swap'), it = msItem(msPickFrom(pool, rnd), rnd); if (!it) return false;
   m.list[i] = it; m.swap = t; markDirty(); SFX.boop(760);
   msSay(tt('missions.swapped', "Today's new mission: {mission}.", { mission: msText(it, true) }), 'good'); msRefresh(); return true;
@@ -406,7 +409,7 @@ function msExpose() {
   if (!window.__paw) return;
   window.__paw.ms = {
     roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), hud: () => msHudSync(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
-    pay: MS_PAY, card: MS_CARD, cardCoins: MS_CARD_COINS, swap: () => msSwap(), swapFree: () => msSwapFree(), eligible: () => msEligible().map((d) => d.id), weight: (id) => { const d = msDef(id); return d ? msW(d) : null; }, fields: () => msFields(), stallDay: () => msStallDay(), resetAt: () => msResetAt().toISOString(),
+    pay: MS_PAY, card: MS_CARD, cardCoins: MS_CARD_COINS, swap: () => msSwap(), swapFree: () => msSwapFree(), swapPool: () => msSwapPool(S.missions).map((d) => d.id), home: MS_HOME.slice(), eligible: () => msEligible().map((d) => d.id), weight: (id) => { const d = msDef(id); return d ? msW(d) : null; }, fields: () => msFields(), stallDay: () => msStallDay(), resetAt: () => msResetAt().toISOString(),
     force: (ids) => { msRoll(); S.missions.list = msForced = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
     text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
