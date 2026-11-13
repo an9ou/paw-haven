@@ -207,9 +207,20 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
     { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
   ]
 };
+const NEWS_V230 = { // v2.30 "Sakura Market" (docs/design/sakura-market.md): the id is a placeholder until the Game Manager picks the version; shown from 1 Mar 2027 (LAUNCH DATE: owner), before the market opens on 25 Mar
+  id: '2.30', date: '2027-03-01', c: '#FFE3EC', d: 'heart', pic: { item: 'Sakura Haori' },
+  title: () => tt('nw.v230.title', 'The Sakura Market is coming!'),
+  items: [
+    { ic: () => nwItemArt('Paper Sakura Tree'), tx: () => tt('nw.v230.market', 'The {market} comes to town from {from} to {to}', { market: tt('fm.m_sakura', 'Sakura Market'), from: nwFmDate('sakura', 0), to: nwFmDate('sakura', 1) }) },
+    { ic: () => nwItemArt('Sakura Petal Crown'), tx: () => tt('nw.v230.costumes', '8 spring costumes from the {first} to the {last}, and the cardigan keeps a dog warm', { first: tItem('Sakura Petal Crown'), last: tItem('Spring Knit Cardigan') }) },
+    { ic: () => nwItemArt('Sakura Paper Lanterns'), tx: () => tt('nw.v230.decor', '5 yard decorations, and the paper lanterns glow after dark') },
+    { ic: () => nwItemArt('Blossom Kennel'), tx: () => tt('nw.v230.homes', 'A {kennel}, 3 cosy beds and 3 spring toys', { kennel: tItem('Blossom Kennel') }) },
+    { ic: () => nwItemArt('Hanami Rice Ball'), tx: () => tt('nw.v230.treats', '2 dog-safe spring treats') }
+  ]
+};
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V230].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once

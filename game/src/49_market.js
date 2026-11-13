@@ -288,7 +288,7 @@ function fmRoute(from, k) {
 function fmLetter() {
   if (!fmOn() || !S || typeof mailPush !== 'function') return; const o = fmMain(); if (!o) return; const key = o.m.id + '_' + o.y;
   if (S.fm.letters[key]) return; S.fm.letters[key] = localISO(); markDirty();
-  mailPush({ kind: 'news', id: 'fm_' + key, from: tt('dd.news_from', 'Gerald'), title: tt('fm.letter_title', 'The {market} is open', { market: fmMarketName(o.m) }), text: tt('fm.letter_text', 'A pop-up market has come to town, right beside the Town Square. Look for the tent with the "Festival!" tag on the map. It is open until {date}, and everything you get there stays yours.', { date: fmClose(o) }), ps: tt('fm.letter_ps', 'Gerald, who has already tried on a hat') });
+  mailPush({ kind: 'news', id: 'fm_' + key, from: tt('dd.news_from', 'Gerald'), title: tt('fm.letter_title', 'The {market} is open', { market: fmMarketName(o.m) }), text: o.m.id === 'sakura' ? tt('fm.letter_text_sakura', 'The blossom is out, and a pop-up market has come to town, right beside the Town Square. Look for the tent with the "Festival!" tag on the map. Paper lanterns, spring costumes and cosy beds are there until {date}, and everything you get stays yours.', { date: fmClose(o) }) : tt('fm.letter_text', 'A pop-up market has come to town, right beside the Town Square. Look for the tent with the "Festival!" tag on the map. It is open until {date}, and everything you get there stays yours.', { date: fmClose(o) }), ps: o.m.id === 'sakura' ? tt('fm.letter_ps_sakura', 'Gerald, who is wearing the sun hat and will not give it back') : tt('fm.letter_ps', 'Gerald, who has already tried on a hat') });
   FM.letters++;
 }
 on('yard:enter', () => { if (fmOn()) setTimeout(() => { if (cur.mode === 'yard') fmLetter(); }, 1600); });
