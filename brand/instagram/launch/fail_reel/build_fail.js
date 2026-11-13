@@ -20,7 +20,7 @@
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'fail_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
@@ -28,8 +28,16 @@ const CAPS = path.resolve(process.env.CAPS || path.join(WORK, 'caps'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', RED = '#D2473C', GREEN = '#3E8A4F';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_fail.json'), 'utf8'));
-for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from vo_fail.json: ' + k);
+// REDNOTE=1 (owner, 13 Nov 2026, after approving the English cut: "make rednote version"): every word in Simplified Chinese (the game's own zh-Hans
+// text for the game's lines, checked below), Mandarin voice (../friends_reel/vo_friends_zh.py with VO_LINES=fail_reel/vo_fail_zh.json, zf_073 1.0x),
+// subtitles of at most 14 characters in a pill under Noodle's feet, LXGW WenKai, Gerald's letter captured with PAW_LANG=zh-Hans. No safe zone (a
+// normal video): everything in front of the scene is moved 85 px right so it sits in the middle of the frame (x 540) with ~60 px margins; the
+// centring, no-overlap and open-ground checks stay. It ends on the RedNote card (brand/kids/endcard.js endCardRN: the logo, 治愈系蜡笔狗狗游戏 and only
+// "搜 Doodle Doggo App"; no QR, link, domain or handles), centred at (540, 960). Output doodle-doggo-cant-fail-rednote.mp4; ONLY=cover writes
+// brand/rednote/rednote-16-cant-fail.jpg (3:4, 1080 x 1440).
+const RN = !!process.env.REDNOTE, VOFILE = RN ? 'vo_fail_zh.json' : 'vo_fail.json';
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from ' + VOFILE + ': ' + k);
 
 // ---- the facts, checked against main (the game's own words, numbers and rules) ----
 const rd = (...p) => fs.readFileSync(path.join(ART_ROOT, ...p), 'utf8');
@@ -58,13 +66,21 @@ must('wb.b_title', 'We kept your spot warm');
 if (!/Welcome back!.*There is nothing to catch up on\..*Here is a treat bag and \{n\} coins/s.test(EN['wb.b_text'])) throw new Error('wb.b_text changed');
 code('game/src/53_welcome.js', /WB_BACK_MS = 3 \* 864e5/); code('game/src/53_welcome.js', /WB_BACK_COINS = 100/);
 const LETTER_TXT = fs.readFileSync(path.join(CAPS, 'gerald_letter.txt'), 'utf8');
-if (!/We kept your spot warm/.test(LETTER_TXT) || !/Here is a treat bag and 100 coins/.test(LETTER_TXT)) throw new Error('the letter capture is not the welcome-back letter');
+if (RN ? (!/我们帮你把位子暖着/.test(LETTER_TXT) || !/送你一袋零食和100金币/.test(LETTER_TXT)) : (!/We kept your spot warm/.test(LETTER_TXT) || !/Here is a treat bag and 100 coins/.test(LETTER_TXT))) throw new Error('the letter capture is not the welcome-back letter');
 // 5. a missed trick: "Oops!" and a kind miss line, no progress lost, and the lesson goes on
 must('tricks.oops', 'Oops! {line}'); must('data.tg_miss.2', 'Close! {n} invented a brand new trick. Nobody knows what it is.');
 code('game/src/15b_trick_games.js', /const TG_GAIN = \{ Great: 0\.35, Good: 0\.2, Missed: 0 \};/);
 code('game/src/15b_trick_games.js', /trainLine\(tt\('tricks\.oops', 'Oops! \{line\}', \{ line \}\), 'bad'\);/);
 // the payoff: the design rule
 code('CLAUDE.md', /\*\*Nothing bad ever happens\.\*\* No fail states, no sickness, death or running away\./);
+// the RedNote cut: the same game lines in the game's own zh-Hans words
+const ZH = JSON.parse(rd('game', 'i18n', 'zh-Hans.json'));
+const mustZ = (k, w) => { if (ZH[k] !== w) throw new Error('the zh-Hans game text changed: ' + k + ' is now ' + JSON.stringify(ZH[k])); };
+if (RN) { mustZ('data.walk_lines.bonk.2', '我是故意的。'); mustZ('mod.walk.pop_bonk', '咚！'); mustZ('data.obs_label.log', '木头');
+  mustZ('yard.wet_dog_smell_intensifies', '湿狗狗的味道越来越浓了。'); mustZ('ff.n_show', '狗狗秀摆姿势'); mustZ('ff.r_ribbon', '梅子太太给{name}别上了{ribbon}。');
+  mustZ('ff.rib_b', '一条蓝缎带'); mustZ('wb.b_title', '我们帮你把位子暖着'); mustZ('fw.rew_bag_coins', '一袋零食和{n, plural, other {#枚金币}}');
+  mustZ('tricks.oops', '哎呀！{line}'); mustZ('data.tg_miss.2', '差一点！{n}发明了一个全新的才艺。谁也不知道那是什么。');
+  if (!/欢迎回来！.*送你一袋零食和\{n\}金币/s.test(ZH['wb.b_text'])) throw new Error('the zh-Hans wb.b_text changed'); }
 
 // ---- the game's art (main), with the poses gliding between the game's drawings (the same patch as back_reel/build_back.js) ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -88,8 +104,8 @@ const SYMS = [sym(LOGSVG, 'obs_log'), sym(PA.item('Show Ribbon'), 'it_ribbon'), 
 const png = (f) => { const b = fs.readFileSync(path.join(CAPS, f)); return { uri: 'data:image/png;base64,' + b.toString('base64'), w: b.readUInt32BE(16), h: b.readUInt32BE(20) }; };
 const LETTER = png('gerald_letter.png');
 const IMGS = `<symbol id="img_letter" viewBox="0 0 ${LETTER.w} ${LETTER.h}"><image href="${LETTER.uri}" width="${LETTER.w}" height="${LETTER.h}"/></symbol>`;
-// Noodle's looks (never the game's sad or cold pose: a bump here is shown as a hop back and a proud face)
-const LOOK = { walk: { pose: 'walk', facing: 'right' }, proud: { pose: 'idle', facing: 'right', expr: 'proud' }, sit: { pose: 'sit', facing: 'right' },
+// Noodle's looks (RedNote: the wink for the proud face, which draws an English "ta-da!"; never the game's sad or cold pose: a bump here is shown as a hop back and a proud face)
+const LOOK = { walk: { pose: 'walk', facing: 'right' }, proud: { pose: 'idle', facing: 'right', expr: RN ? 'wink' : 'proud' }, sit: { pose: 'sit', facing: 'right' },
   wet: { pose: 'idle', facing: 'right', wet: true }, wetshake: { pose: 'shake', facing: 'right', wet: true }, nap: { pose: 'sleep', facing: 'right' },
   bow: { pose: 'bow', facing: 'right' }, yay: { pose: 'happy', facing: 'right', expr: 'hearts' }, scratch: { pose: 'scratch', facing: 'right' },
   curious: { pose: 'down', facing: 'right', expr: 'curious' } };
@@ -144,24 +160,45 @@ const BEATS = [
   { k: 'payoff', bg: ['sunflower'], lines: ['Nothing bad ever', 'happens here.'], small: 'That’s the point.', v: 'no fail states. ever.', vt: 0.25 },
   { k: 'ask', bg: ['dogpark'], lines: ['What should I', 'try next?'], ask: 'comment a way to fail' },
 ];
+if (RN) { const ZB = {
+  hook: { lines: ['这个游戏里，', '狗狗根本没法失败！'], sub: '我试了5种方法' },
+  log: { title: '第一种：', lines: ['直接撞上木头'], x: '失败 #1', v: '他还挺骄傲', quote: ['“我是故意的。”'] },
+  rain: { title: '第二种：', lines: ['出门淋雨'], x: '失败 #2', v: '湿了，然后暖暖的', quote: ['“湿狗狗的味道越来越浓了。”'] },
+  show: { title: '第三种：', lines: ['狗狗秀输掉'], x: '失败 #3', v: '照样有缎带', quote: ['“梅子太太给Noodle', '别上了一条蓝缎带。”'] },
+  away: { title: '第四种：', lines: ['一个星期不管他'], x: '失败 #4', v: '回来就有礼物' },
+  trick: { title: '第五种：', lines: ['每个才艺都做错'], x: '失败 #5', v: '发明了新才艺', quote: ['“差一点！Noodle发明了', '一个全新的才艺。', '谁也不知道那是什么。”'] },
+  payoff: { lines: ['这里永远', '不会发生坏事。'], small: '这就是重点。', v: '没有失败，永远没有' },
+  ask: { lines: ['下次还能', '试什么？'], ask: '评论区说说还能怎么“失败”' } };
+  for (const b of BEATS) Object.assign(b, ZB[b.k]); }
+// RedNote subtitles: the voice line in chunks of at most 14 characters, each as long as its share of the line (as back_reel/build_back.js)
+const SUBS_ZH = { hook: ['在这个游戏里，', '我的狗狗根本没法失败。', '我试了五种方法。'], log: ['第一种：直接撞上木头。', '咚！', '他说：我是故意的。'],
+  rain: ['第二种：出门淋雨。', '湿狗狗的味道越来越浓了。', '然后回到屋里，干干的，', '睡个暖暖的午觉。'], show: ['第三种：狗狗秀输掉。', '梅子太太还是给他', '别上了一条蓝缎带。'],
+  away: ['第四种：一个星期不管他。', '杰拉德寄来一袋零食', '和一百枚金币。', '欢迎回来！'], trick: ['第五种：每个才艺都做错。', '差一点！', '他发明了一个全新的才艺。', '谁也不知道那是什么。'],
+  payoff: ['这里永远不会发生坏事。', '这就是重点。'], ask: ['我下次还能试什么？', '评论区说说', '还能怎么失败吧！'] };
 // the timeline (owner: fast): each card stays up for its spoken line + 0.4 s, then a 0.15 s pause before the next beat
 const VOAT = []; let at = 0.1; const PAUSE = 0.15, B = {}, HOLD = {};
 for (const b of BEATS) { HOLD[b.k] = VOD[b.k] + 0.4; B[b.k] = at; VOAT.push({ k: b.k, at }); b.at = at; b.hold = HOLD[b.k]; b.dur = VOD[b.k]; at += HOLD[b.k] + PAUSE; }
 const LOOP = at - PAUSE + 0.2, T = LOOP + 2.5, NF = Math.round(T * FPS);
-const COVER = { title: ['Your dog can’t fail', 'in this game'], pill: 'I tried 5 ways', x: 'fail', v: 'proud of it' };
+const SUBS = [];
+if (RN) for (const v of VOAT) { const parts = SUBS_ZH[v.k]; if (parts.join('') !== VOJ.text[v.k]) throw new Error('subtitles differ from the voice: ' + v.k);
+  parts.forEach((x) => { if ([...x].length > 14) throw new Error('subtitle over 14 characters: ' + x); });
+  const wt = parts.map((x) => x.replace(/[，。！？：、]/g, '').length + 1), sum = wt.reduce((a, c) => a + c, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: x.replace(/[，。]$/, '') }); t0 += d; }); }
+const COVER = RN ? { title: ['狗狗在这个游戏里', '根本没法失败'], pill: '我试了5种方法', x: '失败', v: '还挺骄傲' } : { title: ['Your dog can’t fail', 'in this game'], pill: 'I tried 5 ways', x: 'fail', v: 'proud of it' };
+const BONK = RN ? '咚！' : 'Bonk!';
 const allText = BEATS.map((b) => [b.title || '', ...(b.lines || []), b.sub || '', b.small || '', b.x || '', b.v || '', b.ask || '', ...(b.quote || [])]).flat().join(' ')
-  + ' Bonk! ' + COVER.title.join(' ') + COVER.pill + COVER.x + COVER.v + ' 0123456789';
+  + ' Bonk! 咚！' + COVER.title.join(' ') + COVER.pill + COVER.x + COVER.v + ' 0123456789#' + (RN ? Object.values(SUBS_ZH).flat().join('') + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '');
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-dog *{animation:none!important}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}${dogSyms}${IMGS}__BGSYMS__</defs>
 <g id="bg"></g><g id="rain"></g><g id="dbg"></g>
-<g id="fg"><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
+<g id="fg"${RN ? ' transform="translate(85 0)"' : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455, DEBUG=${!!process.env.DEBUG};
+const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', CX=455, DEBUG=${!!process.env.DEBUG}, SUBS=${JSON.stringify(SUBS)}, BONK=${JSON.stringify(BONK)};
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, COVER=${JSON.stringify(COVER)};
 const LETTER_AR=${LETTER.h / LETTER.w}, SC=${JSON.stringify(SC)}, FLOORS=${JSON.stringify(FLOORS)};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);}, lerp=(a,b,u)=>a+(b-a)*u;
@@ -256,7 +293,7 @@ window.frame=function(t, D){
       const dw=dims('walk', hh, 510), dp=dims('proud', hh, 530), stopW=lx-55-dw.w/2, stopP=lx-55-dp.w/2-10;
       if(lt<bT){ art_+=noodle('walk', D0.walk, stopW, FEET, hh, 510, -Math.abs(Math.sin(t*9))*8, fade, false); }
       else { const r=cl((lt-bT)/0.3), x=lerp(Math.min(stopW,stopP+10), stopP, sm(r)); art_+=noodle('proud', D0.proud, x, FEET, hh, 530, -Math.sin(r*Math.PI)*26, fade, false); }
-      const bo=fade*Math.min(sm((lt-bT)/0.08), 1-sm((lt-bT-0.95)/0.2)); if(bo>0.001) ov+=pill('Bonk!', 745, FEET-lh-110, 62, F, { fill:'${CREAM}', color:'${RED}', padX:26, op:f2(bo) }).replace('<g data-box','<g data-box data-apart="bonk"');
+      const bo=fade*Math.min(sm((lt-bT)/0.08), 1-sm((lt-bT-0.95)/0.2)); if(bo>0.001) ov+=pill(BONK, 745, FEET-lh-110, 62, F, { fill:'${CREAM}', color:'${RED}', padX:26, op:f2(bo) }).replace('<g data-box','<g data-box data-apart="bonk"');
     } else if(b.k==='rain'){
       const sp=b.dur*b.split, hh=FEET-qb-40;
       if(lt<sp){ const o=fade*(1-sm((lt-(sp-0.2))/0.2)), shake=lt>b.dur*0.42&&lt<b.dur*0.56; art_+=noodle(shake?'wetshake':'wet', shake?D0.wetshake:D0.wet, CX, FEET, hh, 700, 0, o, false); }
@@ -285,18 +322,24 @@ window.frame=function(t, D){
     }
   }
   // the end card: paper and the card fade in once the scene has gone
-  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
+  // RedNote: the voice as subtitles, in a pill under Noodle's feet
+  if(RN&&fade>0){ const su=SUBS.find((x)=>t>=x.a&&t<x.b); if(su){ const o=Math.min(sm((t-su.a)/0.08),sm((su.b-t)/0.08)); ov+=pill(su.s, CX, 1580, fitS(su.s,58,900), F, { fill:'${CREAM}', padX:30, op:f2(fade*o) }).replace('<g data-box','<g data-box data-apart="sub"'); } }
+  // the end card: paper and the card fade in once the scene has gone. RedNote: the RedNote card (logo, 治愈系蜡笔狗狗游戏, only "搜 Doodle Doggo App"; no QR,
+  // no link), centred on the frame at (540, 960)
+  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g>'; }
   $('art').innerHTML=art_; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  if(RN&&end){ const g=$('ec').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')'); }
   if(DEBUG){ const s=SC[scene], f=FLOORS[s.name], Y=(y)=>(y-s.y0)*s.s; $('dbg').innerHTML='<line x1="0" x2="1080" y1="'+Y(f.floor)+'" y2="'+Y(f.floor)+'" stroke="red" stroke-width="3"/><line x1="0" x2="1080" y1="'+Y(f.back)+'" y2="'+Y(f.back)+'" stroke="blue" stroke-width="3"/>'+f.keep.map((k)=>'<rect x="'+(k[0]-s.x0)*s.s+'" y="'+Y(k[1])+'" width="'+(k[2]-k[0])*s.s+'" height="'+(k[3]-k[1])*s.s+'" fill="red" opacity=".25"/>').join(''); }
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
   // Noodle, the log and every chip stand on the open ground: feet on the floor, top below the back row of props, clear of the keep-out boxes
   if(fade>0) for(const e of $('art').querySelectorAll('[data-apart]')){ if(e.getAttribute('data-apart')==='img_letter'||+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(scene, r.left, r.right, r.top, e.hasAttribute('data-feet')?+e.getAttribute('data-feet'):null);
     if(why) return e.getAttribute('data-apart')+' '+why; }
   // the brief's safe area for words and key art: x 60..850, y 270..1440
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
-    if(r.left<56||r.right>854||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
+    if(RN&&(r.left<50||r.right>1030||r.top<40||r.bottom>1880)) return 'in the margin: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round);
+    if(!RN&&(r.left<56||r.right>854||r.top<266||r.bottom>1444)) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   return ''; };
 // the cover: its own design, hook-led; key content inside the 1:1 crop (y 420..1500), the logo inside 4:5 (y 285..1635)
 window.cover=function(D){
@@ -311,7 +354,7 @@ window.cover=function(D){
   const lw=250, lh=lw*50/120; a+='<g data-apart="log"><use href="#obs_log" x="'+(1010-lw)+'" y="'+f2(1462-lh)+'" width="'+lw+'" height="'+f2(lh)+'"/></g>';
   const dp=dims('proud', 470, 640); a+=noodle('proud', D.n.proud, 1010-lw-70-dp.w/2, 1462, 470, 640, 0, 1, false);
   const LW=340, LH=LW*280/900; s+='<g data-apart="logo"><rect x="'+(540-LW/2-30)+'" y="1505" width="'+(LW+60)+'" height="'+f2(LH+14)+'" rx="30" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(540-LW/2)+'" y="1512" width="'+LW+'" height="'+f2(LH)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
-  $('art').innerHTML=a; $('ov').innerHTML=s; $('ec').innerHTML='';
+  $('fg').removeAttribute('transform'); $('art').innerHTML=a; $('ov').innerHTML=s; $('ec').innerHTML='';
   const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
   const near=apartCheck($('st'),24); if(near.length) return 'cover too close: '+near.join('; ');
   for(const e of $('st').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), logo=e.getAttribute('data-apart')==='logo';
@@ -339,12 +382,14 @@ const drawFor = (t) => ({ n: Object.fromEntries(Object.keys(LOOK).map((k) => [k,
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e‘-”]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
   if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
   console.log('T =', T.toFixed(2), 's (', LOOP.toFixed(2), 's before the end card ),', NF, 'frames; beats at', VOAT.map((v) => v.k + ' ' + v.at.toFixed(2) + ' (' + HOLD[v.k].toFixed(2) + ')').join(', '));
   const render = async (t, file) => { const err = await p.evaluate(([t, D]) => window.frame(t, D), [t, drawFor(t)]); if (err) { if (process.env.SOFT) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (!process.env.CHECK) await p.screenshot({ path: file }); };
   if (process.env.ONLY === 'cover') {
     const err = await p.evaluate((D) => window.cover(D), drawFor(0.6)); if (err) throw new Error(err);
-    const f = path.join(OUT, 'fail-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f); await b.close(); return; }
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-16-cant-fail.jpg') : path.join(OUT, 'fail-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ...BEATS.flatMap((x) => [x.at + 0.9, x.at + x.hold * 0.85]).slice(1), LOOP + 0.15, LOOP + 1.2, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -388,7 +433,7 @@ const drawFor = (t) => ({ n: Object.fromEntries(Object.keys(LOOK).map((k) => [k,
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-cant-fail.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-cant-fail-rednote.mp4' : 'doodle-doggo-cant-fail.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });

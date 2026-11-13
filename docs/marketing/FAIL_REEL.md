@@ -1,6 +1,6 @@
 # "Your dog can't fail in this game. I tried 5 ways." Reel (13 Nov 2026)
 
-One English Reel, one video, its designed cover and captions. No RedNote cut. **Made, waiting for the owner's approval; nothing posted.** Files in `brand/instagram/launch/fail_reel/`.
+One English Reel, one video, its designed cover and captions. **The owner approved the English cut (13 Nov 2026: "Good") and asked for a RedNote version (below); nothing posted.** Files in `brand/instagram/launch/fail_reel/`.
 
 | File | What |
 |---|---|
@@ -120,3 +120,41 @@ I tried 5 ways to make my dog fail in our cozy game 🐶 he walked into a log ("
 257 of 280 (the link counts as 23, the emoji as 2) · one ask · `ig-human` score 76.2 PASS.
 
 **Alt text:** `A crayon dachshund called Noodle in the game's own pencil scenes tries five ways to fail. He walks into a log ("I meant to do that."), gets wet in the rain and then naps dry indoors, loses the dog show and still gets a blue ribbon, gets Gerald the duck's welcome-back letter with a treat bag and 100 coins after a week away, and gets a trick wrong ("invented a brand new trick"). Each red "fail" badge is crossed out by a green one. "Nothing bad ever happens here." It ends on the Doodle Doggo card with doodledoggo.app and our Instagram, X and YouTube.`
+
+## RedNote / 小红书 (Simplified Chinese, no link)
+
+Owner, 13 Nov 2026: approved the English cut ("Good") and asked "make rednote version". Post `brand/instagram/launch/fail_reel/doodle-doggo-cant-fail-rednote.mp4` (1080 x 1920, 30 fps, AAC stereo, 52.18 s: 49.68 s of Reel and the RedNote end card for 2.5 s) with the 3:4 cover `brand/rednote/rednote-16-cant-fail.jpg` (1080 x 1440; upload it as the video's custom cover: "狗狗在这个游戏里 / 根本没法失败", the pill "我试了5种方法", the red 失败 crossed out by the green 还挺骄傲, Noodle big by the game's log in the woods, the logo).
+
+- **Remake:** `PAW_LANG=zh-Hans NODE_PATH=$(npm root -g) node brand/instagram/launch/back_reel/capture_back.js <main checkout> <caps_zh dir>` (the game's own Chinese letter), `VO_LINES=brand/instagram/launch/fail_reel/vo_fail_zh.json PYTHONPATH=<jieba-0.42.1 sdist> python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh dir> zf_073 1.0`, then `REDNOTE=1 ART_ROOT=<main checkout> CAPS=<caps_zh dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/fail_reel/build_fail.js <workdir> <vo_zh dir>` (`ONLY=cover` for the cover, `CHECK=1` for the frame checks).
+- **What is different:** every word is in Simplified Chinese in LXGW WenKai; Gerald's letter is the game's own Chinese one (我们帮你把位子暖着, 一袋零食和100枚金币). The game lines are the game's own zh-Hans words, checked by the build (`game/i18n/zh-Hans.json`, same keys as the English cut): `data.walk_lines.bonk.2` "我是故意的。", `mod.walk.pop_bonk` "咚！", `yard.wet_dog_smell_intensifies` "湿狗狗的味道越来越浓了。", `ff.r_ribbon` + `ff.rib_b` "梅子太太给Noodle别上了一条蓝缎带。", `data.tg_miss.2` "差一点！Noodle发明了一个全新的才艺。谁也不知道那是什么。", `wb.b_title`, `wb.b_text`, `fw.rew_bag_coins`. Mandarin voice zf_073 at 1.0x with subtitles of at most 14 characters in a pill under Noodle's feet; the fast timing of the English cut (each card holds its line + 0.4 s, 0.15 s between beats). Noodle's proud face draws an English "ta-da!", so this cut uses the game's wink face instead. No safe zone: everything in front of the scene sits in the middle of the frame (x 540) with ~60 px margins; the centring, no-overlap and open-ground checks run on every frame. Same game scenes and zoom as the English cut. It ends on the RedNote end card centred at (540, 960): the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App". No QR code, link, domain or handle.
+- **Shots:** 0.10 s hook "这个游戏里，/ 狗狗根本没法失败！" + red "我试了5种方法"; 5.60 s 第一种：直接撞上木头 (✕ 失败 #1, ✓ 他还挺骄傲, "我是故意的。", 咚！); 10.29 s 第二种：出门淋雨 (✕ 失败 #2, ✓ 湿了，然后暖暖的, "湿狗狗的味道越来越浓了。"); 18.16 s 第三种：狗狗秀输掉 (✕ 失败 #3, ✓ 照样有缎带, "梅子太太给Noodle别上了一条蓝缎带。"); 24.59 s 第四种：一个星期不管他 (✕ 失败 #4, ✓ 回来就有礼物, the Chinese letter); 32.26 s 第五种：每个才艺都做错 (✕ 失败 #5, ✓ 发明了新才艺, "差一点！Noodle发明了一个全新的才艺。谁也不知道那是什么。"); 40.18 s "这里永远 / 不会发生坏事。" small 这就是重点。 + ✓ 没有失败，永远没有; 44.51 s "下次还能 / 试什么？" + red 评论区说说还能怎么“失败”; 49.68 s the RedNote end card.
+- **Voice** (`vo_fail_zh.json`): 在这个游戏里，我的狗狗根本没法失败。我试了五种方法。/ 第一种：直接撞上木头。咚！他说：我是故意的。/ 第二种：出门淋雨。湿狗狗的味道越来越浓了。然后回到屋里，干干的，睡个暖暖的午觉。/ 第三种：狗狗秀输掉。梅子太太还是给他别上了一条蓝缎带。/ 第四种：一个星期不管他。杰拉德寄来一袋零食和一百枚金币。欢迎回来！/ 第五种：每个才艺都做错。差一点！他发明了一个全新的才艺。谁也不知道那是什么。/ 这里永远不会发生坏事。这就是重点。/ 我下次还能试什么？评论区说说还能怎么失败吧！
+
+标题 (title, 14 characters + emoji; 20 max):
+```
+狗狗在这个游戏里根本没法失败🐶
+```
+
+> My dog can't fail in this game at all.
+
+正文 (text):
+```
+想让狗狗失败一次，结果试了5种方法都没成功😂
+
+🪵 散步时直接撞上木头：“我是故意的。”
+🌧️ 出门淋雨：湿狗狗的味道越来越浓了。回到屋里就干干的，睡个暖暖的午觉
+🎀 狗狗秀输掉：梅子太太还是给Noodle别上了一条蓝缎带
+✉️ 一个星期不管他：杰拉德寄来一袋零食和100枚金币
+✨ 每个才艺都做错：“差一点！Noodle发明了一个全新的才艺。谁也不知道那是什么。”
+
+在Doodle Doggo里永远不会发生坏事，这就是重点。
+搜 Doodle Doggo App 就能找到
+
+我下次还能试什么？评论区说说还能怎么“失败”👇
+
+#DoodleDoggo #治愈系游戏 #养狗日常 #萌宠 #腊肠犬 #治愈 #狗狗
+```
+
+> I wanted my dog to fail just once, tried 5 ways and none worked. Walked straight into a log: "I meant to do that." Went out in the rain: wet dog smell intensifies; back indoors he's dry and has a warm nap. Lost the dog show: Mrs. Plum still pinned a blue ribbon on Noodle. Left him alone for a week: Gerald sent a treat bag and 100 coins. Got every trick wrong: "Close! Noodle invented a brand new trick. Nobody knows what it is." Nothing bad ever happens in Doodle Doggo, that's the point. Search Doodle Doggo App to find it. What should I try next? Tell me in the comments how else he could "fail".
+
+Checked against the RedNote anti-ban list (`README.md`): no link, domain or QR; none of 链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳; no other platform's name, no handle; no 免费 and no claim about ads; the game is named only as "Doodle Doggo App" to search for. One ask: 评论区说说还能怎么“失败”. 7 tags.
