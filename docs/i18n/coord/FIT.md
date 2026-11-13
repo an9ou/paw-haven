@@ -5,8 +5,8 @@ Two suites measure it. They only measure: the layout and translation fixes are a
 
 | Suite | File | What |
 |---|---|---|
-| `i18n_fit` | `game/test_i18n_fit.js` | the game: 11 languages x 5 sizes, about 110 states per session |
-| `site_fit` | `game/test_site_fit.js` | doodledoggo.app: 11 languages x 5 widths, 8 pages and their menus |
+| `i18n_fit` | `game/test_i18n_fit.js` | the game: 12 languages x 5 sizes, about 110 states per session |
+| `site_fit` | `game/test_site_fit.js` | doodledoggo.app: 12 languages x 5 widths, 8 pages and their menus |
 | (shared) | `game/fit_lib.js` | the in-page measurement (`MEASURE`), the red frame for screenshots (`HILITE`), the reports |
 
 Both are in their own runner group `fit`, not in `all` or `phone` (they take a while).
@@ -23,7 +23,7 @@ PAW_FIT_REPORT_ONLY=1 node game/run_tests.js i18n_fit                           
 
 | Env | Meaning |
 |---|---|
-| `PAW_LANGS` | languages, comma separated (default: en + the 10 of `M.CODES` / the site's `I18N.LANGS`); the game also takes `xx`, `xx-cjk` |
+| `PAW_LANGS` | languages, comma separated (default: en + the 11 of `M.CODES` / the site's `I18N.LANGS`), yue included since v2.23.2 (YUE_LIVE = true); the game also takes `xx`, `xx-cjk` |
 | `PAW_FIT_SIZES` | game: `desktop, embed, iphone15, pixel7, small`; site: `1440, 1024, 768, 390, 360` |
 | `PAW_FIT_REPORT_ONLY=1` | always pass (print and write the report); without it the suite FAILS while any finding remains or a screen could not be opened |
 | `PAW_FIT_JOBS` | parallel browsers inside the suite (default: the runner's `--jobs`, passed as `PAW_JOBS`, else CPU cores - 1) |
