@@ -33,7 +33,9 @@ bank account in HKD; the prices stay in USD. Buyers in China, Russia and a few o
 
    Turn on Adaptive Pricing if you want local currencies at checkout. Note each price id (`price_...`).
 4. Add a webhook endpoint (Developers > Webhooks): URL `https://<the API Worker's address>/shop/webhook`, events
-   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`. Note its signing secret (`whsec_...`).
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, and (refund fix, 13 Nov 2026)
+   `checkout.session.expired`, `checkout.session.async_payment_failed`, so an abandoned Checkout stops holding its item at once.
+   Without the last two a hold still ends after 24 hours. Note its signing secret (`whsec_...`).
 
 ## 2. In the Worker (pawhaven-api)
 ```
