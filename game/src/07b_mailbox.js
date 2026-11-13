@@ -71,7 +71,7 @@ function mbCollect(ids) { // collect the gifts of these letters (ids) in one go.
   const parts = (coins ? [tt('mail.coins', '{n, plural, one {# coin} other {# coins}}', { n: coins })] : []).concat(items);
   const txt = tt('mail.collected', 'Collected {list}.{ward, select, none {} other { The {item} is in the Wardrobe.}}{who, select, many { Thank you, neighbours!} other { Thank you, {from}!}}', { list: mbJoin(parts), ward: ward ? 'yes' : 'none', item: ward ? shNameAny(ward) : '', who: ms.length === 1 ? 'one' : 'many', from: ms[0].from });
   try { if (coins) SFX.coin(); else SFX.pop(); } catch (e) { /* audio off */ }
-  markDirty(); toast(txt + (coins ? ksSettleNote(s0) : ''), 'good');
+  markDirty(); toast(txt + (coins ? ksSettleNote(coinSettleSum - s0) : ''), 'good');
   trackAct('collect', { n: ms.length, coins, items: items.length });
   return txt;
 }

@@ -81,7 +81,9 @@ function wbGiftArt(g) {
     return fwFrameSVG(g.t === 'gold' ? '#E8B923' : '#F2C744');
   } catch (e) { return ''; }
 }
+// gives g; returns how many of its coins settled a Kind shop refund (0 for a gift with no coins)
 function wbGive(g) {
+  const s0 = coinSettleSum;
   if (g.t === 'coins') addCoins(Math.max(0, Math.min(WB_COIN_CAP, g.c)), { raw: true });
   else if (g.t === 'food') S.inv.food[g.n] = (S.inv.food[g.n] || 0) + g.q;
   else if (g.t === 'toy') { if (!owns('toys', g.n)) S.inv.toys.push(g.n); }
@@ -90,6 +92,7 @@ function wbGive(g) {
   else if (g.t === 'bag') { FW_BAG.forEach(([n, q]) => { S.inv.food[n] = (S.inv.food[n] || 0) + q; }); if (g.c) addCoins(Math.min(WB_COIN_CAP, g.c), { raw: true }); }
   else if (g.t === 'gold') S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 1;
   markDirty(); updateHUD();
+  return coinSettleSum - s0;
 }
 // each milestone once (S.daysGifts), with a letter from Gerald to keep. An old save that starts past a milestone gets it too: nothing is held back
 function wbMilestones() {
@@ -182,12 +185,12 @@ function wbGiftPick(j) {
 }
 function wbGiftToday() {
   const j = jstISO(); if (!S || (S.awayGiftISO && S.awayGiftISO >= j)) return null;
-  const g = wbGiftPick(j); S.awayGiftISO = j; wbGive(g); return g;
+  const g = wbGiftPick(j); S.awayGiftISO = j; g.sd = wbGive(g); return g; // sd: coins of this gift that settled a refund (not saved)
 }
 function wbAwayText(h) { return h >= 48 ? tt('wb.away_d', 'You were away for {n, plural, one {# day} other {# days}}', { n: Math.floor(h / 24) }) : tt('wb.away_h', 'You were away for {n, plural, one {# hour} other {# hours}}', { n: h }); }
 function wbHTML(pend, gift) {
   const d = D(), lines = wbLines(pend, d);
-  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift) + (typeof ksSettleNote === 'function' ? ksSettleNote() : ''))}</span></span></div>` : '';
+  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift) + ((gift.t === 'coins' || gift.t === 'bag') && typeof ksSettleNote === 'function' ? ksSettleNote(gift.sd || 0) : ''))}</span></span></div>` : '';
   return `<div class="wb-sheet"><article class="dd-page wb-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${headSVG(d)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}</b><span class="small">${esc(wbAwayText(pend.h))}</span></span></header>
     <div class="dd-ptext">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true"><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('heart', 0, 2, 1.1, -8)}</svg><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg></div></article>${giftRow}</div>`;
 }

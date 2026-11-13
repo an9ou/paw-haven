@@ -9,7 +9,8 @@
      S.shop.owned    ids of one-time things owned through a purchase or a coin buy: 'supporter', 'tokyo', 'cozy', 'robo', 'sprinkler', 'bowl', 'comfort'
      S.shop.claimed  purchase ids (Stripe Checkout session ids) granted in this save, so a second poll or a synced save never grants twice
      S.shop.refunded purchase ids whose refund was handled (taken back once)
-     S.shop.onceBack one-time items a refund took back: not granted again. S.shop.coinGot purchase id -> coins that row added.
+     S.shop.onceBack the Supporter Pack once a full refund took it back: never for sale again (owner, 13 Nov 2026). Other ids an older build
+                     listed here (a looks pack, a tool) no longer block anything: they can be bought again. S.shop.coinGot purchase id -> coins that row added.
      S.shop.coinDebt Paw Coins from a refund that were already spent; later coins pay this before they can be spent
      S.shop.coin     what was bought with coins (item names and tool ids): a refund never takes these back
      S.shop.tools    { robo, sprinkler, bowl }: the Settings switches (on by default)
@@ -49,7 +50,7 @@ function v224Fields(s) {
   (Array.isArray(s.dogs) ? s.dogs : []).forEach((d) => { if (d && d.outfit && typeof d.outfit === 'object' && !('feet' in d.outfit)) d.outfit.feet = null; });
   if (!s.shop || typeof s.shop !== 'object' || Array.isArray(s.shop)) s.shop = {};
   const sh = s.shop;
-  ['owned', 'claimed', 'refunded', 'coin', 'log', 'onceBack'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; }); // log (v2.24.1): [{ id, item, at, r }] for My purchases. onceBack: one-time items a refund took back; they are not granted again
+  ['owned', 'claimed', 'refunded', 'coin', 'log', 'onceBack'].forEach((k) => { if (!Array.isArray(sh[k])) sh[k] = []; }); // log (v2.24.1): [{ id, item, at, r }] for My purchases. onceBack: the refunded Supporter Pack (other ids from older builds are ignored)
   if (!sh.coinGot || typeof sh.coinGot !== 'object' || Array.isArray(sh.coinGot)) sh.coinGot = {}; // purchase id -> { n: coins that purchase was for, a: how many landed in S.coins }
   if (typeof sh.coinDebt !== 'number' || !isFinite(sh.coinDebt) || sh.coinDebt < 0) sh.coinDebt = 0; // refunded coins that had already been spent
   if (!sh.tools || typeof sh.tools !== 'object' || Array.isArray(sh.tools)) sh.tools = {};
@@ -87,6 +88,9 @@ function ksHouseMove(n) {
 }
 
 /* ---------------- giving and taking back ---------------- */
+// never for sale again after a full refund: the Supporter Pack only (owner, 13 Nov 2026). Every other one-time item can be bought again (V224.md 4)
+const KS_ONCE_EVER = ['supporter'];
+const ksOnceEver = (id) => KS_ONCE_EVER.includes(id);
 function ksShopReady() {
   const sh = ksS(); if (!sh) return null;
   if (!Array.isArray(sh.onceBack)) sh.onceBack = [];
@@ -107,8 +111,8 @@ let ksLastGrant = null; // the last ksApplyCoins result; not part of the save
 // and Gerald's letter say how it split, so the settle note is taken here (no extra toast).
 function ksApplyCoins(nominal) {
   nominal = Math.max(0, Math.round(Number(nominal) || 0));
-  const added = nominal ? addCoins(nominal, { raw: true }) - coinSettled : 0;
-  if (nominal) { ksSettleTake(coinSettled); coinSettled = 0; }
+  const g = nominal ? addCoinsD(nominal, { raw: true }) : { n: 0, d: 0 }, added = g.n - g.d;
+  if (g.d) ksSettleTake(g.d);
   ksLastGrant = { n: nominal, a: added };
   return added;
 }
@@ -136,13 +140,14 @@ const ksDebt = () => (S && S.shop ? Math.max(0, Math.round(S.shop.coinDebt) || 0
 function ksSettleLine(n) {
   return tt('ks.settle_line', '{n, plural, one {# coin} other {# coins}} went to settling the refund. {left, plural, =0 {All settled now. Thank you!} one {# coin to go.} other {# coins to go.}}', { n, left: ksDebt() });
 }
-// " (N coins go to settling the refund)" after a "+N coins" text, or '' when none did. It speaks for the last addCoins call, or, given since
-// (coinSettleSum before a few calls), for everything settled since then. The walk result (ksSettleHTML) speaks for everything not said yet.
-function ksSettleNote(since) {
-  const n = ksSettleTake(typeof since === 'number' ? coinSettleSum - since : coinSettled); coinSettled = 0;
+// " (N coins go to settling the refund)" after a "+N coins" text, or '' when none did. d: how many of that text's own coins settled the refund
+// (addCoinsD(...).d, or coinSettleSum after minus before for a few calls); never a shared "last call" value, so a text with no coins of its
+// own says nothing. The walk result (ksSettleHTML) speaks for everything not said yet.
+function ksSettleNote(d) {
+  const n = typeof d === 'number' && d > 0 ? ksSettleTake(d) : 0;
   return n > 0 ? ' ' + tt('ks.settle_note', '({n, plural, one {# coin goes} other {# coins go}} to settling the refund)', { n }) : '';
 }
-function ksSettleHTML() { const n = ksSettleTake(); coinSettled = 0; return n > 0 ? `<p class="small ks-settle">${esc(ksSettleLine(n))}</p>` : ''; }
+function ksSettleHTML() { const n = ksSettleTake(); return n > 0 ? `<p class="small ks-settle">${esc(ksSettleLine(n))}</p>` : ''; }
 function ksGiveLook(n) {
   if (ksLookOwned(n)) return false;
   if (n === KS_COZY_BED) { S.beds.push(n); return true; }
@@ -155,8 +160,9 @@ function ksLetter() {
     text: tt('ks.letter_text', 'Dear friend,\nThank you for the Supporter Pack. Doodle Doggo is made by one person, and you just helped keep the crayons sharp.\nThe Golden Paw Cottage is yours, and so is the golden name tag. Walks pay a little more, the veggies grow a little faster, and the calendar has a second gift for you every day.\nEverything else in town can still be earned by playing, for everyone. That is a promise.\nWith a happy waddle,\nGerald') });
 }
 // one purchase's contents, once. coins (ksNominal of the GET /shop/owned row) is how many Paw Coins this row grants; omit it and the catalogue is used.
-// Supporter coins are added only the first time it becomes owned. A paid row always delivers, even for an item a refund took back before
-// (the Worker no longer sells it, so such a row was paid before that refund): it leaves onceBack. Returns coins that reached the balance.
+// Supporter coins are added only the first time it becomes owned. A paid row always delivers, even a Supporter Pack a refund took back before
+// (the Worker no longer sells it, so such a row was paid before that refund): it leaves onceBack. A looks pack or a tool bought again after its
+// refund gives its looks or tool again, and no coins (only the Supporter Pack and the coin packs carry coins). Returns coins that reached the balance.
 function ksGive(item, coins) {
   const sh = ksShopReady(), I = KS_ITEMS[item]; if (!sh || !I) return 0;
   const passed = Number.isInteger(coins) && coins >= 0 && coins <= 1000000;
@@ -219,8 +225,8 @@ function ksRefundLetter(items, n, debt, id) {
 }
 /* GET /shop/owned: [{ id, item, at, refunded, coins }]. Each unclaimed id is granted once and recorded in S.shop.claimed. A refunded id that was
    granted here takes back its one-time items (unless another live purchase of the same thing is in the list) and the coins that row added,
-   with Gerald's letter. A one-time item with no live purchase left is in onceBack: the Kind shop says "Refunded, not for sale again" (the Worker
-   answers 409 refunded). The same list twice changes nothing. Returns { granted: [ids], refunded: [ids], coins, items: [ids], got: [{ n, a } | null] }:
+   with Gerald's letter. A refunded Supporter Pack with no live purchase left is in onceBack: the Kind shop says "Refunded, not for sale again"
+   (the Worker answers 409 refunded). Any other one-time item is for sale again after its refund (owner, 13 Nov 2026). The same list twice changes nothing. Returns { granted: [ids], refunded: [ids], coins, items: [ids], got: [{ n, a } | null] }:
    coins is the net change in the balance, got[i] how items[i]'s coins split (n the pack, a what was added; n - a settled an older refund). */
 function ksGrant(purchases, give) {
   give = give || ksGive;
@@ -244,11 +250,11 @@ function ksGrant(purchases, give) {
     sh.refunded.push(p.id);
     const I = KS_ITEMS[p.item];
     if (!sh.claimed.includes(p.id)) { // refunded before this save ever got it: nothing was given, so nothing comes back. The card still says so
-      if (!I.pack && !list.some((q) => q.item === p.item && !q.refunded) && !sh.onceBack.includes(p.item)) sh.onceBack.push(p.item);
+      if (ksOnceEver(p.item) && !list.some((q) => q.item === p.item && !q.refunded) && !sh.onceBack.includes(p.item)) sh.onceBack.push(p.item);
       return;
     }
     const live = list.some((q) => q.item === p.item && !q.refunded && sh.claimed.includes(q.id));
-    if (!live && !I.pack) { if (!sh.onceBack.includes(p.item)) sh.onceBack.push(p.item); ksTakeBack(p.item); }
+    if (!live && !I.pack) { if (ksOnceEver(p.item) && !sh.onceBack.includes(p.item)) sh.onceBack.push(p.item); ksTakeBack(p.item); }
     const r = ksRefundCoins(p, list);
     out.coins -= r.took; out.refunded.push(p.id);
     if (r.n > 0) { if (!back.items.includes(p.item)) back.items.push(p.item); back.n += r.n; back.debt += r.debt; back.id = back.id || p.id; }
@@ -429,9 +435,9 @@ function ksMineHTML() {
 let ksTab = 'supporter';
 function ksMenuBtn() { return ksOn() && S ? `<button class="btn big" id="mmKs" type="button"><span class="ic">${ICON('coin')}</span>${esc(tt('ks.btn', 'Kind shop'))}</button>` : ''; }
 const ksYours = () => `<span class="chip own ks-yours">${esc(tt('ks.yours', 'Yours'))}</span>`;
-// a one-time item bought and fully refunded is never for sale again (owner, 13 Nov 2026): its card says so kindly instead of a Pay button.
-// What can be earned with coins (a tool, each look) still can.
-const ksRefundedId = (id) => { const sh = ksS(); return !!sh && Array.isArray(sh.onceBack) && sh.onceBack.includes(id) && !KS_ITEMS[id].pack && !ksOwnedId(id); };
+// the Supporter Pack bought and fully refunded is never for sale again (owner, 13 Nov 2026): its card says so kindly instead of a Pay button.
+// Every other one-time item shows its Pay button again after a refund; an older save's onceBack entry for one of them is ignored.
+const ksRefundedId = (id) => { const sh = ksS(); return !!sh && ksOnceEver(id) && Array.isArray(sh.onceBack) && sh.onceBack.includes(id) && !ksOwnedId(id); };
 const ksRefundedTag = () => `<span class="small ks-refunded">${esc(tt('ks.refunded_card', 'Refunded, not for sale again'))}</span>`;
 function ksCardHTML(id) {
   const I = KS_ITEMS[id], own = ksOwnedId(id), back = ksRefundedId(id);
@@ -552,7 +558,7 @@ function ksCheckout(id) {
     const url = r && r.ok && r.data && typeof r.data.url === 'string' && /^https:\/\//.test(r.data.url) ? r.data.url : null;
     if (!url) {
       shut(); const code = r && r.data && r.data.error; ksErrToast(code);
-      if (code === 'refunded') { const sh = ksShopReady(); if (sh && !KS_ITEMS[id].pack && !sh.onceBack.includes(id)) { sh.onceBack.push(id); markDirty(); saveNow(); } if ($('.panel.ks', modal)) ksOpen(); }
+      if (code === 'refunded') { const sh = ksShopReady(); if (sh && ksOnceEver(id) && !sh.onceBack.includes(id)) { sh.onceBack.push(id); markDirty(); saveNow(); } if ($('.panel.ks', modal)) ksOpen(); }
       if (code === 'owned' || code === 'refunded' || code === 'pending') ksRestore(false);
       return false;
     }
@@ -658,8 +664,8 @@ function ksExpose() {
     open: (t) => ksOpen(t), confirm: (id) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? (ksConfirm(p, id), true) : false; }, coinBuy: (n) => { const p = $('.panel.ks', modal) || ksOpen(); return p ? ksCoinBuy(p, n) : false; },
     tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id), restore: (m) => ksRestore(m), poll: (f) => ksPoll(f),
     garden: (h, w) => gardenAdvance({ steps: h || 1, stepWeather: w || 'cloudy' }), rec: () => { KS_REC = []; return true; }, acts: () => (KS_REC || []).slice(),
-    debt: () => ksDebt(), settleNote: () => ksSettleNote(), settleTake: () => ksSettleTake(), refundedId: (id) => ksRefundedId(id), nominal: (p) => ksNominal(p), packsAt: KS_PACKS_AT,
-    addCoins: (n, raw) => addCoins(n, { raw: !!raw }), delivered: (out) => ksDelivered(out), grantToast: (out) => ksGrantToast(out), gotLine: (id, g) => ksGotLine(id, g), errToast: (c) => ksErrToast(c)
+    debt: () => ksDebt(), settleNote: (d) => ksSettleNote(d), settleTake: () => ksSettleTake(), refundedId: (id) => ksRefundedId(id), nominal: (p) => ksNominal(p), packsAt: KS_PACKS_AT,
+    addCoins: (n, raw) => addCoins(n, { raw: !!raw }), addCoinsD: (n, raw) => addCoinsD(n, { raw: !!raw }), delivered: (out) => ksDelivered(out), grantToast: (out) => ksGrantToast(out), gotLine: (id, g) => ksGotLine(id, g), errToast: (c) => ksErrToast(c)
   };
 }
 let KS_REC = null; // tests: the act kinds seen since rec() (the tools must add none)

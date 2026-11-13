@@ -339,7 +339,7 @@ async function worker(job) {
     });
     await step('kind shop refunds', async () => { // refund fix (13 Nov 2026): refunded cards, "Settling" in My purchases, a Delivered! pack that settled a refund
       if (!(await ev(() => !!(window.__paw.ks && window.__paw.ks.on())))) return;
-      await ev(() => { const S = window.__paw.S; window.__fitKs = JSON.stringify(S.shop); S.shop.onceBack = ['supporter', 'tokyo', 'cozy', 'comfort']; S.shop.coinDebt = 1950; });
+      await ev(() => { const S = window.__paw.S; window.__fitKs = JSON.stringify(S.shop); S.shop.onceBack = ['supporter', 'tokyo', 'cozy', 'comfort']; S.shop.coinDebt = 1950; // only the Supporter card says refunded (13 Nov: the rest are for sale again, an old save's entries are ignored) });
       await ev(() => window.__paw.ks.open('supporter')); await modalUp(); await measure('kind shop: refunded');
       await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = b.scrollHeight; }); await measure('kind shop: settling');
       await eachTab('kind shop: refunded', '#modal .panel.ks [role=tab]', 6); await closeAll();
