@@ -6,7 +6,9 @@
 #   bash tools/shop_flag.sh allow email <address> [note]    the same for every account with that email
 #   bash tools/shop_flag.sh clear user <user id>            remove that flag (back to the automatic rule)
 #   bash tools/shop_flag.sh clear email <address>
-#   bash tools/shop_flag.sh list                            every flag, then the accounts the automatic rule pauses now
+#   bash tools/shop_flag.sh block|allow|clear hash <address>  the 'h:' row a paused account left when it was deleted (only a one-way code
+#                                                           of its email is kept): computed here from the address; allow or clear lifts it
+#   bash tools/shop_flag.sh list                            every flag (h: rows as their code), then the accounts the automatic rule pauses now
 # A block wins over an allow. Coins buys in the game are never affected. Emails are stored lower case (Checkout sends the account email).
 # Same Cloudflare D1 API as tools/cf_api_deploy.sh: needs CLOUDFLARE_ACCOUNT_ID; the proxy adds the token in a Claude cloud session,
 # anywhere else export CLOUDFLARE_API_TOKEN (D1: Edit). Arguments only ever travel as D1 query params, never inside the SQL text.
@@ -14,7 +16,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DBNAME=pawhaven
-usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
 CMD="${1:-}"
 case "$CMD" in
@@ -25,7 +27,7 @@ esac
 
 # the D1 request body, built by Python from argv (validated there): { sql, params }
 BODY=$(python3 - "$@" <<'PY'
-import json, re, sys, time
+import hashlib, json, re, sys, time
 a = sys.argv[1:]
 cmd = a[0]
 def die(m): print('shop_flag: ' + m, file=sys.stderr); sys.exit(2)
@@ -36,12 +38,13 @@ note = a[3] if len(a) > 3 else ''
 if kind == 'user':
     if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', val): die('a user id is 1-64 letters, digits, - or _')
     key = 'u:' + val
-elif kind == 'email':
+elif kind in ('email', 'hash'):
     val = val.strip().lower()
     if len(val) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', val): die('that does not look like an email address')
-    key = 'e:' + val
+    # hash: the same one-way code as the Worker's shopHash() (hex SHA-256 of "dd-shop-v1:" + the lowercased, trimmed email)
+    key = 'e:' + val if kind == 'email' else 'h:' + hashlib.sha256(('dd-shop-v1:' + val).encode('utf-8')).hexdigest()
 else:
-    die('say user <id> or email <address>')
+    die('say user <id>, email <address> or hash <address>')
 if any(ord(c) < 32 for c in note): die('the note has control characters')
 if len(note) > 200: die('the note is longer than 200 characters')
 if cmd == 'clear':
