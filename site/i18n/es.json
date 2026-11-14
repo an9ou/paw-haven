@@ -159,6 +159,7 @@
   "privacy.shop.keep": "<b>Lo que guardamos:</b> un id de compra, el artículo, el importe, la moneda, la hora y el id de tu cuenta. Nada más sobre el pago.",
   "privacy.shop.refund": "<b>Los reembolsos</b> se hacen a través de Stripe. Un artículo de pago único reembolsado se retira de tu juego. Las monedas ya entregadas no se retiran.",
   "privacy.shop.delete": "<b>Borrar tu cuenta</b> también borra estos registros de compra de nuestro lado. Stripe guarda sus propios registros, como pide la ley.",
+  "privacy.shop.paused": "<b>Si una cuenta está en pausa</b> por reembolsos o disputas bancarias y luego se elimina, solo guardamos un código cifrado de su correo que no se puede revertir, para frenar el abuso en los pagos, y nada más.",
   "privacy.shop.noads": "No hay anuncios en el juego, y comprar algo no activa ningún rastreo.",
   "privacy.where.title": "Dónde se guarda",
   "privacy.where.text": "Los datos de la cuenta y las partidas se guardan en Cloudflare, que gestiona el servicio de inicio de sesión. Los correos de contraseña se envían a través de Resend, que solo se encarga de ese correo. Ambos guardan los datos solo para hacer ese trabajo. Juegas en itch.io, y el juego funciona en tu navegador. itch.io tiene su propia política de privacidad para su propio sitio.",

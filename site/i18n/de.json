@@ -153,6 +153,7 @@
   "privacy.shop.keep": "<b>Was wir speichern:</b> eine Kauf-ID, den Artikel, den Betrag, die Währung, die Uhrzeit und die ID deines Kontos. Sonst nichts über die Zahlung.",
   "privacy.shop.refund": "<b>Erstattungen</b> laufen über Stripe. Ein erstatteter einmaliger Artikel wird aus deinem Spiel wieder entfernt. Bereits gegebene Taler werden nicht zurückgenommen.",
   "privacy.shop.delete": "<b>Wenn du dein Konto löschst,</b> löschen wir auch diese Kaufdaten bei uns. Stripe behält seine eigenen Unterlagen, wie es das Gesetz verlangt.",
+  "privacy.shop.paused": "<b>Wenn ein Konto</b> wegen Erstattungen oder Bank-Rückbuchungen pausiert ist und dann gelöscht wird, behalten wir nur einen verschlüsselten Einweg-Code seiner E-Mail, um Missbrauch bei Zahlungen zu verhindern, und sonst nichts.",
   "privacy.shop.noads": "Im Spiel gibt es keine Werbung, und ein Kauf startet kein Tracking.",
   "privacy.where.title": "Wo die Daten liegen",
   "privacy.where.text": "Kontodaten und Spielstände werden bei Cloudflare gespeichert, das den Anmeldedienst betreibt. Passwort-E-Mails werden über Resend verschickt, das nur diese eine E-Mail bearbeitet. Beide speichern die Daten nur für genau diese Aufgabe. Du spielst auf itch.io, und das Spiel läuft in deinem Browser. itch.io hat für seine eigene Website eine eigene Daten­schutz­erklärung.",

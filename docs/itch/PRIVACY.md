@@ -46,6 +46,7 @@ Doodle Doggo is a gentle game for everyone. If you are young, please ask a grown
 - **Play as a guest** at any time, with no account.
 - **Export a save code** in Settings whenever you like, to keep your own copy.
 - **Delete your account and everything we hold:** contact the owner at **[CONTACT EMAIL: to be filled in by the owner]** from the email address you used to sign up, and say you want your account deleted. We delete the account, the password hash, the saves, any Dog Card and your Friends data (your code, friends list, blocks, yard snapshot, and pets, notes, gifts and walks), and tell you when it is done. Deleting your account does not remove a save code you exported or the guest save on your own device. You can clear those yourself.
+- **If an account is paused** because of refunds or bank disputes and is then deleted, we keep only a scrambled one-way code of its email, to stop payment abuse, and nothing else.
 - **Ask what we hold** about you in the same way.
 
 ## Changes

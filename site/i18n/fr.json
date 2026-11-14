@@ -153,6 +153,7 @@
   "privacy.shop.keep": "<b>Ce que nous gardons :</b> un identifiant d’achat, l’article, le montant, la devise, l’heure et l’identifiant de ton compte. Rien d’autre sur le paiement.",
   "privacy.shop.refund": "<b>Les remboursements</b> passent par Stripe. Un article unique remboursé est retiré de ton jeu. Les pièces déjà données ne sont pas reprises.",
   "privacy.shop.delete": "<b>Supprimer ton compte</b> supprime aussi ces achats de notre côté. Stripe garde ses propres registres, comme la loi le demande.",
+  "privacy.shop.paused": "<b>Si un compte est en pause</b> à cause de remboursements ou de contestations bancaires, puis supprimé, nous gardons seulement un code brouillé à sens unique de son e-mail, pour éviter les abus de paiement, et rien d'autre.",
   "privacy.shop.noads": "Il n’y a pas de pubs dans le jeu, et acheter quelque chose ne déclenche aucun pistage.",
   "privacy.where.title": "Où c’est conservé",
   "privacy.where.text": "Les données de compte et les sauvegardes sont stockées chez Cloudflare, qui fait tourner le service de connexion. Les e-mails de mot de passe passent par Resend, qui ne s’occupe que de cet e-mail-là. Tous deux ne gardent les données que pour faire ce travail. Tu joues sur itch.io, et le jeu tourne dans ton navigateur. itch.io a sa propre politique de confidentialité pour son propre site.",

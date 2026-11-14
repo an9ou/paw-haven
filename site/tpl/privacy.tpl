@@ -61,6 +61,7 @@
       <li>{{t privacy.shop.keep}}</li>
       <li>{{t privacy.shop.refund}}</li>
       <li>{{t privacy.shop.delete}}</li>
+      <li>{{t privacy.shop.paused}}</li>
     </ul>
     <p>{{t privacy.shop.noads}}</p>
 

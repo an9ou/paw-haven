@@ -159,6 +159,7 @@
   "privacy.shop.keep": "<b>Yang kami simpan:</b> id pembelian, barangnya, jumlah, mata uang, waktu, dan id akunmu. Tidak ada hal lain tentang pembayaran.",
   "privacy.shop.refund": "<b>Pengembalian dana</b> dilakukan lewat Stripe. Barang sekali beli yang dananya dikembalikan akan diambil lagi dari game-mu. Koin yang sudah diberikan tidak diambil kembali.",
   "privacy.shop.delete": "<b>Menghapus akunmu</b> juga menghapus catatan pembelian ini dari pihak kami. Stripe menyimpan catatannya sendiri, sesuai aturan hukum.",
+  "privacy.shop.paused": "<b>Jika akun dijeda</b> karena pengembalian dana atau sengketa bank lalu dihapus, kami hanya menyimpan kode acak satu arah dari emailnya, untuk mencegah penyalahgunaan pembayaran, dan tidak ada yang lain.",
   "privacy.shop.noads": "Tidak ada iklan di dalam game, dan membeli sesuatu tidak memulai pelacakan apa pun.",
   "privacy.where.title": "Di mana data disimpan",
   "privacy.where.text": "Data akun dan simpanan disimpan di Cloudflare, yang menjalankan layanan login. Email kata sandi dikirim lewat Resend, yang hanya menangani email itu. Keduanya menyimpan data hanya untuk melakukan tugas itu. Kamu main di itch.io, dan game berjalan di browsermu. itch.io punya kebijakan privasinya sendiri untuk situsnya.",

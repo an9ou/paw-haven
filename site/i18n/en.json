@@ -265,6 +265,7 @@
   "privacy.shop.keep": "<b>What we keep:</b> a purchase id, the item, the amount, the currency, the time, and the id of your account. Nothing else about the payment.",
   "privacy.shop.refund": "<b>Refunds</b> are made through Stripe. A refunded one-time item is taken back from your game. Coins already given are not taken back.",
   "privacy.shop.delete": "<b>Deleting your account</b> deletes these purchase records from our side too. Stripe keeps its own records, as the law asks.",
+  "privacy.shop.paused": "<b>If an account is paused</b> because of refunds or bank disputes and is then deleted, we keep only a scrambled one-way code of its email, to stop payment abuse, and nothing else.",
   "privacy.shop.noads": "There are no ads in the game, and buying something starts no tracking.",
   "privacy.where.title": "Where it is kept",
   "privacy.where.text": "Account data and saves are stored with Cloudflare, who run the login service. Password emails are sent through Resend, who handle only that one email. Both keep the data only to do that job. You play on itch.io, and the game runs in your browser. itch.io has its own privacy policy for its own site.",
