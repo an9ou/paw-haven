@@ -6888,6 +6888,8 @@
  "ks.or_coins": "or {n} coins",
  "ks.or_each": "or {n} coins each",
  "ks.owned_already": "This is yours already. Restoring your purchases now.",
+ "ks.paused": "Paid items are paused for this account. Everything you can get with coins still works.",
+ "ks.paused_card": "Paused for now",
  "ks.pay": "Pay with Stripe",
  "ks.pay_closed": "Shop payments are not open here",
  "ks.pending": "A payment for this is still on its way. Please look again in a minute.",

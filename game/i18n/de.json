@@ -6888,6 +6888,8 @@
  "ks.or_coins": "oder {n} Taler",
  "ks.or_each": "oder je {n} Taler",
  "ks.owned_already": "Das gehört dir schon. Deine Käufe werden jetzt wiederhergestellt.",
+ "ks.paused": "Bezahlte Sachen sind für dieses Konto pausiert. Alles, was es für Taler gibt, geht weiter wie immer.",
+ "ks.paused_card": "Gerade pausiert",
  "ks.pay": "Mit Stripe bezahlen",
  "ks.pay_closed": "Bezahlen im Laden ist hier nicht geöffnet",
  "ks.pending": "Eine Zahlung dafür ist noch unterwegs. Schau in einer Minute noch mal.",

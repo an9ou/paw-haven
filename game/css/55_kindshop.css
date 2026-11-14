@@ -73,5 +73,7 @@ html[data-layout="phone"] .ks-got-row .art{width:72px;height:62px}
 /* refund fix (13 Nov 2026): a refunded one-time card says so instead of a Pay button; My purchases says what is still being settled;
    the walk result says how many coins settled a refund (ksSettleHTML) */
 .ks-refunded{color:#8A5A2E;font-style:italic;text-align:center;max-width:100%;overflow-wrap:anywhere;line-height:1.5;padding:2px 0 8px} /* clear of the card's wobbly bottom line, Thai included (fit R12) */
+.ks-paused,.ks-paused-tag{color:#8A5A2E;max-width:100%;overflow-wrap:anywhere;line-height:1.5} /* refund protection (14 Nov 2026): the kind paused line, clear of the wobbly lines like .ks-refunded */
+.ks-paused-tag{text-align:center;padding:2px 0 8px}
 .ks-settling{margin:0 0 8px;color:#6B4A2E;overflow-wrap:anywhere}
 .ks-settle{margin:4px 0;text-align:center;color:#6B4A2E}

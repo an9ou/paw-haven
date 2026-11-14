@@ -6888,6 +6888,8 @@
  "ks.or_coins": "atau {n} koin",
  "ks.or_each": "atau {n} koin per buah",
  "ks.owned_already": "Ini sudah milikmu. Sedang memulihkan pembelianmu.",
+ "ks.paused": "Barang berbayar sedang dijeda untuk akun ini. Semua yang bisa didapat dengan koin tetap bisa dipakai.",
+ "ks.paused_card": "Dijeda dulu",
  "ks.pay": "Bayar dengan Stripe",
  "ks.pay_closed": "Pembayaran toko belum dibuka di sini",
  "ks.pending": "Pembayaran untuk ini masih dalam perjalanan. Coba lihat lagi semenit lagi.",

@@ -6888,6 +6888,8 @@
  "ks.or_coins": "或{n}金幣",
  "ks.or_each": "或每個{n}金幣",
  "ks.owned_already": "這個你已經有了。正在找回你買過的東西。",
+ "ks.paused": "這個帳號的付費物品暫停了。用金幣能得到的東西都照常可以用。",
+ "ks.paused_card": "暫時暫停",
  "ks.pay": "用Stripe付款",
  "ks.pay_closed": "這裡還不能在小店付款",
  "ks.pending": "這筆付款還在路上。請過一分鐘再來看看。",

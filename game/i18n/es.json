@@ -6888,6 +6888,8 @@
  "ks.or_coins": "o {n} monedas",
  "ks.or_each": "o {n} monedas cada uno",
  "ks.owned_already": "Esto ya es tuyo. Recuperando tus compras ahora.",
+ "ks.paused": "Los artículos de pago están en pausa para esta cuenta. Todo lo que se consigue con monedas sigue funcionando.",
+ "ks.paused_card": "En pausa por ahora",
  "ks.pay": "Pagar con Stripe",
  "ks.pay_closed": "Los pagos de la tienda no están abiertos aquí",
  "ks.pending": "Un pago de esto todavía está en camino. Vuelve a mirar en un minuto.",

@@ -438,12 +438,19 @@ const ksYours = () => `<span class="chip own ks-yours">${esc(tt('ks.yours', 'You
 // the Supporter Pack bought and fully refunded is never for sale again (owner, 13 Nov 2026): its card says so kindly instead of a Pay button.
 // Every other one-time item shows its Pay button again after a refund; an older save's onceBack entry for one of them is ignored.
 const ksRefundedId = (id) => { const sh = ksS(); return !!sh && ksOnceEver(id) && Array.isArray(sh.onceBack) && sh.onceBack.includes(id) && !ksOwnedId(id); };
+// refund protection (owner, 14 Nov 2026; V224.md 4.4): the Worker answers 409 paused for an account with 2 full refunds or a bank dispute
+// (or one the owner paused). Remembered for this session and this account only, never saved: the Pay buttons give way to one kind line,
+// and everything bought with coins works as before. Reloading asks the Worker again on the next Pay.
+let ksPauseUid = null;
+const ksAcct = () => (typeof CL !== 'undefined' && CL && CL.uid) || '';
+const ksPaused = () => ksPauseUid !== null && ksPauseUid === ksAcct();
+const ksPausedLine = () => tt('ks.paused', 'Paid items are paused for this account. Everything you can get with coins still works.');
 const ksRefundedTag = () => `<span class="small ks-refunded">${esc(tt('ks.refunded_card', 'Refunded, not for sale again'))}</span>`;
 function ksCardHTML(id) {
   const I = KS_ITEMS[id], own = ksOwnedId(id), back = ksRefundedId(id);
   const list = id === 'supporter' || I.looks || I.tools ? `<ul class="ks-gets">${ksGets(id).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : '';
   const or = I.looks ? `<span class="small ks-or">${esc(tt('ks.or_each', 'or {n} coins each', { n: tnum(KS_LOOK_COINS) }))}</span>` : '';
-  const off = ksCashMode() === 'off', act = own ? ksYours() : `${back ? ksRefundedTag() : off ? (I.coins ? '' : `<span class="small ks-nopay-note">${esc(tt('ks.not_here', 'Not open here'))}</span>`) : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
+  const off = ksCashMode() === 'off', act = own ? ksYours() : `${back ? ksRefundedTag() : off ? (I.coins ? '' : `<span class="small ks-nopay-note">${esc(tt('ks.not_here', 'Not open here'))}</span>`) : ksPaused() ? (I.coins ? '' : `<span class="small ks-nopay-note ks-paused-tag">${esc(tt('ks.paused_card', 'Paused for now'))}</span>`) : `<button class="btn yes ks-cash" type="button" data-kscash="${id}">${esc(ksUSD(id))}</button>`}${I.coins ? `<button class="btn ks-coin" type="button" data-kscoin="${id}">${esc(tt('ks.or_coins', 'or {n} coins', { n: tnum(I.coins) }))}</button>` : ''}${or}`;
   return `<div class="sitem ks-card ks-${I.tab}${list ? ' ks-wide' : ''}" data-ks="${id}"><span class="art">${ksArt(id)}</span><b>${esc(ksName(id))}</b><span class="desc">${esc(ksLine(id))}</span>${list}<span class="ks-acts">${act}</span></div>`;
 }
 function ksLookCardHTML(n) {
@@ -485,7 +492,7 @@ function ksOpen(tab) {
   const tabs = `<div class="tabs" role="tablist">${KS_TABS.map((t) => `<button class="btn" role="tab" type="button" aria-selected="${t === ksTab}" data-kstab="${t}">${esc(ksTabName(t))}</button>`).join('')}</div>`;
   const why = `<details class="ks-why"><summary>${esc(tt('ks.why', 'Why is there a shop?'))}</summary><div class="ks-whyb">${duck ? `<span class="ks-duck" aria-hidden="true">${duck}</span>` : ''}<p>${esc(tt('ks.why_text', 'Gerald: "Doodle Doggo is made by one person. The shop helps keep the crayons sharp. Everything here except the Supporter Pack and the coins can also be earned by playing, and the game is complete without paying. Dogs, Bond and chances are never in the shop."'))}</p></div></details>`;
   const body = `<p class="small ks-hi">${esc(tt('ks.hi', 'Looks, comfort tools and coins. You have {coins} Paw Coins.', { coins: tnum(S.coins) }))}</p>${why}${tabs}<div class="shopgrid ks-grid">${ksTabHTML(ksTab)}</div>
-    ${ksCashMode() === 'off' ? '' : `<p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p>`}<p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>${ksMineHTML()}`;
+    ${ksCashMode() === 'off' ? '' : ksPaused() ? `<p class="small ks-ask ks-paused">${esc(ksPausedLine())}</p>` : `<p class="small ks-ask">${esc(tt('ks.ask', 'Ask a grown-up before you buy. Payments are made on Stripe. We never see card details.'))}</p>`}<p class="ks-links">${ksCashMode() === 'off' ? `<span class="small ks-nopay">${esc(tt('ks.pay_closed', 'Shop payments are not open here'))}</span>` : `<button class="btn ks-link" type="button" id="ksRestore">${esc(tt('ks.restore', 'Restore purchases'))}</button>`}</p>${ksMineHTML()}`;
   const p = openModal(esc(tt('ks.title', 'Kind shop')), body, { cls: 'shop ks' });
   p.querySelectorAll('[data-kstab]').forEach((b) => { b.onclick = () => { SFX.click(); ksTab = b.dataset.kstab; ksOpen(); }; });
   p.querySelectorAll('[data-kscash]').forEach((b) => { b.onclick = () => { SFX.click(); if (ksCashMode() === 'guest') ksEmailSheet(p); else ksConfirm(p, b.dataset.kscash); }; });
@@ -529,6 +536,7 @@ function ksErrToast(code) {
   if (code === 'shop_closed') toast(KS_SOON(), 'good');
   else if (code === 'owned') toast(tt('ks.owned_already', 'This is yours already. Restoring your purchases now.'), 'good');
   else if (code === 'refunded') toast(tt('ks.refunded_toast', 'This one was refunded, so it is not for sale again. Thank you for trying it!'), 'good');
+  else if (code === 'paused') toast(ksPausedLine(), 'good');
   else if (code === 'pending') toast(tt('ks.pending', 'A payment for this is still on its way. Please look again in a minute.'), 'good');
   else if (code === 'no_account') toast(tt('ks.need_email', 'Add an email to your save first, so your purchases can come back on a new device.'), 'good');
   else if (code === 'rate_limited') toast(tt('ks.slow_down', 'Lots of taps! Please wait a few minutes and try again.'), 'good');
@@ -559,9 +567,11 @@ function ksCheckout(id) {
     if (!url) {
       shut(); const code = r && r.data && r.data.error; ksErrToast(code);
       if (code === 'refunded') { const sh = ksShopReady(); if (sh && ksOnceEver(id) && !sh.onceBack.includes(id)) { sh.onceBack.push(id); markDirty(); saveNow(); } if ($('.panel.ks', modal)) ksOpen(); }
+      if (code === 'paused') { ksPauseUid = ksAcct(); if ($('.panel.ks', modal)) ksOpen(); } // the Pay buttons give way to the kind line
       if (code === 'owned' || code === 'refunded' || code === 'pending') ksRestore(false);
       return false;
     }
+    if (ksPauseUid !== null) { ksPauseUid = null; if ($('.panel.ks', modal)) ksOpen(); } // the owner lifted the pause: the Pay buttons come back
     if (w && !w.closed) { try { w.location.href = url; } catch (e) { shut(); w = null; } }
     if (!w) ksLinkSheet(url);
     ksPollAt = 0; // the next time the tab is shown, look at once
@@ -665,7 +675,7 @@ function ksExpose() {
     tick: () => { ksLastMin = -1; ksTick(); }, robo: () => ksRoboTick(), bowl: () => ksBowlTick(), gardenCtx: () => ksGardenCtx(), checkout: (id) => ksCheckout(id), restore: (m) => ksRestore(m), poll: (f) => ksPoll(f),
     garden: (h, w) => gardenAdvance({ steps: h || 1, stepWeather: w || 'cloudy' }), rec: () => { KS_REC = []; return true; }, acts: () => (KS_REC || []).slice(),
     debt: () => ksDebt(), settleNote: (d) => ksSettleNote(d), settleTake: () => ksSettleTake(), refundedId: (id) => ksRefundedId(id), nominal: (p) => ksNominal(p), packsAt: KS_PACKS_AT,
-    addCoins: (n, raw) => addCoins(n, { raw: !!raw }), addCoinsD: (n, raw) => addCoinsD(n, { raw: !!raw }), delivered: (out) => ksDelivered(out), grantToast: (out) => ksGrantToast(out), gotLine: (id, g) => ksGotLine(id, g), errToast: (c) => ksErrToast(c)
+    addCoins: (n, raw) => addCoins(n, { raw: !!raw }), addCoinsD: (n, raw) => addCoinsD(n, { raw: !!raw }), delivered: (out) => ksDelivered(out), grantToast: (out) => ksGrantToast(out), gotLine: (id, g) => ksGotLine(id, g), errToast: (c) => ksErrToast(c), paused: () => ksPaused(), pause: (on) => { ksPauseUid = on ? ksAcct() : null; return ksPaused(); }
   };
 }
 let KS_REC = null; // tests: the act kinds seen since rec() (the tools must add none)

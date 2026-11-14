@@ -416,6 +416,30 @@ run('v224_shop', async (t) => {
     const ms2 = await ev(() => { const s = document.querySelector('#modal .ks-settling'); return s ? s.innerText : ''; });
     ok(/Settling: 1,?500 coins/.test(ms || ms2), 'My purchases says "Settling: 1,500 coins": ' + (ms || ms2));
     await ev(() => { window.__paw.S.shop.coinDebt = 0; document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); });
+    // refund protection (owner, 14 Nov 2026): two full refunds on this account (Tokyo Street, the coin pack) -> the Worker answers 409 paused
+    const nP = stripe.length;
+    ok(!(await ev(() => window.__paw.ks.paused())), 'before the next Pay the game does not know about any pause');
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.open('coins'); });
+    await ev(() => window.__paw.ks.checkout('coins_1k'));
+    ok(await t.waitToast(/Paid items are paused for this account\. Everything you can get with coins still works\./, 3000) && (await ev(() => window.__ksTabs[0] && window.__ksTabs[0].w.closed)) && stripe.length === nP, 'two refunds: 409 paused -> the kind line as a toast, the blank tab closes, Stripe is not asked');
+    const pz = await ev(() => { const p = document.querySelector('#modal .panel.ks'), l = p && p.querySelector('.ks-paused'); return { paused: window.__paw.ks.paused(), line: l ? l.innerText : '', cash: p ? p.querySelectorAll('[data-kscash]').length : -1, tags: p ? p.querySelectorAll('.ks-paused-tag').length : -1, ask: !!(p && /Ask a grown-up/.test(p.innerText)), restore: !!(p && p.querySelector('#ksRestore')) }; });
+    ok(pz.paused && /Paid items are paused/.test(pz.line) && pz.cash === 0 && pz.tags === 3 && !pz.ask && pz.restore, 'the open shop now shows the line instead of the Pay buttons (coin packs say "Paused for now"), Restore purchases stays: ' + JSON.stringify(pz));
+    await t.p.screenshot({ path: path.join(LOGS, 'v224_shop_paused.png') });
+    await ev(() => window.__paw.ks.open('tools'));
+    const pt = await ev(() => { const p = document.querySelector('#modal .panel.ks'); return { cash: p.querySelectorAll('[data-kscash]').length, coin: p.querySelectorAll('[data-kscoin]').length }; });
+    ok(pt.cash === 0 && pt.coin >= 3, 'Tools: no Pay buttons, every coin price still there: ' + JSON.stringify(pt));
+    await ev(() => { window.__paw.S.coins = 50000; window.__paw.updateHUD && window.__paw.updateHUD(); });
+    const cB = await ev(() => window.__paw.S.coins), roboC = await ev(() => window.__paw.ks.items.robo.coins);
+    await ev(() => { window.__paw.ks.coinBuy('robo'); }); await t.win();
+    ok(await t.until(() => window.__paw.ks.tool('robo'), null, 3000) && (await ev(() => window.__paw.S.coins)) === cB - roboC, 'the coins shop still works while paused: the Robo Scoop for ' + roboC + ' coins');
+    await ev(() => window.__paw.ks.open('looks'));
+    ok(await ev(() => document.querySelectorAll('#modal [data-kslook]').length + document.querySelectorAll('#modal .ks-look .ks-yours').length >= 12 && !document.querySelector('#modal [data-kscash]')), 'Looks: each look keeps its coin price (or Yours), no Pay buttons');
+    await ev(() => { document.querySelector('#modal .panel .x') && document.querySelector('#modal .panel .x').click(); });
+    // the owner lifts it (tools/shop_flag.sh allow): the next Pay works; the game only remembers the pause for this session
+    srv.env.DB.raw.prepare("insert or replace into shop_flags (key, mode, note, created_at) values (?, 'allow', null, ?)").run('u:' + uid, Date.now());
+    await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('coins_1k'); });
+    ok(await t.until(() => window.__ksTabs[0] && window.__ksTabs[0].w && /^https:\/\/checkout\.stripe\.com\//.test(window.__ksTabs[0].w.location.href), null, 4000) && stripe.length === nP + 1, 'an allow row: the next Pay opens Stripe again');
+    ok(await ev(() => !window.__paw.ks.paused() && !/paus/i.test(JSON.stringify(window.__paw.S.shop)) && !/paus/i.test(localStorage.getItem('pawhaven_proto_v1').match(/"shop":\{[^}]*\}/)[0])), 'a Checkout that opens clears the pause, and nothing about it is in the save');
     // the Worker down: a kind toast, and the tab closes
     delete srv.env.STRIPE_FETCH; srv.offline.add(t.p);
     await ev(() => { window.__ksTabs.length = 0; window.__toasts.length = 0; return window.__paw.ks.checkout('supporter'); });

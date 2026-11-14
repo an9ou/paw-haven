@@ -339,12 +339,19 @@ async function worker(job) {
     });
     await step('kind shop refunds', async () => { // refund fix (13 Nov 2026): refunded cards, "Settling" in My purchases, a Delivered! pack that settled a refund
       if (!(await ev(() => !!(window.__paw.ks && window.__paw.ks.on())))) return;
-      await ev(() => { const S = window.__paw.S; window.__fitKs = JSON.stringify(S.shop); S.shop.onceBack = ['supporter', 'tokyo', 'cozy', 'comfort']; S.shop.coinDebt = 1950; // only the Supporter card says refunded (13 Nov: the rest are for sale again, an old save's entries are ignored) });
+      await ev(() => { const S = window.__paw.S; window.__fitKs = JSON.stringify(S.shop); S.shop.onceBack = ['supporter', 'tokyo', 'cozy', 'comfort']; S.shop.coinDebt = 1950; }); // only the Supporter card says refunded (13 Nov: the rest are for sale again, an old save's entries are ignored)
       await ev(() => window.__paw.ks.open('supporter')); await modalUp(); await measure('kind shop: refunded');
       await ev(() => { const b = document.querySelector('#modal .panel-body'); if (b) b.scrollTop = b.scrollHeight; }); await measure('kind shop: settling');
       await eachTab('kind shop: refunded', '#modal .panel.ks [role=tab]', 6); await closeAll();
       await ev(() => { window.__paw.ks.delivered({ items: ['coins_3k', 'coins_1k'], got: [{ n: 5000, a: 3050 }, { n: 1000, a: 0 }], granted: ['cs_fit'] }); }); await modalUp(); await measure('kind shop: delivered, settled');
       await ev(() => { const S = window.__paw.S; S.shop = JSON.parse(window.__fitKs); }); await closeAll();
+    });
+    await step('kind shop paused', async () => { // refund protection (14 Nov 2026): the kind paused line instead of the Pay buttons, coin prices kept
+      if (!(await ev(() => !!(window.__paw.ks && window.__paw.ks.on() && window.__paw.ks.pause)))) return;
+      await ev(() => { window.__ddShopCash = 'ok'; window.__paw.ks.pause(true); });
+      await ev(() => window.__paw.ks.open('coins')); await modalUp(); await measure('kind shop: paused');
+      await eachTab('kind shop: paused', '#modal .panel.ks [role=tab]', 6);
+      await ev(() => { window.__paw.ks.pause(false); delete window.__ddShopCash; }); await closeAll();
     });
     await step('journal', async () => { await jsClick('[data-act=journal]'); await waitSel('.panel.journal'); await eachTab('journal', '#modal .jtabs [data-jt]', 14); await closeAll(); }, 90000);
     await step('mailbox', async () => {
