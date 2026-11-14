@@ -38,12 +38,17 @@
 //   { error: 'shop_closed' } while STRIPE_KEY is unset (the webhook also needs STRIPE_WEBHOOK_SECRET). Prices come from SHOP_ITEMS
 //   below and the SHOP_PRICES secret (JSON), never from the game. Setup: docs/design/kind-shop-stripe-setup.md.
 //   GET  /shop/catalog                     -> { items: [{ id, usd, once, on }] }   no session; usd in US cents, on: a Stripe price is set
-//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 owned (a one-time item owned),
+//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 paused (refund protection, below; every item),
+//     409 owned (a one-time item owned),
 //     409 refunded (the Supporter Pack bought and fully refunded: never for sale again; any other one-time item can be bought again), 409 pending (the Comfort Kit / a tool Checkout that
 //     covers it was paid and its webhook has not landed), 503 busy. A second tap while Checkout is open returns that same url; an open
 //     Comfort Kit Checkout is expired at Stripe before a tool Checkout opens (and the other way round).
 //   POST /shop/webhook  (Stripe; raw body + Stripe-Signature) -> { received: true }   400 bad_signature / stale. Also
-//     checkout.session.expired and checkout.session.async_payment_failed, which drop that session's hold.
+//     checkout.session.expired and checkout.session.async_payment_failed, which drop that session's hold, and charge.dispute.created
+//     (purchases.disputed_at, matched on payment_intent like charge.refunded; the items stay).
+//   Refund protection (owner, 14 Nov 2026; V224.md 4.4): an account with 2 full refunds or 1 bank dispute in purchases is paused (409 paused
+//     at checkout, coin packs too; coins buys in the game are untouched). shop_flags (set by hand with tools/shop_flag.sh): 'block' on
+//     u:<user id> or e:<lowercased email> pauses that account or every account with that email; 'allow' on either lifts the auto pause.
 //   GET  /shop/owned                       -> { purchases: [{ id, item, at, refunded, coins }] }   120/h
 //     coins: Paw Coins that row grants (the client takes them back when the row is refunded). A coin pack from before v2.24.2 is its old
 //     size. The Supporter 2,000 sits on one row: the oldest not refunded, else the oldest.
@@ -508,6 +513,7 @@ const SHOP_TOL = 300; // seconds: a webhook signed more than 5 minutes ago (or a
 const SHOP_HOLD_MS = 24 * 60 * 60 * 1000; // the hold lives 24 hours
 const SHOP_EXPIRE_MS = 23.5 * 60 * 60 * 1000; // its Checkout Session's expires_at: from the hold's created_at, so the session always ends before its hold
 const SHOP_TRY_MS = 60 * 1000; // a hold with no url whose Stripe request is older than this died on the way (a timeout, a killed Worker): retried once
+const SHOP_PAUSE_REFUNDS = 2, SHOP_PAUSE_DISPUTES = 1; // refund protection (owner, 14 Nov 2026): this many full refunds, or bank disputes, pause paid items
 // the Paw Coins one purchase row of this item grants; at: the row's created_at (a coin pack bought before v2.24.2 is its old size)
 const shopCoinBase = (id, at) => {
   const b = SHOP_ITEMS[id]; if (!b || !Number.isInteger(b.coins) || b.coins <= 0) return 0;
@@ -551,6 +557,25 @@ async function shopBlocked(env, uid, id) {
   if (sets.live.has(id) || shopCovered((t) => sets.live.has(t), id)) return { why: 'owned', sets };
   if (SHOP_ONCE_EVER.includes(id) && sets.ever.has(id)) return { why: 'refunded', sets };
   return { why: null, sets };
+}
+// Refund protection (owner, 14 Nov 2026; V224.md 4.4): true when paid items are paused for this account. A 'block' row in shop_flags for
+// the user or its email always pauses (a new account with the same email too); otherwise an 'allow' row for either lifts the auto pause;
+// otherwise 2 full refunds or 1 dispute on this user's purchases pause it. Before cf_api_deploy.sh has added purchases.disputed_at (or
+// shop_flags), the parts it can read still count, so checkout keeps working.
+async function shopPaused(env, me) {
+  const keys = ['u:' + me.id]; if (me.email) keys.push('e:' + norm(me.email));
+  let flags = [];
+  try { flags = await all(env, 'select mode from shop_flags where key in (?1, ?2)', keys[0], keys[1] || keys[0]); }
+  catch (e) { console.error('pawhaven-api shop: shop_flags unreadable', String((e && e.message) || e).slice(0, 80)); }
+  if (flags.some((f) => f.mode === 'block')) return true;
+  if (flags.some((f) => f.mode === 'allow')) return false;
+  let c = null;
+  try { c = await one(env, 'select count(refunded_at) as r, count(disputed_at) as d from purchases where user_id = ?1', me.id); }
+  catch (e) {
+    console.error('pawhaven-api shop: purchases.disputed_at missing, counting refunds only', String((e && e.message) || e).slice(0, 80));
+    c = await one(env, 'select count(refunded_at) as r, 0 as d from purchases where user_id = ?1', me.id);
+  }
+  return !!c && (Number(c.r) >= SHOP_PAUSE_REFUNDS || Number(c.d) >= SHOP_PAUSE_DISPUTES);
 }
 async function shopFreshHold(env, uid, item) {
   const row = await one(env, 'select session_id, url, created_at, tried_at, nonce from shop_holds where user_id = ?1 and item = ?2', uid, item);
@@ -731,6 +756,23 @@ async function shopWebhook(req, env) {
     await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
       on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), refunded_at = coalesce(purchases.refunded_at, excluded.refunded_at)`,
       cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t, t);
+    await shopRelease(env, uid, md.item, cs.id);
+  }
+  if (type === 'charge.dispute.created') { // refund protection (owner, 14 Nov 2026): a bank dispute pauses paid items for that account. The items stay
+    const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
+    if (!pi) { console.error('pawhaven-api shop: a dispute without a payment_intent', typeof o.id === 'string' ? o.id.slice(0, 40) : '?'); return json({ received: true }); }
+    const t = Date.now();
+    const had = await all(env, 'select id from purchases where payment_intent = ?1', pi);
+    await run(env, 'update purchases set disputed_at = ?1 where payment_intent = ?2 and disputed_at is null', t, pi);
+    if (had.length) return json({ received: true });
+    // the dispute came before its checkout.session.completed: the purchase is written now with disputed_at, and the completed upsert keeps it
+    const r = await shopStripe(env, '/checkout/sessions?limit=1&payment_intent=' + encodeURIComponent(pi), null);
+    if (!r.ok) { console.error('pawhaven-api shop: a dispute before its purchase, and the session lookup failed', r.status); return fail('stripe_error', 502); } // Stripe retries
+    const cs = r.data && Array.isArray(r.data.data) ? r.data.data[0] : null, md = cs && cs.metadata && typeof cs.metadata === 'object' ? cs.metadata : {}, uid = cs && cs.client_reference_id;
+    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return json({ received: true }); // not a shop session
+    await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at, disputed_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, null, ?7)
+      on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), disputed_at = coalesce(purchases.disputed_at, excluded.disputed_at)`,
+      cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t);
     await shopRelease(env, uid, md.item, cs.id);
   }
   return json({ received: true });
@@ -1180,6 +1222,7 @@ const ROUTES = {
     if (!it) return fail('bad_item', 400);
     if (!it.price) return fail('shop_closed', 503); // no Stripe price set up for this item yet
     if (await limited(env, 'shop:co:' + me.id, 20, 3600)) return fail('rate_limited', 429);
+    if (await shopPaused(env, me)) return fail('paused', 409); // refund protection (owner, 14 Nov 2026): every item, coin packs too
     if (it.once) {
       const b = await shopBlocked(env, me.id, it.id); // owned; or the Supporter Pack fully refunded: never for sale again (owner, 13 Nov), the game says so kindly
       if (b.why) return fail(b.why, 409);

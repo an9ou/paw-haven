@@ -64,6 +64,9 @@ const now = () => Math.floor(Date.now() / 1000);
     const n = (sql, ...a) => DB.raw.prepare(sql).get(...a).n;
     const hook = (ev, sig) => { const raw = typeof ev === 'string' ? ev : JSON.stringify(ev); return call('POST', '/shop/webhook', raw, null, { 'Stripe-Signature': sig === undefined ? sign(raw, now()) : sig, 'Content-Type': 'application/json; charset=utf-8' }); };
     const paid = (sid, uid, item, pi, type) => ({ id: 'evt_' + sid, type: type || 'checkout.session.completed', data: { object: { id: sid, object: 'checkout.session', payment_status: 'paid', client_reference_id: uid, metadata: { item, user: uid }, amount_total: 499, currency: 'hkd', payment_intent: pi } } });
+    // refund protection (14 Nov 2026): the owner's 'allow' row lifts the auto pause. The older sections refund one account several times on
+    // purpose to test refunds, so those accounts get one, and their checks still read 409 refunded / owned / a Checkout as before
+    const allow = (uid, note) => DB.raw.prepare("insert or replace into shop_flags (key, mode, note, created_at) values (?, 'allow', ?, ?)").run('u:' + uid, note || 'test', Date.now());
     const account = async (email) => { const g = (await call('POST', '/guest', {})).json; const r = (await call('POST', '/register', { email, password: 'pupper123' }, g.token)).json; return { token: r.token, id: r.user.id }; };
 
     sec('1. closed without keys');
@@ -256,6 +259,7 @@ const now = () => Math.floor(Date.now() / 1000);
     await hook({ id: 'evt_r2', type: 'charge.refunded', data: { object: { id: 'ch_2', payment_intent: 'pi_test_sup0001', refunded: true } } });
     r = await call('GET', '/friends/yard?fid=' + pa.fid, null, B.token); ok(r.status === 200 && !('ff' in r.json.yard), 'the Supporter Pack refunded: the badge goes');
     r = await call('GET', '/card', null, A.token); ok(!('ff' in r.json), 'and from the Dog Card');
+    allow(A.id, 'section 8: two refunds on purpose');
     r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token); ok(r.status === 409 && r.json.error === 'refunded', 'a refunded Supporter Pack cannot be bought again (409 refunded)');
 
     sec('9. limits and account deletion');
@@ -268,7 +272,7 @@ const now = () => Math.floor(Date.now() / 1000);
     ok(n('select count(*) as n from purchases where user_id = ?', A.id) > 0, 'other accounts keep theirs');
 
     sec('11. a refund revokes the grant, and a second Pay cannot grant it twice');
-    const D = await account('twice@example.com');
+    const D = await account('twice@example.com'); allow(D.id, 'section 11: three refunds on purpose');
     const n0 = stripe.calls.length;
     const pay1 = await call('POST', '/shop/checkout', { item: 'supporter' }, D.token);
     const pay2 = await call('POST', '/shop/checkout', { item: 'supporter' }, D.token);
@@ -411,7 +415,7 @@ const now = () => Math.floor(Date.now() / 1000);
     ok(lc.cs_test_new1k0001 === 2000, 'a pack from after: 2,000');
 
     sec('16. a fresh device: two Supporter rows, the older one refunded (review 13 Nov, 6)');
-    const Sd = await account('dupsup@example.com');
+    const Sd = await account('dupsup@example.com'); allow(Sd.id, 'section 16: two refunds on purpose');
     ins.run('cs_test_dupsup001', Sd.id, 'supporter', 'usd', 'pi_test_dupsup001', after, after + 5000);
     ins.run('cs_test_dupsup002', Sd.id, 'supporter', 'usd', 'pi_test_dupsup002', after + 1, null);
     r = await call('GET', '/shop/owned', null, Sd.token);
@@ -509,6 +513,127 @@ const now = () => Math.floor(Date.now() / 1000);
       ok(r.status === 200 && re2.length === 1 && re2[0].o.headers['Idempotency-Key'] === k0 && re2[0].form.get('expires_at') === e0, 'a minute later the retry sends the same key and the same expires_at, and gets the Checkout: ' + r.status);
       ok(q('select url from shop_holds where user_id = ? and item = ?', Y.id, 'cozy').url === r.json.url, 'and the hold now has its url');
       stripe.conflict = 0;
+    }
+
+    sec('21. refund protection: 2 full refunds or 1 dispute pause paid items (owner, 14 Nov 2026)');
+    {
+      const refund = (pi) => hook({ id: 'evt_rf_' + pi, type: 'charge.refunded', data: { object: { id: 'ch_' + pi, payment_intent: pi, refunded: true } } });
+      const dispute = (pi, id) => hook({ id: 'evt_dp_' + (id || pi), type: 'charge.dispute.created', data: { object: { id: 'dp_' + (id || pi), object: 'dispute', charge: 'ch_' + pi, payment_intent: pi, amount: 499, reason: 'fraudulent', status: 'needs_response' } } });
+      const flag = (key, mode) => DB.raw.prepare('insert or replace into shop_flags (key, mode, note, created_at) values (?, ?, ?, ?)').run(key, mode, 'test', Date.now());
+      const unflag = (key) => DB.raw.prepare('delete from shop_flags where key = ?').run(key);
+      const co = (tok, item) => call('POST', '/shop/checkout', { item: item || 'coins_1k' }, tok);
+      const paused = (x) => x.status === 409 && x.json && x.json.error === 'paused';
+      // one full refund: still open
+      const P1 = await account('onerefund@example.com');
+      await hook(paid('cs_test_pz1a0001', P1.id, 'tokyo', 'pi_test_pz1a0001')); await refund('pi_test_pz1a0001');
+      r = await co(P1.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'one full refund: Checkout still opens: ' + r.text);
+      r = await co(P1.token, 'tokyo'); ok(r.status === 200, 'and the refunded looks pack can be bought again');
+      // a partial refund does not count
+      const P2 = await account('tworefunds@example.com');
+      await hook(paid('cs_test_pz2a0001', P2.id, 'coins_1k', 'pi_test_pz2a0001')); await refund('pi_test_pz2a0001');
+      await hook(paid('cs_test_pz2b0001', P2.id, 'coins_3k', 'pi_test_pz2b0001'));
+      await hook({ id: 'evt_pz2b_part', type: 'charge.refunded', data: { object: { id: 'ch_pz2b', payment_intent: 'pi_test_pz2b0001', refunded: false } } });
+      r = await co(P2.token); ok(r.status === 200, 'one full and one partial refund: not paused');
+      await refund('pi_test_pz2b0001');
+      let c0 = stripe.calls.length;
+      const items = ['coins_1k', 'coins_3k', 'supporter', 'tokyo', 'cozy', 'robo', 'comfort'];
+      const outs = []; for (const it of items) outs.push(await co(P2.token, it));
+      ok(outs.every(paused) && stripe.calls.length === c0, 'two full refunds: every item, coin packs too, answers 409 paused and Stripe is not asked: ' + outs.map((x) => x.status + ' ' + (x.json && x.json.error)).join(', '));
+      r = await call('GET', '/shop/owned', null, P2.token); ok(r.status === 200 && r.json.purchases.length === 2, 'Restore purchases still works while paused');
+      // the owner lifts it
+      flag('u:' + P2.id, 'allow');
+      r = await co(P2.token, 'coins_3k'); ok(r.status === 200 && /^https:\/\//.test(r.json.url), "an 'allow' row for the user lifts the auto pause: " + r.text);
+      unflag('u:' + P2.id);
+      r = await co(P2.token, 'coins_3k'); ok(paused(r), 'clearing the allow row: paused again');
+      flag('e:tworefunds@example.com', 'allow');
+      r = await co(P2.token, 'coins_3k'); ok(r.status === 200, "an 'allow' row for the email lifts it too");
+      flag('u:' + P2.id, 'block');
+      r = await co(P2.token, 'coins_3k'); ok(paused(r), "a 'block' wins over an 'allow'");
+      unflag('u:' + P2.id); unflag('e:tworefunds@example.com');
+      // one dispute
+      const P3 = await account('dispute@example.com');
+      await hook(paid('cs_test_pz3a0001', P3.id, 'supporter', 'pi_test_pz3a0001'));
+      r = await co(P3.token); ok(r.status === 200, 'before the dispute: open');
+      r = await dispute('pi_test_pz3a0001');
+      const d3 = q('select disputed_at, refunded_at from purchases where id = ?', 'cs_test_pz3a0001');
+      ok(r.status === 200 && r.json.received === true && d3.disputed_at > 0 && d3.refunded_at === null, 'charge.dispute.created marks disputed_at by payment_intent (the items stay): ' + JSON.stringify(d3));
+      r = await dispute('pi_test_pz3a0001', 'pz3a_again');
+      ok(r.status === 200 && q('select disputed_at from purchases where id = ?', 'cs_test_pz3a0001').disputed_at === d3.disputed_at, 'the same dispute again changes nothing');
+      r = await co(P3.token, 'coins_3k'); ok(paused(r), 'one dispute: 409 paused');
+      r = await call('GET', '/shop/owned', null, P3.token); ok(r.status === 200 && r.json.purchases.length === 1 && r.json.purchases[0].refunded === false && r.json.purchases[0].coins === 2000, 'a disputed purchase is not taken back: ' + r.text);
+      r = await call('GET', '/card', null, P3.token); ok(r.status === 200, 'the rest of the account is untouched');
+      flag('u:' + P3.id, 'allow');
+      r = await co(P3.token, 'coins_3k'); ok(r.status === 200, "allow lifts a dispute pause too");
+      // manual block list
+      const P4 = await account('blockme@example.com');
+      r = await co(P4.token); ok(r.status === 200, 'a fresh account: open');
+      flag('u:' + P4.id, 'block');
+      r = await co(P4.token, 'coins_3k'); ok(paused(r), "a 'block' row for the user id: 409 paused, no refunds needed");
+      r = await co(A.token, 'coins_3k'); ok(r.status === 200, 'another account is not touched');
+      unflag('u:' + P4.id);
+      r = await co(P4.token, 'coins_3k'); ok(r.status === 200, 'cleared: open again');
+      flag('e:again@example.com', 'block');
+      const P5 = await account('Again@Example.com'); // a new account with that email (any case)
+      r = await co(P5.token); ok(paused(r), "a 'block' row for the email pauses a brand-new account with that email: " + r.text);
+      flag('u:' + P5.id, 'allow');
+      r = await co(P5.token); ok(paused(r), 'and a user allow does not lift an email block');
+      unflag('e:again@example.com');
+      r = await co(P5.token); ok(r.status === 200, 'email block cleared: open');
+      // a dispute that comes before its checkout.session.completed
+      const P6 = await account('earlydisp@example.com');
+      stripe.sessions.pi_test_pz6a0001 = paid('cs_test_pz6a0001', P6.id, 'coins_8k', 'pi_test_pz6a0001').data.object;
+      stripe.sessions.pi_test_pz6a0001.metadata = { item: 'coins_3k', user: P6.id };
+      r = await dispute('pi_test_pz6a0001');
+      let row6 = q('select * from purchases where id = ?', 'cs_test_pz6a0001');
+      ok(r.status === 200 && row6 && row6.user_id === P6.id && row6.item === 'coins_3k' && row6.disputed_at > 0 && row6.refunded_at === null, 'a dispute before its purchase: the session is looked up and the purchase written with disputed_at: ' + JSON.stringify(row6));
+      const dat = row6.disputed_at;
+      r = await hook(paid('cs_test_pz6a0001', P6.id, 'coins_3k', 'pi_test_pz6a0001'));
+      row6 = q('select * from purchases where id = ?', 'cs_test_pz6a0001');
+      ok(r.status === 200 && row6.disputed_at === dat && n('select count(*) as n from purchases where id = ?', 'cs_test_pz6a0001') === 1, 'then checkout.session.completed: one row, disputed_at kept');
+      r = await co(P6.token); ok(paused(r), 'and that account is paused');
+      stripe.fail = true;
+      r = await dispute('pi_test_pz6b0001'); stripe.fail = false;
+      ok(r.status === 502 && r.json.error === 'stripe_error', 'the lookup fails: 502, so Stripe sends the dispute again');
+      r = await dispute('pi_test_nothere1'); ok(r.status === 200 && !q('select * from purchases where payment_intent = ?', 'pi_test_nothere1'), 'a dispute for a payment that is not a shop session: 200, nothing stored');
+      r = await hook({ id: 'evt_dp_nopi', type: 'charge.dispute.created', data: { object: { id: 'dp_nopi', object: 'dispute', charge: 'ch_x' } } });
+      ok(r.status === 200, 'a dispute without a payment_intent: 200');
+      r = await hook({ id: 'evt_dp_closed', type: 'charge.dispute.closed', data: { object: { id: 'dp_x', payment_intent: 'pi_test_pz3a0001', status: 'won' } } });
+      ok(r.status === 200, 'other dispute events: 200, ignored');
+      r = await hook({ type: 'charge.dispute.created', data: { object: { id: 'dp_y', payment_intent: 'pi_test_pz1a0001' } } }, 't=1,v1=' + '0'.repeat(64));
+      ok(r.status === 400 && !q('select disputed_at from purchases where id = ?', 'cs_test_pz1a0001').disputed_at, 'a dispute with a bad signature: 400, nothing stored');
+      stripe.sessions = {};
+    }
+
+    sec('22. an older D1: purchases without disputed_at, no shop_flags (before cf_api_deploy.sh adds them)');
+    {
+      const OD = d1();
+      OD.raw.exec(`drop table purchases; drop table shop_flags; create table purchases (id text primary key, user_id text not null, item text not null, amount integer, currency text, payment_intent text, created_at integer not null, refunded_at integer)`);
+      const oenv = Object.assign({}, env, { DB: OD });
+      const ocall = async (method, p, body, token, headers) => {
+        const h = Object.assign({ 'CF-Connecting-IP': '10.25.0.' + (++ipN % 250), 'Content-Type': 'application/json' }, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
+        const res = await worker.fetch(new Request('https://api.test' + p, { method, headers: h, body: method === 'GET' ? undefined : (typeof body === 'string' ? body : JSON.stringify(body || {})) }), oenv, { waitUntil() {} });
+        const text = await res.text(); let j = null; try { j = JSON.parse(text); } catch (e) { j = null; } return { status: res.status, json: j, text };
+      };
+      const ohook = (ev) => { const raw = JSON.stringify(ev); return ocall('POST', '/shop/webhook', raw, null, { 'Stripe-Signature': sign(raw, now()) }); };
+      const g = (await ocall('POST', '/guest', {})).json, reg = (await ocall('POST', '/register', { email: 'oldrows@example.com', password: 'pupper123' }, g.token)).json;
+      const O = { token: reg.token, id: reg.user.id };
+      const oins = OD.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 99, ?, ?, ?, ?)');
+      oins.run('cs_test_old00001', O.id, 'coins_1k', 'usd', 'pi_test_old00001', Date.now() - 9000, Date.now() - 8000);
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_3k' }, O.token);
+      ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'old rows, one refund: checkout still works without the new column or table: ' + r.text);
+      r = await ocall('GET', '/shop/owned', null, O.token); ok(r.status === 200 && r.json.purchases.length === 1, '/shop/owned reads old rows');
+      oins.run('cs_test_old00002', O.id, 'coins_1k', 'usd', 'pi_test_old00002', Date.now() - 7000, Date.now() - 6000);
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_1k' }, O.token); ok(r.status === 409 && r.json.error === 'paused', 'two old refunded rows: paused, counted without disputed_at');
+      oins.run('cs_test_old00003', O.id, 'tokyo', 'usd', 'pi_test_old00003', Date.now() - 5000, null);
+      r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
+      ok(r.status >= 500, 'a dispute before the column exists: an error, so Stripe sends it again later: ' + r.status);
+      OD.raw.exec('alter table purchases add column disputed_at integer'); // what cf_api_deploy.sh addcol does
+      OD.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // and schema.sql makes shop_flags
+      ok(OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00001').disputed_at === null, 'after addcol the old rows read disputed_at null');
+      r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
+      ok(r.status === 200 && OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00003').disputed_at > 0, "Stripe's retry lands once the column is there");
+      OD.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', null, ?)").run('u:' + O.id, Date.now());
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_1k' }, O.token); ok(r.status === 200, 'and an allow row lifts the pause');
     }
 
     sec('10. the source');

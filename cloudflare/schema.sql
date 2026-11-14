@@ -170,10 +170,21 @@ create table if not exists purchases (
   currency       text,                   -- lower case, as Stripe sends it (the buyer's currency with Adaptive Pricing)
   payment_intent text,                   -- pi_..., for refunds
   created_at     integer not null,       -- ms
-  refunded_at    integer                 -- ms; null unless refunded
+  refunded_at    integer,                -- ms; null unless refunded
+  disputed_at    integer                 -- ms; set by charge.dispute.created (refund protection, 14 Nov 2026). tools/cf_api_deploy.sh adds it to an older table
 );
 create index if not exists purchases_user on purchases (user_id);
 create index if not exists purchases_pi on purchases (payment_intent);
+
+-- Refund protection (owner, 14 Nov 2026; V224.md 4.4). Set by hand only, with tools/shop_flag.sh: the Worker reads it at POST /shop/checkout.
+-- 'block': paid items paused for that account, or for every account with that email. 'allow': lifts the auto pause (2 full refunds or
+-- 1 dispute). A block on either key wins over an allow. Kept when an account is deleted, so an email block holds for a new account.
+create table if not exists shop_flags (
+  key        text primary key,   -- 'u:<user id>' or 'e:<lowercased email>'
+  mode       text not null,      -- 'allow' | 'block'
+  note       text,               -- the owner's own note, optional
+  created_at integer not null    -- ms
+);
 
 -- One open Stripe Checkout per account per item (v2.24 payment fix). A second Pay tap returns this url instead of starting
 -- another session. Cleared when that session is paid, refunded, expired (checkout.session.expired, or the Worker expires it
