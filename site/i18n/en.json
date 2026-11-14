@@ -263,7 +263,7 @@
   "privacy.shop.lead": "The Kind shop in the game offers coins and looks. You need an account to buy, so the game can give your purchase to you on any device.",
   "privacy.shop.stripe": "<b>Payments are made on Stripe,</b> who are the merchant of record. We never see your card details. Stripe's own rules are at {link}.",
   "privacy.shop.keep": "<b>What we keep:</b> a purchase id, the item, the amount, the currency, the time, and the id of your account. Nothing else about the payment.",
-  "privacy.shop.refund": "<b>Refunds</b> are made through Stripe. A refunded one-time item is taken back from your game. Coins already given are not taken back.",
+  "privacy.shop.refund": "<b>Refunds</b> are made through Stripe. After a full refund, what that purchase gave goes back: its items and its Paw Coins. Coins already spent are settled from coins you earn later. Things you bought with coins stay yours. Only the Supporter Pack can't be bought again after a full refund.",
   "privacy.shop.delete": "<b>Deleting your account</b> deletes these purchase records from our side too. Stripe keeps its own records, as the law asks.",
   "privacy.shop.paused": "<b>If an account is paused</b> because of refunds or bank disputes and is then deleted, we keep only a scrambled one-way code of its email, to stop payment abuse, and nothing else.",
   "privacy.shop.noads": "There are no ads in the game, and buying something starts no tracking.",

@@ -53,7 +53,8 @@ table and the new house and outfit limits.
 
 ## 3. Test (test mode)
 1. In a test copy with the shop switched on, buy each item with the card `4242 4242 4242 4242`. The game tab should get it when you come back.
-2. Stripe Dashboard > the payment > Refund (in full): the next poll takes the item back (coins stay).
+2. Stripe Dashboard > the payment > Refund (in full): the next poll takes back what that purchase gave, its items and its Paw Coins
+   (coins already spent are settled from later coins, Gerald writes a letter); things bought with coins stay.
 3. Webhooks page: every delivery answered 200.
 
 ## 4. Launch

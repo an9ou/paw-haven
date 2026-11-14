@@ -152,7 +152,7 @@
   "privacy.shop.lead": "A Lojinha Gentil do jogo oferece moedas e visuais. Você precisa de uma conta para comprar, assim o jogo pode entregar sua compra em qualquer aparelho.",
   "privacy.shop.stripe": "<b>Os pagamentos são feitos na Stripe,</b> que é a vendedora registrada (merchant of record). Nós nunca vemos os dados do seu cartão. As regras da própria Stripe estão em {link}.",
   "privacy.shop.keep": "<b>O que guardamos:</b> um id da compra, o item, o valor, a moeda, a hora e o id da sua conta. Mais nada sobre o pagamento.",
-  "privacy.shop.refund": "<b>Reembolsos</b> são feitos pela Stripe. Um item de compra única reembolsado é retirado do seu jogo. Moedas já entregues não são retiradas.",
+  "privacy.shop.refund": "<b>Reembolsos</b> são feitos pela Stripe. Depois de um reembolso total, o que aquela compra deu é retirado: os itens e as Moedas de Patinha. Moedas já gastas são compensadas com as moedas que você ganhar depois. O que você comprou com moedas continua seu. Só o Pacote Apoiador não pode ser comprado de novo depois de um reembolso total.",
   "privacy.shop.delete": "<b>Apagar sua conta</b> também apaga esses registros de compra do nosso lado. A Stripe guarda os próprios registros, como a lei exige.",
   "privacy.shop.paused": "<b>Se uma conta estiver pausada</b> por reembolsos ou contestações bancárias e depois for excluída, guardamos só um código embaralhado do e-mail que não pode ser revertido, para impedir abuso nos pagamentos, e nada mais.",
   "privacy.shop.noads": "Não há anúncios no jogo, e comprar algo não inicia nenhum rastreamento.",

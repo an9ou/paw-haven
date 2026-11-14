@@ -151,7 +151,7 @@
   "privacy.shop.lead": "Der Nette Laden im Spiel bietet Taler und Looks. Zum Kaufen brauchst du ein Konto, damit das Spiel dir deinen Kauf auf jedem Gerät geben kann.",
   "privacy.shop.stripe": "<b>Bezahlt wird bei Stripe,</b> Stripe ist der Verkäufer im rechtlichen Sinn (Merchant of Record). Wir sehen deine Kartendaten nie. Die Regeln von Stripe findest du unter {link}.",
   "privacy.shop.keep": "<b>Was wir speichern:</b> eine Kauf-ID, den Artikel, den Betrag, die Währung, die Uhrzeit und die ID deines Kontos. Sonst nichts über die Zahlung.",
-  "privacy.shop.refund": "<b>Erstattungen</b> laufen über Stripe. Ein erstatteter einmaliger Artikel wird aus deinem Spiel wieder entfernt. Bereits gegebene Taler werden nicht zurückgenommen.",
+  "privacy.shop.refund": "<b>Erstattungen</b> laufen über Stripe. Nach einer vollen Erstattung geht zurück, was dieser Kauf gebracht hat: seine Sachen und seine Pfotentaler. Schon ausgegebene Taler werden mit später verdienten Talern ausgeglichen. Was du mit Talern gekauft hast, bleibt dir. Nur das Unterstützer-Paket kann nach einer vollen Erstattung nicht wieder gekauft werden.",
   "privacy.shop.delete": "<b>Wenn du dein Konto löschst,</b> löschen wir auch diese Kaufdaten bei uns. Stripe behält seine eigenen Unterlagen, wie es das Gesetz verlangt.",
   "privacy.shop.paused": "<b>Wenn ein Konto</b> wegen Erstattungen oder Bank-Rückbuchungen pausiert ist und dann gelöscht wird, behalten wir nur einen verschlüsselten Einweg-Code seiner E-Mail, um Missbrauch bei Zahlungen zu verhindern, und sonst nichts.",
   "privacy.shop.noads": "Im Spiel gibt es keine Werbung, und ein Kauf startet kein Tracking.",

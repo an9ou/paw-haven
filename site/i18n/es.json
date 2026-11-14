@@ -157,7 +157,7 @@
   "privacy.shop.lead": "La Tienda Amable del juego ofrece monedas y looks. Para comprar necesitas una cuenta, así el juego puede darte tu compra en cualquier dispositivo.",
   "privacy.shop.stripe": "<b>Los pagos se hacen en Stripe,</b> que es el comerciante registrado (merchant of record). Nunca vemos los datos de tu tarjeta. Las normas de Stripe están en {link}.",
   "privacy.shop.keep": "<b>Lo que guardamos:</b> un id de compra, el artículo, el importe, la moneda, la hora y el id de tu cuenta. Nada más sobre el pago.",
-  "privacy.shop.refund": "<b>Los reembolsos</b> se hacen a través de Stripe. Un artículo de pago único reembolsado se retira de tu juego. Las monedas ya entregadas no se retiran.",
+  "privacy.shop.refund": "<b>Los reembolsos</b> se hacen a través de Stripe. Tras un reembolso completo, lo que dio esa compra se retira: sus artículos y sus Monedas Pata. Las monedas ya gastadas se compensan con las que ganes después. Lo que compraste con monedas sigue siendo tuyo. Solo el Pack de Apoyo no se puede volver a comprar tras un reembolso completo.",
   "privacy.shop.delete": "<b>Borrar tu cuenta</b> también borra estos registros de compra de nuestro lado. Stripe guarda sus propios registros, como pide la ley.",
   "privacy.shop.paused": "<b>Si una cuenta está en pausa</b> por reembolsos o disputas bancarias y luego se elimina, solo guardamos un código cifrado de su correo que no se puede revertir, para frenar el abuso en los pagos, y nada más.",
   "privacy.shop.noads": "No hay anuncios en el juego, y comprar algo no activa ningún rastreo.",
