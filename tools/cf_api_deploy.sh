@@ -47,6 +47,11 @@ addcol users official 'integer not null default 0'
 addcol shop_holds tried_at 'integer' # Kind shop refund fix (13 Nov 2026): only matters if an older shop_holds was ever created
 addcol shop_holds nonce 'text' # Kind shop fix round 2 (13 Nov 2026): the hold's Idempotency-Key nonce. Must run before the new Worker (below)
 addcol purchases disputed_at 'integer' # refund protection (14 Nov 2026): set by charge.dispute.created. Must run before the new Worker (below)
+addcol users shop_hash 'text' # refund protection (14 Nov 2026): the one-way email code the delete trigger keeps. Before the trigger and the Worker
+# 2c. triggers (cloudflare/schema_triggers.sql), after every added column they name; one statement per request (split on "-- statement")
+py "import json,re; s=open('cloudflare/schema_triggers.sql').read(); [print(json.dumps({'sql': re.sub(r'--[^\n]*', '', p).strip()})) for p in re.split(r'^-- statement$', s, flags=re.M)[1:] if re.sub(r'--[^\n]*', '', p).strip()]" \
+  | while IFS= read -r Q; do curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary "$Q" | ok; done
+echo "triggers applied"
 
 # 3. the Worker, bound to D1 (no plain vars since v2.9.1: Supabase is gone)
 META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'}]}))")

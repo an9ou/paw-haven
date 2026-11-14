@@ -49,6 +49,8 @@
 //   Refund protection (owner, 14 Nov 2026; V224.md 4.4): an account with 2 full refunds or 1 bank dispute in purchases is paused (409 paused
 //     at checkout, coin packs too; coins buys in the game are untouched). shop_flags (set by hand with tools/shop_flag.sh): 'block' on
 //     u:<user id> or e:<lowercased email> pauses that account or every account with that email; 'allow' on either lifts the auto pause.
+//     When a paused account is deleted, the D1 trigger users_shop_keep keeps only 'h:<SHA-256 of "dd-shop-v1:" + email>' as a block, so a
+//     new account with that email is paused too until an 'allow' (user, email or hash) lifts it.
 //   GET  /shop/owned                       -> { purchases: [{ id, item, at, refunded, coins }] }   120/h
 //     coins: Paw Coins that row grants (the client takes them back when the row is refunded). A coin pack from before v2.24.2 is its old
 //     size. The Supporter 2,000 sits on one row: the oldest not refunded, else the oldest.
@@ -141,7 +143,8 @@ async function limited(env, key, max, sec) {
 }
 async function tidy(env) {
   const now = Date.now();
-  await env.DB.batch([
+  const fill = env.DB.prepare('select id, email from users where email is not null and shop_hash is null limit 200'); // refund protection: older accounts without their one-way email code (the delete trigger needs it)
+  const st = [
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
     env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
@@ -150,7 +153,12 @@ async function tidy(env) {
     env.DB.prepare('delete from purchases where user_id not in (select id from users)'), // v2.24: a deleted account's purchases go with it (Stripe keeps its own records)
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
-  ]);
+  ];
+  let out;
+  try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
+  catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
+  const rows = out && out[out.length - 1] && Array.isArray(out[out.length - 1].results) ? out[out.length - 1].results : [];
+  if (rows.length) await shopHashFill(env, rows);
 }
 // Dog Cards: a deleted account's card and paws (both ways). Runs only from the card routes (about 1 in 50 of their requests), not on every route.
 async function dcTidy(env) {
@@ -558,17 +566,37 @@ async function shopBlocked(env, uid, id) {
   if (SHOP_ONCE_EVER.includes(id) && sets.ever.has(id)) return { why: 'refunded', sets };
   return { why: null, sets };
 }
+// The one-way code of an account email for refund protection (owner, 14 Nov 2026): hex SHA-256 of "dd-shop-v1:" + the lowercased, trimmed
+// email. Kept in users.shop_hash while the account lives (set at register, filled in for older accounts by tidy() and at checkout), so the
+// D1 trigger users_shop_keep (cloudflare/schema_triggers.sql) can keep it as an 'h:' block when a paused account is deleted. tools/shop_flag.sh
+// computes the same code. Never change the prefix: every stored 'h:' row would stop matching.
+const shopHash = (email) => sha256('dd-shop-v1:' + norm(email));
+async function shopHashSet(env, uid, email) {
+  try { await run(env, 'update users set shop_hash = ?1 where id = ?2', await shopHash(email), uid); }
+  catch (e) { console.error('pawhaven-api shop: users.shop_hash not added yet', String((e && e.message) || e).slice(0, 80)); }
+}
+// tidy(): fill in users.shop_hash for email accounts made before it existed (rows: { id, email }, 200 at a time)
+async function shopHashFill(env, rows) {
+  try {
+    const st = []; for (const r of rows) st.push(env.DB.prepare('update users set shop_hash = ?1 where id = ?2 and shop_hash is null').bind(await shopHash(r.email), r.id));
+    await env.DB.batch(st);
+  } catch (e) { console.error('pawhaven-api shop: shop_hash fill', String((e && e.message) || e).slice(0, 80)); }
+}
 // Refund protection (owner, 14 Nov 2026; V224.md 4.4): true when paid items are paused for this account. A 'block' row in shop_flags for
-// the user or its email always pauses (a new account with the same email too); otherwise an 'allow' row for either lifts the auto pause;
-// otherwise 2 full refunds or 1 dispute on this user's purchases pause it. Before cf_api_deploy.sh has added purchases.disputed_at (or
-// shop_flags), the parts it can read still count, so checkout keeps working.
+// the user or its email always pauses (a new account with the same email too); otherwise an 'allow' row for the user, the email or its
+// hash lifts the pause; otherwise an 'h:' block (an account with this email was deleted while paused) pauses; otherwise 2 full refunds or
+// 1 dispute on this user's purchases pause it. Before cf_api_deploy.sh has added purchases.disputed_at, shop_flags or users.shop_hash,
+// the parts it can read still count, so checkout keeps working.
 async function shopPaused(env, me) {
-  const keys = ['u:' + me.id]; if (me.email) keys.push('e:' + norm(me.email));
+  const h = me.email ? await shopHash(me.email) : null;
+  const keys = ['u:' + me.id, me.email ? 'e:' + norm(me.email) : 'u:' + me.id, h ? 'h:' + h : 'u:' + me.id];
   let flags = [];
-  try { flags = await all(env, 'select mode from shop_flags where key in (?1, ?2)', keys[0], keys[1] || keys[0]); }
+  try { flags = await all(env, 'select key, mode from shop_flags where key in (?1, ?2, ?3)', keys[0], keys[1], keys[2]); }
   catch (e) { console.error('pawhaven-api shop: shop_flags unreadable', String((e && e.message) || e).slice(0, 80)); }
-  if (flags.some((f) => f.mode === 'block')) return true;
+  if (h) { try { await run(env, 'update users set shop_hash = ?1 where id = ?2 and shop_hash is null', h, me.id); } catch (e) { /* users.shop_hash not added yet */ } }
+  if (flags.some((f) => f.mode === 'block' && !String(f.key).startsWith('h:'))) return true;
   if (flags.some((f) => f.mode === 'allow')) return false;
+  if (flags.some((f) => f.mode === 'block')) return true; // an account with this email was deleted while paused
   let c = null;
   try { c = await one(env, 'select count(refunded_at) as r, count(disputed_at) as d from purchases where user_id = ?1', me.id); }
   catch (e) {
@@ -800,10 +828,12 @@ const ROUTES = {
           env.DB.prepare('update users set email = ?1, pw_hash = ?2, pw_salt = ?3, guest = 0 where id = ?4 and guest = 1').bind(email, h.hash, h.salt, me.id),
           env.DB.prepare('delete from sessions where token_hash = ?1').bind(me.th)
         ]);
+        await shopHashSet(env, me.id, email);
         return json({ token: await newSession(env, me.id), user: { id: me.id, email, guest: false }, upgraded: true });
       }
       const id = crypto.randomUUID();
       await run(env, 'insert into users (id, email, pw_hash, pw_salt, created_at, guest) values (?1, ?2, ?3, ?4, ?5, 0)', id, email, h.hash, h.salt, Date.now());
+      await shopHashSet(env, id, email);
       return json({ token: await newSession(env, id), user: { id, email, guest: false }, upgraded: false });
     } catch (e) {
       if (/unique/i.test(String(e && e.message))) return fail('email_exists', 409);

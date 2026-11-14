@@ -5,6 +5,8 @@ const fs = require('fs'), path = require('path');
 function d1(file) {
   const db = new DatabaseSync(file || ':memory:');
   db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
+  const trig = path.join(__dirname, 'schema_triggers.sql'); // after the tables, as tools/cf_api_deploy.sh does
+  if (fs.existsSync(trig)) db.exec(fs.readFileSync(trig, 'utf8'));
   const stmt = (sql, args) => ({
     sql, args: args || [],
     bind(...a) { return stmt(sql, a); },

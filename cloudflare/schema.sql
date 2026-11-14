@@ -11,7 +11,9 @@ create table if not exists users (
   created_at integer not null,         -- ms
   guest      integer not null default 0,
   migrated   integer not null default 0, -- 1: moved over from Supabase (v2.8.1-v2.9; unused since v2.9.1)
-  official   integer not null default 0  -- v2.22.3: 1 = the game's official Friends account (no friend cap). Set by hand in D1 only.
+  official   integer not null default 0, -- v2.22.3: 1 = the game's official Friends account (no friend cap). Set by hand in D1 only.
+  shop_hash  text                        -- refund protection (14 Nov 2026): hex SHA-256 of "dd-shop-v1:" + email, for the delete trigger in
+                                         -- schema_triggers.sql. Gone with the row. tools/cf_api_deploy.sh adds it to an older table
 );
 -- An older database gets "official" from tools/cf_api_deploy.sh (ALTER TABLE only when the column is missing: SQLite has no
 -- "add column if not exists", so it cannot live in this file).
@@ -179,6 +181,9 @@ create index if not exists purchases_pi on purchases (payment_intent);
 -- Refund protection (owner, 14 Nov 2026; V224.md 4.4). Set by hand only, with tools/shop_flag.sh: the Worker reads it at POST /shop/checkout.
 -- 'block': paid items paused for that account, or for every account with that email. 'allow': lifts the auto pause (2 full refunds or
 -- 1 dispute). A block on either key wins over an allow. Kept when an account is deleted, so an email block holds for a new account.
+-- 'h:<hex SHA-256 of "dd-shop-v1:" + lowercased email>' rows (mode 'block', note 'auto: deleted while paused') are written only by the
+-- trigger users_shop_keep (cloudflare/schema_triggers.sql) when a paused account is deleted: no plain email, no user id. Any 'allow' for the
+-- new account (user, email or hash) lifts one.
 create table if not exists shop_flags (
   key        text primary key,   -- 'u:<user id>' or 'e:<lowercased email>'
   mode       text not null,      -- 'allow' | 'block'

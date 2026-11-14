@@ -607,7 +607,7 @@ const now = () => Math.floor(Date.now() / 1000);
     sec('22. an older D1: purchases without disputed_at, no shop_flags (before cf_api_deploy.sh adds them)');
     {
       const OD = d1();
-      OD.raw.exec(`drop table purchases; drop table shop_flags; create table purchases (id text primary key, user_id text not null, item text not null, amount integer, currency text, payment_intent text, created_at integer not null, refunded_at integer)`);
+      OD.raw.exec(`drop trigger users_shop_keep; alter table users drop column shop_hash; drop table purchases; drop table shop_flags; create table purchases (id text primary key, user_id text not null, item text not null, amount integer, currency text, payment_intent text, created_at integer not null, refunded_at integer)`);
       const oenv = Object.assign({}, env, { DB: OD });
       const ocall = async (method, p, body, token, headers) => {
         const h = Object.assign({ 'CF-Connecting-IP': '10.25.0.' + (++ipN % 250), 'Content-Type': 'application/json' }, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
@@ -627,13 +627,72 @@ const now = () => Math.floor(Date.now() / 1000);
       oins.run('cs_test_old00003', O.id, 'tokyo', 'usd', 'pi_test_old00003', Date.now() - 5000, null);
       r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
       ok(r.status >= 500, 'a dispute before the column exists: an error, so Stripe sends it again later: ' + r.status);
-      OD.raw.exec('alter table purchases add column disputed_at integer'); // what cf_api_deploy.sh addcol does
+      ok(!!O.token && !!O.id && !('shop_hash' in OD.raw.prepare('select * from users where id = ?').get(O.id)), 'register (and tidy() after every request) work on a users table without shop_hash');
+      OD.raw.exec('alter table purchases add column disputed_at integer; alter table users add column shop_hash text'); // what cf_api_deploy.sh addcol does
+      OD.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema_triggers.sql'), 'utf8')); // then the triggers
       OD.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // and schema.sql makes shop_flags
       ok(OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00001').disputed_at === null, 'after addcol the old rows read disputed_at null');
+      await ocall('GET', '/');
+      ok(OD.raw.prepare('select shop_hash from users where id = ?').get(O.id).shop_hash === crypto.createHash('sha256').update('dd-shop-v1:oldrows@example.com').digest('hex'), 'and the next tidy() fills in the one-way code of the older account');
       r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
       ok(r.status === 200 && OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00003').disputed_at > 0, "Stripe's retry lands once the column is there");
       OD.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', null, ?)").run('u:' + O.id, Date.now());
       r = await ocall('POST', '/shop/checkout', { item: 'coins_1k' }, O.token); ok(r.status === 200, 'and an allow row lifts the pause');
+    }
+
+    sec('23. a paused account that is deleted leaves only a one-way code of its email (owner, 14 Nov 2026)');
+    {
+      const hashOf = (e) => crypto.createHash('sha256').update('dd-shop-v1:' + e.trim().toLowerCase()).digest('hex');
+      const refundRow = (uid, id) => DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 99, ?, ?, ?, ?)').run(id, uid, 'coins_1k', 'usd', 'pi_' + id, Date.now() - 9000, Date.now() - 8000);
+      const del = async (uid) => { DB.raw.prepare('delete from users where id = ?').run(uid); await call('GET', '/'); }; // by hand in D1, then tidy() drops the purchases
+      const flagsNow = () => DB.raw.prepare('select key, mode, note, created_at from shop_flags').all().map((x) => Object.assign({}, x));
+      const paused = (x) => x.status === 409 && x.json && x.json.error === 'paused';
+      // an older account (no shop_hash yet): tidy() fills it in
+      const K1 = await account('gone@example.com');
+      ok(q('select shop_hash from users where id = ?', K1.id).shop_hash === hashOf('gone@example.com'), 'register stores the one-way code: SHA-256 of "dd-shop-v1:" + the email');
+      DB.raw.prepare('update users set shop_hash = null where id = ?').run(K1.id);
+      await call('GET', '/');
+      ok(q('select shop_hash from users where id = ?', K1.id).shop_hash === hashOf('gone@example.com'), 'an account from before the column gets it from tidy()');
+      refundRow(K1.id, 'cs_test_gone1a01'); refundRow(K1.id, 'cs_test_gone1b01');
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K1.token); ok(paused(r), 'two refunds: paused before the delete');
+      const before = flagsNow().length;
+      await del(K1.id);
+      const kept = flagsNow().filter((f) => f.note === 'auto: deleted while paused');
+      ok(kept.length === 1 && kept[0].key === 'h:' + hashOf('gone@example.com') && kept[0].mode === 'block' && kept[0].created_at > Date.now() - 60000 && flagsNow().length === before + 1, 'deleting it keeps one block row h:<hash>: ' + JSON.stringify(kept));
+      const all = JSON.stringify(flagsNow());
+      ok(!/gone@example\.com/.test(all) && !all.includes(K1.id) && n('select count(*) as n from purchases where user_id = ?', K1.id) === 0, 'no plain email and no user id kept; its purchases are gone');
+      // a new account with the same email, in other letters
+      const K2 = await account('  GONE@Example.COM ');
+      ok(q('select shop_hash from users where id = ?', K2.id).shop_hash === hashOf('gone@example.com'), 'mixed case and spaces: the same code');
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(paused(r), 'a new account with that email: 409 paused, with no refunds of its own: ' + r.text);
+      r = await call('POST', '/shop/checkout', { item: 'supporter' }, K2.token); ok(paused(r), 'every item');
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('u:' + K2.id, Date.now());
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), "an 'allow' on the new account's user id lifts it");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('u:' + K2.id);
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('e:gone@example.com', Date.now());
+      r = await call('POST', '/shop/checkout', { item: 'coins_3k' }, K2.token); ok(r.status === 200, "an 'allow' on its email lifts it too");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('e:gone@example.com');
+      DB.raw.prepare("update shop_flags set mode = 'allow' where key = ?").run('h:' + hashOf('gone@example.com'));
+      r = await call('POST', '/shop/checkout', { item: 'coins_3k' }, K2.token); ok(r.status === 200, "and so does turning the hash row into an 'allow' (tools/shop_flag.sh allow hash)");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('h:' + hashOf('gone@example.com'));
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(r.status === 200, 'cleared: open');
+      // not paused at the delete: nothing kept
+      const n0 = flagsNow().length;
+      const K3 = await account('onlyone@example.com'); refundRow(K3.id, 'cs_test_one1a001'); await del(K3.id);
+      const K4 = await account('nevermind@example.com'); await del(K4.id);
+      const K5 = await account('allowed@example.com'); refundRow(K5.id, 'cs_test_alw1a001'); refundRow(K5.id, 'cs_test_alw1b001');
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('u:' + K5.id, Date.now()); await del(K5.id);
+      const gg = (await call('POST', '/guest', {})).json; refundRow(gg.user.id, 'cs_test_gst1a001'); refundRow(gg.user.id, 'cs_test_gst1b001');
+      ok(q('select shop_hash from users where id = ?', gg.user.id).shop_hash === null, 'a guest has no code');
+      await del(gg.user.id);
+      ok(flagsNow().length === n0 + 1 && flagsNow().filter((f) => f.note === 'auto: deleted while paused').length === 0, 'one refund, no purchases, an allowed account or a guest: deleting keeps nothing (only the allow row the test wrote): ' + JSON.stringify(flagsNow().slice(-3)));
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, (await account('onlyone@example.com')).token); ok(r.status === 200, 'so a new account with that email is open');
+      // a dispute alone is enough
+      const K6 = await account('disp2@example.com');
+      DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at, disputed_at) values (?, ?, ?, 99, ?, ?, ?, null, ?)').run('cs_test_dsp2a001', K6.id, 'tokyo', 'usd', 'pi_test_dsp2a001', Date.now() - 5000, Date.now() - 4000);
+      await del(K6.id);
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, (await account('Disp2@example.com')).token); ok(paused(r), 'a disputed account deleted: a new one with that email is paused');
+      ok(/drop trigger if exists users_shop_keep/.test(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema_triggers.sql'), 'utf8')) && /addcol users shop_hash/.test(fs.readFileSync(path.join(ROOT, 'tools', 'cf_api_deploy.sh'), 'utf8')) && /schema_triggers\.sql/.test(fs.readFileSync(path.join(ROOT, 'tools', 'cf_api_deploy.sh'), 'utf8')), 'the deploy adds users.shop_hash and applies the trigger after the columns');
     }
 
     sec('10. the source');
