@@ -35,7 +35,8 @@ bank account in HKD; the prices stay in USD. Buyers in China, Russia and a few o
 4. Add a webhook endpoint (Developers > Webhooks): URL `https://<the API Worker's address>/shop/webhook`, events
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, and (refund fix, 13 Nov 2026)
    `checkout.session.expired`, `checkout.session.async_payment_failed`, so an abandoned Checkout stops holding its item at once.
-   Without the last two a hold still ends after 24 hours. Note its signing secret (`whsec_...`).
+   Without the last two a hold still ends after 24 hours. And (refund protection, 14 Nov 2026) `charge.dispute.created`, so a bank
+   dispute pauses paid items for that account (V224.md 4.4). Note its signing secret (`whsec_...`).
 
 ## 2. In the Worker (pawhaven-api)
 ```
