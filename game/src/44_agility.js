@@ -273,7 +273,7 @@ function agFinish() {
   const bondFirst = by[d.id] !== today; if (bondFirst) { by[d.id] = today; const b = withDog(d, () => addBond(10)); lines.push(tt('agility.r_bond', '+{n} Bond.', { n: b })); }
   const coinRun = S.ag.runs < 2; S.ag.runs++;
   let coins = 0; if (coinRun) coins = Math.min(AG_COINS[stars], agCoinsLeft());
-  if (coins > 0) { addCoins(coins, { raw: true }); S.ag.coins = (S.ag.coins || 0) + coins; lines.push(tt('agility.r_coins', '+{n, plural, one {# coin} other {# coins}}.', { n: coins })); }
+  if (coins > 0) { addCoins(coins, { raw: true }); S.ag.coins = (S.ag.coins || 0) + coins; lines.push(tt('agility.r_coins', '+{n, plural, one {# coin} other {# coins}}.', { n: coins })); coinFly(() => $('#agHint'), coins); }
   else if (coinRun && agCoinsLeft() <= 0) lines.push(tt('agility.r_cap', 'Agility coins are done for today. The fun is free.'));
   else if (!coinRun) lines.push(tt('agility.r_nocoin', 'Coins are for the first two runs of the day. Rosettes are always free.'));
   withDog(d, () => addStat('energy', -10)); lines.push(tt('agility.r_energy', '-10 Energy.'));

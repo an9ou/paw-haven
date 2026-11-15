@@ -254,7 +254,7 @@ function openPip(tab) {
     const q0 = await buyWindow(p, { art: art('item', c.item), name: `${gkCropName(c)} ${'★'.repeat(+i + 1)}`, desc: tt('garden.sell_desc', "Pip pays {sell} × {mult} for {stars}-star {crop}. Pip's cart today: {used} / {cap} coins, room for {room} more.", { sell: c.sell, mult: STAR_MULT[+i], stars: +i + 1, crop: tdata('crop_names.' + tid(c.id), c.name.toLowerCase()), used: PIP_CAP - left, cap: PIP_CAP, room }), price: each, sell: true, max: Math.min(a[+i], room), have: a[+i], haveLabel: tt('garden.in_basket', 'In basket') });
     const q = Math.min(q0, a[+i], Math.floor(pipLeft() / each)); if (!q) return;
     a[+i] -= q; const got = addCoins(each * q, { raw: true }); pipToday().coins += each * q; SFX.kaching(); markDirty();
-    toast(tt('garden.sold', 'Sold {q} {crop} for {got, plural, one {# coin} other {# coins}}. Pip says {name} is a fine farm dog.', { q, crop: gkCropName(c), got, name: NAME() }) + (pipLeft() ? '' : ' ' + pipFull()), 'gold'); openPip();
+    const te = toast(tt('garden.sold', 'Sold {q} {crop} for {got, plural, one {# coin} other {# coins}}. Pip says {name} is a fine farm dog.', { q, crop: gkCropName(c), got, name: NAME() }) + (pipLeft() ? '' : ' ' + pipFull()), 'gold'); coinFly(te, got); openPip(); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   }; });
   p.querySelectorAll('[data-people]').forEach((b) => { b.onclick = () => safetyNote(b.dataset.people); });
 }

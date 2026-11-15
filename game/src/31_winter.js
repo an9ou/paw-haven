@@ -258,7 +258,7 @@ function wnContestEnd(here) {
 function wnContestDone() {
   wnFields(); S.wn.contest.date = wnToday();
   const c = wnCategory(outfitOf(D())), n = addCoins(10, { raw: true }); addStat('happy', 10); addBond(2); markDirty(); updateHUD(); SFX.kaching();
-  toast(tt('winter.wins', '{name} wins {cat}. {note} +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), cat: wnCatName(c), note: wnCatNote(c), n }), 'gold'); trackAct('sweater', {});
+  coinFly(toast(tt('winter.wins', '{name} wins {cat}. {note} +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), cat: wnCatName(c), note: wnCatNote(c), n }), 'gold'), n); trackAct('sweater', {});
   if (fsHere('square')) fsSquareDraw();
   const y = wnYear(); if (S.wn.contest.year === y) return;
   S.wn.contest.year = y; const fresh = !owns('clothes', 'Ugly Sweater Rosette'); if (fresh) S.inv.clothes.push('Ugly Sweater Rosette'); markDirty(); saveNow();

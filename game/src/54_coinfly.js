@@ -19,7 +19,7 @@
      They MERGE: gains of one dog within BJ_MERGE ms are one heart, and one dog gets at most one heart every BJ_EVERY ms (pets, feeding and
      care come in bursts); XP gains within XJ_MERGE ms are one star. A tiny Bond gain (under BJ_TINY) only pulses the meter.
      jfSrc(kind, from) names the source for a gain just made or about to be made (the walk result's Bond tile, a toast, a result card).
-     No source given: the dog (Bond), a tap in the last JF_PTR_MS ms, else the icon pops on the meter itself.
+     No source given: the dog in the scene (Bond and XP), a tap in the last JF_PTR_MS ms, else the icon pops on the meter itself.
      A level-up (Bond or town level) keeps its own celebration: no heart or star for it, and any still on the way land at once, quietly.
      The daily XP cap: lvGain grants 0 and says nothing, so nothing flies.
    The values are already right (addCoins, addBond, lvGain): this is display only. While an icon is on its way the meter shows the value
@@ -236,7 +236,7 @@ function juiceFly(kind, from, amount, o = {}) {
   if (kind === 'coin') return coinFly(from, amount, o);
   const K = JK[kind]; amount = Math.max(0, Math.round(+amount || 0)); if (!K || !S || !amount || cur.mode === 'title') return null;
   if (kind === 'bond') { const id = S.dog && S.dog.id; return jfOpen(K, amount, Object.assign({ id, merge: BJ_MERGE, every: BJ_EVERY, tiny: BJ_TINY, alt: () => bjDog(id) }, o, { from })); }
-  return jfOpen(K, amount, Object.assign({ merge: XJ_MERGE }, o, { from }));
+  const id = S.dog && S.dog.id; return jfOpen(K, amount, Object.assign({ merge: XJ_MERGE, alt: () => bjDog(id) }, o, { from }));
 }
 // the source of a Bond or XP gain just made (an open one takes it) or about to be made (within 300 ms)
 function jfSrc(kind, from) {
@@ -257,7 +257,7 @@ function xjGain(g) {
   if (!g || !S) return false;
   if (g.up || g.stUp || g.src === 'bond') { XJ.gs.slice().forEach((x) => { x.silent = true; jfLand(JK.xp, x, true); }); return false; }
   const n = Math.max(0, Math.round(+g.n || 0)); if (!n) return false;
-  return !!jfOpen(JK.xp, n, { merge: XJ_MERGE });
+  const id = S.dog && S.dog.id; return !!jfOpen(JK.xp, n, { merge: XJ_MERGE, alt: () => bjDog(id) });
 }
 // everything lands at once, no effect left behind (back to the title, a hidden tab)
 function cfFinishAll() { Object.values(JK).forEach((K) => K.st.gs.slice().forEach((g) => jfLand(K, g, true))); }

@@ -332,12 +332,12 @@ function coatRewardsCheck() {
   const have = coatCount(), got = [];
   COAT_MILESTONES.forEach(([n, coins]) => {
     if (have < n || S.coatRewards[n]) return; S.coatRewards[n] = localISO(); got.push(n);
-    if (coins) addCoins(coins, { raw: true });
+    const c0 = S.coins; if (coins) addCoins(coins, { raw: true });
     if (n === 15 && !S.inv.charms.includes(RIBBON)) S.inv.charms.push(RIBBON);
     if (n === 25 && !S.inv.clothes.includes(JR_RAINBOW)) S.inv.clothes.push(JR_RAINBOW);
     if (n === 40) jrDecor('Giant Crayon Box');
     const msg = n === 5 ? tt('journal.coat_5', 'Coat Collection: 5 coats! +{coins} coins. A very fashionable family.', { coins }) : n === 10 ? tt('journal.coat_10', 'Coat Collection: 10 coats! You are a Gene Detective now.') : n === 15 ? tt('journal.coat_15', 'Coat Collection: 15 coats! +{coins} coins and the {ribbon} charm.', { coins, ribbon: shNameAny(RIBBON) }) : n === 25 ? tt('journal.coat_25', 'Coat Collection: 25 coats! The Rainbow Collar is in your wardrobe. Every colour, all at once.') : n === 30 ? tt('journal.coat_30', 'Coat Collection: 30 coats! +{coins} coins. Scientists are taking notes.', { coins }) : n === 40 ? tt('journal.coat_40', 'Coat Collection: 40 coats! A Giant Crayon Box for the yard.') : tt('journal.coat_50', 'Coat Collection: 50 coats! You are now a Master Breeder. It says so on the Profile.');
-    toast(msg, 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
+    const te = toast(msg, 'gold'); if (coins) coinFly(te, coins, { gain: S.coins - c0 }); try { SFX.fanfare(); } catch (e) { /* audio off */ } // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     if (n === 10) titleGive('Gene Detective');
     if (n === 50) titleGive('Master Breeder');
   });

@@ -171,7 +171,7 @@ function msOnAct(a) {
     if (it.p >= it.n) { // Daily rhythm: every finished mission pays 40 raw coins and stamps the card
       it.done = jstISO(); const { n: c, d: cd } = addCoinsD(MS_PAY, { raw: true }); stamp = true; m.stamps++; m.stampDay = m.date; ms2Life('ms'); if (typeof lvGain === 'function') lvGain('ms', 20); // v2.20: the lifetime count (Mission pup badge). v2.22: town XP
       const te = msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }) + ksSettleNote(cd), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
-      msCoinEl = te || $('#msBtn:not([hidden])'); coinFly(msCoinEl, c, { gain: c - cd }); // v2.25.2: one coin pops from the toast (or the clipboard) and flies to the counter (54_coinfly.js)
+      msCoinEl = te || $('#msBtn:not([hidden])'); coinFly(msCoinEl, c, { gain: c - cd }); jfSrc('xp', msCoinEl); // v2.25.2: one coin pops from the toast (or the clipboard) and flies to the counter (54_coinfly.js)
     }
   });
   if (!changed) return;

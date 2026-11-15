@@ -208,7 +208,7 @@ function drawWalk() {
 function removeObj(i) { const el = $('#wo' + i); if (el) { el.classList.add('got'); setTimeout(() => el.remove(), 600); } }
 function collect(o, i) {
   if (o.done) return; o.done = true; SFX.pop();
-  if (o.t === 'surprise') { const g = grantTreasure(o.item, W.area); W.extra.push({ item: o.item, dup: g.dup }); SFX.treasure(); toast(g.dup ? tt('walk.surprise_dup', 'A sparkle on the path! Another {item}... sold to a squirrel for 40 coins.', { item: jrTN(o.item) }) : tt('walk.surprise', 'Surprise treasure on the path: {item}! ({rarity})', { item: jrTN(o.item), rarity: tdata('rarity.' + o.item.r, RARITY[o.item.r]) }), 'gold'); }
+  if (o.t === 'surprise') { const g = grantTreasure(o.item, W.area); W.extra.push({ item: o.item, dup: g.dup }); SFX.treasure(); const te = toast(g.dup ? tt('walk.surprise_dup', 'A sparkle on the path! Another {item}... sold to a squirrel for 40 coins.', { item: jrTN(o.item) }) : tt('walk.surprise', 'Surprise treasure on the path: {item}! ({rarity})', { item: jrTN(o.item), rarity: tdata('rarity.' + o.item.r, RARITY[o.item.r]) }), 'gold'); if (g.dup) coinFly(te, g.coins); }
   else W.coins += RINT(1, 4);
   removeObj(i);
 }
@@ -229,13 +229,13 @@ function dig(o) {
   W.happy += favAct('digging') ? 5 : 2; W.bond += 2;
   if (o.treasure) {
     const L = W.loot; W.found = L; updateDigs();
-    if (L.item) { const g = grantTreasure(L.item, W.area); L.dup = g.dup; L.first = g.first; }
+    if (L.item) { const g = grantTreasure(L.item, W.area); L.dup = g.dup; L.first = g.first; if (g.dup) coinFly(() => L.te, g.coins, { delay: 640 }); } // v2.25.3: the squirrel's coins fly from the toast
     else { W.coins += L.coins; W.pouch = (W.pouch || 0) + L.coins; } // Daily rhythm: a pouch keeps its full coins on a tired walk
     setTimeout(() => {
       SFX.treasure(); setTimeout(SFX.fanfare, 300); audioCue('treasure');
       const fx = $('#fx'); if (fx) { fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(artReal('collectible', 'chest') || art('collectible', 'dig'), sx - 45, 220, 90, 90)}${L.item ? place(art('item', L.item.n), sx - 32, 150, 64, 64) : ''}</g>`); setTimeout(() => { const g = fx.lastElementChild; if (g) g.remove(); }, 1400); }
       fxText(tt('walk.treasure_fx', 'TREASURE!'), sx, 140, '#F2C744', 48);
-      toast(L.item ? (L.dup ? tt('walk.treasure_dup', 'Treasure: another {item}. A squirrel bought it for 40 coins.', { item: jrTN(L.item) }) : tt('walk.treasure_get', 'TREASURE! {item} ({rarity})!', { item: jrTN(L.item), rarity: tdata('rarity.' + L.item.r, RARITY[L.item.r]) })) : tt('walk.treasure_pouch', 'A treasure pouch of coins! +{n} coins at the end.', { n: tnum(L.coins * BOOST.coins) }), 'gold');
+      L.te = toast(L.item ? (L.dup ? tt('walk.treasure_dup', 'Treasure: another {item}. A squirrel bought it for 40 coins.', { item: jrTN(L.item) }) : tt('walk.treasure_get', 'TREASURE! {item} ({rarity})!', { item: jrTN(L.item), rarity: tdata('rarity.' + L.item.r, RARITY[L.item.r]) })) : tt('walk.treasure_pouch', 'A treasure pouch of coins! +{n} coins at the end.', { n: tnum(L.coins * BOOST.coins) }), 'gold');
     }, 600);
   } else {
     if (Math.random() < 0.5) { const v = RINT(5, 15); W.coins += v / BOOST.coins; setTimeout(() => toast(tt('walk.consolation', 'No treasure here. Just {n} coins. Consolation coins!', { n: v })), 500); }
@@ -286,9 +286,10 @@ function endWalk(complete) {
   const junk = W.junk.length ? `<p class="small">${esc(tt('walk.res_junk', 'Junk dug up (turned into coins): {list}.', { list: tlist(W.junk.map((k) => k === 'junk-sock' ? tt('walk.junk_sock', 'a sock') : tt('walk.junk_rock', 'a rock'))) }))}</p>` : '';
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
   const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}${typeof ksSettleHTML === 'function' ? ksSettleHTML() : ''}
-    ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
+    ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet
+  jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
   coinFly($('.res-coins .v', p), coins, { gain: gained, delay: 420 }); // v2.25.2: one coin pops from the Paw Coins tile and flies to the counter (54_coinfly.js)
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };

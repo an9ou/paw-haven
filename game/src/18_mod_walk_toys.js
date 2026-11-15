@@ -58,8 +58,9 @@ function finishWalkMod(R, r) {
   const run = `${pkWalkLine(pkFol)}${frLine}${wl ? `<p class="small">${esc(wl)}</p>` : ''}<p class="small">${esc(runBits.join(' '))}</p>${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}${typeof ksSettleHTML === 'function' ? ksSettleHTML() : ''}`;
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
   const p = openModal(t ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(r.early ? tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn }) : tt('walk.res_title_done', 'Walk complete: {route}', { route: rn })), `${tre}${bonus}${junk}${run}
-    ${wfTiles([[`+${tnum(coins)}`, esc(tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${Math.round(en)}`, esc(tt('walk.res_energy', 'Energy')), Math.round(en)], [cl ? '-' + Math.round(cl) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cl]], 'results compact')}`,
+    ${wfTiles([[`+${tnum(coins)}`, esc(tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${Math.round(en)}`, esc(tt('walk.res_energy', 'Energy')), Math.round(en)], [cl ? '-' + Math.round(cl) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cl]], 'results compact')}`,
     { cls: 'celebrate', keep: true, foot: `${t && !dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(t && !dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
+  jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
   coinFly($('.res-coins .v', p), coins, { gain: gained, delay: 420 }); // v2.25.2: one coin pops from the Paw Coins tile and flies to the counter (54_coinfly.js)
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };
@@ -89,8 +90,8 @@ function enterToy(name) {
       if (r.energy) addStat('energy', +r.energy);
       if (crew.length) pkToyFx(crew, r, k, name);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
-      dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
-      if (Math.round(hp) || b || c) toast(tt('toys.reward', '+{happy} Happiness{hasBond, select, yes {, +{bond} Bond} other {}}{hasCoins, select, yes {, +{coins} coins} other {}}{fav, select, yes { (favourite toy!)} other {}}{repeat, select, yes { (x{k}: played already today)} other {}}{crew, select, yes { (each dog)} other {}}', { happy: Math.round(hp), hasBond: b ? 'yes' : 'no', bond: b, hasCoins: c ? 'yes' : 'no', coins: c, fav: fav > 1 ? 'yes' : 'no', repeat: k < 1 ? 'yes' : 'no', k: String(k), crew: crew.length ? 'yes' : 'no' }), 'good');
+      let toyTe = null; dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
+      if (Math.round(hp) || b || c) toyTe = toast(tt('toys.reward', '+{happy} Happiness{hasBond, select, yes {, +{bond} Bond} other {}}{hasCoins, select, yes {, +{coins} coins} other {}}{fav, select, yes { (favourite toy!)} other {}}{repeat, select, yes { (x{k}: played already today)} other {}}{crew, select, yes { (each dog)} other {}}', { happy: Math.round(hp), hasBond: b ? 'yes' : 'no', bond: b, hasCoins: c ? 'yes' : 'no', coins: c, fav: fav > 1 ? 'yes' : 'no', repeat: k < 1 ? 'yes' : 'no', k: String(k), crew: crew.length ? 'yes' : 'no' }), 'good'); if (toyTe) jfSrc('bond', toyTe); if (c) coinFly(toyTe, c); // v2.25.3: the toy game's coin (and Bond heart) fly from its toast (54_coinfly.js)
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
   };

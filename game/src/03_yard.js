@@ -551,6 +551,7 @@ function secretDig() {
     const chest = artReal('collectible', 'chest') || artReal('icon', 'chest') || art('collectible', 'dig');
     const p = openModal('<span class="hl">' + tt('yard.the_grand_treasure_chest', 'The Grand Treasure Chest!') + '</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>${esc(tt('yard.the_x_was_real', 'The X was real. {name} dug up the Grand Treasure Chest of Doodle Doggo.', { name: NAME() }))}</p><ul class="unlocks"><li>${esc(tt('yard.plus_paw_coins', '+{n} Paw Coins', { n: c }) + ksSettleNote(cd))}</li><li>${tt('yard.3_golden_bones_in_the', '3 Golden Bones (in the Food tab)')}</li><li>${tt('yard.new_title_treasure_legend_html', 'New title: <b>Treasure Legend</b> (on your name tag)')}</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">' + tt('yard.legendary', 'Legendary!') + '</button>' });
     $('#sdOk', p).onclick = () => { SFX.boop(700); closeModal(); };
+    coinFly($('.unlocks li', p), c, { gain: c - cd, delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     busy = false; dogTo(0, 0, 1, 0.9); setTemp('happy', 2500);
   }, 2600);
 }
@@ -607,8 +608,8 @@ function beachDig() {
   dailyCheck(); if (S.daily.beachDig) { nope(tt('yard.one_beach_dig_a_day', 'One beach dig a day. The sand needs to recover. (It does not.)')); return; }
   if (busy || S.sleeping) return; S.daily.beachDig = true; busy = true; hideBubble(); renderDog('dig'); SFX.crunch(); setTimeout(SFX.crunch, 400);
   setTimeout(() => {
-    if (Math.random() < 0.55) { const { n: c, d: cd } = addCoinsD(RINT(5, 20)); toast(tt('yard.dug_up_coins_in_the_sand', 'Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.', { n: c }) + ksSettleNote(cd), 'gold'); }
-    else { const j = PICK(JUNK.concat([['junk-rock', tt('yard.a_shell_with_a_smaller', 'A shell with a smaller shell inside. Shell-ception.')]])); const { n: c, d: cd } = addCoinsD(RINT(2, 5)), ji = JUNK.indexOf(j); toast(tt('yard.found_plus_coins', '{text} (+{n, plural, one {# coin} other {# coins}})', { text: ji >= 0 ? tdata('junk.' + ji + '.1', j[1]) : j[1], n: c }) + ksSettleNote(cd), 'gold'); }
+    if (Math.random() < 0.55) { const { n: c, d: cd } = addCoinsD(RINT(5, 20)); coinFly(toast(tt('yard.dug_up_coins_in_the_sand', 'Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.', { n: c }) + ksSettleNote(cd), 'gold'), c, { gain: c - cd }); } // v2.25.3: the coin flies from the toast
+    else { const j = PICK(JUNK.concat([['junk-rock', tt('yard.a_shell_with_a_smaller', 'A shell with a smaller shell inside. Shell-ception.')]])); const { n: c, d: cd } = addCoinsD(RINT(2, 5)), ji = JUNK.indexOf(j); coinFly(toast(tt('yard.found_plus_coins', '{text} (+{n, plural, one {# coin} other {# coins}})', { text: ji >= 0 ? tdata('junk.' + ji + '.1', j[1]) : j[1], n: c }) + ksSettleNote(cd), 'gold'), c, { gain: c - cd }); }
     addStat('happy', favAct('digging') ? 6 : 3); busy = false; exTrig(D(), 'dig', { pose: 'idle', draw: false }); renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty(); // v2.13: the guilty face
   }, 1300);
 }

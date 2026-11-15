@@ -337,7 +337,7 @@ function blReturn(o) {
   const b = BL.ball, c = BL.cfg; b.carrier = null; b.state = 'rest'; b.x = BL.hx; b.gy = BL.hy; b.z = 0; b.vx = b.vz = b.vgy = 0; BL.ph = 'rest'; b.rot = 0;
   BL.n++; S.bl.n = (S.bl.n || 0) + 1; o.role = 'cheer'; o.pose = 'happy'; o.until = BL.t + 1.1; o.got = (o.got || 0) + 1; exTrig(o.d, 'ballCatch', { pose: 'happy', draw: false }); o.key = null; // v2.13: the catcher's face, drawn once by blApplyDog on the happy pose
   BL.dogs.forEach((x) => { if (x !== o) { x.role = 'wait'; x.pose = 'idle'; } });
-  const coins = blCoins(c.coin); blSay(o, blCatchLine(o), true);
+  const coins = blCoins(c.coin); blSay(o, blCatchLine(o), true); if (coins) coinFly({ wx: o.x, wy: o.y - 120 * blDK(o) }, coins); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   fxText(coins ? `+${coins}` : tt('ball.caught', 'Caught it!'), o.x, o.y - 200 * blDK(o), coins ? '#F2C744' : '#9CCF8F', 42);
   try { SFX.bark(BARK[o.d.key]); } catch (e) { /* none */ }
   BL.dogs.forEach((x) => blPlayFx(x));

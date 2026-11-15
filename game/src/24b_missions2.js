@@ -96,7 +96,7 @@ function ms2BgURL(svg, w, h) {
   return `url("data:image/svg+xml,${encodeURIComponent(s)}")`;
 }
 // batched toasts: grouped by kind of news, and held while Gerald or the parade is talking
-function ms2Say(text, kind, group, many) { if (msGuideBusy()) MS2.q.push([text, kind, group, many]); else toast(text, kind, group ? { group, many } : {}); }
+function ms2Say(text, kind, group, many) { if (msGuideBusy()) { MS2.q.push([text, kind, group, many]); return null; } return toast(text, kind, group ? { group, many } : {}); }
 // a sound that waits like the toasts (one held at a time, ms2Flush plays it once Gerald and the parade are done)
 function ms2Sfx(k) { if (msGuideBusy()) { MS2.sfx = k; return; } try { SFX[k](); } catch (e) { /* audio off */ } }
 // the in-memory state of Missions v2 belongs to one S: an import, a restore or a cloud pull (clApply, 22b_cloud.js) puts a new S in its place,
@@ -200,7 +200,7 @@ function ms2OnAct(a) {
     let hit = false; try { hit = !!d.m(a, it); } catch (e) { hit = false; }
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
-    if (it.p >= it.n) { it.done = jstISO(); done++; ms2Life('help'); if (typeof lvGain === 'function') lvGain('help', 10); /* v2.22: town XP */ ms2Say(tt('ms2.help_done', 'Little help done: {help}.', { help: ms2HelpText(it, true) }), 'good', 'ms2h', (k) => tt('ms2.help_done_many', '{n} little helps done.', { n: k })); }
+    if (it.p >= it.n) { it.done = jstISO(); done++; ms2Life('help'); if (typeof lvGain === 'function') lvGain('help', 10); /* v2.22: town XP */ jfSrc('xp', ms2Say(tt('ms2.help_done', 'Little help done: {help}.', { help: ms2HelpText(it, true) }), 'good', 'ms2h', (k) => tt('ms2.help_done_many', '{n} little helps done.', { n: k }))); }
   });
   if (changed) { markDirty(); if (done) { MS2.dot = true; msHudSync(); } }
   const got = ms2PouchCheck();

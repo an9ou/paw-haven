@@ -1551,7 +1551,8 @@ function walkTiredLine(w) {
 }
 function dailyCare(kind) {
   dailyCheck(); if (S.daily[kind]) return; S.daily[kind] = true;
-  const { n, d } = addCoinsD(10); toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }) + ksSettleNote(d), 'gold');
+  const { n, d } = addCoinsD(10), te = toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }) + ksSettleNote(d), 'gold');
+  coinFly(te, n, { gain: n - d }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
 }
 
 /* ---------------- HUD ---------------- */

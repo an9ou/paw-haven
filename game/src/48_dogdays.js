@@ -89,7 +89,7 @@ function ddActDogs(e) {
 }
 function ddWishDone(d, w) {
   const W = S.dd.wish, t0 = Date.now(); w.done = 1; S.dd.wn++; S.dd.wk[w.k] = (S.dd.wk[w.k] || 0) + 1;
-  let coins = 0; if (W.coins < DD_COIN_DAY) { coins = Math.min(DD_COIN, DD_COIN_DAY - W.coins); W.coins += coins; addCoins(coins, { raw: true }); }
+  let coins = 0, wte = null; if (W.coins < DD_COIN_DAY) { coins = Math.min(DD_COIN, DD_COIN_DAY - W.coins); W.coins += coins; addCoins(coins, { raw: true }); coinFly(() => wte, coins, { delay: 1260 }); } // v2.25.3: the coin flies from the wish toast
   if (w.fw && S.fw && S.fw.wish && S.fw.wish.id === d.id) { S.fw.wish.done = true; withDog(d, () => addStat('happy', 10)); }
   const p = ddToday(); if (p && p.id === d.id) p.wi = w.k; // only the writer's own wish goes on its page
   markDirty(); DD.chip = ''; ddChipSync();
@@ -103,7 +103,7 @@ function ddWishDone(d, w) {
     if (coins) parts.push(tt('dd.wish_coins', '+{n, plural, one {# coin} other {# coins}}.', { n: coins }));
     if (w.fw) parts.push(tt('dd.wish_happy', '+10 Happiness.'));
     if (st.length) parts.push(tt('dd.wish_sticker', 'A new sticker: {name}!', { name: st[0].label() }));
-    toast(parts.join(' '), 'gold'); st.slice(1).forEach((s) => toast(tt('dd.st_new', 'New sticker: {name}!', { name: s.label() }), 'good', { group: 'ddst', many: (n) => tt('dd.st_new_many', '{n} new stickers in your sticker book!', { n }) })); SFX.kaching(); ddChipSync(); saveNow();
+    wte = toast(parts.join(' '), 'gold'); jfSrc('bond', wte); st.slice(1).forEach((s) => toast(tt('dd.st_new', 'New sticker: {name}!', { name: s.label() }), 'good', { group: 'ddst', many: (n) => tt('dd.st_new_many', '{n} new stickers in your sticker book!', { n }) })); SFX.kaching(); ddChipSync(); saveNow();
   }, 1200);
 }
 on('act', (e) => {

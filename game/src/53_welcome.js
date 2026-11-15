@@ -100,11 +100,12 @@ function wbMilestones() {
   const got = [];
   WB_DAYS.forEach((n) => {
     if (S.daysPlayed < n || S.daysGifts.includes(n)) return;
-    const g = wbMileGift(n); S.daysGifts.push(n); wbGive(g); got.push(n);
+    const g = wbMileGift(n), c0 = S.coins; S.daysGifts.push(n); wbGive(g); got.push(n); let te = null;
+    if (S.coins > c0) coinFly(() => te, g.c || S.coins - c0, { gain: S.coins - c0, delay: 650 + got.length * 400 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     const what = wbGiftLabel(g);
     mailPush({ kind: 'news', id: 'wb_days_' + n, keep: true, from: tt('ks.letter_from', 'Gerald'), title: tt('wb.m_title', '{n, plural, one {# day together} other {# days together}}', { n }),
       text: tt('wb.m_text', 'Dear friend,\nYou and {name} have now played together on {n} different days. Not in a row and never in a rush, just {n} good days.\nHere is a little thank-you: {gift}.\nWith a happy waddle,\nGerald', { name: NAME(), n, gift: what }) });
-    setTimeout(() => toast(tt('wb.m_toast', '{n} days played! A gift from Gerald: {gift}.', { n, gift: what }), 'gold'), 600 + got.length * 400);
+    setTimeout(() => { te = toast(tt('wb.m_toast', '{n} days played! A gift from Gerald: {gift}.', { n, gift: what }), 'gold'); }, 600 + got.length * 400);
   });
   if (got.length) { try { SFX.kaching(); } catch (e) { /* audio off */ } saveNow(); }
   return got;
@@ -201,6 +202,7 @@ function wbOpen(pend) {
   $('#wbOk', p).onclick = () => { SFX.click(); closeModal(); };
   try { greetBark(); } catch (e) { /* no dog on screen */ }
   if (gift) { try { SFX.kaching(); } catch (e) { /* audio off */ } }
+  if (gift && gift.c && (gift.t === 'coins' || gift.t === 'bag')) coinFly($('.wb-gift .wb-gart', p), Math.min(WB_COIN_CAP, gift.c), { gain: Math.max(0, Math.min(WB_COIN_CAP, gift.c) - (gift.sd || 0)), delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   saveNow(); return p;
 }
 // the automatic open: a calm yard, after the calendar's daily page and the What's new sheet

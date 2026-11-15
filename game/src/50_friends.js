@@ -1542,7 +1542,7 @@ function frWalkEnd(tName) {
   let n = 0;
   if (!S.fr.walked.includes(o.fid) && !frSentToday(o.fid, 'walk')) { // the first walk with this friend today: the coins (2 friends a day) and the walk event
     S.fr.walked = S.fr.walked.concat(o.fid).slice(-50); markDirty();
-    if (S.fr.walks < FR_WALK_MAX) { S.fr.walks++; n = addCoins(FR_WALK_COINS); }
+    if (S.fr.walks < FR_WALK_MAX) { S.fr.walks++; n = addCoins(FR_WALK_COINS); coinFly(() => $('#modal .fr-walked'), n, { delay: 560 }); } // v2.25.3: its coin flies from the walk result's friend line
     frWalkSend(o, tName);
   }
   return `<p class="small fr-walked">${esc(n ? tt('fr.walk_paid', 'Walked with {who}: +{n}', { who, n: tnum(n) }) : tt('fr.walk_with', 'Walked with {who}.', { who }))}</p>`;

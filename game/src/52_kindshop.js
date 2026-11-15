@@ -603,13 +603,15 @@ function ksDelivered(out) { // true when it showed something
   if (!out.items.length) return false;
   const shopOpen = !!$('.panel.ks', modal);
   const got = out.got || [], nm = (id, i) => (KS_ITEMS[id].pack ? ksPackName(id, got[i]) : ksName(id));
-  if (!modal.hidden && !shopOpen) { toast(tt('ks.got_toast', 'Thank you! Delivered: {list}. Look in your mailbox.', { list: tlist(out.items.map(nm)) }), 'gold'); return true; }
+  const pk = got.reduce((a, g) => a + (g && g.n > 0 ? g.n : 0), 0), pa = Math.max(0, got.reduce((a, g) => a + (g && g.a > 0 ? g.a : 0), 0)); // v2.25.3: a coin pack's coins fly to the counter (54_coinfly.js)
+  if (!modal.hidden && !shopOpen) { const te = toast(tt('ks.got_toast', 'Thank you! Delivered: {list}. Look in your mailbox.', { list: tlist(out.items.map(nm)) }), 'gold'); if (pk) coinFly(te, pk, { gain: pa }); return true; }
   const rows = out.items.map((id, i) => { const I = KS_ITEMS[id], gets = I.pack ? [] : ksGets(id), split = I.pack ? ksPackSplit(got[i]) : '';
     return `<div class="ks-got-row" data-ks="${id}"><span class="art">${ksArt(id)}</span><div><b>${esc(nm(id, i))}</b>${gets.length ? `<ul class="ks-gets">${gets.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>` : ''}<p class="small ks-where">${esc(split || ksWhere(id))}</p></div></div>`; }).join('');
   SFX.boop(880);
   const p = openModal(esc(tt('ks.got_h', 'Delivered!')), `<p class="ks-got-hi">${esc(tt('ks.got_hi', 'Thank you! This is yours now:'))}</p>${rows}`,
     { cls: 'ks ks-got', foot: `<button class="btn yes big" type="button" id="ksGotOk">${esc(tt('ks.got_ok', 'Yay!'))}</button>`, onClose: shopOpen ? () => setTimeout(() => ksOpen(), 0) : null });
   $('#ksGotOk', p).onclick = () => { SFX.click(); closeModal(); };
+  if (pk) coinFly($('.ks-got-row .art', p), pk, { gain: pa, delay: 420 });
   return true;
 }
 function ksGrantToast(out) {

@@ -123,16 +123,16 @@ function showResult(n, ok) {
     busy = false; if (TRN) TRN.held = false; endPose(); if (!TRN) return; dailyCheck(); const aud = PUBLIC_AUDIENCE.includes(S.place) ? 2 : 1;
     if (ok) {
       st.shows++; TRN.chain++; addStat('happy', 2); SFX.boop(900); fxText('★', 470, 300, '#F2C744', 46);
-      if (S.place === 'square') { S.daily.squareShows = (S.daily.squareShows || 0) + 1; if (S.daily.squareShows >= 3 && !S.daily.squareGoal) { S.daily.squareGoal = true; const c = addCoins(30, { raw: true }); toast(tt('train.notice_done', 'Town notice goal done: 3 tricks in the Square! +{n} coins.', { n: c }), 'gold'); } }
+      if (S.place === 'square') { S.daily.squareShows = (S.daily.squareShows || 0) + 1; if (S.daily.squareShows >= 3 && !S.daily.squareGoal) { S.daily.squareGoal = true; const c = addCoins(30, { raw: true }); coinFly(toast(tt('train.notice_done', 'Town notice goal done: 3 tricks in the Square! +{n} coins.', { n: c }), 'gold'), c); } }
       if (st.shows === 5) toast(tt('train.mastered', '{name} MASTERED {trick}! Reliable 98% of the time. The other 2% is for drama.', { name: d.name, trick: tName(n) }), 'gold');
       let msg = tt('train.nailed', '{trick}: nailed it! Chain {n}.', { trick: tName(n), n: TRN.chain });
       if (TRN.chain >= 3) {
         const pay = TRN.chain === 3 ? TRN.chainList.concat(n) : [n]; let coins = 0;
         pay.forEach((tn) => { if ((S.daily.showCoins || 0) < 10) { S.daily.showCoins = (S.daily.showCoins || 0) + 1; coins += (trickSt(tn).shows >= 5 ? 5 : 3) * aud; } });
-        const c = coins ? addCoins(coins, { raw: true }) : 0; const b = TRN.chain === 3 ? addBond(3) : 0; addStat('happy', 5);
+        const c = coins ? addCoins(coins, { raw: true }) : 0; TRN.paid = c; const b = TRN.chain === 3 ? addBond(3) : 0; addStat('happy', 5);
         msg = tt('train.combo', 'COMBO x{chain}! {has, select, yes {{c, plural, one {+# coin} other {+# coins}}{aud, select, yes { (audience x2)} other {}}} other {No more show coins today}}{bond, select, yes {, +{b} Bond} other {}}.', { chain: TRN.chain, has: c ? 'yes' : 'no', c, aud: aud > 1 ? 'yes' : 'no', bond: b ? 'yes' : 'no', b }); if (aud > 1) toast(PICK([tt('train.crowd_1', 'The crowd goes wild!'), tt('train.crowd_2', 'A poodle throws a tiny flower.'), tt('train.crowd_3', 'Someone films it. It will go viral (in the park).')]), 'good');
       }
-      TRN.chainList = (TRN.chainList || []).concat(n).slice(-3); trainLine(msg, 'good');
+      TRN.chainList = (TRN.chainList || []).concat(n).slice(-3); trainLine(msg, 'good'); if (TRN.paid) { coinFly(() => $('#trLine'), TRN.paid, { delay: 60 }); TRN.paid = 0; } // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     } else { TRN.chain = 0; TRN.chainList = []; SFX.nope(); trainLine(tt('train.oops', 'Oops! {name} lost the signal halfway. The crowd politely coughs. Chain reset.', { name: d.name }), 'bad'); }
     markDirty(); updateHUD(); renderTraining();
   }, spec.sig && ok ? 2300 : 1400));
