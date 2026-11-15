@@ -59,6 +59,7 @@ require('./test_lib').run('coin_juice', async (t) => {
     judge(ws, tile2, `${L} walk`);
     await idle();
     ok(await shown() === await fmt(await ev(() => window.__paw.S.coins)), `${L} walk: the counter ends exactly on S.coins (${await shown()})`);
+    const nums = ws.map((s) => +s.num.replace(/\D/g, '')); ok(nums.every((v, i) => !i || v >= nums[i - 1]) && Math.min(...nums) >= w.c0, `${L} walk: the number only goes up, never under ${w.c0} (lowest ${Math.min(...nums)})`);
     const rolled = [...new Set(ws.map((s) => s.num))]; ok(rolled.length >= 4, `${L} walk: the number rolls up through ${rolled.length} values (${rolled[0]} -> ${rolled[rolled.length - 1]})`);
     ok(await ev(() => window.PawAudio && window.PawAudio.coinLog.length >= 1 && window.PawAudio.coinLog[window.PawAudio.coinLog.length - 1] === 120), `${L} walk: one chime asked, pitched by the 120 coins (${await ev(() => window.PawAudio && window.PawAudio.coinLog.join())})`);
     await backHome();
@@ -69,6 +70,7 @@ require('./test_lib').run('coin_juice', async (t) => {
     ok(m0.c1 - m0.c0 === 40 && m0.num === await fmt(m0.c0), `${L} mission: +40 in the balance, the counter waits on ${m0.num}`);
     ok(!!m0.src, `${L} mission: the "Mission done" toast is showing (the coin's source)`);
     const msS = await sample(1500);
+    const mnums = msS.map((s) => +s.num.replace(/\D/g, '')); ok(mnums.every((v, i) => !i || v >= mnums[i - 1]) && Math.min(...mnums) >= m0.c0, `${L} mission: the number only goes up (lowest ${Math.min(...mnums)})`);
     judge(msS, m0.src, `${L} mission`);
     await idle();
     ok(await shown() === await fmt(await ev(() => window.__paw.S.coins)), `${L} mission: the counter ends on S.coins (${await shown()})`);

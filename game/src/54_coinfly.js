@@ -57,7 +57,7 @@ function cfRoll() {
   const from = CF.disp == null ? S.coins : CF.disp, t0 = performance.now(); cancelAnimationFrame(CF.roll);
   const step = (now) => {
     if (!S) { CF.roll = 0; return; }
-    const target = S.coins - CF.pend, p = Math.min(1, (now - t0) / CF_ROLL), e = 1 - Math.pow(1 - p, 3);
+    const target = S.coins - CF.pend, p = Math.max(0, Math.min(1, (now - t0) / CF_ROLL)), e = 1 - Math.pow(1 - p, 3);
     if (p >= 1 || target <= from) { cfShow(target); CF.roll = 0; if (!CF.hold) { CF.disp = null; cfShow(S.coins); CF.disp = null; } return; }
     cfShow(from + (target - from) * e); CF.roll = requestAnimationFrame(step);
   };
@@ -67,7 +67,7 @@ function cfHit(tg) {
   const c = $('#coins'); if (!c) return;
   if (cfCalm()) { c.classList.remove('cf-glow'); void c.offsetWidth; c.classList.add('cf-glow'); clearTimeout(c._cfg); c._cfg = setTimeout(() => c.classList.remove('cf-glow'), 900); return; }
   c.classList.remove('bump', 'cf-hit'); void c.offsetWidth; c.classList.add('cf-hit'); clearTimeout(c._cfh); c._cfh = setTimeout(() => c.classList.remove('cf-hit'), 420);
-  if (tg) cfSpark(tg.x, tg.y, tg.s * 2.1);
+  if (tg) cfSpark(tg.x, tg.y, tg.s * 1.8);
 }
 // a gain arrives: its coins leave the "on its way" sum, the counter bumps and rolls up, the chime plays
 function cfLand(g, quick) {
@@ -118,7 +118,9 @@ function cfLaunch(g) {
     if (g.landed) return;
     const t2 = cfTarget(); if (!t2) { cfLand(g, true); return; } // the counter went away during the pop
     const sx = src.x, sy = src.y - 4, ex = t2.x, ey = t2.y, d = Math.hypot(ex - sx, ey - sy);
-    const cx = sx + (ex - sx) * 0.18, cy = Math.max(8, Math.min(sy, ey) - Math.min(140, Math.max(36, d * 0.14))), end = Math.max(0.5, Math.min(1, t2.s / size));
+    // the arc: a lob that bows out to the upper side of the straight line (up and back, away from where it is going), then drops into the counter
+    let px = (ey - sy) / (d || 1), py = -(ex - sx) / (d || 1); if (py > 0 || (py === 0 && px > 0)) { px = -px; py = -py; }
+    const bow = Math.min(160, Math.max(40, d * 0.22)), cx = (sx + ex) / 2 + px * bow, cy = Math.max(8, (sy + ey) / 2 + py * bow), end = Math.max(0.5, Math.min(1, t2.s / size));
     const kf = []; const N = 16;
     for (let i = 0; i <= N; i++) {
       const t = i / N, e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, u = 1 - e; // ease in and out along the arc
