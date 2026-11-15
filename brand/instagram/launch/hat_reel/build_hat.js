@@ -20,15 +20,23 @@
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'hat_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', RED = '#D2473C', YEL = '#FFE3A1', PINK = '#F28FA5';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_hat.json'), 'utf8'));
-for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from vo_hat.json: ' + k);
+// REDNOTE=1 (owner, 15 Nov 2026, after approving the English cut: "create rednote version"): every word in Simplified Chinese (the hat names and the
+// Wizard Hat perk are the game's own zh-Hans strings, checked below), Noodle's Mandarin voice (../friends_reel/vo_friends_zh.py with
+// VO_LINES=hat_reel/vo_hat_zh.json, zf_073 1.0x), subtitles of at most 14 characters in a pill under the art, LXGW WenKai. No safe zone (a normal
+// video): everything in front of the scene is moved 85 px right so it sits in the middle of the frame (x 540) with ~60 px margins; the centring,
+// no-overlap, floor/prop and tile-margin checks stay. It ends on the RedNote card (brand/kids/endcard.js endCardRN: the logo, 治愈系蜡笔狗狗游戏 and only
+// "搜 Doodle Doggo App"; no QR, link, domain or handles), centred at (540, 960). Output doodle-doggo-pick-a-hat-rednote.mp4; ONLY=cover writes
+// brand/rednote/rednote-17-pick-a-hat.jpg (3:4, 1080 x 1440).
+const RN = !!process.env.REDNOTE, VOFILE = RN ? 'vo_hat_zh.json' : 'vo_hat.json';
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from ' + VOFILE + ': ' + k);
 
 // ---- the hats, checked against main: head items, live all year, for every player ----
 const rd = (...p) => fs.readFileSync(path.join(ART_ROOT, ...p), 'utf8');
@@ -56,7 +64,20 @@ const HATS = [
   { n: 'Sun Hat', k: 'h8', lines: ['Hot days?', 'Not his problem.'], expr: null, tint: '#FFF0B3' },
 ];
 HATS.forEach((h) => { Object.assign(h, hatSource(h.n));
-  if (h.lines.join(' ').replace(/’/g, "'") !== VOJ.text[h.k]) throw new Error('the card differs from the voice: ' + h.k); });
+  if (!RN && h.lines.join(' ').replace(/’/g, "'") !== VOJ.text[h.k]) throw new Error('the card differs from the voice: ' + h.k); });
+// RedNote: the game's own Chinese item names (game/i18n/zh-Hans.json) and the Wizard Hat's perk word for word
+const ZH = JSON.parse(rd('game', 'i18n', 'zh-Hans.json'));
+const ZKEY = { 'Party Hat': 'data.clothes.party_hat.n', 'Chef Hat': 'data.clothes.chef_hat.n', 'Wizard Hat': 'data.clothes.wizard_hat.n', 'Cowboy Hat': 'data.clothes.cowboy_hat.n',
+  'Astronaut Helmet': 'data.clothes.astronaut_helmet.n', 'Flower Crown': 'data.clothes.flower_crown.n', 'Acorn Cap': 'data.treasures.acorn_cap.n', 'Sun Hat': 'data.treasures.sun_hat.n' };
+const ZNAME = { 'Party Hat': '派对帽', 'Chef Hat': '厨师帽', 'Wizard Hat': '巫师帽', 'Cowboy Hat': '牛仔帽', 'Astronaut Helmet': '宇航员头盔', 'Flower Crown': '花环', 'Acorn Cap': '橡果帽', 'Sun Hat': '遮阳帽' };
+for (const h of HATS) { if (EN[ZKEY[h.n]] !== h.n) throw new Error('en name key changed: ' + h.n); if (ZH[ZKEY[h.n]] !== ZNAME[h.n]) throw new Error('the zh-Hans name changed: ' + h.n + ' is ' + ZH[ZKEY[h.n]]); }
+const ZPERK = '神奇的手：摸摸额外+1亲密度。';
+if (ZH['data.clothes.wizard_hat.perk'] !== ZPERK || EN['data.clothes.wizard_hat.perk'] !== 'Magic hands: petting gives +1 extra Bond.') throw new Error('the zh-Hans Wizard Hat perk changed');
+HATS.forEach((h) => { h.zh = ZNAME[h.n]; }); // the label on screen in the RedNote cut
+// RedNote subtitles: each voice line in chunks of at most 14 characters (vo_hat_zh.json)
+const SUBS_ZH = { hook: ['别再选可爱的帽子了！', '你的狗狗想要三号。'], pause: ['暂停！三，二，一。'], h1: ['不是他生日，', '他非说是。'], h2: ['他会做饭。', '主要做给自己吃。'],
+  h3: ['哦。先记住这顶。'], h4: ['耶哈！然后睡个午觉。'], h5: ['狗狗的一小步。'], h6: ['最可爱的那顶。', '他自己知道。'], h7: ['松鼠们有话要问。'], h8: ['大热天？', '跟他没关系。'],
+  reveal: ['三号！巫师帽！', '摸摸他，', '额外加一点亲密度。', '太神奇了！'], ask: ['你会选哪一顶？', '评论区告诉我你选几号！'] };
 const FAV = 2; // number 3
 // the facts behind the payoffs and the reveal
 if (HATS[FAV].n !== 'Wizard Hat' || HATS[FAV].perk !== 'Magic hands: petting gives +1 extra Bond.') throw new Error('the Wizard Hat perk changed');
@@ -118,6 +139,11 @@ const BEATS = []; let at = 0.1; const PAUSE = 0.15;
 for (const k of ORDER) { const b = { k, at, dur: VOD[k], hold: VOD[k] + 0.4, bg: BG[k] }; BEATS.push(b); at += b.hold + PAUSE; }
 const LOOP = at - PAUSE + 0.15, T = LOOP + 2.5, NF = Math.round(T * FPS);
 const B = Object.fromEntries(BEATS.map((b) => [b.k, b]));
+const SUBS = [];
+if (RN) for (const v of BEATS) { const parts = SUBS_ZH[v.k]; if (parts.join('') !== VOJ.text[v.k]) throw new Error('subtitles differ from the voice: ' + v.k);
+  parts.forEach((x) => { if ([...x].length > 14) throw new Error('subtitle over 14 characters: ' + x); });
+  const wt = parts.map((x) => x.replace(/[，。！？：、]/g, '').length + 1), sum = wt.reduce((a, c) => a + c, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum; SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: x.replace(/[，。]$/, '') }); t0 += d; }); }
 // the count: 3, 2, 1 on the spoken numbers of "Pause now! Three, two, one." (as ../coat_reel/build_coat.js: the quietest dips of the line's loudness)
 function wavEnv(f) { const b = fs.readFileSync(f); let o = 12, fmt = null, data = null;
   while (o + 8 <= b.length) { const id = b.toString('ascii', o, o + 4), n = b.readUInt32LE(o + 4); if (id === 'fmt ') fmt = { bits: b.readUInt16LE(o + 22), sr: b.readUInt32LE(o + 12), ch: b.readUInt16LE(o + 10), tag: b.readUInt16LE(o + 8) }; if (id === 'data') data = b.subarray(o + 8, o + 8 + n); o += 8 + n + (n & 1); }
@@ -135,19 +161,22 @@ console.log('count at', COUNT.map((x) => (x - B.pause.at).toFixed(2)).join(', ')
 const TX = { hook: ['Stop picking the cute hat.', 'Your dog wants number 3.'], pause: 'Pause now!', reveal: ['Number 3!', 'The Wizard Hat.'],
   quote: ['“Magic hands: petting', 'gives +1 extra Bond.”'], ask: ['Which number would you pick?', 'Comment below!'],
   cover: ['Stop picking', 'the cute hat.'], coverSub: 'Your dog wants number 3.' };
-const allText = [TX.hook, TX.pause, TX.reveal, TX.quote, TX.ask, TX.cover, TX.coverSub, HATS.map((h) => [h.n, h.lines])].flat(3).join(' ') + ' 0123456789';
+if (RN) Object.assign(TX, { hook: ['别再选可爱的帽子了！', '你的狗狗想要3号。'], pause: '暂停！', reveal: ['3号！', '巫师帽'], quote: ['“神奇的手：', '摸摸额外+1亲密度。”'],
+  ask: ['你会选哪一顶？', '评论区告诉我你选几号！'], cover: ['别再选可爱的帽子了！', '你的狗狗想要3号'], coverSub: '' });
+if (RN && TX.quote.join('') !== '“' + ZPERK + '”') throw new Error('the quote is not the game\'s perk');
+const allText = [TX.hook, TX.pause, TX.reveal, TX.quote, TX.ask, TX.cover, TX.coverSub, HATS.map((h) => [h.n, h.zh, h.lines])].flat(3).join(' ') + ' 0123456789' + (RN ? Object.values(SUBS_ZH).flat().join('') + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '');
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-d-f0,.pa-d-f1,.pa-d-f2{display:none}.k0 .pa-d-f0,.k1 .pa-d-f1,.k2 .pa-d-f2{display:inline}.pa-dog *{animation:none!important}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}__BGSYMS__
 </defs>
-<g id="bg"></g><g id="dbg"></g><g id="art"></g><g id="ov"></g><g id="ec"></g></svg>
+<g id="bg"></g><g id="dbg"></g><g id="fg"${RN ? ' transform="translate(85 0)"' : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const $=(i)=>document.getElementById(i), F='Caveat', CX=455, DEBUG=${!!process.env.DEBUG};
-const ART=${JSON.stringify(ART)}, HATS=${JSON.stringify(HATS.map((h) => ({ n: h.n, lines: h.lines, tint: h.tint })))}, FAV=${FAV};
+const $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', CX=455, DEBUG=${!!process.env.DEBUG}, SUBS=${JSON.stringify(SUBS)};
+const ART=${JSON.stringify(ART)}, HATS=${JSON.stringify(HATS.map((h) => ({ n: RN ? h.zh : h.n, lines: h.lines, tint: h.tint })))}, FAV=${FAV};
 const BEATS=${JSON.stringify(BEATS)}, B=${JSON.stringify(B)}, LOOP=${LOOP}, T=${T}, COUNT=${JSON.stringify(COUNT)}, TX=${JSON.stringify(TX)};
 const SC=${JSON.stringify(SC)}, FLOORS=${JSON.stringify(FLOORS)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);}, lerp=(a,b,u)=>a+(b-a)*u;
@@ -183,7 +212,7 @@ function card(L, top, op, o){ o=o||{}; const W0=776, x0=CX-W0/2, hh=L.reduce((a,
 // the grid: eight cards in two columns and four rows, each: Noodle's head and hat (his sitting drawing, cropped), the number, the item's exact name
 const GX=[60,480], GY0=574, CW=370, CH=190, RG=30, gridPos=(i)=>({ x: GX[i%2], y: GY0+(i>>1)*(CH+RG) });
 const PIC={x:12,y:12,w:214,h:166}, PIN=12; // the tile's picture box; Noodle's drawn box sits at least PIN px inside it (the check asks for 8)
-function cell(i, op, z, k, hot){ const p=gridPos(i), h=HATS[i], nm=h.n.split(' '), l2=nm.length>1?[nm[0],nm.slice(1).join(' ')]:[nm[0]];
+function cell(i, op, z, k, hot){ const p=gridPos(i), h=HATS[i], nm=h.n.split(' '), l2=RN?([...h.n].length>=5?[h.n.slice(0,3),h.n.slice(3)]:[h.n]):nm.length>1?[nm[0],nm.slice(1).join(' ')]:[nm[0]];
   const cx=p.x+CW/2, cy=p.y+CH/2;
   const b=BOX['b'+i], sc=Math.min((PIC.w-2*PIN)/b[2],(PIC.h-2*PIN)/b[3]);
   return '<g opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(z)+') translate('+f2(p.x-cx)+' '+f2(p.y-cy)+')">'
@@ -217,7 +246,7 @@ window.frame=function(t){
       ov+=wrap(c.svg);
       ov+=grid(t, fade*(1-sm((t-(B.h1.at-0.14))/0.12)), null, -1); }
     else if(/^h\\d$/.test(b.k)){ const n=+b.k[1]-1, h=HATS[n];
-      const L2=[{s:h.n,size:fitS(h.n,88,510),pitch:h.lines.length>1?84:80}].concat(h.lines.map((s,j)=>({s,size:fitS(s,58,510),pitch:62}))), c=card(L2, CARD_TOP, cop, { badge:String(n+1), icon:n, pad:80 });
+      const L2=RN?[{s:h.n,size:fitS(h.n,100,510)}]:[{s:h.n,size:fitS(h.n,88,510),pitch:h.lines.length>1?84:80}].concat(h.lines.map((s,j)=>({s,size:fitS(s,58,510),pitch:62}))), c=card(L2, CARD_TOP, cop, { badge:String(n+1), icon:n, pad:RN?100:80 });
       ov+=wrap(c.svg);
       const top=Math.max(CARD_TOP+c.h+40, backY(scene)+6), hh=FEET-top, zi=0.88+0.12*back(cl(lt/0.28)), oo=fade*Math.min(sm((lt+0.02)/0.1), 1-sm((lt-b.hold-0.04)/0.1));
       if(i===2) ov+=grid(t, fade*(1-sm((lt+0.14)/0.12)), null, -1);
@@ -231,25 +260,54 @@ window.frame=function(t){
     else if(b.k==='ask'){ ov+=wrap(card([{s:TX.ask[0],size:fitS(TX.ask[0],76,720),pitch:84},{s:TX.ask[1],size:74,fill:'${RED}'}], CARD_TOP, cop).svg);
       ov+=grid(t, fade, b.at+0.1, -1); }
   }
-  let ec=''; if(end) ec='<g opacity="'+f2(sm((t-LOOP-0.1)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+'<g class="k0">'+endCard('tall',HANDLES,LOGO_INNER)+'</g></g>';
+  // RedNote: the voice as subtitles, in a pill under the art
+  if(RN&&fade>0){ const su=SUBS.find((x)=>t>=x.a&&t<x.b); if(su){ const o=Math.min(sm((t-su.a)/0.08),sm((su.b-t)/0.08)); ov+=pill(su.s, CX, 1572, fitS(su.s,60,880), F, { fill:'${CREAM}', padX:30, op:f2(fade*o) }).replace('<g data-box','<g data-box data-apart="sub"'); } }
+  // the end card. RedNote: the RedNote card (the logo, 治愈系蜡笔狗狗游戏, only "搜 Doodle Doggo App"; no QR, no link), centred on the frame at (540, 960)
+  let ec=''; if(end) ec='<g opacity="'+f2(sm((t-LOOP-0.1)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+'<g class="k0">'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g></g>';
   $('art').innerHTML=art; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  if(RN&&end){ const g=$('ec').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')'); }
   if(DEBUG){ const s=SC[scene], f=FLOORS[s.name], Y=(y)=>(y-s.y0)*s.s; $('dbg').innerHTML='<line x1="0" x2="1080" y1="'+Y(f.floor)+'" y2="'+Y(f.floor)+'" stroke="red" stroke-width="3"/><line x1="0" x2="1080" y1="'+Y(f.back)+'" y2="'+Y(f.back)+'" stroke="blue" stroke-width="3"/>'+f.keep.map((k)=>'<rect x="'+(k[0]-s.x0)*s.s+'" y="'+Y(k[1])+'" width="'+(k[2]-k[0])*s.s+'" height="'+(k[3]-k[1])*s.s+'" fill="red" opacity=".25"/>').join(''); }
   return checks(scene, fade>0);
 };
 function checks(scene, ground){
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ');
   const ins=insideCheck(8); if(ins.length) return 'grid: '+ins.join('; ');
   if(ground) for(const e of $('art').querySelectorAll('[data-apart]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(scene, r.left, r.right, r.top, +e.getAttribute('data-feet'));
     if(why) return e.getAttribute('data-apart')+' '+why; }
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
+    if(RN&&(r.left<50||r.right>1030||r.top<40||r.bottom>1880)) return 'in the margin: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round);
+    if(RN) continue;
     if(e.closest('#ec')) continue; // the shared end card is laid out by brand/kids/endcard.js inside SAFE (checked by safeCheck above)
     if(r.left<56||r.right>854||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   return ''; }
+// the RedNote cover (3:4, the middle 1080 x 1440, y 240..1680): the Chinese hook card, the logo, Noodle big in the Wizard Hat with hearts on the
+// Boutique's paving, the eight numbered hats in tall chips with big number badges (readable at 270 px wide), number 3 in pink
+function coverRN(){
+  $('bg').innerHTML='<use href="#bg_cover"/>'; $('fg').removeAttribute('transform');
+  let s='', a='';
+  s+='<g data-apart="title"><g data-box><rect x="60" y="272" width="960" height="222" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'
+    +centred([{s:TX.cover[0],size:fitS(TX.cover[0],92,880),pitch:100},{s:TX.cover[1],size:fitS(TX.cover[1],92,880),fill:'${RED}'}],540,383,F).svg+'</g></g>';
+  const CWc=200, CHc=250, gx=26, gy=28, cx0=1020-2*CWc-gx, cy0=526;
+  HATS.forEach((h,j)=>{ const x=cx0+(j%2)*(CWc+gx), y=cy0+(j>>1)*(CHc+gy), hot=j===FAV;
+    s+='<g data-apart="chip'+(j+1)+'"><rect x="'+f2(x)+'" y="'+y+'" width="'+CWc+'" height="'+CHc+'" rx="28" fill="'+(hot?'#FFE1EA':'${CREAM}')+'" stroke="'+(hot?'${PINK}':'${PEN}')+'" stroke-width="'+(hot?10:6)+'"/>'
+      +bubble(x+CWc/2, y+50, 38, String(j+1), 64, hot?'${PINK}':'${YEL}')+hatIn(j, x+12, y+100, x+CWc-12, y+CHc-12).svg+'</g>'; });
+  const LW=380, LH=LW*280/900, lx=(60+cx0-30)/2; s+='<g data-apart="logo"><rect x="'+f2(lx-LW/2-30)+'" y="526" width="'+(LW+60)+'" height="'+f2(LH+14)+'" rx="30" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg class="k0" x="'+f2(lx-LW/2)+'" y="533" width="'+LW+'" height="'+f2(LH)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
+  const top=Math.max(backY('cover')+8, 526+LH+14+40), feet=1636;
+  a+=noodle('fav', lx, feet, feet-top, cx0-30-60, 1, 0, 1, 0);
+  $('art').innerHTML=a; $('ov').innerHTML=s; $('ec').innerHTML='';
+  const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
+  const near=apartCheck($('st'),24); if(near.length) return 'cover too close: '+near.join('; ');
+  for(const g of $('ov').querySelectorAll('[data-hat]')){ const chip=g.parentNode, r=chip.querySelector('rect').getBoundingClientRect(), b=g.getBoundingClientRect(), c=chip.querySelector('circle').getBoundingClientRect();
+    const d=Math.min(b.left-r.left, r.right-b.right, b.top-r.top, r.bottom-b.bottom), gap=b.top-c.bottom;
+    if(d<8||gap<6) return 'cover: hat '+(+g.getAttribute('data-hat')+1)+' margin '+d.toFixed(1)+', gap to its number '+gap.toFixed(1); }
+  for(const e of $('st').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(); if(r.top<260||r.bottom>1660||r.left<40||r.right>1040) return 'cover: outside the 3:4 crop: '+e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
+  for(const e of $('art').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), why=groundOk('cover', r.left, r.right, r.top, feet); if(why) return 'cover: '+e.getAttribute('data-apart')+' '+why; }
+  return ''; }
 // the cover: its own design, hook-led. The hook card, the eight numbered hats from the game (number 3 in pink), Noodle big in the Wizard Hat on the
 // Boutique's paving. Key content inside the 1:1 crop (y 420..1500), the logo inside 4:5 (y 285..1635)
-window.cover=function(){
+window.cover=function(){ if(RN) return coverRN();
   $('bg').innerHTML='<use href="#bg_cover"/>';
   let s='', a='';
   s+='<g data-apart="title"><g data-box><rect x="60" y="432" width="960" height="250" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'
@@ -292,13 +350,16 @@ window.cover=function(){
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const ht = Object.values(handles()).join('') + 'doodledoggo.app';
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [allText, ht]);
-  if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [allText, ht]))) throw new Error('Caveat or Andika did not load');
+  const latin = allText.replace(/[^\x20-\x7e‘-”]/g, '');
+  if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); await p.evaluate(() => measure()); fs.unlinkSync(pageFile);
   console.log('T =', T.toFixed(2), 's (', LOOP.toFixed(2), 's before the end card ),', NF, 'frames; beats at', BEATS.map((x) => x.k + ' ' + x.at.toFixed(2)).join(', '));
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.SOFT) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (!process.env.CHECK) await p.screenshot({ path: file }); };
   if (process.env.ONLY === 'cover') {
     const err = await p.evaluate(() => window.cover()); if (err) { if (process.env.SOFT) console.log('CHECK', err); else throw new Error(err); }
-    const f = path.join(OUT, 'hat-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f); await b.close(); return; }
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-17-pick-a-hat.jpg') : path.join(OUT, 'hat-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, B.hook.at + B.hook.dur * 0.9, COUNT[1] + 0.1, ...HATS.map((h) => B[h.k].at + 0.6), B.reveal.at + 0.4, B.reveal.at + B.reveal.dur * 0.8, B.ask.at + 1.2, LOOP + 1.2, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -336,7 +397,7 @@ window.cover=function(){
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-pick-a-hat.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-pick-a-hat-rednote.mp4' : 'doodle-doggo-pick-a-hat.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
