@@ -140,7 +140,7 @@ function coinFly(from, amount, o = {}) {
   const g = { from, amount, gain, landed: false, flying: false, el: null, anims: [] }; CF.gs.push(g);
   if (cfCalm()) { cfLand(g, true); return g; }
   const delay = Math.max(0, +o.delay || 0);
-  g.wd = setTimeout(() => cfLand(g, true), delay + 3200); // never stuck: whatever happens, the gain shows within a few seconds
+  g.wd = setTimeout(() => cfLand(g, true), delay + 4000); // never stuck: whatever happens, the gain shows within a few seconds
   g.dt = setTimeout(() => cfQueue(g), delay);
   return g;
 }
