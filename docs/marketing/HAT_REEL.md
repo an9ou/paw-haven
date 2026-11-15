@@ -5,7 +5,7 @@ Owner, 15 Nov 2026: "Create 4 for today's reels. Can we have more hats". The pic
 | File | |
 |---|---|
 | Video | `brand/instagram/launch/hat_reel/doodle-doggo-pick-a-hat.mp4` (32.6 s, 1080 x 1920, 30 fps, AAC stereo; ends on our standard end card) |
-| Cover | `brand/instagram/launch/hat_reel/hat-cover.jpg` (1080 x 1920, its own design: the hook card, Noodle big in the Wizard Hat with hearts on the Boutique's paving, the eight numbered hats from the game's item art with number 3 in pink. Everything inside the 1:1 crop (y 420 to 1500), the logo inside the 4:5 crop) |
+| Cover | `brand/instagram/launch/hat_reel/hat-cover.jpg` (1080 x 1920, its own design: the hook card, Noodle big in the Wizard Hat with hearts on the Boutique's paving, the eight numbered hats from the game's item art (the hat alone, without its two little sparkles) with number 3 in pink. Each hat fills 70 to 90 % of its card and stays at least 8 px inside it, clear of its number; the build checks this. Everything inside the 1:1 crop (y 420 to 1500), the logo inside the 4:5 crop) |
 | Script | `brand/instagram/launch/hat_reel/build_hat.js`, voice lines `brand/instagram/launch/hat_reel/vo_hat.json` |
 | Captions | `docs/marketing/captions/HAT_CAPTIONS.md` (Instagram, TikTok, YouTube Shorts, X, alt text) |
 
@@ -28,7 +28,7 @@ Only head items that are live today and that every player can buy or earn all ye
 
 ## The art
 
-Noodle is the game's dachshund (`PawArt.dog('dachs', { pose, outfit: { head }, expr })` from main's `dogs/pawart_dogs.js`), with the game's own outfit art, all three line-boil frames flipping as in the game. The grid shows his sitting drawing cropped to the head and hat (no expression marks). Payoffs: sitting, with the game's wink (Party Hat), dreamy (Cowboy Hat) and wow (Astronaut Helmet) faces; the reveal is the beg pose with the hearts face. No expression that draws words (yum, blep, hmph, ta-da, oops) is used: words only sit on cream cards. Each payoff card also shows the hat itself from the game's item art (`PawArt.item`).
+Noodle is the game's dachshund (`PawArt.dog('dachs', { pose, outfit: { head }, expr })` from main's `dogs/pawart_dogs.js`), with the game's own outfit art, all three line-boil frames flipping as in the game. The grid shows his whole sitting drawing (no expression marks, no floor shadow) fitted inside each tile's picture box; coordinator, 15 Nov 2026: nothing may touch an edge, so every frame also runs `insideCheck(8)`: each tile's Noodle and hat stay at least 8 px inside the box (12 px planned). Payoffs: sitting, with the game's wink (Party Hat), dreamy (Cowboy Hat) and wow (Astronaut Helmet) faces; the reveal is the beg pose with the hearts face. No expression that draws words (yum, blep, hmph, ta-da, oops) is used: words only sit on cream cards. Each payoff card also shows the hat itself from the game's item art (`PawArt.item`).
 
 Backgrounds are the game's own scenes from main, autumn, no game interface: the Bow-Wow Boutique (`PawArt.scene('boutique')`, two windows: the pink door and the big shop window, zoomed 5x onto the paving) and the Home Yard at the reveal (`yard`, 6x, the fence and the grass). As in `fail_reel/build_fail.js`, every frame checks that Noodle's feet are on the floor, his top (hop included) is below the back row of props (the Boutique's doormat line, the yard fence) and he is clear of the keep-out boxes (bench, flowerpot, topiary, drain, the clothesline pole, the garden...).
 

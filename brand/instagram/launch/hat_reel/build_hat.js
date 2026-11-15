@@ -74,17 +74,22 @@ console.log(HATS.map((h, i) => (i + 1) + ' ' + h.n + ' (' + h.note + ')').join('
 const win = {}, ctx = { window: win, console, Intl, navigator: {} }; vm.createContext(ctx);
 for (const f of fs.readdirSync(path.join(ART_ROOT, 'world')).filter((f) => /^pawart_world_[a-z]\.js$/.test(f)).sort()) vm.runInContext(rd('world', f), ctx);
 vm.runInContext(rd('dogs', 'pawart_dogs.js'), ctx);
+// the grid tiles show the whole sitting Noodle inside the tile's picture box, so the drawing's floor shadow is left out there (as fail_reel/build_fail.js)
+const winG = {}, ctxG = { window: winG, console, Intl, navigator: {} }; vm.createContext(ctxG);
+{ const SH = "const shadow=(s.wet&&pose!=='jump'?wetPuddle(shx,shw):'')+`", src = rd('dogs', 'pawart_dogs.js'); if (!src.includes(SH)) throw new Error('art changed: the shadow line'); vm.runInContext(src.replace(SH, "const shadow=''&&`"), ctxG); }
+const PAG = winG.PawArt;
 const PA = win.PawArt, inner = (s) => s.trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>[^<]*<\/title>/g, '');
 if (!/Noodle/.test(PA.dog('dachs', {}))) throw new Error('the dachshund is not Noodle any more');
 const vbOf = (s) => /viewBox="([^"]+)"/.exec(s)[1];
 let uid = 0; const uniq = (s) => { const p = 'u' + (uid++) + '_'; return s.replace(/id="([^"]+)"/g, `id="${p}$1"`).replace(/url\(#([^)]+)\)/g, `url(#${p}$1)`).replace(/href="#([^"]+)"/g, `href="#${p}$1"`); };
 const sym = (s, id) => { if (!s || />\?<\/text>/.test(s) || /data-fallback/.test(s)) throw new Error('no art for ' + id); return `<symbol id="${id}" viewBox="${vbOf(s)}" overflow="visible">${uniq(inner(s))}</symbol>`; };
-const SYMS = HATS.map((h, i) => sym(PA.item(h.n), 'it' + i)).join('');
+const SPARK = /<g transform="rotate\([^)]*\)"><path d="[^"]*" fill="#FFE59A" stroke="#5B3D32"[^>]*\/><\/g>/g;
+const SYMS = HATS.map((h, i) => sym(PA.item(h.n), 'it' + i) + sym(PA.item(h.n).replace(SPARK, ''), 'ih' + i)).join('');
 // Noodle: all three line-boil frames in each drawing (one shown at a time, as the game flips them)
 const ART = {};
 HATS.forEach((h, i) => {
   ART['s' + i] = inner(PA.dog('dachs', { pose: 'sit', facing: 'right', outfit: { head: h.n }, expr: h.expr || undefined }));
-  ART['b' + i] = inner(PA.dog('dachs', { pose: 'sit', facing: 'right', outfit: { head: h.n } })); // the grid bust: no expression marks
+  ART['b' + i] = inner(PAG.dog('dachs', { pose: 'sit', facing: 'right', outfit: { head: h.n } })); // the grid tile: the whole sitting Noodle, no expression marks, no floor shadow
 });
 ART.fav = inner(PA.dog('dachs', { pose: 'beg', facing: 'right', outfit: { head: 'Wizard Hat' }, expr: 'hearts' }));
 for (const [id, s] of Object.entries(ART)) { if (!s.includes('pa-d-f2')) throw new Error('no line boil in ' + id); if (/<text/.test(s)) throw new Error('words drawn in ' + id + ' (text only on cards)'); }
@@ -135,7 +140,7 @@ const allText = [TX.hook, TX.pause, TX.reveal, TX.quote, TX.ask, TX.cover, TX.co
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}.pa-d-f0,.pa-d-f1,.pa-d-f2{display:none}.k0 .pa-d-f0,.k1 .pa-d-f1,.k2 .pa-d-f2{display:inline}.pa-dog *{animation:none!important}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${SYMS}__BGSYMS__
-<clipPath id="bc" clipPathUnits="userSpaceOnUse"><rect x="14" y="12" width="168" height="156" rx="20"/></clipPath></defs>
+</defs>
 <g id="bg"></g><g id="dbg"></g><g id="art"></g><g id="ov"></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
@@ -157,11 +162,14 @@ function groundOk(key, x0, x1, y0, fy){ const s=SC[key], f=FLOORS[s.name], u0=s.
 const backY=(key)=>{ const s=SC[key]; return (FLOORS[s.name].back-s.y0)*s.s; }; // the screen y of the back row
 let BOX=null;
 function measure(){ BOX={}; const g=$('art'); for(const [id,s] of Object.entries(ART)){ g.innerHTML='<g class="k0">'+s+'</g>'; const b=g.firstChild.getBBox(); BOX[id]=[b.x,b.y,b.width,b.height]; }
-  for(let i=0;i<HATS.length;i++){ g.innerHTML='<use href="#it'+i+'" x="0" y="0" width="100" height="100"/>'; const b=g.firstChild.getBBox(); BOX['it'+i]=[b.x,b.y,b.width,b.height]; }
+  for(const p of ['it','ih']) for(let i=0;i<HATS.length;i++){ g.innerHTML='<use href="#'+p+i+'" x="0" y="0" width="100" height="100"/>'; const b=g.firstChild.getBBox(); BOX[p+i]=[b.x,b.y,b.width,b.height]; }
   g.innerHTML=''; return BOX; }
 // the game's item art for hat i, its drawn box fitted into a size x size square centred on (cx, cy)
 function icon(i, cx, cy, size){ const b=BOX['it'+i], k=size/Math.max(b[2],b[3]);
   return '<g transform="translate('+f2(cx)+' '+f2(cy)+') scale('+k.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]/2))+')"><use href="#it'+i+'" x="0" y="0" width="100" height="100"/></g>'; }
+// the hat alone (no sparkles) fitted into the box x0..x1, y0..y1, centred; returns its scale too
+function hatIn(i, x0, y0, x1, y1){ const b=BOX['ih'+i], k=Math.min((x1-x0)/b[2],(y1-y0)/b[3]);
+  return { k, svg:'<g data-hat="'+i+'" transform="translate('+f2((x0+x1)/2)+' '+f2((y0+y1)/2)+') scale('+k.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]/2))+')"><use href="#ih'+i+'" x="0" y="0" width="100" height="100"/></g>' }; }
 // Noodle standing on (cx, feet), fitted into ww x hh, scaled by z around the feet, dy up/down (a hop), k the line-boil frame
 function noodle(id, cx, feet, hh, ww, z, dy, op, k){ const b=BOX[id], s=Math.min(hh/b[3], ww/b[2])*z, w=b[2]*s;
   return '<g data-apart="Noodle" data-feet="'+f2(feet)+'" opacity="'+f2(op)+'"><ellipse cx="'+f2(cx)+'" cy="'+(feet-3)+'" rx="'+f2(w*0.36)+'" ry="13" fill="${PEN}" opacity=".18"/><g class="k'+k+'" transform="translate('+f2(cx)+' '+f2(feet+(dy||0))+') scale('+s.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]))+')">'+ART[id]+'</g></g>'; }
@@ -173,17 +181,20 @@ function card(L, top, op, o){ o=o||{}; const W0=776, x0=CX-W0/2, hh=L.reduce((a,
   if(o.icon!=null) s+=icon(o.icon, x0+W0-70, top+hh/2, 100);
   return { h: hh, svg: s+'</g>' }; }
 // the grid: eight cards in two columns and four rows, each: Noodle's head and hat (his sitting drawing, cropped), the number, the item's exact name
-const GX=[60,480], GY0=574, CW=370, CH=180, RG=36, gridPos=(i)=>({ x: GX[i%2], y: GY0+(i>>1)*(CH+RG) });
-const BUST='130 42 100 93'; // the sitting drawing's head and hat (viewBox units of PawArt.dog, 240 x 200)
+const GX=[60,480], GY0=574, CW=370, CH=190, RG=30, gridPos=(i)=>({ x: GX[i%2], y: GY0+(i>>1)*(CH+RG) });
+const PIC={x:12,y:12,w:214,h:166}, PIN=12; // the tile's picture box; Noodle's drawn box sits at least PIN px inside it (the check asks for 8)
 function cell(i, op, z, k, hot){ const p=gridPos(i), h=HATS[i], nm=h.n.split(' '), l2=nm.length>1?[nm[0],nm.slice(1).join(' ')]:[nm[0]];
   const cx=p.x+CW/2, cy=p.y+CH/2;
-  return '<g opacity=""'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(z)+') translate('+f2(p.x-cx)+' '+f2(p.y-cy)+')">'
+  const b=BOX['b'+i], sc=Math.min((PIC.w-2*PIN)/b[2],(PIC.h-2*PIN)/b[3]);
+  return '<g opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(z)+') translate('+f2(p.x-cx)+' '+f2(p.y-cy)+')">'
     +'<rect data-safe data-apart="cell'+(i+1)+'" x="0" y="0" width="'+CW+'" height="'+CH+'" rx="26" fill="${CREAM}" stroke="'+(hot?'${PINK}':'${PEN}')+'" stroke-width="'+(hot?9:6)+'"/>'
-    +'<rect x="14" y="12" width="168" height="156" rx="20" fill="'+h.tint+'"/>'
-    +'<g clip-path="url(#bc)"><svg x="14" y="12" width="168" height="156" viewBox="'+BUST+'" preserveAspectRatio="xMidYMid slice" overflow="hidden"><g class="k'+k+'">'+ART['b'+i]+'</g></svg></g>'
-    +'<rect x="14" y="12" width="168" height="156" rx="20" fill="none" stroke="${PEN}" stroke-width="4"/>'
-    +'<g transform="translate(276 52) scale('+f2(hot?1.12:1)+') translate(-276 -52)">'+bubble(276,52,36,String(i+1),56,hot?'${PINK}':'${YEL}')+'</g>'
-    +'<g data-box><rect x="194" y="96" width="164" height="74" fill="${CREAM}"/>'+centred(l2.map((s)=>({s,size:fitS(s,40,156),pitch:36})),276,133,F).svg+'</g></g>'; }
+    +'<rect data-pic="'+i+'" x="'+PIC.x+'" y="'+PIC.y+'" width="'+PIC.w+'" height="'+PIC.h+'" rx="20" fill="'+h.tint+'" stroke="${PEN}" stroke-width="4"/>'
+    +'<g data-in="'+i+'" class="k'+k+'" transform="translate('+f2(PIC.x+PIC.w/2)+' '+f2(PIC.y+PIC.h/2)+') scale('+sc.toFixed(4)+') translate('+f2(-(b[0]+b[2]/2))+' '+f2(-(b[1]+b[3]/2))+')">'+ART['b'+i]+'</g>'
+    +'<g transform="translate(298 56) scale('+f2(hot?1.12:1)+') translate(-298 -56)">'+bubble(298,56,36,String(i+1),56,hot?'${PINK}':'${YEL}')+'</g>'
+    +'<g data-box><rect x="234" y="104" width="128" height="76" fill="${CREAM}"/>'+centred(l2.map((s)=>({s,size:fitS(s,40,122),pitch:36})),298,142,F).svg+'</g></g>'; }
+// every tile's Noodle and hat inside its picture box with at least m px all round (owner: nothing touches an edge)
+function insideCheck(m){ const bad=[]; document.querySelectorAll('#ov [data-in]').forEach((g)=>{ const pic=g.parentNode.querySelector('[data-pic="'+g.getAttribute('data-in')+'"]'), a=g.getBoundingClientRect(), r=pic.getBoundingClientRect(), z=r.width/PIC.w;
+    const d=Math.min(a.left-r.left, r.right-a.right, a.top-r.top, r.bottom-a.bottom)/z; if(d<m) bad.push('tile '+(+g.getAttribute('data-in')+1)+' art only '+d.toFixed(1)+' px inside its box'); }); return bad; }
 function grid(t, op, popAt, hot){ let s=''; for(let i=0;i<8;i++){ const pa=popAt==null?-1:popAt+i*0.05, z=popAt==null?1:Math.max(0.01,Math.min(1,back((t-pa)/0.25))), o=popAt==null?op:op*sm((t-pa)/0.12);
     if(o>0.01) s+=cell(i, o, z, (Math.floor(t/0.15)+i)%3, hot===i); } return s; }
 function bgLayers(i, lt, b){ const L=[], prev=i>0?BEATS[i-1].bg:null, k=i===0?1:sm((lt+0.06)/0.3); if(prev&&prev!==b.bg&&k<1) L.push([prev,1]); L.push([b.bg,k]); return L; }
@@ -229,6 +240,7 @@ function checks(scene, ground){
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
   const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ');
+  const ins=insideCheck(8); if(ins.length) return 'grid: '+ins.join('; ');
   if(ground) for(const e of $('art').querySelectorAll('[data-apart]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), why=groundOk(scene, r.left, r.right, r.top, +e.getAttribute('data-feet'));
     if(why) return e.getAttribute('data-apart')+' '+why; }
   for(const e of $('st').querySelectorAll('[data-apart],[data-box]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05) continue;
@@ -243,10 +255,10 @@ window.cover=function(){
   s+='<g data-apart="title"><g data-box><rect x="60" y="432" width="960" height="250" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'
     +centred([{s:TX.hook[0],size:fitS(TX.hook[0],96,880),pitch:100},{s:TX.hook[1],size:fitS(TX.hook[1],96,880),fill:'${RED}'}],540,557,F).svg+'</g></g>';
   // the eight hats on the right: two columns, four rows of chips (number on top, the game's item art under it); number 3 pink
-  const CWc=172, CHc=160, gx=26, gy=30, cx0=1020-2*CWc-gx, cy0=724;
+  const CWc=200, CHc=170, gx=26, gy=26, cx0=1020-2*CWc-gx, cy0=724;
   HATS.forEach((h,j)=>{ const x=cx0+(j%2)*(CWc+gx), y=cy0+(j>>1)*(CHc+gy), hot=j===FAV;
     s+='<g data-apart="chip'+(j+1)+'"><rect data-safe x="'+f2(x)+'" y="'+y+'" width="'+CWc+'" height="'+CHc+'" rx="26" fill="'+(hot?'#FFE1EA':'${CREAM}')+'" stroke="'+(hot?'${PINK}':'${PEN}')+'" stroke-width="'+(hot?10:6)+'"/>'
-      +bubble(x+CWc/2, y+40, 28, String(j+1), 44, hot?'${PINK}':'${YEL}')+icon(j, x+CWc/2, y+106, 100)+'</g>'; });
+      +bubble(x+30, y+30, 21, String(j+1), 36, hot?'${PINK}':'${YEL}')+(()=>{ const A=hatIn(j, x+10, y+58, x+CWc-10, y+CHc-10), Bx=hatIn(j, x+60, y+10, x+CWc-10, y+CHc-10); return (A.k>=Bx.k?A:Bx).svg; })()+'</g>'; });
   // Noodle in number 3, hearts, big on the paving on the left
   const top=backY('cover')+8, feet=1476;
   a+=noodle('fav', (60+cx0-30)/2, feet, feet-top, cx0-30-60, 1, 0, 1, 0);
@@ -254,6 +266,9 @@ window.cover=function(){
   $('art').innerHTML=a; $('ov').innerHTML=s; $('ec').innerHTML='';
   const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
   const near=apartCheck($('st'),24); if(near.length) return 'cover too close: '+near.join('; ');
+  for(const g of $('ov').querySelectorAll('[data-hat]')){ const chip=g.parentNode, r=chip.querySelector('rect').getBoundingClientRect(), a=g.getBoundingClientRect(), c=chip.querySelector('circle').getBoundingClientRect();
+    const d=Math.min(a.left-r.left, r.right-a.right, a.top-r.top, r.bottom-a.bottom), gap=Math.max(a.left-c.right, a.top-c.bottom), fill=Math.max(a.width/r.width, a.height/r.height);
+    if(d<8||gap<6||fill<0.7) return 'cover: hat '+(+g.getAttribute('data-hat')+1)+' margin '+d.toFixed(1)+', gap to its number '+gap.toFixed(1)+', fills '+(fill*100).toFixed(0)+'%'; }
   for(const e of $('st').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), logo=e.getAttribute('data-apart')==='logo';
     if(logo?(r.top<285||r.bottom>1635):(r.top<420||r.bottom>1500||r.left<40||r.right>1040)) return 'cover: outside the '+(logo?'4:5':'1:1')+' crop: '+e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   for(const e of $('art').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), why=groundOk('cover', r.left, r.right, r.top, feet); if(why) return 'cover: '+e.getAttribute('data-apart')+' '+why; }
