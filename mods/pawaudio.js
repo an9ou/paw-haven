@@ -1056,6 +1056,18 @@
     }
   };
 
+  // v2.25.2 "Shiny coins": a short soft coin chime on the sting bus (PawAudio.coin(amount), once per coin gain the game shows).
+  // Two bell notes up the F pentatonic (a pluck, then a glittery bell, a faint octave on top), about 0.6 s with the tail;
+  // a bigger gain starts one pentatonic step higher (4 steps at most), so it never gets sharp.
+  var COIN_NOTES = [[79, 84], [81, 86], [84, 89], [86, 91]];   // G-C, A-D, C-F, D-G (MIDI)
+  function coinTier(a) { a = +a || 0; return a >= 150 ? 3 : a >= 60 ? 2 : a >= 20 ? 1 : 0; }
+  EP.coinChime = function (t, amount) {
+    var E = this, out = E.stingBus(), n = COIN_NOTES[coinTier(amount)];
+    E.sbell(out, t, n[0], 0.42, 'pluck');
+    E.sbell(out, t + 0.085, n[1], 0.5, 'glit');
+    E.sbell(out, t + 0.09, n[1] + 12, 0.08, 'glit');
+  };
+
   /* ---------------- dog voices (v1.6): formant-filtered noise + pitched glide ---------------- */
   // f0 = speaking pitch, F = formants (Hz), mouth = open-mouth lowpass, noise = breathiness, K = loudness trim
   var BREEDS = {
@@ -1557,7 +1569,7 @@
       while (si < segs.length && segs[si].at <= t) { e.queue(resolve(segs[si].ctx)); si++; }
       while (gi < stings.length && stings[gi].at <= t) {
         var dt = stings[gi].at; e.duckG.gain.setTargetAtTime(0.6, dt, 0.06); e.duckG.gain.setTargetAtTime(1, dt + 1.8, 0.35);
-        if (STINGS.indexOf(stings[gi].name) >= 0) e.sting(stings[gi].name, dt + 0.03); else e.stinger(stings[gi].name, dt + 0.03);
+        if (stings[gi].name === 'coin') e.coinChime(dt + 0.03, stings[gi].amount); else if (STINGS.indexOf(stings[gi].name) >= 0) e.sting(stings[gi].name, dt + 0.03); else e.stinger(stings[gi].name, dt + 0.03);
         gi++;
       }
       var before = e.applied;
@@ -1702,6 +1714,16 @@
         ramp(eng.duckG.gain, 0.75, now, 0.04);
         eng.duckG.gain.setTargetAtTime(1, now + len, 0.3);
       }
+    } catch (e) { /* never throws */ }
+  };
+  // v2.25.2: the coin chime (amount = the coins the game shows: a touch higher for more); sfx bus, so the sound setting and volumes apply; never throws
+  PA.coinLog = [];
+  PA.coin = function (amount) {
+    try {
+      PA.coinLog.push(Math.max(0, Math.round(+amount || 0))); if (PA.coinLog.length > 40) PA.coinLog.shift();
+      if (!eng || hidden) return;
+      resume();
+      eng.coinChime(PA.ctx.currentTime + 0.02, amount);
     } catch (e) { /* never throws */ }
   };
   PA.stinger = function (name) {

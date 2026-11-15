@@ -1514,6 +1514,9 @@ function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty()
 // Each settled coin is said out loud: a text that shows the amount uses addCoinsD() (it returns { n, d }: d is how many of its own coins
 // settled the refund) and adds ksSettleNote(d), or the walk result ksSettleHTML(); whatever no text took gets one kind toast a moment later.
 let coinSettleSum = 0, coinSettleQ = 0, coinSettleT = 0; // all settled so far, settled and not said yet
+// v2.25.2 "Shiny coins" (54_coinfly.js): coinFly() shows a gain as one coin flying to the counter; while it is on its way the top bar keeps the
+// old number (hold: gains not landed yet, pend: their coins, disp: the number shown, roll: the roll-up running) and rolls up to S.coins when it lands
+const CF = { hold: 0, pend: 0, disp: null, roll: 0, live: 0, q: [], last: 0, gs: [], layer: null };
 function addCoins(base, opts = {}) {
   const n = Math.max(0, Math.round(base * (opts.raw ? 1 : BOOST.coins)) || 0);
   let d = 0;
@@ -1571,7 +1574,7 @@ function updateHUD() {
   const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + S.bond.pts;
   if (bt && bt.dataset.k !== bk) { bt.dataset.k = bk; hudTxt($('#bondLvl'), L); $('#bondFill').style.width = pr + '%'; bt.setAttribute('aria-valuenow', Math.round(pr));
     bt.title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) }); }
-  hudTxt($('#coinNum'), tnum(S.coins));
+  if (!CF.hold && !CF.roll) hudTxt($('#coinNum'), tnum(S.coins)); // v2.25.2: a coin on its way holds the old number (54_coinfly.js rolls it up)
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
