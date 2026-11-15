@@ -261,7 +261,7 @@ run('v217_dog_days', async (t) => {
   await fresh(); await calDay();
   ok(await ev(() => { const b = document.querySelector('#modal .fw-cal'), first = b.querySelector('.fw-dg'); return !!first && [...b.children].filter((e) => !e.classList.contains('fw-hello')).indexOf(first) === 0 && !!first.querySelector('#fwDgClaim'); }), 'the calendar sheet leads with Today\'s gift and a Claim button');
   ok(await ev(() => { const n = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); return document.querySelectorAll('.fw-mgrid .fw-md .fw-dgi svg').length === n; }), 'every day circle of the month shows its gift as a tiny icon');
-  ok(await ev(() => document.querySelectorAll('.fw-spec li').length === 5), 'the 3, 7, 12, 18 and 24-day gifts show as bigger special circles');
+  ok(await ev(() => document.querySelectorAll('.fw-spec:not(.wb-spec) li').length === 5), 'the 3, 7, 12, 18 and 24-day gifts show as bigger special circles');
   await shot('daily_gift_desktop');
   const g0 = await ev(() => { const P = window.__paw, t = new Date(), ym = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; return { r: P.fw.daily(ym, t.getDate()), ym, d: t.getDate() }; });
   const before0 = await t.S();
