@@ -1063,9 +1063,9 @@
   function coinTier(a) { a = +a || 0; return a >= 150 ? 3 : a >= 60 ? 2 : a >= 20 ? 1 : 0; }
   EP.coinChime = function (t, amount) {
     var E = this, out = E.stingBus(), n = COIN_NOTES[coinTier(amount)];
-    E.sbell(out, t, n[0], 0.42, 'pluck');
-    E.sbell(out, t + 0.085, n[1], 0.5, 'glit');
-    E.sbell(out, t + 0.09, n[1] + 12, 0.08, 'glit');
+    E.sbell(out, t, n[0], 0.5, 'pluck');
+    E.sbell(out, t + 0.085, n[1], 0.6, 'glit');
+    E.sbell(out, t + 0.09, n[1] + 12, 0.1, 'glit');
   };
 
   /* ---------------- dog voices (v1.6): formant-filtered noise + pitched glide ---------------- */
