@@ -22,6 +22,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
   - **Sonnet** (`paw-fixer`) for routine fixes, docs, test runs and screenshots; art, design and reviews stay on the top model.
   - Check-ins at most every 3–4 hours; teams message only when a part is done or they are blocked.
   - New text is translated once, in one batch near the end of a release.
+- **Every fix launches immediately (owner, 15 Nov 2026):** a finished, reviewed and green fix (including Kind shop and Worker fixes) ships at once, without waiting for the next feature release; Worker and site deploys still need the owner to approve their prompts.
 - **Special and festival updates wait for the owner (owner, 31 Oct 2026).** A festival or special update (a market set, a festival, a big content release) never goes live without the owner's explicit go-ahead and launch date: ask before merging to `main` or deploying, and the 5-minute rule does not apply to it. Prepare everything, then wait. Marketing hears about it only once the owner has set the date. Small fixes still ship automatically once green.
 - **Releases go to doodledoggo.app, itch.io and GitHub only (owner, 23 Oct 2026).** The claude.ai artifact is no longer published (it stays on v2.14).
 
