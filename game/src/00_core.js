@@ -1516,12 +1516,12 @@ function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty()
 let coinSettleSum = 0, coinSettleQ = 0, coinSettleT = 0; // all settled so far, settled and not said yet
 // v2.25.2 "Shiny coins" (54_coinfly.js): coinFly() shows a gain as one coin flying to the counter; while it is on its way the top bar keeps the
 // old number (hold: gains not landed yet, pend: their coins, disp: the number shown, roll: the roll-up running) and rolls up to S.coins when it lands
-const CF = { hold: 0, pend: 0, disp: null, roll: 0, live: 0, q: [], last: 0, gs: [], layer: null };
+const CF = { hold: 0, pend: 0, disp: null, roll: 0, live: 0, q: [], last: 0, gs: [], layer: null, pt: 0, lastAdd: null };
 function addCoins(base, opts = {}) {
   const n = Math.max(0, Math.round(base * (opts.raw ? 1 : BOOST.coins)) || 0);
   let d = 0;
   if (n > 0 && S && S.shop && S.shop.coinDebt > 0) { const owe = Math.max(0, Math.round(S.shop.coinDebt) || 0); d = Math.min(owe, n); S.shop.coinDebt = owe - d; }
-  coinSettleSum += d; S.coins += n - d; markDirty();
+  coinSettleSum += d; S.coins += n - d; CF.lastAdd = { n, a: n - d, t: performance.now() }; markDirty(); // lastAdd (v2.25.3): coinFly's default gain
   if (d > 0 && typeof ksSettleQueue === 'function') ksSettleQueue(d);
   const c = $('#coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); updateHUD(); return n;
 }
@@ -1530,8 +1530,9 @@ function addCoinsD(base, opts) { const s0 = coinSettleSum, n = addCoins(base, op
 let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
-  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
+  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))), L0 = S.bond.level; S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
   while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; if (typeof lvBond === 'function') lvBond(S.dog.id, S.bond.level); if (typeof hbBondUp === 'function') hbBondUp(S.dog.id, S.bond.level); } // v2.22: 20 town XP a Bond level, once per dog (off: only the level floor follows) // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
+  if (typeof bjGain === 'function') bjGain(n, S.bond.level > L0); // v2.25.3 Happy meters: one crayon heart flies to the Bond meter (54_coinfly.js); a level-up keeps its own card
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 // Daily rhythm: the daily bonuses (care, Square goal, trick coins, beach dig, Pupcake, outfit, breakfast, dawn, first visits, walks) reset once a Japan day (00:00 JST), not every game day
@@ -1569,9 +1570,10 @@ function updateHUD() {
     m.classList.toggle('low', v < 25);
   }
   const L = S.bond.level, a = BOND_TH[L - 1], b = BOND_TH[L] || BOND_TH[9];
-  const pr = L >= 10 ? 100 : clamp((S.bond.pts - a) / (b - a) * 100, 0, 100);
+  const bpts = S.bond.pts - (typeof bjPend === 'function' ? bjPend() : 0); // v2.25.3: a heart on its way holds the bar back (54_coinfly.js fills it when it lands)
+  const pr = L >= 10 ? 100 : clamp((bpts - a) / (b - a) * 100, 0, 100);
   const hudTxt = (el, v) => { if (el && el.textContent !== String(v)) el.textContent = v; };
-  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + S.bond.pts;
+  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + bpts;
   if (bt && bt.dataset.k !== bk) { bt.dataset.k = bk; hudTxt($('#bondLvl'), L); $('#bondFill').style.width = pr + '%'; bt.setAttribute('aria-valuenow', Math.round(pr));
     bt.title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) }); }
   if (!CF.hold && !CF.roll) hudTxt($('#coinNum'), tnum(S.coins)); // v2.25.2: a coin on its way holds the old number (54_coinfly.js rolls it up)
