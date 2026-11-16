@@ -55,6 +55,11 @@
 //     coins: Paw Coins that row grants (the client takes them back when the row is refunded). A coin pack from before v2.24.2 is its old
 //     size. The Supporter 2,000 sits on one row: the oldest not refunded, else the oldest.
 //   A Founding Friend (a supporter purchase, not refunded) gets ff: 1 on its Dog Card and friend yard, set here from purchases.
+//   Gift codes (v2.25.5, PROMO.md). Codes are made with tools/promo.sh (D1). Signed-in email accounts only (403 login for a guest or no session).
+//   POST /promo/redeem { code }            -> { ok, code, key, reward: { items, coins, treats }, at }   10/h per account, 30/h per IP (misses count)
+//     404 unknown (also expired, not started, disabled: one answer), 409 used (this account, or a code of the same batch), 409 gone (cap reached /
+//     a unique code used), 429 rate_limited. Coins are at most PROMO_COIN_MAX (500) whatever the row says.
+//   GET  /promo/mine                       -> { redemptions: [{ code, key, at, reward }] }   120/h   what each redemption granted, oldest first
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -154,6 +159,7 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
+  try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
@@ -806,6 +812,34 @@ async function shopWebhook(req, env) {
   return json({ received: true });
 }
 
+/* ---------------- Gift codes (v2.25.5, PROMO.md; owner, 16 Nov 2026) ----------------
+   promo_codes rows are made by hand with tools/promo.sh (D1 API), never by the game. Nothing here is paid. The game sends only the code typed.
+   A code compares upper case with spaces and dashes left out (full-width letters from a phone keyboard count as plain ones). Unknown, expired,
+   not yet started and disabled codes all answer the same 'unknown', so codes cannot be probed by their answers. */
+const PROMO_COIN_MAX = 500; // the most Paw Coins one code can give, whatever its row says (walks stay the main income); tools/promo.sh refuses more
+const PROMO_ITEMS_MAX = 6, PROMO_TREATS_MAX = 6, PROMO_TREAT_Q = 10, PROMO_NAME = 60; // a reward's size: item names, treat kinds, each treat's count, a name's length
+const PROMO_KEY = /^[A-Z0-9]{4,40}$/;
+const PROMO_MAX_U = 10, PROMO_MAX_IP = 30; // redeem attempts an hour, per account and per IP; every attempt counts, a miss too
+function promoNorm(s) {
+  if (typeof s !== 'string' || s.length > 80) return '';
+  const k = s.normalize('NFKC').toUpperCase().replace(/[\s\-_.‐-―−ー・－]/g, '');
+  return PROMO_KEY.test(k) ? k : '';
+}
+const promoName = (n) => typeof n === 'string' && n.length > 0 && n.length <= PROMO_NAME && !/[\u0000-\u001f<>]/.test(n);
+// a reward as the game may see it: { items, coins, treats }, coins clamped to PROMO_COIN_MAX; null when the JSON is broken or empty
+function promoReward(text) {
+  let r = null; try { r = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { return null; }
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+  const items = [...new Set((Array.isArray(r.items) ? r.items : []).filter(promoName))].slice(0, PROMO_ITEMS_MAX);
+  const coins = Math.max(0, Math.min(PROMO_COIN_MAX, Math.floor(Number(r.coins) || 0)));
+  const treats = {};
+  if (r.treats && typeof r.treats === 'object' && !Array.isArray(r.treats)) {
+    for (const k of Object.keys(r.treats)) { const q = Math.floor(Number(r.treats[k]) || 0); if (promoName(k) && q > 0 && Object.keys(treats).length < PROMO_TREATS_MAX) treats[k] = Math.min(PROMO_TREAT_Q, q); }
+  }
+  return items.length || coins || Object.keys(treats).length ? { items, coins, treats } : null;
+}
+const promoAcct = (me) => !!me && !me.guest && !!me.email; // signed-in cloud-save accounts only (an email account), like the Kind shop
+
 /* ---------------- routes ---------------- */
 const ROUTES = {
   'POST /guest': { auth: false, async fn({ env, ip }) {
@@ -1287,6 +1321,44 @@ const ROUTES = {
     if (await limited(env, 'shop:own:' + me.id, 120, 3600)) return fail('rate_limited', 429);
     const rows = await all(env, 'select id, item, created_at, refunded_at from purchases where user_id = ?1 order by created_at asc, id asc limit 500', me.id);
     return json({ purchases: shopPurchaseView(rows) });
+  } },
+
+  /* ---------- Gift codes (v2.25.5, PROMO.md) ---------- */
+  'POST /promo/redeem': { auth: null, async fn({ env, ip, body, me }) {
+    if (!promoAcct(me)) return fail('login', 403); // 403, never 401: a guest's login must not be dropped by the game (clApi forgets a token on 401)
+    const overU = await limited(env, 'promo:' + me.id, PROMO_MAX_U, 3600), overIp = await limited(env, 'promoip:' + ip, PROMO_MAX_IP, 3600);
+    if (overU || overIp) return fail('rate_limited', 429);
+    const key = frOnly(body, ['code']) ? promoNorm(body.code) : '';
+    if (!key) return fail('unknown', 404);
+    const now = Date.now();
+    const c = await one(env, 'select code, shown, kind, batch, reward, starts_at, ends_at, cap, used, disabled from promo_codes where code = ?1', key);
+    const reward = c ? promoReward(c.reward) : null;
+    if (!c || !reward || c.disabled || (c.starts_at && now < c.starts_at) || (c.ends_at && now >= c.ends_at)) return fail('unknown', 404); // the same answer for every reason
+    const batch = c.kind === 'unique' && c.batch ? c.batch : null;
+    if (await one(env, 'select 1 as x from promo_redemptions where code = ?1 and user_id = ?2', key, me.id)) return fail('used', 409);
+    if (batch && (await one(env, 'select 1 as x from promo_redemptions where batch = ?1 and user_id = ?2', batch, me.id))) return fail('used', 409); // one code of a batch per account
+    if (c.cap != null && c.used >= c.cap) return fail('gone', 409);
+    // insert first, then the count: one batch, all or nothing. The CHECK (used <= cap) fails the second of two racing redemptions for the
+    // last slot (its insert rolls back); the unique indexes fail a second redemption of this code (or this batch) by this account
+    try {
+      await env.DB.batch([
+        env.DB.prepare('insert into promo_redemptions (code, user_id, batch, reward, at) values (?1, ?2, ?3, ?4, ?5)').bind(key, me.id, batch, JSON.stringify(reward), now),
+        env.DB.prepare('update promo_codes set used = used + 1 where code = ?1').bind(key)
+      ]);
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      if (/check/i.test(m)) return fail('gone', 409);
+      if (/unique|constraint/i.test(m)) return fail('used', 409);
+      throw e;
+    }
+    return json({ ok: true, code: c.shown || key, key, reward, at: now });
+  } },
+
+  'GET /promo/mine': { auth: null, async fn({ env, me }) {
+    if (!promoAcct(me)) return fail('login', 403);
+    if (await limited(env, 'promo:mine:' + me.id, 120, 3600)) return fail('rate_limited', 429);
+    const rows = await all(env, 'select r.code as key, c.shown as shown, r.reward as reward, r.at as at from promo_redemptions r left join promo_codes c on c.code = r.code where r.user_id = ?1 order by r.at asc, r.code asc limit 200', me.id);
+    return json({ redemptions: rows.map((r) => ({ code: r.shown || r.key, key: r.key, at: r.at, reward: promoReward(r.reward) || { items: [], coins: 0, treats: {} } })) });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {

@@ -206,3 +206,40 @@ create table if not exists shop_holds (
   nonce      text,                 -- random hex per hold (13 Nov 2026), so two holds made in the same ms never share a key; null on older holds
   primary key (user_id, item)
 );
+
+-- Gift codes (v2.25.5 "Gift codes", PROMO.md; owner, 16 Nov 2026). Made by hand with tools/promo.sh only; the Worker reads them at
+-- POST /promo/redeem and writes the redemption. Nothing is paid. Two kinds:
+--   shared: one code for many players (DOGGO-IG-NOV): each account once, a start/end window, an optional total cap
+--   unique: made in batches (tools/promo.sh batch PREFIX 200): each code once in total (cap 1), and one code of a batch per account
+-- code is the normalised form (upper case, no spaces or dashes: what the Worker compares); shown is how the owner wrote it.
+-- The cap is kept by the CHECK below: the redemption insert and "used = used + 1" go in one D1 batch (all or nothing), so when two
+-- players race for the last slot the second batch fails the CHECK and rolls back its insert. Insert first, then the check.
+create table if not exists promo_codes (
+  code       text primary key,          -- A-Z and 0-9 only, 4-40 characters
+  shown      text not null,             -- e.g. DOGGO-IG-NOV
+  kind       text not null check (kind in ('shared', 'unique')),
+  batch      text,                      -- unique codes: the batch name (the PREFIX); null for a shared code
+  reward     text not null,             -- JSON { items: [item names], coins: n (500 at most, the Worker clamps it), treats: { food name: n } }
+  starts_at  integer,                   -- ms; null: from now on
+  ends_at    integer,                   -- ms, the first moment it no longer works; null: no end
+  cap        integer,                   -- total redemptions at most; null: no cap. unique codes: 1
+  used       integer not null default 0,
+  disabled   integer not null default 0, -- 1: tools/promo.sh disable. The game then says "unknown", like an expired code
+  note       text,                      -- the owner's own note, optional
+  created_at integer not null,          -- ms
+  check (cap is null or used <= cap)
+);
+create index if not exists promo_codes_batch on promo_codes (batch);
+
+-- One row per code an account used. reward is exactly what that redemption granted (coins already clamped), so a new device that
+-- restores (GET /promo/mine) gets the same and never more. A deleted account's rows go with it (tidy()).
+create table if not exists promo_redemptions (
+  code    text not null,                -- promo_codes.code (normalised)
+  user_id text not null,
+  batch   text,                         -- the code's batch (unique codes), for the one-per-batch rule; null for shared codes
+  reward  text not null,                -- JSON, as granted
+  at      integer not null,             -- ms
+  unique (code, user_id)
+);
+create unique index if not exists promo_red_batch on promo_redemptions (batch, user_id) where batch is not null;
+create index if not exists promo_red_user on promo_redemptions (user_id);
