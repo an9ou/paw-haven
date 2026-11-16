@@ -220,9 +220,12 @@ async function prRestore(quiet) {
   return out;
 }
 // on start (after the cloud has started) and when another account signs in on this page
+// It waits for the cloud's own pull first (at most 10 s): a newer cloud save loads before anything is granted, so a grant never lands in a save
+// that is about to be replaced (a save that lacks a code gets it on the next look anyway)
+async function prCloudIdle() { for (let i = 0; i < 40 && typeof CL !== 'undefined' && (CL.pulling || CL.pending || CL.signP); i++) await new Promise((r) => setTimeout(r, 250)); }
 function prPoll() {
   if (!S || prMode() !== 'ok' || !prWorker() || prPollP || prPollUid === CL.uid) return Promise.resolve(null);
-  prPollP = prRestore(false).catch(() => null).finally(() => { prPollP = null; });
+  prPollP = prCloudIdle().then(() => prRestore(false)).catch(() => null).finally(() => { prPollP = null; });
   return prPollP;
 }
 
@@ -242,7 +245,7 @@ function prExpose() {
   if (!window.__paw || window.__paw.pr) return;
   window.__paw.pr = {
     ui: () => prUI(), mode: () => prMode(), fields: (s) => prFields(s), grant: (rec) => prGrant(rec), card: (o) => prCard(o), open: () => prOpen(), redeem: (c) => prRedeem(c, $('#prBox')),
-    restore: (q) => prRestore(q), poll: () => { prPollUid = null; return prPoll(); }, wait: () => prWaitTick(), kind: (n) => prKind(n), catalog: () => prCatalog(), max: PR_COIN_MAX, flag: PROMO_UI
+    restore: (q) => prRestore(q), settings: () => openSettings(), more: () => openMore(), poll: () => { prPollUid = null; return prPoll(); }, wait: () => prWaitTick(), kind: (n) => prKind(n), catalog: () => prCatalog(), max: PR_COIN_MAX, flag: PROMO_UI
   };
 }
 on('game:ready', () => {
