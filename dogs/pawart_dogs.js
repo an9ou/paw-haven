@@ -2068,7 +2068,7 @@ FEET2['Little Sneakers']=function(h,s,L,l,haunch){const F=ksFoot(s,L,l,haunch);i
   if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
 /* ---------- Promo-code looks (docs/design/promo-items.md): never sold or earned, a promotion code only. New names only: old renders never reach them ----------
    neck 'Follower Star Bandana': a sky-blue bandana under the chin (the Tokyo bandanas' crude triangle and knot), a darker blue hem band,
-   three crayon stars (yellow, each in its own ink) and a tiny white paw print by the tip. Hands the dog back its random stream (the v2.18.1 rule). */
+   two crayon stars (yellow, each in its own ink) and a tiny white paw print below them. Hands the dog back its random stream (the v2.18.1 rule). */
 const PRM={sky:'#4FA8E6',skyD:'#2F78BE',star:'#FFD84A',paw:'#FFFBF2'};
 function prmStar(c,R,a){const p=[];for(let i=0;i<10;i++){const t=-Math.PI/2+a+i*Math.PI/5,r=i%2?R*.46:R;p.push([c[0]+Math.cos(t)*r,c[1]+Math.sin(t)*r])}return p}
 NECK2['Follower Star Bandana']=function(h,s,L,HT){

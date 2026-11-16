@@ -11,8 +11,8 @@ market, stall, Fun Fair, level, Bond or notebook list shows them. The code syste
 - `PROMO_LOOKS` (`game/src/03_yard.js`) lists every row flagged `promo` as `{ n, kind }` (`clothes` / `decor`): what a code may grant.
 - Friends and Dog Cards (append only): the pennant is the last of `FR_DECOR` (`game/src/50_friends.js`, 32), the bandana the last of `DC_OUTFITS`
   (`game/src/40_dogcards.js`, 58). The Worker needs `FR_LIM.decor 32` and `DC_LIM.outfit 58` (`cloudflare/worker.js`), deployed before a code can grant them.
-- Pennant catalogue spot `[146, 410, 52, 84]`: the phone's left half (x 140-534), clear of the mailbox, the house door, the bowl, the dog at rest, the dog house,
-  the yard visitor (`YV_SPOT`) and the first pack spots (desktop and phone). `hoFreeSpot` moves it when another decoration stands there.
+- Pennant catalogue spot `[446, 516, 48, 78]`: on the grass in front of the dog at rest, in the phone's left half (x 140-534), clear of the garden hotspot,
+  the mailbox, the house door, the bowl, the dog house, the yard visitor (`YV_SPOT`) and the pack spots (desktop and phone). `hoFreeSpot` moves it when another decoration stands there.
 - Renaming: the names are literal in the rows, the art keys and the lists above (the i18n extractor reads literals). One `grep -rl` for each name
   (`game/src`, `dogs/`, `world/`, `game/test_*.js`, `dogs/connect_check.js`, `dogs/fill_sweep.js`) and a replace renames it; the data keys
   (`data.clothes.<tid>.*`, `data.hm_decor.<tid>.*`) follow the name, then `node tools/i18n_extract.js --en`.
