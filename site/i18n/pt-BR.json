@@ -155,6 +155,7 @@
   "privacy.shop.refund": "<b>Reembolsos</b> são feitos pela Stripe. Depois de um reembolso total, o que aquela compra deu é retirado: os itens e as Moedas de Patinha. Moedas já gastas são compensadas com as moedas que você ganhar depois. O que você comprou com moedas continua seu. Só o Pacote Apoiador não pode ser comprado de novo depois de um reembolso total.",
   "privacy.shop.delete": "<b>Apagar sua conta</b> também apaga esses registros de compra do nosso lado. A Stripe guarda os próprios registros, como a lei exige.",
   "privacy.shop.paused": "<b>Se uma conta estiver pausada</b> por reembolsos ou contestações bancárias e depois for excluída, guardamos só um código embaralhado do e-mail que não pode ser revertido, para impedir abuso nos pagamentos, e nada mais.",
+  "privacy.shop.codes": "<b>Códigos de presente:</b> um código que você digita no jogo vai só para o nosso servidor, para ser conferido. Guardamos quais códigos a sua conta usou, para que os presentes voltem num aparelho novo.",
   "privacy.shop.noads": "Não há anúncios no jogo, e comprar algo não inicia nenhum rastreamento.",
   "privacy.where.title": "Onde fica guardado",
   "privacy.where.text": "Os dados da conta e os jogos salvos ficam guardados na Cloudflare, que cuida do serviço de login. Os e-mails de senha são enviados pela Resend, que cuida só desse e-mail. As duas guardam os dados só para fazer esse trabalho. Você joga no itch.io, e o jogo roda no seu navegador. O itch.io tem sua própria política de privacidade para o site dele.",

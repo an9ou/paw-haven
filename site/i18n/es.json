@@ -160,6 +160,7 @@
   "privacy.shop.refund": "<b>Los reembolsos</b> se hacen a través de Stripe. Tras un reembolso completo, lo que dio esa compra se retira: sus artículos y sus Monedas Pata. Las monedas ya gastadas se compensan con las que ganes después. Lo que compraste con monedas sigue siendo tuyo. Solo el Pack de Apoyo no se puede volver a comprar tras un reembolso completo.",
   "privacy.shop.delete": "<b>Borrar tu cuenta</b> también borra estos registros de compra de nuestro lado. Stripe guarda sus propios registros, como pide la ley.",
   "privacy.shop.paused": "<b>Si una cuenta está en pausa</b> por reembolsos o disputas bancarias y luego se elimina, solo guardamos un código cifrado de su correo que no se puede revertir, para frenar el abuso en los pagos, y nada más.",
+  "privacy.shop.codes": "<b>Códigos de regalo:</b> un código que escribes en el juego solo se envía a nuestro servidor, para comprobarlo. Guardamos qué códigos usó tu cuenta, para que sus regalos vuelvan en un dispositivo nuevo.",
   "privacy.shop.noads": "No hay anuncios en el juego, y comprar algo no activa ningún rastreo.",
   "privacy.where.title": "Dónde se guarda",
   "privacy.where.text": "Los datos de la cuenta y las partidas se guardan en Cloudflare, que gestiona el servicio de inicio de sesión. Los correos de contraseña se envían a través de Resend, que solo se encarga de ese correo. Ambos guardan los datos solo para hacer ese trabajo. Juegas en itch.io, y el juego funciona en tu navegador. itch.io tiene su propia política de privacidad para su propio sitio.",
