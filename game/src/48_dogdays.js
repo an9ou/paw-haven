@@ -12,7 +12,8 @@
    5. Letters: Gerald's weekly town news and short letters from the families of puppies the player adopted out, at most one a day, in the morning mailbox.
    Under the test harness all of it needs prefs.ddTest. Nothing is ever taken away and a missed day costs nothing. */
 function ddOn() { return !navigator.webdriver || !!prefs.ddTest; }
-const DD = { bond: [], chip: '', dpg: -1, spg: -1, n: 0, defs: null };
+const DD = { bond: [], chip: '', dpg: -1, spg: -1, n: 0, defs: null, wdone: {} }; // wdone: dog id -> when its wish came true this session (16 Nov: the done chip shows a moment, then leaves the screen)
+const DD_WDONE_MS = 9000; // the "Wish come true!" chip stays this long after the wish, then the yard is clear until tomorrow's wish
 const ddReady = () => !!(S && S.dd && S.dogs && S.dogs.length && D() && ddOn());
 const DD_COIN = 10, DD_COIN_DAY = 20, DD_DIARY_MAX = 60;
 const ddArr = (a) => (Array.isArray(a) ? a : []);
@@ -89,9 +90,10 @@ function ddActDogs(e) {
 }
 function ddWishDone(d, w) {
   const W = S.dd.wish, t0 = Date.now(); w.done = 1; S.dd.wn++; S.dd.wk[w.k] = (S.dd.wk[w.k] || 0) + 1;
-  let coins = 0; if (W.coins < DD_COIN_DAY) { coins = Math.min(DD_COIN, DD_COIN_DAY - W.coins); W.coins += coins; addCoins(coins, { raw: true }); }
+  let coins = 0, wte = null; if (W.coins < DD_COIN_DAY) { coins = Math.min(DD_COIN, DD_COIN_DAY - W.coins); W.coins += coins; addCoins(coins, { raw: true }); coinFly(() => wte, coins, { delay: 1260 }); } // v2.25.3: the coin flies from the wish toast
   if (w.fw && S.fw && S.fw.wish && S.fw.wish.id === d.id) { S.fw.wish.done = true; withDog(d, () => addStat('happy', 10)); }
   const p = ddToday(); if (p && p.id === d.id) p.wi = w.k; // only the writer's own wish goes on its page
+  DD.wdone[d.id] = t0; setTimeout(() => { if (S) ddChipSync(); }, DD_WDONE_MS + 50);
   markDirty(); DD.chip = ''; ddChipSync();
   trackAct('wish', { k: w.k, a: w.a || null, id: d.id }); // v2.20 Missions v2: the wish mission, badges, the notebook
   setTimeout(() => {
@@ -103,7 +105,7 @@ function ddWishDone(d, w) {
     if (coins) parts.push(tt('dd.wish_coins', '+{n, plural, one {# coin} other {# coins}}.', { n: coins }));
     if (w.fw) parts.push(tt('dd.wish_happy', '+10 Happiness.'));
     if (st.length) parts.push(tt('dd.wish_sticker', 'A new sticker: {name}!', { name: st[0].label() }));
-    toast(parts.join(' '), 'gold'); st.slice(1).forEach((s) => toast(tt('dd.st_new', 'New sticker: {name}!', { name: s.label() }), 'good', { group: 'ddst', many: (n) => tt('dd.st_new_many', '{n} new stickers in your sticker book!', { n }) })); SFX.kaching(); ddChipSync(); saveNow();
+    wte = toast(parts.join(' '), 'gold'); jfSrc('bond', wte); st.slice(1).forEach((s) => toast(tt('dd.st_new', 'New sticker: {name}!', { name: s.label() }), 'good', { group: 'ddst', many: (n) => tt('dd.st_new_many', '{n} new stickers in your sticker book!', { n }) })); SFX.kaching(); ddChipSync(); saveNow();
   }, 1200);
 }
 on('act', (e) => {
@@ -119,6 +121,7 @@ function ddChipSync() {
   let el = $('#ddWish', view);
   if (!ddChipShown()) { if (el && !el.hidden) { el.hidden = true; DD.ct = ''; toastPlace(); } return; }
   const d = D(), w = ddWish(d); if (!w) return;
+  if (w.done && !(Date.now() - (DD.wdone[d.id] || 0) < DD_WDONE_MS)) { if (el && !el.hidden) { el.hidden = true; DD.ct = ''; toastPlace(); } return; } // a wish already come true: off the main screen (owner, 16 Nov 2026)
   if (!el) { el = document.createElement('button'); el.id = 'ddWish'; el.type = 'button'; el.className = 'dd-wish'; el.onclick = (ev) => { ev.stopPropagation(); ddChipTap(); }; view.appendChild(el); DD.chip = ''; }
   const key = [d.id, w.k, w.a, w.done, I18N.lang].join('|');
   if (DD.chip !== key) {

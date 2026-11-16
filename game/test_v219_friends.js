@@ -208,8 +208,8 @@ run('v219_friends', async (t) => {
   const order = await ev(() => window.__paw.fr.orderOk());
   const lim = await ev(() => window.__paw.fr.lim());
   ok(order.gifts && order.decor && order.houses && order.notes, 'FR_GIFTS, FR_DECOR, FR_HOUSES and FR_NOTES match the game tables: ' + JSON.stringify(order.n));
-  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys)');
-  ok(workerLim === 'notes:12,gifts:47,decor:35,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
+  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; v2.25.5: + the Paw-Print Pennant after them)');
+  ok(workerLim === 'notes:12,gifts:47,decor:36,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
 
   // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)
@@ -397,6 +397,20 @@ run('v219_friends', async (t) => {
   ok(!toys.off.includes('Tug Post') && toys.off.includes('Bird Bath') && JSON.stringify(toys.offSeen) === '["Bird Bath"]', 'before Yard visitors is live a toy is neither sent nor drawn in a friend\'s yard: ' + JSON.stringify({ off: toys.off, seen: toys.offSeen }));
   ok(toys.on.includes('Tug Post') && toys.on.includes('Bird Bath') && JSON.stringify(toys.onSeen) === '["Tug Post","Bird Bath"]', 'once live, the toy is sent and a friend\'s toy is drawn: ' + JSON.stringify({ on: toys.on, seen: toys.onSeen }));
   ok(toys.okOld === true && toys.bad === 1 && toys.oldPut === 1 && !toys.old1.includes('Tug Post') && toys.old1.includes('Bird Bath') && toys.flag === true && toys.bad2 === 0 && !toys.old2.includes('Tug Post'), 'an older Worker refuses the toy: the yard goes again without it, once, and later pushes skip it: ' + JSON.stringify(toys));
+  // v2.25.5 gift codes: the Paw-Print Pennant is FR_DECOR 35. An older Worker (FR_LIM.decor 31) refuses the snapshot: the yard goes again without it, once,
+  // and later pushes skip it until the next load (PROMO.md 5)
+  const pen = await ev(async () => {
+    const P = window.__paw, fr = P.fr, S = P.S, srv = window.__frSrv, list = fr.lists().decor, last = () => srv.yards[srv.yards.length - 1];
+    const r = { idx: list.indexOf('Paw-Print Pennant'), old: fr.decorOldN };
+    S.decor['Paw-Print Pennant'] = { out: true, at: [446, 516] };
+    await fr.pushYard(true); r.on = last().decor.map((d) => list[d.i]);
+    srv.decorLim = 31; const n0 = srv.yards.length; r.okOld = await fr.pushYard(true); r.oldPut = srv.yards.length - n0; r.bad = srv.badYards; r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
+    const b0 = srv.badYards; await fr.pushYard(true); r.bad2 = srv.badYards - b0; r.old2 = last().decor.map((d) => list[d.i]);
+    delete srv.decorLim; fr.decorOld(false); delete S.decor['Paw-Print Pennant']; await fr.pushYard(true);
+    return r;
+  });
+  ok(pen.idx === 35 && pen.old === 31 && pen.on.includes('Paw-Print Pennant'), 'the Paw-Print Pennant is FR_DECOR 35 and goes in the snapshot: ' + JSON.stringify(pen.on));
+  ok(pen.okOld === true && pen.bad === 1 && pen.oldPut === 1 && !pen.old1.includes('Paw-Print Pennant') && pen.old1.includes('Bird Bath') && pen.flag === true && pen.bad2 === 0 && !pen.old2.includes('Paw-Print Pennant'), 'an older Worker refuses it: the yard goes again without it, once, and later pushes skip it: ' + JSON.stringify(pen));
 
   await ev(() => { window.__frSrv.offline = true; window.__toasts.length = 0; });
   await t.closeX(); await t.modalGone();

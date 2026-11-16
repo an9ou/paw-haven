@@ -14,6 +14,9 @@ Object.assign(HM_DECOR, {
   'Bubble Fountain': { prop: 'yvbubbles', at: [470, 410, 72, 96], vb: [120, 160], price: 1500, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A little box that blows bubbles all afternoon. Dog-safe bubbles, so catching them is allowed.' }
 });
 const YV_TOYS = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'];
+// v2.25.5 gift codes: the Paw-Print Pennant (03_yard.js) comes after these toys in FR_DECOR and the Worker's list (index 35), so it moves to the end of
+// HM_DECOR here too: the yard order stays the friends order (frExpose orderOk)
+{ const pp = HM_DECOR['Paw-Print Pennant']; if (pp) { delete HM_DECOR['Paw-Print Pennant']; HM_DECOR['Paw-Print Pennant'] = pp; } }
 const YV_OLD = ['Sandbox', 'Bird Bath', 'Stepping Stones', 'Hammock', 'Garden Bench', 'Doggy Ramp']; // older yard items that pull a little
 // the visitors (V226.md 3): [id, name, breed, coat option, age in months, family, favourite toy, rare condition]
 const YV_DOGS = [

@@ -549,11 +549,12 @@ function secretDig() {
   setTimeout(() => {
     S.secretDug = true; S.title = 'Treasure Legend'; // saved title: always English, shown through the core's title display S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 3;
     if (!S.found['Golden Bone']) S.found['Golden Bone'] = { day: day(), route: 'yard' };
-    const c = addCoins(1000, { raw: true }); SFX.treasure(); setTimeout(SFX.fanfare, 400); audioCue('treasure'); markDirty();
+    const { n: c, d: cd } = addCoinsD(1000, { raw: true }); SFX.treasure(); setTimeout(SFX.fanfare, 400); audioCue('treasure'); markDirty();
     const sx = $('#secretX'); if (sx) sx.remove(); setHudDog(); hudDogKey = ''; setHudDog();
     const chest = artReal('collectible', 'chest') || artReal('icon', 'chest') || art('collectible', 'dig');
-    const p = openModal('<span class="hl">' + tt('yard.the_grand_treasure_chest', 'The Grand Treasure Chest!') + '</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>${esc(tt('yard.the_x_was_real', 'The X was real. {name} dug up the Grand Treasure Chest of Doodle Doggo.', { name: NAME() }))}</p><ul class="unlocks"><li>${esc(tt('yard.plus_paw_coins', '+{n} Paw Coins', { n: c }))}</li><li>${tt('yard.3_golden_bones_in_the', '3 Golden Bones (in the Food tab)')}</li><li>${tt('yard.new_title_treasure_legend_html', 'New title: <b>Treasure Legend</b> (on your name tag)')}</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">' + tt('yard.legendary', 'Legendary!') + '</button>' });
+    const p = openModal('<span class="hl">' + tt('yard.the_grand_treasure_chest', 'The Grand Treasure Chest!') + '</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>${esc(tt('yard.the_x_was_real', 'The X was real. {name} dug up the Grand Treasure Chest of Doodle Doggo.', { name: NAME() }))}</p><ul class="unlocks"><li>${esc(tt('yard.plus_paw_coins', '+{n} Paw Coins', { n: c }) + ksSettleNote(cd))}</li><li>${tt('yard.3_golden_bones_in_the', '3 Golden Bones (in the Food tab)')}</li><li>${tt('yard.new_title_treasure_legend_html', 'New title: <b>Treasure Legend</b> (on your name tag)')}</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">' + tt('yard.legendary', 'Legendary!') + '</button>' });
     $('#sdOk', p).onclick = () => { SFX.boop(700); closeModal(); };
+    coinFly($('.unlocks li', p), c, { gain: c - cd, delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     busy = false; dogTo(0, 0, 1, 0.9); setTemp('happy', 2500);
   }, 2600);
 }
@@ -610,8 +611,8 @@ function beachDig() {
   dailyCheck(); if (S.daily.beachDig) { nope(tt('yard.one_beach_dig_a_day', 'One beach dig a day. The sand needs to recover. (It does not.)')); return; }
   if (busy || S.sleeping) return; S.daily.beachDig = true; busy = true; hideBubble(); renderDog('dig'); SFX.crunch(); setTimeout(SFX.crunch, 400);
   setTimeout(() => {
-    if (Math.random() < 0.55) { const c = addCoins(RINT(5, 20)); toast(tt('yard.dug_up_coins_in_the_sand', 'Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.', { n: c }), 'gold'); }
-    else { const j = PICK(JUNK.concat([['junk-rock', tt('yard.a_shell_with_a_smaller', 'A shell with a smaller shell inside. Shell-ception.')]])); const c = addCoins(RINT(2, 5)), ji = JUNK.indexOf(j); toast(tt('yard.found_plus_coins', '{text} (+{n, plural, one {# coin} other {# coins}})', { text: ji >= 0 ? tdata('junk.' + ji + '.1', j[1]) : j[1], n: c }), 'gold'); }
+    if (Math.random() < 0.55) { const { n: c, d: cd } = addCoinsD(RINT(5, 20)); coinFly(toast(tt('yard.dug_up_coins_in_the_sand', 'Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.', { n: c }) + ksSettleNote(cd), 'gold'), c, { gain: c - cd }); } // v2.25.3: the coin flies from the toast
+    else { const j = PICK(JUNK.concat([['junk-rock', tt('yard.a_shell_with_a_smaller', 'A shell with a smaller shell inside. Shell-ception.')]])); const { n: c, d: cd } = addCoinsD(RINT(2, 5)), ji = JUNK.indexOf(j); coinFly(toast(tt('yard.found_plus_coins', '{text} (+{n, plural, one {# coin} other {# coins}})', { text: ji >= 0 ? tdata('junk.' + ji + '.1', j[1]) : j[1], n: c }) + ksSettleNote(cd), 'gold'), c, { gain: c - cd }); }
     addStat('happy', favAct('digging') ? 6 : 3); busy = false; exTrig(D(), 'dig', { pose: 'idle', draw: false }); renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty(); // v2.13: the guilty face
   }, 1300);
 }
@@ -1011,8 +1012,14 @@ const HM_DECOR = {
   'Cardboard Fireplace': { prop: 'ksfireplace', at: [388, 300, 120, 120], vb: [160, 160], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fireplace made of painted cardboard with paper flames. All the cosy, none of the heat, so noses stay safe.' },
   'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' },
   // v2.28 Stories and stars (V228.md 2, 56_stories.js): the 5 Bond stars keepsake, a reward never sold (prop drawn in 56_stories.js)
-  'Framed Paw Print': { prop: 'stpawframe', at: [700, 304, 68, 79], vb: [120, 140], room: 'house', zone: 'wall', kind: 'decor', reward: true, v228: true, story: 'One muddy paw print in a wooden frame, with two gold stars. It took five Bond stars and a lot of mud.' }
+  'Framed Paw Print': { prop: 'stpawframe', at: [700, 304, 68, 79], vb: [120, 140], room: 'house', zone: 'wall', kind: 'decor', reward: true, v228: true, story: 'One muddy paw print in a wooden frame, with two gold stars. It took five Bond stars and a lot of mud.' },
+  // Promo-code looks (docs/design/promo-items.md): only from a promotion code, never sold or earned (promo, reward, no v27 / fest / price / bond, so no shop,
+  // market, stall, level or Bond list shows it). Prop prpennant in world B. Catalogue spot in the phone's left half (x 140-534), on the grass in front of the dog
+  // at rest, clear of the garden, the mailbox, the house door, the bowl, the dog house, the yard visitor and the pack spots (desktop and phone); the last yard row (FR_DECOR)
+  'Paw-Print Pennant': { prop: 'prpennant', at: [446, 516, 48, 78], vb: [100, 160], room: 'yard', zone: 'floor', kind: 'decor', promo: true, reward: true, story: 'A little flag on a stick with a big crayon paw print and a star. Only from a code, as a thank-you for following.' }
 };
+// every promo-code look, by name and kind (the rows flagged promo): what a promotion code may grant
+const PROMO_LOOKS = CLOTHES.filter((c) => c.promo).map((c) => ({ n: c.n, kind: 'clothes' })).concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].promo).map((n) => ({ n, kind: 'decor' })));
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
 function hmDecorOut(name) { return !!(S && S.decor && S.decor[name] && S.decor[name].out); }

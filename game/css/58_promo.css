@@ -1,0 +1,25 @@
+/* ======================= v2.25.5 Gift codes (PROMO.md, game/src/55_promo.js): "Have a code?" in Settings and the phone menu ======================= */
+.pmset{margin:14px 0 6px;padding-top:10px;border-top:2px dashed rgba(91,61,50,.25)}
+.pmset .clh{margin:6px 0 2px;font-family:var(--font-hand);font-size:26px}
+.pmset .clrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.pmset .clrow .btn{min-height:44px}
+.pm-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:6px 0 2px}
+.pm-form .pm-field{display:flex;flex-direction:column;gap:4px;margin:0;flex:1 1 220px;min-width:0;max-width:360px}
+.pm-form .pm-field span{font-size:16px}
+.pm-form .pm-field input{font:inherit;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;min-height:44px;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;color:var(--ink);box-sizing:border-box;width:100%}
+.pm-form .pm-field input::placeholder{text-transform:none;letter-spacing:0;color:#9b8a7c}
+#pmBox .pm-form .pm-go{min-height:46px;min-width:120px;flex:none}
+.pm-msg{margin:6px 0 0;min-height:0;font-weight:600;overflow-wrap:anywhere}
+.pm-msg:empty{display:none}
+.pm-msg[data-kind="err"]{color:#a2453a}
+.pm-msg[data-kind="good"]{color:#3f7a3a}
+.pmset .pm-note,.pmset .pm-guest{margin:6px 0;overflow-wrap:anywhere}
+.panel.pm-sheet .pmset{margin-top:0;padding-top:0;border-top:0}
+.panel.pm-got .pm-row .art{display:flex;align-items:center;justify-content:center}
+.panel.pm-got .pm-coins .art svg{width:64px;height:64px}
+.panel.pm-got .pm-mail,.panel.pm-got .pm-wait{margin:8px 0 0;text-align:center}
+html[data-layout="phone"] .panel.pm-sheet .panel-body{padding-bottom:var(--rs-kb,0px)} /* the on-screen keyboard's room (rsKeyboard, as the reset sheet) */
+html[data-layout="phone"] .pm-form{flex-direction:column;align-items:stretch}
+html[data-layout="phone"] .pm-form .pm-field{max-width:none;flex:none}
+html[data-layout="phone"] .pm-form .pm-field input{font-size:18px;min-height:48px;touch-action:manipulation}
+html[data-layout="phone"] #pmBox .pm-form .pm-go,html[data-layout="phone"] .pmset .clrow .btn{min-height:48px;width:100%}

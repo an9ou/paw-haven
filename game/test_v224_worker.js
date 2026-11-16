@@ -20,16 +20,33 @@ const now = () => Math.floor(Date.now() / 1000);
     const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
     const DB = d1();
     DB.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // safe to re-run
-    const stripe = { calls: [], n: 0, fail: false, sessions: {} };
+    // throws: a network error (fetch rejects); delay: ms before answering (concurrent taps); status: session id -> open | complete | expired;
+    // keys: Idempotency-Key -> session id (Stripe answers the same session for the same key)
+    // conflict: n answers of 409 (the same Idempotency-Key still in flight at Stripe)
+    const stripe = { calls: [], n: 0, fail: false, throws: false, delay: 0, conflict: 0, sessions: {}, status: {}, keys: {} };
+    const sres = (o, st) => new Response(JSON.stringify(o), { status: st || 200 });
     const STRIPE_FETCH = async (url, o) => {
       stripe.calls.push({ url, o, form: new URLSearchParams(o.body) });
-      if (stripe.fail) return new Response(JSON.stringify({ error: { code: 'resource_missing' } }), { status: 400 });
-      if (o.method === 'GET') { // GET /checkout/sessions?payment_intent=...: the list API, from stripe.sessions
-        const pi = new URL(url).searchParams.get('payment_intent'), cs = stripe.sessions[pi];
-        return new Response(JSON.stringify({ object: 'list', data: cs ? [cs] : [], has_more: false }), { status: 200 });
+      if (stripe.delay) await new Promise((r) => setTimeout(r, stripe.delay));
+      if (stripe.throws) throw new Error('network down');
+      if (stripe.fail) return sres({ error: { code: 'resource_missing' } }, 400);
+      if (stripe.conflict > 0 && o.method === 'POST' && /\/checkout\/sessions$/.test(url)) { stripe.conflict--; return sres({ error: { type: 'idempotency_error', message: 'in progress' } }, 409); }
+      const u = new URL(url);
+      let m = u.pathname.match(/\/checkout\/sessions\/(cs_[A-Za-z0-9_]+)\/expire$/);
+      if (m && o.method === 'POST') { // only an open session can be expired
+        const st = stripe.status[m[1]] || 'open'; if (st !== 'open') return sres({ error: { code: 'checkout_session_not_expirable' } }, 400);
+        stripe.status[m[1]] = 'expired'; return sres({ id: m[1], object: 'checkout.session', status: 'expired' });
       }
-      const id = 'cs_test_' + (++stripe.n).toString().padStart(8, '0');
-      return new Response(JSON.stringify({ id, object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/' + id }), { status: 200 });
+      m = u.pathname.match(/\/checkout\/sessions\/(cs_[A-Za-z0-9_]+)$/);
+      if (m && o.method === 'GET') return sres({ id: m[1], object: 'checkout.session', status: stripe.status[m[1]] || 'open' });
+      if (o.method === 'GET') { // GET /checkout/sessions?payment_intent=...: the list API, from stripe.sessions
+        const pi = u.searchParams.get('payment_intent'), cs = stripe.sessions[pi];
+        return sres({ object: 'list', data: cs ? [cs] : [], has_more: false });
+      }
+      const key = o.headers && o.headers['Idempotency-Key'];
+      const id = key && stripe.keys[key] ? stripe.keys[key] : 'cs_test_' + (++stripe.n).toString().padStart(8, '0');
+      if (key) stripe.keys[key] = id;
+      return sres({ id, object: 'checkout.session', url: 'https://checkout.stripe.com/c/pay/' + id });
     };
     const PRICES = JSON.stringify({ supporter: 'price_sup123', tokyo: 'price_tok123', cozy: 'price_coz123', robo: 'price_rob123', sprinkler: 'price_spr123', bowl: 'price_bow123', comfort: { price: 'price_com123', usd: 299 }, coins_1k: 'price_c1k123', coins_3k: 'price_c3k123' }); // coins_8k left out on purpose
     const env = { DB, TIDY: '1', RATE_SCALE: '1', STRIPE_FETCH };
@@ -47,6 +64,9 @@ const now = () => Math.floor(Date.now() / 1000);
     const n = (sql, ...a) => DB.raw.prepare(sql).get(...a).n;
     const hook = (ev, sig) => { const raw = typeof ev === 'string' ? ev : JSON.stringify(ev); return call('POST', '/shop/webhook', raw, null, { 'Stripe-Signature': sig === undefined ? sign(raw, now()) : sig, 'Content-Type': 'application/json; charset=utf-8' }); };
     const paid = (sid, uid, item, pi, type) => ({ id: 'evt_' + sid, type: type || 'checkout.session.completed', data: { object: { id: sid, object: 'checkout.session', payment_status: 'paid', client_reference_id: uid, metadata: { item, user: uid }, amount_total: 499, currency: 'hkd', payment_intent: pi } } });
+    // refund protection (14 Nov 2026): the owner's 'allow' row lifts the auto pause. The older sections refund one account several times on
+    // purpose to test refunds, so those accounts get one, and their checks still read 409 refunded / owned / a Checkout as before
+    const allow = (uid, note) => DB.raw.prepare("insert or replace into shop_flags (key, mode, note, created_at) values (?, 'allow', ?, ?)").run('u:' + uid, note || 'test', Date.now());
     const account = async (email) => { const g = (await call('POST', '/guest', {})).json; const r = (await call('POST', '/register', { email, password: 'pupper123' }, g.token)).json; return { token: r.token, id: r.user.id }; };
 
     sec('1. closed without keys');
@@ -156,7 +176,8 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await call('GET', '/shop/owned', null, A.token);
     const P = (r.json && r.json.purchases) || [];
     ok(r.status === 200 && P.length === 4, 'four purchases for A: ' + r.text);
-    ok(P.every((p) => Object.keys(p).join() === 'id,item,at,refunded' && typeof p.at === 'number'), 'each is { id, item, at, refunded } only (no amount, user or payment intent)');
+    ok(P.every((p) => Object.keys(p).join() === 'id,item,at,refunded,coins' && typeof p.at === 'number' && typeof p.coins === 'number'), 'each is { id, item, at, refunded, coins } only (no amount, user or payment intent)');
+    ok(P.find((p) => p.id === 'cs_test_sup0001').coins === 2000 && P.find((p) => p.id === 'cs_test_wait0001').coins === 0 && P.filter((p) => p.item === 'coins_1k').every((p) => p.coins === 2000), 'coins: 2,000 on the Supporter Pack and on each coin pack; a look is 0');
     ok(P.find((p) => p.id === 'cs_test_wait0001').refunded === true && P.find((p) => p.id === 'cs_test_sup0001').refunded === false, 'the refunded flag');
     r = await call('GET', '/shop/owned', null, B.token); ok(r.status === 200 && r.json.purchases.length === 0, 'another account sees none of them');
     r = await call('GET', '/shop/owned', null, G.token); ok(r.status === 200 && r.json.purchases.length === 0, 'a guest: an empty list');
@@ -173,7 +194,7 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await hook(paid('cs_test_early001', B.id, 'cozy', 'pi_test_early001'));
     ok(r.status === 200 && q('select refunded_at from purchases where id = ?', 'cs_test_early001').refunded_at === era && n('select count(*) as n from purchases where id = ?', 'cs_test_early001') === 1, 'then checkout.session.completed: one row, still refunded');
     r = await call('GET', '/shop/owned', null, B.token); ok(r.status === 200 && r.json.purchases.length === 1 && r.json.purchases[0].refunded === true, 'B owns nothing: the one purchase shows refunded');
-    r = await call('POST', '/shop/checkout', { item: 'cozy' }, B.token); ok(r.status === 200, 'and can buy it again');
+    r = await call('POST', '/shop/checkout', { item: 'cozy' }, B.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'a refunded looks pack can be bought again (owner, 13 Nov: only the Supporter Pack is never for sale again): ' + r.status + ' ' + r.text);
     const g1 = gets();
     r = await hook({ id: 'evt_e2', type: 'charge.refunded', data: { object: { id: 'ch_e', payment_intent: 'pi_test_early001', refunded: true } } });
     ok(r.status === 200 && gets() === g1, 'the refund again: no lookup (the row is there)');
@@ -193,14 +214,21 @@ const now = () => Math.floor(Date.now() / 1000);
     sec('7. one-time items owned are refused');
     const before = stripe.calls.length;
     r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token); ok(r.status === 409 && r.json.error === 'owned', 'the Supporter Pack, owned: 409 owned');
-    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 200, 'Tokyo Street, refunded: can be bought again');
-    r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, A.token); ok(r.status === 200, 'coin packs are repeatable');
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'Tokyo Street, refunded: for sale again, a new Checkout (only the Supporter Pack is never for sale again)');
+    const tokAgain = r.json.url.split('/').pop();
+    r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, A.token); ok(r.status === 200, 'coin packs are repeatable (an open Checkout is reused)');
     await hook(paid('cs_test_kit00001', B.id, 'comfort', 'pi_test_kit00001'));
     r = await call('POST', '/shop/checkout', { item: 'robo' }, B.token); ok(r.status === 409, 'the Comfort Kit covers the Robo Scoop');
     r = await call('POST', '/shop/checkout', { item: 'comfort' }, B.token); ok(r.status === 409, 'and the Kit itself');
     for (const t of ['robo', 'sprinkler', 'bowl']) await hook(paid('cs_test_tool_' + t, A.id, t, 'pi_test_tool_' + t));
     r = await call('POST', '/shop/checkout', { item: 'comfort' }, A.token); ok(r.status === 409, 'all three tools owned: the Comfort Kit is refused');
-    ok(stripe.calls.length === before + 2, 'only the two allowed checkouts reached Stripe');
+    ok(stripe.calls.length === before + 1, 'only the refunded Tokyo Street reached Stripe (once); owned items do not, and the open coin-pack Checkout is not opened twice');
+    await hook(paid(tokAgain, A.id, 'tokyo', 'pi_test_tokagain1'));
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, A.token); ok(r.status === 409 && r.json.error === 'owned', 'bought again: Tokyo Street is owned (409 owned)');
+    r = await call('GET', '/shop/owned', null, A.token);
+    const tokRows = (r.json.purchases || []).filter((p) => p.item === 'tokyo');
+    ok(tokRows.length === 2 && tokRows.filter((p) => p.refunded).length === 1 && tokRows.every((p) => p.coins === 0), 'two Tokyo Street rows, one refunded, one live, and neither carries coins: ' + JSON.stringify(tokRows));
+    ok((r.json.purchases || []).filter((p) => !['supporter', 'coins_1k', 'coins_3k', 'coins_8k'].includes(p.item)).every((p) => p.coins === 0), 'no looks pack or tool row ever carries coins');
 
     sec('8. Founding Friend (ff) from purchases, never from the client');
     const card = (extra) => Object.assign({ name: [1, 2], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }] }, extra || {});
@@ -231,7 +259,8 @@ const now = () => Math.floor(Date.now() / 1000);
     await hook({ id: 'evt_r2', type: 'charge.refunded', data: { object: { id: 'ch_2', payment_intent: 'pi_test_sup0001', refunded: true } } });
     r = await call('GET', '/friends/yard?fid=' + pa.fid, null, B.token); ok(r.status === 200 && !('ff' in r.json.yard), 'the Supporter Pack refunded: the badge goes');
     r = await call('GET', '/card', null, A.token); ok(!('ff' in r.json), 'and from the Dog Card');
-    r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token); ok(r.status === 200, 'a refunded Supporter Pack can be bought again');
+    allow(A.id, 'section 8: two refunds on purpose');
+    r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token); ok(r.status === 409 && r.json.error === 'refunded', 'a refunded Supporter Pack cannot be bought again (409 refunded)');
 
     sec('9. limits and account deletion');
     const codes = []; for (let i = 0; i < 21; i++) codes.push((await call('POST', '/shop/checkout', { item: 'coins_3k' }, C.token)).status);
@@ -241,6 +270,430 @@ const now = () => Math.floor(Date.now() / 1000);
     await call('GET', '/');
     ok(n('select count(*) as n from purchases where user_id = ?', C.id) === 0, 'a deleted account\'s purchases are tidied away with it');
     ok(n('select count(*) as n from purchases where user_id = ?', A.id) > 0, 'other accounts keep theirs');
+
+    sec('11. a refund revokes the grant, and a second Pay cannot grant it twice');
+    const D = await account('twice@example.com'); allow(D.id, 'section 11: three refunds on purpose');
+    const n0 = stripe.calls.length;
+    const pay1 = await call('POST', '/shop/checkout', { item: 'supporter' }, D.token);
+    const pay2 = await call('POST', '/shop/checkout', { item: 'supporter' }, D.token);
+    ok(pay1.status === 200 && pay2.status === 200 && pay1.json.url === pay2.json.url, 'two Pay taps: one Checkout URL');
+    const made = stripe.calls.slice(n0).filter((c) => c.o.method === 'POST' && /\/checkout\/sessions$/.test(c.url));
+    ok(made.length === 1 && typeof made[0].o.headers['Idempotency-Key'] === 'string' && made[0].o.headers['Idempotency-Key'].indexOf(D.id) > 0, 'the second tap does not create a Stripe session; the first one sends an Idempotency-Key');
+    const sid = pay1.json.url.split('/').pop();
+    await hook(paid(sid, D.id, 'supporter', 'pi_twice_sup1'));
+    await hook(paid('cs_test_twicedup1', D.id, 'supporter', 'pi_twice_dup1')); // a second paid session that raced in before the hold existed
+    r = await call('GET', '/shop/owned', null, D.token);
+    const supRows = (r.json.purchases || []).filter((p) => p.item === 'supporter');
+    ok(supRows.length === 2 && supRows.reduce((s, p) => s + p.coins, 0) === 2000 && supRows.filter((p) => p.coins > 0).length === 1, 'two paid Supporter sessions still expose 2,000 coins once: ' + JSON.stringify(supRows));
+    DB.raw.prepare('insert into shop_holds (user_id, item, session_id, url, created_at) values (?, ?, null, null, ?)').run(D.id, 'cozy', Date.now());
+    const nBusy = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'cozy' }, D.token);
+    ok(r.status === 503 && r.json.error === 'busy' && stripe.calls.length === nBusy, 'a Checkout still being created answers busy and does not call Stripe');
+    DB.raw.prepare('delete from shop_holds where user_id = ? and item = ?').run(D.id, 'cozy');
+    DB.raw.prepare('insert into shop_holds (user_id, item, session_id, url, created_at) values (?, ?, ?, ?, ?)').run(D.id, 'bowl', 'cs_test_oldbowl1', 'https://checkout.stripe.com/c/pay/cs_test_oldbowl1', Date.now() - 25 * 3600 * 1000);
+    const nStale = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'bowl' }, D.token);
+    ok(r.status === 200 && stripe.calls.length === nStale + 1 && r.json.url !== 'https://checkout.stripe.com/c/pay/cs_test_oldbowl1', 'a hold older than 24 hours is replaced with a new Checkout');
+    await hook({ id: 'evt_twice_r1', type: 'charge.refunded', data: { object: { id: 'ch_twice', payment_intent: 'pi_twice_sup1', refunded: true } } });
+    await hook({ id: 'evt_twice_r2', type: 'charge.refunded', data: { object: { id: 'ch_twice2', payment_intent: 'pi_twice_dup1', refunded: true } } });
+    r = await call('GET', '/shop/owned', null, D.token);
+    const back = (r.json.purchases || []).filter((p) => p.item === 'supporter');
+    ok(back.length === 2 && back.every((p) => p.refunded) && back.reduce((s, p) => s + p.coins, 0) === 2000, 'both Supporter rows are refunded and the one coin grant is the amount to take back');
+    const nNo = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'supporter' }, D.token);
+    ok(r.status === 409 && r.json.error === 'refunded' && stripe.calls.length === nNo, 'after the refund the Supporter Pack cannot be bought again (409 refunded)');
+    r = await call('PUT', '/card', card({ ff: true }), D.token);
+    ok(r.status === 200 && !('ff' in r.json), 'the refund also drops the Founding Friend badge: ' + r.text);
+    await hook(paid('cs_test_twicecoin', D.id, 'coins_1k', 'pi_twice_coin'));
+    await hook({ id: 'evt_twice_rc', type: 'charge.refunded', data: { object: { id: 'ch_coin', payment_intent: 'pi_twice_coin', refunded: true } } });
+    r = await call('GET', '/shop/owned', null, D.token);
+    const pack = (r.json.purchases || []).find((p) => p.id === 'cs_test_twicecoin');
+    ok(pack && pack.refunded && pack.coins === 2000, 'a refunded coin pack still says 2,000 coins, so the save can take them back');
+    r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, D.token);
+    const again = await call('POST', '/shop/checkout', { item: 'coins_1k' }, D.token);
+    ok(r.status === 200 && again.status === 200 && again.json.url === r.json.url, 'a refunded coin pack can be bought again, and a second tap reuses that Checkout');
+    const c3 = await call('POST', '/shop/checkout', { item: 'coins_3k' }, D.token);
+    const sid3 = c3.json.url.split('/').pop();
+    await hook(paid(sid3, D.id, 'coins_3k', 'pi_twice_c3k1'));
+    const c3b = await call('POST', '/shop/checkout', { item: 'coins_3k' }, D.token);
+    ok(c3.status === 200 && c3b.status === 200 && c3b.json.url !== c3.json.url, 'once that coin pack is paid, the next Pay starts a new Checkout');
+
+    sec('12. Stripe throws while a hold exists, then recovers (review 13 Nov, 1)');
+    const E = await account('flaky@example.com');
+    const creates = (from) => stripe.calls.slice(from).filter((c) => c.o.method === 'POST' && /\/checkout\/sessions$/.test(new URL(c.url).pathname));
+    stripe.throws = true;
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, E.token);
+    ok(r.status === 503 && r.json.error === 'busy', 'a network error from Stripe: 503 busy');
+    ok(n('select count(*) as n from shop_holds where user_id = ? and item = ?', E.id, 'tokyo') === 0, 'and the hold is gone (not stuck for 24 hours)');
+    stripe.throws = false;
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, E.token);
+    ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'the next tap, Stripe back: a Checkout url');
+    const stuckAt = Date.now() - 120 * 1000; // a Worker that died mid-request: a null-url hold, two minutes old
+    DB.raw.prepare('insert into shop_holds (user_id, item, session_id, url, created_at, tried_at) values (?, ?, null, null, ?, ?)').run(E.id, 'cozy', stuckAt, stuckAt);
+    stripe.keys['ks_' + E.id + '_cozy_' + stuckAt] = 'cs_test_samekey001'; // Stripe had made that session before the Worker died
+    let c0 = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'cozy' }, E.token);
+    const re = creates(c0);
+    ok(r.status === 200 && /cs_test_samekey001$/.test(r.json.url) && re.length === 1 && re[0].o.headers['Idempotency-Key'] === 'ks_' + E.id + '_cozy_' + stuckAt, 'a null-url hold over a minute old is retried with its own Idempotency-Key: the same session comes back');
+    ok(q('select session_id from shop_holds where user_id = ? and item = ?', E.id, 'cozy').session_id === 'cs_test_samekey001', 'and the hold now has that session');
+    DB.raw.prepare('insert into shop_holds (user_id, item, session_id, url, created_at, tried_at) values (?, ?, null, null, ?, ?)').run(E.id, 'robo', Date.now() - 5000, Date.now() - 5000);
+    c0 = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'robo' }, E.token);
+    ok(r.status === 503 && r.json.error === 'busy' && stripe.calls.length === c0, 'a null-url hold under a minute old: busy, Stripe is not asked twice');
+    DB.raw.prepare('delete from shop_holds where user_id = ? and item = ?').run(E.id, 'robo');
+
+    sec('13. an abandoned Comfort Kit Checkout, then a tool (review 13 Nov, 2)');
+    const K = await account('kit@example.com');
+    const kit = await call('POST', '/shop/checkout', { item: 'comfort' }, K.token);
+    const kitSid = kit.json.url.split('/').pop();
+    c0 = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'robo' }, K.token);
+    const exp = stripe.calls.slice(c0).find((c) => c.o.method === 'POST' && new URL(c.url).pathname === '/v1/checkout/sessions/' + kitSid + '/expire');
+    ok(r.status === 200 && r.json.url !== kit.json.url && !!exp, 'the Robo Scoop after an abandoned Kit Checkout: 200, the Kit session is expired at Stripe first: ' + r.status + ' ' + r.text);
+    ok(stripe.status[kitSid] === 'expired' && n('select count(*) as n from shop_holds where user_id = ? and item = ?', K.id, 'comfort') === 0, 'and its hold is gone');
+    const roboSid = r.json.url.split('/').pop();
+    c0 = stripe.calls.length;
+    const kit2 = await call('POST', '/shop/checkout', { item: 'comfort' }, K.token);
+    ok(kit2.status === 200 && kit2.json.url !== kit.json.url, 'the Kit again (one tool Checkout open does not cover it): a new Checkout');
+    ok(!stripe.calls.slice(c0).some((c) => /\/expire$/.test(c.url)) && stripe.status[roboSid] !== 'expired' && n('select count(*) as n from shop_holds where user_id = ? and item = ?', K.id, 'robo') === 1, 'and the open Robo Scoop Checkout is left alone (it does not block the Kit)');
+    const kit2Sid = kit2.json.url.split('/').pop();
+    stripe.status[kit2Sid] = 'complete'; // paid on Stripe, its webhook not here yet
+    c0 = stripe.calls.length;
+    r = await call('POST', '/shop/checkout', { item: 'sprinkler' }, K.token);
+    ok(r.status === 409 && r.json.error === 'pending' && creates(c0).length === 0, 'a tool while the paid Kit webhook is on its way: 409 pending, honest, no new Checkout: ' + r.text);
+    ok(n('select count(*) as n from shop_holds where user_id = ? and item = ?', K.id, 'comfort') === 1, 'the paid Kit hold stays');
+    await hook(paid(kit2Sid, K.id, 'comfort', 'pi_test_kit2paid'));
+    r = await call('POST', '/shop/checkout', { item: 'sprinkler' }, K.token);
+    ok(r.status === 409 && r.json.error === 'owned', 'once the Kit webhook lands: 409 owned');
+    const K2 = await account('kit2@example.com');
+    await hook(paid('cs_test_k2robo001', K2.id, 'robo', 'pi_test_k2robo001')); await hook(paid('cs_test_k2spr0001', K2.id, 'sprinkler', 'pi_test_k2spr0001'));
+    const bowlOpen = await call('POST', '/shop/checkout', { item: 'bowl' }, K2.token), bowlSid = bowlOpen.json.url.split('/').pop();
+    r = await call('POST', '/shop/checkout', { item: 'comfort' }, K2.token);
+    ok(r.status === 200 && stripe.status[bowlSid] === 'expired' && n('select count(*) as n from shop_holds where user_id = ? and item = ?', K2.id, 'bowl') === 0, 'two tools owned and the Bowl Checkout left open: the Kit expires that Bowl session first, then opens');
+    const X = await account('expire@example.com');
+    const ex1 = await call('POST', '/shop/checkout', { item: 'coins_1k' }, X.token), ex1Sid = ex1.json.url.split('/').pop();
+    const exEv = (type, sid, item) => ({ id: 'evt_' + type + sid, type, data: { object: { id: sid, object: 'checkout.session', status: 'expired', payment_status: 'unpaid', client_reference_id: X.id, metadata: { item, user: X.id } } } });
+    r = await hook(exEv('checkout.session.expired', ex1Sid, 'coins_1k'));
+    ok(r.status === 200 && n('select count(*) as n from shop_holds where user_id = ? and item = ?', X.id, 'coins_1k') === 0, 'checkout.session.expired drops that hold');
+    const ex2 = await call('POST', '/shop/checkout', { item: 'coins_1k' }, X.token), ex2Sid = ex2.json.url.split('/').pop();
+    ok(ex2.status === 200 && ex2Sid !== ex1Sid, 'and the next tap opens a new Checkout');
+    await hook(exEv('checkout.session.async_payment_failed', ex2Sid, 'coins_1k'));
+    ok(n('select count(*) as n from shop_holds where user_id = ? and item = ?', X.id, 'coins_1k') === 0, 'checkout.session.async_payment_failed drops it too');
+    const exT = await call('POST', '/shop/checkout', { item: 'tokyo' }, X.token), exTSid = exT.json.url.split('/').pop();
+    await hook(exEv('checkout.session.expired', exTSid, 'tokyo'));
+    r = await call('POST', '/shop/checkout', { item: 'tokyo' }, X.token);
+    ok(r.status === 200 && r.json.url !== exT.json.url, 'an expired one-time Checkout is not a purchase: Tokyo Street can be bought');
+    DB.raw.prepare('insert into shop_holds (user_id, item, session_id, url, created_at, tried_at) values (?, ?, null, null, ?, ?)').run(X.id, 'coins_3k', Date.now(), Date.now());
+    await hook(paid('cs_test_oldsess3k', X.id, 'coins_3k', 'pi_test_oldsess3k'));
+    await hook(exEv('checkout.session.expired', 'cs_test_oldsess3kb', 'coins_3k'));
+    ok(n('select count(*) as n from shop_holds where user_id = ? and item = ?', X.id, 'coins_3k') === 1, "an older session's webhooks do not delete a newer hold that is still being made");
+
+    sec('14. a refund before checkout.session.completed, with a hold open');
+    const Rf = await account('early2@example.com');
+    const rf = await call('POST', '/shop/checkout', { item: 'coins_1k' }, Rf.token), rfSid = rf.json.url.split('/').pop();
+    stripe.sessions.pi_test_rfhold01 = { id: rfSid, object: 'checkout.session', client_reference_id: Rf.id, metadata: { item: 'coins_1k', user: Rf.id }, amount_total: 99, currency: 'usd', payment_intent: 'pi_test_rfhold01' };
+    r = await hook({ id: 'evt_rfhold', type: 'charge.refunded', data: { object: { id: 'ch_rfhold', payment_intent: 'pi_test_rfhold01', refunded: true } } });
+    ok(r.status === 200 && q('select refunded_at from purchases where id = ?', rfSid).refunded_at > 0, 'the refund writes the purchase already refunded');
+    ok(n('select count(*) as n from shop_holds where user_id = ?', Rf.id) === 0, 'and drops that Checkout hold');
+    await hook(paid(rfSid, Rf.id, 'coins_1k', 'pi_test_rfhold01'));
+    r = await call('GET', '/shop/owned', null, Rf.token);
+    ok(r.json.purchases.length === 1 && r.json.purchases[0].refunded && r.json.purchases[0].coins === 2000, 'the late completed event keeps it refunded (coins 2,000 to take back if it was ever granted)');
+    r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, Rf.token);
+    ok(r.status === 200 && r.json.url !== rf.json.url, 'a coin pack can be bought again: a new Checkout');
+
+    sec('15. a coin pack bought before v2.24.2 says its old size (review 13 Nov, 5)');
+    const L = await account('legacy@example.com');
+    const legB = Date.UTC(2026, 10, 10, 9, 0, 0), after = Date.UTC(2026, 10, 12, 9, 0, 0), edge = Date.UTC(2026, 10, 11, 15, 50, 0);
+    const ins = DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 99, ?, ?, ?, ?)');
+    ins.run('cs_test_leg1k0001', L.id, 'coins_1k', 'usd', 'pi_test_leg1k0001', legB, legB + 1000);
+    ins.run('cs_test_leg3k0001', L.id, 'coins_3k', 'usd', 'pi_test_leg3k0001', legB + 1, null);
+    ins.run('cs_test_leg8k0001', L.id, 'coins_8k', 'usd', 'pi_test_leg8k0001', edge, null);
+    ins.run('cs_test_new1k0001', L.id, 'coins_1k', 'usd', 'pi_test_new1k0001', after, null);
+    r = await call('GET', '/shop/owned', null, L.token);
+    const lc = Object.fromEntries((r.json.purchases || []).map((p) => [p.id, p.coins]));
+    ok(lc.cs_test_leg1k0001 === 1000 && lc.cs_test_leg3k0001 === 3000 && lc.cs_test_leg8k0001 === 8000, 'packs from before 16:00 UTC 11 Nov: 1,000 / 3,000 / 8,000 (refunded or not): ' + JSON.stringify(lc));
+    ok(lc.cs_test_new1k0001 === 2000, 'a pack from after: 2,000');
+
+    sec('16. a fresh device: two Supporter rows, the older one refunded (review 13 Nov, 6)');
+    const Sd = await account('dupsup@example.com'); allow(Sd.id, 'section 16: two refunds on purpose');
+    ins.run('cs_test_dupsup001', Sd.id, 'supporter', 'usd', 'pi_test_dupsup001', after, after + 5000);
+    ins.run('cs_test_dupsup002', Sd.id, 'supporter', 'usd', 'pi_test_dupsup002', after + 1, null);
+    r = await call('GET', '/shop/owned', null, Sd.token);
+    let sc = Object.fromEntries((r.json.purchases || []).map((p) => [p.id, p.coins]));
+    ok(sc.cs_test_dupsup001 === 0 && sc.cs_test_dupsup002 === 2000, 'the 2,000 sit on the live row, so a restore gets them: ' + JSON.stringify(sc));
+    DB.raw.prepare('update purchases set refunded_at = ? where id = ?').run(after + 9000, 'cs_test_dupsup002');
+    r = await call('GET', '/shop/owned', null, Sd.token);
+    sc = Object.fromEntries((r.json.purchases || []).map((p) => [p.id, p.coins]));
+    ok(sc.cs_test_dupsup001 === 2000 && sc.cs_test_dupsup002 === 0, 'both refunded: the oldest carries the one grant again');
+    r = await call('POST', '/shop/checkout', { item: 'supporter' }, Sd.token);
+    ok(r.status === 409 && r.json.error === 'refunded', 'and it is not for sale again: 409 refunded');
+
+    sec('17. three taps at the same moment');
+    const T3 = await account('triple@example.com');
+    stripe.delay = 30; c0 = stripe.calls.length;
+    const taps = await Promise.all([1, 2, 3].map(() => call('POST', '/shop/checkout', { item: 'supporter' }, T3.token)));
+    stripe.delay = 0;
+    const urls = new Set(taps.filter((t) => t.status === 200).map((t) => t.json.url));
+    ok(creates(c0).length === 1 && urls.size === 1 && taps.every((t) => t.status === 200 || (t.status === 503 && t.json.error === 'busy')), 'one Stripe session, one url, the other taps busy or the same url: ' + taps.map((t) => t.status).join(','));
+    r = await call('POST', '/shop/checkout', { item: 'supporter' }, T3.token);
+    ok(r.status === 200 && urls.has(r.json.url) && creates(c0).length === 1, 'a later tap gets that same Checkout');
+
+    sec('18. the paid webhook lands between the ownership check and the hold read (review 13 Nov, round 2, 1)');
+    {
+      const R = await account('race@example.com');
+      const t1 = await call('POST', '/shop/checkout', { item: 'supporter' }, R.token), rsid = t1.json.url.split('/').pop();
+      let gate = null; const prep = DB.prepare;
+      const wrap = (st) => { const w = Object.assign({}, st); w.bind = (...a) => wrap(st.bind(...a)); w.first = async (c) => { if (gate && gate.match.test(st.sql)) { const g = gate; gate = null; await g.wait; } return st.first(c); }; return w; };
+      DB.prepare = (sql) => wrap(prep.call(DB, sql));
+      try {
+        let go; gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p2 = call('POST', '/shop/checkout', { item: 'supporter' }, R.token); // reads purchases (none), then waits before it reads the hold
+        await new Promise((res) => setTimeout(res, 30));
+        const h = await hook(paid(rsid, R.id, 'supporter', 'pi_test_race0001')); // the purchase lands, its hold goes
+        go(); const t2 = await p2;
+        ok(h.status === 200 && t2.status === 409 && t2.json.error === 'owned', 'the tap that raced the webhook gets 409 owned, not a second Checkout: ' + t2.status + ' ' + t2.text);
+        ok(creates(c0).length === 0 && n('select count(*) as n from shop_holds where user_id = ?', R.id) === 0, 'no new Stripe session, and the hold that tap made is gone');
+        // a Supporter Pack paid and fully refunded on another device while this tap was mid-flight: 409 refunded, no Checkout
+        const R3 = await account('race3@example.com');
+        gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p3 = call('POST', '/shop/checkout', { item: 'supporter' }, R3.token);
+        await new Promise((res) => setTimeout(res, 30));
+        await hook(paid('cs_test_race3sup', R3.id, 'supporter', 'pi_test_race3sup'));
+        await hook({ id: 'evt_race3_r', type: 'charge.refunded', data: { object: { id: 'ch_race3', payment_intent: 'pi_test_race3sup', refunded: true } } });
+        go(); const t3 = await p3;
+        ok(t3.status === 409 && t3.json.error === 'refunded' && creates(c0).length === 0 && n('select count(*) as n from shop_holds where user_id = ?', R3.id) === 0, 'a Supporter Pack paid and refunded mid-flight: 409 refunded, no Checkout, no hold left: ' + t3.text);
+        const R2 = await account('race2@example.com');
+        DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 499, ?, ?, ?, ?)').run('cs_test_race2old', R2.id, 'tokyo', 'usd', 'pi_test_race2old', Date.now() - 5000, Date.now() - 4000);
+        gate = { match: /^select session_id, url, created_at, tried_at/, wait: new Promise((res) => (go = res)) };
+        c0 = stripe.calls.length;
+        const p4 = call('POST', '/shop/checkout', { item: 'tokyo' }, R2.token); // a refunded Tokyo Street is for sale; it is bought on another device mid-flight
+        await new Promise((res) => setTimeout(res, 30));
+        await hook(paid('cs_test_race2new', R2.id, 'tokyo', 'pi_test_race2new'));
+        go(); const t4 = await p4;
+        ok(t4.status === 409 && t4.json.error === 'owned' && creates(c0).length === 0, 'Tokyo Street bought again elsewhere while this tap was mid-flight: 409 owned, no second Checkout');
+      } finally { DB.prepare = prep; gate = null; }
+    }
+
+    sec('19. two holds of one item in the same millisecond never share an Idempotency-Key (review 13 Nov, round 2, 2)');
+    {
+      const Z = await account('samems@example.com'), realNow = Date.now, fixed = realNow();
+      Date.now = () => fixed;
+      try {
+        c0 = stripe.calls.length;
+        const a1 = await call('POST', '/shop/checkout', { item: 'coins_3k' }, Z.token), s1 = a1.json.url.split('/').pop();
+        const h1 = q('select nonce, created_at from shop_holds where user_id = ? and item = ?', Z.id, 'coins_3k');
+        await hook(paid(s1, Z.id, 'coins_3k', 'pi_test_samems01'));
+        const a2 = await call('POST', '/shop/checkout', { item: 'coins_3k' }, Z.token), s2 = a2.json.url.split('/').pop();
+        const h2 = q('select nonce, created_at from shop_holds where user_id = ? and item = ?', Z.id, 'coins_3k');
+        const made = creates(c0), k1 = made[0] && made[0].o.headers['Idempotency-Key'], k2 = made[1] && made[1].o.headers['Idempotency-Key'];
+        ok(a1.status === 200 && a2.status === 200 && s1 !== s2 && made.length === 2, 'a coin pack paid, then bought again in the same ms: a new Checkout, not the paid one: ' + s1 + ' ' + s2);
+        ok(h1 && h2 && /^[0-9a-f]{16}$/.test(h1.nonce) && /^[0-9a-f]{16}$/.test(h2.nonce) && h1.nonce !== h2.nonce && h1.created_at === h2.created_at, 'each hold has its own random nonce: ' + JSON.stringify([h1, h2]));
+        ok(k1 === 'ks_' + Z.id + '_coins_3k_' + fixed + '_' + h1.nonce && k2 === 'ks_' + Z.id + '_coins_3k_' + fixed + '_' + h2.nonce && k1 !== k2, 'the Idempotency-Key is ks_<user>_<item>_<created_at>_<nonce>: ' + k1);
+        const ex = Number(made[0].form.get('expires_at'));
+        ok(ex === Math.floor((fixed + 23.5 * 3600 * 1000) / 1000), 'expires_at is the hold\'s created_at + 23.5 hours, so the session ends before its 24-hour hold: ' + ex);
+      } finally { Date.now = realNow; }
+    }
+
+    sec('20. Stripe 409 (the same key still in flight) keeps the hold (review 13 Nov, round 2, 3)');
+    {
+      const Y = await account('inflight@example.com');
+      stripe.conflict = 1; c0 = stripe.calls.length;
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      const held = q('select session_id, url, created_at, tried_at, nonce from shop_holds where user_id = ? and item = ?', Y.id, 'cozy');
+      ok(r.status === 503 && r.json.error === 'busy' && held && held.url === null && /^[0-9a-f]{16}$/.test(held.nonce), 'Stripe answers 409: busy, and the hold stays (no second request can start a new key): ' + JSON.stringify(held));
+      const k0 = creates(c0)[0].o.headers['Idempotency-Key'], e0 = creates(c0)[0].form.get('expires_at');
+      c0 = stripe.calls.length;
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      ok(r.status === 503 && r.json.error === 'busy' && stripe.calls.length === c0, 'a tap inside the minute: busy, Stripe is not asked');
+      DB.raw.prepare('update shop_holds set tried_at = ? where user_id = ? and item = ?').run(Date.now() - 2 * 60 * 1000, Y.id, 'cozy');
+      r = await call('POST', '/shop/checkout', { item: 'cozy' }, Y.token);
+      const re2 = creates(c0);
+      ok(r.status === 200 && re2.length === 1 && re2[0].o.headers['Idempotency-Key'] === k0 && re2[0].form.get('expires_at') === e0, 'a minute later the retry sends the same key and the same expires_at, and gets the Checkout: ' + r.status);
+      ok(q('select url from shop_holds where user_id = ? and item = ?', Y.id, 'cozy').url === r.json.url, 'and the hold now has its url');
+      stripe.conflict = 0;
+    }
+
+    sec('21. refund protection: 2 full refunds or 1 dispute pause paid items (owner, 14 Nov 2026)');
+    {
+      const refund = (pi) => hook({ id: 'evt_rf_' + pi, type: 'charge.refunded', data: { object: { id: 'ch_' + pi, payment_intent: pi, refunded: true } } });
+      const dispute = (pi, id) => hook({ id: 'evt_dp_' + (id || pi), type: 'charge.dispute.created', data: { object: { id: 'dp_' + (id || pi), object: 'dispute', charge: 'ch_' + pi, payment_intent: pi, amount: 499, reason: 'fraudulent', status: 'needs_response' } } });
+      const flag = (key, mode) => DB.raw.prepare('insert or replace into shop_flags (key, mode, note, created_at) values (?, ?, ?, ?)').run(key, mode, 'test', Date.now());
+      const unflag = (key) => DB.raw.prepare('delete from shop_flags where key = ?').run(key);
+      const co = (tok, item) => call('POST', '/shop/checkout', { item: item || 'coins_1k' }, tok);
+      const paused = (x) => x.status === 409 && x.json && x.json.error === 'paused';
+      // one full refund: still open
+      const P1 = await account('onerefund@example.com');
+      await hook(paid('cs_test_pz1a0001', P1.id, 'tokyo', 'pi_test_pz1a0001')); await refund('pi_test_pz1a0001');
+      r = await co(P1.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'one full refund: Checkout still opens: ' + r.text);
+      r = await co(P1.token, 'tokyo'); ok(r.status === 200, 'and the refunded looks pack can be bought again');
+      // a partial refund does not count
+      const P2 = await account('tworefunds@example.com');
+      await hook(paid('cs_test_pz2a0001', P2.id, 'coins_1k', 'pi_test_pz2a0001')); await refund('pi_test_pz2a0001');
+      await hook(paid('cs_test_pz2b0001', P2.id, 'coins_3k', 'pi_test_pz2b0001'));
+      await hook({ id: 'evt_pz2b_part', type: 'charge.refunded', data: { object: { id: 'ch_pz2b', payment_intent: 'pi_test_pz2b0001', refunded: false } } });
+      r = await co(P2.token); ok(r.status === 200, 'one full and one partial refund: not paused');
+      await refund('pi_test_pz2b0001');
+      let c0 = stripe.calls.length;
+      const items = ['coins_1k', 'coins_3k', 'supporter', 'tokyo', 'cozy', 'robo', 'comfort'];
+      const outs = []; for (const it of items) outs.push(await co(P2.token, it));
+      ok(outs.every(paused) && stripe.calls.length === c0, 'two full refunds: every item, coin packs too, answers 409 paused and Stripe is not asked: ' + outs.map((x) => x.status + ' ' + (x.json && x.json.error)).join(', '));
+      r = await call('GET', '/shop/owned', null, P2.token); ok(r.status === 200 && r.json.purchases.length === 2, 'Restore purchases still works while paused');
+      // the owner lifts it
+      flag('u:' + P2.id, 'allow');
+      r = await co(P2.token, 'coins_3k'); ok(r.status === 200 && /^https:\/\//.test(r.json.url), "an 'allow' row for the user lifts the auto pause: " + r.text);
+      unflag('u:' + P2.id);
+      r = await co(P2.token, 'coins_3k'); ok(paused(r), 'clearing the allow row: paused again');
+      flag('e:tworefunds@example.com', 'allow');
+      r = await co(P2.token, 'coins_3k'); ok(r.status === 200, "an 'allow' row for the email lifts it too");
+      flag('u:' + P2.id, 'block');
+      r = await co(P2.token, 'coins_3k'); ok(paused(r), "a 'block' wins over an 'allow'");
+      unflag('u:' + P2.id); unflag('e:tworefunds@example.com');
+      // one dispute
+      const P3 = await account('dispute@example.com');
+      await hook(paid('cs_test_pz3a0001', P3.id, 'supporter', 'pi_test_pz3a0001'));
+      r = await co(P3.token); ok(r.status === 200, 'before the dispute: open');
+      r = await dispute('pi_test_pz3a0001');
+      const d3 = q('select disputed_at, refunded_at from purchases where id = ?', 'cs_test_pz3a0001');
+      ok(r.status === 200 && r.json.received === true && d3.disputed_at > 0 && d3.refunded_at === null, 'charge.dispute.created marks disputed_at by payment_intent (the items stay): ' + JSON.stringify(d3));
+      r = await dispute('pi_test_pz3a0001', 'pz3a_again');
+      ok(r.status === 200 && q('select disputed_at from purchases where id = ?', 'cs_test_pz3a0001').disputed_at === d3.disputed_at, 'the same dispute again changes nothing');
+      r = await co(P3.token, 'coins_3k'); ok(paused(r), 'one dispute: 409 paused');
+      r = await call('GET', '/shop/owned', null, P3.token); ok(r.status === 200 && r.json.purchases.length === 1 && r.json.purchases[0].refunded === false && r.json.purchases[0].coins === 2000, 'a disputed purchase is not taken back: ' + r.text);
+      r = await call('GET', '/card', null, P3.token); ok(r.status === 200, 'the rest of the account is untouched');
+      flag('u:' + P3.id, 'allow');
+      r = await co(P3.token, 'coins_3k'); ok(r.status === 200, "allow lifts a dispute pause too");
+      // manual block list
+      const P4 = await account('blockme@example.com');
+      r = await co(P4.token); ok(r.status === 200, 'a fresh account: open');
+      flag('u:' + P4.id, 'block');
+      r = await co(P4.token, 'coins_3k'); ok(paused(r), "a 'block' row for the user id: 409 paused, no refunds needed");
+      r = await co(A.token, 'coins_3k'); ok(r.status === 200, 'another account is not touched');
+      unflag('u:' + P4.id);
+      r = await co(P4.token, 'coins_3k'); ok(r.status === 200, 'cleared: open again');
+      flag('e:again@example.com', 'block');
+      const P5 = await account('Again@Example.com'); // a new account with that email (any case)
+      r = await co(P5.token); ok(paused(r), "a 'block' row for the email pauses a brand-new account with that email: " + r.text);
+      flag('u:' + P5.id, 'allow');
+      r = await co(P5.token); ok(paused(r), 'and a user allow does not lift an email block');
+      unflag('e:again@example.com');
+      r = await co(P5.token); ok(r.status === 200, 'email block cleared: open');
+      // a dispute that comes before its checkout.session.completed
+      const P6 = await account('earlydisp@example.com');
+      stripe.sessions.pi_test_pz6a0001 = paid('cs_test_pz6a0001', P6.id, 'coins_8k', 'pi_test_pz6a0001').data.object;
+      stripe.sessions.pi_test_pz6a0001.metadata = { item: 'coins_3k', user: P6.id };
+      r = await dispute('pi_test_pz6a0001');
+      let row6 = q('select * from purchases where id = ?', 'cs_test_pz6a0001');
+      ok(r.status === 200 && row6 && row6.user_id === P6.id && row6.item === 'coins_3k' && row6.disputed_at > 0 && row6.refunded_at === null, 'a dispute before its purchase: the session is looked up and the purchase written with disputed_at: ' + JSON.stringify(row6));
+      const dat = row6.disputed_at;
+      r = await hook(paid('cs_test_pz6a0001', P6.id, 'coins_3k', 'pi_test_pz6a0001'));
+      row6 = q('select * from purchases where id = ?', 'cs_test_pz6a0001');
+      ok(r.status === 200 && row6.disputed_at === dat && n('select count(*) as n from purchases where id = ?', 'cs_test_pz6a0001') === 1, 'then checkout.session.completed: one row, disputed_at kept');
+      r = await co(P6.token); ok(paused(r), 'and that account is paused');
+      stripe.fail = true;
+      r = await dispute('pi_test_pz6b0001'); stripe.fail = false;
+      ok(r.status === 502 && r.json.error === 'stripe_error', 'the lookup fails: 502, so Stripe sends the dispute again');
+      r = await dispute('pi_test_nothere1'); ok(r.status === 200 && !q('select * from purchases where payment_intent = ?', 'pi_test_nothere1'), 'a dispute for a payment that is not a shop session: 200, nothing stored');
+      r = await hook({ id: 'evt_dp_nopi', type: 'charge.dispute.created', data: { object: { id: 'dp_nopi', object: 'dispute', charge: 'ch_x' } } });
+      ok(r.status === 200, 'a dispute without a payment_intent: 200');
+      r = await hook({ id: 'evt_dp_closed', type: 'charge.dispute.closed', data: { object: { id: 'dp_x', payment_intent: 'pi_test_pz3a0001', status: 'won' } } });
+      ok(r.status === 200, 'other dispute events: 200, ignored');
+      r = await hook({ type: 'charge.dispute.created', data: { object: { id: 'dp_y', payment_intent: 'pi_test_pz1a0001' } } }, 't=1,v1=' + '0'.repeat(64));
+      ok(r.status === 400 && !q('select disputed_at from purchases where id = ?', 'cs_test_pz1a0001').disputed_at, 'a dispute with a bad signature: 400, nothing stored');
+      stripe.sessions = {};
+    }
+
+    sec('22. an older D1: purchases without disputed_at, no shop_flags (before cf_api_deploy.sh adds them)');
+    {
+      const OD = d1();
+      OD.raw.exec(`drop trigger users_shop_keep; alter table users drop column shop_hash; drop table purchases; drop table shop_flags; create table purchases (id text primary key, user_id text not null, item text not null, amount integer, currency text, payment_intent text, created_at integer not null, refunded_at integer)`);
+      const oenv = Object.assign({}, env, { DB: OD });
+      const ocall = async (method, p, body, token, headers) => {
+        const h = Object.assign({ 'CF-Connecting-IP': '10.25.0.' + (++ipN % 250), 'Content-Type': 'application/json' }, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
+        const res = await worker.fetch(new Request('https://api.test' + p, { method, headers: h, body: method === 'GET' ? undefined : (typeof body === 'string' ? body : JSON.stringify(body || {})) }), oenv, { waitUntil() {} });
+        const text = await res.text(); let j = null; try { j = JSON.parse(text); } catch (e) { j = null; } return { status: res.status, json: j, text };
+      };
+      const ohook = (ev) => { const raw = JSON.stringify(ev); return ocall('POST', '/shop/webhook', raw, null, { 'Stripe-Signature': sign(raw, now()) }); };
+      const g = (await ocall('POST', '/guest', {})).json, reg = (await ocall('POST', '/register', { email: 'oldrows@example.com', password: 'pupper123' }, g.token)).json;
+      const O = { token: reg.token, id: reg.user.id };
+      const oins = OD.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 99, ?, ?, ?, ?)');
+      oins.run('cs_test_old00001', O.id, 'coins_1k', 'usd', 'pi_test_old00001', Date.now() - 9000, Date.now() - 8000);
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_3k' }, O.token);
+      ok(r.status === 200 && /^https:\/\//.test(r.json.url), 'old rows, one refund: checkout still works without the new column or table: ' + r.text);
+      r = await ocall('GET', '/shop/owned', null, O.token); ok(r.status === 200 && r.json.purchases.length === 1, '/shop/owned reads old rows');
+      oins.run('cs_test_old00002', O.id, 'coins_1k', 'usd', 'pi_test_old00002', Date.now() - 7000, Date.now() - 6000);
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_1k' }, O.token); ok(r.status === 409 && r.json.error === 'paused', 'two old refunded rows: paused, counted without disputed_at');
+      oins.run('cs_test_old00003', O.id, 'tokyo', 'usd', 'pi_test_old00003', Date.now() - 5000, null);
+      r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
+      ok(r.status >= 500, 'a dispute before the column exists: an error, so Stripe sends it again later: ' + r.status);
+      ok(!!O.token && !!O.id && !('shop_hash' in OD.raw.prepare('select * from users where id = ?').get(O.id)), 'register (and tidy() after every request) work on a users table without shop_hash');
+      OD.raw.exec('alter table purchases add column disputed_at integer; alter table users add column shop_hash text'); // what cf_api_deploy.sh addcol does
+      OD.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema_triggers.sql'), 'utf8')); // then the triggers
+      OD.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8')); // and schema.sql makes shop_flags
+      ok(OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00001').disputed_at === null, 'after addcol the old rows read disputed_at null');
+      await ocall('GET', '/');
+      ok(OD.raw.prepare('select shop_hash from users where id = ?').get(O.id).shop_hash === crypto.createHash('sha256').update('dd-shop-v1:oldrows@example.com').digest('hex'), 'and the next tidy() fills in the one-way code of the older account');
+      r = await ohook({ id: 'evt_old_dp', type: 'charge.dispute.created', data: { object: { id: 'dp_old', payment_intent: 'pi_test_old00003' } } });
+      ok(r.status === 200 && OD.raw.prepare('select disputed_at from purchases where id = ?').get('cs_test_old00003').disputed_at > 0, "Stripe's retry lands once the column is there");
+      OD.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', null, ?)").run('u:' + O.id, Date.now());
+      r = await ocall('POST', '/shop/checkout', { item: 'coins_1k' }, O.token); ok(r.status === 200, 'and an allow row lifts the pause');
+    }
+
+    sec('23. a paused account that is deleted leaves only a one-way code of its email (owner, 14 Nov 2026)');
+    {
+      const hashOf = (e) => crypto.createHash('sha256').update('dd-shop-v1:' + e.trim().toLowerCase()).digest('hex');
+      const refundRow = (uid, id) => DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?, ?, ?, 99, ?, ?, ?, ?)').run(id, uid, 'coins_1k', 'usd', 'pi_' + id, Date.now() - 9000, Date.now() - 8000);
+      const del = async (uid) => { DB.raw.prepare('delete from users where id = ?').run(uid); await call('GET', '/'); }; // by hand in D1, then tidy() drops the purchases
+      const flagsNow = () => DB.raw.prepare('select key, mode, note, created_at from shop_flags').all().map((x) => Object.assign({}, x));
+      const paused = (x) => x.status === 409 && x.json && x.json.error === 'paused';
+      // an older account (no shop_hash yet): tidy() fills it in
+      const K1 = await account('gone@example.com');
+      ok(q('select shop_hash from users where id = ?', K1.id).shop_hash === hashOf('gone@example.com'), 'register stores the one-way code: SHA-256 of "dd-shop-v1:" + the email');
+      DB.raw.prepare('update users set shop_hash = null where id = ?').run(K1.id);
+      await call('GET', '/');
+      ok(q('select shop_hash from users where id = ?', K1.id).shop_hash === hashOf('gone@example.com'), 'an account from before the column gets it from tidy()');
+      refundRow(K1.id, 'cs_test_gone1a01'); refundRow(K1.id, 'cs_test_gone1b01');
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K1.token); ok(paused(r), 'two refunds: paused before the delete');
+      const before = flagsNow().length;
+      await del(K1.id);
+      const kept = flagsNow().filter((f) => f.note === 'auto: deleted while paused');
+      ok(kept.length === 1 && kept[0].key === 'h:' + hashOf('gone@example.com') && kept[0].mode === 'block' && kept[0].created_at > Date.now() - 60000 && flagsNow().length === before + 1, 'deleting it keeps one block row h:<hash>: ' + JSON.stringify(kept));
+      const all = JSON.stringify(flagsNow());
+      ok(!/gone@example\.com/.test(all) && !all.includes(K1.id) && n('select count(*) as n from purchases where user_id = ?', K1.id) === 0, 'no plain email and no user id kept; its purchases are gone');
+      // a new account with the same email, in other letters
+      const K2 = await account('  GONE@Example.COM ');
+      ok(q('select shop_hash from users where id = ?', K2.id).shop_hash === hashOf('gone@example.com'), 'mixed case and spaces: the same code');
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(paused(r), 'a new account with that email: 409 paused, with no refunds of its own: ' + r.text);
+      r = await call('POST', '/shop/checkout', { item: 'supporter' }, K2.token); ok(paused(r), 'every item');
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('u:' + K2.id, Date.now());
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(r.status === 200 && /^https:\/\//.test(r.json.url), "an 'allow' on the new account's user id lifts it");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('u:' + K2.id);
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('e:gone@example.com', Date.now());
+      r = await call('POST', '/shop/checkout', { item: 'coins_3k' }, K2.token); ok(r.status === 200, "an 'allow' on its email lifts it too");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('e:gone@example.com');
+      DB.raw.prepare("update shop_flags set mode = 'allow' where key = ?").run('h:' + hashOf('gone@example.com'));
+      r = await call('POST', '/shop/checkout', { item: 'coins_3k' }, K2.token); ok(r.status === 200, "and so does turning the hash row into an 'allow' (tools/shop_flag.sh allow hash)");
+      DB.raw.prepare('delete from shop_flags where key = ?').run('h:' + hashOf('gone@example.com'));
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, K2.token); ok(r.status === 200, 'cleared: open');
+      // not paused at the delete: nothing kept
+      const n0 = flagsNow().length;
+      const K3 = await account('onlyone@example.com'); refundRow(K3.id, 'cs_test_one1a001'); await del(K3.id);
+      const K4 = await account('nevermind@example.com'); await del(K4.id);
+      const K5 = await account('allowed@example.com'); refundRow(K5.id, 'cs_test_alw1a001'); refundRow(K5.id, 'cs_test_alw1b001');
+      DB.raw.prepare("insert into shop_flags (key, mode, note, created_at) values (?, 'allow', 'ok', ?)").run('u:' + K5.id, Date.now()); await del(K5.id);
+      const gg = (await call('POST', '/guest', {})).json; refundRow(gg.user.id, 'cs_test_gst1a001'); refundRow(gg.user.id, 'cs_test_gst1b001');
+      ok(q('select shop_hash from users where id = ?', gg.user.id).shop_hash === null, 'a guest has no code');
+      await del(gg.user.id);
+      ok(flagsNow().length === n0 + 1 && flagsNow().filter((f) => f.note === 'auto: deleted while paused').length === 0, 'one refund, no purchases, an allowed account or a guest: deleting keeps nothing (only the allow row the test wrote): ' + JSON.stringify(flagsNow().slice(-3)));
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, (await account('onlyone@example.com')).token); ok(r.status === 200, 'so a new account with that email is open');
+      // a dispute alone is enough
+      const K6 = await account('disp2@example.com');
+      DB.raw.prepare('insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at, disputed_at) values (?, ?, ?, 99, ?, ?, ?, null, ?)').run('cs_test_dsp2a001', K6.id, 'tokyo', 'usd', 'pi_test_dsp2a001', Date.now() - 5000, Date.now() - 4000);
+      await del(K6.id);
+      r = await call('POST', '/shop/checkout', { item: 'coins_1k' }, (await account('Disp2@example.com')).token); ok(paused(r), 'a disputed account deleted: a new one with that email is paused');
+      ok(/drop trigger if exists users_shop_keep/.test(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema_triggers.sql'), 'utf8')) && /addcol users shop_hash/.test(fs.readFileSync(path.join(ROOT, 'tools', 'cf_api_deploy.sh'), 'utf8')) && /schema_triggers\.sql/.test(fs.readFileSync(path.join(ROOT, 'tools', 'cf_api_deploy.sh'), 'utf8')), 'the deploy adds users.shop_hash and applies the trigger after the columns');
+    }
 
     sec('10. the source');
     const src = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');

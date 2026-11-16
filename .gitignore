@@ -45,3 +45,6 @@ _cfsite/
 /_cfsite_img/
 /_cfsite_play/
 _i18n/
+
+# v2.25.5 gift codes: the unique code lists tools/promo.sh batch writes. Private: never commit them
+docs/marketing/promo/*.csv

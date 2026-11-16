@@ -178,7 +178,10 @@ const CLOTHES = [
   { n: 'Little Sneakers', slot: 'feet', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: four tiny sneakers with pink lace dots. They come off for naps.' },
   { n: 'Paw Tote', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a little canvas tote with a paw print, for one biscuit and big plans.' },
   { n: 'Round Shades', slot: 'eyes', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: round sunglasses. Nobody has ever looked so relaxed.' },
-  { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' }
+  { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' },
+  // Promo-code looks (docs/design/promo-items.md): only from a promotion code the owner posts for followers, never sold or earned (promo; reward keeps every
+  // shop, market, stall, level and Bond list off them; bond 1 keeps them off the Bond-up cards). Looks only: the perk is flavour. Drawn in dogs/pawart_dogs.js (NECK2)
+  { n: 'Follower Star Bandana', slot: 'neck', price: 0, bond: 1, promo: true, reward: true, perk: 'Thank you for following: a sky-blue bandana with crayon stars and a tiny paw print. Only from a code.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -853,6 +856,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v227Fields(st); // v2.27 Town projects (V227.md 4, 55_projects.js): S.projects
   v228Fields(st); // v2.28 Stories and stars (V228.md 1, 56_stories.js): S.st
   v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
+  if (typeof pmFields === 'function') pmFields(st); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): S.promo
   return linkDogs(st);
 }
 let S = null;
@@ -929,6 +933,7 @@ function migrate(s) {
   v227Fields(s); // v2.27 Town projects (V227.md 4, 55_projects.js): additive, S.projects
   v228Fields(s); // v2.28 Stories and stars (V228.md 1, 56_stories.js): additive, S.st; an old Bond 10+ save gets its stars counted once
   v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
+  if (typeof pmFields === 'function') pmFields(s); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): additive, S.promo = { used: [], wait: [] }
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
@@ -1525,15 +1530,30 @@ function nope(text) { SFX.nope(); toast(text, 'bad', { scr: toastScr() }); } // 
 
 /* ---------------- stats ---------------- */
 function addStat(k, v) { S.stats[k] = clamp(S.stats[k] + v, 0, 100); markDirty(); }
+// Every coin the game gives goes through addCoins. It returns the coins earned (what the texts show). A refunded Kind shop purchase whose coins
+// were already spent leaves S.shop.coinDebt (52_kindshop.js): later coins settle it first, so the balance never goes below what was paid for.
+// Each settled coin is said out loud: a text that shows the amount uses addCoinsD() (it returns { n, d }: d is how many of its own coins
+// settled the refund) and adds ksSettleNote(d), or the walk result ksSettleHTML(); whatever no text took gets one kind toast a moment later.
+let coinSettleSum = 0, coinSettleQ = 0, coinSettleT = 0; // all settled so far, settled and not said yet
+// v2.25.2 "Shiny coins" (54_coinfly.js): coinFly() shows a gain as one coin flying to the counter; while it is on its way the top bar keeps the
+// old number (hold: gains not landed yet, pend: their coins, disp: the number shown, roll: the roll-up running) and rolls up to S.coins when it lands
+const CF = { hold: 0, pend: 0, disp: null, roll: 0, live: 0, q: [], last: 0, gs: [], layer: null, pt: 0, lastAdd: null };
 function addCoins(base, opts = {}) {
-  const n = Math.round(base * (opts.raw ? 1 : BOOST.coins)); S.coins += n; markDirty();
+  const n = Math.max(0, Math.round(base * (opts.raw ? 1 : BOOST.coins)) || 0);
+  let d = 0;
+  if (n > 0 && S && S.shop && S.shop.coinDebt > 0) { const owe = Math.max(0, Math.round(S.shop.coinDebt) || 0); d = Math.min(owe, n); S.shop.coinDebt = owe - d; }
+  coinSettleSum += d; S.coins += n - d; CF.lastAdd = { n, a: n - d, t: performance.now() }; markDirty(); // lastAdd (v2.25.3): coinFly's default gain
+  if (d > 0 && typeof ksSettleQueue === 'function') ksSettleQueue(d);
   const c = $('#coins'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); updateHUD(); return n;
 }
+// addCoins for a text that shows the amount: { n: coins earned, d: how many of these very coins settled a refund (for ksSettleNote(d)) }
+function addCoinsD(base, opts) { const s0 = coinSettleSum, n = addCoins(base, opts); return { n, d: coinSettleSum - s0 }; }
 let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
-  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
+  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))), L0 = S.bond.level; S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
   while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; if (typeof lvBond === 'function') lvBond(S.dog.id, S.bond.level); if (typeof hbBondUp === 'function') hbBondUp(S.dog.id, S.bond.level); } // v2.22: 20 town XP a Bond level, once per dog (off: only the level floor follows) // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
+  if (typeof bjGain === 'function') bjGain(n, S.bond.level > L0); // v2.25.3 Happy meters: one crayon heart flies to the Bond meter (54_coinfly.js); a level-up keeps its own card
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 // Daily rhythm: the daily bonuses (care, Square goal, trick coins, beach dig, Pupcake, outfit, breakfast, dawn, first visits, walks) reset once a Japan day (00:00 JST), not every game day
@@ -1552,7 +1572,8 @@ function walkTiredLine(w) {
 }
 function dailyCare(kind) {
   dailyCheck(); if (S.daily[kind]) return; S.daily[kind] = true;
-  const n = addCoins(10); toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }), 'gold');
+  const { n, d } = addCoinsD(10), te = toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }) + ksSettleNote(d), 'gold');
+  coinFly(te, n, { gain: n - d }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
 }
 
 /* ---------------- HUD ---------------- */
@@ -1571,12 +1592,13 @@ function updateHUD() {
     m.classList.toggle('low', v < 25);
   }
   const L = S.bond.level, a = BOND_TH[L - 1], b = BOND_TH[L] || BOND_TH[9];
-  const pr = L >= 10 ? 100 : clamp((S.bond.pts - a) / (b - a) * 100, 0, 100);
+  const bpts = S.bond.pts - (typeof bjPend === 'function' ? bjPend() : 0); // v2.25.3: a heart on its way holds the bar back (54_coinfly.js fills it when it lands)
+  const pr = L >= 10 ? 100 : clamp((bpts - a) / (b - a) * 100, 0, 100);
   const hudTxt = (el, v) => { if (el && el.textContent !== String(v)) el.textContent = v; };
-  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + S.bond.pts;
+  const bt = $('#bondTrack'), bk = L + '|' + pr + '|' + bpts;
   if (bt && bt.dataset.k !== bk) { bt.dataset.k = bk; hudTxt($('#bondLvl'), L); $('#bondFill').style.width = pr + '%'; bt.setAttribute('aria-valuenow', Math.round(pr));
     bt.title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) }); }
-  hudTxt($('#coinNum'), tnum(S.coins));
+  if (!CF.hold && !CF.roll) hudTxt($('#coinNum'), tnum(S.coins)); // v2.25.2: a coin on its way holds the old number (54_coinfly.js rolls it up)
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);

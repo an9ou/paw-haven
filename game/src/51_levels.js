@@ -379,7 +379,8 @@ function lvHudSync() {
     coins.insertAdjacentHTML('beforebegin', `<button id="lvBtn" class="lv" type="button"><span class="lv-star"><span class="lv-art"></span><b class="lv-n"></b></span><span class="track lv-track" aria-hidden="true"><span class="fill"></span></span><span id="lvNext" class="lv-next" hidden></span></button>`);
     b = $('#lvBtn'); b.onclick = (e) => { e.stopPropagation(); SFX.click(); lvOpen(); };
   }
-  const p = lvProg(), nk = p.lv + '|' + (I18N && I18N.lang); // the Next line is cached by level and language (refreshed every 10 s): this runs about twice a second (V222 review)
+  const p = lvProg(), nk = p.lv + '|' + (I18N && I18N.lang);
+  const xh = typeof xjPend === 'function' ? xjPend() : 0; if (xh > 0) p.frac = Math.max(0, p.frac - xh / (p.top ? LV_STAR : (LV_AT[p.lv + 1] - LV_AT[p.lv]) || 1)); // v2.25.3: a star on its way holds the bar back (54_coinfly.js) // the Next line is cached by level and language (refreshed every 10 s): this runs about twice a second (V222 review)
   if (nk !== LVU.nxKey || Date.now() - LVU.nxAt > 10000) { LVU.nxKey = nk; LVU.nxAt = Date.now(); LVU.nx = p.top ? '' : lvNextText(p.lv); }
   const next = LVU.nx, key = [p.lv, Math.round(p.frac * 40), p.star, next, I18N && I18N.lang].join('|');
   if (key === LVU.hudKey) return b; LVU.hudKey = key;
@@ -395,10 +396,11 @@ function lvHudSync() {
 // called by fwNextSync (47_firstweek.js) and by this file's tick: the star and its Next line
 function lvNextSync() { try { lvHudSync(); } catch (e) { console.warn('lv hud', e); } }
 on('lv:gain', (g) => {
+  const flies = typeof xjGain === 'function' && xjGain(g); // v2.25.3 Happy meters: one crayon star flies to the level star and wiggles it as it lands (54_coinfly.js)
   lvNextSync();
   if (g && g.up && S && (S.place === 'yard' || S.place === 'house') && cur.mode === 'yard' && typeof placeButtons === 'function') placeButtons(); // the Garden / Kitchen button opens with the level (V222 review)
   const b = $('#lvBtn'); if (!b || document.documentElement.dataset.motion === 'off') return;
-  const up = !!(g && (g.up || g.stUp)), c = up ? 'lv-pop' : 'lv-wig'; b.classList.remove('lv-pop', 'lv-wig'); void b.offsetWidth; b.classList.add(c);
+  const up = !!(g && (g.up || g.stUp)), c = up ? 'lv-pop' : 'lv-wig'; if (!up && flies) return; b.classList.remove('lv-pop', 'lv-wig'); void b.offsetWidth; b.classList.add(c);
   clearTimeout(LVU.wig); LVU.wig = setTimeout(() => b.classList.remove('lv-pop', 'lv-wig'), up ? 700 : 450);
 });
 /* part G: the star stickers past level 20 (V222.md Decided 4). The nth full star (S.lv.st.n) gives sticker (n - 1) % 8 of the art's 8

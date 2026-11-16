@@ -7652,6 +7652,45 @@ ITEMS['Framed Paw Print']=b=>{stPawFrameDraw(b,.42,6.8,2.6)};
  PA.prop=function(name,o){if(name!=='stpawframe')return _propST.apply(this,arguments);
   return serve('p:'+name,()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'','Framed Paw Print')})}}
 PA.YARD_VISITORS={props:Object.keys(YV_LBL),items:Object.values(YV_LBL),book:()=>serve('yv:book',yvBook)};
+/* ===================================== Promo-code looks (docs/design/promo-items.md) =====================================
+   Only from a promotion code the owner posts for followers: never sold or earned. The bandana on the dog is in dogs/pawart_dogs.js (NECK2).
+     prpennant 100x160   'Paw-Print Pennant': a sky-blue pennant on a wooden stick with a gold knob, a big cream crayon paw print and a yellow star,
+                         tied on with two white strings, the stick in a little grass mound. Ground y=154
+   Item cards (64): 'Follower Star Bandana' (the Red Bandana's card in sky blue, two crayon stars and a tiny paw) and 'Paw-Print Pennant' (its own prop). */
+const PRM_SKY='#5DB0EA',PRM_SKD='#2F78BE',PRM_STAR='#FFD84A',PRM_CRM='#FFFBF2';
+PROPS.prpennant=function(b){const G=154;b.shadow(34,G,28,3.6);
+  // the stick, a gold knob on top
+  b.sh([[23.6,G-4],[23,22],[29,22],[28.4,G-4]],C.wood,{k:0,hatch:0,hl:0,lw:.9,base:'#F3DDB4',det:[[[25.6,40],[25.8,130]]],dw:.55,dcol:C.woodD});
+  b.sh(E(26,16,5.6,5.4,12),'#F2C14E',{k:0,hatch:0,hl:0,lw:.8,base:'#FFE9A8'});b.dot(24.4,14.2,1.2,'#FFF6CC','top');
+  // the pennant, waving a little: a darker hem band by the stick, a dashed stitch line along it
+  const F=[[29,23],[52,27],[76,40],[97,61],[76,76],[52,91],[29,101]];
+  b.sh(F,PRM_SKY,{k:.12,sh:PRM_SKD,ho:.35,hl:0,lw:1,base:'#CFE8F8',marks:[{pts:[[20,0],[37,0],[37,120],[20,120]],fill:PRM_SKD,k:0,op:.8}],
+   inner:b.st('M39 30Q40 62 39 94',PRM_CRM,1,.8).replace('stroke-linecap','stroke-dasharray="2.6 2.4" stroke-linecap')});
+  // two white strings tie it on
+  [27,96].forEach(y=>b.raw(b.st(`M21.6 ${y-2}Q26 ${y+3} 31 ${y-1}`,PRM_CRM,2.2)+b.st(`M21.6 ${y-2}Q26 ${y+3} 31 ${y-1}`,INK,.7,.55),'top'));
+  // the big crayon paw print and the star by the tip, each in its own line
+  paw(b,56,65,9.4,PRM_CRM,{a:-.12,lw:.9});
+  b.sh(starP(83,61,6.4,2.9,5,-Math.PI/2+.15),PRM_STAR,{k:.04,hatch:0,hl:0,lw:.75,base:'#FFF2C2',top:1});
+  // a little grass mound holding the stick
+  b.sh(cloudP(26,G-3.5,19,6.4,6,.16,30),'#8FC06A',{k:.2,hatch:0,hl:0,lw:.85,base:'#CDE8B4'});
+  b.ln([[14,G-6],[12,G-13]],{w:1,col:'#5E9446'});b.ln([[18,G-7],[19,G-15]],{w:1,col:'#5E9446'});b.ln([[35,G-7],[37,G-14]],{w:1,col:'#5E9446'});
+  b.ex('spark',86,22,4,'#FFE07A');b.ex('heart',76,124,3.2,'#F7B2C4');
+};
+Object.assign(PROP_VB,{prpennant:'0 0 100 160'});
+const PRM_LBL={prpennant:'Paw-Print Pennant'};
+{const _propPR=PA.prop;
+ PA.prop=function(name,o){if(!PRM_LBL[name])return _propPR.apply(this,arguments);
+  return serve('p:'+name+':{}',()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'',PRM_LBL[name])})}}
+Object.assign(ITEMS,{
+ 'Follower Star Bandana'(b){
+  b.sh([[3,12],[8,16],[3,19]],PRM_SKD,{k:0,hatch:0,hl:0,lw:.7});b.sh([[61,12],[56,16],[61,19]],PRM_SKD,{k:0,hatch:0,hl:0,lw:.7});
+  b.sh([[6,15],[58,15],[32,57]],PRM_SKY,{k:.05,sh:PRM_SKD,marks:[{pts:[[0,10],[64,10],[64,21],[0,21]],fill:PRM_SKD,k:0,op:.6}],inner:`<path d="M9 19.5H55" stroke="#fff" stroke-width="1" stroke-dasharray="2.4 2"/>`});
+  b.sh(starP(21,27,6,2.8,5,-Math.PI/2+.2),PRM_STAR,{k:.04,hatch:0,hl:0,lw:.7,base:'#FFF2C2',top:1});b.sh(starP(43,27,5.4,2.5,5,-Math.PI/2-.25),PRM_STAR,{k:.04,hatch:0,hl:0,lw:.7,base:'#FFF2C2',top:1});
+  paw(b,32,40,3.3,PRM_CRM,{lw:.6});
+  b.ex('spark',55,44,3.2)},
+ 'Paw-Print Pennant'(b){hmPropCard(b,'prpennant',false,[6,6,94,152])}
+});
+PA.PROMO={costumes:['Follower Star Bandana'],decor:Object.assign({},PRM_LBL)};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
