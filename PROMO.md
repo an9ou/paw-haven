@@ -90,8 +90,13 @@ bash tools/promo.sh disable GIFT-20261116     # a code or a whole batch (its id)
   to the counter from the card (`coinFly`), Gerald's letter "A little gift for our friends" (kept to reread, `pr_<key>`). Items: clothes to the
   Wardrobe, `HM_DECOR` to the house waiting to be put out, houses, beds, toys; one already owned says "You had this one already". Treats to the
   pantry. Coins with `addCoins(raw)` (a Kind shop refund debt is settled first, and the card says so).
-- **Errors:** used, unknown/expired ("That code is not working. Check the letters, or it may be over."), empty, gone ("So many friends were
-  quicker!"), rate limited, offline. Nothing is granted on an error.
+- **Errors:** used, batch_used ("You already used a code from this gift batch."), unknown/expired ("That code is not working. Check the
+  letters, or it may be over."), empty, gone ("So many friends were quicker!"), rate limited, offline, and no_session (the login ran out:
+  "You were logged out on this device. Log in again, then try the code." with a Log in button). Nothing is granted on an error.
+- **This save has it already:** the game turns the typed code into the Worker's key and checks `S.promo.used` first: "This save already has
+  this gift." and the Worker is not asked (no account spends its slot, e.g. the same save on a second account).
+- **Phones:** the sheet makes room for the on-screen keyboard like the reset sheet (`rsKeyboard`, `--rs-kb`), so the field stays above it.
+- No letter (and no "Gerald sent you a letter" line) when a code brought nothing new (every item owned already, no coins or treats).
 - **Save:** `S.promo = { used: [keys], wait: [{ k, n, q? }] }`, added by `prFields` in `migrate()` and the new-save path. `wait`: an item
   name this build does not know yet (a code made for a newer build) waits and is given once a build knows it.
 - **Restore:** `GET /promo/mine` on start (after the cloud's own pull, so a newer cloud save loads first) and after a log in; every
