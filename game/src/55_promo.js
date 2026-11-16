@@ -39,7 +39,7 @@ const prTreat = (n) => typeof n === 'string' && n !== 'Fresh Water' && FOOD.some
 function prKind(n) {
   if (typeof n !== 'string' || !n) return null;
   if (CLOTHES.some((c) => c.n === n)) return 'clothes';
-  if (typeof HM_DECOR !== 'undefined' && HM_DECOR[n]) return 'decor';
+  if (typeof HM_DECOR !== 'undefined' && Object.prototype.hasOwnProperty.call(HM_DECOR, n)) return 'decor'; // own keys only (never 'constructor', 'toString' ...)
   if (HOUSES.some((h) => h.n === n)) return 'houses';
   if (typeof BEDS !== 'undefined' && BEDS.some((b) => b.n === n)) return 'beds';
   if (TOYS.some((t) => t.n === n)) return 'toys';
@@ -92,7 +92,7 @@ function prGrant(rec) {
   const c = Math.max(0, Math.min(PR_COIN_MAX, Math.floor(Number(R.coins) || 0)));
   if (c) { const g = addCoinsD(c, { raw: true }); out.coins = c; out.added = g.n - g.d; } // coins that settle a Kind shop refund: the card says so (ksSettleNote), else the settle toast
   S.promo.used.push(rec.key);
-  prLetter(out);
+  out.letter = !!prLetter(out); // no letter when nothing new came (every item owned already, no coins or treats)
   markDirty(); updateHUD(); saveNow();
   return out;
 }
@@ -146,7 +146,7 @@ function prCard(o) {
     + (o.wait ? `<p class="small pr-wait">${esc(tt('pr.wait', 'One more thing is on its way. It arrives with the next game update.'))}</p>` : '');
   if (!modal.hidden) closeModal();
   SFX.boop(880);
-  const p = openModal(esc(tt('pr.got_h', 'A gift for you!')), `<p class="ks-got-hi">${esc(tt('pr.got_hi', 'Code {code}: this is yours now.', { code: o.code }))}</p>${rows}<p class="small pr-mail">${esc(tt('pr.got_mail', 'Gerald sent you a letter about it.'))}</p>`,
+  const p = openModal(esc(tt('pr.got_h', 'A gift for you!')), `<p class="ks-got-hi">${esc(tt('pr.got_hi', 'Code {code}: this is yours now.', { code: o.code }))}</p>${rows}${o.letter ? `<p class="small pr-mail">${esc(tt('pr.got_mail', 'Gerald sent you a letter about it.'))}</p>` : ''}`,
     { cls: 'ks ks-got pr-got', foot: `<button class="btn yes big" type="button" id="prGotOk">${esc(tt('ks.got_ok', 'Yay!'))}</button>` });
   $('#prGotOk', p).onclick = () => { SFX.click(); closeModal(); };
   if (o.added > 0) coinFly($('.pr-coins .art', p) || $('#prGotOk', p), o.added, { gain: o.added, delay: 420 });
@@ -158,6 +158,9 @@ function prCard(o) {
 const prErrText = (code) => ({
   unknown: tt('pr.err_unknown', 'That code is not working. Check the letters, or it may be over.'),
   used: tt('pr.err_used', 'You have used this code already. Its gift is in your game.'),
+  batch_used: tt('pr.err_batch', 'You already used a code from this gift batch.'), // one code of a batch per account (another code of it)
+  had: tt('pr.err_had', 'This save already has this gift.'), // this save has the code's key already (from this or another account): nothing asked, nothing spent
+  no_session: tt('pr.err_session', 'You were logged out on this device. Log in again, then try the code.'), // 401: the login expired (clApi has dropped it)
   gone: tt('pr.err_gone', 'So many friends were quicker! This code has no gifts left.'),
   rate_limited: tt('pr.err_slow', 'Lots of tries! Please wait a while and try again.'),
   empty: tt('pr.err_empty', 'Type a code first.'),
@@ -170,17 +173,24 @@ function prBoxHTML(where) {
   return `<section class="prset" id="prBox" data-pr="ok">${head}<form class="pr-form" id="prForm" novalidate><label class="clfield pr-field" for="prCode"><span>${esc(tt('pr.label', 'Gift code'))}</span>`
     + `<input id="prCode" type="text" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" maxlength="${PR_LEN}" enterkeyhint="go" placeholder="${esc(tt('pr.placeholder', 'DOGGO-XXXX'))}"></label>`
     + `<button class="btn yes pr-go" type="submit" id="prGo">${esc(tt('pr.use', 'Use code'))}</button></form>`
-    + `<p class="pr-msg" id="prMsg" role="status" aria-live="polite"></p><p class="small pr-note">${esc(tt('pr.note', 'The code goes only to our server, to check it.'))}</p></section>`;
+    + `<p class="pr-msg" id="prMsg" role="status" aria-live="polite"></p><div class="clrow pr-relog" hidden><button class="btn yes" type="button" id="prLogin">${esc(tt('cloud.log_in', 'Log in'))}</button></div><p class="small pr-note">${esc(tt('pr.note', 'The code goes only to our server, to check it.'))}</p></section>`;
 }
 let prBusy = false;
 function prBind(p) {
   const box = $('#prBox', p); if (!box) return;
   const ac = $('#prAcct', box);
-  if (ac) ac.onclick = () => { SFX.click(); if (!modal.hidden) closeModal(); setTimeout(() => { if (typeof cloudOpen === 'function') cloudOpen(); if (typeof clGo === 'function') clGo('reg'); }, 60); };
+  const cloudTo = (ui) => () => { SFX.click(); if (!modal.hidden) closeModal(); setTimeout(() => { if (typeof cloudOpen === 'function') cloudOpen(); if (typeof clGo === 'function') clGo(ui); }, 60); };
+  if (ac) ac.onclick = cloudTo('reg');
+  const li = $('#prLogin', box); if (li) li.onclick = cloudTo('login');
   const f = $('#prForm', box); if (!f) return;
   f.onsubmit = (e) => { e.preventDefault(); prSubmit(box); };
 }
-function prSay(box, code, good) { const m = $('#prMsg', box); if (!m) return; m.textContent = code ? prErrText(code) : ''; m.dataset.kind = good ? 'good' : code ? 'err' : ''; }
+function prSay(box, code, good) {
+  const m = $('#prMsg', box); if (!m) return; m.textContent = code ? prErrText(code) : ''; m.dataset.kind = good ? 'good' : code ? 'err' : '';
+  const rl = $('.pr-relog', box); if (rl) rl.hidden = code !== 'no_session'; // an expired login: a Log in button right under the line
+}
+// the Worker's key for a typed code (promoNorm in cloudflare/worker.js): upper case, no spaces, dashes, dots or underscores, full-width as plain
+const prKey = (c) => (typeof c === 'string' ? c.normalize('NFKC').toUpperCase().replace(/[\s\-_.‐-―−ー・－]/g, '') : '');
 async function prSubmit(box) {
   if (prBusy) return null;
   const inp = $('#prCode', box), btn = $('#prGo', box), code = String(inp ? inp.value : '').trim();
@@ -191,16 +201,17 @@ async function prSubmit(box) {
 // one redeem: the card on success, a kind line in the box otherwise. Resolves the grant (or null)
 async function prRedeem(code, box) {
   if (prMode() !== 'ok' || !prWorker()) { if (box) prSay(box, prMode() === 'ok' ? 'offline' : 'login'); return null; }
+  if (S && prFields(S).promo.used.includes(prKey(code))) { if (box && box.isConnected) prSay(box, 'had'); return null; } // asked nothing: no account's slot is spent
   let r = null; try { r = await clApi('POST', '/promo/redeem', { code: String(code).slice(0, 80) }); } catch (e) { r = null; }
   if (r && r.ok && r.data && r.data.ok) {
     const o = prGrant({ key: r.data.key, code: r.data.code, reward: r.data.reward, at: r.data.at });
     if (o) { prCard(o); return o; }
-    if (box && box.isConnected) prSay(box, 'used'); return null; // this save had it already (a synced save)
+    if (box && box.isConnected) prSay(box, 'had'); return null; // this save had it already under another spelling of the key (a synced save)
   }
-  const err = r && r.data && r.data.error ? r.data.error : 'offline';
+  const err = r && r.status === 401 ? 'no_session' : r && r.data && r.data.error ? r.data.error : 'offline';
   if (err === 'used') { // the answer of an earlier tap may have been lost on the way: what the account used and this save lacks comes back now
     const got = await prRestore(true);
-    const mine = got && got.find((o) => o.key === (typeof code === 'string' ? code.normalize('NFKC').toUpperCase().replace(/[\s\-_.‐-―−ー・－]/g, '') : ''));
+    const mine = got && got.find((o) => o.key === prKey(code));
     if (mine) { prCard(mine); return mine; }
   }
   if (box && box.isConnected) prSay(box, err);
@@ -216,7 +227,8 @@ async function prRestore(quiet) {
   if (!r || !r.ok || !r.data || !Array.isArray(r.data.redemptions)) return null;
   prPollUid = CL.uid;
   const out = r.data.redemptions.map((x) => prGrant(x)).filter(Boolean);
-  if (out.length && !quiet) toast(tt('pr.restored', 'Your gift codes came back: {list}. Gerald sent you a letter.', { list: tlist(out.map((o) => o.code)) }), 'gold');
+  const list = tlist(out.map((o) => o.code));
+  if (out.length && !quiet) toast(out.some((o) => o.letter) ? tt('pr.restored', 'Your gift codes came back: {list}. Gerald sent you a letter.', { list }) : tt('pr.restored_nl', 'Your gift codes came back: {list}.', { list }), 'gold');
   return out;
 }
 // on start (after the cloud has started) and when another account signs in on this page
@@ -236,6 +248,7 @@ function prOpen() {
   if (!S || prMode() === 'off') return null;
   const p = openModal(esc(tt('pr.title', 'Have a code?')), prBoxHTML('sheet'), { cls: 'pr-sheet' });
   prBind(p);
+  rsKeyboard(p); // phones: room under the field as tall as the on-screen keyboard (--rs-kb), and the field scrolls up into view (22d_reset.js)
   const i = $('#prCode', p); if (i && !isPhone()) setTimeout(() => { try { i.focus({ preventScroll: true }); } catch (e) { /* gone */ } }, 30);
   return p;
 }
@@ -245,7 +258,7 @@ function prExpose() {
   if (!window.__paw || window.__paw.pr) return;
   window.__paw.pr = {
     ui: () => prUI(), mode: () => prMode(), fields: (s) => prFields(s), grant: (rec) => prGrant(rec), card: (o) => prCard(o), open: () => prOpen(), redeem: (c) => prRedeem(c, $('#prBox')),
-    restore: (q) => prRestore(q), settings: () => openSettings(), more: () => openMore(), poll: () => { prPollUid = null; return prPoll(); }, wait: () => prWaitTick(), kind: (n) => prKind(n), catalog: () => prCatalog(), max: PR_COIN_MAX, flag: PROMO_UI
+    restore: (q) => prRestore(q), settings: () => openSettings(), more: () => openMore(), poll: () => { if (prPollP) return prPollP; prPollUid = null; return prPoll(); }, polled: () => prPollUid === CL.uid && !prPollP, wait: () => prWaitTick(), kind: (n) => prKind(n), catalog: () => prCatalog(), max: PR_COIN_MAX, flag: PROMO_UI
   };
 }
 on('game:ready', () => {

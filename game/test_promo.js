@@ -10,6 +10,7 @@
 //   8. an item this build does not know yet waits in S.promo.wait and is given once it is known
 //   9. phone 360x640: the "..." menu's Have a code?, the sheet and the card, 44 px taps, above the phone bar, one column (screenshots in test_logs/)
 //  10. reduce motion: the card and the coins still arrive
+//  11. a second code of one batch (its own line), a code that brings nothing new (no letter promised), own-key item lookups, an expired login
 // node game/run_tests.js promo
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path'); const fs = require('fs'); const { makeServer, mockInit } = require('./cloud_mock');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
@@ -36,6 +37,9 @@ run('promo', async (t) => {
     await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew, #tContinue, [data-ac="guest"]');
   };
   const newHere = async () => { // a new game on the cloud page (a guest pick first when the title asks)
+    // the title redraws once the cloud has started (a stored login: "How do you want to play?" turns into New game): decide after that, else
+    // the guest card can go away under the click (review 3)
+    await t.until((k) => !localStorage.getItem(k) || !!(window.__pawCloud && window.__pawCloud.CL.started && !window.__pawCloud.CL.startP), AUTH, 8000);
     if (!(await t.p.locator('#tNew').count())) { await t.p.click('[data-ac="guest"]'); await t.p.waitForSelector('#tNew'); }
     await t.adopt({}); await t.calm(); await t.lu();
     await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.pr), null, 8000);
@@ -136,7 +140,9 @@ run('promo', async (t) => {
   sec('5. the kind error lines');
   const c5 = await ev(() => window.__paw.S.coins);
   await settings();
-  await typeCode('DOGGO-IG-NOV'); ok(await t.until(() => /used this code already/.test((document.getElementById('prMsg') || {}).textContent || ''), null, 4000), 'the same code again: "You have used this code already": ' + (await msg()));
+  const r5 = srv.calls.filter((c) => c.page && c.op === 'POST /promo/redeem').length;
+  await typeCode('doggo-ig-nov'); ok(await t.until(() => /This save already has this gift/.test((document.getElementById('prMsg') || {}).textContent || ''), null, 4000), 'the same code again: "This save already has this gift.": ' + (await msg()));
+  ok(srv.calls.filter((c) => c.page && c.op === 'POST /promo/redeem').length === r5, 'checked on this device first: the Worker was not asked, no slot spent');
   ok(await ev(() => document.getElementById('prMsg').getAttribute('role') === 'status'), 'the line is a status for screen readers');
   await typeCode('NOPE-1234'); ok(await t.until(() => /not working/.test(document.getElementById('prMsg').textContent), null, 4000), 'an unknown code: "That code is not working": ' + (await msg()));
   mkCode('OLD-CODE', { reward: { coins: 50 }, to: Date.now() - 1000 });
@@ -158,6 +164,9 @@ run('promo', async (t) => {
 
   sec('6. a lost answer: recorded at the Worker, never heard by the game');
   mkCode('LOST-ANSWER', { reward: { items: ['Bow Tie'], coins: 120 } });
+  // the start-up look at /promo/mine for this account first (it runs once per account: the email account came after the guest's start, so a
+  // yard visit could start it any time): else it may bring the lost code back on its own before it is typed (review 3)
+  await ev(() => window.__paw.pr.poll()); ok(await ev(() => window.__paw.pr.polled()), 'the start-up restore has run for this account');
   const tok = await ev((k) => JSON.parse(localStorage.getItem(k)).token, AUTH);
   const lostR = srv.json((await srv.handle(null, 'POST', '/promo/redeem', JSON.stringify({ code: 'LOST-ANSWER' }), 'Bearer ' + tok)).text);
   ok(lostR.ok === true, 'the Worker recorded it');
@@ -167,7 +176,7 @@ run('promo', async (t) => {
   ok((await ev(() => window.__paw.S.coins)) === c6 + 120 && (await ev(() => window.__paw.S.inv.clothes.includes('Bow Tie'))), '+120 coins and the Bow Tie, once');
   await t.p.click('#prGotOk'); await t.until(() => document.getElementById('modal').hidden, null, 2000);
   await settings(); await typeCode('LOST-ANSWER');
-  ok(await t.until(() => /used this code already/.test(document.getElementById('prMsg').textContent), null, 4000) && (await ev(() => window.__paw.S.coins)) === c6 + 120, 'and again: used, no more coins');
+  ok(await t.until(() => /This save already has this gift/.test(document.getElementById('prMsg').textContent), null, 4000) && (await ev(() => window.__paw.S.coins)) === c6 + 120, 'and again: this save already has it, no more coins: ' + (await msg()) + ' ' + (await ev(() => [window.__paw.S.coins, document.querySelector('#modal .panel') && document.querySelector('#modal .panel').className])) + ' ' + c6);
   await closeAll();
   const keep = await ev(() => window.__paw.S.coins);
 
@@ -201,7 +210,13 @@ run('promo', async (t) => {
   ok(Array.isArray(again) && again.length === 0 && (await ev(() => window.__paw.S.coins)) === f7c, 'a second look: nothing more, coins unchanged');
   ok(srv.calls.filter((c) => c.op === 'GET /promo/mine').length >= 2, 'GET /promo/mine was asked');
   await ev(() => window.__paw.saveNow());
-  await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+  // "a reload" is a fresh page on a copy of this page's storage (review 3). page.reload() of the file:// harness came back about one run in
+  // three with an EMPTY localStorage (no save, login or cloud meta: only the prefs the harness writes on every load), so the title asked
+  // "How do you want to play?" and #tContinue never came. The game has no localStorage.clear() and removes only single keys; with a
+  // storage probe added the loss never happened again, so it is the browser's file:// storage across the reload, not a signal to wait for
+  const keepLS = await ev(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; });
+  ok(keepLS[SAVE] && keepLS[AUTH], 'the save and the login are on this device before the reload');
+  await cloudPage({ storage: keepLS }); await t.p.waitForSelector('#tContinue', { timeout: 8000 }); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
   await t.until(() => window.__paw && window.__paw.pr, null, 5000); await ev(() => window.__paw.pr.poll()); await t.sleep(500);
   ok((await ev(() => window.__paw.S.coins)) === f7c && (await ev(() => window.__paw.S.promo.used.length)) === 2, 'after a reload: still once (' + f7c + ' coins)');
   const startCoins = await ev(() => { const S = window.__paw.S; return S.coins - 320; });
@@ -243,6 +258,31 @@ run('promo', async (t) => {
   ok(a9.inputFont >= 16, 'the field text is 16 px or more (no zoom on iPhone): ' + a9.inputFont);
   const st9 = await ev(() => { const f = document.getElementById('prForm'), i = document.getElementById('prCode').getBoundingClientRect(), b = document.getElementById('prGo').getBoundingClientRect(); return { col: b.top >= i.bottom - 1, dir: getComputedStyle(f).flexDirection }; });
   ok(st9.col && st9.dir === 'column', 'one column: the button under the field');
+  // the on-screen keyboard (review 2; as the reset sheet, rsKeyboard): Android shrinks the page, iOS only the visual viewport
+  await t.p.setViewportSize({ width: 360, height: 360 }); await t.sleep(300);
+  await t.p.focus('#prCode'); await t.sleep(500);
+  const kb9 = await ev(() => { const r = document.getElementById('prCode').getBoundingClientRect(), g = document.getElementById('prGo').getBoundingClientRect(), vv = window.visualViewport; return [Math.round(r.top), Math.round(r.bottom), Math.round(vv ? vv.height : innerHeight), Math.round(g.bottom)]; });
+  ok(kb9[0] >= 0 && kb9[1] <= kb9[2], 'Android: with the keyboard up (the page 360 px tall), the field stays in view ' + kb9.join(' '));
+  await t.p.setViewportSize({ width: 360, height: 640 }); await t.sleep(300);
+  await closeAll();
+  await ev(() => { // iOS: the page keeps its height, the keyboard covers its bottom: a stand-in visualViewport the test resizes
+    const vv = new EventTarget(); vv.width = innerWidth; vv.height = innerHeight; vv.offsetTop = 0; vv.offsetLeft = 0; vv.scale = 1;
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true }); window.__fakeVV = vv;
+  });
+  await t.p.click('#moreBtn'); await t.until(() => !!document.getElementById('mmPromo'), null, 3000); await t.p.click('#mmPromo');
+  await t.until(() => !!document.querySelector('#modal .panel.pr-sheet #prCode'), null, 3000); await t.sleep(400);
+  const ios0 = await ev(() => Math.round(document.getElementById('prCode').getBoundingClientRect().bottom));
+  await t.p.focus('#prCode');
+  await ev(() => { const vv = window.__fakeVV; vv.height = innerHeight - 280; vv.dispatchEvent(new Event('resize')); });
+  await t.sleep(700);
+  const ios = await ev(() => { const p = document.querySelector('#modal .panel.pr-sheet'), r = document.getElementById('prCode').getBoundingClientRect(); return { kb: p.style.getPropertyValue('--rs-kb'), pad: getComputedStyle(p.querySelector('.panel-body')).paddingBottom, top: Math.round(r.top), bottom: Math.round(r.bottom), vh: window.__fakeVV.height }; });
+  ok(ios.kb === '280px' && ios.pad === '280px', 'iOS: the sheet gets room as tall as the keyboard (--rs-kb 280px): ' + JSON.stringify(ios));
+  ok(ios.top >= 0 && ios.bottom <= ios.vh, `iOS: the field moves up above a 280 px keyboard (it was at ${ios0}): ` + JSON.stringify(ios));
+  await t.p.screenshot({ path: path.join(LOGS, 'promo_phone_keyboard.png') });
+  await ev(() => { const vv = window.__fakeVV; vv.height = innerHeight; vv.dispatchEvent(new Event('resize')); });
+  await t.sleep(200);
+  ok((await ev(() => document.querySelector('#modal .panel.pr-sheet').style.getPropertyValue('--rs-kb'))) === '0px', 'the keyboard down: the room goes too');
+  await ev(() => { delete window.visualViewport; delete window.__fakeVV; });
   const c9 = await ev(() => window.__paw.S.coins);
   await t.p.fill('#prCode', 'phone gift'); await t.p.click('#prGo');
   ok(await t.until(() => !!document.querySelector('#modal .panel.pr-got'), null, 5000), 'the card opens on the phone');
@@ -271,6 +311,39 @@ run('promo', async (t) => {
   await t.p.fill('#prCode', 'CALM-GIFT'); await t.p.click('#prGo');
   ok(await t.until(() => !!document.querySelector('#modal .panel.pr-got'), null, 5000), 'motion off: the card opens');
   ok(await t.until((c) => window.__paw.S.coins === c + 60 && document.getElementById('coins').innerText.replace(/\D/g, '') === String(window.__paw.S.coins), c10, 4000), 'the coins are in, and the counter shows them: ' + (await ev(() => [window.__paw.S.coins, document.getElementById('coins').innerText])));
-  await t.p.click('#prGotOk');
+  await t.p.click('#prGotOk'); await t.until(() => document.getElementById('modal').hidden, null, 2000);
+  await ev(() => { delete document.documentElement.dataset.motion; });
+
+  sec('11. a second code of one gift batch, nothing new, own keys only, a login that ran out');
+  ['XMAS-AB2C-DE3F', 'XMAS-GH4J-KM5N'].forEach((c) => mkCode(c, { kind: 'unique', batch: 'XMAS-20261116', cap: 1, reward: { coins: 30 } }));
+  await t.p.click('#moreBtn'); await t.until(() => !!document.getElementById('mmPromo'), null, 3000); await t.p.click('#mmPromo');
+  await t.until(() => !!document.getElementById('prCode'), null, 3000);
+  await t.p.fill('#prCode', 'xmas-ab2c-de3f'); await t.p.click('#prGo');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.pr-got'), null, 5000), 'a batch code: the card');
+  await t.p.click('#prGotOk'); await t.until(() => document.getElementById('modal').hidden, null, 2000);
+  const c11 = await ev(() => window.__paw.S.coins);
+  await t.p.click('#moreBtn'); await t.until(() => !!document.getElementById('mmPromo'), null, 3000); await t.p.click('#mmPromo');
+  await t.until(() => !!document.getElementById('prCode'), null, 3000);
+  await t.p.fill('#prCode', 'XMAS-GH4J-KM5N'); await t.p.click('#prGo');
+  ok(await t.until(() => /You already used a code from this gift batch/.test(document.getElementById('prMsg').textContent), null, 4000) && (await ev(() => window.__paw.S.coins)) === c11, 'another code of the same batch: its own line, nothing granted: ' + (await msg()));
+  await closeAll();
+  // everything owned already, no coins or treats: the card does not promise a letter, and none is sent
+  const had = await ev(() => { const P = window.__paw, S = P.S; const n = S.inv.clothes.includes('Bow Tie') ? 'Bow Tie' : S.inv.clothes[0]; const m0 = S.mail.length; const o = P.pr.grant({ key: 'TESTHAD', code: 'TEST-HAD', reward: { items: [n], coins: 0, treats: {} } }); const p = P.pr.card(o); const r = { n, letter: o.letter, mail: S.mail.length - m0, mailLine: !!p.querySelector('.pr-mail'), txt: p.innerText }; p.querySelector('#prGotOk').click(); return r; });
+  ok(had.letter === false && had.mail === 0 && !had.mailLine && /You had this one already/.test(had.txt) && !/sent you a letter/.test(had.txt), 'nothing new: "You had this one already", no letter and no letter line: ' + JSON.stringify(had).slice(0, 200));
+  const own = await ev(() => ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map((n) => window.__paw.pr.kind(n)));
+  ok(own.every((x) => x === null), 'item lookups use own keys only (constructor, toString ... are not items): ' + JSON.stringify(own));
+  // the login ran out (the Worker no longer knows the token): 401 no_session, "log in again" with a Log in button
+  await ev(() => { window.__paw.S.promo.used = window.__paw.S.promo.used.filter((k) => k !== 'TESTHAD'); });
+  await t.p.click('#moreBtn'); await t.until(() => !!document.getElementById('mmPromo'), null, 3000); await t.p.click('#mmPromo');
+  await t.until(() => !!document.getElementById('prCode'), null, 3000);
+  ok(await ev(() => document.querySelector('#prBox .pr-relog').hidden), 'no Log in button before');
+  raw.prepare('delete from sessions').run();
+  await t.p.fill('#prCode', 'CALM-GIFT-2'); await t.p.click('#prGo');
+  ok(await t.until(() => /logged out on this device. Log in again/.test(document.getElementById('prMsg').textContent), null, 4000), 'an expired login: "You were logged out on this device. Log in again, then try the code.": ' + (await msg()));
+  const rl = await ev(() => { const b = document.getElementById('prLogin'), r = b.getBoundingClientRect(); return { shown: !document.querySelector('#prBox .pr-relog').hidden, w: r.width, h: r.height, mode: window.__paw.pr.mode() }; });
+  ok(rl.shown && rl.w >= 44 && rl.h >= 44 && rl.mode === 'guest', 'a Log in button (44 px) under it; the dead login is dropped: ' + JSON.stringify(rl));
+  await t.p.click('#prLogin');
+  ok(await t.until(() => !!document.querySelector('#modal #clBox #clPw[autocomplete="current-password"]'), null, 3000), 'Log in opens the cloud log-in form');
+  await closeAll();
   ok(!t.errors.length, 'no console errors: ' + t.errors.slice(0, 3).join(' | '));
 }, { timeout: 420000 });
