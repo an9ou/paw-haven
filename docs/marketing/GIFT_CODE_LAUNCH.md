@@ -1,5 +1,7 @@
 # Launch-day gift code post: Instagram caption (18 Nov 2026)
 
+> **Superseded (16 Nov 2026): each platform now has its own code.** The current captions for all four platforms (Instagram `{CODE_IG}`, YouTube Shorts `{CODE_YT}`, X `{CODE_X}`, RedNote `{CODE_RN}`) are in `docs/marketing/captions/GIFT_CODE_CAPTIONS.md`, with the launch Reel (`docs/marketing/GIFT_REEL.md`). A player can use only one of the four codes. The text below is the earlier single-code draft, kept for reference.
+
 Owner's first gift code campaign (GM, 16 Nov 2026): ONE shared code for the Instagram launch post on 18 Nov. It gives the Follower Star Bandana + the Paw-Print Pennant (both code-only, never sold) + 100 coins, once per cloud-save account, valid 18 Nov 00:00 to 17 Dec 23:59 JST. Redeem: in the game, Settings > Have a code? (needs the free cloud save).
 
 **`{CODE}` is a placeholder: the owner pastes the real code when posting. Never put the real code in any file in this repo or in chat.**
