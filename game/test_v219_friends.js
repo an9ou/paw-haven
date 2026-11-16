@@ -404,7 +404,7 @@ run('v219_friends', async (t) => {
     const r = { idx: list.indexOf('Paw-Print Pennant'), old: fr.decorOldN };
     S.decor['Paw-Print Pennant'] = { out: true, at: [446, 516] };
     await fr.pushYard(true); r.on = last().decor.map((d) => list[d.i]);
-    srv.decorLim = 31; const n0 = srv.yards.length, bb = srv.badYards || 0; r.okOld = await fr.pushYard(true); r.oldPut = srv.yards.length - n0; r.bad = srv.badYards - bb; // relative: the v2.26 toy check above was refused once already r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
+    srv.decorLim = 31; const n0 = srv.yards.length, bb = srv.badYards || 0; r.okOld = await fr.pushYard(true); r.oldPut = srv.yards.length - n0; r.bad = srv.badYards - bb; /* relative: the v2.26 toy check above was refused once already */ r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
     const b0 = srv.badYards; await fr.pushYard(true); r.bad2 = srv.badYards - b0; r.old2 = last().decor.map((d) => list[d.i]);
     delete srv.decorLim; fr.decorOld(false); delete S.decor['Paw-Print Pennant']; await fr.pushYard(true);
     return r;
