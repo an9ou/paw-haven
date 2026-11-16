@@ -14,9 +14,6 @@ Object.assign(HM_DECOR, {
   'Bubble Fountain': { prop: 'yvbubbles', at: [470, 410, 72, 96], vb: [120, 160], price: 1500, room: 'yard', zone: 'floor', kind: 'decor', v27: true, v226: true, story: 'A little box that blows bubbles all afternoon. Dog-safe bubbles, so catching them is allowed.' }
 });
 const YV_TOYS = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'];
-// v2.25.5 gift codes: the Paw-Print Pennant (03_yard.js) comes after these toys in FR_DECOR and the Worker's list (index 35), so it moves to the end of
-// HM_DECOR here too: the yard order stays the friends order (frExpose orderOk)
-{ const pp = HM_DECOR['Paw-Print Pennant']; if (pp) { delete HM_DECOR['Paw-Print Pennant']; HM_DECOR['Paw-Print Pennant'] = pp; } }
 const YV_OLD = ['Sandbox', 'Bird Bath', 'Stepping Stones', 'Hammock', 'Garden Bench', 'Doggy Ramp']; // older yard items that pull a little
 // the visitors (V226.md 3): [id, name, breed, coat option, age in months, family, favourite toy, rare condition]
 const YV_DOGS = [
@@ -120,7 +117,7 @@ function yvGift(p) {
   else if (g === 'flower') V.flowers++;
   else { // every coin goes through addCoins (a Kind shop refund settles first, 00_core.js); v2.25.3: one coin flies to the counter from the gift's toast,
     // the visitor or the While you were out line, whichever shows (else it pops on the counter; on the title it simply lands)
-    V.cday = p.t; addCoins(YV_COIN, { raw: true });
+    V.cday = p.t; YV.gD = addCoinsD(YV_COIN, { raw: true }).d; // gD: coins that settled a Kind shop refund, said once in the gift toast (ksSettleNote)
     if (typeof coinFly === 'function') coinFly(() => [YV.gTe, $('#visitorG.yv', view), $('.wb-vis .wb-vg')].find((el) => el && el.isConnected && el.getBoundingClientRect().width > 2) || null, YV_COIN, { delay: 1600 });
   }
   return g;
@@ -152,7 +149,7 @@ function yvCatchUp(now) {
 }
 
 /* ---------------- the visitor in the yard ---------------- */
-const YV = { tick: 0, greet: false, gTe: null };
+const YV = { tick: 0, greet: false, gTe: null, gD: 0 };
 // fix batch (art 3, phone 4): the yard visitor has its own spot, right of the dog and clear of the mailbox (the pack's free spot stood it in front of
 // the mailbox, the mail badge on its head, and off the left edge at 390 px). Feet x 592: inside the phone crop at 360 and 390 (phHomeRefit widens the
 // crop to the right edge of visitorSpot(), which answers this spot while a yard visitor is drawn).
@@ -186,7 +183,7 @@ function yvDraw(greet) {
   if (typeof dcRoom === 'function') dcRoom();
   if (greet) setTimeout(() => {
     if (!yvHere() || !$('#visitorG.yv', view) || !modal.hidden) return; const [fx, fy, , sc] = yvSpot(); say(yvLine(e), fx, fy - 200 * sc, 4200); SFX.bark(BARK[yvDog(e.id).key] || 1);
-    if (e.g) setTimeout(() => { YV.gTe = toast(yvGiftLine(e), 'gold'); }, 600); // gTe: the coin gift's source (yvGift)
+    if (e.g) setTimeout(() => { YV.gTe = toast(yvGiftLine(e) + (e.g === 'coins' ? ksSettleNote(YV.gD) : ''), 'gold'); }, 600); // gTe: the coin gift's source (yvGift)
   }, 900);
   return e;
 }

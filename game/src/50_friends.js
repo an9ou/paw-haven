@@ -35,14 +35,13 @@ const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
   'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern',
   'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair',
-  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain', // v2.26 Yard visitors: the four yard toys (54_visitors.js)
-  'Paw-Print Pennant' // v2.25.5 gift codes: the promo-code look, appended after the v2.26 toys (index 35; the Worker's FR_LIM.decor 36). On main alone it was
-                      // index 31 (Worker decor 32); it moved here with the v2.26-v2.29 merge: a pre-2.26 copy's Pennant (31) reads as a Tug Post until it updates
+  'Paw-Print Pennant', // v2.25.5 gift codes: the promo-code look, FR_DECOR 31 (live on main since v2.25.5; the Worker's FR_LIM.decor 32 there, 36 with v2.26)
+  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain' // v2.26 Yard visitors: the four yard toys, appended after the Pennant (32-35; 54_visitors.js)
 ];
-// the length of FR_DECOR that a Worker from before v2.25.5 / v2.26 takes (its FR_LIM.decor 31; the gift codes Worker took 32). It refuses the whole snapshot
-// when one index is past it, so if PUT /friends/yard says bad while newer items are out (a v2.26 toy, the Pennant), frAfterPush sends the same yard once
-// more without them (FR.decorOld) until the next load. 31 also covers the 32 Worker: everything past 31 is left out once.
-const FR_DECOR_OLD = 31;
+// the length of FR_DECOR that the deployed gift-codes Worker takes (its FR_LIM.decor 32: no older Worker is live). It refuses the whole snapshot
+// when one index is past it, so if PUT /friends/yard says bad while newer items are out (a v2.26 toy, index 32+), frAfterPush sends the same yard once
+// more without them (FR.decorOld) until the next load.
+const FR_DECOR_OLD = 32;
 // an item from a later release shows in friend yards (mine sent, theirs drawn) only once its feature is live here: before the v2.26 news date no toy
 function frDecorLive(n) {
   const c = typeof HM_DECOR !== 'undefined' ? HM_DECOR[n] : null; if (!c) return false;

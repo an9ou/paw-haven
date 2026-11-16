@@ -121,10 +121,10 @@ const smChap = (n) => SM_CH.find((c) => c.n === n) || null;
 
 /* ---------------- rewards: each task and each chapter pays once ---------------- */
 function smPay(rw, quiet) {
-  const got = { xp: 0, bond: 0, c: 0 };
+  const got = { xp: 0, bond: 0, c: 0, d: 0 };
   if (rw.xp && typeof lvGain === 'function') got.xp = lvGain('story', rw.xp) || 0;
   if (rw.bond) got.bond = addBond(rw.bond, { raw: true });
-  if (rw.c) got.c = addCoins(rw.c, { raw: true });
+  if (rw.c) { const { n, d } = addCoinsD(rw.c, { raw: true }); got.c = n; got.d = d; } // d: coins that settled a Kind shop refund (ksSettleNote in the toast)
   if (!quiet) updateHUD();
   return got;
 }
@@ -148,7 +148,7 @@ function smBump(k, full) {
   const T = S.story; T.p[k.id] = full ? k.n : Math.min(k.n, (T.p[k.id] || 0) + 1);
   if (T.p[k.id] >= k.n) {
     T.t[k.id] = jstISO(); const got = smPay(k.rw);
-    const te = toast(tt('sm.task_done', 'Story: {task}. {reward}', { task: k.t(), reward: smRwText(k.rw) }), 'gold');
+    const te = toast(tt('sm.task_done', 'Story: {task}. {reward}', { task: k.t(), reward: smRwText(k.rw) }) + ksSettleNote(got.d), 'gold');
     smJuice(got, te, 0);
   }
 }
@@ -173,7 +173,7 @@ function smChapterCheck() {
   const T = S.story, ch = smChap(T.ch); if (!ch || T.c[ch.n] || !ch.tasks.every((k) => T.t[k.id])) return false;
   T.c[ch.n] = jstISO(); const got = smPay(ch.rw); scQueue(ch.scene); T.ch = ch.n + 1; markDirty();
   let te = null; smJuice(got, () => te, 560);
-  setTimeout(() => { te = toast(tt('sm.ch_done', 'Chapter {n} done: {title}! {reward}', { n: ch.n, title: ch.title(), reward: smRwText(ch.rw) }), 'gold'); }, 500);
+  setTimeout(() => { te = toast(tt('sm.ch_done', 'Chapter {n} done: {title}! {reward}', { n: ch.n, title: ch.title(), reward: smRwText(ch.rw) }) + ksSettleNote(got.d), 'gold'); }, 500);
   if (ch.n === SM_N) setTimeout(() => toast(tt('sm.frame_got', "A new photo frame: Gerald's Big Book. Find it in photo mode."), 'gold'), 3200);
   try { SFX.kaching(); } catch (e) { /* audio off */ }
   saveNow(); return true;
