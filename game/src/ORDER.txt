@@ -81,4 +81,5 @@
 57_scenes.js
 57b_story.js
 58_invite.js
+58b_goal.js
 23_boot.js

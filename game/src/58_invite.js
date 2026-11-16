@@ -107,7 +107,7 @@ function fiCard(o) {
   if (o.wait) {
     body = `<div class="ks-got-row fi-row"><span class="art">${fiArt()}</span><div><b>${esc(homeName(FI_ITEM))}</b><p class="small ks-where">${esc(tt('fi.wait_where', 'It arrives as soon as you turn on cloud save. Nothing is lost meanwhile.'))}</p></div></div>`;
     const p = openModal(esc(tt('fi.wait_h', 'Your bandana is waiting')), `<p class="ks-got-hi">${esc(tt('fi.wait_hi', 'Your friend\'s invite brings you both a Friendship Bandana.'))}</p>${body}<p class="small fi-mail">${esc(tt('pm.got_mail', 'Gerald sent you a letter about it.'))}</p>`,
-      { cls: 'ks ks-got fi-got', foot: `<button class="btn" type="button" id="fiLater">${esc(tt('fi.later', 'Later'))}</button><button class="btn yes big" type="button" id="fiCloud">${esc(tt('fi.cloud', 'Turn on cloud save'))}</button>` });
+      { cls: 'ks ks-got fi-got fi-wait', foot: `<button class="btn" type="button" id="fiLater">${esc(tt('fi.later', 'Later'))}</button><button class="btn yes big" type="button" id="fiCloud">${esc(tt('fi.cloud', 'Turn on cloud save'))}</button>` });
     $('#fiLater', p).onclick = () => { SFX.click(); closeModal(); };
     $('#fiCloud', p).onclick = () => { SFX.click(); closeModal(); setTimeout(() => { if (typeof cloudOpen === 'function') cloudOpen(); if (typeof clGo === 'function') clGo('reg'); }, 60); };
     return p;

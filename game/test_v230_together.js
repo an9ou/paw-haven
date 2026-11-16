@@ -57,7 +57,7 @@ run('v230_together', async (t) => {
   ok(await ev(() => !window.__paw.fi.on() && window.__paw.fi.mode() === 'off' && window.__paw.fi.line() === ''), 'before the date: off, no Friends line');
   ok(await ev(() => window.__paw.nw.v230Date() === '2099-01-01' && !window.__paw.nw.list().includes('2.30') && !window.__paw.nw.due('2.30')), 'NEWS 2.30 waits for its placeholder date (2099-01-01)');
   ok(srv.count(null, '/invite/') === 0 && srv.count(null, '/town/goal') === 0, 'no new route is asked before the date');
-  ok(await ev(() => { const S = window.__paw.S; return S.fi && S.fi.link === '' && S.fi.join === '' && S.fi.n === 0; }), 'a new save has S.fi');
+  ok(await ev(() => { const S = window.__paw.S; return S.fi && S.fi.link === '' && S.fi.join === '' && S.fi.n === 0; }) && await ev(() => { const g = window.__paw.S.goal; return g && g.q === 0 && Array.isArray(g.got) && g.miss === ''; }), 'a new save has S.fi and S.goal');
   ok(await ev(() => { const f = window.__paw.fi.fields({ v: 1 }).fi; return f.link === '' && f.join === '' && f.mine === 0 && f.n === 0 && f.wait === 0; }), 'fiFields fills an old save');
   ok(await ev(() => { const f = window.__paw.fi.fields({ fi: { n: 99, join: 'x', mine: 'yes' } }).fi; return f.n === 10 && f.join === '' && f.mine === 1; }), 'fiFields tidies odd values');
 
@@ -130,4 +130,92 @@ run('v230_together', async (t) => {
   ok(await ev(() => !document.querySelector('#v230sheet b')), 'every dog draws with the bandana');
   await ev(() => document.getElementById('v230sheet').remove());
   ok(await ev(() => /#A98BE3/i.test(document.querySelector('svg.world, #view').innerHTML)), 'the dog wears the lavender bandana in the yard');
+
+  sec('6. the town goal');
+  await ev(() => { window.__paw.S.outfit.neck = null; });
+  ok(await ev(() => window.__paw.gl.on()), 'on: btTest and cloud here');
+  const q0 = await ev(() => window.__paw.S.goal.q);
+  await ev(() => window.__paw.gl.act('walk', { area: 'park' }));
+  ok(await ev((q) => window.__paw.S.goal.q === q + 3, q0), 'a walk adds 3 belly rubs');
+  await ev(() => window.__paw.gl.act('pet', { dogs: 2, ids: ['a', 'b'] }));
+  ok(await ev((q) => window.__paw.S.goal.q === q + 5, q0), 'a pet of two dogs adds 2');
+  const q1 = await ev(() => window.__paw.S.goal.q);
+  ok(await t.pet(() => window.__paw.S.goal.q > 0), 'a real pet counts');
+  // one batched POST: at most 40, and none again within 5 minutes
+  const posts0 = srv.count(null, 'POST /town/goal');
+  const d6 = await ev(() => { window.__paw.S.goal.at = 0; return window.__paw.gl.post(false); });
+  const month = await ev(() => window.__paw.gl.month());
+  ok(d6 && d6.took > 0 && d6.month === month && srv.count(null, 'POST /town/goal') === posts0 + 1, 'one POST sends what waits: ' + JSON.stringify(d6));
+  ok(await ev(() => window.__paw.S.goal.q === 0), 'nothing waits after it');
+  await ev(() => window.__paw.gl.add(10)); await ev(() => window.__paw.gl.post(false));
+  ok(srv.count(null, 'POST /town/goal') === posts0 + 1 && await ev(() => window.__paw.S.goal.q === 10), 'within 5 minutes: no second POST, 10 wait');
+  await ev(() => window.__paw.gl.add(500));
+  ok(await ev(() => window.__paw.S.goal.q === 200), 'what waits is capped at 200');
+  const row = raw.prepare('select n from town_goal where month = ?').get(month);
+  ok(row && row.n === d6.took, 'the Worker counted it: ' + JSON.stringify(row));
+  // the Square: the Town goal button and Gerald's notice
+  await t.home('square');
+  ok(await t.until(() => !!document.querySelector('#placeBtns [data-gl] .gl-mini'), null, 4000), 'the Square has a Town goal button with a tiny meter');
+  await ev(() => document.querySelector('#placeBtns [data-gl]').click());
+  ok(await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 5000), 'the sheet: the meter');
+  ok(await ev(() => { const t = document.querySelector('.gl-sheet').textContent; return /belly rubs/.test(t) && /You added/.test(t) && /treat bag/.test(t) && !/@|#1|top 10/i.test(t); }), 'the sheet: the goal, my part, the gift; no names or ranks');
+  await shot('goal_sheet_desktop');
+  await closeAll();
+  // the town reaches the goal: the gift once
+  raw.prepare('update town_goal set n = goal - 1 where month = ?').run(month);
+  const food0 = await ev(() => Object.assign({}, window.__paw.S.inv.food));
+  await ev(() => { window.__paw.S.goal.at = 0; return window.__paw.gl.post(false); });
+  ok(await ev((m) => window.__paw.S.goal.got.includes(m) && window.__paw.S.mail.some((x) => x.id === 'gl_' + m), month), 'the goal reached: Gerald\'s letter, the month marked');
+  ok(await ev((f) => { const F = window.__paw.S.inv.food; return (F['Pupcake'] | 0) === (f['Pupcake'] | 0) + 1 && (F['Bone-shaped Biscuit'] | 0) === (f['Bone-shaped Biscuit'] | 0) + 3; }, food0), 'the treat bag: 1 Pupcake and 3 Bone-shaped Biscuits');
+  const coins = await ev(() => window.__paw.S.coins);
+  await ev(() => window.__paw.gl.fetch(true));
+  ok(await ev((f) => (window.__paw.S.inv.food['Pupcake'] | 0) === (f['Pupcake'] | 0) + 1, food0) && await ev((c) => window.__paw.S.coins === c, coins), 'a second look gives nothing more, never coins');
+  // last month was missed: the kind letter, once
+  const y = +month.slice(0, 4), m = +month.slice(5, 7), prev = m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
+  const uid = await ev(() => window.__pawCloud.CL.uid);
+  raw.prepare('insert into town_goal (month, n, goal, done_at) values (?, 31000, 50000, null)').run(prev);
+  raw.prepare('insert into town_goal_users (month, user_id, n) select ?, id, 12 from users').run(prev); void uid; // this page plays as A since section 4: every account took part
+  await ev(() => window.__paw.gl.fetch(true));
+  ok(await ev((p) => { const l = window.__paw.S.mail.find((x) => x.id === 'gl_miss_' + p); return !!l && /So close/.test(l.title) && /new goal/.test(l.text) && window.__paw.S.goal.miss === p && !window.__paw.S.goal.got.includes(p); }, prev), 'a missed month: the "So close!" letter, no gift, nothing bad');
+  await ev(() => window.__paw.gl.fetch(true));
+  ok(await ev((p) => window.__paw.S.mail.filter((x) => x.id === 'gl_miss_' + p).length === 1, prev), 'only once');
+  ok(await ev(() => { const s = window.__paw.gl.fields({ goal: { q: -3, got: 'x', sent: [], miss: 5 } }).goal; return s.q === 0 && Array.isArray(s.got) && !Array.isArray(s.sent) && s.miss === ''; }), 'glFields tidies odd values');
+
+  sec('7. phone 360x640');
+  const save = await ev(() => JSON.stringify(window.__paw.S));
+  const tok = await ev((k) => localStorage.getItem(k), AUTH);
+  await cloudPage({ device: 'Phone 360x640', prefs: { btTest: true, frTest: true }, storage: { pawhaven_proto_v1: save, [AUTH]: tok } });
+  if (await t.p.locator('#tContinue').count()) await t.p.click('#tContinue');
+  await t.calm(); await t.lu();
+  await t.until(() => !!(window.__paw && window.__paw.gl && window.__paw.fi), null, 8000);
+  const audit = (sel) => ev((sel) => {
+    const vw = innerWidth, vh = innerHeight, bad = [];
+    const panel = document.querySelector(sel); if (!panel) return { bad: ['no panel ' + sel] };
+    const pr = panel.getBoundingClientRect();
+    const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+    [...panel.querySelectorAll('.btn')].filter(vis).forEach((b) => { const r = b.getBoundingClientRect(); if (r.height < 43.5 || r.width < 43.5) bad.push('small ' + (b.innerText || b.id).trim().slice(0, 20) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); if (r.right > vw + 0.5 || r.left < -0.5) bad.push('off screen ' + (b.id || b.className)); });
+    [...panel.querySelectorAll('p, h3, b')].filter(vis).forEach((e) => { if (e.scrollWidth > e.clientWidth + 1) bad.push('clipped ' + e.textContent.slice(0, 20)); });
+    return { bad, over: document.documentElement.scrollWidth > vw + 1, pw: Math.round(pr.width), top: Math.round(pr.top), bottom: Math.round(pr.bottom), vh };
+  }, sel);
+  await ev(() => window.__paw.fi.card({ wait: 'new' }));
+  await t.until(() => !!document.querySelector('#modal .panel.fi-got'), null, 3000); await shot('wait_card_phone');
+  let a = await audit('#modal .panel.fi-got');
+  ok(!a.bad.length && a.pw <= 360 && !a.over, 'the waiting card fits: ' + JSON.stringify(a));
+  await closeAll();
+  await ev(() => window.__paw.fi.card({ mine: true, from: [7, 9], joined: [], bandana: true }));
+  await t.until(() => !!document.querySelector('#modal .panel.fi-got #fiOk'), null, 3000); await shot('got_card_phone');
+  a = await audit('#modal .panel.fi-got');
+  ok(!a.bad.length && a.pw <= 360 && !a.over, 'the gift card fits: ' + JSON.stringify(a));
+  await closeAll();
+  await ev(() => window.__paw.gl.open());
+  await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 5000); await shot('goal_sheet_phone');
+  a = await audit('#modal .panel.gl-sheet');
+  ok(!a.bad.length && a.pw <= 360 && !a.over, 'the town goal sheet fits: ' + JSON.stringify(a));
+  await closeAll();
+  await t.home('square');
+  ok(await t.until(() => !!document.querySelector('#placeBtns [data-gl]'), null, 4000), 'the phone Square has the button');
+  const b = await ev(() => { const r = document.querySelector('#placeBtns [data-gl]').getBoundingClientRect(); return { w: r.width, h: r.height, r: r.right, vw: innerWidth }; });
+  ok(b.w >= 44 && b.h >= 44 && b.r <= b.vw + 0.5, 'its button is 44 px or more and on screen: ' + JSON.stringify(b));
+  await shot('square_phone');
 });
+

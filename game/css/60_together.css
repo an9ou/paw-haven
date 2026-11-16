@@ -4,3 +4,22 @@
 .fi-line .fi-ic svg { width: 100%; height: 100%; }
 .fi-got .ks-got-row .art svg { width: 100%; height: 100%; }
 .fi-got .panel-foot, .fi-got .modal-foot { flex-wrap: wrap; gap: 8px; }
+.fi-wait .foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* the town goal: the Square button's tiny crayon meter, and Gerald's notice */
+.gl-btn { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+.gl-mini { display: block; width: 64px; height: 7px; border: 1.5px solid #5B3D32; border-radius: 5px; background: #FFFDF8; overflow: hidden; }
+.gl-mini i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, #F7B2C4 0 5px, #F48FAA 5px 7px); }
+.gl { display: flex; flex-direction: column; gap: 10px; }
+.gl-head { display: flex; gap: 10px; align-items: flex-start; }
+.gl-head h3 { margin: 0 0 4px; }
+.gl-head .gl-ic { flex: 0 0 40px; width: 40px; height: 40px; display: inline-flex; }
+.gl-head .gl-ic svg { width: 100%; height: 100%; }
+.gl-bar { height: 18px; border: 2px solid #5B3D32; border-radius: 10px; background: #FFFDF8; overflow: hidden; }
+.gl-bar i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, #F7B2C4 0 7px, #F48FAA 7px 10px); border-radius: 8px 0 0 8px; }
+.gl-num { margin: 0; font-weight: 700; text-align: center; }
+.gl-mine, .gl-done, .gl-off { margin: 0; text-align: center; }
+.gl-done { font-weight: 700; }
+.gl-gift { display: flex; gap: 10px; align-items: center; background: rgba(255, 244, 214, .7); border: 1.5px dashed #C9A27A; border-radius: 12px; padding: 8px 10px; }
+.gl-gift .art { flex: 0 0 48px; width: 48px; height: 48px; display: inline-flex; }
+.gl-gift .art svg { width: 100%; height: 100%; }
+.gl-gift p { margin: 0; }
