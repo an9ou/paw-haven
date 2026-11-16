@@ -48,21 +48,36 @@ Tags: #廣東話 #香港 #治愈系遊戲 #蠟筆畫 #狗狗 #獨立遊戲
 Doodle Doggo now speaks Cantonese 🐶 our 12th language, checked line by line by a friend from Hong Kong 💛 a free cozy dog game with 40 wobbly crayon dogs, in your browser. which language do you play in? doodledoggo.app/yue/
 ```
 
-## Poster (12 Nov 2026 redo, draft: not posted until the owner approves)
+## Posters (16 Nov 2026, owner's review; drafts: nothing is posted until the owner approves)
 
-File: `brand/instagram/launch/cantonese_post/cantonese-launch.jpg` (1080 x 1350, Instagram). Build script: `brand/instagram/launch/cantonese_post/build_cantonese_post.js`.
+Two versions with the same words. The hook is 「勁正！」, the headline 「Doodle Doggo 識講廣東話喇！」 and the English line "now in Cantonese · our 12th language". The thank-you line is 「多謝香港朋友逐句幫我哋睇過」, and the logo sits with doodledoggo.app. **Before posting, the owner's Hong Kong friend should check 「勁正！」 as the hook.** Chinese text is Iansui (the face the game uses for yue and zh-Hant) and Latin text is Caveat. All art is today's, from origin/main e3be5e8f. No flags.
 
-Owner's changes (12 Nov): a hook headline and the game background. Line 1 is the hook 「勁正！」, big pink-red with a cream and an ink outline in a yellow crayon sticker burst. Line 2 is a cream card with 「Doodle Doggo 識講廣東話喇！」 and "now in Cantonese · our 12th language". **Before posting, the owner's Hong Kong friend should check 「勁正！」 as the hook.** Behind everything is the game's own Mt. Fuji Lookout on an autumn day (`PawArt.scene('fujihill', { season: 'autumn', v215: true })`, today's art from origin/main 7a85ce30, no game UI, the corner tapes left out). All text sits on solid cards, bubbles or pills. The dogs stand on the meadow in front of the torii, lanterns and bench, and their heads stay below those objects' feet. At the bottom are the thank-you pill 「多謝香港朋友逐句幫我哋睇過」 and a cream card with the logo and doodledoggo.app. No flags, no other links. Chinese text is Iansui (the face the game uses for yue and zh-Hant) and Latin text is Caveat.
-
-The three bubbles quote the game's Cantonese text exactly (`game/i18n/yue.json` on main; the build stops if a line no longer matches; the line breaks are only for the bubbles):
+The three bubbles quote the game's Cantonese text exactly (`game/i18n/yue.json` on main; both builds stop if a line no longer matches; line breaks and vertical setting are only for the bubbles):
 - Noodle the Dachshund: 「扭呀扭。後面嗰半遲到咗。」 `data.sig.dachs.say` ("Wiggle wiggle. The back half is late.")
 - Peanut the Chihuahua: 「我係八號風球！！」 `data.sig.chihuahua.say` ("I AM A WEATHER EVENT.", here Typhoon Signal No. 8)
 - Sunny the Golden Retriever: 「睇下我搵到乜！」 `data.sr_lines.fetch.2` ("Look what I found!")
 
-Known small point: the tops of two stone lanterns and the end of the bench sit behind the bubbles. The dogs and the torii are clear.
+### 1. Mt. Fuji Lookout: `brand/instagram/launch/cantonese_post/cantonese-launch.jpg`
+Build: `build_cantonese_post.js`. The hook is in a yellow sticker burst, with the headline card under it. The game's Mt. Fuji Lookout on an autumn day fills the poster (v215 art, no game UI). Changes from the owner's review:
+- All three bubbles sit in open sky and lake, with no prop under or touching them. A new pixel check (`prop_check.js`) keeps every bubble, dog and card at least 12 px clear of the scene's props (lanterns, torii, shrine, bench, bowl).
+- The scene is drawn a little smaller so the dogs are bigger and the middle around Fuji is filled. The dogs stand on the meadow, clear of the props.
+- The English line is bigger and darker.
+- Peanut's line is on one line.
+- The footer logo is bigger.
 
-Rebuild (checks: text ink-centred in every burst, card, bubble and pill, logo row centred, dogs apart, nothing closer than 20 px, 60 px margins, dogs' heads below the scene objects' feet):
+### 2. Japan style: `brand/instagram/launch/cantonese_post/cantonese-launch-japan.jpg`
+Build: `build_cantonese_japan.js`.
+- 「勁正！」 is a red hanko seal, set vertically.
+- The headline hangs on an indigo noren, one character per panel, with "Doodle Doggo" on the top band. The English line is on a paper strip.
+- The game's Asakusa (the Tokyo trip) on an autumn day sits in a wooden frame. Its tap outlines and corner tapes are left out.
+- Peanut's and Sunny's lines are set vertically in manga-style bubbles beside the picture. Noodle's bubble is above him.
+- The dogs stand on a wooden engawa.
+- The thank-you strip and an ema plaque with the logo and doodledoggo.app sit at the bottom.
+- Washi paper, a seigaiha wave border and crayon momiji leaves.
+
+Rebuild both (checks: text ink-centred in every box, dogs apart, nothing closer than 20 px, 60 px margins; the Fuji poster also runs the prop check):
 ```
 git worktree add --detach <scratch>/main origin/main
 ART_ROOT=<scratch>/main NODE_PATH=$(npm root -g) node brand/instagram/launch/cantonese_post/build_cantonese_post.js
+ART_ROOT=<scratch>/main NODE_PATH=$(npm root -g) node brand/instagram/launch/cantonese_post/build_cantonese_japan.js
 ```
