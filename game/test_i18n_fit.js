@@ -407,6 +407,14 @@ async function worker(job) {
       await ev(() => window.__paw.sc.play('ch1', { replay: true })); await sleep(2500); await measure('sc: scene'); await ev(() => window.__paw.sc.skip());
       await sleep(400); await closeAll(); await ev(() => { window.__paw.sm.test(false); window.__paw.sc.test(false); });
     }, 50000);
+    await step('bt', async () => { // v2.30 Better together (V230.md): the invite cards, the Friends line and the town goal sheet (prefs.btTest through the test hook)
+      await ev(() => { const P = window.__paw; P.gl.test(true); P.gl.set({ month: P.gl.month(), goal: 50000, n: 31234, done: false, mine: 126 }); P.fi.card({ wait: 'new' }); }); await modalUp(); await measure('bt: invite waiting card'); await closeAll();
+      await ev(() => window.__paw.fi.card({ mine: true, from: [7, 9], joined: [], bandana: true })); await modalUp(); await measure('bt: invite gift card'); await closeAll();
+      await ev(() => window.__paw.fi.card({ mine: false, joined: [[7, 9], [3, 5]], bandana: false })); await modalUp(); await measure('bt: inviter card'); await closeAll();
+      await ev(() => window.__paw.gl.open()); await modalUp(); await sleep(300); await measure('bt: town goal sheet'); await closeAll();
+      await ev(() => window.__paw.gl.set({ month: window.__paw.gl.month(), goal: 50000, n: 50210, done: true, mine: 3120 })); await ev(() => window.__paw.gl.open()); await modalUp(); await sleep(300); await measure('bt: town goal sheet done'); await closeAll();
+      await ev(() => window.__paw.gl.test(false));
+    }, 40000);
     await step('dog card settings', async () => { await ev(() => window.__paw.dc.settings(true)); await modalUp(); await measure('dog cards: my card settings'); await closeAll(); });
     // ---------------------------------------------------------------- photo, training, ball ----------------------------------------------------------------
     await step('photo mode', async () => { await ev(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.active(), null, 5000); await sleep(600); await measure('photo mode'); await ev(() => window.__paw.ph.close()); await t.until(() => !window.__paw.ph.active(), null, 4000); });

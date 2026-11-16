@@ -146,7 +146,7 @@ function glExpose() {
   if (!window.__paw || window.__paw.gl) return;
   window.__paw.gl = {
     on: () => glOn(), fields: (s) => glFields(s), add: (n) => glAdd(n), post: (f) => glPost(f), fetch: (f) => glFetch(f), state: () => GL.st, gift: (st) => glGift(st), open: () => glOpen(),
-    every: GL_EVERY, max: GL_POST, treats: GL_TREATS.map((x) => x.slice()), btn: () => glPlaceBtn(), month: () => glMonth(), act: (k, d) => trackAct(k, d || {}), drop: () => { GL.st = null; GL.at = 0; }
+    every: GL_EVERY, max: GL_POST, treats: GL_TREATS.map((x) => x.slice()), btn: () => glPlaceBtn(), month: () => glMonth(), act: (k, d) => trackAct(k, d || {}), drop: () => { GL.st = null; GL.at = 0; }, set: (st) => { GL.st = st; GL.at = Date.now(); }, test: (v) => { prefs.btTest = !!v; window.__ddGlMode = v ? 'on' : undefined; window.__ddFiMode = v ? 'guest' : undefined; }
   };
 }
 on('game:ready', () => {
