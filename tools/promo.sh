@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # Gift codes (v2.25.5, PROMO.md): the owner's codes in the D1 table promo_codes. Nothing is paid. Rewards: code-only items, a few coins
 # (500 at most a code: walks stay the main income), dog-safe treats. Names are checked against tools/promo_items.json (node tools/promo_items.js).
-#   bash tools/promo.sh create <CODE> [reward] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--cap N] [--note "..."]
+#   bash tools/promo.sh create <CODE> [reward] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--cap N] [--group NAME] [--note "..."]
 #        a shared code (e.g. DOGGO-IG-NOV): each account can use it once; --cap: at most N uses in all
+#        --group NAME (A-Z 0-9 dash, 3-40; not like a batch id PREFIX-YYYYMMDD): codes with the same NAME form a group, one code of it per
+#        account (platform codes: DOGGO-IG, DOGGO-YT ... --group SPRING-GIFT); a second one answers batch_used. stats NAME sums the group
 #   bash tools/promo.sh batch <PREFIX> <count> [reward] [--from ...] [--to ...] [--note "..."]
 #        <count> unique codes PREFIX-XXXX-XXXX (no 0/O/1/I/L), each usable once in all and one per account per batch. The batch id is PREFIX
 #        and today's Japan date (GIFT-20261116); a batch id that exists already is refused (one PREFIX a day). The codes are never printed:
 #        only how many, and the CSV docs/marketing/promo/<batch id>-<time>.csv (git-ignored: never commit, paste or show them anywhere)
 #   reward: --items "Follower Star Bandana,Paw-Print Pennant"  --coins 200  --treats "Pupcake:2,Blueberry Bites"   (at least one)
-#   bash tools/promo.sh list                    every shared code, then every batch (its id), with its uses
-#   bash tools/promo.sh stats <CODE|BATCH-ID>   one code or one batch (GIFT-20261116): uses, cap, coins given, first and last use
-#   bash tools/promo.sh disable|enable <CODE|BATCH-ID>
+#   bash tools/promo.sh list                    every shared code (with its group), then every batch (its id), with its uses
+#   bash tools/promo.sh stats <CODE|BATCH-ID|GROUP>   one code, one batch (GIFT-20261116) or one group: uses, cap, coins given, first and last use
+#   bash tools/promo.sh disable|enable <CODE|BATCH-ID|GROUP>
 # Dates are Japan days (the game's day): --from 2026-11-20 starts at 00:00 JST that day, --to 2026-12-31 ends at the end of that day (JST).
 # Codes compare in upper case with spaces and dashes left out. Same Cloudflare D1 API as tools/shop_flag.sh: needs CLOUDFLARE_ACCOUNT_ID (the
 # proxy adds the token in a Claude cloud session; elsewhere export CLOUDFLARE_API_TOKEN, D1: Edit). Arguments only travel as D1 query params,
@@ -20,7 +22,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DBNAME=pawhaven
-usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 [ $# -ge 1 ] || usage
 case "$1" in create|batch|list|stats|disable|enable) ;; *) usage ;; esac
 
@@ -97,13 +99,18 @@ INS = 'insert into promo_codes (code, shown, kind, batch, reward, starts_at, end
 now = int(time.time() * 1000)
 if cmd == 'create':
     if len(a) < 2: die('create <CODE> [reward] [--from] [--to] [--cap] [--note]')
-    k = code_ok(a[1]); o = opts(a[2:], ['items', 'coins', 'treats', 'from', 'to', 'cap', 'note'])
+    k = code_ok(a[1]); o = opts(a[2:], ['items', 'coins', 'treats', 'from', 'to', 'cap', 'group', 'note'])
+    grp = None
+    if 'group' in o:
+        grp = o['group'].strip().upper()
+        if not re.fullmatch(r'[A-Z0-9][A-Z0-9-]{1,38}[A-Z0-9]', grp): die('--group is 3-40 letters, digits and dashes: ' + repr(o['group']))
+        if re.fullmatch(r'[A-Z0-9]{2,12}-?\d{8}', grp): die('--group must not look like a batch id (PREFIX-YYYYMMDD): ' + repr(grp))
     cap = None
     if 'cap' in o:
         if not re.fullmatch(r'\d{1,7}', o['cap']) or int(o['cap']) < 1: die('--cap is a whole number, 1 or more')
         cap = int(o['cap'])
     f, t = window(o)
-    out(INS + "(?1, ?2, 'shared', null, ?3, ?4, ?5, ?6, 0, 0, ?7, ?8)", [k, a[1].strip().upper(), reward(o), f, t, cap, note(o), now])
+    out(INS + "(?1, ?2, 'shared', ?9, ?3, ?4, ?5, ?6, 0, 0, ?7, ?8)", [k, a[1].strip().upper(), reward(o), f, t, cap, note(o), now, grp])
 elif cmd == 'batch':
     if len(a) < 3: die('batch <PREFIX> <count> [reward] [--from] [--to] [--note]')
     p = a[1].strip().upper()
@@ -129,7 +136,7 @@ elif cmd == 'batch':
 else:
     if cmd == 'list':
         if len(a) != 1: die('list takes nothing')
-        out("select shown as code, used, cap, disabled, starts_at, ends_at, reward, note from promo_codes where kind = 'shared' order by created_at")
+        out("select shown as code, batch as grp, used, cap, disabled, starts_at, ends_at, reward, note from promo_codes where kind = 'shared' order by created_at")
         out("select batch, count(*) as codes, sum(used) as used, max(disabled) as disabled, min(starts_at) as starts_at, max(ends_at) as ends_at, min(reward) as reward, min(note) as note from promo_codes where kind = 'unique' group by batch order by min(created_at)")
     else:
         if len(a) != 2: die(cmd + ' <CODE|BATCH-ID>')

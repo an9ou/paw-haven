@@ -1337,9 +1337,9 @@ const ROUTES = {
     const c = await one(env, 'select code, shown, kind, batch, reward, starts_at, ends_at, cap, used, disabled from promo_codes where code = ?1', key);
     const reward = c ? promoReward(c.reward) : null;
     if (!c || !reward || c.disabled || (c.starts_at && now < c.starts_at) || (c.ends_at && now >= c.ends_at)) return fail('unknown', 404); // the same answer for every reason
-    const batch = c.kind === 'unique' && c.batch ? c.batch : null;
+    const batch = c.batch || null; // a unique code's batch, or a shared code's group (platform codes: one code of the group per account); null for a plain shared code
     if (await one(env, 'select 1 as x from promo_redemptions where code = ?1 and user_id = ?2', key, me.id)) return fail('used', 409);
-    if (batch && (await one(env, 'select 1 as x from promo_redemptions where batch = ?1 and user_id = ?2', batch, me.id))) return fail('batch_used', 409); // one code of a batch per account (another code of it)
+    if (batch && (await one(env, 'select 1 as x from promo_redemptions where batch = ?1 and user_id = ?2', batch, me.id))) return fail('batch_used', 409); // one code of a batch or group per account (another code of it)
     if (c.cap != null && c.used >= c.cap) return fail('gone', 409);
     // insert first, then the count: one batch, all or nothing. The CHECK (used <= cap) fails the second of two racing redemptions for the
     // last slot (its insert rolls back); the unique indexes fail a second redemption of this code (or this batch) by this account
