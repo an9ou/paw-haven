@@ -359,11 +359,12 @@ async function worker(job) {
       if (!(await ev(() => !!(window.__paw.pr && window.__paw.pr.ui())))) return;
       await ev(() => { window.__ddPromoMode = 'ok'; window.__paw.pr.open(); }); await modalUp(); await measure('promo: sheet');
       await ev(() => { document.getElementById('prCode').value = 'DOGGO-IG-NOV'; return window.__paw.pr.redeem('NOPE-CODE'); }); await sleep(250); await measure('promo: sheet, a line'); // no Worker in the harness: the offline line
+      await ev(() => window.__paw.pr.say('no_session')); await sleep(150); await measure('promo: sheet, logged out'); // the longest line, with its Log in button
       await closeAll();
       await ev(() => { window.__ddPromoMode = 'guest'; window.__paw.pr.open(); }); await modalUp(); await measure('promo: guest'); await closeAll();
       await ev(() => { window.__ddPromoMode = 'ok'; window.__paw.pr.settings(); }); await modalUp();
       await ev(() => { const b = document.getElementById('prBox'); if (b) b.scrollIntoView({ block: 'start' }); }); await sleep(200); await measure('promo: settings'); await closeAll();
-      await ev(() => window.__paw.pr.card({ key: 'FITGIFT', code: 'DOGGO-IG-NOV', rows: [{ n: 'Party Hat', k: 'clothes' }, { n: 'Bird Bath', k: 'decor' }, { n: 'Pupcake', k: 'food', q: 2 }, { n: 'Bow Tie', k: 'clothes', had: true }], coins: 200, added: 0, wait: 1 }));
+      await ev(() => window.__paw.pr.card({ key: 'FITGIFT', code: 'DOGGO-IG-NOV', rows: [{ n: 'Party Hat', k: 'clothes' }, { n: 'Bird Bath', k: 'decor' }, { n: 'Pupcake', k: 'food', q: 2 }, { n: 'Bow Tie', k: 'clothes', had: true }], coins: 200, added: 0, wait: 1, letter: true }));
       await modalUp(); await sleep(250); await measure('promo: card');
       await ev(() => { delete window.__ddPromoMode; }); await closeAll();
     });

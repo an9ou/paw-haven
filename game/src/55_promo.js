@@ -257,7 +257,7 @@ function prOpen() {
 function prExpose() {
   if (!window.__paw || window.__paw.pr) return;
   window.__paw.pr = {
-    ui: () => prUI(), mode: () => prMode(), fields: (s) => prFields(s), grant: (rec) => prGrant(rec), card: (o) => prCard(o), open: () => prOpen(), redeem: (c) => prRedeem(c, $('#prBox')),
+    ui: () => prUI(), mode: () => prMode(), fields: (s) => prFields(s), grant: (rec) => prGrant(rec), card: (o) => prCard(o), open: () => prOpen(), redeem: (c) => prRedeem(c, $('#prBox')), say: (code) => prSay($('#prBox'), code),
     restore: (q) => prRestore(q), settings: () => openSettings(), more: () => openMore(), poll: () => { if (prPollP) return prPollP; prPollUid = null; return prPoll(); }, polled: () => prPollUid === CL.uid && !prPollP, wait: () => prWaitTick(), kind: (n) => prKind(n), catalog: () => prCatalog(), max: PR_COIN_MAX, flag: PROMO_UI
   };
 }
