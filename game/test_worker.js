@@ -483,7 +483,7 @@ async function checks(label, call, sql, mail) {
       ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 15 })],
       ['6 dogs', yard({ dogs: [dog(), dog(), dog(), dog(), dog(), dog()] })],
       ['41 decor', yard({ decor: Array.from({ length: 41 }, (_, i) => ({ i: 0, x: i, y: 0 })) })],
-      ['decor index past the list', yard({ decor: [{ i: 31, x: 0, y: 0 }] })],
+      ['decor index past the list', yard({ decor: [{ i: 32, x: 0, y: 0 }] })],
       ['x past 1200', yard({ decor: [{ i: 0, x: 1201, y: 0 }] })], ['y past 800', yard({ decor: [{ i: 0, x: 0, y: 801 }] })],
       ['x negative', yard({ decor: [{ i: 0, x: -1, y: 0 }] })], ['x not an integer', yard({ decor: [{ i: 0, x: 1.5, y: 0 }] })],
       ['x as text', yard({ decor: [{ i: 0, x: '10', y: 0 }] })], ['an extra decor key', yard({ decor: [{ i: 0, x: 0, y: 0, z: 1 }] })],
