@@ -56,12 +56,14 @@ const sec = (s) => console.log('--- ' + s);
     sec('1. signed-in email accounts only');
     mk('DOGGO-IG-NOV');
     let r = await call('POST', '/promo/redeem', { code: 'DOGGO-IG-NOV' });
-    ok(is(r, 403, 'login'), 'no session: 403 login (' + r.status + ' ' + r.text + ')');
+    ok(is(r, 401, 'no_session'), 'no session: 401 no_session (' + r.status + ' ' + r.text + ')');
+    r = await call('POST', '/promo/redeem', { code: 'DOGGO-IG-NOV' }, 'ab'.repeat(32));
+    ok(is(r, 401, 'no_session'), 'a token the Worker does not know (expired, signed out elsewhere): 401 no_session, so the game can say log in again: ' + r.status);
     const G = (await call('POST', '/guest', {})).json;
     r = await call('POST', '/promo/redeem', { code: 'DOGGO-IG-NOV' }, G.token);
     ok(is(r, 403, 'login'), 'a guest: 403 login, never 401 (the game would drop its login): ' + r.status);
     r = await call('GET', '/promo/mine', null, G.token); ok(is(r, 403, 'login'), 'GET /promo/mine as a guest: 403 login');
-    r = await call('GET', '/promo/mine'); ok(is(r, 403, 'login'), 'GET /promo/mine with no session: 403 login');
+    r = await call('GET', '/promo/mine'); ok(is(r, 401, 'no_session'), 'GET /promo/mine with no session: 401 no_session');
     ok(n('select count(*) as n from promo_redemptions') === 0, 'nothing recorded');
 
     sec('2. a shared code: each account once; spaces, dashes and case do not matter');
@@ -101,7 +103,8 @@ const sec = (s) => console.log('--- ' + s);
     const U = ['GIFT-AB2C-DE3F', 'GIFT-GH4J-KM5N', 'GIFT-PQ6R-ST7U'].map((s) => mk(s, { kind: 'unique', batch: 'GIFT', cap: 1, reward: { items: ['Party Hat'], coins: 100, treats: {} } }));
     ok((await redeem('GIFT-AB2C-DE3F', A)).status === 200, 'A redeems a unique code');
     r = await redeem('GIFT-AB2C-DE3F', B); ok(is(r, 409, 'gone'), 'B with the same code: 409 gone');
-    r = await redeem('GIFT-GH4J-KM5N', A); ok(is(r, 409, 'used'), 'A with another code of the same batch: 409 used');
+    r = await redeem('GIFT-GH4J-KM5N', A); ok(is(r, 409, 'batch_used'), 'A with another code of the same batch: 409 batch_used (its own line in the game)');
+    r = await redeem('GIFT-AB2C-DE3F', A); ok(is(r, 409, 'used'), 'A with its own code again: 409 used');
     ok(q('select used from promo_codes where code = ?', U[1]).used === 0, 'that code is still unused');
     ok((await redeem('gift gh4j km5n', B)).status === 200, 'so B can redeem it');
     ok(n("select count(*) as n from promo_redemptions where batch = 'GIFT'") === 2, 'two batch rows');
@@ -124,6 +127,12 @@ const sec = (s) => console.log('--- ' + s);
     ok(res.filter((x) => x.status === 200).length === 1 && res.filter((x) => is(x, 409, 'used')).length === 2, 'one account, three taps at once: one 200, two used: ' + res.map((x) => x.status).join(' '));
     ok(n('select count(*) as n from promo_redemptions where code = ? and user_id = ?', 'TWOTAPS', D.id) === 1 && q('select used from promo_codes where code = ?', 'TWOTAPS').used === 1, 'one row, used = 1: the coins come once');
     ok(batchErrs.some((m) => /UNIQUE/i.test(m)), 'the unique index stopped the second tap: ' + batchErrs.slice(0, 2).join(' | '));
+    batchErrs.length = 0;
+    const RB = ['RACE-AB2C-DE3F', 'RACE-GH4J-KM5N'].map((s) => mk(s, { kind: 'unique', batch: 'RACE-20261116', cap: 1, reward: { coins: 10 } }));
+    const E2 = await account();
+    open = race(2); res = await Promise.all([redeem('RACE-AB2C-DE3F', E2), redeem('RACE-GH4J-KM5N', E2)]); open();
+    ok(res.filter((x) => x.status === 200).length === 1 && res.filter((x) => is(x, 409, 'batch_used')).length === 1 && n('select count(*) as n from promo_redemptions where user_id = ?', E2.id) === 1, 'one account, two codes of one batch at once: one 200, one batch_used: ' + res.map((x) => x.status + ':' + (x.json && x.json.error || 'ok')).join(' '));
+    ok(batchErrs.some((m) => /UNIQUE/i.test(m) && /batch/i.test(m)) && RB.reduce((a, c) => a + q('select used from promo_codes where code = ?', c).used, 0) === 1, 'the (batch, user_id) index stopped it, one use counted: ' + batchErrs.slice(0, 2).join(' | '));
 
     sec('7. the coin ceiling and the reward kept clean');
     mk('BIG-COINS', { reward: { items: ['Red Bandana', 'Red Bandana', '<b>x</b>', 'y'.repeat(61), 'A', 'B', 'C', 'D', 'E', 'F'], coins: 5000, treats: { Pupcake: 99, 'Carrot Sticks': 3, '': 2, Bad: -1 } } });
@@ -183,15 +192,19 @@ const sec = (s) => console.log('--- ' + s);
     r = await redeem('cli-shared', G2); ok(r.status === 200 && r.json.reward.coins === 150 && r.json.reward.items[0] === anItem, 'and the Worker redeems it: ' + r.text);
     c1 = cli('batch', 'clitest', '5', '--coins', '50', '--to', '2099-01-31');
     ok(c1.code === 0, 'batch: 5 unique codes');
+    const BID = 'CLITEST-' + new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10).replace(/-/g, ''); // the batch id: PREFIX and today's Japan date
+    const bodies = c1.out.split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l));
+    ok(/^select count\(\*\) as n from promo_codes where batch = \?1$/.test(bodies[0].sql) && bodies[0].params[0] === BID && bodies.slice(1).every((b) => b.params[0] === BID), 'the batch id is ' + BID + ', asked for first (a batch id that exists is refused): ' + JSON.stringify(bodies[0]));
     apply(c1.out);
-    const codes = c1.out.split('\n').filter((l) => /^CLITEST-/.test(l));
-    ok(codes.length === 5 && codes.every((c) => /^CLITEST-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/.test(c)) && new Set(codes).size === 5, 'printed, readable (no 0 O 1 I L), all different: ' + codes.join(' '));
-    ok(n("select count(*) as n from promo_codes where batch = 'CLITEST' and kind = 'unique' and cap = 1") === 5, 'five rows, unique, cap 1');
+    const codes = bodies.slice(1).flatMap((b) => b.params.slice(6).filter((x, i) => i % 2 === 1));
+    ok(!c1.out.split('\n').some((l) => /^CLITEST-/.test(l)), 'a dry run prints no code list either');
+    ok(codes.length === 5 && codes.every((c) => /^CLITEST-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/.test(c)) && new Set(codes).size === 5, 'readable (no 0 O 1 I L), all different: ' + codes.join(' '));
+    ok(n("select count(*) as n from promo_codes where batch = ? and kind = 'unique' and cap = 1", BID) === 5, 'five rows, unique, cap 1, batch ' + BID);
     r = await redeem(codes[0].toLowerCase(), G2); ok(r.status === 200, 'a batch code redeems');
-    r = await redeem(codes[1], G2); ok(is(r, 409, 'used'), 'one per account per batch');
+    r = await redeem(codes[1], G2); ok(is(r, 409, 'batch_used'), 'one per account per batch');
     const big = cli('batch', 'BIG', '90', '--coins', '10');
-    ok(big.code === 0 && big.out.split('\n').filter((l) => l.startsWith('{')).length === 3 && big.out.split('\n').filter((l) => l.startsWith('{')).every((l) => JSON.parse(l).params.length <= 100), '90 codes go in 3 requests of at most 100 parameters (the D1 limit)');
-    apply(big.out); ok(n("select count(*) as n from promo_codes where batch = 'BIG'") === 90, 'all 90 made');
+    { const ins = big.out.split('\n').filter((l) => l.startsWith('{"sql": "insert')); ok(big.code === 0 && ins.length === 3 && ins.every((l) => JSON.parse(l).params.length <= 100), '90 codes go in 3 requests of at most 100 parameters (the D1 limit), after the one batch-id check'); }
+    apply(big.out); ok(n("select count(*) as n from promo_codes where batch like 'BIG-%'") === 90, 'all 90 made');
     const bad = [
       [['create', 'TOO-RICH', '--coins', '501'], /ceiling/], [['create', 'NO-ITEM', '--items', 'Moon Boots'], /unknown item/], [['create', 'NO-TREAT', '--treats', 'Grapes:2'], /unknown treat/],
       [['create', 'BAD-TREAT', '--treats', 'Pupcake:11'], /1-10/], [['create', 'NOTHING']], [['create', 'X1', '--coins', '5'], /4-40/], [['create', 'BAD-DATE', '--coins', '5', '--to', '31/12/2026'], /YYYY-MM-DD/],
@@ -204,8 +217,45 @@ const sec = (s) => console.log('--- ' + s);
     const sh = fs.readFileSync(path.join(ROOT, 'tools', 'promo.sh'), 'utf8');
     ok(/'params'/.test(sh) && !/\$\{?[0-9A-Z_]+\}?['"]?\s*\+?\s*['"]?\s*(where|values)/i.test(sh) && /docs\/marketing\/promo/.test(sh), 'arguments travel as D1 params; the CSV goes to docs/marketing/promo/');
     ok(/docs\/marketing\/promo\/\*\.csv/.test(fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8')), '.gitignore keeps the code lists out of git');
-    for (const s2 of ['list', 'stats', 'disable', 'enable']) { const x = cli(s2, ...(s2 === 'list' ? [] : ['CLITEST'])); let okq = x.code === 0; try { apply(x.out); } catch (e) { okq = false; } ok(okq, s2 + ': its SQL runs'); }
-    ok(n("select count(*) as n from promo_codes where batch = 'CLITEST' and disabled = 0") === 5, 'disable then enable leaves the batch on');
+    for (const s2 of ['list', 'stats', 'disable', 'enable']) { const x = cli(s2, ...(s2 === 'list' ? [] : [BID])); let okq = x.code === 0; try { apply(x.out); } catch (e) { okq = false; } ok(okq, s2 + ': its SQL runs'); }
+    ok(n("select count(*) as n from promo_codes where batch = ? and disabled = 0", BID) === 5, 'disable then enable leaves the batch on');
+    { const x = cli('disable', BID); apply(x.out); ok(n('select count(*) as n from promo_codes where batch = ? and disabled = 1', BID) === 5, 'disable <batch id> covers its five codes'); apply(cli('enable', BID.toLowerCase().replace('-', ' ')).out); ok(n('select count(*) as n from promo_codes where batch = ? and disabled = 0', BID) === 5, 'enable "clitest 2026...": typed loosely, the same batch'); }
+
+    sec('13. tools/promo.sh for real, on a local D1 stand-in (PROMO_D1_API): a batch, a second batch of the same PREFIX the same day, no codes printed');
+    const http = require('http'), os = require('os');
+    const d1srv = http.createServer((req, res) => {
+      let b = ''; req.on('data', (d) => { b += d; }); req.on('end', () => {
+        const send = (o) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
+        if (req.method === 'GET' && /^\/d1\/database\?name=pawhaven$/.test(req.url)) return send({ success: true, result: [{ name: 'pawhaven', uuid: 'local' }] });
+        if (req.method === 'POST' && req.url === '/d1/database/local/query') {
+          try { const x = JSON.parse(b), st = DB.raw.prepare(x.sql); if (/^\s*select/i.test(x.sql)) return send({ success: true, result: [{ results: st.all(...(x.params || [])), meta: {} }] }); const r2 = st.run(...(x.params || [])); return send({ success: true, result: [{ results: [], meta: { changes: Number(r2.changes) } }] }); }
+          catch (e) { return send({ success: false, errors: [{ message: String(e.message) }] }); }
+        }
+        res.writeHead(404); res.end('{}');
+      });
+    });
+    await new Promise((r) => d1srv.listen(0, '127.0.0.1', r));
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'promo-csv-'));
+    const live = (...args) => new Promise((resolve) => cp.execFile('bash', [path.join(ROOT, 'tools', 'promo.sh'), ...args], { cwd: ROOT, env: Object.assign({}, process.env, { DRY_RUN: '', PROMO_D1_API: 'http://127.0.0.1:' + d1srv.address().port, PROMO_OUT: outDir, NO_PROXY: '127.0.0.1,localhost', no_proxy: '127.0.0.1,localhost', http_proxy: '', HTTP_PROXY: '' }) }, (e, so, se) => resolve({ code: e ? e.code : 0, out: String(so), err: String(se) })));
+    try {
+      const L1 = await live('batch', 'LIVE', '45', '--coins', '20', '--note', 'test');
+      const LID = 'LIVE-' + BID.slice(-8);
+      const csvs = fs.readdirSync(outDir), csv = csvs.length === 1 ? fs.readFileSync(path.join(outDir, csvs[0]), 'utf8').trim().split('\n') : [];
+      ok(L1.code === 0 && n('select count(*) as n from promo_codes where batch = ?', LID) === 45, 'a real batch: 45 codes in D1, in two requests, batch ' + LID + ' (' + L1.err.trim() + ')');
+      ok(csv.length === 46 && csv.slice(1).every((l) => l.split(',')[1] === LID) && new RegExp('^' + LID + '-\\d{6}\\.csv$').test(csvs[0]), 'the CSV has every code and the batch id: ' + csvs.join(' ') + ' ' + csv.length);
+      const shown = csv.slice(1).map((l) => l.split(',')[0]);
+      ok(!shown.some((c) => (L1.out + L1.err).includes(c)) && /made 45 unique codes in batch LIVE-\d{8}; they are in /.test(L1.out) && L1.out.trim().split('\n').length === 1, 'no code is printed: only how many and where: ' + L1.out.trim());
+      const L2 = await live('batch', 'live', '3', '--coins', '20');
+      ok(L2.code === 2 && /exists already/.test(L2.err) && n('select count(*) as n from promo_codes where batch = ?', LID) === 45 && fs.readdirSync(outDir).length === 1, 'the same PREFIX again today: refused, nothing made, no CSV (' + L2.err.trim() + ')');
+      const A2 = await account(), B2 = await account();
+      ok((await redeem(shown[0], A2)).status === 200 && is(await redeem(shown[1], A2), 409, 'batch_used') && (await redeem(shown[1], B2)).status === 200, 'its codes redeem: one per account');
+      const st = await live('stats', LID);
+      ok(st.code === 0 && /codes=45/.test(st.out) && /redeemed=2/.test(st.out) && /coins_given=40/.test(st.out), 'stats <batch id>: 45 codes, 2 redeemed, 40 coins: ' + st.out.replace(/\s+/g, ' ').slice(0, 200));
+      const ds = await live('disable', LID);
+      ok(ds.code === 0 && /disabled 45 code/.test(ds.out) && is(await redeem(shown[2], B2), 404, 'unknown'), 'disable <batch id>: 45 codes off, they answer unknown');
+      const none = await live('disable', 'LIVE');
+      ok(none.code === 0 && /disabled 0 code/.test(none.out) && /no code or batch by that name/.test(none.err), 'a bare PREFIX is not a batch id: 0 codes and a hint');
+    } finally { d1srv.close(); fs.rmSync(outDir, { recursive: true, force: true }); }
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
   console.log(`${passes} passed, ${fails} failed (${((Date.now() - t0) / 1000).toFixed(1)} s)`);
   if (!fails) console.log('ALL OK');

@@ -55,9 +55,9 @@
 //     coins: Paw Coins that row grants (the client takes them back when the row is refunded). A coin pack from before v2.24.2 is its old
 //     size. The Supporter 2,000 sits on one row: the oldest not refunded, else the oldest.
 //   A Founding Friend (a supporter purchase, not refunded) gets ff: 1 on its Dog Card and friend yard, set here from purchases.
-//   Gift codes (v2.25.5, PROMO.md). Codes are made with tools/promo.sh (D1). Signed-in email accounts only (403 login for a guest or no session).
+//   Gift codes (v2.25.5, PROMO.md). Codes are made with tools/promo.sh (D1). Signed-in email accounts only (401 no_session without a live login, 403 login for a guest).
 //   POST /promo/redeem { code }            -> { ok, code, key, reward: { items, coins, treats }, at }   10/h per account, 30/h per IP (misses count)
-//     404 unknown (also expired, not started, disabled: one answer), 409 used (this account, or a code of the same batch), 409 gone (cap reached /
+//     404 unknown (also expired, not started, disabled: one answer), 409 used (this account), 409 batch_used (another code of the batch), 409 gone (cap reached /
 //     a unique code used), 429 rate_limited. Coins are at most PROMO_COIN_MAX (500) whatever the row says.
 //   GET  /promo/mine                       -> { redemptions: [{ code, key, at, reward }] }   120/h   what each redemption granted, oldest first
 //
@@ -1327,8 +1327,8 @@ const ROUTES = {
   } },
 
   /* ---------- Gift codes (v2.25.5, PROMO.md) ---------- */
-  'POST /promo/redeem': { auth: null, async fn({ env, ip, body, me }) {
-    if (!promoAcct(me)) return fail('login', 403); // 403, never 401: a guest's login must not be dropped by the game (clApi forgets a token on 401)
+  'POST /promo/redeem': { auth: true, async fn({ env, ip, body, me }) { // auth: no token, or one the Worker no longer knows (expired) -> 401 no_session
+    if (!promoAcct(me)) return fail('login', 403); // a guest: 403, never 401 (clApi forgets a token on 401, and a guest's login must stay)
     const overU = await limited(env, 'promo:' + me.id, PROMO_MAX_U, 3600), overIp = await limited(env, 'promoip:' + ip, PROMO_MAX_IP, 3600);
     if (overU || overIp) return fail('rate_limited', 429);
     const key = frOnly(body, ['code']) ? promoNorm(body.code) : '';
@@ -1339,7 +1339,7 @@ const ROUTES = {
     if (!c || !reward || c.disabled || (c.starts_at && now < c.starts_at) || (c.ends_at && now >= c.ends_at)) return fail('unknown', 404); // the same answer for every reason
     const batch = c.kind === 'unique' && c.batch ? c.batch : null;
     if (await one(env, 'select 1 as x from promo_redemptions where code = ?1 and user_id = ?2', key, me.id)) return fail('used', 409);
-    if (batch && (await one(env, 'select 1 as x from promo_redemptions where batch = ?1 and user_id = ?2', batch, me.id))) return fail('used', 409); // one code of a batch per account
+    if (batch && (await one(env, 'select 1 as x from promo_redemptions where batch = ?1 and user_id = ?2', batch, me.id))) return fail('batch_used', 409); // one code of a batch per account (another code of it)
     if (c.cap != null && c.used >= c.cap) return fail('gone', 409);
     // insert first, then the count: one batch, all or nothing. The CHECK (used <= cap) fails the second of two racing redemptions for the
     // last slot (its insert rolls back); the unique indexes fail a second redemption of this code (or this batch) by this account
@@ -1351,13 +1351,13 @@ const ROUTES = {
     } catch (e) {
       const m = String((e && e.message) || e);
       if (/check/i.test(m)) return fail('gone', 409);
-      if (/unique|constraint/i.test(m)) return fail('used', 409);
+      if (/unique|constraint/i.test(m)) return fail(batch && /batch/i.test(m) ? 'batch_used' : 'used', 409); // (batch, user_id): another code of this batch won a race
       throw e;
     }
     return json({ ok: true, code: c.shown || key, key, reward, at: now });
   } },
 
-  'GET /promo/mine': { auth: null, async fn({ env, me }) {
+  'GET /promo/mine': { auth: true, async fn({ env, me }) { // 401 no_session without a live login, 403 login for a guest
     if (!promoAcct(me)) return fail('login', 403);
     if (await limited(env, 'promo:mine:' + me.id, 120, 3600)) return fail('rate_limited', 429);
     const rows = await all(env, 'select r.code as key, c.shown as shown, r.reward as reward, r.at as at from promo_redemptions r left join promo_codes c on c.code = r.code where r.user_id = ?1 order by r.at asc, r.code asc limit 200', me.id);

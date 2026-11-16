@@ -20,7 +20,7 @@ Suites: `promo` (the game), `promo_worker` (the Worker and the CLI), plus a few 
 | Kind | Example | Who | Limits |
 |---|---|---|---|
 | shared | `DOGGO-IG-NOV` | many players | each account once; start/end window; optional total `cap` |
-| unique | `GIFT-AB2C-DE3F` (batch `GIFT`) | one player each | each code once in total (`cap` 1); **one code of a batch per account** |
+| unique | `GIFT-AB2C-DE3F` (batch `GIFT-20261116`) | one player each | each code once in total (`cap` 1); **one code of a batch per account** |
 
 Codes compare upper case with spaces, dashes, dots and underscores left out (full-width letters and the Japanese long dash from a phone keyboard
 count as plain ones): `doggo ig-nov` = `DOGGO-IG-NOV`. A code is 4-40 letters and digits once normalised. Batch codes use the readable
@@ -28,17 +28,19 @@ alphabet `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0, O, 1, I, L), 8 random characte
 
 ## 2. Worker routes (`cloudflare/worker.js`)
 
-- `POST /promo/redeem { code }` (session; an email account, else **403 `login`**, never 401 so the game keeps a guest's login). Rate limit
+- `POST /promo/redeem { code }` (session: none, or a token the Worker no longer knows (expired) is **401 `no_session`**, and the game says
+  "log in again" with a Log in button; a guest is **403 `login`**, never 401, so the game keeps a guest's login). Rate limit
   first: **10 an hour per account and 30 per IP**, every attempt counts, a miss too (**429 `rate_limited`**). Then:
   - **404 `unknown`**: no such code, not started, ended, disabled, a broken or empty reward row, a code that does not normalise, extra body
     keys. The same bytes for every reason, so codes cannot be probed.
-  - **409 `used`**: this account used this code, or another code of the same batch.
+  - **409 `used`**: this account used this code. **409 `batch_used`**: this account used another code of the same batch ("You already used a
+    code from this gift batch.").
   - **409 `gone`**: the cap is reached / the unique code was used by someone else.
   - **200** `{ ok: true, code: 'DOGGO-IG-NOV', key: 'DOGGOIGNOV', reward: { items, coins, treats }, at }`.
   - **Atomic:** the redemption insert and `used = used + 1` go in **one D1 batch** (all or nothing). The CHECK `used <= cap` fails the second
     of two racing redemptions for the last slot and rolls its insert back; the unique `(code, user_id)` and `(batch, user_id)` indexes stop a
     double tap and a second code of a batch. Insert first, then the check (like `shop_holds`); the pre-checks only give the nicer answer.
-- `GET /promo/mine` (session; email account, else 403 `login`; 120 an hour): `{ redemptions: [{ code, key, at, reward }] }`, oldest first,
+- `GET /promo/mine` (session, else 401 `no_session`; an email account, else 403 `login`; 120 an hour): `{ redemptions: [{ code, key, at, reward }] }`, oldest first,
   each with the reward **as it was granted** (coins already clamped), even after the code was disabled or its row changed or deleted.
 
 ## 3. D1 (`cloudflare/schema.sql`, `create table if not exists`)
@@ -52,19 +54,29 @@ alphabet `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0, O, 1, I, L), 8 random characte
 
 ## 4. The CLI (`tools/promo.sh`; same D1 API as `tools/shop_flag.sh`, `CLOUDFLARE_ACCOUNT_ID`, arguments only as D1 params; `DRY_RUN=1`)
 
+It needs **python3** and curl, so run it **from a Claude cloud session** (the owner's Mac has no Python), like `tools/shop_flag.sh`; the proxy
+adds the Cloudflare token there.
+
 ```
 bash tools/promo.sh create DOGGO-IG-NOV --items "Follower Star Bandana" --coins 200 --treats "Pupcake:2,Blueberry Bites" --from 2026-11-20 --to 2026-12-31 --cap 500 --note "Instagram Nov"
 bash tools/promo.sh batch GIFT 200 --items "Paw-Print Pennant" --coins 100 --to 2026-12-31 --note "Christmas cards"
 bash tools/promo.sh list
-bash tools/promo.sh stats DOGGO-IG-NOV        # or a batch: stats GIFT
-bash tools/promo.sh disable GIFT              # a code or a whole batch; enable undoes it
+bash tools/promo.sh stats DOGGO-IG-NOV        # or a batch by its id: stats GIFT-20261116
+bash tools/promo.sh disable GIFT-20261116     # a code or a whole batch (its id); enable undoes it
 ```
 
 - Dates are **Japan days**: `--from` starts at 00:00 JST, `--to` ends at the end of that day (JST). `--to` in the past or before `--from` is refused.
 - Refused (exit 2, nothing sent): coins over 500, an item or treat not in `tools/promo_items.json`, a treat count over 10, no reward, more than
   6 items or treat kinds, a short or odd code, a bad date, cap 0, an unknown flag. A non-`promo` item is allowed with a note on stderr.
-- `batch` prints the codes and saves `docs/marketing/promo/<PREFIX>-<JST time>.csv` (git-ignored: private, never committed or pasted).
-  D1 takes 100 bound parameters a query, so codes go 40 a request; a failed request stops and says how many were made (those are in the CSV).
+- **A batch id is the PREFIX and the Japan day it is made**: `batch GIFT 200` on 16 Nov 2026 makes batch `GIFT-20261116` (codes
+  `GIFT-XXXX-XXXX`). `batch` asks D1 first and refuses (exit 2, nothing made) a batch id that exists already: one batch a PREFIX a day, so a
+  second one the same day takes another PREFIX. A later `batch GIFT` is a new batch, so a player who used a December code can use one of it
+  too, and `stats` / `disable` of one batch never touch the other. `list` shows the batch ids; `stats` / `disable` / `enable` take one
+  (`gift 20261116` works too); a bare PREFIX is not a batch (0 codes, and a hint).
+- `batch` **never prints the codes** (output can end up in a chat transcript): only how many were made and the CSV
+  `docs/marketing/promo/<batch id>-<JST time>.csv` (git-ignored: private, never committed, pasted or shown). D1 takes 100 bound parameters a
+  query, so codes go 40 a request; a failed request stops and says how many were made (those are in the CSV). `DRY_RUN=1` prints the requests
+  only (those codes are never made).
 - `tools/promo_items.json` is generated: `NODE_PATH=$(npm root -g) node tools/promo_items.js` reads the built game (`window.__paw.pr.catalog()`):
   every `promo: true` item, what the shops sell (price > 0, not `reward`, not `ks`), and FOOD without Fresh Water. The `promo` suite fails
   while it is stale, so rerun it after any item table change.
@@ -109,7 +121,9 @@ allow free promo codes; keep it on for Android unless the owner says otherwise.
 - `promo_worker`: signed-in only, shared once per account, normalising (spaces, dashes, case, full-width), the cap, the window, disabled, one
   generic `unknown`, unique once in total and one per batch, races (five accounts for one slot, five for one unique code, three taps from one
   account: exactly one wins, and the losers really reached the CHECK / unique index), the coin ceiling and reward cleaning, `/promo/mine`,
-  rate limits (account and IP, misses count), `tidy()`, and `tools/promo.sh` (its DRY_RUN requests run on the local D1; every refusal).
+  rate limits (account and IP, misses count), `tidy()`, 401 `no_session` / 403 `login`, `batch_used` (also in a race), and `tools/promo.sh`
+  (its DRY_RUN requests run on the local D1; every refusal; and for real against a local D1 stand-in (`PROMO_D1_API`): a batch id, a second
+  batch of the same PREFIX the same day refused, no code printed, `stats` / `disable` by batch id).
 - `worker`: a cap-1 code, the coin clamp, `/promo/mine` and the CHECK on workerd's D1 (Miniflare).
 - `promo`: migration, `promo_items.json` up to date, no box without cloud or with `PROMO_UI` off, the guest line, a shared code from Settings
   (card, letter, items, treats, coins once, 44 px), every error line, a lost answer, a fresh device (restore once, reload adds nothing), the

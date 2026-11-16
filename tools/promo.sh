@@ -4,20 +4,23 @@
 #   bash tools/promo.sh create <CODE> [reward] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--cap N] [--note "..."]
 #        a shared code (e.g. DOGGO-IG-NOV): each account can use it once; --cap: at most N uses in all
 #   bash tools/promo.sh batch <PREFIX> <count> [reward] [--from ...] [--to ...] [--note "..."]
-#        <count> unique codes PREFIX-XXXX-XXXX (no 0/O/1/I/L), each usable once in all and one per account per batch. They are printed and
-#        saved to docs/marketing/promo/<PREFIX>-<date>.csv (git-ignored: never commit or paste them anywhere public)
+#        <count> unique codes PREFIX-XXXX-XXXX (no 0/O/1/I/L), each usable once in all and one per account per batch. The batch id is PREFIX
+#        and today's Japan date (GIFT-20261116); a batch id that exists already is refused (one PREFIX a day). The codes are never printed:
+#        only how many, and the CSV docs/marketing/promo/<batch id>-<time>.csv (git-ignored: never commit, paste or show them anywhere)
 #   reward: --items "Follower Star Bandana,Paw-Print Pennant"  --coins 200  --treats "Pupcake:2,Blueberry Bites"   (at least one)
-#   bash tools/promo.sh list                  every shared code, then every batch, with its uses
-#   bash tools/promo.sh stats <CODE|PREFIX>   one code or one batch: uses, cap, coins given, first and last use
-#   bash tools/promo.sh disable|enable <CODE|PREFIX>
+#   bash tools/promo.sh list                    every shared code, then every batch (its id), with its uses
+#   bash tools/promo.sh stats <CODE|BATCH-ID>   one code or one batch (GIFT-20261116): uses, cap, coins given, first and last use
+#   bash tools/promo.sh disable|enable <CODE|BATCH-ID>
 # Dates are Japan days (the game's day): --from 2026-11-20 starts at 00:00 JST that day, --to 2026-12-31 ends at the end of that day (JST).
 # Codes compare in upper case with spaces and dashes left out. Same Cloudflare D1 API as tools/shop_flag.sh: needs CLOUDFLARE_ACCOUNT_ID (the
 # proxy adds the token in a Claude cloud session; elsewhere export CLOUDFLARE_API_TOKEN, D1: Edit). Arguments only travel as D1 query params,
 # never inside the SQL text. DRY_RUN=1 prints the requests instead of sending them (no account or token needed; batch writes no CSV).
+# Needs python3 and curl: run it from a Claude cloud session (the owner's Mac has no Python), like tools/shop_flag.sh.
+# Tests only: PROMO_D1_API points it at a local D1 stand-in, PROMO_OUT at another folder for the CSV.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DBNAME=pawhaven
-usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 [ $# -ge 1 ] || usage
 case "$1" in create|batch|list|stats|disable|enable) ;; *) usage ;; esac
 
@@ -112,11 +115,15 @@ elif cmd == 'batch':
     while len(codes) < n: codes.add(p + '-' + ''.join(secrets.choice(ALPH) for _ in range(4)) + '-' + ''.join(secrets.choice(ALPH) for _ in range(4)))
     codes = sorted(codes)
     open(work + '/codes.txt', 'w').write('\n'.join(codes) + '\n')
+    # the batch id: PREFIX and the Japan day it is made (a later batch of the same PREFIX is another batch: its players may use one code of it too)
+    bid = p + '-' + datetime.datetime.now(JST).strftime('%Y%m%d')
+    open(work + '/batch.txt', 'w').write(bid + '\n')
+    out('select count(*) as n from promo_codes where batch = ?1', [bid]) # first: a batch id that exists already is refused
     # D1 takes at most 100 bound parameters a query: the shared values are ?1-?6, then two per code (40 codes a request)
     for i in range(0, n, 40):
         chunk = codes[i:i + 40]
         vals = ', '.join("(?%d, ?%d, 'unique', ?1, ?2, ?3, ?4, 1, 0, 0, ?5, ?6)" % (7 + 2 * j, 8 + 2 * j) for j in range(len(chunk)))
-        params = [p, rw, f, t, nt, now]
+        params = [bid, rw, f, t, nt, now]
         for c in chunk: params += [key(c), c]
         out(INS + vals, params)
 else:
@@ -125,24 +132,28 @@ else:
         out("select shown as code, used, cap, disabled, starts_at, ends_at, reward, note from promo_codes where kind = 'shared' order by created_at")
         out("select batch, count(*) as codes, sum(used) as used, max(disabled) as disabled, min(starts_at) as starts_at, max(ends_at) as ends_at, min(reward) as reward, min(note) as note from promo_codes where kind = 'unique' group by batch order by min(created_at)")
     else:
-        if len(a) != 2: die(cmd + ' <CODE|PREFIX>')
+        if len(a) != 2: die(cmd + ' <CODE|BATCH-ID>')
         k = key(a[1])
-        if not re.fullmatch(r'[A-Z0-9]{2,40}', k): die('say a code or a batch PREFIX')
+        if not re.fullmatch(r'[A-Z0-9]{2,40}', k): die('say a code or a batch id (PREFIX-YYYYMMDD, see list)')
+        m = re.fullmatch(r'([A-Z0-9]{2,12})[\s\-_.]?(\d{8})', a[1].strip().upper())
+        b = m.group(1) + '-' + m.group(2) if m else a[1].strip().upper() # a batch id: GIFT-20261116 (gift 20261116 too)
         if cmd == 'stats':
-            out('select count(*) as codes, sum(used) as used, sum(cap) as cap, max(disabled) as disabled, min(starts_at) as starts_at, max(ends_at) as ends_at, min(reward) as reward from promo_codes where code = ?1 or batch = ?1', [k])
-            out("select count(*) as redeemed, coalesce(sum(json_extract(r.reward, '$.coins')), 0) as coins_given, min(r.at) as first_at, max(r.at) as last_at from promo_redemptions r where r.code = ?1 or r.batch = ?1", [k])
+            out('select count(*) as codes, sum(used) as used, sum(cap) as cap, max(disabled) as disabled, min(starts_at) as starts_at, max(ends_at) as ends_at, min(reward) as reward from promo_codes where code = ?1 or batch = ?2', [k, b])
+            out("select count(*) as redeemed, coalesce(sum(json_extract(r.reward, '$.coins')), 0) as coins_given, min(r.at) as first_at, max(r.at) as last_at from promo_redemptions r where r.code = ?1 or r.batch = ?2", [k, b])
         else:
-            out('update promo_codes set disabled = ?2 where code = ?1 or batch = ?1', [k, 1 if cmd == 'disable' else 0])
+            out('update promo_codes set disabled = ?3 where code = ?1 or batch = ?2', [k, b, 1 if cmd == 'disable' else 0])
 PY
 
 if [ "${DRY_RUN:-}" = "1" ]; then
   cat "$WORK/bodies.jsonl"
-  [ -f "$WORK/codes.txt" ] && { echo "codes (dry run, not saved):"; cat "$WORK/codes.txt"; }
+  [ -f "$WORK/batch.txt" ] && echo "dry run: $(wc -l < "$WORK/codes.txt" | tr -d ' ') codes for batch $(cat "$WORK/batch.txt") (not made, no CSV)" >&2
   exit 0
 fi
 
-: "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}"
-API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
+if [ -n "${PROMO_D1_API:-}" ]; then API="$PROMO_D1_API"; else
+  : "${CLOUDFLARE_ACCOUNT_ID:?Set CLOUDFLARE_ACCOUNT_ID}"
+  API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID"
+fi
 AUTH=(); if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ "$CLOUDFLARE_API_TOKEN" != "proxy-injected" ]; then AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"); fi
 DBID=$(curl -sS "$API/d1/database?name=$DBNAME" "${AUTH[@]}" | python3 -c "import json,sys; r=[d for d in json.load(sys.stdin)['result'] if d['name']=='$DBNAME']; print(r[0]['uuid'] if r else '')")
 [ -n "$DBID" ] || { echo "promo: no D1 database $DBNAME" >&2; exit 1; }
@@ -155,6 +166,7 @@ d = json.load(sys.stdin)
 if not d.get("success"): print("promo: D1 said no:", d.get("errors"), file=sys.stderr); sys.exit(1)
 res = d["result"][0]; rows = res.get("results") or []; title = sys.argv[1]
 if title == "-": print(res.get("meta", {}).get("changes", 0)); sys.exit(0)
+if title == "#": print(list(rows[0].values())[0] if rows else 0); sys.exit(0)
 print(title)
 if not rows: print("  (none)")
 J = datetime.timezone(datetime.timedelta(hours=9))
@@ -169,16 +181,19 @@ case "$1" in
     n=$(q "$(sed -n 1p "$WORK/bodies.jsonl")" | show -)
     echo "made $2 ($n row)" ;;
   batch)
-    PREFIX=$(echo "$2" | tr '[:lower:]' '[:upper:]'); OUT="docs/marketing/promo/$PREFIX-$(TZ=Asia/Tokyo date +%Y%m%d-%H%M%S).csv"
-    mkdir -p docs/marketing/promo; made=0; total=$(wc -l < "$WORK/codes.txt")
+    BID=$(cat "$WORK/batch.txt")
+    have=$(q "$(sed -n 1p "$WORK/bodies.jsonl")" | show '#')
+    [ "$have" = "0" ] || { echo "promo: batch $BID exists already ($have codes): one batch a PREFIX a day, so use another PREFIX (nothing made)" >&2; exit 2; }
+    DIR="${PROMO_OUT:-docs/marketing/promo}"; OUT="$DIR/$BID-$(TZ=Asia/Tokyo date +%H%M%S).csv"
+    mkdir -p "$DIR"; made=0; total=$(wc -l < "$WORK/codes.txt" | tr -d ' ')
     echo "code,batch,made_at" > "$OUT"
     while IFS= read -r B; do
       c=$(q "$B" | show -) || { echo "promo: stopped after $made of $total codes; those are in $OUT" >&2; exit 1; }
-      sed -n "$((made + 1)),$((made + c))p" "$WORK/codes.txt" | sed "s/\$/,$PREFIX,$(TZ=Asia/Tokyo date +%Y-%m-%d)/" >> "$OUT"
+      sed -n "$((made + 1)),$((made + c))p" "$WORK/codes.txt" | sed "s/\$/,$BID,$(TZ=Asia/Tokyo date +%Y-%m-%d)/" >> "$OUT"
       made=$((made + c))
-    done < "$WORK/bodies.jsonl"
-    cat "$WORK/codes.txt"
-    echo "made $made unique codes in batch $PREFIX; saved to $OUT (git-ignored: keep it private)" >&2 ;;
+    done < <(tail -n +2 "$WORK/bodies.jsonl")
+    # never the codes themselves: this output can end up in a chat transcript
+    echo "made $made unique codes in batch $BID; they are in $OUT (git-ignored: keep it private, never paste it)" ;;
   list)
     q "$(sed -n 1p "$WORK/bodies.jsonl")" | show "shared codes:"
     q "$(sed -n 2p "$WORK/bodies.jsonl")" | show "batches (unique codes):" ;;
@@ -187,5 +202,6 @@ case "$1" in
     q "$(sed -n 2p "$WORK/bodies.jsonl")" | show "redemptions:" ;;
   disable|enable)
     n=$(q "$(sed -n 1p "$WORK/bodies.jsonl")" | show -)
-    echo "${1}d $n code(s)" ;;
+    echo "${1}d $n code(s)"
+    [ "$n" != "0" ] || echo "promo: no code or batch by that name (a batch id is PREFIX-YYYYMMDD: see list)" >&2 ;;
 esac
