@@ -246,7 +246,7 @@ create index if not exists promo_red_user on promo_redemptions (user_id);
 
 -- v2.30 "Better together" (V230.md 2 and 6). New tables only (no addcol). Deploy before the v2.30 game launch.
 -- Friend invite gift: one row per new player, ever (who invited them). The Worker checks the new account is at most 7 days old and newer
--- than the inviter's. A deleted account's rows go (tidy()).
+-- than the inviter's. A deleted account's rows go (btTidy(), from the v2.30 routes).
 create table if not exists invites (
   new_id     text primary key,          -- users.id of the new player
   inviter_id text not null,             -- users.id of the friend whose invite link they came from

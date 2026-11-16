@@ -141,8 +141,7 @@ const sec = (s) => console.log('--- ' + s);
     sec('6. tidy');
     DB.raw.prepare('delete from users where id = ?').run(C.id);
     DB.raw.prepare('delete from users where id = ?').run(G.id);
-    await call('POST', '/guest', {}); // tidy() runs on a request (TIDY under test)
-    const { default: w2 } = { default: worker }; void w2;
+    await call('GET', '/town/goal'); // btTidy runs from the v2.30 routes (every time under TIDY)
     ok(n('select count(*) as n from invites where new_id = ?', C.id) === 0, 'a deleted account: its invite row goes');
     ok(n('select count(*) as n from town_goal_users where user_id = ?', G.id) === 0, 'and its town goal rows');
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }

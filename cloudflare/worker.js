@@ -169,7 +169,6 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
   try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
-  try { await btTidy(env, now); } catch (e) { /* v2.30: invites / town_goal tables not made yet (schema first) */ }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
@@ -1389,7 +1388,8 @@ const ROUTES = {
   } },
 
   /* ---------------- v2.30 "Better together" (V230.md) ---------------- */
-  'POST /invite/join': { auth: true, async fn({ env, ip, body, me }) {
+  'POST /invite/join': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    await btTidySoon(env, ctx);
     const overU = await limited(env, 'inv:join:' + me.id, 10, 3600), overIp = await limited(env, 'inv:joinip:' + ip, 30, 3600);
     if (overU || overIp) return fail('rate_limited', 429);
     if (!frOnly(body, ['code'])) return fail('bad', 400);
@@ -1411,7 +1411,8 @@ const ROUTES = {
     return json({ ok: true, gift: btEmail(me) ? 'now' : 'later' });
   } },
 
-  'GET /invite/gifts': { auth: true, async fn({ env, me }) {
+  'GET /invite/gifts': { auth: true, async fn({ env, ctx, me }) {
+    await btTidySoon(env, ctx);
     if (await limited(env, 'inv:gifts:' + me.id, 120, 3600)) return fail('rate_limited', 429);
     const mine = await one(env, 'select i.at, f.name_a, f.name_b from invites i left join friend_ids f on f.user_id = i.inviter_id where i.new_id = ?1', me.id);
     const joined = await all(env, `select i.at, f.name_a, f.name_b from invites i join users u on u.id = i.new_id left join friend_ids f on f.user_id = i.new_id
@@ -1421,7 +1422,8 @@ const ROUTES = {
     return json({ mine: mine ? { at: mine.at, name: nm(mine) } : null, joined: joined.map((r) => ({ at: r.at, name: nm(r) })) });
   } },
 
-  'POST /town/goal': { auth: true, async fn({ env, ip, body, me }) {
+  'POST /town/goal': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    await btTidySoon(env, ctx);
     if (!frOnly(body, ['n']) || !Number.isInteger(body.n) || body.n < 1 || body.n > GL_POST_MAX) return fail('bad', 400);
     if (await limited(env, 'gl:post:' + me.id, 1, GL_GAP_S)) return fail('rate_limited', 429);
     const now = Date.now(), day = dcDay(now), month = day.slice(0, 7);
@@ -1439,7 +1441,8 @@ const ROUTES = {
     return json(Object.assign({ ok: true, took }, st));
   } },
 
-  'GET /town/goal': { async fn({ env, ip, me }) {
+  'GET /town/goal': { async fn({ env, ctx, ip, me }) {
+    await btTidySoon(env, ctx);
     if (await limited(env, 'gl:get:' + ip, 120, 3600)) return fail('rate_limited', 429);
     const month = dcDay(Date.now()).slice(0, 7);
     const st = await glState(env, month, me && me.id);
@@ -1469,6 +1472,11 @@ async function glState(env, month, uid) {
   const mine = uid ? await one(env, 'select n from town_goal_users where month = ?1 and user_id = ?2', month, uid) : null;
   const goal = g ? g.goal : glGoal(env), n = g ? g.n : 0;
   return { month, goal, n, done: !!(g && g.done_at), mine: mine ? mine.n : 0 };
+}
+// like dcTidy / frTidy: runs only from the v2.30 routes (about 1 in 50 of their requests; every time under env.TIDY), never from tidy()
+function btTidySoon(env, ctx) {
+  if (env.TIDY) return btTidy(env, Date.now()).catch(() => {}); // tests: at once
+  if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(btTidy(env, Date.now()).catch(() => {}));
 }
 async function btTidy(env, now) {
   const old = dcDay(now - 400 * 864e5).slice(0, 7); // about 13 months
