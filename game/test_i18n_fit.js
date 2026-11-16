@@ -94,6 +94,8 @@ async function master() {
   const kept = FIT.keepShots(all, TMP, path.join(LOGS, 'fit_shots'), SHOTS_KEEP);
   const r = FIT.report('i18n_fit', all, meta);
   console.log('\n' + FIT.summary(all, meta).join('\n'));
+  // one check line per session that measured something, so the runner's checks column shows the screens really were measured (0 = nothing opened)
+  for (const j of ran) { const n = (states[j] || []).length, f = all.filter((x) => x.lang + ':' + x.size === j).length; console.log(n ? `  ok  ${j}: ${n} states measured, ${f} findings` : `  note ${j}: no states measured`); }
   console.log(`report: ${path.relative(process.cwd(), r.md)}, game/test_logs/i18n_fit.json, ${kept} screenshots in game/test_logs/fit_shots/`);
   console.log('worst 10:'); r.groups.slice(0, 10).forEach((g, i) => console.log(`  ${i + 1}. ${g.worst.kind}/${g.worst.how} ${g.worst.sev} ${g.worst.screen} [${g.worst.lang} ${g.worst.size}] "${g.worst.text}" ${g.worst.sel}`));
   if (unreached.length) { console.log('screens not opened:'); unreached.slice(0, 40).forEach((u) => console.log('  ' + u)); }
@@ -352,6 +354,18 @@ async function worker(job) {
       await ev(() => window.__paw.ks.open('coins')); await modalUp(); await measure('kind shop: paused');
       await eachTab('kind shop: paused', '#modal .panel.ks [role=tab]', 6);
       await ev(() => { window.__paw.ks.pause(false); delete window.__ddShopCash; }); await closeAll();
+    });
+    await step('promo', async () => { // v2.25.5 Gift codes (55_promo.js, PROMO.md): the code sheet with an error line, the guest sheet, Settings with the box, the gift card
+      if (!(await ev(() => !!(window.__paw.pr && window.__paw.pr.ui())))) return;
+      await ev(() => { window.__ddPromoMode = 'ok'; window.__paw.pr.open(); }); await modalUp(); await measure('promo: sheet');
+      await ev(() => { document.getElementById('prCode').value = 'DOGGO-IG-NOV'; return window.__paw.pr.redeem('NOPE-CODE'); }); await sleep(250); await measure('promo: sheet, a line'); // no Worker in the harness: the offline line
+      await closeAll();
+      await ev(() => { window.__ddPromoMode = 'guest'; window.__paw.pr.open(); }); await modalUp(); await measure('promo: guest'); await closeAll();
+      await ev(() => { window.__ddPromoMode = 'ok'; window.__paw.pr.settings(); }); await modalUp();
+      await ev(() => { const b = document.getElementById('prBox'); if (b) b.scrollIntoView({ block: 'start' }); }); await sleep(200); await measure('promo: settings'); await closeAll();
+      await ev(() => window.__paw.pr.card({ key: 'FITGIFT', code: 'DOGGO-IG-NOV', rows: [{ n: 'Party Hat', k: 'clothes' }, { n: 'Bird Bath', k: 'decor' }, { n: 'Pupcake', k: 'food', q: 2 }, { n: 'Bow Tie', k: 'clothes', had: true }], coins: 200, added: 0, wait: 1 }));
+      await modalUp(); await sleep(250); await measure('promo: card');
+      await ev(() => { delete window.__ddPromoMode; }); await closeAll();
     });
     await step('journal', async () => { await jsClick('[data-act=journal]'); await waitSel('.panel.journal'); await eachTab('journal', '#modal .jtabs [data-jt]', 14); await closeAll(); }, 90000);
     await step('mailbox', async () => {
