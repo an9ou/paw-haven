@@ -102,7 +102,7 @@ run('promo', async (t) => {
   await newHere();
   ok((await ev(() => window.__paw.pm.mode())) === 'guest', 'a cloud guest: mode guest');
   await settings();
-  const g = await ev(() => { const b = document.getElementById('pmBox'); return b ? { kind: b.dataset.pr, txt: b.innerText, input: !!b.querySelector('input'), btn: !!b.querySelector('#pmAcct') } : null; });
+  const g = await ev(() => { const b = document.getElementById('pmBox'); return b ? { kind: b.dataset.pm, txt: b.innerText, input: !!b.querySelector('input'), btn: !!b.querySelector('#pmAcct') } : null; });
   ok(g && g.kind === 'guest' && /free account/.test(g.txt) && !g.input && g.btn, 'Settings: "Have a code?" with one kind line and a button, no field: ' + JSON.stringify(g));
   await t.p.click('#pmAcct');
   ok(await t.until(() => !!document.querySelector('#modal #clBox #clEmail'), null, 3000), '"Make the free account" opens the cloud sign-up form');
@@ -328,7 +328,7 @@ run('promo', async (t) => {
   ok(await t.until(() => /You already used a code from this gift batch/.test(document.getElementById('pmMsg').textContent), null, 4000) && (await ev(() => window.__paw.S.coins)) === c11, 'another code of the same batch: its own line, nothing granted: ' + (await msg()));
   await closeAll();
   // everything owned already, no coins or treats: the card does not promise a letter, and none is sent
-  const had = await ev(() => { const P = window.__paw, S = P.S; const n = S.inv.clothes.includes('Bow Tie') ? 'Bow Tie' : S.inv.clothes[0]; const m0 = S.mail.length; const o = P.pr.grant({ key: 'TESTHAD', code: 'TEST-HAD', reward: { items: [n], coins: 0, treats: {} } }); const p = P.pr.card(o); const r = { n, letter: o.letter, mail: S.mail.length - m0, mailLine: !!p.querySelector('.pm-mail'), txt: p.innerText }; p.querySelector('#pmGotOk').click(); return r; });
+  const had = await ev(() => { const P = window.__paw, S = P.S; const n = S.inv.clothes.includes('Bow Tie') ? 'Bow Tie' : S.inv.clothes[0]; const m0 = S.mail.length; const o = P.pm.grant({ key: 'TESTHAD', code: 'TEST-HAD', reward: { items: [n], coins: 0, treats: {} } }); const p = P.pm.card(o); const r = { n, letter: o.letter, mail: S.mail.length - m0, mailLine: !!p.querySelector('.pm-mail'), txt: p.innerText }; p.querySelector('#pmGotOk').click(); return r; });
   ok(had.letter === false && had.mail === 0 && !had.mailLine && /You had this one already/.test(had.txt) && !/sent you a letter/.test(had.txt), 'nothing new: "You had this one already", no letter and no letter line: ' + JSON.stringify(had).slice(0, 200));
   const own = await ev(() => ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map((n) => window.__paw.pm.kind(n)));
   ok(own.every((x) => x === null), 'item lookups use own keys only (constructor, toString ... are not items): ' + JSON.stringify(own));

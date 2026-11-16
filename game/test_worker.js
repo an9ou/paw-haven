@@ -506,7 +506,7 @@ async function checks(label, call, sql, mail) {
     ok(res.status === 200 && res.json.yard.house === 13 && res.json.yard.season === 'winter' && res.json.yard.name.join() === '9,9', 'GET /friends/yard returns the snapshot');
     ok(res.json.yard.dogs[3].e === 2 && res.json.yard.dogs[3].p === 123456789 && !('e' in res.json.yard.dogs[0]) && !('p' in res.json.yard.dogs[0]), 'v2.23: a yard dog keeps its eyes and pattern seed; a dog without them has none');
     ok(res.json.yard.dogs.length === 5 && res.json.yard.dogs[0].b === 3 && res.json.yard.dogs[1].c === '#aabbcc' && res.json.yard.dogs[2].c === null && res.json.yard.dogs[2].o === -1, 'dogs come back in the Dog Card shape, leader first, colour lower case');
-    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 34, 'decor keeps integer coordinates up to 1200 and 800, and the v2.26 yard toys (index 31-34)');
+    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 35, 'decor keeps integer coordinates up to 1200 and 800, the v2.26 yard toys (index 31-34) and the Paw-Print Pennant (35)');
     ok(!res.text.includes(yB.user.id) && !/"updated_at"|"created_at"/.test(res.text), 'the yard answer has no user id and no timestamp');
     const zero = await frCall('PUT', '/friends/yard', { yard: yard({ dogs: [], decor: [], season: 'summer', house: 0 }) }, yA.token);
     ok(zero.status === 200, 'a yard may have no dogs and no decor (at most 5, at most 40)');
