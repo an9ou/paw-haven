@@ -128,6 +128,14 @@ function smPay(rw, quiet) {
   if (!quiet) updateHUD();
   return got;
 }
+// v2.25.3 Happy meters (54_coinfly.js): the coins fly from the reward's toast to the counter (called right after smPay, same task); the Bond
+// heart and the XP star (addBond / lvGain start them by themselves) take the toast as their source when it is already there. A chapter's
+// scene waits for a calm screen; whatever is still in the air when it starts lands at once, quietly (sc:start in 54_coinfly.js)
+function smJuice(got, from, delay) {
+  if (!got) return;
+  if (got.c > 0 && typeof coinFly === 'function') coinFly(from, got.c, { delay });
+  if (!delay && from && typeof jfSrc === 'function') { if (got.xp > 0) jfSrc('xp', from); if (got.bond > 0) jfSrc('bond', from); }
+}
 function smRwText(rw) {
   const L = []; if (rw.xp && typeof lvOn === 'function' && lvOn()) L.push(tt('sm.rw_xp', '+{n} XP', { n: rw.xp }));
   if (rw.bond) L.push(tt('sm.rw_bond', '+{n} Bond', { n: rw.bond })); if (rw.c) L.push(tt('sm.rw_coins', '+{n, plural, one {# coin} other {# coins}}', { n: rw.c }));
@@ -139,8 +147,9 @@ const smWaits = (ch) => !!(ch && ch.lv && smLv() < ch.lv);
 function smBump(k, full) {
   const T = S.story; T.p[k.id] = full ? k.n : Math.min(k.n, (T.p[k.id] || 0) + 1);
   if (T.p[k.id] >= k.n) {
-    T.t[k.id] = jstISO(); smPay(k.rw);
-    toast(tt('sm.task_done', 'Story: {task}. {reward}', { task: k.t(), reward: smRwText(k.rw) }), 'gold');
+    T.t[k.id] = jstISO(); const got = smPay(k.rw);
+    const te = toast(tt('sm.task_done', 'Story: {task}. {reward}', { task: k.t(), reward: smRwText(k.rw) }), 'gold');
+    smJuice(got, te, 0);
   }
 }
 // one act: moves the open chapter's tasks; a task done pays once (S.story.t), the last one finishes the chapter
@@ -162,8 +171,9 @@ function smStates() {
 }
 function smChapterCheck() {
   const T = S.story, ch = smChap(T.ch); if (!ch || T.c[ch.n] || !ch.tasks.every((k) => T.t[k.id])) return false;
-  T.c[ch.n] = jstISO(); smPay(ch.rw); scQueue(ch.scene); T.ch = ch.n + 1; markDirty();
-  setTimeout(() => toast(tt('sm.ch_done', 'Chapter {n} done: {title}! {reward}', { n: ch.n, title: ch.title(), reward: smRwText(ch.rw) }), 'gold'), 500);
+  T.c[ch.n] = jstISO(); const got = smPay(ch.rw); scQueue(ch.scene); T.ch = ch.n + 1; markDirty();
+  let te = null; smJuice(got, () => te, 560);
+  setTimeout(() => { te = toast(tt('sm.ch_done', 'Chapter {n} done: {title}! {reward}', { n: ch.n, title: ch.title(), reward: smRwText(ch.rw) }), 'gold'); }, 500);
   if (ch.n === SM_N) setTimeout(() => toast(tt('sm.frame_got', "A new photo frame: Gerald's Big Book. Find it in photo mode."), 'gold'), 3200);
   try { SFX.kaching(); } catch (e) { /* audio off */ }
   saveNow(); return true;

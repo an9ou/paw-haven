@@ -118,7 +118,11 @@ function yvGift(p) {
   if (g === 'sticker') m.stk = 1;
   else if (g === 'bone') S.inv.food['Bone-shaped Biscuit'] = (S.inv.food['Bone-shaped Biscuit'] || 0) + 1;
   else if (g === 'flower') V.flowers++;
-  else { V.cday = p.t; S.coins += YV_COIN; }
+  else { // every coin goes through addCoins (a Kind shop refund settles first, 00_core.js); v2.25.3: one coin flies to the counter from the gift's toast,
+    // the visitor or the While you were out line, whichever shows (else it pops on the counter; on the title it simply lands)
+    V.cday = p.t; addCoins(YV_COIN, { raw: true });
+    if (typeof coinFly === 'function') coinFly(() => [YV.gTe, $('#visitorG.yv', view), $('.wb-vis .wb-vg')].find((el) => el && el.isConnected && el.getBoundingClientRect().width > 2) || null, YV_COIN, { delay: 1600 });
+  }
   return g;
 }
 function yvArrive(p) {
@@ -148,7 +152,7 @@ function yvCatchUp(now) {
 }
 
 /* ---------------- the visitor in the yard ---------------- */
-const YV = { tick: 0, greet: false };
+const YV = { tick: 0, greet: false, gTe: null };
 // fix batch (art 3, phone 4): the yard visitor has its own spot, right of the dog and clear of the mailbox (the pack's free spot stood it in front of
 // the mailbox, the mail badge on its head, and off the left edge at 390 px). Feet x 592: inside the phone crop at 360 and 390 (phHomeRefit widens the
 // crop to the right edge of visitorSpot(), which answers this spot while a yard visitor is drawn).
@@ -182,7 +186,7 @@ function yvDraw(greet) {
   if (typeof dcRoom === 'function') dcRoom();
   if (greet) setTimeout(() => {
     if (!yvHere() || !$('#visitorG.yv', view) || !modal.hidden) return; const [fx, fy, , sc] = yvSpot(); say(yvLine(e), fx, fy - 200 * sc, 4200); SFX.bark(BARK[yvDog(e.id).key] || 1);
-    if (e.g) setTimeout(() => toast(yvGiftLine(e), 'gold'), 600);
+    if (e.g) setTimeout(() => { YV.gTe = toast(yvGiftLine(e), 'gold'); }, 600); // gTe: the coin gift's source (yvGift)
   }, 900);
   return e;
 }

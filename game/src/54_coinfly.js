@@ -35,6 +35,8 @@ const BJ = { q: [], live: 0, last: 0, gs: [], pt: 0, at: {}, hint: null, glowAt:
 const XJ = { q: [], live: 0, last: 0, gs: [], pt: 0, hint: null, glowAt: 0 };
 let jfPtr = null; // the last tap: { x, y, t } in client px
 window.addEventListener('pointerdown', (e) => { if (e.isPrimary !== false) jfPtr = { x: e.clientX, y: e.clientY, t: performance.now() }; }, { capture: true, passive: true });
+// v2.29 Story mode (57_scenes.js): while a scene plays full screen nothing flies over it; a gain then lands at once, without a sound (the scene has its own)
+const jfQuiet = () => typeof scPlaying === 'function' && scPlaying();
 function cfCalm() { const m = document.documentElement.dataset.motion; return m === 'off' || (m !== 'on' && !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)); }
 function cfNum() { return $('#coinNum'); }
 function cfShow(v) { CF.disp = v; const el = cfNum(), t = tnum(Math.max(0, Math.round(v))); if (el && el.textContent !== t) el.textContent = t; }
@@ -172,7 +174,8 @@ function jfLaunch(K, g) {
   const tg = K.target();
   if (g.tiny) { if (tg && !cfCalm() && K.box) jfBump(K.box(), null, K.hitCls); g.noHit = true; jfLand(K, g, true); return; } // a tiny gain: the meter only pulses
   const src = cfFrom(g.from) || (g.alt && cfFrom(g.alt)) || jfTap() || (tg ? { x: tg.x, y: tg.y, here: true } : null);
-  if (!src || cfCalm() || document.hidden) { jfLand(K, g, true); return; }
+  const quiet = jfQuiet(); if (quiet) g.silent = true;
+  if (!src || cfCalm() || document.hidden || quiet) { jfLand(K, g, true); return; }
   const st = K.st; st.last = performance.now(); g.flying = true; st.live++;
   const size = Math.round(Math.max(26, Math.min(44, (tg ? tg.s : 30) * 1.3))), el = document.createElement('div');
   el.className = K.cls ? 'jf-icon ' + K.cls : 'cf-coin'; el.innerHTML = K.icon(); el.style.width = el.style.height = size + 'px'; el.style.left = (-size / 2) + 'px'; el.style.top = (-size / 2) + 'px';
@@ -211,7 +214,7 @@ function coinFly(from, amount, o = {}) {
   CF.hold++; CF.pend += gain;
   cfShow(Math.min(CF.disp == null ? S.coins : CF.disp, S.coins - CF.pend)); // back to the number before this gain (never up: a gain earlier in this task may still be on its way)
   const g = { kind: 'coin', from, amount, gain, landed: false, flying: false, el: null, anims: [] }; CF.gs.push(g);
-  if (cfCalm()) { jfLand(JK.coin, g, true); return g; }
+  if (cfCalm() || jfQuiet()) { g.silent = jfQuiet(); jfLand(JK.coin, g, true); return g; }
   const delay = Math.max(0, +o.delay || 0);
   g.wd = setTimeout(() => jfLand(JK.coin, g, true), delay + 4000); // never stuck: whatever happens, the gain shows within a few seconds
   g.dt = setTimeout(() => jfQueue(JK.coin, g), delay);
@@ -226,7 +229,7 @@ function jfOpen(K, amount, o) {
   const hint = st.hint && now - st.hint.t < 300 ? st.hint.from : null; st.hint = null;
   g = { kind: K.name, id, from: o.from || hint, alt: o.alt || null, amount, gain: amount, open: true, landed: false, flying: false, el: null, anims: [], tiny: amount < (o.tiny || 0) };
   st.gs.push(g);
-  if (cfCalm() || document.hidden) { jfLand(K, g, true); return g; } // no flight: the value simply changes, with a soft highlight
+  if (cfCalm() || document.hidden || jfQuiet()) { g.silent = jfQuiet(); jfLand(K, g, true); return g; } // no flight: the value simply changes, with a soft highlight (v2.29: silently under a scene)
   const wait = Math.max(o.merge || 0, o.every && st.at ? (st.at[id] || 0) + o.every - now : 0, +o.delay || 0);
   g.wd = setTimeout(() => jfLand(K, g, true), wait + 4000); // never stuck
   g.dt = setTimeout(() => { g.open = false; if (st.at) st.at[id] = performance.now(); if (!g.landed) jfQueue(K, g); }, wait);
@@ -271,6 +274,8 @@ function cfReset() {
   if (CF.layer) CF.layer.innerHTML = '';
   if (S) { const el = cfNum(); if (el) el.textContent = tnum(S.coins); try { bjShow(); xjShow(); } catch (e) { /* no HUD yet */ } }
 }
+// v2.29: a scene starting (a chapter's end, a big moment) lands whatever is still in the air, quietly, before it covers the screen
+on('sc:start', () => { if (!Object.values(JK).some((K) => K.st.gs.length)) return; Object.values(JK).forEach((K) => K.st.gs.forEach((g) => { g.silent = true; })); cfFinishAll(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && Object.values(JK).some((K) => K.st.gs.length)) cfFinishAll(); });
 // a screen that hides a meter mid-flight (a mini-game, the title): the icons in the air land at once, nothing is left on screen
 setInterval(() => {

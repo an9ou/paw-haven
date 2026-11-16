@@ -226,7 +226,8 @@ function stFinish(id) {
   r.ks = stToday(); const f = 'k_' + id;
   if (S.dd && Array.isArray(S.dd.fr) && !S.dd.fr.includes(f)) S.dd.fr.push(f);
   markDirty(); if (typeof lvGain === 'function') try { lvGain('story', 40, { once: 'st:' + id }); } catch (e) { /* no town levels */ }
-  toast(tt('st.finished', 'A story is finished: {title}. A keepsake for you, {item}, and a page in your journal.', { title: stTitle(id), item: stKeepsake(id) }), 'gold');
+  const te = toast(tt('st.finished', 'A story is finished: {title}. A keepsake for you, {item}, and a page in your journal.', { title: stTitle(id), item: stKeepsake(id) }), 'gold');
+  if (te && typeof jfSrc === 'function') jfSrc('xp', te); // v2.25.3 Happy meters: the story's XP star flies from this toast (lvGain above started it)
   return true;
 }
 
