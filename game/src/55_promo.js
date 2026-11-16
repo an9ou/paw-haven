@@ -90,7 +90,7 @@ function prGrant(rec) {
     S.inv.food[n] = (S.inv.food[n] || 0) + q; out.rows.push({ n, k: 'food', q });
   });
   const c = Math.max(0, Math.min(PR_COIN_MAX, Math.floor(Number(R.coins) || 0)));
-  if (c) { const g = addCoinsD(c, { raw: true }); out.coins = c; out.added = g.n - g.d; if (g.d && typeof ksSettleTake === 'function') ksSettleTake(g.d); }
+  if (c) { const g = addCoinsD(c, { raw: true }); out.coins = c; out.added = g.n - g.d; } // coins that settle a Kind shop refund: the card says so (ksSettleNote), else the settle toast
   S.promo.used.push(rec.key);
   prLetter(out);
   markDirty(); updateHUD(); saveNow();
