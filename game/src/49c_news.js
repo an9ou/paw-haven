@@ -224,13 +224,15 @@ function nwEntryHTML(e, big) {
   return `<section class="fw-page nw-page${big ? ' big' : ''}" style="--fwc:${e.c || 'var(--paper)'}" aria-label="${esc(e.title())}">${big ? border : ''}<div class="nw-head">${big ? nwPic(e) : ''}<div><h3>${esc(e.title())}</h3><p class="small nw-ver">${esc(tt('nw.version', 'Version {v} · {date}', { v: e.id, date: nwDate(e.date) }))}</p></div></div><ul class="nw-list">${li}</ul></section>`;
 }
 // the sheet: the newest entry; "See all updates" swaps in every entry, newest first
+// the first page: the newest entry and every entry sharing its date (16 Nov: v2.26-v2.29 open together on 18 Nov, so all four are seen, newest first)
+function nwTop() { return NEWS.length ? NEWS.filter((e) => e.date === NEWS[0].date) : []; }
 function nwOpen(auto) {
   if (!S) return false;
   if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   nwSort();
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`
-      : `<div class="nw-sheet">${nwEntryHTML(NEWS[0], true)}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
+      : `<div class="nw-sheet">${nwTop().map((e, i) => nwEntryHTML(e, i === 0)).join('')}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
     const p = openModal(esc(tt('nw.title', "What's new in town")), body, { cls: 'fw-calpop nw-pop', foot: `<button class="btn yes big nw-ok" id="nwOk">${esc(tt('nw.ok', 'OK!'))}</button>` });
     $('#nwOk', p).onclick = () => { SFX.click(); closeModal(); };
     const a = $('#nwAll', p); if (a) a.onclick = () => { SFX.click(); draw(true); };

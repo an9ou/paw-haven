@@ -196,7 +196,7 @@ function yvGiftLine(e) {
 }
 function yvCard(t) {
   const V = yvS(), e = V.q.find((x) => x.t === t) || V.q[V.q.length - 1]; if (!e) return;
-  const v = yvDog(e.id), m = V.met[v.id] || { n: 1 }, d = yvVisDog(v), petted = m.pet === localISO(), more = V.q.length > 1;
+  const v = yvDog(e.id), m = V.met[v.id] || { n: 1 }, d = yvVisDog(v), petted = m.pet === jstISO(), more = V.q.length > 1;
   SFX.boop(700);
   const p = openModal(esc(tt('yv.title', '{name} is visiting!', { name: v.name })), `<div class="visitcard yv-card"><span class="vzdog">${dogSVG(d, { pose: 'sit' })}</span><div><p><b>${esc(v.name)}</b> · ${esc(tbreed(v.key))}${v.rare ? ` <span class="yv-star" title="${esc(tt('yv.rare', 'Rare visitor'))}">★</span>` : ''}</p>
     <p>${esc(tt('yv.family', 'Lives with {family}.', { family: yvFam(v) }))}</p><p class="small">${esc(yvLine(e))}</p>
@@ -204,8 +204,8 @@ function yvCard(t) {
   { cls: 'yv-pop', foot: `<button class="btn" id="yvBye">${esc(more ? tt('yv.next', 'Wave bye, next!') : tt('yv.bye', 'Wave bye'))}</button><button class="btn" id="yvBookB">${esc(tt('yv.book', 'Visitors Book'))}</button><button class="btn yes big" id="yvPet" ${petted ? 'aria-disabled="true"' : ''}>${esc(petted ? tt('yv.petted', 'Petted today') : tt('yv.pet', 'Pet'))}</button>` });
   $('#yvPet', p).onclick = () => {
     const mm = V.met[v.id]; if (!mm) return;
-    if (mm.pet === localISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
-    mm.pet = localISO(); addStat('happy', 3); markDirty(); SFX.boop(820); updateHUD(); closeModal();
+    if (mm.pet === jstISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
+    mm.pet = jstISO(); addStat('happy', 3); markDirty(); SFX.boop(820); updateHUD(); closeModal();
     const [fx, fy, , sc] = yvSpot(); fxText('♥', fx, fy - 150 * sc); setTimeout(() => fxText('♥', fx + 20, fy - 170 * sc), 200);
     toast(tt('yv.hello', '{name} and {friend} sniff hello. +3 Happiness.', { name: NAME(), friend: v.name }), 'good');
   };
