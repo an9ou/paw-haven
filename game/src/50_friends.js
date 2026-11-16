@@ -482,7 +482,7 @@ function frSheetHTML() {
   const friends = frSorted((S.fr.cache && S.fr.cache.friends) || []);
   const off = FR.offline ? `<p class="fr-off" id="frOff">${esc(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'))}</p>` : '';
   const list = friends.length ? friends.map(frRowHTML).join('') : `<p class="small">${esc(tt('fr.none', 'No friends yet. Share your code, or add one below.'))}</p>`;
-  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div>${typeof ksBadgeHTML === 'function' && ksSup() ? ksBadgeHTML() : ''}<div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
+  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div>${typeof ksBadgeHTML === 'function' && ksSup() ? ksBadgeHTML() : ''}<div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div>${typeof fiSheetLine === 'function' ? fiSheetLine() : ''}<h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
 }
 function frCodeChars() { return [0, 1, 2, 3, 4].map((i) => { const el = document.getElementById('frCh' + i); return el ? el.value.toUpperCase() : ''; }).join(''); }
 function frFillCode(code) {
@@ -659,11 +659,13 @@ async function frAdd() {
     else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
     return;
   }
+  const viaLink = !!FR.invite && FR.invite === code; // v2.30: the add came from an invite link (58_invite.js asks the Worker for the gift)
   FR.invite = null; FR.wantAdd = false;
   await frLoad();
   const added = ((S.fr.cache && S.fr.cache.friends) || []).find((f) => f && !had.has(f.fid));
   toast(tt('fr.added', '{name} is your friend now!', { name: (added && frPairName(added.name)) || tt('fr.a_friend', 'A friend') }), 'good');
   frHearts(); frSheet();
+  if (viaLink && typeof fiJoin === 'function') fiJoin(code);
 }
 // v2.19 (owner, 2 Nov 2026): no New code button: a player's code stays the same forever (the Worker route /friends/code/new is kept, unused)
 // Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way

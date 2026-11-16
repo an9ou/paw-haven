@@ -29,6 +29,7 @@ SQL=$(py "import json,re; s=open('cloudflare/schema.sql').read(); print(json.dum
 curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' -d "$SQL" | ok
 echo "schema applied"
 # (v2.25.5 gift codes: promo_codes and promo_redemptions are new tables in schema.sql, made here by step 2. Later columns: addcol below.)
+# (v2.30 "Better together": invites, town_goal and town_goal_users are new tables, made here by step 2. No added columns.)
 # 2b. added columns: SQLite has no "add column if not exists", so each is added only when it is missing (safe to repeat).
 #     Additive only: never drop or rename. users.official (v2.22.3): the official Friends account, set by hand in D1 only.
 addcol() { # table column definition

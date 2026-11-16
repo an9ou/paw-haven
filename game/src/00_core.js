@@ -181,7 +181,9 @@ const CLOTHES = [
   { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' },
   // Promo-code looks (docs/design/promo-items.md): only from a promotion code the owner posts for followers, never sold or earned (promo; reward keeps every
   // shop, market, stall, level and Bond list off them; bond 1 keeps them off the Bond-up cards). Looks only: the perk is flavour. Drawn in dogs/pawart_dogs.js (NECK2)
-  { n: 'Follower Star Bandana', slot: 'neck', price: 0, bond: 1, promo: true, reward: true, perk: 'Thank you for following: a sky-blue bandana with crayon stars and a tiny paw print. Only from a code.' }
+  { n: 'Follower Star Bandana', slot: 'neck', price: 0, bond: 1, promo: true, reward: true, perk: 'Thank you for following: a sky-blue bandana with crayon stars and a tiny paw print. Only from a code.' },
+  // v2.30 "Better together" (V230.md 3): the friend invite gift, for the new player and the friend who invited them. Never sold or earned otherwise
+  { n: 'Friendship Bandana', slot: 'neck', price: 0, bond: 1, promo: true, reward: true, perk: 'A matching bandana for two friends: lavender with two little hearts side by side. From a friend\'s invite.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -857,6 +859,8 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   v228Fields(st); // v2.28 Stories and stars (V228.md 1, 56_stories.js): S.st
   v229Fields(st, true); // v2.29 Story mode (V229.md 2, 57b_story.js): S.story, the story starts after the first day
   if (typeof pmFields === 'function') pmFields(st); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): S.promo
+  if (typeof fiFields === 'function') fiFields(st); // v2.30 Better together (V230.md 4, 58_invite.js): S.fi
+  if (typeof glFields === 'function') glFields(st); // v2.30 Better together (V230.md 7, 58b_goal.js): S.goal
   return linkDogs(st);
 }
 let S = null;
@@ -934,6 +938,8 @@ function migrate(s) {
   v228Fields(s); // v2.28 Stories and stars (V228.md 1, 56_stories.js): additive, S.st; an old Bond 10+ save gets its stars counted once
   v229Fields(s, false); // v2.29 Story mode (V229.md 2, 57b_story.js): additive; an old save gets its earned chapters once (smCatchUp)
   if (typeof pmFields === 'function') pmFields(s); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): additive, S.promo = { used: [], wait: [] }
+  if (typeof fiFields === 'function') fiFields(s); // v2.30 Better together (V230.md 4, 58_invite.js): additive, S.fi
+  if (typeof glFields === 'function') glFields(s); // v2.30 Better together (V230.md 7, 58b_goal.js): additive, S.goal
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save

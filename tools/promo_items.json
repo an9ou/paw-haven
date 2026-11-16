@@ -61,6 +61,7 @@
   {"n":"Asakusa Bandana","kind":"clothes","slot":"neck"},
   {"n":"Tokyo Tower Bandana","kind":"clothes","slot":"neck"},
   {"n":"Follower Star Bandana","kind":"clothes","promo":true,"slot":"neck"},
+  {"n":"Friendship Bandana","kind":"clothes","promo":true,"slot":"neck"},
   {"n":"Jack-o-Lantern Trio","kind":"decor"},
   {"n":"Paper Bat Bunting","kind":"decor"},
   {"n":"Friendly Scarecrow","kind":"decor"},
