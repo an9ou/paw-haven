@@ -17,17 +17,18 @@
 const path = require('path'), fs = require('fs'), vm = require('vm'), os = require('os');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
+const { propCheck } = require('./prop_check.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const OUT = path.resolve(process.argv[2] || path.join(__dirname, 'cantonese-launch.jpg'));
 const W = 1080, H = 1350, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', DOT = '#E3D2BA', MUTED = '#8A7468', PINK = '#F28FA5', YEL = '#FFE3A1', MINT = '#CDEBD2', LILAC = '#E0D5F0';
-const MARGIN = 60, GAP = 20;
+const MARGIN = 60, GAP = 20, PROP_GAP = 12;
 
 // ---------- the real lines from the game (game/i18n/yue.json on main), checked against the file at build time ----------
 const LINES = {
-  dachs: { key: 'data.sig.dachs.say', lines: ['扭呀扭。', '後面嗰半', '遲到咗。'] }, // Noodle's signature trick: "Wiggle wiggle. The back half is late."
-  chihuahua: { key: 'data.sig.chihuahua.say', lines: ['我係', '八號', '風球！！'] },        // Peanut's signature trick: "I AM A WEATHER EVENT." (Typhoon Signal No. 8)
-  golden: { key: 'data.sr_lines.fetch.2', lines: ['睇下我', '搵到乜！'] },              // a shelter dog's fetch line: "Look what I found!"
+  dachs: { key: 'data.sig.dachs.say', lines: ['扭呀扭。', '後面嗰半遲到咗。'] }, // Noodle's signature trick: "Wiggle wiggle. The back half is late."
+  chihuahua: { key: 'data.sig.chihuahua.say', lines: ['我係八號風球！！'] },        // Peanut's signature trick: "I AM A WEATHER EVENT." (Typhoon Signal No. 8)
+  golden: { key: 'data.sr_lines.fetch.2', lines: ['睇下我搵到乜！'] },              // a shelter dog's fetch line: "Look what I found!"
 };
 const yue = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'yue.json'), 'utf8'));
 const get = (o, k) => o[k]; // the file's keys are flat ("data.sig.dachs.say")
@@ -44,15 +45,18 @@ const ART = {
   golden: inner(win.PawArt.dog('golden', { anim: false, pose: 'happy' })),
 };
 // the background: the Mt. Fuji Lookout as the game draws it today (v215), an autumn day; S/TX/TY place its 1000 x 600 canvas on the poster
-const SCENE = { name: 'fujihill', env: { time: 'day', weather: 'sunny', season: 'autumn', jp: true, halloween: false, v215: true }, S: 2.2, TX: -154, TY: 49 }; // the scene starts 19 px below the frame: a second copy fills the sky above it
+const SCENE = { name: 'fujihill', env: { time: 'day', weather: 'sunny', season: 'autumn', jp: true, halloween: false, v215: true }, S: 1.8, TX: -150, TY: 138 }; // smaller than the frame: a copy above fills the sky, a copy below the front of the meadow
 const OBJ_FEET = 440; // the scene y where its lanterns, torii and bench stand: no dog's head (hearts aside) rises above it
 // where things go (poster px): the hook and the card; Noodle's centre x and width; the corner dogs' centres and heights; one feet line; the bubbles; the bottom row
-const LAYOUT = { hy: 150, hs: 128, hrx: 268, hry: 74, cy: 334, c1: 56, c2: 52, c3: 30,
-  nx: 540, nw: 372, px: 165, gx: 905, nfeet: 1186, cfeet: 1186, ph: 198, gh: 182, nbx: 552, nbup: 186, nbs: 32, pbx: 66, pbup: 164, gbr: 1000, cbup: 150, cbs: 32,
-  ry: 1254, ths: 30, us: 40, pairgap: 26 };
+const LAYOUT = { hy: 138, hs: 112, hrx: 244, hry: 62, cy: 307, c1: 50, c2: 46, c3: 38,
+  nx: 497, nw: 450, px: 148, gx: 901, nfeet: 1176, cfeet: 1176, ph: 200, gh: 205,
+  nbx: 580, nby: 688, nbs: 38, pbx: 66, pby: 478, gbr: 1014, gby: 478, cbs: 38, tail: 46,
+  ry: 1250, ths: 28, us: 40, lw: 240, pairgap: 26 };
 // the scene's two corner washi tapes belong to its own frame in the game, not to the place: left out of the poster
 const SCENE_SVG = inner(win.PawArt.scene(SCENE.name, SCENE.env)).replace(/<g transform="translate\(\d+ \d+\) rotate\(-2\d\)"><path d="M0 0l-3 4\.4[^"]*"[^>]*\/>.*?<\/g>/g, '');
 const BACK = Number(/data-back="([\d.]+)"/.exec(win.PawArt.scene(SCENE.name, SCENE.env))[1]); // the meadow's back line (scene y)
+// a copy of the scene with its ids renamed, drawn behind the main one: shifted so its plain sky (up) or its front meadow (dn) fills the frame
+const sceneCopy = (tag, ty) => `<g transform="translate(${SCENE.TX} ${ty}) scale(${SCENE.S})">${SCENE_SVG.replace(/id="([^"]+)"/g, `id="$1_${tag}"`).replace(/url\(#([^)]+)\)/g, `url(#$1_${tag})`).replace(/href="#([^"]+)"/g, `href="#$1_${tag}"`).replace(/ data-prop="/g, ' data-copyprop="')}</g>`;
 const LOGO_INNER = fs.readFileSync(path.join(ART_ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>[^<]*<\/title>/, '').replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
 
 // ---------- pencil lines (as make.js) ----------
@@ -89,14 +93,14 @@ const html = `<!doctype html><meta charset="utf-8">
 <pattern id="stripe" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="10" fill="#fff" opacity=".5"/></pattern>
 <clipPath id="sceneclip"><rect x="33" y="33" width="${W - 66}" height="${H - 66}" rx="30"/></clipPath></defs>
 <rect width="${W}" height="${H}" fill="${PAPER}"/><rect width="${W}" height="${H}" fill="url(#dots)"/>
-<g clip-path="url(#sceneclip)"><g transform="translate(${SCENE.TX} 20) scale(${SCENE.S})">${SCENE_SVG.replace(/id="([^"]+)"/g, 'id="$1_up"').replace(/url\(#([^)]+)\)/g, 'url(#$1_up)').replace(/href="#([^"]+)"/g, 'href="#$1_up"')}</g><g transform="translate(${SCENE.TX} ${SCENE.TY}) scale(${SCENE.S})">${SCENE_SVG}</g></g>${box(30, 30, W - 60, H - 60, 28, 11, 3, 5)}
+<g clip-path="url(#sceneclip)">${sceneCopy('up', 33)}${sceneCopy('dn', Math.round(SCENE.TY + 600 * SCENE.S - 520 * SCENE.S))}<g id="scene" transform="translate(${SCENE.TX} ${SCENE.TY}) scale(${SCENE.S})">${SCENE_SVG}</g></g>${box(30, 30, W - 60, H - 60, 28, 11, 3, 5)}
 <g id="items"></g><g id="probe"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 const LAYOUT=${JSON.stringify(LAYOUT)}, ART=${JSON.stringify(ART)}, LINES=${JSON.stringify(LINES)}, LOGO_INNER=${JSON.stringify(LOGO_INNER)};
-const W=${W}, H=${H}, MARGIN=${MARGIN}, GAP=${GAP}, LAT='Caveat', ZH='Iansui', SC=${JSON.stringify(SCENE)}, BACK=${BACK}, OBJ_FEET=${OBJ_FEET};
-const RED='#E5484D', PEN='${PEN}', CREAM='${CREAM}', MUTED='${MUTED}', PINK='${PINK}', YEL='${YEL}', MINT='${MINT}', LILAC='${LILAC}';
+const W=${W}, H=${H}, MARGIN=${MARGIN}, GAP=${GAP}, PROP_GAP=${PROP_GAP}, LAT='Caveat', ZH='Iansui', SC=${JSON.stringify(SCENE)}, BACK=${BACK}, OBJ_FEET=${OBJ_FEET};
+const SUBINK='#5E4136', RED='#E5484D', PEN='${PEN}', CREAM='${CREAM}', MUTED='${MUTED}', PINK='${PINK}', YEL='${YEL}', MINT='${MINT}', LILAC='${LILAC}';
 const f1=(n)=>Math.round(n*10)/10, $=(i)=>document.getElementById(i);
 ${seeded.toString()}
 ${rrPts.toString()}
@@ -162,7 +166,7 @@ window.draw=function(){
   const cw=Math.max(r1.w,k3.L+k3.R)+70, ch=blockH+38;
   let card='<g data-item="card"><g data-box><rect x="'+f1(CX-cw/2)+'" y="'+f1(CY-ch/2)+'" width="'+f1(cw)+'" height="'+f1(ch)+'" rx="30" fill="'+CREAM+'"/>';
   const x0=CX-r1.w/2; r1.parts.forEach((p)=>{ card+=T(p,x0+p.x,b1); });
-  card+=T({s:SUB,size:LAYOUT.c3,fam:LAT,fill:MUTED},CX+(k3.L-k3.R)/2,b2)+'</g>'+pencil(rrPts(CX-cw/2,CY-ch/2,CX+cw/2,CY+ch/2,30,110),31,2.2,4.6)+'</g>';
+  card+=T({s:SUB,size:LAYOUT.c3,fam:LAT,fill:SUBINK},CX+(k3.L-k3.R)/2,b2)+'</g>'+pencil(rrPts(CX-cw/2,CY-ch/2,CX+cw/2,CY+ch/2,30,110),31,2.2,4.6)+'</g>';
   s+=card;
   // 3) the dogs on the meadow, in a row in front of the scene's objects (their heads below the objects' feet); each bubble over its own dog
   const LY=LAYOUT, pw=(id,h)=>h*BOX[id][2]/BOX[id][3], NH=BOX.dachs[3]*LY.nw/BOX.dachs[2];
@@ -171,16 +175,18 @@ window.draw=function(){
   s+=dogAt('golden',LY.gx,LY.cfeet,pw('golden',LY.gh),false).svg;
   // 4) the bottom row: the thank-you pill and the logo card side by side, centred as a pair
   const TH='多謝香港朋友逐句幫我哋睇過', tk=inkOf(TH,LY.ths,ZH), thw=tk.L+tk.R+2*24;
-  const lw=200, lh=lw*280/900, URL='doodledoggo.app', us=LY.us, ku=inkOf(URL,us,LAT), uw=ku.L+ku.R, gap=18;
+  const lw=LY.lw, lh=lw*280/900, URL='doodledoggo.app', us=LY.us, ku=inkOf(URL,us,LAT), uw=ku.L+ku.R, gap=18;
   s+='<g data-item="logocard"><rect id="lcard" x="0" y="0" width="10" height="10" rx="24" fill="'+CREAM+'"/><g id="lcpen"></g><svg id="logo" x="0" y="0" width="'+lw+'" height="'+f1(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg>'
     +'<text id="url" x="0" y="0" font-family="'+LAT+'" font-weight="700" font-size="'+us+'" fill="'+PEN+'">'+URL+'</text></g>';
   $('items').innerHTML=s;
   // the bubbles go where the dogs' heads are (measured)
   const items=$('items'), db=(id)=>items.querySelector('[data-apart="'+id+'"]').getBoundingClientRect();
   const nb=db('dachs'), cb=db('chihuahua'), gb=db('golden');
-  items.insertAdjacentHTML('beforeend',bubble('Noodle',LINES.dachs.lines,0,nb.top-LY.nbup,LY.nbs,CREAM,(x,y,w,h)=>[x+w*0.5,y+h-4,x+w*0.5+6,nb.top-32],21,{left:LY.nbx}));
-  items.insertAdjacentHTML('beforeend',bubble('Peanut',LINES.chihuahua.lines,0,cb.top-LY.pbup,LY.cbs,MINT,(x,y,w,h)=>[x+w*0.42,y+h-4,x+w*0.42+8,cb.top-32],22,{left:LY.pbx}));
-  items.insertAdjacentHTML('beforeend',bubble('Sunny',LINES.golden.lines,0,gb.top-LY.cbup,LY.cbs,LILAC,(x,y,w,h)=>[x+w*0.5,y+h-4,x+w*0.5+4,gb.top-32],23,{right:LY.gbr}));
+  // the bubbles sit in open sky and meadow (prop_check.js): Noodle's tail runs down the clear strip between the lanterns and the bench to his
+  // head; Peanut's and Sunny's bubbles float in the sky right above them, their tails pointing down at them
+  items.insertAdjacentHTML('beforeend',bubble('Noodle',LINES.dachs.lines,0,LY.nby,LY.nbs,CREAM,(x,y,w,h)=>[x+56,y+h-4,nb.right-56,nb.top-30],21,{left:LY.nbx}));
+  items.insertAdjacentHTML('beforeend',bubble('Peanut',LINES.chihuahua.lines,0,LY.pby,LY.cbs,MINT,(x,y,w,h)=>[x+w*0.3,y+h-4,x+w*0.3-6,y+h+LY.tail],22,{left:LY.pbx}));
+  items.insertAdjacentHTML('beforeend',bubble('Sunny',LINES.golden.lines,0,LY.gby,LY.cbs,LILAC,(x,y,w,h)=>[x+w*0.66,y+h-4,x+w*0.66+6,y+h+LY.tail],23,{right:LY.gbr}));
   const RY=LY.ry;
   const L=$('logo'); const lb=boxOf(L); const lt=L.getBoundingClientRect(); const offL=lb.left-lt.left, offT=lb.top-lt.top, lbw=lb.right-lb.left, lbh=lb.bottom-lb.top;
   const rowW=lbw+gap+uw, rowH=Math.max(lbh,ku.A+ku.D), cw2=rowW+44, ch2=rowH+24, PAIR=thw+LY.pairgap+cw2, px0=540-PAIR/2, LCX=px0+thw+LY.pairgap+cw2/2, rx=LCX-rowW/2;
@@ -204,8 +210,12 @@ window.draw=function(){
   // the dogs' feet on the meadow, well in front of the back line where the scene's objects stand
   if(Math.min(LY.nfeet,LY.cfeet)<SY(BACK)+200) bad.push('dogs stand too close to the back line ('+Math.round(SY(BACK))+')');
   for(const [id,r] of [['dachs',nb],['chihuahua',cb],['golden',gb]]) if(r.top+30<SY(OBJ_FEET)) bad.push(id+' rises '+Math.round(SY(OBJ_FEET)-r.top)+' px into the scene objects (their feet at '+Math.round(SY(OBJ_FEET))+')');
+  // the scene's props (its floor kit marks each with data-prop): nothing of ours may sit on or touch one
+  const CL={l:33,t:33,r:W-33,b:H-33}, PROPS=[...$('scene').querySelectorAll('[data-prop]')].map((e)=>{ const r=e.getBoundingClientRect();
+    return {n:e.getAttribute('data-prop'),l:Math.max(r.left,CL.l),t:Math.max(r.top,CL.t),r:Math.min(r.right,CL.r),b:Math.min(r.bottom,CL.b)}; }).filter((q)=>q.r-q.l>4&&q.b-q.t>4);
+  // (the pixel check against the props runs after draw(): prop_check.js)
   near.sort((a,b)=>a[2]-b[2]);
-  return {bad, closest:near.slice(0,8), back:Math.round(SY(BACK)), items:its.map((x)=>x.n+' '+[x.r.left,x.r.top,x.r.right,x.r.bottom].map(Math.round).join(','))};
+  return {bad, closest:near.slice(0,8), back:Math.round(SY(BACK)), names:its.map((x)=>x.n), props:PROPS.map((q)=>q.n+' '+[q.l,q.t,q.r,q.b].map(Math.round).join(',')), items:its.map((x)=>x.n+' '+[x.r.left,x.r.top,x.r.right,x.r.bottom].map(Math.round).join(','))};
 };
 </script>`;
 
@@ -217,8 +227,13 @@ window.draw=function(){
   const zh = [...new Set(('勁正識講廣東話喇！多謝香港朋友逐句幫我哋睇過' + Object.values(LINES).map((l) => l.lines.join('')).join('')).split(''))].join('');
   await p.evaluate((zh) => Promise.all(['600 40px Caveat', '700 40px Caveat'].map((f) => document.fonts.load(f, 'Doodle Doggo 12th · now in Cantonese our language doodledoggo.app')).concat([document.fonts.load('700 40px Iansui', zh), document.fonts.load('400 40px Iansui', zh)])), zh);
   const r = await p.evaluate(() => window.draw());
+  if (process.env.PROPSHOT) { // a debug view: the scene alone with its props outlined
+    await p.evaluate(() => { document.getElementById('items').style.display = 'none'; const sv = document.getElementById('sv');
+      for (const e of document.querySelectorAll('#scene [data-prop]')) { const q = e.getBoundingClientRect(); sv.insertAdjacentHTML('beforeend', `<rect x="${q.left}" y="${q.top}" width="${q.width}" height="${q.height}" fill="none" stroke="red" stroke-width="2"/>`); } });
+    await p.screenshot({ path: process.env.PROPSHOT, type: 'jpeg', quality: 80 }); }
+  r.bad.push(...await propCheck(p, { scene: '#scene', items: r.names, gap: PROP_GAP }));
   console.log('meadow back line y', r.back, '| closest items:', r.closest.map((c) => `${c[0]} ~ ${c[1]} ${c[2]}px`).join('; '));
-  if (process.env.VERBOSE) console.log(r.items.join('\n'));
+  if (process.env.VERBOSE) console.log(r.items.join('\n') + '\nprops:\n' + r.props.join('\n'));
   if (r.bad.length) { await p.screenshot({ path: OUT.replace(/\.jpg$/, '.failed.jpg'), type: 'jpeg', quality: 80 }); throw new Error(r.bad.join('; ')); }
   await p.waitForTimeout(300);
   await p.screenshot({ path: OUT, type: 'jpeg', quality: 92 }); await b.close(); fs.rmSync(tmp);
