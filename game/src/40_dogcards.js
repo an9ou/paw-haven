@@ -34,7 +34,8 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Candy Corn Bandana', 'Bat Wings', 'Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Ugly Sweater Rosette', 'Year of the Sheep Hood', 'Astronaut Helmet',
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume',
-  'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm']; // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
+  'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm', // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
+  'Follower Star Bandana']; // the promo-code bandana (the Worker's DC_LIM.outfit 58)
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
 /* v2.23 (review fix): a card dog's eyes and its coat pattern. phenotype() rolls Bl/bl and merle eyes from the dog's id and the art places merle smudges,
    white patches and spots from it (seed = hashId(id)), and a card dog has its own id, so the card sends both: e = the eyes (an index into DC_EYES, only

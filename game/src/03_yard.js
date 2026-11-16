@@ -1007,8 +1007,14 @@ const HM_DECOR = {
   'Cocoa Mug Lamp': { prop: 'kslamp', at: [236, 436, 60, 84], vb: [100, 140], room: 'house', zone: 'floor', kind: 'decor', lit: true, ks: 'cozy', reward: true, story: 'A lamp shaped like a mug of cocoa with a marshmallow on top. After dark it glows warm and brown. Not for drinking.' },
   'Doggy Snow Globe': { prop: 'ksglobe', at: [312, 454, 60, 70], vb: [120, 140], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A glass globe with a tiny dog and a tiny house inside. Shake it and it snows, indoors, on purpose.' },
   'Cardboard Fireplace': { prop: 'ksfireplace', at: [388, 300, 120, 120], vb: [160, 160], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fireplace made of painted cardboard with paper flames. All the cosy, none of the heat, so noses stay safe.' },
-  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' }
+  'Woolly Armchair': { prop: 'ksarmchair', at: [880, 432, 112, 105], vb: [160, 150], room: 'house', zone: 'floor', kind: 'decor', ks: 'cozy', reward: true, story: 'A fat armchair covered in knitted wool. It is for people, officially. The dog sat in it first.' },
+  // Promo-code looks (docs/design/promo-items.md): only from a promotion code, never sold or earned (promo, reward, no v27 / fest / price / bond, so no shop,
+  // market, stall, level or Bond list shows it). Prop prpennant in world B. Catalogue spot in the phone's left half (x 140-534), clear of the mailbox, the
+  // house door, the bowl, the dog at rest, the dog house, the yard visitor and the first pack spots (desktop and phone); it stays the last yard row (FR_DECOR)
+  'Paw-Print Pennant': { prop: 'prpennant', at: [146, 410, 52, 84], vb: [100, 160], room: 'yard', zone: 'floor', kind: 'decor', promo: true, reward: true, story: 'A little flag on a stick with a big crayon paw print and a star. Only from a code, as a thank-you for following.' }
 };
+// every promo-code look, by name and kind (the rows flagged promo): what a promotion code may grant
+const PROMO_LOOKS = CLOTHES.filter((c) => c.promo).map((c) => ({ n: c.n, kind: 'clothes' })).concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].promo).map((n) => ({ n, kind: 'decor' })));
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
 function hmDecorOut(name) { return !!(S && S.decor && S.decor[name] && S.decor[name].out); }

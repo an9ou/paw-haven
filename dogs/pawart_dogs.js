@@ -2066,6 +2066,18 @@ FEET2['Little Sneakers']=function(h,s,L,l,haunch){const F=ksFoot(s,L,l,haunch);i
 // the v2.18.1 rule: each draw hands the dog back its random stream
 [HAT2,NECK2,BODY2,EYES2,FEET2].forEach(R=>['Bucket Hat','Golden Name Tag','Paw Tote','Lucky Cat Charm','Sukajan Jacket','Round Shades','Little Sneakers'].forEach(n=>{const fn=R[n];
   if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+/* ---------- Promo-code looks (docs/design/promo-items.md): never sold or earned, a promotion code only. New names only: old renders never reach them ----------
+   neck 'Follower Star Bandana': a sky-blue bandana under the chin (the Tokyo bandanas' crude triangle and knot), a darker blue hem band,
+   three crayon stars (yellow, each in its own ink) and a tiny white paw print by the tip. Hands the dog back its random stream (the v2.18.1 rule). */
+const PRM={sky:'#4FA8E6',skyD:'#2F78BE',star:'#FFD84A',paw:'#FFFBF2'};
+function prmStar(c,R,a){const p=[];for(let i=0;i<10;i++){const t=-Math.PI/2+a+i*Math.PI/5,r=i%2?R*.46:R;p.push([c[0]+Math.cos(t)*r,c[1]+Math.sin(t)*r])}return p}
+NECK2['Follower Star Bandana']=function(h,s,L,HT){
+  tkBand(h,s,L,HT,PRM.sky,(Q,z)=>{
+   h.shape([Q(0,0),Q(1,0),Q(1,.16),Q(0,.16)],PRM.skyD,{noline:1,ox:0,oy:0,sc:1,famp:.3});
+   [[.29,.29,1.12,.2],[.71,.27,1,-.25]].forEach(([u,v,k,a])=>h.shape(prmStar(Q(u,v),Math.max(3.4,z*k),a),PRM.star,{w:1.7,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15}));
+   const p=Q(.5,.6),q=Math.max(1.1,z*.27);h.dot(p[0],p[1]+q*.9,q*1.45,q*1.15,PRM.paw);[[-1.55,-.6],[-.55,-1.45],[.55,-1.45],[1.55,-.6]].forEach(([dx,dy])=>h.dot(p[0]+dx*q,p[1]+dy*q,q*.5,q*.6,PRM.paw))})};
+OUT.neck.push('Follower Star Bandana');
+{const fn=NECK2['Follower Star Bandana'];NECK2['Follower Star Bandana']=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}
 function drawEyewear(h,s,L,HT,e){if(EYES2[e])return EYES2[e](h,s,L,HT);(e==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
 
 function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
