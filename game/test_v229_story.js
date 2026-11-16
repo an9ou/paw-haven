@@ -85,13 +85,15 @@ run('v229_story', async (t) => {
   s = await st();
   ok(s.p.c1_pet === 3 && !!s.t.c1_pet && !!s.t.c1_play && !s.t.c1_nap && s.ch === 1, `pets stop at 3/3, the toy task is done, the nap is still open (${JSON.stringify(s.p)})`);
   const rn = await ev(() => { const S = window.__paw.S; return { c: S.coins, b: S.bond.pts, xp: S.lv.xp }; }); // the nap goes through the act bus: only the story pays here
-  await ev(() => window.__paw.sm.act('nap', { dogs: 1 }));
+  const fly = await ev(() => { const P = window.__paw, c0 = P.cf.state(); P.sm.act('nap', { dogs: 1 }); const c = P.cf.state(); return { hold: c.hold - c0.hold, pend: c.pend - c0.pend }; }); // v2.25.3 Happy meters
   s = await st();
   const r1 = await ev(() => { const S = window.__paw.S; return { c: S.coins, b: S.bond.pts, xp: S.lv.xp }; });
   ok(s.ch === 2 && !!s.c[1] && s.q.includes('ch1'), 'the last task finishes chapter 1: chapter 2 opens and the chapter scene waits in the queue');
   ok(r1.c - rn.c === 50 && r1.xp - rn.xp >= 40 && r1.xp - rn.xp <= 52 && r1.b - rn.b === 13, `the last task and the chapter pay once: +${r1.c - rn.c} coins (10 + 40), +${r1.xp - rn.xp} XP (10 + 30, plus 2 care XP for the nap itself and at most one 10 XP notebook milestone), +${r1.b - rn.b} Bond (3 + 10)`);
   ok(r1.c - r0.c >= 80 && r1.xp - r0.xp >= 70 && r1.b - r0.b >= 22, `over the whole chapter: +${r1.c - r0.c} coins (80 from the story, plus the real feed and pet), +${r1.xp - r0.xp} XP, +${r1.b - r0.b} Bond`);
   ok(await t.waitToast(/Chapter 1 done: A New Friend in Town/), 'a gold toast for the chapter');
+  ok(fly.hold === 2 && fly.pend === 50, `Happy meters: the task's coins and the chapter's coins each fly to the counter (two more coins on their way, ${fly.pend} more coins held back): ${JSON.stringify(fly)}`);
+  ok(await t.until(() => window.__paw.jf.idle() && window.__paw.cf.state().disp === null, null, 9000), 'every story coin, heart and star lands, the counter ends on S.coins');
   await ev(() => { const A = window.__paw.sm.act; A('feed', {}); A('pet', {}); A('nap', {}); A('toy', {}); });
   const r2 = await ev(() => window.__paw.S.coins);
   ok(r2 === r1.c, 'chapter 1 acts again pay nothing more');
