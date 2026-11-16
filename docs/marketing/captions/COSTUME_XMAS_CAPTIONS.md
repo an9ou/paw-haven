@@ -1,6 +1,6 @@
-# "Stop the video to dress Noodle" Christmas Reel: all captions (15 Nov 2026)
+# "Stop the video to dress Noodle" Christmas Reel: all captions (15 Nov 2026; loop and RedNote 16 Nov 2026)
 
-Video: `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas.mp4` (English, one video for Instagram, TikTok, YouTube Shorts and X). Cover: `costume_reel_xmas/xmas-dress-cover.jpg`. What is in it, the 41 looks and where players get each item: `docs/marketing/COSTUME_XMAS.md`. One ask everywhere: comment what Noodle got. Links only https://doodledoggo.app (YouTube and X), never itch.io. No em dashes. Made, waiting for the owner; nothing posted, the owner picks the date.
+Video: `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas.mp4` (English, one video for Instagram, TikTok, YouTube Shorts and X; a seamless loop with no end card, so the website and handles live in the captions). Cover: `costume_reel_xmas/xmas-dress-cover.jpg`. What is in it, the 41 looks and where players get each item: `docs/marketing/COSTUME_XMAS.md`. One ask everywhere: comment what Noodle got. Links only https://doodledoggo.app (YouTube and X), never itch.io. No em dashes. Made, waiting for the owner; nothing posted, the owner picks the date.
 
 Availability, as written: the Christmas costumes are sold only at the Winter Market, 1 to 26 December (Japan date), so the captions say it "opens in the game on 1 December". The Pom-pom Beanie and the Knit Winter Sweater are in the Bow-Wow Boutique all year. If posted on or after 1 Dec, change "opens in the game on 1 December" to "is open in the game until 26 December" (and "opens 1 Dec" to "is open until 26 Dec").
 
@@ -59,4 +59,29 @@ About 262 of 280 (the link counts as 23) · one ask · `ig-human` 88.7 PASS.
 
 ### Alt text
 
-`Noodle the crayon dachshund sits in a snowy yard at night by a felt Christmas tree while Christmas costumes fall through him one by one: a Father Christmas Suit, an elf outfit, reindeer antlers, a penguin suit, a nutcracker jacket and more. Each fits him for a single frame with a "perfect fit!" stamp, and a label names the look. It ends on the Doodle Doggo card with doodledoggo.app and our Instagram, X and YouTube.`
+`Noodle the crayon dachshund sits in a snowy yard at night by a felt Christmas tree while Christmas costumes fall through him one by one: a Father Christmas Suit, an elf outfit, reindeer antlers, a penguin suit, a nutcracker jacket and more. Each fits him for a single frame with a "perfect fit!" stamp, and a label names the look. It loops with no end.`
+
+### RedNote / 小红书 (no link)
+
+Upload `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas-rednote.mp4` with the 3:4 cover `brand/rednote/rednote-18-xmas-dress.jpg` as its custom cover. Not posted; the owner picks the date. Availability as in the game: the 冬日市集 (Winter Market) sells the Christmas costumes 1 to 26 Dec; the 毛球毛线帽 and 针织冬季毛衣 are in the 汪汪精品店 (Bow-Wow Boutique) all year. If posted on or after 1 Dec, change "12月1日起" to "现在开着，到12月26日".
+
+标题 (14 characters with the emoji; 20 max):
+```
+暂停视频给Noodle换装🎄
+```
+
+正文:
+```
+暂停视频，看看Noodle换上了哪一套🎄
+每件衣服从天上掉下来，只有一帧刚好合身，早一帧晚一帧都不算！
+
+41套圣诞和冬日造型：圣诞老人装、小精灵装、姜饼狗狗装、雪人装、北极熊兜帽、企鹅装、胡桃夹子外套和帽子、驯鹿鹿角、超丑萌毛衣……还有好多混搭。
+
+这些圣诞服装12月1日起在游戏里的冬日市集上架，一直到12月26日。毛球毛线帽和针织冬季毛衣全年都能在汪汪精品店买到。
+
+评论区说说你停在了哪一套👇
+搜 Doodle Doggo App
+
+#治愈系游戏 #圣诞节 #狗狗 #腊肠犬 #独立游戏 #萌宠 #蜡笔画
+```
+Anti-ban check (REDNOTE.md list): no QR, no URL or dotted name, no other platform names, none of 链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳, no handles, no download or app-store wording; the game is named only as "Doodle Doggo App". One ask (comment). 7 tags.

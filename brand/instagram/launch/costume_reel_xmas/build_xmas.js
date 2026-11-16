@@ -4,7 +4,8 @@
 // (PawArt.scene 'yard', winter, snow) with the Winter Market's yard decorations (the game's own props, lit and tinted as the game draws them at
 // night). Each Christmas or winter costume falls straight down, fast, right through him, and fits him on ONE frame only, which shows a "perfect fit!"
 // stamp. A paper label names the look with the game's exact item names. Every Christmas and winter wearable in today's game (checked below against
-// main's CLOTHES, the Winter Market table and the v2.8 winter lane), plus Christmas and winter combinations. Then the standard end card (2.5 s).
+// main's CLOTHES, the Winter Market table and the v2.8 winter lane), plus Christmas and winter combinations. A seamless loop with no end card (owner, 16 Nov 2026: "It is a loop video, so no need end card"):
+// the last frame flows into the first and the music is crossfaded end into start, as the October Reel.
 // How a costume fits exactly: it is cut out of the game's own drawing of Noodle wearing it (Noodle with the outfit minus plain Noodle, pixel by
 // pixel, with a clean-up of stray crayon lines), so on the fitting frame it sits exactly where the game draws it.
 // Every frame: centreCheck(), safeCheck() and apartCheck() (../centre_text.js) over the cards, the stamp, Noodle (with the costume he wears on the
@@ -15,11 +16,15 @@
 //   ONLY=sprites: a check sheet of every look fitted on Noodle (WORK/sprites), with how far each cut-out is from the game's own drawing.
 //   ONLY=stills: key frames (WORK/stills; TS=a,b,... for chosen times). ONLY=cover: xmas-dress-cover.jpg. FRAMES=a-b: re-render only frames
 //   a..b, then encode again. DEBUG=1 outlines the decorations' boxes. CHECK=1 runs every frame's checks without rendering.
+// REDNOTE=1 (owner, 16 Nov 2026): the RedNote cut, the same loop with every word in Simplified Chinese (the item names are the game's own zh-Hans
+//   strings, checked below against game/i18n/zh-Hans.json on main), LXGW WenKai, no safe zone (cards across the frame with 60 px margins; the
+//   centring and no-overlap checks stay). No QR, link, domain, handles or platform names. Output doodle-doggo-dress-noodle-christmas-rednote.mp4;
+//   ONLY=cover writes brand/rednote/rednote-18-xmas-dress.jpg (3:4, the middle 1080 x 1440).
 // Output next to this file: doodle-doggo-dress-noodle-christmas.mp4, xmas-dress-cover.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'xmas_work');
@@ -91,15 +96,16 @@ if (new Set(LOOKS.map((l) => l.name)).size !== LOOKS.length) throw new Error('tw
 console.log(LOOKS.length, 'looks;', SINGLES.map((n) => n + ' (' + SRC[n] + ')').join('; '));
 
 // ---- the order and the timeline: the Father Christmas Suit first (the hook), then the rest shuffled, each once ----
-const STEP = 0.75, A0 = 0.7, CROSS = 0.65; // one costume every 0.75 s; each takes 0.65 s from just above the top edge to just below the bottom edge
+const SF = 23, STEP = SF / 30, CROSS = 0.65; // one costume every 23 frames (0.77 s), so the loop is a whole number of frames; each takes 0.65 s from just above the top edge to just below the bottom edge
 const ORDER = (() => { let seed = 25; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
   const rest = LOOKS.map((_, i) => i).filter((i) => LOOKS[i].name !== 'Father Christmas Suit'), r = rest.map((i) => [rnd(), i]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
   // no two looks in a row share their main piece
   const main = (i) => LOOKS[i].outfit.body || LOOKS[i].outfit.head || LOOKS[i].outfit.neck;
   for (let k = 1; k < r.length; k++) if (main(r[k]) === main(r[k - 1])) { const j = r.findIndex((x, q) => q > k + 1 && main(x) !== main(r[k - 1]) && main(x) !== main(r[k + 1] ?? -1)); if (j > 0) [r[k], r[j]] = [r[j], r[k]]; }
+  if (main(r[r.length - 1]) === 'Father Christmas Suit') [r[r.length - 1], r[r.length - 2]] = [r[r.length - 2], r[r.length - 1]]; // nor across the loop point
   return [LOOKS.findIndex((l) => l.name === 'Father Christmas Suit'), ...r]; })();
-const ALIGN = ORDER.map((_, k) => Math.round((A0 + k * STEP) * FPS) / FPS); // the one frame each costume fits
-const LOOP = +(ALIGN[ALIGN.length - 1] + 0.75).toFixed(3), T = +(LOOP + 2.5).toFixed(3), NF = Math.round(T * FPS);
+const ALIGN = ORDER.map((_, k) => (k * SF + 11) / FPS); // the one frame each costume fits
+const NF = ORDER.length * SF, T = NF / FPS, LOOP = T; // a seamless loop: every costume falls once per loop, and the falls wrap round the loop point
 
 // ---- the game's art (main) ----
 const win = {}, ctx = { window: win, console, Intl, navigator: {} }; vm.createContext(ctx);
@@ -137,27 +143,42 @@ const propBoxes = (sc, places) => places.map(([n, x, y]) => { const d = DECOR[n]
 // Noodle: sitting, facing right, his drawn box (shadow included) NW wide, centred on x NX, feet on FEET (on the snow, below the fence's foot)
 const NX = 455, NW = 740, FEET = 1236;
 const FENCE_FOOT = 404; // the yard's fence foot in scene units (the hat Reel's FLOORS.yard.floor)
-const TX = { head: 'Stop the video to dress Noodle 🎄', ask: 'comment what Noodle got 👇', fit: 'perfect fit!', cover: ['Stop the video', 'to dress Noodle!'], coverAsk: 'can you get a perfect fit?' };
+const RN = !!process.env.REDNOTE;
+const ZH = JSON.parse(rd('game', 'i18n', 'zh-Hans.json')), ENJ = JSON.parse(rd('game', 'i18n', 'en.json'));
+// the game's own Chinese item names (checked), and the combinations' names in natural Chinese
+const ZNAME = { 'Father Christmas Suit': '圣诞老人装', 'Little Elf Outfit': '小精灵装', 'Gingerbread Pup Suit': '姜饼狗狗装', 'Snowman Suit': '雪人装', 'Polar Bear Hood': '北极熊兜帽',
+  'Penguin Suit': '企鹅装', 'Puffer Jacket': '羽绒服', 'Nutcracker Jacket & Hat': '胡桃夹子外套和帽子', 'Snowflake Wings': '雪花翅膀', 'Jingle Bell Collar': '铃铛项圈', 'Very Ugly Sweater': '超丑萌毛衣',
+  'Reindeer Antlers': '驯鹿鹿角', 'Snowflake Snood': '雪花围脖', 'Ugly Sweater Rosette': '丑萌毛衣花章', 'Pom-pom Beanie': '毛球毛线帽', 'Knit Winter Sweater': '针织冬季毛衣', 'Cozy Hoodie': '暖暖连帽衫', 'Knit Scarf': '针织围巾' };
+for (const [n, z] of Object.entries(ZNAME)) { const k = Object.keys(ENJ).find((q) => /^data\.clothes\.[a-z_]+\.n$/.test(q) && ENJ[q] === n); if (!k || ZH[k] !== z) throw new Error('the zh-Hans name changed: ' + n + ' is ' + (k && ZH[k])); }
+const ZCOMBO = { 'The Full Reindeer': '全套驯鹿', 'Sweater Champion': '毛衣冠军', 'Champion Reindeer': '冠军驯鹿', 'Jingle All the Way': '一路响叮当', 'Gingerbread Reindeer': '姜饼驯鹿',
+  'Jingle Gingerbread': '叮当姜饼', 'Gingerbread in a Beanie': '戴毛线帽的姜饼', 'Prize Gingerbread': '得奖姜饼', 'Ski Day': '滑雪日', 'Puffer Reindeer': '羽绒驯鹿', 'Snow Angel': '雪天使',
+  'Flying Reindeer': '会飞的驯鹿', 'Cosy Night In': '宅家暖冬夜', 'Snowflake Sweater': '雪花毛衣', 'Hoodie Reindeer': '连帽衫驯鹿', 'Cozy Day': '暖暖的一天', 'Snow Day': '下雪天',
+  'Jingle Santa': '叮当圣诞老人', 'Prize Penguin': '得奖企鹅', 'Snowman in a Snood': '围脖雪人', 'Polar Bear in a Scarf': '围巾北极熊', 'Nutcracker Champion': '冠军胡桃夹子', 'Jingle Elf': '叮当小精灵' };
+if (RN) for (const l of LOOKS) { const single = l.items.length === 1 && l.name === l.items[0]; if (!single && !ZCOMBO[l.name]) throw new Error('no Chinese name for ' + l.name);
+  l.name = single ? ZNAME[l.items[0]] : ZCOMBO[l.name]; l.items = l.items.map((n) => ZNAME[n]); l.single = single; }
+else for (const l of LOOKS) l.single = l.items.length === 1 && l.name === l.items[0];
+const TX = RN ? { head: '暂停视频给Noodle换装🎄', ask: '评论区说说Noodle换到了什么👇', fit: '完美合身！', cover: ['暂停视频', '给Noodle换装！'], coverAsk: '你能停在完美合身吗？' } : { head: 'Stop the video to dress Noodle 🎄', ask: 'comment what Noodle got 👇', fit: 'perfect fit!', cover: ['Stop the video', 'to dress Noodle!'], coverAsk: 'can you get a perfect fit?' };
 const allText = [Object.values(TX).flat(), LOOKS.map((l) => [l.name, l.items.join(' + ')])].flat(3).join(' ') + ' 0123456789';
+if (RN && /链接|网址|官网|二维码|扫码|下载|私信|加我|主页|戳|doodledoggo|\.app|@|Instagram|YouTube|微信|抖音|微博/i.test(allText)) throw new Error('a RedNote no-go word on screen');
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="bg"></g><g id="dog"></g><g id="fall"></g><g id="dbg"></g><g id="ov"></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const $=(i)=>document.getElementById(i), F='Caveat', CX=${NX}, DEBUG=${!!process.env.DEBUG};
+const $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', TCX=RN?540:455, TW=RN?960:790, CX=${NX}, DEBUG=${!!process.env.DEBUG};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, TX=${JSON.stringify(TX)};
 let D=null; // set by setup(): looks, order, align, sprites, Noodle's box, the decorations' boxes
 function fitS(s,max,w){ let z=max; while(z>16){ const k=inkOf(s,z,F); if(k.L+k.R<=w) return z; z-=1; } return z; }
 // the header: the hook and the ask, two lines, centred in a cream card (x 60..850)
-function header(){ return '<g data-apart="header"><g data-box><rect x="60" y="284" width="790" height="150" rx="34" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/>'
-  +centred([{s:TX.head,size:fitS(TX.head,70,730),pitch:66},{s:TX.ask,size:46,fill:'${MUTED}'}],455,359,F).svg+'</g></g>'; }
+function header(){ return '<g data-apart="header"><g data-box><rect x="60" y="284" width="'+TW+'" height="150" rx="34" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/>'
+  +centred([{s:TX.head,size:fitS(TX.head,RN?66:70,TW-60),pitch:RN?70:66},{s:TX.ask,size:RN?42:46,fill:'${MUTED}'}],TCX,359,F).svg+'</g></g>'; }
 // the label: the look's name, and under a combination's name its pieces with the game's exact names
-function label(l){ const y=1290, h=140, L=l.items.length>1||l.name!==l.items[0]?[{s:l.name,size:fitS(l.name,64,720),pitch:58,fill:'${RED}'},{s:l.items.join(' + '),size:fitS(l.items.join(' + '),38,730)}]:[{s:l.name,size:fitS(l.name,72,720),fill:'${RED}'}];
-  return '<g data-apart="label"><g data-box><rect x="60" y="'+y+'" width="790" height="'+h+'" rx="34" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/>'+centred(L,455,y+h/2,F).svg+'</g></g>'; }
+function label(l){ const y=1290, h=140, w=TW-70, L=!l.single?[{s:l.name,size:fitS(l.name,RN?64:64,w),pitch:RN?62:58,fill:'${RED}'},{s:l.items.join(' + '),size:fitS(l.items.join(' + '),RN?44:38,w+10)}]:[{s:l.name,size:fitS(l.name,RN?80:72,w),fill:'${RED}'}];
+  return '<g data-apart="label"><g data-box><rect x="60" y="'+y+'" width="'+TW+'" height="'+h+'" rx="34" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/>'+centred(L,TCX,y+h/2,F).svg+'</g></g>'; }
 // the stamp: a gold pill just above Noodle's head on the fitting frame, tilted
 function stamp(cx,cy,size){ const s=size||58; return '<g data-apart="stamp" transform="rotate(-6 '+f2(cx)+' '+f2(cy)+')">'+pill(TX.fit,cx,cy,s,F,{fill:'${GOLD}',padX:34})+'</g>'; }
 function setup(d){ D=d;
@@ -168,31 +189,30 @@ function setup(d){ D=d;
 const box=(tag,b)=>'<rect data-apart="'+tag+'" x="'+f2(b[0])+'" y="'+f2(b[1])+'" width="'+f2(b[2]-b[0])+'" height="'+f2(b[3]-b[1])+'" fill="none" stroke="none"/>';
 window.frame=function(t){
   let fall='', ov='', ec='';
-  const end=t>=${LOOP}, N=D.order.length;
-  let near=0, perfect=-1;
-  for(let k=0;k<N;k++){ const li=D.order[k], sp=D.sprites[li], dt=t-D.align[k];
-    if(Math.abs(dt)<Math.abs(t-D.align[near])) near=k;
+  const end=false, N=D.order.length;
+  let near=0, nd=1e9, perfect=-1;
+  for(let k=0;k<N;k++) for(const wrap of [-${T},0,${T}]){ const li=D.order[k], sp=D.sprites[li], dt=t-(D.align[k]+wrap);
+    if(Math.abs(dt)<nd){ nd=Math.abs(dt); near=k; } // the label names the nearest costume, across the loop point too
     const v=(${H}+(sp.b[3]-sp.b[1]))/${CROSS}, dy=v*dt;
     if(Math.abs(dt)<1e-6) perfect=li;
     if(sp.b[3]+dy<0||sp.b[1]+dy>${H}) continue;
     fall+='<image href="'+sp.url+'" x="'+f2(sp.x)+'" y="'+f2(sp.y+dy)+'" width="'+sp.w+'" height="'+sp.h+'"/>'; }
-  if(!end){
+  {
     ov+=header()+label(D.looks[D.order[near]]);
     let nb=D.noodle.slice(); if(perfect>=0){ const b=D.sprites[perfect].b; nb=[Math.min(nb[0],b[0]),Math.min(nb[1],b[1]),Math.max(nb[2],b[2]),Math.max(nb[3],b[3])];
       ov+=stamp(Math.min(700,Math.max(250,(D.head[0]))), Math.max(520, nb[1]-92)); }
     ov+=box('Noodle',nb)+D.props.map((b)=>box('decor '+b.n,[b.x,b.y,b.x+b.w,b.y+b.h])).join('');
-  } else {
-    ec='<g opacity="'+f2(sm((t-${LOOP})/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>';
   }
-  $('fall').innerHTML=end&&t>${LOOP}+0.3?'':fall; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  $('fall').innerHTML=fall; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
   return checks(end);
 };
 function checks(end){
   const st=$('st'), bad=centreCheck(st); if(bad.length) return 'not centred: '+bad.join('; ');
-  const out=safeCheck(st); if(out.length) return 'outside SAFE: '+out.join('; ');
+  if(!RN){ const out=safeCheck(st); if(out.length) return 'outside SAFE: '+out.join('; '); }
   const near=apartCheck(st,28); if(near.length) return 'too close: '+near.join('; ');
   if(end) return '';
   for(const e of st.querySelectorAll('#ov text,#ov [data-box],#ov [data-apart="stamp"],#ov [data-apart="Noodle"]')){ const r=e.getBoundingClientRect(); if(!r.width) continue;
+    if(RN){ if(r.left<50||r.right>1030||r.top<40||r.bottom>1880) return 'in the margin: '+(e.getAttribute('data-apart')||e.textContent||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); continue; }
     if(r.left<56||r.right>854||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||e.textContent||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   return ''; }
 // the cover: its own design. The hook in a big card, Noodle big in the Father Christmas Suit with the "perfect fit!" stamp on the yard at night,
@@ -229,6 +249,8 @@ window.cover=function(c){
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const ht = Object.values(handles()).join('') + 'doodledoggo.app';
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [allText, ht]);
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText.replace(/[\u{1F300}-\u{1FAFF}]/gu, '')))) throw new Error('LXGW WenKai did not load'); }
   const latin = allText.replace(/[^\x20-\x7e‘-”]/g, '');
   if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
@@ -279,7 +301,7 @@ window.cover=function(c){
   const props = propBoxes(SC, PLACE.reel), fence = (FENCE_FOOT - SC.y0) * SC.s;
   if (FEET < fence + 15) throw new Error('Noodle sits on the fence, not the snow');
   await p.evaluate((d) => setup(d), { bg, plain: plain.url, sprites, looks: LOOKS, order: ORDER, align: ALIGN, noodle: plain.b, head, props, fence });
-  console.log('T =', T, 's (', LOOP, 's before the end card ),', NF, 'frames,', LOOKS.length, 'looks; Noodle', plain.b.join(','));
+  console.log('T =', T.toFixed(3), 's (a seamless loop, no end card),', NF, 'frames,', LOOKS.length, 'looks; Noodle', plain.b.join(','));
 
   if (process.env.ONLY === 'sprites') {
     for (const [i, l] of LOOKS.entries()) { await p.evaluate(([sp, l]) => { $('fall').innerHTML = '<image href="' + sp.url + '" x="' + sp.x + '" y="' + sp.y + '" width="' + sp.w + '" height="' + sp.h + '"/>'; $('ov').innerHTML = label(l); }, [sprites[i], l]);
@@ -291,16 +313,16 @@ window.cover=function(c){
 
   if (process.env.ONLY === 'cover') {
     // Noodle on the cover: sitting in the Father Christmas Suit (the game's drawing of the whole look), big, left of centre
-    const CK = 600 / NB[2], CXc = 380, CF = 1366, look = LOOKS.find((l) => l.name === 'Father Christmas Suit'), dogR = await raster(solo(look.outfit, CXc, CF, CK));
+    const CK = 600 / NB[2], CXc = 380, CF = 1366, look = LOOKS.find((l) => l.single && l.outfit.body === 'Father Christmas Suit'), dogR = await raster(solo(look.outfit, CXc, CF, CK));
     const chipsAt = [[818, 700, -4], [818, 908, 3], [818, 1116, -3], [72, 712, 4]], chipN = ['Reindeer Antlers', 'Nutcracker Jacket & Hat', 'Snowman Suit', 'Penguin Suit'];
     const chips = chipsAt.map(([x, y, r], j) => ({ x, y, r, w: 190, h: 170, art: inner(PA.item(chipN[j])) }));
     const err = await p.evaluate((c) => window.cover(c), { bg: bgc, dog: dogR.url, noodle: dogR.b, chips, stamp: [545, dogR.b[1] - 88], props: propBoxes(SCC, PLACE.cover) });
     if (err) { if (process.env.SOFT) console.log('CHECK', err); else throw new Error(err); }
-    const f = path.join(OUT, 'xmas-dress-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92 }); console.log('wrote', f); await b.close(); return; }
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-18-xmas-dress.jpg') : path.join(OUT, 'xmas-dress-cover.jpg'); await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
 
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.SOFT) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(3)); } if (!process.env.CHECK) await p.screenshot({ path: file }); };
   if (process.env.ONLY === 'stills') {
-    const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ALIGN[0] - 0.1, ALIGN[0], ALIGN[1], ALIGN[5] - 2 / FPS, ALIGN[5], ALIGN[12], ALIGN[20], ALIGN[30], LOOP + 1.5];
+    const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ALIGN[0] - 0.1, ALIGN[0], ALIGN[1], ALIGN[5] - 2 / FPS, ALIGN[5], ALIGN[12], ALIGN[20], ALIGN[30], (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
     console.log(ts.length, 'stills in', path.join(WORK, 'stills')); await b.close(); return; }
   const t0 = Date.now();
@@ -312,26 +334,30 @@ window.cover=function(c){
   await b.close(); if (process.env.CHECK) { console.log('all', fr.length, 'frames checked'); return; }
   for (let fi = NF; fs.existsSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); fi++) fs.unlinkSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`));
 
-  // ---- sound: the game's Winter Market night music, a quiet crayon whoosh as each costume passes Noodle, fading under the end card ----
+  // ---- sound: the game's Winter Market night music, rendered 2.2 s longer and crossfaded end into start so the loop has no seam (as
+  //      ../costume_reel/build_costumes.js), and a quiet crayon whoosh as each costume passes Noodle (wrapping round the loop point) ----
   const ab = await chromium.launch({ executablePath: exe, args: ['--autoplay-policy=no-user-gesture-required'] });
   const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ART_ROOT, 'mods', 'pawaudio.js') });
   const wav = await ap.evaluate(async ([s]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.8, ambience: 0.06 },
-    segments: [{ at: 0, ctx: { place: 'fmarket', fest: 'winter', time: 'night', weather: 'snow' } }] })).wav, [T + 0.5]);
+    segments: [{ at: 0, ctx: { place: 'fmarket', fest: 'winter', time: 'night', weather: 'snow' } }] })).wav, [T + 2.2]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64')); await ab.close();
   { const SR = 44100, n = Math.ceil(T * SR), buf = new Float32Array(n); let seed = 3; const noise = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x3fffffff - 1; };
-    for (const t0 of ALIGN) { let lp = 0; for (let i = 0; i < 0.3 * SR; i++) { const t = i / SR, e = Math.sin(Math.PI * t / 0.3) ** 3; lp += 0.12 * (noise() - lp); const j = Math.floor((t0 - 0.15) * SR) + i; if (j >= 0 && j < n) buf[j] += 0.7 * e * lp; } }
+    for (const t0 of ALIGN) { let lp = 0; for (let i = 0; i < 0.3 * SR; i++) { const t = i / SR, e = Math.sin(Math.PI * t / 0.3) ** 3; lp += 0.12 * (noise() - lp); const j = Math.floor((t0 - 0.15) * SR) + i; buf[((j % n) + n) % n] += 0.7 * e * lp; } }
     const pcm = Buffer.alloc(44 + n * 2); pcm.write('RIFF', 0); pcm.writeUInt32LE(36 + n * 2, 4); pcm.write('WAVEfmt ', 8); pcm.writeUInt32LE(16, 16); pcm.writeUInt16LE(1, 20); pcm.writeUInt16LE(1, 22);
     pcm.writeUInt32LE(SR, 24); pcm.writeUInt32LE(SR * 2, 28); pcm.writeUInt16LE(2, 32); pcm.writeUInt16LE(16, 34); pcm.write('data', 36); pcm.writeUInt32LE(n * 2, 40);
     for (let i = 0; i < n; i++) pcm.writeInt16LE((Math.max(-1, Math.min(1, buf[i])) * 32767) | 0, 44 + i * 2);
     fs.writeFileSync(path.join(WORK, 'sfx.wav'), pcm); }
   const ff = (args) => cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...args]);
   const pre = path.join(WORK, 'premix.wav'), mixWav = path.join(WORK, 'mix.wav');
-  ff(['-i', path.join(WORK, 'music.wav'), '-i', path.join(WORK, 'sfx.wav'), '-filter_complex',
-    `[0:a]atrim=0:${T},asetpts=PTS-STARTPTS,afade=t=in:d=0.3,afade=t=out:st=${LOOP}:d=${(T - LOOP).toFixed(2)}[m];[1:a]volume=0.55,aformat=channel_layouts=stereo[s];[m][s]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.6:level=false[a]`,
+  const raw = path.join(WORK, 'music.wav'), loopWav = path.join(WORK, 'music_loop.wav'), Ts = T.toFixed(4);
+  // (two inputs, not asplit: with asplit + amix, ffmpeg 6.1 ended the mix after 0.02 s)
+  ff(['-i', raw, '-i', raw, '-filter_complex', `[0]atrim=1:${(1 + T).toFixed(4)},asetpts=PTS-STARTPTS,afade=t=in:d=1:curve=qsin[a];[1]atrim=${(1 + T).toFixed(4)}:${(2 + T).toFixed(4)},asetpts=PTS-STARTPTS,afade=t=out:d=1:curve=qsin,apad=whole_dur=${Ts}[b];[a][b]amix=inputs=2:duration=first:normalize=0[o]`, '-map', '[o]', loopWav]);
+  ff(['-i', loopWav, '-i', path.join(WORK, 'sfx.wav'), '-filter_complex',
+    `[0:a]atrim=0:${Ts},asetpts=PTS-STARTPTS[m];[1:a]volume=0.55,aformat=channel_layouts=stereo[s];[m][s]amix=inputs=2:duration=first:normalize=0[a]`,
     '-map', '[a]', '-ar', '44100', pre]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-dress-noodle-christmas.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-dress-noodle-christmas-rednote.mp4' : 'doodle-doggo-dress-noodle-christmas.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '19', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
