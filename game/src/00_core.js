@@ -176,7 +176,10 @@ const CLOTHES = [
   { n: 'Little Sneakers', slot: 'feet', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: four tiny sneakers with pink lace dots. They come off for naps.' },
   { n: 'Paw Tote', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a little canvas tote with a paw print, for one biscuit and big plans.' },
   { n: 'Round Shades', slot: 'eyes', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: round sunglasses. Nobody has ever looked so relaxed.' },
-  { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' }
+  { n: 'Lucky Cat Charm', slot: 'neck', price: 0, bond: 1, ks: 'tokyo', reward: true, perk: 'Tokyo Street: a tiny lucky cat on the collar, one paw up to wave hello.' },
+  // Promo-code looks (docs/design/promo-items.md): only from a promotion code the owner posts for followers, never sold or earned (promo; reward keeps every
+  // shop, market, stall, level and Bond list off them; bond 1 keeps them off the Bond-up cards). Looks only: the perk is flavour. Drawn in dogs/pawart_dogs.js (NECK2)
+  { n: 'Follower Star Bandana', slot: 'neck', price: 0, bond: 1, promo: true, reward: true, perk: 'Thank you for following: a sky-blue bandana with crayon stars and a tiny paw print. Only from a code.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },

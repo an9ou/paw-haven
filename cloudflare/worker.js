@@ -227,14 +227,17 @@ async function sendMail(env, to, m) {
 /* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
-const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 57 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six)
+const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 58 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six); v2.25.5 gift codes: +1 outfit (the Follower Star Bandana, appended last: 57 -> 58; a game copy meeting an older Worker drops it from its card, 40_dogcards.js DC_OUTFITS_OLD)
 // v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
 //   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
 //             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
-//   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
+//   decor 32: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included. v2.25.5 gift codes: +1 decor (the
+//             Paw-Print Pennant, appended last: 31 -> 32). MERGE NOTE for the GM: this is a delta of +1 on whatever the list is when it merges
+//             (claude/release-26-29 has 35 with the four yard toys, so 36 there; Sakura 40, so 41); the Pennant goes after the toys and FR_DECOR_OLD
+//             (game/src/50_friends.js) stays the deployed Worker's length. Same for DC_LIM.outfit: +1 on the list as merged.
 //   houses 15: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
-const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 15 };
+const FR_LIM = { notes: 12, gifts: 47, decor: 32, houses: 15 }; // v2.25.5: decor +1 (the Paw-Print Pennant)
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'], I: ['I', 'i'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE; I = RED_I, the fox red Lab and dark golden, optional)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

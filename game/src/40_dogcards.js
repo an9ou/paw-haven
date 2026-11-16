@@ -34,7 +34,8 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Candy Corn Bandana', 'Bat Wings', 'Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Ugly Sweater Rosette', 'Year of the Sheep Hood', 'Astronaut Helmet',
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume',
-  'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm']; // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
+  'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm', // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
+  'Follower Star Bandana']; // the promo-code bandana (the Worker's DC_LIM.outfit 58)
 // v2.25.5 gift codes (PROMO.md 5): the length of DC_OUTFITS that a Worker from before the gift codes takes (its DC_LIM.outfit 57). It refuses a card with
 // a newer outfit index (400 bad_card), so dcPublish sends it once more with those dogs in no outfit (DC.outfitOld) until the next load
 const DC_OUTFITS_OLD = 57;

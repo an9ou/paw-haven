@@ -34,7 +34,8 @@ const FR_NOTES = [
 const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
   'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern',
-  'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair'
+  'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair',
+  'Paw-Print Pennant' // promo-code look (the Worker's FR_LIM.decor 32)
 ];
 // v2.25.5 gift codes (PROMO.md 5): the length of FR_DECOR that a Worker from before the gift codes takes (its FR_LIM.decor 31). It refuses the whole
 // snapshot when one index is past it, so if PUT /friends/yard says bad while a newer item is out, frAfterPush sends the same yard once more without the

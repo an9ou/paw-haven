@@ -171,6 +171,20 @@ run('promo', async (t) => {
   await closeAll();
   const keep = await ev(() => window.__paw.S.coins);
 
+  sec('6b. a Dog Card with the Follower Star Bandana meets an older Worker (DC_LIM.outfit 57): sent again without it');
+  { const h0 = srv.handle; let refused = 0, sent = null;
+    srv.handle = async (page, m, u, b, a) => { if (srv.oldDc && m === 'PUT' && u === '/card') { const x = JSON.parse(b || '{}'); if ((x.dogs || []).some((d) => d.o >= 57)) { refused++; return { status: 400, text: '{"error":"bad_card"}' }; } sent = x; } return h0(page, m, u, b, a); };
+    srv.oldDc = true;
+    const dc = await ev(async () => { const P = window.__paw, S = P.S, C = window.__pawCloud.CL; if (!S.inv.clothes.includes('Follower Star Bandana')) S.inv.clothes.push('Follower Star Bandana'); S.dog.outfit.neck = 'Follower Star Bandana'; S.dog.outfit.body = null;
+      S.dc.on = true; S.dc.uid = C.uid; S.dc.dogs = [{ id: S.dog.id }]; const before = P.dc.payload().dogs.map((d) => d.o); P.dc.outfitOld(false); await P.dc.sync(); return { before, old: P.dc.outfitOld(), oldN: P.dc.outfitOldN, list: P.dc.lists.outfits.indexOf('Follower Star Bandana'), mine: P.dc.mine ? P.dc.mine.dogs.map((d) => d.o) : null }; });
+    ok(dc.list === 57 && dc.before[0] === 57 && dc.oldN === 57, 'the bandana is DC_OUTFITS 57 and the card carries it: ' + JSON.stringify(dc));
+    ok(refused === 1 && sent && sent.dogs[0].o === -1 && dc.old === true && dc.mine && dc.mine[0] === -1, 'the older Worker refuses it once; the card goes again with no outfit and stays shared: ' + JSON.stringify({ refused, sent: sent && sent.dogs.map((d) => d.o), dc }));
+    await ev(() => window.__paw.dc.sync()); ok(refused === 1, 'a later sync does not knock again');
+    srv.oldDc = false; srv.handle = h0;
+    await ev(() => { const P = window.__paw, S = P.S; P.dc.outfitOld(false); S.dc.on = false; S.dog.outfit.neck = null; P.saveNow(); });
+    await ev(() => window.__paw.dc.sync());
+  }
+
   sec('7. a fresh device with no cloud save: everything comes back once');
   await ev(() => window.__paw.saveNow());
   raw.prepare('delete from saves').run(); // the account has no cloud save (a new game on a new phone)
