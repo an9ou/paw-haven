@@ -167,6 +167,45 @@ const sec = (s) => console.log('--- ' + s);
     const sch = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     ok(/create table if not exists promo_codes/.test(sch) && /create table if not exists promo_redemptions/.test(sch) && /check \(cap is null or used <= cap\)/.test(sch) && /unique \(code, user_id\)/.test(sch), 'schema.sql: both tables, create if not exists, the CHECK and the unique pair');
     let dup = null; try { DB.raw.exec(sch); } catch (e) { dup = e; } ok(!dup, 'schema.sql runs again on a database that has them');
+
+    sec('12. tools/promo.sh (DRY_RUN=1: its D1 requests run here on the local D1)');
+    const cp = require('child_process');
+    const cli = (...args) => { try { return { code: 0, out: cp.execFileSync('bash', [path.join(ROOT, 'tools', 'promo.sh'), ...args], { cwd: ROOT, env: Object.assign({}, process.env, { DRY_RUN: '1' }), stdio: ['ignore', 'pipe', 'pipe'] }).toString() }; } catch (e) { return { code: e.status, out: String(e.stdout || ''), err: String(e.stderr || '') }; } };
+    const apply = (out) => out.split('\n').filter((l) => l.startsWith('{')).map((l) => { const b = JSON.parse(l); const st = DB.raw.prepare(b.sql); return /^\s*select/i.test(b.sql) ? st.all(...(b.params || [])) : st.run(...(b.params || [])); });
+    const ITEMS = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'promo_items.json'), 'utf8'));
+    const anItem = (ITEMS.items.find((x) => x.promo) || ITEMS.items.find((x) => x.kind === 'clothes')).n;
+    let c1 = cli('create', 'CLI-SHARED', '--items', anItem, '--coins', '150', '--treats', 'Pupcake:2,Blueberry Bites', '--to', '2099-12-31', '--cap', '3', '--note', 'test');
+    ok(c1.code === 0, 'create: a valid shared code (' + (c1.err || '') + ')');
+    apply(c1.out);
+    const row = q('select * from promo_codes where code = ?', 'CLISHARED');
+    ok(row && row.shown === 'CLI-SHARED' && row.kind === 'shared' && row.cap === 3 && row.ends_at === Date.UTC(2099, 11, 31, 15, 0, 0) && JSON.parse(row.reward).treats['Blueberry Bites'] === 1, 'the row: shown, shared, cap 3, ends at the end of 31 Dec 2099 in Japan, treats counted: ' + JSON.stringify(row));
+    const G2 = await account();
+    r = await redeem('cli-shared', G2); ok(r.status === 200 && r.json.reward.coins === 150 && r.json.reward.items[0] === anItem, 'and the Worker redeems it: ' + r.text);
+    c1 = cli('batch', 'clitest', '5', '--coins', '50', '--to', '2099-01-31');
+    ok(c1.code === 0, 'batch: 5 unique codes');
+    apply(c1.out);
+    const codes = c1.out.split('\n').filter((l) => /^CLITEST-/.test(l));
+    ok(codes.length === 5 && codes.every((c) => /^CLITEST-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/.test(c)) && new Set(codes).size === 5, 'printed, readable (no 0 O 1 I L), all different: ' + codes.join(' '));
+    ok(n("select count(*) as n from promo_codes where batch = 'CLITEST' and kind = 'unique' and cap = 1") === 5, 'five rows, unique, cap 1');
+    r = await redeem(codes[0].toLowerCase(), G2); ok(r.status === 200, 'a batch code redeems');
+    r = await redeem(codes[1], G2); ok(is(r, 409, 'used'), 'one per account per batch');
+    const big = cli('batch', 'BIG', '90', '--coins', '10');
+    ok(big.code === 0 && big.out.split('\n').filter((l) => l.startsWith('{')).length === 3 && big.out.split('\n').filter((l) => l.startsWith('{')).every((l) => JSON.parse(l).params.length <= 100), '90 codes go in 3 requests of at most 100 parameters (the D1 limit)');
+    apply(big.out); ok(n("select count(*) as n from promo_codes where batch = 'BIG'") === 90, 'all 90 made');
+    const bad = [
+      [['create', 'TOO-RICH', '--coins', '501'], /ceiling/], [['create', 'NO-ITEM', '--items', 'Moon Boots'], /unknown item/], [['create', 'NO-TREAT', '--treats', 'Grapes:2'], /unknown treat/],
+      [['create', 'BAD-TREAT', '--treats', 'Pupcake:11'], /1-10/], [['create', 'NOTHING']], [['create', 'X1', '--coins', '5'], /4-40/], [['create', 'BAD-DATE', '--coins', '5', '--to', '31/12/2026'], /YYYY-MM-DD/],
+      [['create', 'OLD-DATE', '--coins', '5', '--to', '2020-01-01'], /past/], [['create', 'BACKWARDS', '--coins', '5', '--from', '2099-02-01', '--to', '2099-01-01'], /before/],
+      [['create', 'BAD-CAP', '--coins', '5', '--cap', '0']], [['create', 'ODD-FLAG', '--coins', '5', '--colour', 'red'], /unknown option/], [['batch', 'P', '5', '--coins', '5']], [['batch', 'PFX', '0', '--coins', '5']],
+      [['batch', 'PFX', '3', '--coins', '5', '--cap', '2'], /unknown option/], [['stats']], [['frobnicate']]
+    ];
+    const badOut = bad.map(([args, re]) => { const x = cli(...args); return { args: args.join(' '), ok: x.code === 2 && !x.out.includes('{"sql"') && (!re || re.test(x.err || '')), err: (x.err || '').split('\n')[0] }; });
+    ok(badOut.every((x) => x.ok), 'refused with exit 2 and no request: coins over 500, unknown item or treat, a treat count over 10, no reward, a short code, bad, past or backwards dates, cap 0, unknown flags, a bad batch: ' + badOut.filter((x) => !x.ok).map((x) => x.args + ' -> ' + x.err).join(' | '));
+    const sh = fs.readFileSync(path.join(ROOT, 'tools', 'promo.sh'), 'utf8');
+    ok(/'params'/.test(sh) && !/\$\{?[0-9A-Z_]+\}?['"]?\s*\+?\s*['"]?\s*(where|values)/i.test(sh) && /docs\/marketing\/promo/.test(sh), 'arguments travel as D1 params; the CSV goes to docs/marketing/promo/');
+    ok(/docs\/marketing\/promo\/\*\.csv/.test(fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8')), '.gitignore keeps the code lists out of git');
+    for (const s2 of ['list', 'stats', 'disable', 'enable']) { const x = cli(s2, ...(s2 === 'list' ? [] : ['CLITEST'])); let okq = x.code === 0; try { apply(x.out); } catch (e) { okq = false; } ok(okq, s2 + ': its SQL runs'); }
+    ok(n("select count(*) as n from promo_codes where batch = 'CLITEST' and disabled = 0") === 5, 'disable then enable leaves the batch on');
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
   console.log(`${passes} passed, ${fails} failed (${((Date.now() - t0) / 1000).toFixed(1)} s)`);
   if (!fails) console.log('ALL OK');

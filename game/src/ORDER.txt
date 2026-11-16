@@ -73,4 +73,5 @@
 52_kindshop.js
 53_welcome.js
 54_coinfly.js
+55_promo.js
 23_boot.js

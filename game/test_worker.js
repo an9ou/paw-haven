@@ -831,6 +831,25 @@ async function checks(label, call, sql, mail) {
     ok((await nOf('select count(*) as n from friend_blocks where user_id = ? or blocked_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_blocks rows');
     ok((await nOf('select count(*) as n from friend_events where from_id = ? or to_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_events rows');
   }
+  // v2.25.5 gift codes (PROMO.md; the full suite is test_promo_worker.js): here once more on workerd's own D1, where a batch is all or nothing
+  // and the CHECK (used <= cap) must roll back the losing insert
+  {
+    const ip = '10.25.77.';
+    const acct = async (i) => { const g = (await call('POST', '/guest', {}, null, { 'CF-Connecting-IP': ip + i })).json; return (await call('POST', '/register', { email: 'promo' + i + '@example.com', password: 'pupper123' }, g.token, { 'CF-Connecting-IP': ip + i })).json; };
+    const now = Date.now();
+    await sql("insert into promo_codes (code, shown, kind, batch, reward, starts_at, ends_at, cap, used, disabled, note, created_at) values ('WFONE', 'WF-ONE', 'shared', null, ?, ?, ?, 1, 0, 0, null, ?)", JSON.stringify({ items: ['Red Bandana'], coins: 900 }), now - 1000, now + 864e5, now, true);
+    const p1 = await acct(1), p2 = await acct(2);
+    let x = await call('POST', '/promo/redeem', { code: 'wf one' }, p1.token, { 'CF-Connecting-IP': ip + 1 });
+    ok(x.status === 200 && x.json.reward.coins === 500 && x.json.code === 'WF-ONE', 'promo: redeem a cap-1 code, coins clamped to 500: ' + x.text);
+    x = await call('POST', '/promo/redeem', { code: 'WF-ONE' }, p2.token, { 'CF-Connecting-IP': ip + 2 });
+    ok(x.status === 409 && x.json.error === 'gone', 'promo: the cap is reached for the next account');
+    let thrown = null;
+    try { await sql("update promo_codes set used = used + 1 where code = 'WFONE'", true); } catch (e) { thrown = e; }
+    ok(thrown && /CHECK/i.test(String(thrown.message)), 'promo: D1 refuses used > cap (CHECK constraint): ' + (thrown && thrown.message));
+    x = await call('GET', '/promo/mine', null, p1.token, { 'CF-Connecting-IP': ip + 1 });
+    ok(x.status === 200 && x.json.redemptions.length === 1 && x.json.redemptions[0].code === 'WF-ONE' && x.json.redemptions[0].reward.coins === 500, 'promo: /promo/mine lists it as granted');
+    ok(((await sql('select count(*) as n from promo_redemptions where code = ?', 'WFONE')) || {}).n === 1, 'promo: one redemption row');
+  }
 }
 
 /* ---------------- backends ---------------- */
