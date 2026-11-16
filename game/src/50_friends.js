@@ -36,6 +36,10 @@ const FR_DECOR = [
   'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern',
   'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair'
 ];
+// v2.25.5 gift codes (PROMO.md 5): the length of FR_DECOR that a Worker from before the gift codes takes (its FR_LIM.decor 31). It refuses the whole
+// snapshot when one index is past it, so if PUT /friends/yard says bad while a newer item is out, frAfterPush sends the same yard once more without the
+// newer items (FR.decorOld) until the next load. (claude/release-26-29 has the same constant for its v2.26 yard toys: keep one, at the deployed Worker's length)
+const FR_DECOR_OLD = 31;
 /* append only, never reorder: the Worker validates indices */
 const FR_HOUSES = ['Cardboard Box', 'Classic Wooden Doghouse', 'Cozy Cottage', 'Snow Igloo', 'Treehouse Den', 'Royal Castle Kennel', 'Little Tea House', 'Beach Hut', 'Camper Van', 'Pumpkin Cottage', 'Lighthouse Kennel', 'Friendly Haunted Kennel', 'Gingerbread Kennel', 'Rocket Ship', 'Golden Paw Cottage']; // v2.24: + the Supporter House (the Worker's FR_LIM.houses 15)
 /* append only, never reorder: the Worker validates indices.
@@ -140,7 +144,7 @@ function frYard() {
   Object.keys((S && S.decor) || {}).forEach((n) => {
     if (decor.length >= 40) return;
     const rec = S.decor[n]; if (!rec || !rec.out) return;
-    const i = FR_DECOR.indexOf(n); if (i < 0) return;
+    const i = FR_DECOR.indexOf(n); if (i < 0 || (FR.decorOld && i >= FR_DECOR_OLD)) return;
     const cat = typeof HM_DECOR !== 'undefined' ? HM_DECOR[n] : null;
     const at = Array.isArray(rec.at) && rec.at.length >= 2 ? rec.at : (cat && cat.at) || null;
     if (!at) return;
@@ -163,7 +167,12 @@ function frAfterPush() {
     const yard = frYard(); if (!yard) return Promise.resolve(false);
     FR.yardAt = Date.now();
     const ids = frYardDogs().map((o) => o.d.id);
-    return frApi('PUT', '/friends/yard', { yard }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
+    const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
+    return put(yard).then((r) => {
+      // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
+      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(Object.assign({}, yard, { decor: yard.decor.filter((d) => d.i < FR_DECOR_OLD) })); }
+      return r;
+    }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
 }
 
@@ -1619,6 +1628,7 @@ function frExpose() {
       return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
+    decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD,
     yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
     note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,

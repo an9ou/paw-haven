@@ -35,6 +35,9 @@ const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Hear
   'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
   'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume',
   'Golden Name Tag', 'Sukajan Jacket', 'Bucket Hat', 'Little Sneakers', 'Paw Tote', 'Round Shades', 'Lucky Cat Charm']; // v2.24: the kind shop wearables (the Worker's DC_LIM.outfit 57)
+// v2.25.5 gift codes (PROMO.md 5): the length of DC_OUTFITS that a Worker from before the gift codes takes (its DC_LIM.outfit 57). It refuses a card with
+// a newer outfit index (400 bad_card), so dcPublish sends it once more with those dogs in no outfit (DC.outfitOld) until the next load
+const DC_OUTFITS_OLD = 57;
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
 /* v2.23 (review fix): a card dog's eyes and its coat pattern. phenotype() rolls Bl/bl and merle eyes from the dog's id and the art places merle smudges,
    white patches and spots from it (seed = hashId(id)), and a card dog has its own id, so the card sends both: e = the eyes (an index into DC_EYES, only
@@ -113,7 +116,7 @@ async function dcApi(method, path, body) { const r = await clApi(method, path, b
 /* ---------------- my card (the payload) ---------------- */
 function dcOwnNameIdx(d) { const i = DC_DOG_NAMES.findIndex((n) => n.toLowerCase() === String(d.name || '').trim().toLowerCase()); return dcNameOk(i) ? i : -1; }
 function dcDefaultNm(d) { const own = dcOwnNameIdx(d); if (own >= 0) return own; const b = dcBreeds().indexOf(d.key); return b >= 0 && b < DC_BREED_WORDS.length ? DC_PET_NAMES.length + b : 0; }
-function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes', 'feet']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0) return i; } return -1; }
+function dcOutfitIdx(d) { const o = d.outfit || {}; for (const s of ['body', 'neck', 'head', 'eyes', 'feet']) { const i = DC_OUTFITS.indexOf(o[s]); if (i >= 0 && !(DC.outfitOld && i >= DC_OUTFITS_OLD)) return i; } return -1; }
 function dcCoat(d) {
   const g = d.genes; if (!g || typeof g !== 'object') return null;
   const out = {}; Object.keys(DC_LOCI).forEach((k) => { const v = g[k]; if (Array.isArray(v) && v.length === 2 && v.every((a) => DC_LOCI[k].includes(a))) out[k] = [v[0], v[1]]; });
@@ -448,8 +451,11 @@ function dcSettings(force) {
 async function dcPublish() {
   if (!dcAcct()) return { ok: false, msg: dcNeedLogin() };
   if (!dcOptIn()) return { ok: false, msg: tt('cards.switch_on', 'Switch on Share my Dog Card first.') };
-  const pl = dcPayload(); if (!pl.dogs.length) return { ok: false, msg: tt('cards.pick_one_card', 'Pick at least one dog for your card.') };
+  let pl = dcPayload(); if (!pl.dogs.length) return { ok: false, msg: tt('cards.pick_one_card', 'Pick at least one dog for your card.') };
   let r = null; try { r = await dcApi('PUT', '/card', pl); } catch (e) { r = null; }
+  if (r && !r.ok && r.status === 400 && !DC.outfitOld && pl.dogs.some((x) => x.o >= DC_OUTFITS_OLD)) { // an older Worker (DC_LIM.outfit 57): once more without the newer outfits
+    DC.outfitOld = true; pl = dcPayload(); try { r = await dcApi('PUT', '/card', pl); } catch (e) { r = null; }
+  }
   if (!r) return { ok: false, msg: tt('cards.offline', 'Cloud save is offline. Try again in a moment.') };
   if (!r.ok || !r.data) return { ok: false, msg: r.status === 429 ? tt('cards.too_many', 'Too many saves. Wait a few minutes and try again.') : tt('cards.failed', "That didn't work. Try again in a moment.") };
   DC.mine = r.data; if ((DC.mine.paws | 0) < S.dc.got) { S.dc.got = DC.mine.paws | 0; markDirty(); }
@@ -488,6 +494,7 @@ window.addEventListener('focus', () => { if (DC.uid && Date.now() - DC.syncAt > 
 function dcExpose() {
   if (!window.__paw) return;
   window.__paw.dc = {
+    outfitOld: (v) => { if (v !== undefined) DC.outfitOld = !!v; return !!DC.outfitOld; }, outfitOldN: DC_OUTFITS_OLD, // v2.25.5: the older-Worker fallback
     mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreedsAll(), get live() { return dcBreeds(); }, get nameN() { return dcNameN(); } }, // v2.21: breeds = every PawGenes breed (the Worker's DC_LIM), live = the ones a card may carry now
     visitors: () => DC.vis.map((v) => ({ card: v.card.id, i: v.i, key: v.dog.key, size: sizeOf(v.dog), name: v.dog.name, x: v.x, y: v.y, k: v.k, hidden: v.hidden, moving: !!v.tw, tap: rmTapBox(v.x, v.y, v.k) })),
     cards: () => (DC.cards || []).map((c) => c.id), visit: (ids) => { DC.pick = ids || null; DC.place = ''; DC.cards = null; return dcVisit(); },

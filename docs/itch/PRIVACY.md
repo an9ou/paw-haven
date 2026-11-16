@@ -33,6 +33,10 @@ You can use Friends as a guest or with an account. It starts when you pick a fri
 - **Remove and block** are quiet. The other player is not told.
 - **Leave Friends** in Settings deletes it all: your code, your friends list, the blocks you made, your yard snapshot, and the pets, notes, gifts and walks. A block someone else made stays.
 
+## Gift codes
+
+- **A gift code you type in the game** is sent only to our server, to check it. We keep which codes your account used, so their gifts can come back on a new device. Gift codes need an account; nothing about them is paid.
+
 ## Where it is kept
 
 Account data and saves are stored with Cloudflare, who run the login service. They keep the data only so the game can load and save it. Where you play (doodledoggo.app, GitHub Pages or itch.io) the game runs in your browser. itch.io has its own privacy policy for its own site.
