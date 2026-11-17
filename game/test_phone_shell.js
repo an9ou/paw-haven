@@ -179,6 +179,10 @@ require('./test_lib').run('phone_shell', async (t) => {
     ok(th.length === 0 && await ev(() => !!document.querySelector('#toasts .toast.tq')), `${dev}: a toast from before the sheet opened waits, off its title and tabs ${JSON.stringify(th)}`);
     await clearT(); await ev(() => window.__paw.toast('New mail: a note.', 'gold')); await sleep(300); th = await tabHit();
     ok(th.length === 0, `${dev}: a toast while the Journal is open waits, off its tab row ${JSON.stringify(th)}`);
+    // bug sweep 18 Nov: at most three wait under a sheet; a reward (gold) is kept and the oldest plain ones go
+    await clearT(); await ev(() => { const T = window.__paw.toast; T('plain one'); T('Reward A: +10 coins.', 'gold'); T('plain two'); T('plain three'); T('plain four'); });
+    const wq = await ev(() => [...document.querySelectorAll('#toasts .toast.tq')].map((e) => e.textContent));
+    ok(wq.length === 3 && wq.includes('Reward A: +10 coins.') && !wq.includes('plain one') && !wq.includes('plain two'), `${dev}: under a sheet the reward toast keeps its place in the queue, plain ones go first ${JSON.stringify(wq)}`);
     await p.locator('.panel .x').tap(); await t.modalGone(); await clearT();
 
     sec(dev + ': long-press tooltip');

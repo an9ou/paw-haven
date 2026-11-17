@@ -1383,7 +1383,9 @@ function toast(text, kind = '', o = {}) {
     if (o.now && !hold) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
     toasts.appendChild(t);
     if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
-    const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
+    // at most three wait. Bug sweep 18 Nov: since v2.30.1 every sheet holds them, so a walk results card often ends with 6-8 waiting; the oldest plain
+    // one goes first (as on wide screens), and a gold one (a reward: a wish, a story task, a step of the first day) or a screen's own answer (o.scr) only when all are
+    const q = [...toasts.querySelectorAll('.toast.tq')]; while (q.length > 3) { const i = Math.max(0, q.findIndex((e) => !e.classList.contains('gold') && !e.dataset.scr)); q.splice(i, 1)[0].remove(); }
   } else {
     toasts.appendChild(t); if (toastScene()) t.classList.add('tq'); else toastRun(t);
     // up to three show at once; v2.29 code review: the ones held during a scene are not dropped by that cap. At most 8 wait (the oldest
