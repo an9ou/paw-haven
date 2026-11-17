@@ -26,3 +26,5 @@ html[data-layout="phone"] .nw-page.big h3{font-size:24px}
 html[data-layout="phone"] .nw-tx{font-size:16px}
 html[data-layout="phone"] .nw-ic{flex-basis:40px;width:40px;height:40px}
 html[data-layout="phone"] .nw-pop .foot .nw-ok{width:100%}
+/* v2.30.1 (audit 17 Nov, Thai): the list fades out above the OK bar and its last line scrolls clear of it, never cut on the bar's edge */
+html[data-layout="phone"] .panel.nw-pop .panel-body{padding-bottom:26px;-webkit-mask-image:linear-gradient(#000 calc(100% - 24px),transparent);mask-image:linear-gradient(#000 calc(100% - 24px),transparent)}

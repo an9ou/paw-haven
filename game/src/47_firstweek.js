@@ -40,6 +40,7 @@ function fwStepDone(i) {
   if (last && S.bond.level < 2) b += addBond(Math.max(1, BOND_TH[1] - S.bond.pts), { raw: true }); // the first day always ends at Bond 2
   setTimeout(() => toast(tt('fw.step_done', 'First day: step {i} of {n} done. +{b} Bond.', { i: i + 1, n: FW_STEPS.length, b }), 'good'), 700);
   if (last) { S.guide.done = localISO(); markDirty(); gdBye(); } else gdGo(i + 1, true);
+  saveNow(); // v2.30.1: every first-day step is saved at once (gdGo saves too; the step's own change, a name tag or a pet, is in it)
 }
 // the first day is over (done or skipped): the calendar opens once the yard is calm (fwMorningTry)
 function fwGuideEnd(skipped) {
@@ -70,6 +71,7 @@ function fwTagOpen() {
     const v = inp.value.replace(/\s+/g, ' ').trim().slice(0, 12); if (v) d.name = v; d.fwTag = col; markDirty(); SFX.boop(720);
     hudDogKey = ''; setHudDog(); closeModal();
     toast(tt('fw.tag_on', '{name} wears the new name tag. Very official.', { name: d.name }), 'good'); trackAct('nametag', { id: d.id });
+    saveNow(); // v2.30.1 (audit 17 Nov): the new name and the guide step are saved at once; a reload 2 s later went back to the name-tag step
   };
 }
 function fwTagName(k) {

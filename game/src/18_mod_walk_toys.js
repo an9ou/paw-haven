@@ -9,7 +9,7 @@ function enterWalkMod(area) {
   let rolls = 0, ended = false;
   const walk15 = buffOn('walk15'), dig1 = buffOn('dig1');
   if (walk15 || dig1) { if (dig1 && S.outfit.head === 'Acorn Cap') { addStat('happy', 10); toast(tt('toys.spinach_cap', 'Spinach power + Acorn Cap: digs are maxed, so +10 Happiness instead.'), 'good'); } else toast(walk15 ? tt('toys.carrot_power', 'Carrot Crunchies power: +15 seconds on this walk!') : tt('toys.spinach_power', 'Spinach Scramble power: +1 dig on this walk!'), 'good'); S.buff = null; markDirty(); }
-  W = { mod: true, area, env: e, ended: false };
+  W = { mod: true, area, env: e, ended: false, first: firstWalk }; // v2.30.1: first = the player's very first walk (finishWalkMod: firstWalkFind)
   const o = {
     area, time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, dog: Object.assign(dogForMod(), { size: sizeK(D()) }), durationSec: Math.round(R.secs * pkWalkScale()) + (walk15 ? 15 : 0), firstWalk, pack: pkWalkLooks().map((l, i) => Object.assign(l, { size: sizeK(pkWalkers()[i]) })).concat(typeof frGuestLooks === 'function' ? frGuestLooks() : []), // v2.19: plus a friend's dog (friend: true, cosmetic).  v2: 3 to 6 months x0.7 (v2.9 PACK: the shortest walker decides; pack: the followers' looks, [] with one dog). v2.11.1: size = each walker's size class (sizeK), the runner draws the followers by it
     skipTutorial: !!prefs.skipTut, setSkipTutorial: (v) => { prefs.skipTut = !!v; savePrefs(); },
@@ -35,6 +35,7 @@ function enterWalkMod(area) {
 function finishWalkMod(R, r) {
   pottyWalked();
   const e = W.env, rainCoat = e.weather === 'rain' && hasRaincoat();
+  if (W.first && !(r.treasure && (r.treasure.name || r.treasure.coins))) { const ff = firstWalkFind(W.area); if (ff) r.treasure = { name: ff.item.n, dup: false, gift: true }; } // v2.30.1: the first walk always finds something
   const went = !r.early || (+r.distance || 0) >= 2 || !!r.treasure; // a walk headed home at the start covered no ground: it is not one of the day's walks, no friend coins, no letter (as the classic walk's frac > 0.05)
   const wk = went ? walkCount() : null, raw = Math.max(0, +r.coins || 0), pouch = Math.round((W.pouch || 0) * (S.outfit.charm === 'Lucky Penny' ? 1.1 : 1)); // Daily rhythm: walks after the 5th today pay half (the runner's pouch coins stay whole)
   const c0 = S.coins, pay = addCoins(pkWalkCoins(walkShare(raw, pouch, wk ? wk.share : 1))); // v2.9 PACK: one walk's pay, +10% (rounded down) when 2 or more dogs walk
@@ -60,7 +61,7 @@ function finishWalkMod(R, r) {
   const p = openModal(t ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(r.early ? tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn }) : tt('walk.res_title_done', 'Walk complete: {route}', { route: rn })), `${tre}${bonus}${junk}${run}
     ${wfTiles([[`+${tnum(coins)}`, esc(tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${Math.round(en)}`, esc(tt('walk.res_energy', 'Energy')), Math.round(en)], [cl ? '-' + Math.round(cl) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cl]], 'results compact')}`,
     { cls: 'celebrate', keep: true, foot: `${t && !dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(t && !dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
-  jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
+  resDog(p); jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
   coinFly($('.res-coins .v', p), coins, { gain: gained, delay: 420 }); // v2.25.2: one coin pops from the Paw Coins tile and flies to the counter (54_coinfly.js)
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };

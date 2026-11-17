@@ -64,6 +64,23 @@ require('./test_lib').run('coin_juice', async (t) => {
     ok(await ev(() => window.PawAudio && window.PawAudio.coinLog.length >= 1 && window.PawAudio.coinLog[window.PawAudio.coinLog.length - 1] === 120), `${L} walk: one chime asked, pitched by the 120 coins (${await ev(() => window.PawAudio && window.PawAudio.coinLog.join())})`);
     await backHome();
 
+    sec(`${L}: the very first walk always finds a treasure, and the happy dog sits by the coin (v2.30.1)`);
+    await idle(); await spyWalk();
+    await ev(() => { const S = window.__paw.S; S.walks = 0; S.found = {}; S.sleeping = false; S.daily.play = true; S.dogs.forEach((d) => { d.stats.energy = 90; d.stats.happy = 50; }); window.__paw.go('walk', 'park'); });
+    await t.walkGate(true);
+    const f = await endWalk(); // the result has no treasure: the dig missed
+    ok(f.c1 - f.c0 === w.c1 - w.c0, `${L} first walk: the same pay as any walk (${f.c1 - f.c0} = ${w.c1 - w.c0})`);
+    const fr = await ev(() => ({ h: (document.querySelector('#modal .tfind h3') || {}).textContent || '', found: Object.keys(window.__paw.S.found).length, j: !!document.getElementById('resJournal'), dog: !!document.querySelector('#modal .res-coins .res-dog svg') }));
+    ok(fr.found === 1 && fr.j && !/stayed hidden/.test(fr.h), `${L} first walk: a treasure even though the dig missed (${fr.h}, ${fr.found} found)`);
+    ok(fr.dog, `${L} first walk: the happy dog sits in the Paw Coins tile`);
+    const dl = await ev(() => { const a = document.querySelector('#modal .res-coins .res-dog').getBoundingClientRect(), v = document.querySelector('#modal .res-coins .v').getBoundingClientRect(), k = document.querySelector('#modal .res-coins').getBoundingClientRect(); return a.right <= v.left + 2 && a.left >= k.left - 1; });
+    ok(dl, `${L}: the dog sits beside the coin number, inside the tile`);
+    await backHome(); await idle(); await spyWalk();
+    await ev(() => { const S = window.__paw.S; S.sleeping = false; S.dogs.forEach((d) => { d.stats.energy = 90; }); window.__paw.go('walk', 'park'); }); await t.walkGate(true);
+    await endWalk();
+    ok(await ev(() => /stayed hidden/.test((document.querySelector('#modal .tfind h3') || {}).textContent || '') && Object.keys(window.__paw.S.found).length === 1), `${L}: the second walk has no gift treasure (a missed dig stays a miss)`);
+    await backHome();
+
     sec(`${L}: a finished mission`);
     await idle(); await t.until(() => !document.querySelector('#toasts .toast:not(.tq)'), null, 9000);
     const m0 = await ev(() => { const P = window.__paw; P.ms.force(['bath']); const c0 = P.S.coins; P.ms.act('bath', {}); const te = [...document.querySelectorAll('#toasts .toast')].find((e) => /Mission done/.test(e.textContent)); return { c0, c1: P.S.coins, num: document.getElementById('coinNum').textContent, src: te && !te.classList.contains('tq') ? te.getBoundingClientRect().toJSON() : null }; });
@@ -114,10 +131,10 @@ require('./test_lib').run('coin_juice', async (t) => {
     sec(`${L}: reduce motion (prefers-reduced-motion)`);
     await t.p.emulateMedia({ reducedMotion: 'reduce' }); await ev(() => { delete document.documentElement.dataset.motion; });
     ok(await ev(() => window.__paw.cf.calm()), `${L}: prefers-reduced-motion counts as calm`);
-    await ev(() => { const P = window.__paw; P.S.coins += 25; P.cf.fly({ x: 150, y: 300 }, 25); });
+    const glowP = await ev(() => { const P = window.__paw; P.S.coins += 25; P.cf.fly({ x: 150, y: 300 }, 25); return document.getElementById('coins').classList.contains('cf-glow'); }); // read at once: the glow lasts 0.9 s, a busy machine can spend that on the sampling below
     const ps = await sample(700); ok(ps.every((s) => s.n === 0), `${L}: no flight with prefers-reduced-motion`);
     ok(await shown() === await fmt(await ev(() => window.__paw.S.coins)), `${L}: the number is right at once`);
-    ok(await ev(() => document.getElementById('coins').classList.contains('cf-glow')), `${L}: the soft highlight shows`);
+    ok(glowP, `${L}: the soft highlight shows`);
     await t.p.emulateMedia({ reducedMotion: 'no-preference' });
     await idle();
   }

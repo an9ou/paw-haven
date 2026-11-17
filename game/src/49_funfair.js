@@ -363,7 +363,7 @@ function ffStallRun(goods, sel) {
 function ffContest() { const P = S.ff.pc, wk = ffWeekOf(localISO()); if (P.wk !== wk) { P.wk = wk; P.e = []; P.judged = ''; P.won = 0; markDirty(); } return P; }
 function ffContestLine() { const P = ffContest(); return P.judged ? tt('ff.pc_done', 'Judged this week: you won {n, plural, one {# coin} other {# coins}} and a ribbon. A new contest starts on Monday.', { n: P.won }) : tt('ff.pc_line', 'Photos entered this week: {n} of 3. Prize up to {cap} coins.', { n: P.e.length, cap: FF_CAPS.photo.week }); }
 // photo mode: the button and the entry. c = the photo mode capture (dogs' x boxes); vb = the crop shown
-function ffPhotoBtn() { if (!ffReady()) return ''; const P = ffContest(); if (P.judged || P.e.length >= 3) return ''; return `<button type="button" class="btn ff-phbtn" id="ffPhoto">${esc(tt('ff.pc_enter', 'Enter in the photo contest ({n}/3)', { n: P.e.length }))}</button>`; }
+function ffPhotoBtn() { if (!ffReady()) return ''; const P = ffContest(); if (P.judged || P.e.length >= 3) return ''; const L = tt('ff.pc_enter', 'Enter in the photo contest ({n}/3)', { n: P.e.length }); return `<button type="button" class="btn ff-phbtn" id="ffPhoto" aria-label="${esc(L)}"><span class="ff-pl">${esc(L)}</span><span class="ff-ps" aria-hidden="true">${esc(tt('ff.pc_enter_short', 'Contest ({n}/3)', { n: P.e.length }))}</span></button>`; } // v2.30.1: phones show the short label (one short row of buttons)
 function ffPhotoBind(root, getCap) {
   const b = root && $('#ffPhoto', root); if (!b) return;
   b.onclick = () => { SFX.boop(840); const r = ffPhotoEnter(getCap()); if (r) { b.remove(); toast(r, 'good'); } };

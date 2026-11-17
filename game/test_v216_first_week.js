@@ -72,6 +72,7 @@ run('v216_first_week', async (t) => {
   await t.p.click('#fwTagOk');
   ok(await cardAt('walk'), 'hanging the tag moves on to the walk');
   s = await t.S(); ok(s.dog.name === 'Biscuit' && s.dog.fwTag === 'mint' && await ev(() => !!document.querySelector('#hudHead .fw-htag')), 'the dog wears the tag (name, colour, the HUD portrait)');
+  ok(await ev(() => { try { const v = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); return (v.dogs || [v.dog]).some((d) => d && d.name === 'Biscuit' && d.fwTag === 'mint') && v.guide.step === 4; } catch (e) { return false; } }), 'v2.30.1: Hang it on is saved at once (the new name and the walk step are on disk, no wait for the autosave)');
   const before = await t.S(); ok(before.bond.level === 1 && before.bond.pts < 60, `still Bond 1 before the walk (${before.bond.pts} points, ${before.bond.pts - b0} from the first four steps)`);
   ok((await ringFor()) === '#bar [data-act=walk]', 'the ring is on Walk');
   await t.startWalk(true); await ev(() => { window.__paw.W.dist = 1e7; }); await t.quitWalk(false);
