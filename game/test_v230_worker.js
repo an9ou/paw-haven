@@ -47,10 +47,11 @@ const sec = (s) => console.log('--- ' + s);
     let r = await call('POST', '/invite/join', { code: A.code });
     ok(is(r, 401, 'no_session'), 'no token: 401');
     r = await join(B, A.code);
-    ok(is(r, 404, 'not_found'), 'not friends yet: 404 not_found (' + r.text + ')');
+    ok(is(r, 409, 'not_friends'), 'not friends yet: 409 not_friends, its own code (' + r.text + ')');
     ok(await befriend(B, A), 'B adds A');
     ok(is(await call('POST', '/invite/join', { code: A.code, x: 1 }, B.tok), 400, 'bad'), 'extra keys: 400 bad');
-    ok(is(await join(B, 'DOG-ZZZZZ'), 404, 'not_found'), 'an unknown code: 404');
+    ok(is(await join(B, 'DOG-ZZZZZ'), 404, 'no_code'), 'an unknown code: 404 no_code (never the plain not_found of an unknown route)');
+    ok(is(await call('POST', '/invite/nope', { code: A.code }, B.tok), 404, 'not_found'), 'an unknown route stays 404 not_found (what an older Worker answers)');
     ok(is(await join(B, B.code), 400, 'self'), 'my own code: 400 self');
     r = await join(B, A.code);
     ok(r.status === 200 && r.json.ok && r.json.gift === 'later', 'a new guest: 200 gift later (' + r.text + ')');
@@ -61,6 +62,11 @@ const sec = (s) => console.log('--- ' + s);
     ok(r.status === 200 && r.json.gift === 'now', 'a new email account: gift now');
     const Old = await player(true, 8); ok(await befriend(Old, A), 'Old adds A');
     ok(is(await join(Old, A.code), 409, 'not_new'), 'an account older than 7 days: 409 not_new');
+    // owner, 17 Nov: the official Friends account works as a friend but gives no invite bandana
+    const Of = await player(true, 90); DB.raw.prepare('update users set official = 1 where id = ?').run(Of.id);
+    const O2 = await player(true, 0); ok(await befriend(O2, Of), 'a new player adds the official account');
+    ok(is(await join(O2, Of.code), 409, 'official'), 'the official account: 409 official');
+    ok(n('select count(*) as n from invites where inviter_id = ?', Of.id) === 0, 'no invite row for the official account');
     const N1 = await player(true, 2), N2 = await player(true, 1); ok(await befriend(N1, N2), 'two new players');
     ok(is(await join(N1, N2.code), 409, 'not_new'), 'the inviter newer than me: 409 not_new');
     ok(n('select count(*) as n from invites where new_id in (?, ?)', Old.id, N1.id) === 0, 'no rows for refused joins');
@@ -73,7 +79,8 @@ const sec = (s) => console.log('--- ' + s);
     r = await call('GET', '/invite/gifts', null, A.tok);
     ok(r.status === 200 && r.json.mine === null && Array.isArray(r.json.joined) && r.json.joined.length === 1, 'A: joined lists only the new email account (C), not the guest B: ' + r.text);
     ok(r.json.joined[0] && Array.isArray(r.json.joined[0].name) && r.json.joined[0].name[0] === C.name[0], 'joined carries the friend name');
-    ok(!/"id"|user_id|email|@/.test(r.text), 'no ids or emails in the answer');
+    ok(!/"id"|user_id|email|@|"at"/.test(r.text), 'no ids, emails or times in the answer');
+    const t1 = r.json.joined[0].t; ok(typeof t1 === 'string' && /^[0-9a-f]{16}$/.test(t1) && t1 !== C.id && !r.text.includes(C.id), 'each joined row has an opaque token t, not a user id: ' + t1);
     r = await call('GET', '/invite/gifts', null, C.tok);
     ok(r.status === 200 && r.json.mine && r.json.mine.name[0] === A.name[0] && r.json.mine.name[1] === A.name[1], 'C: mine is A');
     r = await call('GET', '/invite/gifts', null, B.tok);
@@ -82,8 +89,10 @@ const sec = (s) => console.log('--- ' + s);
     const up = (await call('POST', '/register', { email: 'bt-b@example.com', password: 'pupper123' }, B.tok)).json; B.tok = up.token;
     r = await call('GET', '/invite/gifts', null, A.tok);
     ok(r.json.joined.length === 2, 'B upgraded: A has 2 joined');
+    ok(r.json.joined.some((x) => x.t === t1) && r.json.joined.find((x) => x.t !== t1), 'C keeps its token when B (who joined first) turns on cloud save later: B gets a new one');
+    ok(!/"at"/.test(r.text), 'no times');
     r = await call('GET', '/invite/gifts', null, B.tok);
-    ok(r.json.mine && !r.json.guest, 'B upgraded: mine is an object now');
+    ok(r.json.mine && !r.json.guest && !('at' in r.json.mine), 'B upgraded: mine is an object now, without a time');
     // the inviter's cap: 10 credits
     const Z = await player(true, 60);
     for (let i = 0; i < 12; i++) { const p = await player(true, 0); await befriend(p, Z); const x = await join(p, Z.code); ok(x.status === 200 && x.json.gift === 'now', 'new player ' + (i + 1) + ' still gets theirs'); }
@@ -112,11 +121,21 @@ const sec = (s) => console.log('--- ' + s);
     let took = 0; for (let i = 0; i < 6; i++) { gap(); const x = await call('POST', '/town/goal', { n: 40 }, H.tok); took += x.json.took; }
     ok(took === 120 && n('select n from town_goal_users where user_id = ?', H.id) === 150, 'one account takes at most 150 a day: ' + took);
     gap(); r = await call('POST', '/town/goal', { n: 10 }, H.tok);
-    ok(r.status === 200 && r.json.took === 0, 'over the cap: 200 took 0');
-    // per-IP day cap 600 (many guests on one IP)
-    const ip2 = '10.98.0.2'; let ipTook = 0;
-    for (let i = 0; i < 6; i++) { const p = await player(false, 0); for (let k = 0; k < 4; k++) { gap(); const x = await call('POST', '/town/goal', { n: 40 }, p.tok, ip2); ipTook += x.json.took; } }
-    ok(ipTook === 600, 'one IP takes at most 600 a day: ' + ipTook);
+    ok(r.status === 200 && r.json.took === 0 && r.json.part === true, 'over the cap: 200 took 0, still took part');
+    // per-IP day cap 5000 (a shared network is many players): fill most of it by hand, then three accounts on that IP
+    const ip2 = '10.98.0.2', day = month + '-' + new Date(Date.now() + 9 * 3600e3).toISOString().slice(8, 10);
+    DB.raw.prepare('insert into rate (k, n, reset_at) values (?, ?, ?)').run('gl:ip:' + ip2 + ':' + day, 4950, Date.now() + 864e5);
+    const P1 = await player(false, 0), P2 = await player(false, 0), P3 = await player(false, 0);
+    let x1 = await call('POST', '/town/goal', { n: 40 }, P1.tok, ip2), x2 = await call('POST', '/town/goal', { n: 40 }, P2.tok, ip2), x3 = await call('POST', '/town/goal', { n: 40 }, P3.tok, ip2);
+    ok(x1.json.took === 40 && x2.json.took === 10 && x3.json.took === 0, 'one IP takes at most 5000 a day: 40, 10, 0 (' + [x1.json.took, x2.json.took, x3.json.took] + ')');
+    ok(x3.json.part === true && x3.json.mine === 0, 'the IP cap took nothing: the player still took part (part: true, mine 0)');
+    ok(n("select n from rate where k = ?", 'gl:u:' + P2.id + ':' + day) === 10 && !DB.raw.prepare('select n from rate where k = ?').get('gl:u:' + P3.id + ':' + day), 'the account pays only what was taken (10, and nothing for 0)');
+    gap(); const x4 = await call('POST', '/town/goal', { n: 40 }, P3.tok); ok(x4.json.took === 40, 'from another network the same account still takes its own 150');
+    // concurrent posts on one IP never take past its cap (one atomic upsert)
+    const ip3 = '10.98.0.3'; DB.raw.prepare('insert into rate (k, n, reset_at) values (?, ?, ?)').run('gl:ip:' + ip3 + ':' + day, 4980, Date.now() + 864e5);
+    const ps = []; for (let i = 0; i < 4; i++) ps.push(await player(false, 0));
+    const xs = await Promise.all(ps.map((p) => call('POST', '/town/goal', { n: 15 }, p.tok, ip3)));
+    ok(xs.reduce((a, x) => a + x.json.took, 0) === 20, 'four posts at once on a nearly full IP take 20 in all: ' + xs.map((x) => x.json.took));
 
     sec('5. town goal: done, last month, GET');
     DB.raw.prepare('update town_goal set n = 9990 where month = ?').run(month);
@@ -126,7 +145,15 @@ const sec = (s) => console.log('--- ' + s);
     r = await call('GET', '/town/goal');
     ok(r.status === 200 && r.json.month === month && r.json.done && r.json.mine === 0 && r.json.last && r.json.last.n === 0 && !r.json.last.done, 'GET without a token: mine 0, last month empty ' + r.text);
     r = await call('GET', '/town/goal', null, G.tok);
-    ok(r.json.mine === 32, 'GET with a token: mine 32');
+    ok(r.json.mine === 32 && r.json.part === true, 'GET with a token: mine 32');
+    // with a token the limit is the account's: a shared IP's 120 an hour does not stop it
+    const ip4 = '10.98.0.4'; for (let i = 0; i < 121; i++) await call('GET', '/town/goal', null, null, ip4);
+    ok(is(await call('GET', '/town/goal', null, null, ip4), 429, 'rate_limited'), 'tokenless: 120 an hour per IP');
+    ok((await call('GET', '/town/goal', null, G.tok, ip4)).status === 200, 'with a token on that IP: still 200 (per account)');
+    // the town's totals are cached in the isolate (GL_CACHE seconds); a POST refreshes them
+    const envC = Object.assign({}, env, { GL_CACHE: '60' }); const getC = async (tok) => (await (await worker.fetch(new Request('https://api.test/town/goal', { method: 'GET', headers: Object.assign({ 'CF-Connecting-IP': freshIp() }, tok ? { Authorization: 'Bearer ' + tok } : {}) }), envC, { waitUntil() {} })).json());
+    const c1 = await getC(); DB.raw.prepare('update town_goal set n = n + 5 where month = ?').run(month);
+    const c2 = await getC(H.tok); ok(c2.n === c1.n && c2.mine === 150, 'cached totals for 60 s, mine still fresh: ' + c1.n + ' ' + c2.n + ' mine ' + c2.mine);
     const y = +month.slice(0, 4), m = +month.slice(5, 7), prev = m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
     DB.raw.prepare('insert into town_goal (month, n, goal, done_at) values (?, 51000, 50000, 1)').run(prev);
     DB.raw.prepare('insert into town_goal_users (month, user_id, n) values (?, ?, 7)').run(prev, G.id);
@@ -141,7 +168,8 @@ const sec = (s) => console.log('--- ' + s);
     sec('6. tidy');
     DB.raw.prepare('delete from users where id = ?').run(C.id);
     DB.raw.prepare('delete from users where id = ?').run(G.id);
-    await call('GET', '/town/goal'); // btTidy runs from the v2.30 routes (every time under TIDY)
+    await call('GET', '/'); // btTidy runs from tidy() (after every request under TIDY), not on the v2.30 routes
+    ok(!/btTidySoon/.test(src) && /async function tidy\(env\)[\s\S]*?btTidy\(env, now\)[\s\S]*?\n\}/.test(src), 'btTidy only from tidy()');
     ok(n('select count(*) as n from invites where new_id = ?', C.id) === 0, 'a deleted account: its invite row goes');
     ok(n('select count(*) as n from town_goal_users where user_id = ?', G.id) === 0, 'and its town goal rows');
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }

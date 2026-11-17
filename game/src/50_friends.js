@@ -178,7 +178,9 @@ function frAfterPush() {
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
     return put(yard).then((r) => {
       // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
-      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(Object.assign({}, yard, { decor: yard.decor.filter((d) => d.i < FR_DECOR_OLD) })); }
+      // v2.30 (code review 8): the same for a card dog in a newer outfit (an older Worker's DC_LIM.outfit 58 refuses the Friendship Bandana): those dogs go in no outfit (DC.outfitOld, 40_dogcards.js)
+      const newer = (y) => y.decor.some((d) => d.i >= FR_DECOR_OLD) || y.dogs.some((x) => x && x.o >= DC_OUTFITS_OLD);
+      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); return y2 ? put(y2) : r; }
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
@@ -655,7 +657,11 @@ async function frAdd() {
     if (err === 'not_found') nope(tt('fr.not_found', "We couldn't find that code. Check the letters?"));
     else if (err === 'self') nope(tt('fr.self', "That's you! Share your code with a friend."));
     else if (err === 'full') nope(tt('fr.full', 'You have 50 friends, the most for now.'));
-    else if (err === 'already') toast(tt('fr.already', 'You are already friends.'), 'good');
+    else if (err === 'already') {
+      toast(tt('fr.already', 'You are already friends.'), 'good');
+      // v2.30 (code review 7): friends already (an add that went through before the join reached the Worker): still ask for the invite gift
+      if (FR.invite && FR.invite === code) { FR.invite = null; FR.wantAdd = false; if (typeof fiJoin === 'function') fiJoin(code, true); }
+    }
     else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
     return;
   }
@@ -665,7 +671,7 @@ async function frAdd() {
   const added = ((S.fr.cache && S.fr.cache.friends) || []).find((f) => f && !had.has(f.fid));
   toast(tt('fr.added', '{name} is your friend now!', { name: (added && frPairName(added.name)) || tt('fr.a_friend', 'A friend') }), 'good');
   frHearts(); frSheet();
-  if (viaLink && typeof fiJoin === 'function') fiJoin(code);
+  if (viaLink && typeof fiJoin === 'function') fiJoin(code, true); // true: from the Friends sheet, the card may open at once (phone review 1)
 }
 // v2.19 (owner, 2 Nov 2026): no New code button: a player's code stays the same forever (the Worker route /friends/code/new is kept, unused)
 // Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way
