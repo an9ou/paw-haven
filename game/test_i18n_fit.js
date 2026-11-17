@@ -400,6 +400,12 @@ async function worker(job) {
       await ev(() => window.__paw.st.pc('yard')); await modalUp(); await sleep(800); await measure('st: postcard'); await closeAll();
       await ev(() => window.__paw.st.test(false));
     }, 40000);
+    await step('sh', async () => { // v2.31 Share my dog (58_share.js): the sheet in both sizes with the name on, "Share this moment" after a scene
+      await ev(() => { window.__paw.sh.open({ from: 'menu' }); }); await modalUp(); await sleep(900); await measure('sh: share my dog');
+      await ev(() => { const b = document.querySelector('#modal [data-shsize="story"]'); if (b) b.click(); const n = document.getElementById('shName'); if (n && n.getAttribute('aria-checked') !== 'true') n.click(); }); await sleep(900); await measure('sh: share my dog, story size, name on');
+      await ev(() => { const b = document.querySelector('#modal [data-shsize="feed"]'); if (b) b.click(); const n = document.getElementById('shName'); if (n && n.getAttribute('aria-checked') === 'true') n.click(); }); await closeAll();
+      await ev(() => window.__paw.sh.chip()); await sleep(500); await measure('sh: share this moment chip'); await ev(() => { const c = document.getElementById('shMoment'); if (c) c.remove(); });
+    }, 40000);
     await step('sm', async () => {
       await ev(() => { const P = window.__paw; P.sm.test(true); P.sc.test(true); P.sm.start(); P.sm.goto(3); }); await closeAll();
       await ev(() => window.__paw.sm.open('story')); await modalUp(); await measure('sm: story book');

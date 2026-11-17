@@ -119,13 +119,13 @@ run('v228_stories', async (t) => {
   await ev(() => { const S = window.__paw.S; S.dog.name = 'Zorbleflip'; window.__paw.st.pcForce('none'); });
   ok(await t.until(() => { const b = document.getElementById('stPcBtn'); return !!b && !b.hidden && b.getBoundingClientRect().width > 20; }, null, 4000), 'the yard has a postcard button in the top bar');
   ok(await ev(() => { const v = window.__paw.st.pcSVG('yard'); return /Greetings from our yard/.test(v) && !/Zorbleflip/.test(v) && /doodledoggo\.app/.test(v); }), 'the postcard has game words only: never the typed dog name');
-  await t.p.click('#stPcBtn');
-  ok(await t.until(() => !!document.querySelector('#modal .st-pcpop'), null, 3000), 'the yard button opens the postcard sheet');
-  ok(await t.until(() => { const i = document.querySelector('#modal .st-pcimg'); return !!i && i.complete && i.naturalWidth === 1080 && i.naturalHeight === 1920; }, null, 15000), 'the postcard is drawn: a 1080x1920 PNG');
+  await t.p.click('#stPcBtn'); // v2.31 Share my dog (58_share.js): the yard button opens the share picture (suite share_dog)
+  ok(await t.until(() => !!document.querySelector('#modal .sh-pop'), null, 3000), 'the yard button opens the Share my dog sheet');
+  ok(await t.until(() => { const i = document.querySelector('#modal .sh-img'); return !!i && i.complete && i.naturalWidth === 1080 && i.naturalHeight === 1350; }, null, 15000), 'the picture is drawn: a 1080x1350 PNG');
   await shot('postcard_yard_desktop');
   const dl = t.p.waitForEvent('download', { timeout: 8000 }).catch(() => null);
-  await t.p.click('#stPcGo'); const got = await dl;
-  ok(!!got && /doodle-doggo-postcard\.png/.test(got.suggestedFilename()) && (await st()).pc === 1, 'Share (no share sheet here): the PNG downloads, the count goes up');
+  await ev(() => window.__paw.sh.force('none')); await t.p.click('#shGo'); const got = await dl; await ev(() => window.__paw.sh.force(''));
+  ok(!!got && /^doodle-doggo-[a-z-]+-\d{4}-\d{2}-\d{2}\.png$/.test(got.suggestedFilename()) && (await st()).pc === 1, 'Share (no share sheet here): the PNG downloads, the count goes up');
   await t.closeX(); await t.modalGone();
   await t.pet((p0) => window.__paw.S.bond.pts > p0, (await t.S()).bond.pts); await t.sleep(300);
   await ev(() => window.__paw.dd.journal('diary')); await t.until(() => !!document.querySelector('#modal .dd-page'), null, 3000);
@@ -149,10 +149,10 @@ run('v228_stories', async (t) => {
   await fresh({ device: 'Phone 360x640' });
   ok(await ev(() => document.documentElement.dataset.layout === 'phone' && getComputedStyle(document.getElementById('stPcBtn')).display === 'none'), 'phones: no top bar postcard icon');
   await t.p.click('#moreBtn'); await t.until(() => !!document.querySelector('#modal #mmPc'), null, 3000);
-  ok(await ev(() => { const b = document.querySelector('#modal #mmPc'); return !!b && b.getBoundingClientRect().height >= 44; }), 'the "..." menu has "Send a postcard", a 44 px row');
+  ok(await ev(() => { const b = document.querySelector('#modal #mmPc'); return !!b && b.getBoundingClientRect().height >= 44; }), 'the "..." menu has "Share my dog", a 44 px row');
   await t.p.click('#modal #mmPc');
-  ok(await t.until(() => { const i = document.querySelector('#modal .st-pcimg'); return !!i && i.naturalWidth === 1080; }, null, 15000), 'the phone postcard sheet opens and draws');
-  const fit = await ev(() => { const p = document.querySelector('#modal .panel').getBoundingClientRect(), pr = document.querySelector('#modal .st-pcprev').getBoundingClientRect(), g = document.getElementById('stPcGo').getBoundingClientRect(); return { inX: p.left >= -1 && p.right <= 361, prev: pr.top >= 0 && pr.bottom <= 641 && pr.width > 100, go: g.bottom <= 641 && g.height >= 44, noScroll: document.documentElement.scrollWidth <= 361 }; });
+  ok(await t.until(() => { const i = document.querySelector('#modal .sh-img'); return !!i && i.naturalWidth === 1080; }, null, 15000), 'the phone share sheet opens and draws');
+  const fit = await ev(() => { const p = document.querySelector('#modal .panel').getBoundingClientRect(), pr = document.querySelector('#modal .sh-prev').getBoundingClientRect(), g = document.getElementById('shGo').getBoundingClientRect(); return { inX: p.left >= -1 && p.right <= 361, prev: pr.top >= 0 && pr.bottom <= 641 && pr.width > 100, go: g.bottom <= 641 && g.height >= 44, noScroll: document.documentElement.scrollWidth <= 361 }; });
   ok(Object.values(fit).every(Boolean), '360 x 640: the sheet, the preview and a 44 px Share button fit, no sideways scroll ' + JSON.stringify(fit));
   await shot('postcard_phone_360');
   await t.closeX(); await t.modalGone();

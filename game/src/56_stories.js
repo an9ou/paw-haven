@@ -318,6 +318,7 @@ async function stPcDeliver(blob) {
 }
 // the postcard sheet: a preview of the PNG and a Share button. src: 'yard' | 'diary' | 'card'. From the diary or the card, Back returns there
 function stPcOpen(src, id, dno) {
+  if (src !== 'diary' && src !== 'card' && typeof shareDog === 'function') return shareDog({ from: 'yard', id: id || undefined }); // v2.31 Share my dog (58_share.js): the yard's postcard is now the bigger dog picture
   if (!stReady()) return null;
   src = ['diary', 'card'].includes(src) ? src : 'yard'; SFX.click();
   const back = src === 'diary' ? () => openJournal('diary') : src === 'card' && typeof dcSettings === 'function' ? () => dcSettings() : null;
@@ -356,12 +357,13 @@ document.addEventListener('click', (e) => {
 });
 // the yard button: desktop, the top bar after the camera (phones: the "..." menu below)
 const stPcTop = document.createElement('button');
-stPcTop.id = 'stPcBtn'; stPcTop.className = 'iconbtn'; stPcTop.type = 'button'; stPcTop.hidden = true; stPcTop.innerHTML = stPcIcon();
+stPcTop.id = 'stPcBtn'; stPcTop.className = 'iconbtn'; stPcTop.type = 'button'; stPcTop.hidden = true; stPcTop.innerHTML = typeof shIcon === 'function' ? shIcon() : stPcIcon(); // v2.31: the Share my dog icon (58_share.js)
 stPcTop.onclick = () => { firstGesture(); stPcOpen('yard'); };
 (($('#phBtn') || $('#muteBtn'))).insertAdjacentElement('afterend', stPcTop);
-const stPcCan = () => stReady() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && modal.hidden && !busy && !hud.hidden && !(typeof PH === 'object' && PH && PH.on) && !(typeof HO === 'object' && HO && HO.pl);
+const stPcYardOk = () => (typeof shareDog === 'function' ? !!(S && S.dogs && S.dogs.length) : stReady()); // v2.31: Share my dog is not tied to the stories
+const stPcCan = () => stPcYardOk() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && modal.hidden && !busy && !hud.hidden && !(typeof PH === 'object' && PH && PH.on) && !(typeof HO === 'object' && HO && HO.pl);
 function stPcTopSync() {
-  const on = stPcCan(), l = tt('st.pc_yard', 'Send a postcard from the yard');
+  const on = stPcCan(), l = typeof shareDog === 'function' ? tt('sh.btn', 'Share my dog') : tt('st.pc_yard', 'Send a postcard from the yard');
   if (on && stPcTop.title !== l) { stPcTop.title = l; stPcTop.setAttribute('aria-label', l); }
   if (stPcTop.hidden === on) stPcTop.hidden = !on;
 }
@@ -372,9 +374,9 @@ if (typeof openMore === 'function') {
     const r = stMorePrev.apply(this, arguments);
     try {
       const m = document.querySelector('#modal .moremenu');
-      if (m && stReady() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && !m.querySelector('#mmPc')) {
+      if (m && stPcYardOk() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && !m.querySelector('#mmPc')) {
         const b = document.createElement('button'); b.className = 'btn big'; b.id = 'mmPc'; b.type = 'button';
-        b.innerHTML = `<span class="ic">${stPcIcon()}</span>${esc(tt('st.pc_menu', 'Send a postcard'))}`;
+        b.innerHTML = `<span class="ic">${typeof shIcon === 'function' ? shIcon() : stPcIcon()}</span>${esc(typeof shareDog === 'function' ? tt('sh.btn', 'Share my dog') : tt('st.pc_menu', 'Send a postcard'))}`;
         b.onclick = (e) => { e.stopPropagation(); closeModal(); setTimeout(() => stPcOpen('yard'), 60); };
         const ph = m.querySelector('#mmPhoto'); if (ph) ph.insertAdjacentElement('afterend', b); else m.insertBefore(b, m.querySelector('#mmCloud') || null);
       }

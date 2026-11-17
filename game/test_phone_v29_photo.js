@@ -39,7 +39,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       ok(geo.pic[2] - geo.pic[0] > geo.vw * 0.7 || geo.pic[3] - geo.pic[1] > geo.vh * 0.45, tag + 'the picture is big enough to see');
       ok(geo.hidden.every((v) => v === 'hidden') && geo.hs, tag + 'the HUD, bar and tray are hidden, no sideways scroll');
       const sizes = await ev(() => ({ z: window.__paw.ph.size(), svg: window.__paw.ph.svg() }));
-      ok(sizes.z.h === 1080 && sizes.z.w < 1080 && sizes.z.w > 500, tag + `a portrait postcard, ${sizes.z.w}x${sizes.z.h}`);
+      ok(sizes.z.h === 1350 && sizes.z.w === 1080, tag + `a portrait postcard (v2.31: 1080x1350), ${sizes.z.w}x${sizes.z.h}`);
       ok(sizes.svg.includes('>Home<') || /Home ·/.test(sizes.svg), tag + 'the frame names the place');
       ok(await ev(() => { const c = document.querySelector('.ph-caps'); return c.scrollWidth >= c.clientWidth; }), tag + 'the captions scroll sideways');
 
@@ -47,14 +47,14 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       const before = await ev(() => window.__paw.ph.svg()); await p.click('#phMode [data-frame=sky]'); ok(await t.until((old) => window.__paw.ph.svg() !== old && window.__paw.ph.ready(), before, 8000), tag + 'a frame colour tap changes the picture');
       await p.click('#phMode [data-cap=c4]'); ok(await t.until(() => window.__paw.ph.svg().includes('Drawn on purpose') && window.__paw.ph.ready(), null, 8000), tag + 'a caption chip tap changes the caption');
       let dl = p.waitForEvent('download'); await p.click('#phSave'); let d = await dl, sz = pngSize(await readStream(d));
-      ok(!!sz && sz.h === 1080 && sz.w === sizes.z.w, tag + `the PNG downloads (${sz && sz.w}x${sz && sz.h})`);
+      ok(!!sz && sz.h === 1350 && sz.w === sizes.z.w, tag + `the PNG downloads (${sz && sz.w}x${sz && sz.h})`);
       ok((await S()).ph.n === 1, tag + 'S.ph.n is 1');
       await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080 && window.__paw.ph.ready(); }, null, 10000), tag + 'Square: 1080 x 1080');
       ok(await ev(() => document.querySelector('#phMode [data-sq="1"]').getAttribute('aria-pressed') === 'true'), tag + 'the Square switch is on');
       await ev(() => { window.__shared = null; navigator.canShare = (x) => !!(x && x.files && x.files.length); navigator.share = async (x) => { window.__shared = { type: x.files[0].type, size: x.files[0].size }; }; });
       await p.click('#phSave'); ok(await t.until(() => !!window.__shared, null, 5000) && (await ev(() => window.__shared.type)) === 'image/png', tag + 'on a phone Save goes to the share sheet with the PNG');
       ok(await t.until(() => window.__paw.S.ph.n === 2, null, 3000), tag + 'it counts (2)');
-      await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => window.__paw.ph.size().w < 1080 && window.__paw.ph.ready(), null, 10000), tag + 'tapping Square again goes back to the postcard');
+      await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000), tag + 'tapping Square again goes back to the postcard');
 
       sec(tag + 'hold to save');
       await ev(() => { navigator.canShare = undefined; navigator.share = undefined; window.__paw.ph.force('none'); });
@@ -97,7 +97,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       ok(placed.every(([, a, b]) => (Math.min(b, x1) - Math.max(a, x0)) >= (b - a) * 0.9 || a < 0 || b > 1000), tag + `every dog is inside the square crop (${Math.round(x0)} to ${Math.round(x1)}: ${placed.map((b) => b[0] + ' ' + Math.round(b[1]) + '-' + Math.round(b[2])).join(', ')})`);
       ok(sq.crop[2] > 600 * sq.crop[2] / sq.crop[3] - 1 && sq.crop[1] < -1 && new RegExp(`<rect x="[^"]+" y="${+sq.crop[1].toFixed(2)}" width="[^"]+" height="[^"]+" fill="#(?!FFFBF3)`).test(sq.svg), tag + `edge to edge: the crop widens (${Math.round(sq.crop[2])} wide) and the extra height above the scene takes the sky colour`);
       ok(sq.inShot.length === 4 && sq.inShot.every((n) => sq.svg.includes(n)), tag + `the names line is the dogs in the crop: all four (${sq.inShot.join(', ')})`);
-      await p.click('#phMode [data-sq="1"]'); await t.until(() => window.__paw.ph.size().w < 1080 && window.__paw.ph.ready(), null, 10000);
+      await p.click('#phMode [data-sq="1"]'); await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000);
       await p.keyboard.press('Escape'); await t.freezeMotion(false);
     }, { device });
   }
