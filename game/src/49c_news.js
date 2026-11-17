@@ -208,7 +208,7 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
   ]
 };
 const NEWS_V230 = { // v2.30 "Better together" (V230.md). Needs the v2.30 Worker (deploy it first); it never opens early on the Pages test copy (no nwNext)
-  id: '2.30', date: '2099-01-01', c: '#FDE3C8', d: 'heart', pic: { item: 'Friendship Bandana' }, // LAUNCH DATE: placeholder, the owner sets it (JST day)
+  id: '2.30', date: '2026-11-25', c: '#FDE3C8', d: 'heart', pic: { item: 'Friendship Bandana' }, // LAUNCH DATE (owner, 17 Nov: 25 Nov 2026 JST)
   title: () => tt('nw.v230.title', 'Better together'),
   items: [
     { ic: () => nwItemArt('Friendship Bandana'), tx: () => tt('nw.v230.invite', 'Invite a new player with your friend link: you both get a matching Friendship Bandana') },

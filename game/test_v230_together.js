@@ -55,7 +55,7 @@ run('v230_together', async (t) => {
   await cloudPage({});
   await newHere();
   ok(await ev(() => !window.__paw.fi.on() && window.__paw.fi.mode() === 'off' && window.__paw.fi.line() === ''), 'before the date: off, no Friends line');
-  ok(await ev(() => window.__paw.nw.v230Date() === '2099-01-01' && !window.__paw.nw.list().includes('2.30') && !window.__paw.nw.due('2.30')), 'NEWS 2.30 waits for its placeholder date (2099-01-01)');
+  ok(await ev(() => { const d = window.__paw.nw.v230Date(), due = window.__paw.jstISO ? window.__paw.jstISO() >= d : new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) >= d; return d === '2026-11-25' && window.__paw.nw.due('2.30') === due && window.__paw.nw.list().includes('2.30') === due; }), 'NEWS 2.30 opens on its launch date (2026-11-25 JST) and not before');
   ok(srv.count(null, '/invite/') === 0 && srv.count(null, '/town/goal') === 0, 'no new route is asked before the date');
   ok(await ev(() => { const S = window.__paw.S; return S.fi && S.fi.link === '' && S.fi.join === '' && S.fi.n === 0; }) && await ev(() => { const g = window.__paw.S.goal; return g && g.q === 0 && Array.isArray(g.got) && g.miss === ''; }), 'a new save has S.fi and S.goal');
   ok(await ev(() => { const f = window.__paw.fi.fields({ v: 1 }).fi; return f.link === '' && f.join === '' && f.mine === 0 && f.n === 0 && f.wait === 0; }), 'fiFields fills an old save');
