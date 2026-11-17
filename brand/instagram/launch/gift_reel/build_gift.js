@@ -249,7 +249,7 @@ window.frame=async function(t, D){
       const y=below+40, w=790; art_+=shot('img_letter', AR.letter, CX-w/2, y, w, cl((lt-0.3)/0.35), fade);
       const top=y+w*AR.letter+72; art_+=noodle('sit', D.n.sit, 510, FEET-20, FEET-20-top, 560, 0, fade, true);
     } else if(b.kind==='story'){
-      const w=790, h=w*SEQ_AR, x=CX-w/2, y=below+40; clip={x,y,w,h,op:fade*sm(u*2.5),idx:Math.min(SEQN-1, Math.max(0, Math.floor(lt*30)+(RN?8:28)))};
+      const w=790, h=w*SEQ_AR, x=CX-w/2, y=below+40; clip={x,y,w,h,op:fade*sm(u*2.5),idx:Math.min(SEQN-1, Math.max(0, Math.floor(lt*30+1e-4)+(RN?8:28)))}; // +1e-4: lt*30 can land a hair under a whole number (20.30 s), which doubled one frame and skipped the next
       const top=y+h+50; art_+=noodle('sit', D.n.sit, 250, FEET, FEET-top, 380, 0, fade, false);
     } else if(b.kind==='gift'){
       // what the code gives, in the game's own names; the pennant (the game's prop) on the grass, a coin, Noodle in the bandana
