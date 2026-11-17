@@ -13,7 +13,7 @@ function openSettings() {
     <div class="barkset"><span>${esc(tt('settings.barking', 'Barking:'))}</span>${[['normal', tt('settings.bark_normal', 'Normal')], ['fewer', tt('settings.bark_fewer', 'Fewer')], ['off', tt('settings.bark_off', 'Off')]].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${esc(l)}</button>`).join('')}</div>
     <p class="small">${esc(tt('settings.economy_clock', 'Time: 1 game hour = {min} real minutes, so a game day is {hrs, plural, one {# real hour} other {# real hours}}. Daily bonuses and the mission start again every day at midnight in Japan. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { min: tnum(GAME_SEC), hrs: GAME_SEC * 24 / 60, coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
     <p class="small">${esc(touchOnly ? tt('settings.clock', 'Clock and weather follow your real local time (3 weather periods a day).') : tt('settings.clock_keys', 'Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'))}</p>
-    ${S && typeof nwMenuBtn === 'function' ? `<p class="nw-setrow"><button class="btn" type="button" id="setNews">${esc(tt('nw.menu', "What's new"))}</button></p>` : ''}
+    ${S && typeof nwMenuBtn === 'function' ? `<p class="nw-setrow"><button class="btn" type="button" id="setNews">${esc(tt('nw.menu', "What's new"))}</button>${typeof shareDog === 'function' && S.dogs && S.dogs.length ? ` <button class="btn" type="button" id="setShare">${esc(tt('sh.btn', 'Share my dog'))}</button>` : ''}</p>` : ''}
     ${typeof frLeaveRow === 'function' ? frLeaveRow() : ''}
     ${typeof pmSettingsHTML === 'function' ? pmSettingsHTML() : ''}
     ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">${esc(tt('settings.reset', 'Reset save'))}</button><button class="btn" id="setTitle">${esc(tt('settings.to_title', 'Title screen'))}</button></div>` });
@@ -27,6 +27,7 @@ function openSettings() {
   if (typeof pmBind === 'function') pmBind(p); // v2.25.5: Have a code? (55_promo.js)
   langBind(p);
   { const nb = $('#setNews', p); if (nb) nb.onclick = () => { SFX.click(); closeModal(); setTimeout(() => nwOpen(false), 60); }; } // v2.18.2: What's new
+  { const sb = $('#setShare', p); if (sb) sb.onclick = () => { SFX.click(); closeModal(); setTimeout(() => shareDog({ from: 'menu' }), 60); }; } // fit sweep 18 Nov: Share my dog on a small desktop stage, where the top bar has no room for its icon (59_scenes.css)
   { const lb = $('#frLeave', p); if (lb) lb.onclick = () => { SFX.click(); if (typeof frLeave === 'function') frLeave(p); }; } // v2.19: Leave Friends (50_friends.js)
   p.querySelectorAll('[data-barkm]').forEach((b) => { b.onclick = () => { prefs.bark = b.dataset.barkm; savePrefs(); SFX.click(); p.querySelectorAll('[data-barkm]').forEach((x) => { x.classList.toggle('yes', x === b); x.setAttribute('aria-pressed', String(x === b)); }); }; });
   $('#setTitle', p).onclick = () => { saveNow(); closeModal(); go('title'); };

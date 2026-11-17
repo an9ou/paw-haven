@@ -215,7 +215,9 @@ function showMomentChip() {
   hideMomentChip(); if (!S || !S.dog || cur.mode !== 'yard' || (typeof phActive === 'function' && phActive())) return;
   const c = document.createElement('div'); c.id = 'shMoment'; c.innerHTML = shMomentBtn('story').replace('sh-mrow', 'sh-mrow sh-mchip');
   const hb = hud && !hud.hidden ? hud.getBoundingClientRect() : null, sb = stage.getBoundingClientRect();
-  c.style.top = Math.max(8, Math.round((hb ? hb.bottom : sb.top + 56) - sb.top + 10)) + 'px';
+  // fit sweep 18 Nov: under the HUD's Next tags too (desktop hangs "Next: Bond 3 ..." and "Next: Level 2 ..." below the bar; the chip sat on them)
+  const low = ['#fwNext', '#lvNext'].reduce((m, q) => { const e = $(q); if (!e || e.hidden || !e.offsetParent) return m; const r = e.getBoundingClientRect(); return r.height ? Math.max(m, r.bottom) : m; }, hb ? hb.bottom : sb.top + 56);
+  c.style.top = Math.max(8, Math.round(low - sb.top + 10)) + 'px';
   stage.appendChild(c); SH.moT = setTimeout(hideMomentChip, 12000);
 }
 on('sc:end', (e) => { if (e && !e.skipped) setTimeout(() => { if (modal.hidden) showMomentChip(); }, 400); });

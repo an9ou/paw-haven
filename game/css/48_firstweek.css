@@ -184,3 +184,5 @@ html[data-layout="phone"] #hud .fw-next.fw-wrap{white-space:normal;text-overflow
 /* fit sweep 18 Nov: the "new!" tape on the phone bar's own buttons (More) took the bar label's 19 px, no tilt and a Thai 1.6 line, and sat over the
    More dots (ja "NEW!", th "ใหม่!" hid two of the three); it is the 15 px tilted tape of the tiles again, in the corner above the dots */
 html[data-layout="phone"] #bar.optc > .act > span.fw-newtag{font-size:15px;line-height:1.15!important;padding:1px 5px 2px;top:1px;right:1px;transform:rotate(8deg);overflow:visible;max-width:none;text-overflow:clip}
+/* fit sweep 18 Nov: the phone HUD's Next line ("Next Bond 10: a signature trick", 390 px) put its descenders on the HUD's bottom pencil line: 4 px more room under it */
+html[data-layout="phone"] #hud:has(.fw-next:not([hidden])):not(.hexp):not(:has(.buffchip:not([hidden]))){padding-bottom:10px}
