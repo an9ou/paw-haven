@@ -234,7 +234,7 @@ function nwEntryHTML(e, big) {
 }
 // the sheet: the newest entry; "See all updates" swaps in every entry, newest first
 // the first page: the newest entry and every entry sharing its date (16 Nov: v2.26-v2.29 open together on 18 Nov, so all four are seen, newest first)
-function nwTop(lead) { lead = lead || NEWS[0]; return lead ? NEWS.filter((e) => e.date === lead.date) : []; } // v2.29.1: the group is the lead's date (the auto sheet's lead is the newest unseen non-minor entry)
+function nwTop(lead) { lead = lead || NEWS[0]; return lead ? NEWS.filter((e) => e.date === lead.date && (lead.minor || !e.minor)) : []; } // v2.29.1: the group is the lead's date (the auto sheet's lead is the newest unseen non-minor entry)
 function nwOpen(auto) {
   if (!S) return false;
   nwSort();
