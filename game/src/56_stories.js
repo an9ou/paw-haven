@@ -80,7 +80,7 @@ function stTrackHTML(d) {
 // the star badge on the dog's journal profile card (journalProfile, 11_garden_kitchen.js)
 function stStarBadge(d) {
   if (!stReady() || !d) return ''; const n = stStars(d); if (!n) return '';
-  return ` <span class="st-badge" title="${esc(tt('st.badge', '{n, plural, one {# Bond star} other {# Bond stars}}', { n }))}"><span aria-hidden="true">★</span> ${tnum(n)}</span>`;
+  return ` <span class="st-badge" role="img" title="${esc(tt('st.badge', '{n, plural, one {# Bond star} other {# Bond stars}}', { n }))}" aria-label="${esc(tt('st.badge', '{n, plural, one {# Bond star} other {# Bond stars}}', { n }))}"><span aria-hidden="true">★</span> ${tnum(n)}</span>`;
 }
 
 /* ---------------- 2. neighbour stories ---------------- */

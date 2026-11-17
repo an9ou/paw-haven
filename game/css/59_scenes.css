@@ -85,3 +85,4 @@ html:not([data-layout="phone"]) .panel.sm-pop{width:min(640px,100%);max-width:mi
 .sm-msic{flex:0 0 30px;width:30px;height:34px}
 .sm-msic svg{width:100%;height:100%;display:block}
 .sm-mstx{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.25}
+#scLayer:focus{outline:none} /* test round d: the scene takes the focus (57_scenes.js); the Skip button keeps its own ring */

@@ -9135,6 +9135,7 @@
  "sm.task_done": "Story: {task}. {reward}",
  "sm.title": "Story",
  "sm.watch": "Watch",
+ "sm.watch_aria": "Watch: {title}",
  "st.badge": "{n, plural, one {# Bond star} other {# Bond stars}}",
  "st.finished": "A story is finished: {title}. A keepsake for you, {item}, and a page in your journal.",
  "st.j_empty": "No stories yet. Once {name} reaches Bond 3, a neighbour will write to you.",
