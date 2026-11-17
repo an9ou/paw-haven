@@ -424,4 +424,25 @@ run('v229_story', async (t) => {
   ok(during.live === 0 && during.queued === 1 && !during.bubble, `during the scene: no live toast, one waiting, no hint bubble (${JSON.stringify(during)})`);
   await skipNow(); await t.sleep(500);
   ok(await ev(() => [...document.querySelectorAll('#toasts .toast:not(.tq)')].some((e) => /New mail/.test(e.textContent))), 'after the scene ends the waiting toast shows');
+
+  sec('13. bug sweep 2 (v2.31.3): a birth that comes due, and the calendar\'s new page, wait for a playing scene and open after it (never under it)');
+  await ev(() => { document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); });
+  const pd = await ev(() => {
+    const P = window.__paw, S = P.S, f = S.dog, b = new Date(); b.setDate(b.getDate() - 30);
+    Object.assign(f, { sex: 'female', born: b.toISOString().slice(0, 10), litters: 0, lastLitter: null, bond: { level: 8, pts: 2500 }, stats: { hunger: 90, happy: 90, energy: 90, clean: 90 } });
+    const m = P.addDog({ key: 'akita', sex: 'male', months: 24 }, 'Kuma'); Object.assign(m, { bond: { level: 8, pts: 2500 }, stats: { hunger: 90, happy: 90, energy: 90, clean: 90 } });
+    P.breed.setSeason(f.id, true); const r = P.breed.playdate(f.id, m.id, { force: true, size: 2 }); P.saveNow(); return !!(r && r.ok && f.preg);
+  });
+  ok(pd, 'a pregnancy for the check');
+  for (let i = 0; i < 3 && !(await ev(() => document.getElementById('modal').hidden)); i++) { await t.closeX(); await t.sleep(600); }
+  await ev(() => { const P = window.__paw; P.sc.gap(0); P.sc.play('ch2', { replay: true }); });
+  ok(await waitPlay('ch2', 4000), 'a scene plays');
+  await ev(() => { const P = window.__paw, S = P.S; S.dogs.forEach((d) => { if (d.preg) d.preg.due = '2026-01-01'; }); P.fw.test(true); S.fw.morning = S.fw.morning || '2026-11-20'; S.fw.shown = ''; });
+  await t.sleep(5000);
+  const und = await ev(() => ({ on: window.__paw.sc.on(), modal: !document.getElementById('modal').hidden ? document.querySelector('#modal .panel').className : '' }));
+  ok(und.on === 'ch2' && !und.modal, `no birth sheet and no calendar page under the playing scene (${JSON.stringify(und)})`);
+  await skipNow();
+  ok(await t.until(() => !!document.querySelector('#modal .panel.birth, #modal .panel.fw-calpop'), null, 9000), 'after the scene the waiting sheet opens: ' + (await ev(() => (document.querySelector('#modal .panel') || {}).className)));
+  for (let i = 0; i < 4 && !(await ev(() => document.getElementById('modal').hidden)); i++) { await t.closeX(); await t.sleep(2500); }
+  await ev(() => window.__paw.fw.test(false));
 }, { timeout: 580000 });

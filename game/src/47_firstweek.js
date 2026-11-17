@@ -157,7 +157,7 @@ function fwPaw(d, tries = 12) {
 // a Bond 2 party lost to a reload (S.fw.b2pending): shown on its own on the next calm yard
 function fwPartyPending() {
   const ids = Object.keys(S.fw.b2pending || {}); if (!ids.length) return;
-  if (cur.mode !== 'yard' || !modal.hidden || popOpen() || busy || Date.now() - FW.enterAt < 1500 || (gdLive() && gdAllowed())) return;
+  if (cur.mode !== 'yard' || !modal.hidden || popOpen() || busy || Date.now() - FW.enterAt < 1500 || (gdLive() && gdAllowed()) || (typeof scPlaying === 'function' && scPlaying())) return; // v2.31.3: not under a story scene
   const id = ids.find((x) => !levelQueue.some((q) => q.id === x)); if (!id) return;
   const party = fwParty(id); if (!party) { delete S.fw.b2pending[id]; markDirty(); return; }
   const p = openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: 2 }))}</span>`, `<ul class="unlocks">${party.html}</ul>`, { cls: 'celebrate fw-party', foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>`, onClose: party.after });
@@ -459,6 +459,7 @@ function fwCalIcon() { return `<svg viewBox="0 0 64 64" class="fw-ic" aria-hidde
 function fwMorningTry() {
   const f = S.fw; if (!f.morning || f.shown === f.morning) return;
   if (cur.mode !== 'yard' || !modal.hidden || popOpen() || busy || levelQueue.length || Date.now() - FW.enterAt < 2200) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // v2.31.3: the calendar's new page waits for a story scene to end (never under it)
   if (gdLive() && gdAllowed()) return; if (typeof phActive === 'function' && phActive()) return; if (typeof blOn === 'function' && blOn()) return;
   f.shown = f.morning; markDirty(); fwCalOpen(true);
 }
