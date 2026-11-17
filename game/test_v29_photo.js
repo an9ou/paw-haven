@@ -18,7 +18,7 @@ run('v29_photo', async (t) => {
   ok(await t.until(() => !!(window.__paw && window.__paw.ph), null, 5000) && await API(), 'the test hook exists');
 
   sec('the camera button: next to the sound button, only where it belongs');
-  ok(await ev(() => { const m = document.getElementById('muteBtn'), c = document.getElementById('phBtn'); return !c.hidden && m.nextElementSibling === c && !!c.querySelector('svg'); }), 'yard: the camera button sits right after #muteBtn and has an icon');
+  ok(await ev(() => { const m = document.getElementById('muteBtn'), c = document.getElementById('phBtn'); let n = m.nextElementSibling; while (n && n.id === 'smBtn') n = n.nextElementSibling; return !c.hidden && n === c && !!c.querySelector('svg'); }), 'yard: the camera button sits right after #muteBtn (after the v2.29 Story button) and has an icon');
   ok(await ev(() => /camera|photo/i.test(document.getElementById('phBtn').getAttribute('aria-label'))), 'the camera button has a label');
   const hb = await ev(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; }; return { m: r('muteBtn'), c: r('phBtn'), g: r('gearBtn') }; });
   ok(hb.c[0] >= hb.m[1] - 0.5 && hb.c[1] <= hb.g[0] + 0.5 && Math.abs(hb.c[2] - hb.m[2]) < 4, `on screen the camera sits straight after the sound button, before the gear (mute ${hb.m.map(Math.round)}, camera ${hb.c.map(Math.round)}, gear ${hb.g.map(Math.round)})`);
@@ -55,7 +55,7 @@ run('v29_photo', async (t) => {
   ok(!/(href|src)\s*=\s*["'](?!#|data:)/i.test(svg) && !/url\(\s*["']?(?!#|data:)/i.test(svg) && !/<image|<script|foreignObject/i.test(svg), 'nothing in the image points outside the file (the canvas stays clean)');
   ok(svg.length < 2.5e6, `the image markup is a sane size (${Math.round(svg.length / 1024)} KB)`);
   ok(!/animation-name|@keyframes/i.test(svg.replace(/<style>.*?<\/style>/s, '')), 'no running animation is left in the picture');
-  ok(await ev(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h > 600 && z.h < 1080; }), 'the postcard is 1080 px on the long side');
+  ok(await ev(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1350; }), 'the postcard is 1080 x 1350 (v2.31: a feed post on every screen)');
 
   sec('the choices: frame colour, caption, square');
   ok(await ev(() => document.querySelectorAll('#phMode .ph-swatch').length) === 5, 'five frame colours');
@@ -75,7 +75,7 @@ run('v29_photo', async (t) => {
   ok(true, 'caption: the season line works');
   await p.click('#phMode [data-sq="1"]'); await t.until(() => { const z = window.__paw.ph.size(); return z.w === z.h && window.__paw.ph.ready(); }, null, 10000);
   ok(await ev(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080; }), 'Square: 1080 x 1080');
-  await p.click('#phMode [data-sq="0"]'); await t.until(() => window.__paw.ph.size().h < 1080 && window.__paw.ph.ready(), null, 10000);
+  await p.click('#phMode [data-sq="0"]'); await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000);
   ok(true, 'Postcard: back to the postcard shape');
 
   sec('Save: the download is a PNG of the right size');
@@ -192,7 +192,7 @@ run('v29_photo', async (t) => {
   if (R - L > strip) ok(sq.crop[2] >= Math.min(R - L, 1000) - 1 && sq.crop[1] < -1 && new RegExp(`<rect x="[^"]+" y="${+sq.crop[1].toFixed(2)}" width="[^"]+" height="[^"]+" fill="#(?!FFFBF3)`).test(sq.svg), `spread out wider than the strip (${Math.round(strip)}): the crop widens to ${Math.round(sq.crop[2])} and the extra height above the scene takes the sky colour`);
   else ok(false, `the test spreads the pack wider than the strip (dogs ${Math.round(L)} to ${Math.round(R)}, strip ${Math.round(strip)})`);
   ok(sq.inShot.length === 4 && sq.inShot.join() === sq.names.join() && sq.inShot.every((n) => sq.svg.includes(n)), `the names line is built from the dogs in the crop: all four (${sq.inShot.join(', ')})`);
-  await p.click('#phMode [data-sq="0"]'); await t.until(() => window.__paw.ph.size().h < 1080 && window.__paw.ph.ready(), null, 10000);
+  await p.click('#phMode [data-sq="0"]'); await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000);
   await p.keyboard.press('Escape'); await t.freezeMotion(false);
 
   sec('night, rain and snow are in the picture');

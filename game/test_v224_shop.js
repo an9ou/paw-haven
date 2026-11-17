@@ -56,7 +56,7 @@ run('v224_shop', async (t) => {
   ok(!rows.lv.length, 'no town level row unlocks a kind-shop item: ' + rows.lv.join(' '));
   if (LIVE) ok(rows.wardFeet.join() === 'head,eyes,neck,body,feet,charm,feet tab', 'the Wardrobe has a Feet tab and section with the shop on: ' + rows.wardFeet.join(', '));
   else ok(rows.wardFeet.length === 5 && !rows.wardFeet.some((x) => /feet/.test(x)), 'the Wardrobe has its four slots and the charm, no Feet tab or section: ' + rows.wardFeet.join(', '));
-  const menu = await ev(() => typeof window.__paw.ks.open === 'function' && !document.getElementById('mmKs'));
+  const menu = await ev(() => typeof window.__paw.ks.open === 'function' && !document.querySelector('#bar .act[data-act=kindshop]'));
   if (!LIVE) { ok(menu, 'no kind shop in the menu');
   ok(await ev(() => { const b = document.getElementById('ksPlus'); return !b || b.hidden || !b.offsetParent; }), 'no (+) by the coins while the shop is off'); }
   else ok(await ev(() => { const b = document.getElementById('ksPlus'); return !!b && !b.hidden && !!b.offsetParent; }), 'the (+) by the coins shows with the shop on');
@@ -326,7 +326,7 @@ run('v224_shop', async (t) => {
       window.open = function (u, n) { window.__ksTabs.push({ at: performance.now(), u, n }); if (window.__ksBlock) return null; const w = { closed: false, opener: 1, close() { this.closed = true; }, location: { href: '' }, document: { title: '', body: { innerHTML: '' } } }; window.__ksTabs[window.__ksTabs.length - 1].w = w; return w; };
     });
     await was.close();
-    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew'); if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
+    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew, #tPlay'); if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
     await t.adopt({}); await t.calm();
     ok(await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.ks), null, 8000), 'a guest on the local Worker');
     // the guest becomes an email account on the Worker (same user id), and this device takes the new login
@@ -496,8 +496,8 @@ run('v224_shop', async (t) => {
   // the phone menu has the shop
   await ev(() => { document.querySelector('#modal .panel .x').click(); });
   await t.until(() => document.getElementById('modal').hidden, null, 2000);
-  await ev(() => document.getElementById('moreBtn').click());
-  const mm = await t.until(() => !!document.getElementById('mmKs'), null, 2500);
-  ok(mm, 'the phone "..." menu has a Kind shop button');
-  if (mm) { await t.p.click('#mmKs'); ok(await t.until(() => !!document.querySelector('#modal .panel.ks'), null, 3000), 'it opens the Kind shop'); }
+  await ev(() => { const m = document.querySelector('#bar .act[data-act=more]'); if (m) m.click(); });
+  const mm = await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=kindshop]'), null, 2500);
+  ok(mm, 'the phone More tray has a Kind shop tile');
+  if (mm) { await t.p.click('#bar .barpop:not([hidden]) .act[data-act=kindshop]'); ok(await t.until(() => !!document.querySelector('#modal .panel.ks'), null, 3000), 'it opens the Kind shop'); }
 });

@@ -249,8 +249,8 @@ run('v229_story', async (t) => {
     await t.p.screenshot({ path: path.join(SHOTS, `v229_story_${name}.png`) });
     await t.closeX();
     if (name === 'phone') {
-      await t.p.click('#moreBtn'); ok(await t.until(() => !!document.getElementById('mmSm'), null, 3000), 'phone: Story is in the "..." menu');
-      await t.p.click('#mmSm'); ok(await t.until(() => !!document.querySelector('#modal .sm-pop'), null, 3000), 'phone: it opens the Story page'); await t.closeX();
+      await t.p.click('#bar .act[data-act=more]'); ok(await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=story]'), null, 3000), 'phone: Story is a tile in the More tray');
+      await t.p.click('#bar .barpop:not([hidden]) .act[data-act=story]'); ok(await t.until(() => !!document.querySelector('#modal .sm-pop'), null, 3000), 'phone: it opens the Story page'); await t.closeX();
     } else {
       ok(await ev(() => { const b = document.getElementById('smBtn'); return !!b && !b.hidden && b.getBoundingClientRect().width >= 44; }), 'desktop: the Story button is in the top bar');
     }

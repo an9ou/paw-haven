@@ -115,7 +115,7 @@ async function start(t, o) {
   if (o.host) await t.ctx.addInitScript((h) => { window.__pawCloudHost = h; }, o.host);
   if (o.mock !== false) await t.ctx.addInitScript(mockInit);
   await t.p.goto((o.url || URL) + (o.query || ''));
-  await t.p.waitForSelector('#tNew, #tContinue, #tGuest'); // cloud on: Play as guest comes first
+  await t.p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay'); // cloud on: Play as guest comes first (v2.30.1: a new player's one Play, t.adopt taps it)
   if (o.fresh === false) return;
   if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
   await t.adopt(o);
@@ -490,12 +490,12 @@ run('v219_friends', async (t) => {
     await start(t, { vw: w, vh: h });
     await t.until(() => document.documentElement.dataset.layout === 'phone', null, 4000);
     await t.p.click('#moreBtn');
-    ok(await t.until(() => !!document.getElementById('mmFr') && !!document.getElementById('mmMs'), null, 4000), tag + ': the ... menu has Friends next to Daily missions');
+    ok(await t.until(() => !!document.getElementById('mmSet'), null, 4000) && await ev(() => !document.getElementById('mmFr') && !document.getElementById('mmMs')), tag + ': the ... menu keeps Settings; Friends and the missions are tiles in the More tray (v2.31)');
     const menu = await layout(t);
     ok(!menu.side && !menu.bad.length, tag + ' menu fits: ' + JSON.stringify(menu));
     await t.closeX(); await t.modalGone();
     await t.p.click('#bar [data-act="more"]');
-    ok(await t.until(() => !!document.querySelector('#bar [data-act="friends"]'), null, 3000), tag + ': the More tray has Friends');
+    ok(await t.until(() => !!document.querySelector('#bar [data-act="friends"]') && !!document.querySelector('#bar [data-act="missions"]'), null, 3000), tag + ': the More tray has Friends and Missions');
     ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop="more"] .act')].every((b) => { const r = b.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= -1 && r.right <= window.innerWidth + 1; })), tag + ': More tray taps are 44 px and on screen');
     await t.p.click('#bar [data-act="friends"]');
     ok(await t.until(() => !!document.getElementById('frPrev'), null, 4000), tag + ': name pick opens');

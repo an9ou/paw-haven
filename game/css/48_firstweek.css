@@ -120,7 +120,8 @@ html[data-layout="phone"] .fw-md{font-size:13px}
 html[data-layout="phone"] .fw-mgrid{max-width:300px;gap:3px;margin:4px auto}
 html[data-layout="phone"] .fw-wdays{gap:4px;max-width:340px}
 /* narrow phones (360 px): the next-unlock line drops the Next chip and may take two lines, as the translations do (51_i18n_room.css) */
-@media (max-width:380px){html[data-layout="phone"] .fw-next .fw-nl{display:none}html[data-layout="phone"] .fw-next{white-space:normal;text-overflow:clip;font-size:15px;line-height:1.02;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}}
+/* v2.30.1 (audit 17 Nov): one line on every phone, cut with an ellipsis (the whole line is in its long-press tip) */
+@media (max-width:380px){html[data-layout="phone"] .fw-next .fw-nl{display:none}html[data-layout="phone"] .fw-next{white-space:nowrap;text-overflow:ellipsis;font-size:15px;line-height:1.15;display:block}}
 /* v2.16.1 owner fix: on desktop the calendar fills the sheet. The sheet grows (up to 1240 px) and the month's days are big crayon circles (up to 96 px)
    spread across the page. With the welcome week: the week is a card on the left (its seven days in two rows of big circles, the gifts below) and the month
    fills the rest, its gifts in two columns under the grid. Without it: the month's gifts sit in a column beside the grid. Phones keep the v2.16 sizes;
@@ -162,3 +163,21 @@ html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child > .fw-rews{grid-c
 html[data-layout="phone"] .fw-dg{grid-template-columns:44px minmax(0,1fr);gap:8px}
 html[data-layout="phone"] .fw-dgart{width:44px;height:44px}
 html[data-layout="phone"] .fw-dg .fw-claim,html[data-layout="phone"] .fw-dg .fw-got{grid-column:1 / -1}
+/* v2.31 the More tray is the phone's tile sheet: Photo, Share, Story, Wardrobe, Journal, Stickers, Friends, Calendar, News, Missions, Kind shop
+   (built as it opens, 47_firstweek.js fwMoreTiles). Three equal tiles a row (four on a wide phone), 44 px taps and more, a small badge in a corner */
+html[data-layout="phone"] #bar .barpop.fw-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;left:6px;right:6px;width:auto;max-width:none;padding:10px 9px 11px;transform:rotate(-.4deg)}
+@media (min-width:520px){html[data-layout="phone"] #bar .barpop.fw-tiles{grid-template-columns:repeat(4,minmax(0,1fr));left:auto;width:min(520px,calc(100vw - 12px))}}
+@media (max-height:600px){html[data-layout="phone"] #bar .barpop.fw-tiles{max-height:calc(100dvh - var(--barH) - 64px);overflow-y:auto;overscroll-behavior:contain}}
+html[data-layout="phone"] #bar .barpop.fw-tiles[hidden]{display:none}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act{min-width:0;max-width:none;width:100%;min-height:64px;gap:2px;padding:6px 3px 5px;flex:none}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act .ic{width:30px;height:30px}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act > span:not(.ic):not(.fw-newtag){font-size:16px;line-height:1.02;max-width:100%;overflow-wrap:anywhere;hyphens:auto;padding:0 2px 2px}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+1){--wash:var(--w-blue)} html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+2){--wash:var(--w-lilac)}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act > span.fw-newtag{font-size:15px;padding:1px 5px 2px;top:2px;right:2px}
+.fw-tb{position:absolute;top:2px;right:2px;z-index:2;min-width:22px;padding:1px 5px 2px;box-sizing:border-box;font-family:var(--font-hand);font-weight:700;font-size:15px;line-height:1.1;text-align:center;background:#FFE3A1;color:var(--ink);border:1.5px solid var(--ink);border-radius:9px 11px 8px 10px;transform:rotate(6deg);pointer-events:none}
+.fw-tb.done{background:#CFEBC6}
+.fw-tdot{position:absolute;top:3px;left:4px;width:10px;height:10px;border-radius:50%;background:#F28FA5;border:1.5px solid var(--ink);pointer-events:none}
+/* v2.31: the tile sheet is tall: while it is open Gerald's card steps aside (it came back on top of the tray's first row in ja and th at 360 x 640);
+   his ring still shows a tile when his step points into the tray, and the card returns as the tray closes */
+html[data-layout="phone"] #stage:has(#bar .barpop.fw-tiles:not([hidden])) #gdLayer .gd-card{visibility:hidden}
+html[data-layout="phone"] #hud .fw-next.fw-wrap{white-space:normal;text-overflow:clip;line-height:1.05;overflow:visible}

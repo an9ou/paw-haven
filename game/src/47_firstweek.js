@@ -40,6 +40,7 @@ function fwStepDone(i) {
   if (last && S.bond.level < 2) b += addBond(Math.max(1, BOND_TH[1] - S.bond.pts), { raw: true }); // the first day always ends at Bond 2
   setTimeout(() => toast(tt('fw.step_done', 'First day: step {i} of {n} done. +{b} Bond.', { i: i + 1, n: FW_STEPS.length, b }), 'good'), 700);
   if (last) { S.guide.done = localISO(); markDirty(); gdBye(); } else gdGo(i + 1, true);
+  saveNow(); // v2.30.1: every first-day step is saved at once (gdGo saves too; the step's own change, a name tag or a pet, is in it)
 }
 // the first day is over (done or skipped): the calendar opens once the yard is calm (fwMorningTry)
 function fwGuideEnd(skipped) {
@@ -70,6 +71,7 @@ function fwTagOpen() {
     const v = inp.value.replace(/\s+/g, ' ').trim().slice(0, 12); if (v) d.name = v; d.fwTag = col; markDirty(); SFX.boop(720);
     hudDogKey = ''; setHudDog(); closeModal();
     toast(tt('fw.tag_on', '{name} wears the new name tag. Very official.', { name: d.name }), 'good'); trackAct('nametag', { id: d.id });
+    saveNow(); // v2.30.1 (audit 17 Nov): the new name and the guide step are saved at once; a reload 2 s later went back to the name-tag step
   };
 }
 function fwTagName(k) {
@@ -113,8 +115,9 @@ function fwNextSync() {
   const txt = S && fwOn() && S.bond.level < 10 ? fwNextText(S.bond.level) : '';
   if (!txt) { if (el) el.hidden = true; FW.nextKey = ''; return; }
   if (!el) { el = document.createElement('span'); el.id = 'fwNext'; el.className = 'fw-next'; b.appendChild(el); }
-  if (FW.nextKey !== txt) { FW.nextKey = txt; const sh = fwNextText(S.bond.level, true); el.innerHTML = `<span class="fw-nl">${esc(tt('fw.next', 'Next'))}</span> <span class="fw-nlong">${esc(txt)}</span><span class="fw-nshort">${esc(sh)}</span>`; el.title = txt; el.setAttribute('data-tip', txt); } // phones show the short line (one unlock)
+  if (FW.nextKey !== txt) { FW.nextKey = txt; const sh = fwNextText(S.bond.level, true); el.innerHTML = `<span class="fw-nl">${esc(tt('fw.next', 'Next'))}</span> <span class="fw-nlong">${esc(txt)}</span><span class="fw-nshort">${esc(sh)}</span>`; el.title = txt; el.setAttribute('data-tip', txt); el.classList.remove('fw-wrap'); } // phones show the short line (one unlock)
   el.hidden = false;
+  if (isPhone() && !el.classList.contains('fw-wrap') && el.scrollWidth > el.clientWidth + 1) el.classList.add('fw-wrap'); // v2.31 fit: a short line that does not fit (ko, pt-BR, th at 360 px) takes two lines instead of an ellipsis
 }
 
 /* ---------------- 3. the Bond 2 party ---------------- */
@@ -164,18 +167,88 @@ function fwPartyPending() {
 /* ---------------- 6. the phone bar, option C (owner, 25 Oct 2026): Care, Walk, Map, More for every phone player ----------------
    Care opens a small crayon tray above it (Feed, Play, Bath & nap: the old trays), More opens Wardrobe and Journal. The inner buttons are the
    same .act[data-act] buttons as on desktop, inside #bar, so doAct, the guide rings and the shortcuts keep working. Desktop keeps the 7 buttons. */
-const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['wardrobe', 'journal'] };
+const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['photo', 'share', 'story', 'wardrobe', 'journal', 'stickers', 'friends', 'calendar', 'news', 'missions', 'kindshop'] }; // v2.31: the More tray is the phone's tile sheet (the "..." menu keeps Settings, Sound, Cloud and Have a code)
 function fwMoreIcon() { return `<svg viewBox="-20 -20 40 40" aria-hidden="true">${[-11, 0, 11].map((x, i) => `<path d="M${x - 3.6} ${i % 2 ? 0.6 : -0.4} q0 -4 3.8 -4 q4 0 3.8 4 q0 4 -3.9 3.9 q-3.7 0 -3.7 -3.9z" fill="${['#F28FA5', '#F2C744', '#8EC0EA'][i]}" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/>`).join('')}</svg>`; }
-const fwPopList = (k) => FW_POPS[k].concat(k === 'more' && typeof ddOn === 'function' && ddOn() ? ['stickers'] : []).concat(k === 'more' && typeof frOn === 'function' && frOn() ? ['friends'] : []); // v2.17: the sticker book in the More tray (48_dogdays.js). v2.19: Friends (50_friends.js)
-function fwActLabel(a) { return a === 'friends' ? tt('fr.menu', 'Friends') : a === 'stickers' ? tt('dd.st_title', 'Sticker book') : a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
-function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'friends' && typeof frIcon === 'function' ? frIcon() : a === 'stickers' && typeof ddBookIcon === 'function' ? ddBookIcon() : a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
-function fwActBtn(a, extra) { return `<button class="act" type="button" data-act="${a}"${extra || ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span></button>`; }
+// which More tiles show right now (the tray is built each time it opens): the camera only where photo mode works, nothing that leaves a friend's yard on a visit
+const fwVisit = () => cur.mode === 'fryard';
+const FW_MORE_ON = {
+  photo: () => typeof phOpen === 'function' && (cur.mode === 'yard' || cur.mode === 'market') && !(typeof PH === 'object' && PH && PH.on) && !(typeof HO === 'object' && HO && HO.pl) && !!$('#view > svg.world'),
+  share: () => typeof shareDog === 'function' && !!(S && S.dog) && !fwVisit(),
+  story: () => typeof smOpen === 'function' && typeof smOn === 'function' && smOn() && !fwVisit(),
+  stickers: () => typeof ddOn === 'function' && ddOn(), friends: () => typeof frOn === 'function' && frOn(),
+  calendar: () => typeof fwCalOpen === 'function' && fwOn() && !fwVisit(), news: () => typeof nwOpen === 'function',
+  missions: () => typeof msOpen === 'function' && !!(S && S.missions) && !fwVisit(), kindshop: () => typeof ksOpen === 'function' && typeof ksOn === 'function' && ksOn() && !fwVisit()
+};
+const fwPopList = (k) => (k === 'more' ? FW_POPS.more.filter((a) => !S || !FW_MORE_ON[a] || FW_MORE_ON[a]()) : FW_POPS[k]); // v2.17 stickers, v2.19 friends, v2.31 the tiles
+function fwActLabel(a) {
+  switch (a) {
+    case 'friends': return tt('fr.menu', 'Friends');
+    case 'stickers': return tt('dd.st_title', 'Sticker book');
+    case 'caremenu': return tdata('acts.care.1', 'Care');
+    case 'more': return tt('fw.more', 'More');
+    case 'care': return tt('fw.bath_nap', 'Bath & nap');
+    case 'photo': return tt('phone.t_photo', 'Photo');
+    case 'share': return tt('phone.t_share', 'Share');
+    case 'story': return tt('sm.menu', 'Story');
+    case 'calendar': return tt('fw.cal_title', 'Calendar');
+    case 'news': return tt('nw.menu', "What's new");
+    case 'missions': return tt('phone.t_missions', 'Missions');
+    case 'kindshop': return tt('ks.btn', 'Kind shop');
+    default: return tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]);
+  }
+}
+function fwActIcon(a) {
+  const r = ACTS.find((x) => x[0] === a);
+  switch (a) {
+    case 'friends': return typeof frIcon === 'function' ? frIcon() : ICON('bond');
+    case 'stickers': return typeof ddBookIcon === 'function' ? ddBookIcon() : doodle('star', 0, 0, 1);
+    case 'more': return fwMoreIcon();
+    case 'caremenu': return ICON('bath');
+    case 'journal': return iconOr('journal', doodle('paw', 0, 2, 1.1));
+    case 'photo': return ICON('camera');
+    case 'share': return typeof shIcon === 'function' ? shIcon() : ICON('camera');
+    case 'story': return `<svg viewBox="-20 -20 40 40">${doodle('heart', 0, 0, 1.15)}</svg>`;
+    case 'calendar': return fwCalIcon();
+    case 'news': return `<svg viewBox="-20 -20 40 40">${doodle('spark', 0, 0, 1.25)}${doodle('spark', 11, -11, 0.5)}</svg>`;
+    case 'missions': return typeof msHudIcon === 'function' ? msHudIcon() : ICON('star');
+    case 'kindshop': return ICON('coin');
+    default: return ICON(r ? r[2] : a);
+  }
+}
+// a small corner badge on a tile: today's missions, friends waiting, a calendar gift to claim
+function fwTileBadge(a) {
+  try {
+    if (a === 'missions' && S && S.missions && typeof msDoneN === 'function') { const nd = msDoneN(), t = msTotal(); return `<b class="fw-tb${nd >= t ? ' done' : ''}" aria-hidden="true">${nd}/${t}</b>${typeof ms2DotOn === 'function' && ms2DotOn() ? '<i class="fw-tdot" aria-hidden="true"></i>' : ''}`; }
+    if (a === 'friends' && typeof frBadgeN === 'function') { const n = frBadgeN(); return n ? `<b class="fw-tb" aria-hidden="true">${n > 9 ? '9+' : n}</b>` : ''; }
+    if (a === 'calendar' && typeof fwClaimable === 'function' && fwClaimable()) return `<span class="fw-newtag" aria-hidden="true">${esc(tt('fw.new_tag', 'new!'))}</span>`;
+  } catch (e) { /* a system is not ready */ }
+  return '';
+}
+function fwTileAria(a) {
+  try {
+    if (a === 'missions' && S && S.missions && typeof msHudLabel === 'function') return msHudLabel(msDoneN());
+    if (a === 'friends' && typeof frBadgeN === 'function' && frBadgeN()) return tt('fr.menu_n', 'Friends, {n} waiting', { n: frBadgeN() });
+  } catch (e) { /* a system is not ready */ }
+  return '';
+}
+function fwActBtn(a, extra, tile) { const al = tile ? fwTileAria(a) : ''; return `<button class="act" type="button" data-act="${a}"${extra || ''}${al ? ` aria-label="${esc(al)}"` : ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span>${tile ? fwTileBadge(a) : ''}</button>`; }
+// a tile's page opens once the tray and any sheet under it have closed (as the old "..." menu rows did)
+const FW_TILE_GO = { photo: () => phOpen(), share: () => shareDog({ from: 'menu' }), story: () => smOpen(), calendar: () => fwCalOpen(), news: () => nwOpen(false), missions: () => msOpen(), kindshop: () => ksOpen() };
+function fwTileAct(a) {
+  const g = FW_TILE_GO[a]; if (!g) return false;
+  hideBubble(); if (typeof closeTraining === 'function') closeTraining();
+  if (popOpen()) closeTray(); else SFX.click(); if (!modal.hidden) closeModal();
+  setTimeout(() => { try { g(); } catch (e) { /* that page is not ready */ } }, 60);
+  return true;
+}
+const fwMoreTiles = () => fwPopList('more').map((a) => fwActBtn(a, '', true)).join('');
 function fwPhoneBar() {
-  const pop = (k) => `<div class="barpop${k === 'more' && fwPopList(k).length > 3 ? ' fr-four' : ''}" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
+  const pop = (k) => `<div class="barpop${k === 'more' ? ' fw-tiles' : ''}" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${k === 'more' ? fwMoreTiles() : fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
   return fwActBtn('caremenu', ' aria-haspopup="true" aria-expanded="false"') + fwActBtn('walk') + fwActBtn('map') + fwActBtn('more', ' aria-haspopup="true" aria-expanded="false"') + pop('caremenu') + pop('more');
 }
 const fwPopOf = (a) => Object.keys(FW_POPS).find((k) => FW_POPS[k].includes(a)) || null;
 function fwBarPop(k) { // open the tray k (or none), close the other
+  if (k === 'more') { const mp = bar.querySelector('.barpop[data-pop="more"]'); if (mp) mp.innerHTML = fwMoreTiles(); } // v2.31: the tiles are built as the tray opens (the camera, a gift waiting, today's missions)
   bar.querySelectorAll('.barpop').forEach((p) => { const on = p.dataset.pop === k; p.hidden = !on; const b = bar.querySelector(`.act[data-act="${p.dataset.pop}"]`); if (b) { b.setAttribute('aria-expanded', on); b.classList.toggle('pop', on); } });
   bar.classList.toggle('popon', !!k); // over an open tray sheet (z 15) while a bar tray is up
   if (k === 'more') fwDockApply();

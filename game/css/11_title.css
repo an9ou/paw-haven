@@ -137,3 +137,22 @@ html[data-layout="phone"]:lang(th) .tchoose .tch :is(b,.tch-s){line-height:1.4!i
 html[data-layout="phone"]:lang(th) .tchoose .tch b{font-size:23px}
 html[data-layout="phone"]:lang(th) .cover.choosing .tagline{font-size:23px;line-height:1.45!important}
 html[data-layout="phone"] .cover.choosing .tchoose .tch .tch-dog{width:64px;height:54px}
+/* v2.30.1 first impressions: a new player's cover. A big crayon dog over one big Play; Log in and Make an account as small links */
+.cover .tbig{position:relative;width:min(230px,40vmin);aspect-ratio:1/0.8;margin:-6px 0 -10px;pointer-events:none}
+.cover .tbig svg{width:100%;height:100%;display:block;animation:tbigBob 2.6s ease-in-out infinite}
+@keyframes tbigBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
+@media (prefers-reduced-motion:reduce){.cover .tbig svg{animation:none}}
+html[data-motion="off"] .cover .tbig svg{animation:none}
+.cover.tfirst #tPlay,.cover.tfirst #tNew{min-width:240px;font-size:34px}
+.tacct.tlinks{margin-top:-4px;gap:0 18px}
+.cover.tfirst .dd-low{transform:translateY(34px)}
+.tacct.tlinks .tlink{font-size:21px}
+#title:has(.cover.tfirst){overflow-x:hidden;overflow-y:auto;align-items:safe center}
+.cover.tfirst{height:auto;min-height:78%;gap:10px;margin:12px 0}
+html[data-layout="phone"] .cover.tfirst{min-height:0;padding-top:20px;padding-bottom:28px;gap:8px}
+html[data-layout="phone"] .cover.tfirst .tbig{width:min(170px,46vw);margin:-4px 0 -6px}
+html[data-layout="phone"] .cover.tfirst #tPlay,html[data-layout="phone"] .cover.tfirst #tNew{min-width:0;font-size:30px}
+html[data-layout="phone"] .tacct.tlinks{margin-top:-2px;gap:0 10px}
+html[data-layout="phone"] .tacct.tlinks .tlink{font-size:19px}
+html[data-layout="phone"] #title:has(.cover.tfirst) :is(.tdog,.tdog2){display:none}
+html[data-layout="phone"] .cover.tfirst .crayon-note{font-size:15px;line-height:1.3} /* v2.31 fit: th at 360 x 640 ran the note past the cover's bottom edge */

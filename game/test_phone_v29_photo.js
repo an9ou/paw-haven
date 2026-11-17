@@ -11,14 +11,14 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await t.adopt({ sex: 'girl' }); await t.patch({ bond: { level: 7, pts: 1450 }, coins: 500, stats: { hunger: 80, happy: 80, energy: 90, clean: 90 } }); await t.calm();
       await t.until(() => !!(window.__paw && window.__paw.ph), null, 5000);
 
-      sec(tag + 'the camera is in the "..." sheet');
+      sec(tag + 'the camera is a tile in the More tray (v2.31)');
       ok(await ev(() => getComputedStyle(document.getElementById('phBtn')).display === 'none'), tag + 'no camera button in the HUD (the phone HUD is tight)');
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto');
-      ok(await ev(() => { const b = document.getElementById('mmPhoto'), r = b.getBoundingClientRect(); return /Take a photo/.test(b.textContent) && r.height >= 44 && !!b.querySelector('svg'); }), tag + 'the sheet has "Take a photo" (44 px, with the icon)');
-      ok(await ev(() => !document.getElementById('modal').hidden && !window.__paw.ph.can()), tag + 'a sheet is open: photo mode cannot start under it');
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]');
+      ok(await ev(() => { const b = document.querySelector('#bar .barpop:not([hidden]) .act[data-act=photo]'), r = b.getBoundingClientRect(); return /Photo/.test(b.textContent) && r.height >= 44 && r.width >= 44 && !!b.querySelector('svg'); }), tag + 'the More tray has a Photo tile (44 px, with the icon)');
+      ok(await ev(() => document.getElementById('modal').hidden), tag + 'the tray is not a sheet');
       await t.SH('more_sheet');
-      await p.click('#mmPhoto');
-      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'the sheet closes and photo mode opens');
+      await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]');
+      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'the tray closes and photo mode opens');
       await t.SH('photo_mode');
 
       sec(tag + 'photo mode fits the screen');
@@ -39,7 +39,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       ok(geo.pic[2] - geo.pic[0] > geo.vw * 0.7 || geo.pic[3] - geo.pic[1] > geo.vh * 0.45, tag + 'the picture is big enough to see');
       ok(geo.hidden.every((v) => v === 'hidden') && geo.hs, tag + 'the HUD, bar and tray are hidden, no sideways scroll');
       const sizes = await ev(() => ({ z: window.__paw.ph.size(), svg: window.__paw.ph.svg() }));
-      ok(sizes.z.h === 1080 && sizes.z.w < 1080 && sizes.z.w > 500, tag + `a portrait postcard, ${sizes.z.w}x${sizes.z.h}`);
+      ok(sizes.z.h === 1350 && sizes.z.w === 1080, tag + `a portrait postcard (v2.31: 1080x1350), ${sizes.z.w}x${sizes.z.h}`);
       ok(sizes.svg.includes('>Home<') || /Home ·/.test(sizes.svg), tag + 'the frame names the place');
       ok(await ev(() => { const c = document.querySelector('.ph-caps'); return c.scrollWidth >= c.clientWidth; }), tag + 'the captions scroll sideways');
 
@@ -47,14 +47,14 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       const before = await ev(() => window.__paw.ph.svg()); await p.click('#phMode [data-frame=sky]'); ok(await t.until((old) => window.__paw.ph.svg() !== old && window.__paw.ph.ready(), before, 8000), tag + 'a frame colour tap changes the picture');
       await p.click('#phMode [data-cap=c4]'); ok(await t.until(() => window.__paw.ph.svg().includes('Drawn on purpose') && window.__paw.ph.ready(), null, 8000), tag + 'a caption chip tap changes the caption');
       let dl = p.waitForEvent('download'); await p.click('#phSave'); let d = await dl, sz = pngSize(await readStream(d));
-      ok(!!sz && sz.h === 1080 && sz.w === sizes.z.w, tag + `the PNG downloads (${sz && sz.w}x${sz && sz.h})`);
+      ok(!!sz && sz.h === 1350 && sz.w === sizes.z.w, tag + `the PNG downloads (${sz && sz.w}x${sz && sz.h})`);
       ok((await S()).ph.n === 1, tag + 'S.ph.n is 1');
       await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080 && window.__paw.ph.ready(); }, null, 10000), tag + 'Square: 1080 x 1080');
       ok(await ev(() => document.querySelector('#phMode [data-sq="1"]').getAttribute('aria-pressed') === 'true'), tag + 'the Square switch is on');
       await ev(() => { window.__shared = null; navigator.canShare = (x) => !!(x && x.files && x.files.length); navigator.share = async (x) => { window.__shared = { type: x.files[0].type, size: x.files[0].size }; }; });
       await p.click('#phSave'); ok(await t.until(() => !!window.__shared, null, 5000) && (await ev(() => window.__shared.type)) === 'image/png', tag + 'on a phone Save goes to the share sheet with the PNG');
       ok(await t.until(() => window.__paw.S.ph.n === 2, null, 3000), tag + 'it counts (2)');
-      await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => window.__paw.ph.size().w < 1080 && window.__paw.ph.ready(), null, 10000), tag + 'tapping Square again goes back to the postcard');
+      await p.click('#phMode [data-sq="1"]'); ok(await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000), tag + 'tapping Square again goes back to the postcard');
 
       sec(tag + 'hold to save');
       await ev(() => { navigator.canShare = undefined; navigator.share = undefined; window.__paw.ph.force('none'); });
@@ -76,12 +76,12 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       sec(tag + 'not on the map, not in a walk');
       await p.click('[data-act=map]'); await p.waitForSelector('[data-area=park]');
       ok(await ev(() => !window.__paw.ph.can()), tag + 'the map: no camera');
-      if (await p.locator('#moreBtn:visible').count()) { await p.click('#moreBtn'); await t.sleep(200); ok(await p.locator('#mmPhoto').count() === 0, tag + 'the map: the "..." sheet has no camera'); await ev(() => { document.querySelector('#modal .x') && document.querySelector('#modal .x').click(); }); }
+      if (await p.locator('#bar .act[data-act=more]:visible').count()) { await p.click('#bar .act[data-act=more]'); await t.sleep(200); ok(await p.locator('#bar .barpop:not([hidden]) .act[data-act=photo]').count() === 0, tag + 'the map: the More tray has no camera'); await p.click('#bar .act[data-act=more]'); }
       await t.home();
 
       sec(tag + 'a town place');
       await t.home('market');
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'Market Street: photo mode opens');
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]'); await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]'); ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'Market Street: photo mode opens');
       ok(await ev(() => window.__paw.ph.svg().includes('Market Street')), tag + 'the frame names Market Street');
       await p.keyboard.press('Escape'); ok(await t.until(() => !window.__paw.ph.active(), null, 3000), tag + 'Esc closes it');
 
@@ -89,7 +89,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'dachshund', sex: 'female', months: 30 }, 'Noodle'); });
       await t.home(); await t.calm(); await t.freezeMotion(true); await t.sleep(300);
       await ev(() => { const svg = document.querySelector('#view > svg.world'), inv = svg.getScreenCTM().inverse(), sx = (x) => new DOMPoint(x, 0).matrixTransform(inv).x; const ds = [...svg.querySelectorAll('#pack .packdog')].map((g) => ({ g, r: g.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left); const lo = ds[0], hi = ds[ds.length - 1]; lo.g.style.transform = `translate(${(20 - sx(lo.r.left)).toFixed(1)}px,0)`; hi.g.style.transform = `translate(${(985 - sx(hi.r.right)).toFixed(1)}px,0)`; }); // spread the pack from edge to edge
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000);
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]'); await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]'); await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000);
       if (!(await ev(() => window.__paw.ph.size().w === 1080 && window.__paw.ph.size().h === 1080))) { await p.click('#phMode [data-sq="1"]'); await t.until(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080 && window.__paw.ph.ready(); }, null, 10000); }
       const sq = await ev(() => ({ crop: window.__paw.ph.crop(), boxes: window.__paw.ph.boxes(), names: window.__paw.ph.names(), inShot: window.__paw.ph.inShot(), svg: window.__paw.ph.svg() }));
       const placed = sq.boxes.filter((b) => b[1] != null), x0 = sq.crop[0], x1 = sq.crop[0] + sq.crop[2];
@@ -97,7 +97,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       ok(placed.every(([, a, b]) => (Math.min(b, x1) - Math.max(a, x0)) >= (b - a) * 0.9 || a < 0 || b > 1000), tag + `every dog is inside the square crop (${Math.round(x0)} to ${Math.round(x1)}: ${placed.map((b) => b[0] + ' ' + Math.round(b[1]) + '-' + Math.round(b[2])).join(', ')})`);
       ok(sq.crop[2] > 600 * sq.crop[2] / sq.crop[3] - 1 && sq.crop[1] < -1 && new RegExp(`<rect x="[^"]+" y="${+sq.crop[1].toFixed(2)}" width="[^"]+" height="[^"]+" fill="#(?!FFFBF3)`).test(sq.svg), tag + `edge to edge: the crop widens (${Math.round(sq.crop[2])} wide) and the extra height above the scene takes the sky colour`);
       ok(sq.inShot.length === 4 && sq.inShot.every((n) => sq.svg.includes(n)), tag + `the names line is the dogs in the crop: all four (${sq.inShot.join(', ')})`);
-      await p.click('#phMode [data-sq="1"]'); await t.until(() => window.__paw.ph.size().w < 1080 && window.__paw.ph.ready(), null, 10000);
+      await p.click('#phMode [data-sq="1"]'); await t.until(() => window.__paw.ph.size().h === 1350 && window.__paw.ph.ready(), null, 10000);
       await p.keyboard.press('Escape'); await t.freezeMotion(false);
     }, { device });
   }

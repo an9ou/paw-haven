@@ -17,7 +17,7 @@ run('cloud', async (t) => {
       await t.ctx.addInitScript(mockInit, cfg || {});
       srv.pages.add(p);
     }
-    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest'); // v2.3: cloud on and no session shows Log in / Make an account / Play as guest
+    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay'); // v2.3: cloud on and no session shows Log in / Make an account / Play as guest
     pages[name] = p; return p;
   }
   const use = (p) => { t.p = p; return p; };

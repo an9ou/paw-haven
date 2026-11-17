@@ -1354,7 +1354,12 @@ function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = se
 // toasts wait in the queue (and the live one steps back into it), so none lands on the card; they come in when it closes.
 // v2.29: and on every device while a story scene plays (scPlaying, 57_scenes.js): toasts wait in the queue and come in after it (scEnd calls toastNext)
 const toastScene = () => typeof scPlaying === 'function' && scPlaying();
-const toastHold = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
+const toastHard = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
+// v2.30.1 first impressions (audit 17 Nov): on phones toasts also wait while any sheet is up or Gerald's guide card shows, so none lands on a
+// sheet's title or on Gerald; they come in when it closes (closeModal / gdStop / a hidden card call toastNext). A screen's own "Nope" (o.scr) and
+// an Undo (o.now) still show at once: they answer a tap on that sheet.
+const toastSoft = () => isPhone() && (!modal.hidden || (typeof gdActive === 'function' && gdActive()));
+const toastHold = () => toastHard() || toastSoft();
 // a "Nope" toast belongs to the screen it came from (o.scr: 's:<sheet number>' or 'v:<mode>'); phones drop it when that screen closes (toastDrop)
 let modalSeq = 0;
 const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
@@ -1374,7 +1379,7 @@ function toast(text, kind = '', o = {}) {
   if (o.scr) t.dataset.scr = o.scr;
   if (o.arr) t.dataset.arr = o.arr;
   if (isPhone()) {
-    const live = toastLive(), hold = toastHold();
+    const live = toastLive(), hold = toastHard() || (toastSoft() && !o.scr && !o.now);
     if (o.now && !hold) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
     toasts.appendChild(t);
     if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
@@ -1463,7 +1468,8 @@ function sayPlace(p, o) {
   const rel = (q) => ({ l: q.left - sg.left, t: q.top - sg.top, r: q.right - sg.left, b: q.bottom - sg.top });
   const soft = (o.avoid || []).slice(), hard = [], vis = (el) => el && !el.hidden && el.offsetParent !== null && el.getBoundingClientRect().height > 0; // hard: kept clear on every try (v2.14.1)
   if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); hard.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
-    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } } // UI/UX H9: nor under the look-right button
+    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } // UI/UX H9: nor under the look-right button
+    const pbs = [...view.querySelectorAll('#placeBtns > *')].filter(vis).map((e) => rel(e.getBoundingClientRect())); if (pbs.length) hard.push({ l: Math.min(...pbs.map((r) => r.l)) - 4, t: Math.min(...pbs.map((r) => r.t)) - 6, r: Math.max(...pbs.map((r) => r.r)) + 4, b: Math.max(...pbs.map((r) => r.b)) }); } // v2.30.1 (audit 17 Nov): nor on the Garden / Go inside / Yard games row (a tall Thai bubble went down over it)
   const tr = $('#dock .tray'); if (vis(tr) && getComputedStyle(dock).display !== 'none') soft.push(rel(tr.getBoundingClientRect()));
   const hit = (b, r) => b.l < r.r && b.l + b.w > r.l && b.t < r.b && b.t + b.h > r.t;
   const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !hard.some((r) => hit(b, r)) && !(useSoft && soft.some((r) => hit(b, r)));
@@ -1602,7 +1608,8 @@ function updateHUD() {
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
-  const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
+  // v2.30.1 (audit 17 Nov): on the map the chip has no place name (the map has its own title; "Home Yard" there read wrong and covered it)
+  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap; if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span> · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays)
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 
@@ -1619,6 +1626,7 @@ function doAct(a) {
   if (typeof fwBarPop === 'function') fwBarPop(null);
   if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
+  if (typeof fwTileAct === 'function' && fwTileAct(a)) return; // v2.31: the phone More tray's tiles (Photo, Share, Story, Calendar, News, Missions, Kind shop; 47_firstweek.js)
   if (cur.mode === 'fryard' && typeof frBarAct === 'function' && frBarAct(a)) return; // v2.19: on a visit Map goes home and the care buttons wait (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
@@ -1698,7 +1706,18 @@ const cur = { mode: null, cleanup: [] };
 function onCleanup(fn) { cur.cleanup.push(fn); }
 function setChrome(hudOn, barOn) { hud.hidden = !hudOn; bar.hidden = !barOn; stage.classList.toggle('nobar', !barOn); if (hudOn) setHudDog(); requestAnimationFrame(() => stage.style.setProperty('--hudH', (hud.hidden ? 0 : hud.offsetHeight) + 'px')); }
 let hudDogKey = '';
-function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; requestAnimationFrame(hudTitleFit); $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+// v2.31 review (phone_v222_levels): on phones a long title ("Friendly Neighbour" with 5 dogs and a 5-digit purse at 360 px) shrinks to fit the
+// room left of the level star (down to 13 px, a hair tighter), and only then ends in an ellipsis; the star keeps its 44 px box. Re-fit on resize.
+function hudTitleFit() {
+  const ht = $('#hudTitle'); if (!ht) return;
+  ht.style.fontSize = ''; ht.style.letterSpacing = ''; ht.style.paddingRight = '';
+  if (ht.hidden || !isPhone() || !ht.clientWidth || ht.scrollWidth <= ht.clientWidth + 1) return;
+  const f0 = parseFloat(getComputedStyle(ht).fontSize) || 17, pad = 4, f = Math.max(13, Math.floor(f0 * (ht.clientWidth - pad) / (ht.scrollWidth - pad) * 4) / 4);
+  ht.style.fontSize = f + 'px';
+  if (ht.scrollWidth > ht.clientWidth + 1) { ht.style.letterSpacing = '-0.02em'; ht.style.paddingRight = '2px'; }
+}
+if (typeof ResizeObserver === 'function' && $('#hudTitle')) { let hfT = 0; new ResizeObserver(() => { cancelAnimationFrame(hfT); hfT = requestAnimationFrame(hudTitleFit); }).observe($('#hudTitle')); }
 function go(mode, arg) {
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }

@@ -253,6 +253,17 @@ function meetNpc(o, i) {
   sayW(line, o.x - W.dist - 60, 150, 2600);
 }
 /* v2.3 walkfetch: results tiles. A tile whose number is zero is left out; an all-zero sheet gets one kind line instead of an empty grid. Each row is [shown, label, number]. */
+// v2.30.1 first impressions: the very first walk always brings a little treasure home (a common one from the route; never coins, the pay
+// is not touched), whether or not the dig hit. Both walks call it when they end; the treasure is granted like a dug one.
+function firstWalkFind(area) {
+  const L = rollTreasure(area, { common: true }); if (!L.item) return null;
+  const g = grantTreasure(L.item, area); return { item: L.item, r: L.item.r, dup: !!g.dup, first: g.first, gift: true };
+}
+// v2.30.1: the happy dog sits in the Paw Coins tile of the walk results, next to where the coin pops and flies (coinFly)
+function resDog(p) {
+  const rc = p && p.querySelector('.res-coins'); if (!rc || !S || !S.dog) return;
+  rc.classList.add('has-dog'); rc.insertAdjacentHTML('afterbegin', `<span class="res-dog" aria-hidden="true">${dogSVG(D(), { pose: 'happy' })}</span>`);
+}
 function wfTiles(rows, cls) {
   const on = rows.filter((r) => Math.round(+r[2]) !== 0);
   return on.length ? `<div class="${cls}">${on.map((r) => `<div class="res${r[3] ? ' ' + r[3] : ''}"><div class="v">${r[0]}</div><div class="k">${r[1]}</div></div>`).join('')}</div>` : '<p class="small wf-nil">' + esc(tt('walk.stroll', 'Just a stroll. Nothing to count, all good.')) + '</p>';
@@ -260,6 +271,7 @@ function wfTiles(rows, cls) {
 function endWalk(complete) {
   if (!W || W.ended) return; W.ended = true; pottyWalked(); cancelAnimationFrame(W.raf);
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
+  if (!W.found && !S.walks && frac > 0.05) { const ff = firstWalkFind(W.area); if (ff) W.found = ff; } // v2.30.1: the first walk always finds something (v2.31 review: once it covered ground; a walk turned home at the start stays uncounted, so the next one is still the first)
   const base = Math.round(RAND(R.coins[0], R.coins[1]) * frac);
   const penny = S.outfit.charm === 'Lucky Penny' ? 1.1 : 1;
   const wk = frac > 0.05 || W.found ? walkCount() : null; // Daily rhythm: a walk that counts is walk n of the Japan day; after the 5th, half coins (the pouch part stays whole)
@@ -289,7 +301,7 @@ function endWalk(complete) {
     ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet
-  jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
+  resDog(p); jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
   coinFly($('.res-coins .v', p), coins, { gain: gained, delay: 420 }); // v2.25.2: one coin pops from the Paw Coins tile and flies to the counter (54_coinfly.js)
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };

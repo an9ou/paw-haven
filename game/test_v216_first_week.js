@@ -72,6 +72,7 @@ run('v216_first_week', async (t) => {
   await t.p.click('#fwTagOk');
   ok(await cardAt('walk'), 'hanging the tag moves on to the walk');
   s = await t.S(); ok(s.dog.name === 'Biscuit' && s.dog.fwTag === 'mint' && await ev(() => !!document.querySelector('#hudHead .fw-htag')), 'the dog wears the tag (name, colour, the HUD portrait)');
+  ok(await ev(() => { try { const v = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); return (v.dogs || [v.dog]).some((d) => d && d.name === 'Biscuit' && d.fwTag === 'mint') && v.guide.step === 4; } catch (e) { return false; } }), 'v2.30.1: Hang it on is saved at once (the new name and the walk step are on disk, no wait for the autosave)');
   const before = await t.S(); ok(before.bond.level === 1 && before.bond.pts < 60, `still Bond 1 before the walk (${before.bond.pts} points, ${before.bond.pts - b0} from the first four steps)`);
   ok((await ringFor()) === '#bar [data-act=walk]', 'the ring is on Walk');
   await t.startWalk(true); await ev(() => { window.__paw.W.dist = 1e7; }); await t.quitWalk(false);
@@ -221,7 +222,7 @@ run('v216_first_week', async (t) => {
   await t.p.click('#luOk'); await t.modalGone(); await quiet();
   ok(await ev(() => !!document.querySelector('#bar [data-act=more] .fw-newtag') && !document.querySelector('#bar [data-act=caremenu] .fw-newtag')), 'More wears a new! tag while something in it is unseen');
   await t.p.locator('#bar [data-act=more]').tap(); ok(await popOpen('more'), 'More opens its tray');
-  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act).join(',') === 'wardrobe,journal' && ['wardrobe', 'journal'].every((a) => !!document.querySelector(`#bar [data-act=${a}] .fw-newtag`))), 'the More tray: Wardrobe and Journal, both new!');
+  ok(await ev(() => { const l = [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act); return l.slice(0, 2).join(',') === 'photo,share' && l.indexOf('wardrobe') > 1 && l.indexOf('journal') === l.indexOf('wardrobe') + 1 && ['news', 'missions'].every((a) => l.includes(a)) && ['wardrobe', 'journal'].every((a) => !!document.querySelector(`#bar [data-act=${a}] .fw-newtag`)); }), 'the More tray (v2.31 tiles): Photo, Share first, then Wardrobe and Journal, both new!, News and Missions');
   await shot('dock_c_more');
   await t.p.locator('#bar [data-act=wardrobe]').tap(); await t.until(() => !document.getElementById('modal').hidden, null, 4000);
   ok(await ev(() => !document.querySelector('#bar [data-act=wardrobe] .fw-newtag') && !!document.querySelector('#bar [data-act=journal] .fw-newtag') && !!document.querySelector('#bar [data-act=more] .fw-newtag') && !window.__paw.S.fw.dockNew.wardrobe), 'a tap takes the tag off that button only');
@@ -241,9 +242,9 @@ run('v216_first_week', async (t) => {
     await t.closeX();
   }
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(300);
-  // the "..." menu reaches the calendar
-  await ev(() => document.getElementById('moreBtn').click()); ok(await t.until(() => !!document.getElementById('mmCal'), null, 3000), 'the phone menu has a Calendar button');
-  await t.p.click('#mmCal'); ok(await t.until(() => !!document.querySelector('#modal .fw-calpop'), null, 3000), 'which opens the calendar'); await t.closeX();
+  // the More tray reaches the calendar (v2.31)
+  await ev(() => document.querySelector('#bar .act[data-act=more]').click()); ok(await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=calendar]'), null, 3000), 'the phone More tray has a Calendar tile');
+  await t.p.click('#bar .barpop:not([hidden]) .act[data-act=calendar]'); ok(await t.until(() => !!document.querySelector('#modal .fw-calpop'), null, 3000), 'which opens the calendar'); await t.closeX();
   await t.ctx.close();
 
   sec('9b. a reload between the Bond 2 level-up and its card keeps the party');

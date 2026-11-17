@@ -126,7 +126,8 @@ class T {
   // adoption through the real UI, then wait for the yard. o: { sex:'girl'|'boy', head: 'aria-label' of a carousel head, name:true -> accept the default name }
   async adopt(o) {
     o = o || {}; const p = this.p;
-    await p.click('#tNew'); await p.waitForSelector('#aAdopt');
+    if (!(await p.locator('#aAdopt').count())) await p.click((await p.locator('#tPlay').count()) ? '#tPlay' : '#tNew'); // v2.30.1: a new player's cover has one Play (guest + new game)
+    await p.waitForSelector('#aAdopt');
     if (o.head) await p.click(`.heads button[aria-label${o.head.startsWith('~') ? '$' : ''}="${o.head.replace(/^~/, '')}"]`);
     await p.click(o.sex === 'boy' ? '#aBoy' : '#aGirl'); await p.click('#aAdopt'); await p.waitForSelector('#nOk'); await p.click('#nOk');
     await this.intro(); await this.calm();
