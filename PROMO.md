@@ -22,6 +22,17 @@ Suites: `promo` (the game), `promo_worker` (the Worker and the CLI), plus a few 
 | shared | `DOGGO-IG-NOV` | many players | each account once; start/end window; optional total `cap` |
 | unique | `GIFT-AB2C-DE3F` (batch `GIFT-20261116`) | one player each | each code once in total (`cap` 1); **one code of a batch per account** |
 
+**Platform codes (a group of shared codes):** one campaign can have several shared codes with the same reward, one per platform (`DOGGO-IG`,
+`DOGGO-YT`, `DOGGO-X`, `DOGGO-RED`), so `stats` shows which platform works. `create ... --group SPRING-GIFT` stores the group name in the code's
+`batch` column; a player may use **one** code of a group in total: a second answers 409 `batch_used` ("You already used a code from this gift
+batch."), the same unique index as unique batches. A shared code without a group is unchanged. A group name is 3-40 letters, digits and dashes and
+never looks like a batch id (PREFIX-YYYYMMDD). `stats SPRING-GIFT` sums the group, `stats DOGGO-IG` one code, `disable|enable SPRING-GIFT` the
+whole group, `list` shows each shared code's group.
+
+```
+for c in IG YT X RED; do bash tools/promo.sh create DOGGO-$c --items "Follower Star Bandana" --coins 200 --group SPRING-GIFT --to 2026-12-31; done
+```
+
 Codes compare upper case with spaces, dashes, dots and underscores left out (full-width letters and the Japanese long dash from a phone keyboard
 count as plain ones): `doggo ig-nov` = `DOGGO-IG-NOV`. A code is 4-40 letters and digits once normalised. Batch codes use the readable
 alphabet `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0, O, 1, I, L), 8 random characters after the prefix.

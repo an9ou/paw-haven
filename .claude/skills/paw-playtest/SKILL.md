@@ -12,10 +12,12 @@ description: >-
 
 `tools/playtest.js` drives the test harness build (`game/test_merged.html`, rebuilt when the sources are newer) in Playwright Chromium.
 It switches on every feature that is live in the shipped game but off under the harness (the `prefs.*Test` flags, `LIVE_PREFS` in
-`tools/paw_sim_lib.js`; Friends and cloud save stay off: they need the Worker). One fresh save per profile, adopted through the real
+`tools/paw_sim_lib.js`; Friends and cloud save stay off: they need the Worker). The list covers every release up to v2.29 (wbTest welcome back, yvTest visitors, prTest town projects, stTest stories, smTest story mode, scTest scenes); a build that lacks a feature ignores its pref. One fresh save per profile, adopted through the real
 title and adoption screens (a 3-month puppy, as for players).
 
-Each day: the page clock moves on 24 hours and the page reloads (so mail, needs, the garden and the 00:00 JST resets happen as for a
+Day 1 also plays Gerald's first-day guide the way a player would (pet, feed, Care > Play > tap the ball, the name tag, a walk), so the story (v2.29) can start; it is retried on later days if a step did not finish.
+
+Each day: the save is written at the old time, the page clock moves on 24 hours with the page's last save muted (so the save is not stamped with the new time: the gap is a real absence and "While you were out" shows; no save lands in the future) and the page reloads (so mail, needs, the garden and the 00:00 JST resets happen as for a
 returning player), the player taps Continue, then runs the profile's session:
 
 | | Light (15 min) | Regular (45 min) | Keen (2 h) |
@@ -43,7 +45,7 @@ node tools/playtest.js --start 2026-12-01 --days 3                    # e.g. the
 ```
 
 `--days N` (1-30), `--profile light,regular,keen`, `--phone` (360x640), `--shots [dir]` (a screenshot per profile per day),
-`--out file` (else stdout; rewritten as each profile finishes, so a stopped run still leaves a report), `--start YYYY-MM-DD` (festivals
+`--next` (set `window.__ddNextTest`, which opens the dated features of 49c_news.js `nwDue` early; not needed for the `*Test` prefs, which already switch the features on under the harness, so it is off by default and the What's new sheet of a dated release only appears once the simulated date reaches it), `--out file` (else stdout; rewritten as each profile finishes, so a stopped run still leaves a report), `--start YYYY-MM-DD` (festivals
 and markets follow the date), `--build`. Run it in the background with a long timeout (`run_in_background`, timeout 7200000: the
 default 30 min background limit stops a 7-day run) and keep one copy running at a time.
 
@@ -57,6 +59,7 @@ that opened (titles), and what was new that day. Then **Bored / stuck**:
 - "the same session as yesterday": the same actions and outcomes with nothing new.
 - "walk: blocked", "travel X: did not arrive", "STUCK a window would not close": the player could not do something; check by hand.
 - Missions or helps "not done (the script cannot play it)": a tool limit; flag it only if a player-facing task is impossible.
+- "HARNESS: ..." lines: the save was missing after a reload (the page logs any removeItem/clear/empty write; the harness put the copy back) or was stamped in the future. Tool problems, not game bugs.
 - **Console errors**: any page error or console error while playing. Always worth a look.
 
 Send the findings to the Game Manager (a short list: profile, day, what happened, why it matters, a suggestion). Do not change game code

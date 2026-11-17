@@ -255,6 +255,31 @@ const sec = (s) => console.log('--- ' + s);
       ok(ds.code === 0 && /disabled 45 code/.test(ds.out) && is(await redeem(shown[2], B2), 404, 'unknown'), 'disable <batch id>: 45 codes off, they answer unknown');
       const none = await live('disable', 'LIVE');
       ok(none.code === 0 && /disabled 0 code/.test(none.out) && /no code or batch by that name/.test(none.err), 'a bare PREFIX is not a batch id: 0 codes and a hint');
+      sec('14. platform codes: shared codes in one group (create --group), one code of the group per account');
+      const BADG = [['create', 'GRP-BAD1', '--coins', '5', '--group', 'ab'], ['create', 'GRP-BAD2', '--coins', '5', '--group', 'X_Y!Z'], ['create', 'GRP-BAD3', '--coins', '5', '--group', 'GIFT-20261116'], ['create', 'GRP-BAD4', '--coins', '5', '--group', 'GIFT20261116']].map((a2) => cli(...a2));
+      ok(BADG.every((x) => x.code === 2 && !x.out.includes('{"sql"')), 'a bad group name (short, odd characters, a batch id) is refused with exit 2 and no request');
+      for (const pl of ['IG', 'YT', 'X', 'RED']) { const x = await live('create', 'PLAT-' + pl, '--coins', '30', '--group', 'plat-spring', '--note', pl); ok(x.code === 0, 'create PLAT-' + pl + ' --group: ' + x.err.trim()); }
+      await live('create', 'PLAT-SOLO', '--coins', '30');
+      ok(n("select count(*) as n from promo_codes where batch = 'PLAT-SPRING' and kind = 'shared'") === 4 && q("select batch from promo_codes where code = 'PLATSOLO'").batch === null, 'the group is stored upper case in batch for the four codes; a code without --group has none');
+      const P1 = await account(), P2 = await account();
+      ok((await redeem('plat-ig', P1)).status === 200, 'first code of the group: ok');
+      r = await redeem('PLAT-YT', P1); ok(is(r, 409, 'batch_used'), 'another code of the group: 409 batch_used');
+      r = await redeem('PLAT-IG', P1); ok(is(r, 409, 'used'), 'the same code again: 409 used');
+      ok(q("select used from promo_codes where code = 'PLATYT'").used === 0, 'that code is still unused');
+      ok((await redeem('PLAT-YT', P2)).status === 200 && (await redeem('PLAT-IG', P2)).status === 409, 'another account can still redeem one');
+      ok((await redeem('PLAT-SOLO', P1)).status === 200 && (await redeem('PLAT-SOLO', P2)).status === 200, 'a shared code without a group is unchanged (outside the group)');
+      const PM = await call('GET', '/promo/mine', null, P1.token); ok(PM.status === 200 && PM.json.redemptions.length === 2, '/promo/mine still lists both: ' + PM.text.slice(0, 120));
+      const PE = await account(); batchErrs.length = 0;
+      const rr = await Promise.all([redeem('PLAT-X', PE), redeem('PLAT-RED', PE)]);
+      ok(rr.filter((x) => x.status === 200).length === 1 && rr.filter((x) => is(x, 409, 'batch_used')).length === 1, 'one account, two group codes at once: one 200, one batch_used: ' + rr.map((x) => x.status).join(' '));
+      const gs = await live('stats', 'plat-spring');
+      ok(gs.code === 0 && /codes=4/.test(gs.out) && /redeemed=\d/.test(gs.out), 'stats <GROUP> sums its codes: ' + gs.out.replace(/\s+/g, ' ').slice(0, 160));
+      const cs = await live('stats', 'PLAT-IG'); ok(cs.code === 0 && /codes=1/.test(cs.out), 'stats <CODE> still works for one code');
+      const ls = await live('list'); ok(/code=PLAT-IG\s+grp=PLAT-SPRING/.test(ls.out) && /code=PLAT-SOLO\s+grp=\s/.test(ls.out), 'list shows the group of shared codes');
+      const gd = await live('disable', 'PLAT-SPRING');
+      ok(/disabled 4 code/.test(gd.out) && is(await redeem('PLAT-RED', P2), 404, 'unknown') && (await redeem('PLAT-SOLO', await account())).status === 200, 'disable <GROUP>: its four codes are off, the ungrouped one is not');
+      await live('enable', 'PLAT-SPRING');
+      ok(n('select count(*) as n from promo_codes where batch = ? and disabled = 0', 'PLAT-SPRING') === 4, 'enable <GROUP> turns them back on');
     } finally { d1srv.close(); fs.rmSync(outDir, { recursive: true, force: true }); }
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
   console.log(`${passes} passed, ${fails} failed (${((Date.now() - t0) / 1000).toFixed(1)} s)`);

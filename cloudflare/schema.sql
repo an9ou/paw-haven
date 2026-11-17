@@ -218,7 +218,7 @@ create table if not exists promo_codes (
   code       text primary key,          -- A-Z and 0-9 only, 4-40 characters
   shown      text not null,             -- e.g. DOGGO-IG-NOV
   kind       text not null check (kind in ('shared', 'unique')),
-  batch      text,                      -- unique codes: the batch name (the PREFIX); null for a shared code
+  batch      text,                      -- unique codes: the batch id (PREFIX-YYYYMMDD); shared codes: an optional group name (platform codes, tools/promo.sh create --group), one code of a group per account; null for a plain shared code
   reward     text not null,             -- JSON { items: [item names], coins: n (500 at most, the Worker clamps it), treats: { food name: n } }
   starts_at  integer,                   -- ms; null: from now on
   ends_at    integer,                   -- ms, the first moment it no longer works; null: no end
@@ -236,7 +236,7 @@ create index if not exists promo_codes_batch on promo_codes (batch);
 create table if not exists promo_redemptions (
   code    text not null,                -- promo_codes.code (normalised)
   user_id text not null,
-  batch   text,                         -- the code's batch (unique codes), for the one-per-batch rule; null for shared codes
+  batch   text,                         -- the code's batch or group, for the one-per-batch/group rule; null for a plain shared code
   reward  text not null,                -- JSON, as granted
   at      integer not null,             -- ms
   unique (code, user_id)
