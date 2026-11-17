@@ -40,7 +40,7 @@ require('./test_lib').run('itch_build', async (t) => {
   }
 
   sec('the split build: one language file at a time, the loading paw, the photo fonts on first use');
-  const L = (code) => JSON.parse(fs.readFileSync(path.join(ROOT, 'game', 'i18n', code + '.json'), 'utf8'))['title.new_game'];
+  const L = (code) => JSON.parse(fs.readFileSync(path.join(ROOT, 'game', 'i18n', code + '.json'), 'utf8'))['title.play'];
   const sideFiles = (p) => p.evaluate(() => [...document.scripts].map((e) => e.getAttribute('src')).filter((u) => u && /^lang\/|^photo_fonts/.test(u))); // the loaders add <script src> tags (file:// has no resource timing)
   let p = await t.mk({}); await p.goto(ITCH); await p.waitForSelector('#tNew, #tContinue');
   ok(!(await sideFiles(p)).length && !(await p.$('#pawload')) && await p.evaluate(() => document.documentElement.lang === 'en'), 'English: no language file, the loading paw is gone');
@@ -56,7 +56,7 @@ require('./test_lib').run('itch_build', async (t) => {
   const fr = fs.readdirSync(path.join(tmp, 'lang')).find((f) => /^fr\./.test(f)), frPath = path.join(tmp, 'lang', fr), keep = path.join(tmp, 'fr.keep');
   fs.renameSync(frPath, keep);
   p = await t.mk({ lang: 'fr' }); await p.goto('file://' + path.join(tmp, 'index.html')); await p.waitForSelector('#tNew', { timeout: 30000 });
-  ok((await p.textContent('#tNew')).trim() === 'New game' && await p.evaluate(() => document.documentElement.lang === 'en'), 'French file missing: the game starts in English');
+  ok((await p.textContent('#tNew')).trim() === 'Play' && await p.evaluate(() => document.documentElement.lang === 'en'), 'French file missing: the game starts in English');
   fs.renameSync(keep, frPath);
   ok(await t.until((s) => document.documentElement.lang === 'fr' && document.getElementById('tNew').textContent.trim() === s, L('fr'), 30000), 'once the file is there, the title switches to French on its own');
   t.errors = t.errors.filter((e) => !/ERR_FILE_NOT_FOUND|net::ERR_/.test(e)); // the failed load above is on purpose

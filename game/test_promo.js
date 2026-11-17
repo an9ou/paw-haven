@@ -34,13 +34,13 @@ run('promo', async (t) => {
     await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a));
     await t.ctx.addInitScript(mockInit, {});
     if (was) await was.close();
-    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew, #tContinue, [data-ac="guest"]');
+    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew, #tContinue, #tPlay, [data-ac="guest"]');
   };
   const newHere = async () => { // a new game on the cloud page (a guest pick first when the title asks)
     // the title redraws once the cloud has started (a stored login: "How do you want to play?" turns into New game): decide after that, else
     // the guest card can go away under the click (review 3)
     await t.until((k) => !localStorage.getItem(k) || !!(window.__pawCloud && window.__pawCloud.CL.started && !window.__pawCloud.CL.startP), AUTH, 8000);
-    if (!(await t.p.locator('#tNew').count())) { await t.p.click('[data-ac="guest"]'); await t.p.waitForSelector('#tNew'); }
+    if (!(await t.p.locator('#tNew, #tPlay').count())) { await t.p.click('[data-ac="guest"]'); await t.p.waitForSelector('#tNew'); }
     await t.adopt({}); await t.calm(); await t.lu();
     await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.pm), null, 8000);
   };

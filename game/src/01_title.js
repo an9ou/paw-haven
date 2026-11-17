@@ -60,13 +60,19 @@ function titleAcctRender() {
   const has = !!loadSave() || !!(S && S.dog), m = acMode(), ln = m === 'choose' ? null : acLine(m);
   const key = [m, has, ln && ln.t, ln && ln.link].join('|'); if (key === tAcctKey) return; tAcctKey = key;
   const cov = box.closest('.cover'); if (cov) cov.classList.toggle('choosing', m === 'choose');
-  if (m === 'choose') {
+  if (cov) cov.classList.toggle('tfirst', !has); // v2.30.1: a new player's cover (the big dog and one Play button)
+  if (m === 'choose' && has) { // a save on this device after a log out: the three account choices, as before
     box.innerHTML = `<div class="tchoose" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}">${acChoicesHTML('t', m)}</div>`;
     acBindChoices(box, false); return;
   }
-  box.innerHTML = `<div class="tbtns">
+  if (m === 'choose') { // v2.30.1 first impressions: one big Play (guest + new game in one tap), Log in and Make an account as small links
+    box.innerHTML = `${tBigDog()}<div class="tbtns"><button class="btn big yes" id="tPlay">${tt('title.play', 'Play')}</button></div>
+      <p class="tacct tlinks" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}"><button class="tlink" id="tLogin" data-ac="login">${tt('title.log_in', 'Log in')}</button><button class="tlink" id="tReg" data-ac="reg">${tt('title.make_an_account', 'Make an account')}</button></p>`;
+    acBindChoices(box, false); const tp = $('#tPlay'); tp.onclick = () => acPlayNow(tp); return;
+  }
+  box.innerHTML = `${has ? '' : tBigDog()}<div class="tbtns">
         ${has ? '<button class="btn big go" id="tContinue">' + tt('title.continue', 'Continue') + '</button>' : ''}
-        <button class="btn big ${has ? '' : 'yes'}" id="tNew">${tt('title.new_game', 'New game')}</button>
+        <button class="btn big ${has ? '' : 'yes'}" id="tNew">${has ? tt('title.new_game', 'New game') : tt('title.play', 'Play')}</button>
       </div>
       <p class="tacct" role="status"><span>${ln.t}</span>${ln.link ? `<button class="tlink" id="tSwitch">${ln.link}</button>` : ''}</p>`;
   const tn = $('#tNew'), tc = $('#tContinue'), sw = $('#tSwitch');
@@ -77,6 +83,18 @@ function titleAcctRender() {
   };
   if (tc) tc.onclick = () => { SFX.boop(700); if (!S) S = loadSave(); applyAway(); gardenAdvance(); birthdayCheck(); go('yard'); migNote(); setTimeout(() => greetBark(), 1200); };
   if (sw) sw.onclick = () => { SFX.click(); acOpenChoices(); };
+}
+// v2.30.1: the big crayon dog on a new player's cover (game art, no new breed)
+function tBigDog() { return `<div class="tbig" aria-hidden="true">${art('dog', 'golden', { pose: 'happy' })}</div>`; }
+// v2.30.1: Play on a new player's cover = "Play as guest" + "New game" in one tap. The guest sign-in (and a pull of a guest game the
+// cloud may already hold for this browser) runs first, as acPlayGuest did; a game that arrives shows Continue instead of the adoption.
+async function acPlayNow(btn) {
+  SFX.boop(600); if (btn) btn.disabled = true; acGuest = true;
+  const wait = (pr, ms) => Promise.race([Promise.resolve(pr).catch(() => false), new Promise((r) => setTimeout(() => r(false), ms))]);
+  try { if (acCl() && acCl().on && !clOwner() && (await wait(clEnsureUser(), 6000))) await wait(clPull(), 6000); } catch (e) { /* offline: play on this device */ }
+  if (cur.mode !== 'title') return;
+  if (loadSave()) { tAcctKey = ''; titleAcctRender(); return; }
+  go('adopt');
 }
 function acBindChoices(root, inSheet) {
   root.querySelectorAll('[data-ac]').forEach((b) => { b.onclick = () => { SFX.click(); const a = b.dataset.ac; if (a === 'guest') acPlayGuest(b.closest('.panel')); else acOpenForm(a, inSheet); }; });
