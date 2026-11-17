@@ -67,8 +67,36 @@ on('game:ready', () => { CL.ready = true; clOnLoaded(); });
 setTimeout(clOnLoaded, 0); // also covers a hot-reload start, which skips loadSave()
 
 /* ---------- the Worker ---------- */
-function clTok() { try { return (JSON.parse(lsGet(CL_CFG.authKey) || 'null') || {}).token || null; } catch (e) { return null; } }
-function clTokSet(t) { if (t) lsSet(CL_CFG.authKey, JSON.stringify({ token: t })); else lsDel(CL_CFG.authKey); }
+// html.itch.zone and html-classic.itch.zone are one origin for every HTML game on itch.io. A bearer left in localStorage
+// there can be read by another game. On those hosts the token stays in sessionStorage (this tab only; gone when the tab closes)
+// and any localStorage copy is removed. Another game opened in the same tab can still see sessionStorage: the remaining step
+// is to publish the itch build on its own host. window.__pawCloudOrigin overrides location.origin in tests.
+const CL_ITCH_SHARED = /^https:\/\/(?:html-classic|html)\.itch\.zone$/;
+function clPageOrigin() { try { return String(window.__pawCloudOrigin || (typeof location !== 'undefined' ? location.origin : '') || ''); } catch (e) { return ''; } }
+function clItchShared() { return CL_ITCH_SHARED.test(clPageOrigin()); }
+function clTokBag() {
+  try { return clItchShared() && window.sessionStorage ? window.sessionStorage : window.localStorage; } catch (e) { return null; }
+}
+function clTokDropLocal() { try { window.localStorage.removeItem(CL_CFG.authKey); } catch (e) { /* storage blocked */ } }
+function clTok() {
+  try {
+    if (clItchShared()) clTokDropLocal();
+    const bag = clTokBag(); if (!bag) return null;
+    return (JSON.parse(bag.getItem(CL_CFG.authKey) || 'null') || {}).token || null;
+  } catch (e) { return null; }
+}
+function clTokSet(t) {
+  try {
+    if (clItchShared()) clTokDropLocal();
+    const bag = clTokBag(); if (!bag) return;
+    if (t) bag.setItem(CL_CFG.authKey, JSON.stringify({ token: t }));
+    else {
+      try { bag.removeItem(CL_CFG.authKey); } catch (e2) { /* storage blocked */ }
+      clTokDropLocal();
+      try { if (window.sessionStorage) window.sessionStorage.removeItem(CL_CFG.authKey); } catch (e3) { /* storage blocked */ }
+    }
+  } catch (e) { /* storage blocked */ }
+}
 // one call. Resolves { ok, status, data, error } for every answer and throws only when the Worker can't be reached (offline).
 // While the page closes, small bodies use keepalive (the browser caps keepalive bodies at 64 KB).
 async function clApi(method, path, body, anon) {
@@ -428,9 +456,14 @@ async function clLogout() {
   clMetaSet({ uid: null, rev: 0, pushedAt: 0 }); // the next change makes a fresh guest that carries this device's save
   CL.out = true; titleAcctRender();
 }
-async function clChangePw(pw) {
+async function clChangePw(pw, current) {
   if (!CL.live || !CL.uid) return { ok: false, msg: tt('cloud.log_in_first', 'Log in first.') };
-  try { const r = await clApi('POST', '/password', { password: pw }); return r.ok ? { ok: true } : { ok: false, msg: clErrText(r.error) }; } catch (e) { return { ok: false, msg: clErrText(e) }; }
+  try {
+    const r = await clApi('POST', '/password', { current, password: pw });
+    if (r.ok) return { ok: true };
+    if (r.data && r.data.error === 'invalid_credentials') return { ok: false, msg: tt('cloud.current_pw_wrong', "That isn't the current password.") };
+    return { ok: false, msg: clErrText(r.error) };
+  } catch (e) { return { ok: false, msg: clErrText(e) }; }
 }
 async function clBackups() {
   if (!(await clStart()) || !CL.uid) return null;
@@ -525,7 +558,7 @@ function clBodyHTML() {
   const acct = CL.uid && !CL.anon;
   if (CL.ui === 'reg') return `<div class="clform"><p>${esc(tt('cloud.reg_lead', 'Keep my save on every device: make an account.'))}</p>${clIn('clEmail', 'email', esc(tt('cloud.email', 'Email')), 'username')}${clIn('clPw', 'password', esc(tt('cloud.pw_label', 'Password ({n} or more characters)', { n: CL_PW_MIN })), 'new-password')}${clIn('clPw2', 'password', esc(tt('cloud.pw_again', 'Password again')), 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doReg">${esc(tt('cloud.make_account', 'Make account'))}</button></div></div>`;
   if (CL.ui === 'login') return `<div class="clform"><p>${esc(tt('cloud.login_lead', 'I have an account: log in.'))}</p>${clIn('clEmail', 'email', esc(tt('cloud.email', 'Email')), 'username')}${clIn('clPw', 'password', esc(tt('cloud.password', 'Password')), 'current-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doLogin">${esc(tt('cloud.log_in', 'Log in'))}</button></div><button class="btn cllink" data-cl="forgot">${esc(tt('cloud.forgot', 'Forgot your password?'))}</button></div>`;
-  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', esc(tt('cloud.new_pw_label', 'New password ({n} or more characters)', { n: CL_PW_MIN })), 'new-password')}${clIn('clPw2', 'password', esc(tt('cloud.new_pw_again', 'New password again')), 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doPw">${esc(tt('cloud.change_pw', 'Change password'))}</button></div></div>`;
+  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw0', 'password', esc(tt('cloud.current_pw', 'Current password')), 'current-password')}${clIn('clPw', 'password', esc(tt('cloud.new_pw_label', 'New password ({n} or more characters)', { n: CL_PW_MIN })), 'new-password')}${clIn('clPw2', 'password', esc(tt('cloud.new_pw_again', 'New password again')), 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doPw">${esc(tt('cloud.change_pw', 'Change password'))}</button></div></div>`;
   if (CL.ui === 'backups') {
     const list = CL.bk === null ? `<p class="small">${esc(tt('cloud.backups_loading', 'Loading backups...'))}</p>` : !CL.bk.length ? `<p class="small">${esc(tt('cloud.backups_none', 'No backups yet. When two devices disagree, the older save lands here.'))}</p>` : `<ul class="clbk">${CL.bk.map((b, i) => { const d = b.data || {}, dogs = (d.dogs || (d.dog ? [d.dog] : [])).map((x) => x.name).filter(Boolean); return `<li><div class="clbk-t"><b>${esc(tdate(b.created_at, { dateStyle: 'medium', timeStyle: 'short' }))}</b><span>${esc(tt('cloud.backup_line', '{dogs} · {n, plural, one {# coin} other {# coins}}', { dogs: dogs.length ? tlist(dogs) : tt('cloud.a_dog', 'A dog'), n: d.coins | 0 }))}</span><span class="small">${esc(clReasonText(b.reason || ''))}</span></div><button class="btn" data-clrestore="${i}">${esc(tt('cloud.restore', 'Restore'))}</button></li>`; }).join('')}</ul>`;
     return `<div class="clform">${list}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button></div></div>`;
@@ -565,12 +598,13 @@ function clBind(p) {
     if (a === 'backups') { CL.bk = null; clGo('backups'); CL.bk = (await clBackups()) || []; if (CL.ui === 'backups') clRender(); return; }
     if (a === 'logout') { const ok = await confirmIn(p, tt('cloud.logout_q', 'Log out? The game stays on this device.'), tt('cloud.log_out', 'Log out'), tt('cloud.stay', 'Stay')); if (!ok) return; await clLogout(); clGo('', tt('cloud.logged_out', 'Logged out. Your game stays on this device.')); return; }
     if (a === 'doReg' || a === 'doPw') {
-      const em = val('clEmail').trim(), pw = val('clPw'), pw2 = val('clPw2');
+      const em = val('clEmail').trim(), pw = val('clPw'), pw2 = val('clPw2'), cur = val('clPw0');
       if (a === 'doReg' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return clGo(CL.ui, tt('cloud.email_wrong', 'That email looks wrong. Check it and try again.'));
+      if (a === 'doPw' && !cur) return clGo('pw', tt('cloud.current_pw_need', 'Type your current password too.'));
       if (pw.length < CL_PW_MIN) return clGo(CL.ui, tt('cloud.pw_too_short', 'Pick a password with at least {n} characters.', { n: CL_PW_MIN }));
       if (pw !== pw2) return clGo(CL.ui, tt('cloud.pw_mismatch', "The two passwords don't match."));
       k.disabled = true; CL.msg = '';
-      const r = a === 'doReg' ? await clRegister(em, pw) : await clChangePw(pw);
+      const r = a === 'doReg' ? await clRegister(em, pw) : await clChangePw(pw, cur);
       if (!r.ok) { clGo(CL.ui, r.msg); return; }
       if (a === 'doReg' && !clLocal()) { if (!modal.hidden) closeModal(); go('title'); return; } // the game on this device was another account's: it stayed with that account
       clGo('', a === 'doReg' ? tt('cloud.account_made', 'Account made. {name} is safe on every device now.', { name: NAME() }) : tt('cloud.pw_changed', 'Password changed.')); return;
@@ -597,4 +631,4 @@ function clBind(p) {
     }
   });
 }
-window.__pawCloud = { get CL() { return CL; }, meta: clMeta, status: cloudStatus, push: clPush, pull: clPull, apply: clApply, encode: clExport, decode: clDecode, open: cloudOpen };
+window.__pawCloud = { get CL() { return CL; }, meta: clMeta, status: cloudStatus, push: clPush, pull: clPull, apply: clApply, encode: clExport, decode: clDecode, open: cloudOpen, itchShared: clItchShared, putToken: clTokSet, takeToken: clTok };

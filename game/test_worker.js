@@ -83,7 +83,13 @@ async function checks(label, call, sql, mail) {
   ok((await call('GET', '/save', null, d2)).json.save.data.coins === 100, 'a second device reads the same save');
   r = await call('PUT', '/save', { data: save(200), rev: 2, changed_at: new Date().toISOString(), device: 'Pixel Chrome' }, d2); ok(r.json.rev === 2, 'device 2 pushes rev 2');
   ok((await call('GET', '/save', null, a.token)).json.save.data.coins === 200, 'device 1 pulls rev 2');
-  r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 200, 'change password');
+  r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 400 && r.json.error === 'invalid_credentials', 'a bearer token alone cannot change the password');
+  ok((await call('GET', '/me', null, d2)).status === 200 && (await call('GET', '/me', null, a.token)).status === 200, 'a refused change logs nobody out');
+  r = await call('POST', '/password', { current: 'nope-nope-1', password: 'pupper456' }, a.token); ok(r.status === 400 && r.json.error === 'invalid_credentials', 'a wrong current password is refused');
+  ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 200, 'the password is unchanged');
+  r = await call('POST', '/password', { current: 'pupper123', password: 'short' }, a.token); ok(r.status === 400 && r.json.error === 'weak_password', 'a short new password is refused and costs no session');
+  ok((await call('GET', '/me', null, d2)).status === 200, 'the other device is still logged in');
+  r = await call('POST', '/password', { current: 'pupper123', password: 'pupper456' }, a.token); ok(r.status === 200, 'change password with the current password');
   ok((await call('GET', '/me', null, d2)).status === 401 && (await call('GET', '/me', null, a.token)).status === 200, 'a password change logs out every other device; this one stays logged in');
   ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 401 && (await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper456' })).status === 200, 'the old password stops working, the new one works');
   ok((await call('POST', '/password', { password: 'pupper789' }, (await call('POST', '/guest', {})).json.token)).status === 403, 'a guest has no password to change');
@@ -97,6 +103,20 @@ async function checks(label, call, sql, mail) {
   r = await call('POST', '/register', { email: 'third@example.com', password: 'biscuits9' }, a.token);
   ok(r.status === 200 && r.json.upgraded === false && r.json.user.id !== a.user.id, 'register while logged in to an account never renames it');
   ok((await call('GET', '/me', null, a.token)).json.user.email === 'mochi@example.com', 'the first account keeps its email');
+
+  // sessions: 30 days absolute, 14 days idle (a stolen token does not last 400 days of use)
+  {
+    const day = 864e5;
+    const fresh = (await call('POST', '/login', { email: 'second@example.com', password: 'biscuits9' })).json.token;
+    await sql('update sessions set created_at = ? where token_hash = ?', Date.now() - 31 * day, sha(fresh), true);
+    ok((await call('GET', '/me', null, fresh)).status === 401, 'a session older than 30 days is refused, even if it was just used');
+    const idle = (await call('POST', '/login', { email: 'second@example.com', password: 'biscuits9' })).json.token;
+    await sql('update sessions set last_seen = ? where token_hash = ?', Date.now() - 15 * day, sha(idle), true);
+    ok((await call('GET', '/me', null, idle)).status === 401, 'a session idle for 14 days is refused');
+    const okTok = (await call('POST', '/login', { email: 'second@example.com', password: 'biscuits9' })).json.token;
+    await sql('update sessions set created_at = ?, last_seen = ? where token_hash = ?', Date.now() - 10 * day, Date.now() - day, sha(okTok), true);
+    ok((await call('GET', '/me', null, okTok)).status === 200, 'a session inside 30 days and used within 14 days still works');
+  }
 
   // backups: the newest 5
   for (let i = 1; i <= 7; i++) await call('POST', '/backups', { data: save(i), reason: 'older than your other device' }, a.token);

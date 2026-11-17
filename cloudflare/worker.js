@@ -10,7 +10,7 @@
 //   POST /reset    {token, password} -> { token, user }   v2.8.2 emailed links (no new ones since v2.9.2; kept for links already sent)
 //   POST /login    {email,password}  -> { token, user }
 //   POST /migrate  -> 410 gone (v2.9.1: Supabase is switched off, nothing carries over any more)
-//   POST /logout   GET /me   POST /password {password}
+//   POST /logout   GET /me   POST /password {current, password}   the current password is required; a bearer token alone changes nothing
 //   GET  /save[?meta=1] -> { save: {data,rev,changed_at,device,updated_at} | null }
 //   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev, or a higher rev whose changed_at is older
 //   GET  /backups -> { backups: [{id,data,reason,created_at}] }   POST /backups {data,reason}  (the newest 5 are kept)
@@ -43,9 +43,13 @@
 //     409 refunded (the Supporter Pack bought and fully refunded: never for sale again; any other one-time item can be bought again), 409 pending (the Comfort Kit / a tool Checkout that
 //     covers it was paid and its webhook has not landed), 503 busy. A second tap while Checkout is open returns that same url; an open
 //     Comfort Kit Checkout is expired at Stripe before a tool Checkout opens (and the other way round).
-//   POST /shop/webhook  (Stripe; raw body + Stripe-Signature) -> { received: true }   400 bad_signature / stale. Also
-//     checkout.session.expired and checkout.session.async_payment_failed, which drop that session's hold, and charge.dispute.created
-//     (purchases.disputed_at, matched on payment_intent like charge.refunded; the items stay).
+//   POST /shop/webhook  (Stripe; raw body + Stripe-Signature) -> { received: true }   400 bad_signature / stale. A valid HMAC is
+//     accepted for 3 days (Stripe's retries); a timestamp more than 5 minutes ahead is refused. shop_events dedupes event.id.
+//     A paid session is granted only after the Worker re-reads it from Stripe and the line-item Price id is the one in SHOP_PRICES
+//     for metadata.item, quantity is 1, and amount_total is above 0. 502 stripe_error (and no shop_events row) when that read fails,
+//     so Stripe retries. Also checkout.session.expired and checkout.session.async_payment_failed, which drop that session's hold, and
+//     charge.dispute.created (disputed_at, and refunded_at, so the same take-back as a full refund, including the Founding Friend flag;
+//     the checkout pause stays).
 //   Refund protection (owner, 14 Nov 2026; V224.md 4.4): an account with 2 full refunds or 1 bank dispute in purchases is paused (409 paused
 //     at checkout, coin packs too; coins buys in the game are untouched). shop_flags (set by hand with tools/shop_flag.sh): 'block' on
 //     u:<user id> or e:<lowercased email> pauses that account or every account with that email; 'allow' on either lifts the auto pause.
@@ -62,14 +66,18 @@
 //   GET  /promo/mine                       -> { redemptions: [{ code, key, at, reward }] }   120/h   what each redemption granted, oldest first
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
+// A session ends 30 days after it was made, or after 14 days unused, whichever comes first.
 // Nothing here logs a password, a token or a save.
 
 const ORIGINS = new Set([
   'https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io',
+  // Shared itch.io HTML hosts (every HTML game on that host is the same origin). Kept so a player there can still call the API.
+  // The game does not keep the bearer in localStorage on these origins (game/src/22b_cloud.js). The remaining step is a per-game itch host.
   'https://html-classic.itch.zone', 'https://html.itch.zone'
 ]);
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
 const PW_MIN = 8, PW_MAX = 200, ITER = 100000, MAX_SAVE = 524288, MAX_BODY = 600000, KEEP = 5;
+const SESSION_MAX_MS = 30 * 864e5, SESSION_IDLE_MS = 14 * 864e5; // absolute life, and idle life: a stolen token cannot be used for 400 days
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const enc = new TextEncoder();
 
@@ -153,11 +161,12 @@ async function tidy(env) {
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
     env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
-    env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
+    env.DB.prepare('delete from sessions where last_seen < ?1 or created_at < ?2').bind(now - SESSION_IDLE_MS, now - SESSION_MAX_MS),
     env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)), // Dog Cards: paws only matter for today (index paws_day)
     env.DB.prepare('delete from purchases where user_id not in (select id from users)'), // v2.24: a deleted account's purchases go with it (Stripe keeps its own records)
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
-    env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
+    env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS), // an abandoned Checkout expires with its Stripe session
+    env.DB.prepare('delete from shop_events where at < ?1').bind(now - 4 * 864e5) // past the 3-day webhook window, so a replay cannot be granted twice
   ];
   try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
   let out;
@@ -188,9 +197,14 @@ async function who(req, env) {
   const m = (req.headers.get('Authorization') || '').match(/^Bearer ([A-Za-z0-9_-]{20,100})$/);
   if (!m) return null;
   const th = await sha256(m[1]);
-  const r = await one(env, 'select s.user_id as id, s.last_seen, u.email, u.guest from sessions s join users u on u.id = s.user_id where s.token_hash = ?1', th);
+  const r = await one(env, 'select s.user_id as id, s.created_at, s.last_seen, u.email, u.guest from sessions s join users u on u.id = s.user_id where s.token_hash = ?1', th);
   if (!r) return null;
-  if (Date.now() - r.last_seen > 36e5) await run(env, 'update sessions set last_seen = ?1 where token_hash = ?2', Date.now(), th);
+  const now = Date.now();
+  if (now - Number(r.created_at) > SESSION_MAX_MS || now - Number(r.last_seen) > SESSION_IDLE_MS) {
+    await run(env, 'delete from sessions where token_hash = ?1', th);
+    return null;
+  }
+  if (now - r.last_seen > 36e5) await run(env, 'update sessions set last_seen = ?1 where token_hash = ?2', now, th);
   return { id: r.id, email: r.email, guest: !!r.guest, th };
 }
 const pwBad = (pw) => typeof pw !== 'string' || pw.length < PW_MIN || pw.length > PW_MAX;
@@ -526,7 +540,8 @@ const SHOP_ITEMS = {
 const SHOP_PACKS_AT = Date.UTC(2026, 10, 11, 16, 0, 0);
 const SHOP_TOOLS = ['robo', 'sprinkler', 'bowl'];
 const SHOP_ONCE_EVER = ['supporter']; // bought once, ever: a full refund does not put it back on sale (409 refunded). Owner, 13 Nov 2026
-const SHOP_TOL = 300; // seconds: a webhook signed more than 5 minutes ago (or ahead) is refused
+const SHOP_TOL_PAST = 3 * 24 * 3600; // seconds: a webhook signed up to 3 days ago is still accepted (Stripe retries that long)
+const SHOP_TOL_FUTURE = 300; // a timestamp more than 5 minutes ahead is refused
 const SHOP_HOLD_MS = 24 * 60 * 60 * 1000; // the hold lives 24 hours
 const SHOP_EXPIRE_MS = 23.5 * 60 * 60 * 1000; // its Checkout Session's expires_at: from the hold's created_at, so the session always ends before its hold
 const SHOP_TRY_MS = 60 * 1000; // a hold with no url whose Stripe request is older than this died on the way (a timeout, a killed Worker): retried once
@@ -744,9 +759,45 @@ async function shopSigOk(env, raw, header) {
   const want = hex(await crypto.subtle.sign('HMAC', key, enc.encode(t + '.' + raw)));
   let good = false; for (const s of v1) if (same(s, want)) good = true; // constant time, and every candidate is checked
   if (!good) return false;
-  return Math.abs(Date.now() / 1000 - Number(t)) <= SHOP_TOL ? true : 'stale';
+  const age = Date.now() / 1000 - Number(t); // positive: the signature is in the past (a retry); negative: ahead of us
+  return age > SHOP_TOL_PAST || age < -SHOP_TOL_FUTURE ? 'stale' : true;
 }
-// POST /shop/webhook: no session, no CORS (Stripe calls it server to server). Always 200 for an event it does not need.
+// true when this Stripe event id was already finished. A missing shop_events table (schema not applied yet) is "not seen", so the event still runs.
+async function shopEventSeen(env, eid) {
+  try { return !!(await one(env, 'select id from shop_events where id = ?1', eid)); }
+  catch (e) { return false; }
+}
+async function shopEventNote(env, eid, type) {
+  if (!eid) return;
+  try { await run(env, 'insert into shop_events (id, type, at) values (?1, ?2, ?3) on conflict(id) do nothing', eid, String(type || '').slice(0, 80), Date.now()); }
+  catch (e) { console.error('pawhaven-api shop: shop_events', String((e && e.message) || e).slice(0, 80)); }
+}
+// GET the Checkout Session from Stripe, with its line items. The webhook body is not what we grant from.
+async function shopFetchSession(env, sid) {
+  return shopStripe(env, '/checkout/sessions/' + encodeURIComponent(sid) + '?expand[]=line_items', null);
+}
+// A paid session this Worker will grant, or null. The Price id must be the one configured for metadata.item, quantity 1, amount above 0.
+function shopPaidView(env, cs) {
+  if (!cs || typeof cs !== 'object' || cs.payment_status !== 'paid') return null;
+  const md = cs.metadata && typeof cs.metadata === 'object' ? cs.metadata : {};
+  const it = shopItem(env, md.item);
+  if (!it || !it.price || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id)) return null;
+  const lines = cs.line_items && Array.isArray(cs.line_items.data) ? cs.line_items.data : null;
+  if (!lines || lines.length !== 1) return null;
+  const line = lines[0] || {};
+  if (Number(line.quantity) !== 1) return null;
+  const price = typeof line.price === 'string' ? line.price : line.price && typeof line.price.id === 'string' ? line.price.id : '';
+  if (price !== it.price) return null;
+  if (!Number.isInteger(cs.amount_total) || cs.amount_total <= 0) return null;
+  const uid = cs.client_reference_id;
+  if (typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return null;
+  let pi = null;
+  if (typeof cs.payment_intent === 'string' && SHOP_PI.test(cs.payment_intent)) pi = cs.payment_intent;
+  else if (cs.payment_intent && typeof cs.payment_intent === 'object' && typeof cs.payment_intent.id === 'string' && SHOP_PI.test(cs.payment_intent.id)) pi = cs.payment_intent.id;
+  return { id: cs.id, item: it.id, uid, pi, amount: cs.amount_total, currency: typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null };
+}
+// POST /shop/webhook: no session, no CORS (Stripe calls it server to server). 200 only after the work is stored (or the event is one it does not grant).
+// A 502 leaves shop_events empty so Stripe's retry is processed. A second delivery of the same event.id is a no-op.
 async function shopWebhook(req, env) {
   if (!shopOpen(env) || !env.STRIPE_WEBHOOK_SECRET) return fail('shop_closed', 503);
   const raw = await req.text();
@@ -756,63 +807,76 @@ async function shopWebhook(req, env) {
   if (sig !== true) return fail('bad_signature', 400);
   let ev; try { ev = JSON.parse(raw); } catch (e) { return fail('bad_json', 400); }
   const o = ev && ev.data && ev.data.object, type = String((ev && ev.type) || '');
-  if (!o || typeof o !== 'object') return json({ received: true });
-  if ((type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') && o.payment_status === 'paid') {
-    const md = o.metadata && typeof o.metadata === 'object' ? o.metadata : {}, uid = o.client_reference_id;
-    if (typeof o.id !== 'string' || !SHOP_SID.test(o.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) {
-      console.error('pawhaven-api shop: a paid session the Worker cannot place', typeof o.id === 'string' ? o.id.slice(0, 40) : '?');
-      return json({ received: true });
+  const eid = ev && typeof ev.id === 'string' && /^[A-Za-z0-9_]{1,255}$/.test(ev.id) ? ev.id : '';
+  if (eid && await shopEventSeen(env, eid)) return json({ received: true }); // already finished: the purchase row is in place
+  const ack = async () => { await shopEventNote(env, eid, type); return json({ received: true }); };
+  if (!o || typeof o !== 'object') return ack();
+  if (type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') {
+    const sid = typeof o.id === 'string' ? o.id : '';
+    if (!SHOP_SID.test(sid)) { console.error('pawhaven-api shop: a paid session the Worker cannot place', sid.slice(0, 40) || '?'); return ack(); }
+    let got = null;
+    try { got = await shopFetchSession(env, sid); }
+    catch (e) { console.error('pawhaven-api shop: session read failed', String((e && e.message) || e).slice(0, 80)); return fail('stripe_error', 502); } // Stripe retries; the event is not marked done
+    if (!got || !got.ok || !got.data) {
+      if (!got || got.status >= 500 || got.status === 0) { console.error('pawhaven-api shop: session read failed', got && got.status); return fail('stripe_error', 502); }
+      console.error('pawhaven-api shop: a paid session the Worker cannot place', sid.slice(0, 40));
+      return ack();
     }
-    const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
-    // idempotent on the session id: Stripe retries, and completed and async_payment_succeeded can both arrive for one session
+    const v = shopPaidView(env, got.data);
+    if (!v || v.id !== sid) { console.error('pawhaven-api shop: a paid session the Worker cannot place', sid.slice(0, 40)); return ack(); }
+    // idempotent on the session id: Stripe retries, and completed and async_payment_succeeded can both arrive for one session.
+    // refunded_at already set (a refund or a dispute got here first) is kept.
     await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, null)
       on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent)`,
-      o.id, uid, md.item, Number.isInteger(o.amount_total) ? o.amount_total : null, typeof o.currency === 'string' ? o.currency.slice(0, 8) : null, pi, Date.now());
-    await shopRelease(env, uid, md.item, o.id); // this Checkout is finished; a coin pack can open another, a one-time item is now owned
-    return json({ received: true });
+      v.id, v.uid, v.item, v.amount, v.currency, v.pi, Date.now());
+    await shopRelease(env, v.uid, v.item, v.id); // this Checkout is finished; a coin pack can open another, a one-time item is now owned
+    return ack(); // 200 only after the purchase row is written
   }
   if (type === 'checkout.session.expired' || type === 'checkout.session.async_payment_failed') { // that Checkout cannot be paid any more: its hold goes
     const md = o.metadata && typeof o.metadata === 'object' ? o.metadata : {}, uid = o.client_reference_id;
     if (typeof o.id === 'string' && SHOP_SID.test(o.id) && shopItem(env, md.item) && typeof uid === 'string' && uid && uid.length <= 64 && (!md.user || md.user === uid)) await shopRelease(env, uid, md.item, o.id);
-    return json({ received: true });
+    return ack();
   }
   if (type === 'charge.refunded') { // a full refund only (charge.refunded true): a partial refund keeps the item
     const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
-    if (!pi || o.refunded !== true) return json({ received: true });
+    if (!pi || o.refunded !== true) return ack();
     const t = Date.now();
     const had = await all(env, 'select id, user_id, item from purchases where payment_intent = ?1', pi);
     await run(env, 'update purchases set refunded_at = ?1 where payment_intent = ?2 and refunded_at is null', t, pi);
     for (const row of had) await shopRelease(env, row.user_id, row.item, row.id); // only this session's hold; a newer coin-pack Checkout stays
-    if (had.length) return json({ received: true });
+    if (had.length) return ack();
     // v2.24.1: the refund came before its checkout.session.completed (Stripe does not promise an order). Look the session up and
     // write the purchase already refunded, so the completed event that follows (an upsert that keeps refunded_at) gives nothing.
     const r = await shopStripe(env, '/checkout/sessions?limit=1&payment_intent=' + encodeURIComponent(pi), null);
     if (!r.ok) { console.error('pawhaven-api shop: a refund before its purchase, and the session lookup failed', r.status); return fail('stripe_error', 502); } // Stripe retries
     const cs = r.data && Array.isArray(r.data.data) ? r.data.data[0] : null, md = cs && cs.metadata && typeof cs.metadata === 'object' ? cs.metadata : {}, uid = cs && cs.client_reference_id;
-    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return json({ received: true }); // not a shop session
+    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return ack(); // not a shop session
     await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
       on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), refunded_at = coalesce(purchases.refunded_at, excluded.refunded_at)`,
       cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t, t);
     await shopRelease(env, uid, md.item, cs.id);
+    return ack();
   }
-  if (type === 'charge.dispute.created') { // refund protection (owner, 14 Nov 2026): a bank dispute pauses paid items for that account. The items stay
+  if (type === 'charge.dispute.created') { // a bank dispute takes the goods back the same way a full refund does, and still pauses checkout
     const pi = typeof o.payment_intent === 'string' && SHOP_PI.test(o.payment_intent) ? o.payment_intent : null;
-    if (!pi) { console.error('pawhaven-api shop: a dispute without a payment_intent', typeof o.id === 'string' ? o.id.slice(0, 40) : '?'); return json({ received: true }); }
+    if (!pi) { console.error('pawhaven-api shop: a dispute without a payment_intent', typeof o.id === 'string' ? o.id.slice(0, 40) : '?'); return ack(); }
     const t = Date.now();
-    const had = await all(env, 'select id from purchases where payment_intent = ?1', pi);
-    await run(env, 'update purchases set disputed_at = ?1 where payment_intent = ?2 and disputed_at is null', t, pi);
-    if (had.length) return json({ received: true });
-    // the dispute came before its checkout.session.completed: the purchase is written now with disputed_at, and the completed upsert keeps it
+    const had = await all(env, 'select id, user_id, item from purchases where payment_intent = ?1', pi);
+    await run(env, 'update purchases set disputed_at = coalesce(disputed_at, ?1), refunded_at = coalesce(refunded_at, ?1) where payment_intent = ?2', t, pi);
+    for (const row of had) await shopRelease(env, row.user_id, row.item, row.id);
+    if (had.length) return ack();
+    // the dispute came before its checkout.session.completed: the purchase is written already refunded and disputed, and the completed upsert keeps both
     const r = await shopStripe(env, '/checkout/sessions?limit=1&payment_intent=' + encodeURIComponent(pi), null);
     if (!r.ok) { console.error('pawhaven-api shop: a dispute before its purchase, and the session lookup failed', r.status); return fail('stripe_error', 502); } // Stripe retries
     const cs = r.data && Array.isArray(r.data.data) ? r.data.data[0] : null, md = cs && cs.metadata && typeof cs.metadata === 'object' ? cs.metadata : {}, uid = cs && cs.client_reference_id;
-    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return json({ received: true }); // not a shop session
-    await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at, disputed_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, null, ?7)
-      on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), disputed_at = coalesce(purchases.disputed_at, excluded.disputed_at)`,
+    if (!cs || typeof cs.id !== 'string' || !SHOP_SID.test(cs.id) || !shopItem(env, md.item) || typeof uid !== 'string' || !uid || uid.length > 64 || (md.user && md.user !== uid)) return ack(); // not a shop session
+    await run(env, `insert into purchases (id, user_id, item, amount, currency, payment_intent, created_at, refunded_at, disputed_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?7)
+      on conflict(id) do update set payment_intent = coalesce(purchases.payment_intent, excluded.payment_intent), refunded_at = coalesce(purchases.refunded_at, excluded.refunded_at), disputed_at = coalesce(purchases.disputed_at, excluded.disputed_at)`,
       cs.id, uid, md.item, Number.isInteger(cs.amount_total) ? cs.amount_total : null, typeof cs.currency === 'string' ? cs.currency.slice(0, 8) : null, pi, t);
     await shopRelease(env, uid, md.item, cs.id);
+    return ack();
   }
-  return json({ received: true });
+  return ack();
 }
 
 /* ---------------- Gift codes (v2.25.5, PROMO.md; owner, 16 Nov 2026) ----------------
@@ -974,12 +1038,16 @@ const ROUTES = {
 
   'POST /password': { auth: true, async fn({ env, body, me }) {
     if (me.guest) return fail('no_account', 403);
-    if (pwBad(body.password)) return fail('weak_password', 400);
+    const cur = body.current, pw = body.password;
+    if (typeof cur !== 'string' || !cur || cur.length > PW_MAX) return fail('invalid_credentials', 400); // 400, not 401: the session is still good. 401 would log this device out.
+    if (pwBad(pw)) return fail('weak_password', 400); // a short new password costs no try and changes nothing
     if (await limited(env, 'pw:' + me.id, 10, 3600)) return fail('rate_limited', 429);
-    const h = await newHash(body.password);
+    const u = await one(env, 'select pw_hash, pw_salt from users where id = ?1', me.id);
+    if (!u || !u.pw_hash || !same(await pbkdf2(cur, u.pw_salt), u.pw_hash)) return fail('invalid_credentials', 400); // wrong current password: every session stays
+    const h = await newHash(pw);
     await env.DB.batch([
       env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, me.id),
-      env.DB.prepare('delete from sessions where user_id = ?1 and token_hash != ?2').bind(me.id, me.th) // same as a reset: other devices lose the old password's sessions. This device keeps its token.
+      env.DB.prepare('delete from sessions where user_id = ?1 and token_hash != ?2').bind(me.id, me.th) // other devices lose the old password's sessions. This device keeps its token.
     ]);
     return json({ ok: true });
   } },

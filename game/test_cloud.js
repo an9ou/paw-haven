@@ -89,8 +89,33 @@ run('cloud', async (t) => {
   ok(srv.saves[g1].data.dogs[0].name === name1 && (await ev(d1, () => window.__paw.S.dog.name)) === name1, 'register keeps the save');
   ok(await until(d1, () => /Logged in as m…@example\.com/.test(document.getElementById('clStat').textContent), null, 3000), 'status line: Logged in as m…@example.com');
   ok(await d1.locator('[data-cl=logout]').count() === 1 && await d1.locator('[data-cl=pw]').count() === 1, 'logged-in view has Change password and Log out');
-  await tap(d1, '[data-cl=pw]'); await d1.fill('#clPw', 'pupper456'); await d1.fill('#clPw2', 'pupper456'); await tap(d1, '[data-cl=doPw]');
-  ok(await until(d1, () => /Password changed/.test((document.querySelector('.clmsg') || {}).textContent || ''), null, 4000) && srv.pwIs(g1, 'pupper456'), 'change password works (stored as a PBKDF2 hash)');
+  await tap(d1, '[data-cl=pw]'); await d1.waitForSelector('#clPw0');
+  await d1.fill('#clPw', 'pupper456'); await d1.fill('#clPw2', 'pupper456'); await tap(d1, '[data-cl=doPw]');
+  ok(/current password/i.test(await d1.textContent('.clmsg')), 'change password asks for the current password');
+  await d1.fill('#clPw0', 'wrongpass1'); await d1.fill('#clPw', 'pupper456'); await d1.fill('#clPw2', 'pupper456'); await tap(d1, '[data-cl=doPw]');
+  ok(await until(d1, () => /isn't the current password/i.test((document.querySelector('.clmsg') || {}).textContent || ''), null, 4000) && srv.pwIs(g1, 'pupper123'), 'a wrong current password changes nothing');
+  await d1.fill('#clPw0', 'pupper123'); await d1.fill('#clPw', 'pupper456'); await d1.fill('#clPw2', 'pupper456'); await tap(d1, '[data-cl=doPw]');
+  ok(await until(d1, () => /Password changed/.test((document.querySelector('.clmsg') || {}).textContent || ''), null, 4000) && srv.pwIs(g1, 'pupper456'), 'change password with the current password works (stored as a PBKDF2 hash)');
+  const itchBag = await ev(d1, () => {
+    const k = 'pawhaven_cf_auth', prevL = localStorage.getItem(k), prevS = sessionStorage.getItem(k);
+    window.__pawCloudOrigin = 'https://html-classic.itch.zone';
+    localStorage.setItem(k, JSON.stringify({ token: 'left-in-local' }));
+    window.__pawCloud.putToken('itch-tab-token');
+    const mid = { local: localStorage.getItem(k), session: sessionStorage.getItem(k), shared: window.__pawCloud.itchShared() };
+    window.__pawCloudOrigin = 'https://html.itch.zone';
+    const also = window.__pawCloud.itchShared();
+    window.__pawCloud.putToken(null);
+    const cleared = { local: localStorage.getItem(k), session: sessionStorage.getItem(k) };
+    window.__pawCloudOrigin = 'https://doodledoggo.app';
+    window.__pawCloud.putToken('site-token');
+    const site = { local: localStorage.getItem(k), session: sessionStorage.getItem(k), shared: window.__pawCloud.itchShared() };
+    window.__pawCloud.putToken(null);
+    if (prevL == null) localStorage.removeItem(k); else localStorage.setItem(k, prevL);
+    if (prevS == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, prevS);
+    delete window.__pawCloudOrigin;
+    return { mid, also, cleared, site };
+  });
+  ok(itchBag.mid.shared && itchBag.also && itchBag.mid.local === null && /itch-tab-token/.test(itchBag.mid.session || '') && itchBag.cleared.local === null && itchBag.cleared.session === null && !itchBag.site.shared && /site-token/.test(itchBag.site.local || '') && itchBag.site.session === null, 'on a shared itch origin the bearer is sessionStorage only, and localStorage is cleared; doodledoggo.app still uses localStorage');
   await t.SH('d1_settings');
   await t.closeX();
 

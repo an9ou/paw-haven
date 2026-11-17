@@ -178,6 +178,16 @@ create table if not exists purchases (
 create index if not exists purchases_user on purchases (user_id);
 create index if not exists purchases_pi on purchases (payment_intent);
 
+-- Stripe webhook event ids (security pass, Nov 2026). One row per event the Worker has finished, so a retry days later
+-- (the signature is still valid) does not grant twice. Written only after the purchase row, or after a deliberate no-grant.
+-- tidy() drops rows older than 4 days, which is past the 3-day signature window.
+create table if not exists shop_events (
+  id   text primary key,             -- Stripe event id (evt_...)
+  type text,
+  at   integer not null              -- ms
+);
+create index if not exists shop_events_at on shop_events (at);
+
 -- Refund protection (owner, 14 Nov 2026; V224.md 4.4). Set by hand only, with tools/shop_flag.sh: the Worker reads it at POST /shop/checkout.
 -- 'block': paid items paused for that account, or for every account with that email. 'allow': lifts the auto pause (2 full refunds or
 -- 1 dispute). A block on either key wins over an allow. Kept when an account is deleted, so an email block holds for a new account.
