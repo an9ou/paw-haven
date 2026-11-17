@@ -11,9 +11,9 @@
    Script: { id, sting, shots: [{ d: seconds, bg: place id | 'card', cam: [[x, y, zoom], [x, y, zoom]], title: () => text (card shots),
      cap: () => text, actors: [{ who: 'dog' | 'gerald' | 'book' | 'doodle' | 'prop' (SC_PROPS, part 2), dog: 'other' | 'pup' (part 2), pose, pose2 (once the move ends), face, expr, at: [x, y] (feet),
      to: [x, y], s: scale, hop: px, t0, t1 (move window, 0-1 of the shot), k (doodle kind), open (book), fade: 'in' | 'out' }] }] } */
-const SC_SKIP_MS = 3000, SC_CALM_MS = 1500, SC_GAP_MS = 8000, SC_FADE_MS = 380;
+const SC_SKIP_MS = 3000, SC_CALM_MS = 1500, SC_GAP_MS = 8000, SC_FADE_MS = 380, SC_JUMP_MS = 100; // SC_JUMP_MS (test round c): a frame slower than this holds the scene clock
 const SC_SCRIPTS = {}; // id -> script (57b_story.js)
-const SC = { on: null, raf: 0, calm: 0, lastEnd: 0 };
+const SC = { on: null, raf: 0, calm: 0, lastEnd: 0, filmOld: true }; // filmOld (test round c): the film's size must be measured again (a ResizeObserver sets it)
 function scAllowed() { return !navigator.webdriver || !!(typeof prefs !== 'undefined' && prefs && prefs.scTest); }
 const scStill = () => document.documentElement.dataset.motion === 'off';
 const scEase = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -110,6 +110,8 @@ function scLayer() {
   L.innerHTML = '<div class="sc-film"><svg class="sc-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g class="sc-cam"></g></svg><div class="sc-title" hidden></div><div class="sc-fade"></div></div>'
     + '<div class="sc-foot"><p class="sc-cap" aria-live="polite"></p><button class="btn sc-skip" type="button" hidden></button></div>';
   ($('#stage') || document.body).appendChild(L);
+  // test round c (slow phones): the film's size is measured once and again only when the film or the card title changes size, not every frame
+  try { SC.ro = new ResizeObserver(() => { SC.filmOld = true; }); SC.ro.observe($('.sc-svg', L)); SC.ro.observe($('.sc-title', L)); } catch (e) { SC.ro = null; }
   $('.sc-skip', L).onclick = () => { try { SFX.click(); } catch (e) { /* audio off */ } scEnd(true); };
   return L;
 }
@@ -139,8 +141,9 @@ function scEnterShot(i) {
   x.actors.forEach((a) => { if (a.who === 'dog' && (!a.dog || a.dog === 'other' || a.dog === 'pup')) a.dog = a.dog === 'other' ? scOtherDog(P.dog) : a.dog === 'pup' ? scPup() || scOtherDog(P.dog) : P.dog; });
   const parts = x.actors.map((a, k) => scActorInner(a, P.poses[k])); P.sz = parts.map((q) => [q[1], q[2]]);
   $('.sc-cam', L).innerHTML = scBg(x.bg || 'card') + `<g class="sc-acts">${parts.map((q, k) => `<g class="sc-a" data-a="${k}">${q[0]}</g>`).join('')}</g>`;
+  P.els = []; $('.sc-cam', L).querySelectorAll('.sc-acts > .sc-a').forEach((g) => { P.els[+g.dataset.a] = g; }); P.cam = $('.sc-cam', L); P.fade = $('.sc-fade', L); P.skip = $('.sc-skip', L); // test round c: found once a shot, not every frame (the backdrop is thousands of nodes to search)
   $('.sc-cam', L).querySelectorAll('[tabindex]').forEach((e) => e.setAttribute('tabindex', '-1')); // test round d: the yard backdrop's own hot spots (the garden gate) are only a picture here, never a Tab stop
-  const T = $('.sc-title', L), tl = x.title ? x.title() : ''; T.hidden = !tl; T.textContent = tl;
+  const T = $('.sc-title', L), tl = x.title ? x.title() : ''; T.hidden = !tl; T.textContent = tl; SC.filmOld = true;
   P.bx = scMeasure(x, P.poses); P.fit = null;
   const c = $('.sc-cap', L); c.textContent = x.cap ? x.cap() : ''; c.classList.remove('sc-in'); void c.offsetWidth; c.classList.add('sc-in');
 }
@@ -172,6 +175,10 @@ function scMeasure(x, poses) {
   return out;
 }
 function scFilm() {
+  const P0 = SC.on; if (P0 && P0.film && !SC.filmOld && SC.ro) return P0.film;
+  const f = scFilmNow(); if (P0) { P0.film = f; SC.filmOld = false; } return f;
+}
+function scFilmNow() {
   const L = scLayer(), svg = $('.sc-svg', L), r = svg.getBoundingClientRect(), k = Math.max(r.width / 1000, r.height / 600) || 1;
   const T = $('.sc-title', L), top = T && !T.hidden && r.height ? Math.max(0, T.getBoundingClientRect().bottom - r.top) : 0;
   return { k, W: r.width / k || 1000, H: r.height / k || 600, top };
@@ -256,11 +263,15 @@ function scCam(x, p) {
 function scFrame(now) {
   const P = SC.on; if (!P) return;
   if (P.hid) return; // hidden tab: wait (visibilitychange restarts the frames)
+  // test round c (slow phones): a slow frame (a shot's first frame builds and paints its picture, 200-400 ms on a slow phone) holds the clock
+  // instead of skipping ahead, so the cut's fade-in and the moves after it still play in full
+  if (P.lastF && now - P.lastF > SC_JUMP_MS) P.t0 += now - P.lastF - 1000 / 60;
+  P.lastF = now;
   const ms = now - P.t0, L = scLayer();
   if (ms >= P.total) { scEnd(false); return; }
   const [i, p] = scShotAt(ms); if (i !== P.shot) scEnterShot(i);
   const x = P.shots[i];
-  $('.sc-cam', L).setAttribute('transform', scCam(x, p));
+  (P.cam || $('.sc-cam', L)).setAttribute('transform', scCam(x, p));
   const F = P.fit, sq = (pt) => (F && F.fx < 1 ? [scSqueeze(pt[0], F.gx, F.fx), pt[1]] : pt), pts = [], qs = [];
   x.actors.forEach((a, k) => {
     const t0 = a.t0 || 0, t1 = a.t1 == null ? 1 : a.t1, q = P.still ? 1 : Math.min(1, Math.max(0, (p - t0) / Math.max(0.01, t1 - t0))), e = scEase(q);
@@ -270,17 +281,17 @@ function scFrame(now) {
   });
   x.actors.forEach((a, k) => { if (a.on && P.bx) pts[k] = scHeld(a, P.bx, pts, (j) => !!x.actors[j].pose2 && P.poses[j] === x.actors[j].pose2); });
   x.actors.forEach((a, k) => {
-    const g = L.querySelector(`.sc-a[data-a="${k}"]`); if (!g) return;
+    const g = (P.els && P.els[k]) || L.querySelector(`.sc-a[data-a="${k}"]`); if (!g) return;
     const q = qs[k], [hh, ff] = P.sz[k], [ax, ay] = pts[k];
     g.setAttribute('transform', `translate(${ax.toFixed(1)} ${(ay - hh * ff).toFixed(1)})`);
     if (a.fade) g.setAttribute('opacity', (a.fade === 'in' ? Math.min(1, p * 3) : Math.max(0, 1 - p * 1.4)).toFixed(2));
     if (a.pose2 && q >= 1 && P.poses[k] !== a.pose2) { P.poses[k] = a.pose2; g.innerHTML = scActorInner(a, a.pose2)[0]; }
   });
   // the cross-fade at each cut (also with Motion off: it is a fade, not a move)
-  const into = ms - P.shots.slice(0, i).reduce((n, s) => n + s.d * 1000, 0), left = x.d * 1000 - into, fd = $('.sc-fade', L);
+  const into = ms - P.shots.slice(0, i).reduce((n, s) => n + s.d * 1000, 0), left = x.d * 1000 - into, fd = P.fade || $('.sc-fade', L);
   const fo = i === 0 && into < SC_FADE_MS ? 1 - into / SC_FADE_MS : into < SC_FADE_MS && i > 0 ? 1 - into / SC_FADE_MS : left < SC_FADE_MS ? 1 - left / SC_FADE_MS : 0;
   fd.style.opacity = Math.max(0, Math.min(1, fo)).toFixed(2);
-  const sk = $('.sc-skip', L); if (sk.hidden && ms >= P.skipAt) { sk.hidden = false; }
+  const sk = P.skip || $('.sc-skip', L); if (sk.hidden && ms >= P.skipAt) { sk.hidden = false; }
   SC.raf = requestAnimationFrame(scFrame);
 }
 function scEnd(skipped) {
@@ -290,6 +301,7 @@ function scEnd(skipped) {
   try { lastTick = performance.now(); } catch (e) { /* the loop has its own clock */ }
   try { if (typeof rmResume === 'function') rmResume('scene'); } catch (e) { /* no roaming */ }
   try { if (typeof toastNext === 'function') toastNext(); } catch (e) { /* no toasts */ }
+  setTimeout(maybeLevelUp, 300); // test round c: a Bond card that waited for the scene
   emit('sc:end', { id: P.id, skipped: !!skipped, replay: !!P.o.replay });
   if (P.o.onEnd) { try { P.o.onEnd(!!skipped); } catch (e) { console.warn('sc end', e); } }
 }
@@ -298,7 +310,7 @@ function scEnd(skipped) {
 document.addEventListener('visibilitychange', () => {
   const P = SC.on; if (!P) return;
   if (document.hidden) { P.hid = performance.now(); cancelAnimationFrame(SC.raf); }
-  else { if (P.hid) { P.t0 += performance.now() - P.hid; P.hid = 0; } cancelAnimationFrame(SC.raf); SC.raf = requestAnimationFrame(scFrame); }
+  else { if (P.hid) { P.t0 += performance.now() - P.hid; P.hid = 0; } P.lastF = 0; cancelAnimationFrame(SC.raf); SC.raf = requestAnimationFrame(scFrame); }
 });
 document.addEventListener('keydown', (e) => { if (SC.on && e.key === 'Escape') { const sk = $('#scLayer .sc-skip'); if (sk && !sk.hidden) { e.preventDefault(); e.stopPropagation(); scEnd(true); } } }, true);
 

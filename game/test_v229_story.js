@@ -441,8 +441,14 @@ run('v229_story', async (t) => {
   await t.sleep(5000);
   const und = await ev(() => ({ on: window.__paw.sc.on(), modal: !document.getElementById('modal').hidden ? document.querySelector('#modal .panel').className : '' }));
   ok(und.on === 'ch2' && !und.modal, `no birth sheet and no calendar page under the playing scene (${JSON.stringify(und)})`);
+  // test round c: what waited can be more than one sheet (the birth, the calendar page and, when a Bond 2 party is still pending from
+  // earlier in the run, that party); whichever tick comes first opens first, so the check walks them in turn: each one opens on its own
+  // (one panel), the next only after the player closes it, and both the birth and the calendar page do come
+  await ev(() => { const M = document.getElementById('modal'); window.__rcSeq = []; window.__rcMo = new MutationObserver(() => { const p = M.querySelector('.panel'); const c = !M.hidden && p ? p.className + '|' + M.querySelectorAll('.panel').length : ''; if (c && window.__rcSeq[window.__rcSeq.length - 1] !== c) window.__rcSeq.push(c); }); window.__rcMo.observe(M, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] }); });
   await skipNow();
-  ok(await t.until(() => !!document.querySelector('#modal .panel.birth, #modal .panel.fw-calpop'), null, 9000), 'after the scene the waiting sheet opens: ' + (await ev(() => (document.querySelector('#modal .panel') || {}).className)));
-  for (let i = 0; i < 4 && !(await ev(() => document.getElementById('modal').hidden)); i++) { await t.closeX(); await t.sleep(2500); }
+  ok(await t.until(() => !!document.querySelector('#modal .panel.birth, #modal .panel.fw-calpop, #modal .panel.fw-party'), null, 9000), 'after the scene a waiting sheet opens: ' + (await ev(() => (document.querySelector('#modal .panel') || {}).className)));
+  for (let i = 0; i < 6; i++) { if (!(await t.until(() => !document.getElementById('modal').hidden, null, i ? 9000 : 1000))) break; await t.sleep(300); await t.closeX(); await t.sleep(300); }
+  const seq = await ev(() => { window.__rcMo.disconnect(); return window.__rcSeq; });
+  ok(seq.every((c) => /\|1$/.test(c)) && seq.some((c) => /\bbirth\b/.test(c)) && seq.some((c) => /\bfw-calpop\b/.test(c)), `the waiting sheets open one at a time, each after the one before is closed, and the birth and the calendar page both come (${JSON.stringify(seq)})`);
   await ev(() => window.__paw.fw.test(false));
 }, { timeout: 580000 });
