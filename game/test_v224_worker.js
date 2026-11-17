@@ -23,12 +23,13 @@ const now = () => Math.floor(Date.now() / 1000);
     // throws: a network error (fetch rejects); delay: ms before answering (concurrent taps); status: session id -> open | complete | expired;
     // keys: Idempotency-Key -> session id (Stripe answers the same session for the same key)
     // conflict: n answers of 409 (the same Idempotency-Key still in flight at Stripe)
-    const stripe = { calls: [], n: 0, fail: false, throws: false, delay: 0, conflict: 0, sessions: {}, status: {}, keys: {}, detail: {} };
+    const stripe = { calls: [], n: 0, fail: false, throws: false, delay: 0, conflict: 0, http: 0, sessions: {}, status: {}, keys: {}, detail: {} };
     const sres = (o, st) => new Response(JSON.stringify(o), { status: st || 200 });
     const STRIPE_FETCH = async (url, o) => {
       stripe.calls.push({ url, o, form: new URLSearchParams(o.body) });
       if (stripe.delay) await new Promise((r) => setTimeout(r, stripe.delay));
       if (stripe.throws) throw new Error('network down');
+      if (stripe.http && o.method === 'GET' && /\/checkout\/sessions\/cs_/.test(new URL(url).pathname)) return sres({ error: { type: 'api_error' } }, stripe.http);
       if (stripe.fail) return sres({ error: { code: 'resource_missing' } }, 400);
       if (stripe.conflict > 0 && o.method === 'POST' && /\/checkout\/sessions$/.test(url)) { stripe.conflict--; return sres({ error: { type: 'idempotency_error', message: 'in progress' } }, 409); }
       const u = new URL(url);
@@ -168,7 +169,21 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await hook(zero); ok(r.status === 200 && !q('select * from purchases where id = ?', 'cs_test_zero0001'), 'amount_total of 0 is not granted');
     const qty = paid('cs_test_qty00001', A.id, 'coins_1k', 'pi_test_qty00001');
     stripe.detail['cs_test_qty00001'].line_items.data[0].quantity = 2;
-    r = await hook(qty); ok(r.status === 200 && !q('select * from purchases where id = ?', 'cs_test_qty00001'), 'quantity other than 1 is not granted');
+    r = await hook(qty); ok(r.status === 200 && !q('select * from purchases where id = ?', 'cs_test_qty00001') && q('select id from shop_events where id = ?', qty.id), 'quantity other than 1 is not granted, and that finished rejection is marked done');
+    const RATE = await account('ratelimit@example.com');
+    stripe.http = 429;
+    const limited = paid('cs_test_lim00001', RATE.id, 'tokyo', 'pi_test_lim00001');
+    r = await hook(limited);
+    ok(r.status === 502 && r.json.error === 'stripe_error' && !q('select * from purchases where id = ?', 'cs_test_lim00001') && !q('select id from shop_events where id = ?', limited.id), 'a 429 on the session read: 502, no purchase, event not marked done');
+    stripe.http = 404;
+    const missing = paid('cs_test_miss0001', RATE.id, 'cozy', 'pi_test_miss0001');
+    r = await hook(missing);
+    ok(r.status === 502 && r.json.error === 'stripe_error' && !q('select * from purchases where id = ?', 'cs_test_miss0001') && !q('select id from shop_events where id = ?', missing.id), 'a 404 on the session read: 502, no purchase, event not marked done');
+    stripe.http = 0;
+    r = await hook(limited);
+    ok(r.status === 200 && q('select item from purchases where id = ?', 'cs_test_lim00001').item === 'tokyo', 'the retry after the 429 grants that session');
+    r = await hook(missing);
+    ok(r.status === 200 && q('select item from purchases where id = ?', 'cs_test_miss0001').item === 'cozy', 'the retry after the 404 grants that session');
     const LIE = await account('lie@example.com');
     const lie = paid('cs_test_lie00001', LIE.id, 'supporter', 'pi_test_lie00001');
     lie.data.object.metadata.item = 'coins_8k'; lie.data.object.amount_total = 1;

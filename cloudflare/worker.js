@@ -817,11 +817,8 @@ async function shopWebhook(req, env) {
     let got = null;
     try { got = await shopFetchSession(env, sid); }
     catch (e) { console.error('pawhaven-api shop: session read failed', String((e && e.message) || e).slice(0, 80)); return fail('stripe_error', 502); } // Stripe retries; the event is not marked done
-    if (!got || !got.ok || !got.data) {
-      if (!got || got.status >= 500 || got.status === 0) { console.error('pawhaven-api shop: session read failed', got && got.status); return fail('stripe_error', 502); }
-      console.error('pawhaven-api shop: a paid session the Worker cannot place', sid.slice(0, 40));
-      return ack();
-    }
+    // Any failed read, including 429 and a short 404, must not be marked done. 200 with no purchase is only for a session Stripe actually returned that shopPaidView rejects.
+    if (!got || !got.ok || !got.data) { console.error('pawhaven-api shop: session read failed', got && got.status); return fail('stripe_error', 502); }
     const v = shopPaidView(env, got.data);
     if (!v || v.id !== sid) { console.error('pawhaven-api shop: a paid session the Worker cannot place', sid.slice(0, 40)); return ack(); }
     // idempotent on the session id: Stripe retries, and completed and async_payment_succeeded can both arrive for one session.
