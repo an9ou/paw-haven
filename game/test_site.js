@@ -11,8 +11,8 @@
 // v2.14: the same pages in 11 more languages (tools/site_i18n.js; yue, Cantonese, since v2.20) and the test-only pseudo-locales /xx/ (en-XA) and /xx-cjk/ (ja-XA): html lang, hreflang,
 // the language menu (also without JavaScript), the first-visit language from navigator.languages, the dog count rule, the size budget, iPhone 15 and Pixel 7.
 // Size: the deploy builds INLINE (SITE_IMG=SITE_FONTS=inline: the fonts and the map pictures are served by the main Worker at /fonts/i18n/* and /img/map/*;
-// the account's Worker limit is the paid 10 MB and the token cannot create Worker routes for side Workers). The suite builds the same way; the split
-// mode (side Workers, SITE_IMG=split SITE_FONTS=split) is still tested when asked for.
+// the account's Worker limit is the paid 10 MB). The suite builds the same way; the split mode (side Workers, SITE_IMG=split SITE_FONTS=split
+// SITE_PLAY=split, docs/design/site-split.md) is tested when asked for: requests then go through _cfsite/routes.txt the way the zone's routes send them.
 // PAW_SITE_SHOTS=<dir> also saves screenshots there: site_<page>_<lang>_<device>.png for every page in en, ja, fr at desktop and iPhone 15.
 // Node-only runner contract: prints ALL OK when every check passes.
 process.removeAllListeners('warning');
@@ -61,7 +61,17 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
   // the routes doodledoggo.app/fonts/i18n/* and doodledoggo.app/img/map/* do
   const fmf = SIZES.fontMode === 'split' ? workerOf(path.join(ROOT, '_cfsite_fonts')) : null;
   const imf = SIZES.imgMode === 'split' && fs.existsSync(path.join(ROOT, '_cfsite_img', 'worker.js')) ? workerOf(path.join(ROOT, '_cfsite_img')) : null;
-  const relay = (w) => async (route) => { const fr = await w.dispatchFetch('https://doodledoggo.app' + new URL(route.request().url()).pathname); return route.fulfill({ status: fr.status, headers: { 'content-type': fr.headers.get('content-type') || 'application/octet-stream' }, body: Buffer.from(await fr.arrayBuffer()) }); };
+  // site-split (17 Nov 2026): the game copy's own Worker (SITE_PLAY=split, route doodledoggo.app/play/*)
+  const pmf = SIZES.playMode === 'split' && fs.existsSync(path.join(ROOT, '_cfsite_play', 'worker.js')) ? workerOf(path.join(ROOT, '_cfsite_play')) : null;
+  // the routes the deploy creates (_cfsite/routes.txt: "<folder> <script> doodledoggo.app/<prefix>*"), matched the way Cloudflare does: a route runs
+  // before the Custom Domain (the main Worker), and the longest (most specific) matching pattern wins
+  const SIDE_MF = { _cfsite_fonts: fmf, _cfsite_img: imf, _cfsite_play: pmf };
+  const ROUTES = (fs.existsSync(path.join(dir, 'routes.txt')) ? fs.readFileSync(path.join(dir, 'routes.txt'), 'utf8').trim().split('\n').filter(Boolean) : []).map((l) => l.split(' '))
+    .map(([d, script, pat]) => ({ d, script, pat, prefix: pat.replace(/^doodledoggo\.app/, '').replace(/\*$/, ''), w: SIDE_MF[d] })).sort((a, b) => b.prefix.length - a.prefix.length);
+  const routeOf = (u) => { const pn = new URL(u).pathname; return new URL(u).hostname === 'doodledoggo.app' || local(u) ? ROUTES.find((r) => pn.startsWith(r.prefix)) : null; };
+  // site(): a request the way doodledoggo.app answers it (the routed side Worker, else the main one); get() below is always the main Worker
+  const site = (u, o) => { const r = routeOf(u); return (r ? r.w : mf).dispatchFetch(u, Object.assign({ redirect: 'manual' }, o || {})); };
+  const relay = async (route) => { const rq = route.request(), fr = await routeOf(rq.url()).w.dispatchFetch(rq.url(), { method: rq.method(), redirect: 'manual' }); const headers = {}; fr.headers.forEach((v, k) => { if (k !== 'content-encoding' && k !== 'content-length') headers[k] = v; }); return route.fulfill({ status: fr.status, headers, body: Buffer.from(await fr.arrayBuffer()) }); };
   const local = (u) => { const s = String(u); return s.startsWith(base) || s.startsWith('data:') || s.startsWith('about:') || s.startsWith('blob:'); };
   // the game (/play/) asks Google Fonts for its hand fonts (its own CSP allows exactly that); here they are empty stubs, and every such request is recorded as an outside request
   // every browser context: nothing reaches the network (anything not local is aborted, so it also shows as a console error), itch.io would be a stub (nothing may ask for it),
@@ -70,8 +80,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     await ctx.route((u) => !local(u), (route) => route.abort()); // the reset page's Worker calls: page.route in wire() wins over this
     await ctx.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     await ctx.route('https://fonts.gstatic.com/**', (route) => route.fulfill({ status: 200, contentType: 'font/woff2', body: '' }));
-    if (fmf) await ctx.route('**/fonts/i18n/**', relay(fmf));
-    if (imf) await ctx.route('**/img/map/**', relay(imf));
+    if (ROUTES.length) await ctx.route((u) => local(u) && !!routeOf(u), relay); // the side Workers' routes (split mode), as the zone's routes send them
     return ctx;
   };
   const browser = await chromium.launch({ args: (process.env.PAW_ARGS || '').split(' ').filter(Boolean) });
@@ -142,7 +151,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     ok(r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'self'/.test(csp), 'home: 200, HTML, a strict content security policy');
     ok(/frame-src 'self'(;|$)/.test(csp) && !/unsafe-eval/.test(csp) && /frame-ancestors 'none'/.test(csp) && !/frame-src[^;]*(\*|http)/.test(csp) && !/itch\.io|googleapis|gstatic/.test(csp), `the CSP frames only the site itself (the game at /play/): frame-src 'self', no itch.io, no unsafe-eval, frame-ancestors 'none' (${csp})`);
     { // the game at /play/ has its own CSP: only the site may frame it, Google Fonts and the cloud save API are the only outside hosts
-      const gr = await get(SITE + '/play/', { method: 'HEAD' }), gp = await get(SITE + '/play', { method: 'HEAD' }), gc = gr.headers.get('content-security-policy') || '';
+      const gr = await site(SITE + '/play/', { method: 'HEAD' }), gp = await get(SITE + '/play', { method: 'HEAD' }), gc = gr.headers.get('content-security-policy') || '';
       ok(gr.status === 200 && gp.status === 301 && /\/play\/$/.test(gp.headers.get('location') || '') && /text\/html/.test(gr.headers.get('content-type')) && /frame-ancestors 'self'/.test(gc) && !/unsafe-eval/.test(gc) && !/(^|[ ;])(\*|http:)/.test(gc) && /connect-src 'self' https:\/\/pawhaven-api\./.test(gc), `/play/: 200 (/play: 301 to /play/, v2.14 PERF: the game's files are relative), the game's own CSP (frame-ancestors 'self', no unsafe-eval, cloud save API only) (${gc.slice(0, 90)}...)`);
     }
     const EN = {}; for (const p of PG) EN[p.id] = p.id === 'index' ? home : await (await get(SITE + p.path)).text();
@@ -185,6 +194,35 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         ok(!inl && r.status === 404 && r2.status === 404, 'split mode: the main Worker leaves /img/map/ to the map pictures Worker, which answers 404 for an unknown picture'); }
       else ok(SIZES.imgMode === 'inline' ? inl && r.status === 404 : true, `inline: the main Worker serves /img/map/*.webp itself (${SIZES.imgMode}) and answers 404 for an unknown picture`);
     }
+    { // site-split (17 Nov 2026, docs/design/site-split.md): the routes, the side Workers' sizes, and what each answers; the inline build has no routes
+      const want = [];
+      if (SIZES.fontMode === 'split') want.push('_cfsite_fonts doodle-doggo-fonts doodledoggo.app/fonts/i18n/*', '_cfsite_fonts doodle-doggo-fonts doodledoggo.app/play/fonts/i18n/*');
+      if (SIZES.imgMode === 'split') want.push('_cfsite_img doodle-doggo-img doodledoggo.app/img/map/*');
+      if (SIZES.playMode === 'split') want.push('_cfsite_play doodle-doggo-play doodledoggo.app/play/*');
+      const have = ROUTES.map((x) => `${x.d} ${x.script} ${x.pat}`).sort();
+      ok(have.join('|') === want.sort().join('|') && ROUTES.every((x) => x.w), `the side Worker routes are exactly ${want.length ? want.map((w) => w.split(' ').slice(1).reverse().join(' -> ')).join(', ') : 'none (inline build)'} (${have.length})`);
+      ok(['fonts', 'img', 'play'].every((k) => SIZES[k.replace(/s$/, '') + 'Mode'] !== 'split' || SIZES[k] < 9.8e6) && (SIZES.playMode !== 'split' || !!pmf), `every split side Worker fits the 10 MB limit (fonts ${(SIZES.fonts / 1e6).toFixed(2)}, img ${(SIZES.img / 1e6).toFixed(2)}, play ${(SIZES.play / 1e6).toFixed(2)} MB gzipped; main ${(SIZES.main / 1e6).toFixed(2)})`);
+      if (ROUTES.length) {
+        const hdr = async (u, how) => { const x = await (how === 'main' ? get(SITE + u) : site(SITE + u)); await x.arrayBuffer(); return { s: x.status, t: x.headers.get('content-type'), c: x.headers.get('cache-control'), csp: x.headers.get('content-security-policy') || '', n: x.headers.get('x-content-type-options') }; };
+        const lang = readParts(path.join(ROOT, SIZES.playMode === 'split' ? '_cfsite_play' : '_cfsite')).map((l) => l[0]).find((n) => /^play__lang__ja\.[0-9a-f]{8}\.js$/.test(n));
+        const exp = [
+          ['/play/', 200, /^text\/html/, /max-age=300, stale-while-revalidate/, true],
+          ['/play/' + (lang || '').replace(/^play__/, '').replace(/__/g, '/'), 200, /^text\/javascript/, /max-age=31536000, immutable/],
+          ['/play/fonts/i18n/ja.woff2', 200, /^font\/woff2$/, /max-age=31536000, immutable/],
+          ['/play/favicon.svg', 200, /^image\/svg\+xml$/, /max-age=86400$/],
+          ['/fonts/i18n/ja.css', 200, /^text\/css/, /max-age=86400$/],
+          ['/fonts/i18n/ja.woff2', 200, /^font\/woff2$/, /max-age=86400$/],
+          ['/img/map/town-map.webp', 200, /^image\/webp$/, /max-age=86400$/],
+          ['/play/nope.js', 404, /^text\/plain/, null]];
+        const bad = [];
+        for (const [u, st, ty, ca, game] of exp) { const h = await hdr(u); if (h.s !== st || !ty.test(h.t || '') || (ca && !ca.test(h.c || '')) || h.n !== 'nosniff' || (game && !/frame-ancestors 'self'/.test(h.csp))) bad.push(`${u} ${h.s} ${h.t} ${h.c}`); }
+        ok(!bad.length && !!lang, 'through the routes: the game copy, its hashed language file and fonts, the site fonts and the map pictures answer with the inline build\'s types and caching (a year for hashed, a day for the rest, 5 min HTML), nosniff, the game\'s own CSP ' + bad.join('; '));
+        const leaves = []; for (const x of ROUTES) { const h = await hdr(x.prefix + (x.prefix === '/play/' ? '' : x.prefix.endsWith('i18n/') ? 'ja.woff2' : 'town-map.webp'), 'main'); if (h.s !== 404) leaves.push(x.prefix + ' ' + h.s); }
+        ok(!leaves.length, 'the main Worker leaves every routed path to its side Worker (404 there) ' + leaves.join(' '));
+        const r1 = await site(SITE + '/play'), r2 = await site(SITE + '/play/index.html'); await r1.arrayBuffer(); await r2.arrayBuffer();
+        ok(r1.status === 301 && r1.headers.get('location') === SITE + '/play/' && r2.status === 301 && r2.headers.get('location') === SITE + '/play/', '/play (main Worker: the route /play/* does not match it) and /play/index.html (game Worker) redirect to /play/');
+      }
+    }
     r = await get('https://www.doodledoggo.app/privacy?x=1'); ok(r.status === 301 && r.headers.get('location') === SITE + '/privacy?x=1', 'www.doodledoggo.app redirects to the apex, keeping the path');
     r = await get('https://www.doodledoggo.app/ja/map'); ok(r.status === 301 && r.headers.get('location') === SITE + '/ja/map', 'www.doodledoggo.app/ja/map redirects to the apex');
     r = await get(SITE + '/dogs.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/dogs', '/dogs.html redirects to /dogs');
@@ -218,7 +256,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       ok(bad.ok, '/f/nope is the same safe page, with no code');
       iv = await invite('/f');
       ok(iv.status === 200 && !/id="friendcode"/.test(iv.html) && /id="playhere" href="\/play\/"/.test(iv.html), '/f with no code is the same page');
-      const playOf = async (q) => { const pr = await get(SITE + '/play/' + q, { redirect: 'manual' }); await pr.arrayBuffer(); return { status: pr.status, loc: pr.headers.get('location') || '' }; };
+      const playOf = async (q) => { const pr = await site(SITE + '/play/' + q, { redirect: 'manual' }); await pr.arrayBuffer(); return { status: pr.status, loc: pr.headers.get('location') || '' }; };
       let pv = await playOf('?friend=DOG-ABCDE');
       ok(pv.status === 200 && pv.loc === '', '/play/?friend=DOG-ABCDE is the game itself (200, the code stays on the URL)');
       pv = await playOf('?lang=ja&friend=DOG-ABCDE');
@@ -562,7 +600,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const bad = [];
       for (const u of ['/yue/', '/yue/dogs', '/yue/map', '/yue/privacy']) { const x = await get(SITE + u); const h = await x.text(); if (x.status !== 404 || /lang="yue/.test(h)) bad.push(u + ' ' + x.status); }
       for (const u of ['/', '/dogs', '/zh-hant/', '/ja/map']) { const h = await (await get(SITE + u)).text(); if (/href="\/yue\/|hreflang="zh-HK"|廣東話|lang="yue/.test(h)) bad.push(u + ' links yue'); }
-      { const x = await get(SITE + '/fonts/i18n/yue.css'); await x.arrayBuffer(); if (x.status !== 404) bad.push('/fonts/i18n/yue.css ' + x.status); }
+      { const x = await site(SITE + '/fonts/i18n/yue.css'); await x.arrayBuffer(); if (x.status !== 404) bad.push('/fonts/i18n/yue.css ' + x.status); }
       ok(!bad.length && !I18N.LANGS.some((x) => x.code === 'yue'), `v2.20: Cantonese is hidden while YUE_LIVE is off: no /yue/ pages, no 廣東話 menu link or zh-HK hreflang, no yue font${bad.length ? ' (' + bad.join(', ') + ')' : ''}`);
     } else {
     r = await get(SITE + '/yue/nope'); ok(r.status === 404 && /<html lang="yue-Hant-HK"/.test(await r.text()) && r.headers.get('content-language') === 'yue-Hant-HK', 'v2.20: a 404 under /yue/ is in Cantonese (lang yue-Hant-HK)');
@@ -758,7 +796,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       ok(n === 36, `${n} screenshots saved (6 pages x 3 languages x 2 devices)`);
     }
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
-  finally { await browser.close(); await mf.dispose(); if (fmf) await fmf.dispose(); if (imf) await imf.dispose(); }
+  finally { await browser.close(); await mf.dispose(); if (fmf) await fmf.dispose(); if (imf) await imf.dispose(); if (pmf) await pmf.dispose(); }
   console.log(`\n${passes} passed, ${fails} failed`);
   if (!fails) console.log('ALL OK');
   process.exit(fails ? 1 : 0);
