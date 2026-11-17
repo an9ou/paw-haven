@@ -103,7 +103,7 @@ const sec = (s) => console.log('--- ' + s);
     for (const b of [{ n: 0 }, { n: 41 }, { n: 2.5 }, { n: '3' }, { n: 3, x: 1 }, {}]) ok(is(await call('POST', '/town/goal', b, G.tok), 400, 'bad'), 'bad n: ' + JSON.stringify(b));
     r = await call('POST', '/town/goal', { n: 12 }, G.tok);
     const month = r.json && r.json.month;
-    ok(r.status === 200 && r.json.took === 12 && r.json.n === 12 && r.json.mine === 12 && r.json.goal === 50000 && !r.json.done && /^\d{4}-\d{2}$/.test(month), 'a guest posts 12: ' + r.text);
+    ok(r.status === 200 && r.json.took === 12 && r.json.n === 12 && r.json.mine === 12 && r.json.goal === 10000 && !r.json.done && /^\d{4}-\d{2}$/.test(month), 'a guest posts 12: ' + r.text);
     ok(is(await call('POST', '/town/goal', { n: 3 }, G.tok), 429, 'rate_limited'), 'a second post within 2 minutes: 429');
     const gap = () => DB.raw.prepare("delete from rate where k like 'gl:post:%'").run(); // the 2-minute gap passes
     gap(); r = await call('POST', '/town/goal', { n: 30 }, H.tok);
@@ -119,9 +119,9 @@ const sec = (s) => console.log('--- ' + s);
     ok(ipTook === 600, 'one IP takes at most 600 a day: ' + ipTook);
 
     sec('5. town goal: done, last month, GET');
-    DB.raw.prepare('update town_goal set n = 49990 where month = ?').run(month);
+    DB.raw.prepare('update town_goal set n = 9990 where month = ?').run(month);
     gap(); r = await call('POST', '/town/goal', { n: 20 }, G.tok);
-    ok(r.json.done === true && r.json.n === 50010, 'reaching the goal: done ' + r.text);
+    ok(r.json.done === true && r.json.n === 10010, 'reaching the goal: done ' + r.text);
     ok(n('select count(*) as n from town_goal where month = ? and done_at is not null', month) === 1, 'done_at set');
     r = await call('GET', '/town/goal');
     ok(r.status === 200 && r.json.month === month && r.json.done && r.json.mine === 0 && r.json.last && r.json.last.n === 0 && !r.json.last.done, 'GET without a token: mine 0, last month empty ' + r.text);
@@ -136,7 +136,7 @@ const sec = (s) => console.log('--- ' + s);
     const env2 = Object.assign({}, env, { TOWN_GOAL: '1234' });
     DB.raw.prepare("delete from town_goal where month = '2000-01'").run();
     const res = await worker.fetch(new Request('https://api.test/town/goal', { method: 'GET', headers: { 'CF-Connecting-IP': freshIp() } }), env2, { waitUntil() {} });
-    ok((await res.json()).goal === 50000, 'a month that has started keeps its goal; TOWN_GOAL only sets new months');
+    ok((await res.json()).goal === 10000, 'a month that has started keeps its goal; TOWN_GOAL only sets new months');
 
     sec('6. tidy');
     DB.raw.prepare('delete from users where id = ?').run(C.id);

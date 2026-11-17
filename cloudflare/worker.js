@@ -1453,7 +1453,7 @@ const ROUTES = {
 
 /* ---------------- v2.30 "Better together" (V230.md) ---------------- */
 const INV_NEW_DAYS = 7, INV_CAP = 10, INV_IP_DAY = 5; // a new player's account is at most a week old; the inviter's credits; new invite rows per IP a Japan day
-const GL_GOAL = 50000, GL_POST_MAX = 40, GL_GAP_S = 120, GL_DAY_U = 150, GL_DAY_IP = 600; // the town goal (belly rubs a Japan month); env.TOWN_GOAL changes it
+const GL_GOAL = 10000, GL_POST_MAX = 40, GL_GAP_S = 120, GL_DAY_U = 150, GL_DAY_IP = 600; // the town goal (belly rubs a Japan month); env.TOWN_GOAL changes it
 const btEmail = (me) => !!me && !me.guest && !!me.email; // cloud save on: an email account
 function glGoal(env) { const g = Math.floor(Number(env.TOWN_GOAL)); return g >= 100 && g <= 1e8 ? g : GL_GOAL; }
 function glPrevMonth(m) { const y = +m.slice(0, 4), mo = +m.slice(5, 7); return mo === 1 ? (y - 1) + '-12' : y + '-' + String(mo - 1).padStart(2, '0'); }
