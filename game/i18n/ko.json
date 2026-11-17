@@ -9135,6 +9135,7 @@
  "sm.task_done": "이야기: {task}. {reward}",
  "sm.title": "이야기",
  "sm.watch": "보기",
+ "sm.watch_aria": "보기: {title}",
  "st.badge": "{n, plural, other {친밀도 별 #개}}",
  "st.finished": "이야기가 끝났어요: {title}. 기념품 {item}, 그리고 일기장에 한 페이지.",
  "st.j_empty": "아직 이야기가 없어요. {name, josa, 이/가} 친밀도 3이 되면 이웃이 편지를 보내요.",

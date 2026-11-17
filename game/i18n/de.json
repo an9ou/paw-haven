@@ -9135,6 +9135,7 @@
  "sm.task_done": "Geschichte: {task}. {reward}",
  "sm.title": "Geschichte",
  "sm.watch": "Ansehen",
+ "sm.watch_aria": "Ansehen: {title}",
  "st.badge": "{n, plural, one {# Bindungsstern} other {# Bindungssterne}}",
  "st.finished": "Eine Geschichte ist zu Ende: {title}. Ein Andenken für dich, {item}, und eine Seite in deinem Tagebuch.",
  "st.j_empty": "Noch keine Geschichten. Sobald {name} Bindung 3 erreicht, schreibt dir jemand aus der Nachbarschaft.",

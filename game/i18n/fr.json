@@ -9135,6 +9135,7 @@
  "sm.task_done": "Histoire : {task}. {reward}",
  "sm.title": "Histoire",
  "sm.watch": "Regarder",
+ "sm.watch_aria": "Regarder : {title}",
  "st.badge": "{n, plural, one {# étoile d'Amitié} other {# étoiles d'Amitié}}",
  "st.finished": "Une histoire est finie : {title}. Un souvenir pour toi, {item}, et une page dans ton carnet.",
  "st.j_empty": "Pas encore d'histoires. Quand {name} atteindra Amitié 3, un voisin t'écrira.",

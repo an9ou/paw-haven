@@ -268,6 +268,9 @@ function wfTiles(rows, cls) {
   const on = rows.filter((r) => Math.round(+r[2]) !== 0);
   return on.length ? `<div class="${cls}">${on.map((r) => `<div class="res${r[3] ? ' ' + r[3] : ''}"><div class="v">${r[0]}</div><div class="k">${r[1]}</div></div>`).join('')}</div>` : '<p class="small wf-nil">' + esc(tt('walk.stroll', 'Just a stroll. Nothing to count, all good.')) + '</p>';
 }
+// test round E (17 Nov 2026): the walk results title keeps its route name in one piece where it fits (th "สวน|แดดอุ่น", ja "ひだまり公|園" broke at 360 px):
+// the name is an inline-block, so it moves to its own line whole and only wraps inside when it is longer than the line
+function wkResTitle(s, rn) { return esc(s).replace('\u0001', `<span class="res-rt">${esc(rn)}</span>`); }
 function endWalk(complete) {
   if (!W || W.ended) return; W.ended = true; pottyWalked(); cancelAnimationFrame(W.raf);
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
@@ -297,7 +300,7 @@ function endWalk(complete) {
   const extra = W.extra.length ? `<p class="small">${esc(tt('walk.res_extra', 'Also found on the path: {list}.', { list: tlist(W.extra.map((e) => e.dup ? tt('walk.res_extra_dup', '{item} (sold, duplicate)', { item: jrTN(e.item) }) : jrTN(e.item))) }))}</p>` : '';
   const junk = W.junk.length ? `<p class="small">${esc(tt('walk.res_junk', 'Junk dug up (turned into coins): {list}.', { list: tlist(W.junk.map((k) => k === 'junk-sock' ? tt('walk.junk_sock', 'a sock') : tt('walk.junk_rock', 'a rock'))) }))}</p>` : '';
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
-  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}${typeof ksSettleHTML === 'function' ? ksSettleHTML() : ''}
+  const p = openModal(L ? `<span class="hl">${wkResTitle(tt('walk.res_title_found', 'Treasure found: {route}', { route: '\u0001' }), rn)}</span>` : wkResTitle(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: '\u0001' }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: '\u0001' }), rn), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}${typeof ksSettleHTML === 'function' ? ksSettleHTML() : ''}
     ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet

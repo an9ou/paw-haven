@@ -9135,6 +9135,7 @@
  "sm.task_done": "Historia: {task}. {reward}",
  "sm.title": "Historia",
  "sm.watch": "Ver",
+ "sm.watch_aria": "Ver: {title}",
  "st.badge": "{n, plural, one {# estrella de Cariño} other {# estrellas de Cariño}}",
  "st.finished": "Una historia ha terminado: {title}. Un recuerdo para ti, {item}, y una página en tu diario.",
  "st.j_empty": "Aún no hay historias. Cuando {name} llegue a Cariño 3, un vecino te escribirá.",

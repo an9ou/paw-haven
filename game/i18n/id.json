@@ -9135,6 +9135,7 @@
  "sm.task_done": "Kisah: {task}. {reward}",
  "sm.title": "Kisah",
  "sm.watch": "Tonton",
+ "sm.watch_aria": "Tonton: {title}",
  "st.badge": "{n, plural, other {# bintang Kedekatan}}",
  "st.finished": "Satu kisah selesai: {title}. Kenang-kenangan untukmu, {item}, dan satu halaman di jurnalmu.",
  "st.j_empty": "Belum ada kisah. Saat {name} mencapai Kedekatan 3, seorang tetangga akan menulis surat untukmu.",
