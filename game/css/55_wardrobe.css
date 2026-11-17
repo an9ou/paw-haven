@@ -88,6 +88,3 @@ html[data-layout="phone"] .wd-tabs.wd-t7 .wd-tab{min-width:44px;padding:6px 2px 
 }
 /* test round E (17 Nov 2026): any desktop width, when the labels still run past the sheet (de "Glücksbringer" at 1280), wdTabShow adds .wd-stack */
 html:not([data-layout="phone"]) .wd-tabs.wd-stack .wd-tab{flex-direction:column;gap:1px;min-width:44px;padding:6px 5px 4px;font-size:16px;line-height:1}
-/* test round E: the shelf ends a few px above the sheet body's edge; the grid's last tile row was then cut by both edges at once (fit R2d
-   only folds edges within 2 px). The scroll area reaches down to the body's edge, so a half-shown tile is cut by the scroll fold only */
-html:not([data-layout="phone"]) .panel.wd-pop .wd-scroll{margin-bottom:-5px}

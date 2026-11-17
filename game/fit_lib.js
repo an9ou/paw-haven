@@ -189,18 +189,19 @@ function MEASURE(cfg) {
       // R2d: a clipping box whose edge is also the edge of an inner box that scrolls on that axis cuts nothing the scroller would not:
       // the text straddles the scroller's fold (a phone page that scrolls inside a clipped stage), it is not clipped
       const near = (u, v) => Math.abs(u - v) <= 2, fold = { t: scr.some((s) => s.y && near(s.b.top, b.top)), b: scr.some((s) => s.y && near(s.b.bottom, b.bottom)), l: scr.some((s) => s.x && near(s.b.left, b.left)), r: scr.some((s) => s.x && near(s.b.right, b.right)) };
-      { const sx = /auto|scroll/.test(cc.ox), sy = /auto|scroll/.test(cc.oy); if (sx || sy) scr.push({ b, x: sx, y: sy }); }
+      const sy0 = /auto|scroll/.test(cc.oy); { const sx = /auto|scroll/.test(cc.ox), sy = sy0; if (sx || sy) scr.push({ b, x: sx, y: sy }); }
       // R2b: a card cut sideways by a clipping ancestor whose content is wider than it (a carousel, a panned track: the route cards, the pup row)
       // is panned, not clipped; a vertical cut is real (a box too short for its text)
       const panned = hx && !!nbr && nb !== cc.a && cc.a.contains(nb) && (nbr.left < b.left - 1 || nbr.right > b.right + 1);
       const nv = [];
       for (const r of vis) {
-        const [vt, vb] = vbox(it, r.o);
+        // R2e: once a scroller has cut the line at its fold (sT/sB), an outer clip judges only the part the scroller shows
+        let [vt, vb] = vbox(it, r.o); if (r.sT) vt = Math.max(vt, r.top); if (r.sB) vb = Math.min(vb, r.bottom);
         const ix = Math.min(r.right, b.right) - Math.max(r.left, b.left), iy = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
         const dx = Math.max(0, fold.l ? 0 : b.left - r.left, fold.r ? 0 : r.right - b.right), dy = Math.max(0, fold.t ? 0 : b.top - vt, fold.b ? 0 : vb - b.bottom);
         if (ix > 0.5 && iy > 0.5) {
           if ((hx && dx > 1 && !panned) || (hy && dy > 2)) { const amt = Math.max(hx && !panned ? dx : 0, hy ? dy : 0); if (!cut || amt > cut.amt) cut = { amt, by: cc.a, dx: Math.round(dx), dy: Math.round(dy) }; }
-          nv.push({ left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom), o: r.o });
+          nv.push({ left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom), o: r.o, sT: r.sT || (sy0 && b.top > r.top + 0.5), sB: r.sB || (sy0 && b.bottom < r.bottom - 0.5) });
         } else if (((hx && dx > 0 && !panned) || (hy && dy > 0))) {
           // a whole line outside a clipping box: cut, unless every line of the node is outside (R2: scrolled / panned away)
           const amt = Math.max(hx && !panned ? dx + (r.right - r.left) : 0, hy ? dy + (r.bottom - r.top) : 0); if (amt > 0 && (!cut || amt > cut.amt)) cut = { amt: Math.min(amt, 400), by: cc.a, dx: Math.round(dx), dy: Math.round(dy), line: true };
