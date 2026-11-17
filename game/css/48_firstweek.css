@@ -181,3 +181,6 @@ html[data-layout="phone"] #bar .barpop.fw-tiles .act > span.fw-newtag{font-size:
    his ring still shows a tile when his step points into the tray, and the card returns as the tray closes */
 html[data-layout="phone"] #stage:has(#bar .barpop.fw-tiles:not([hidden])) #gdLayer .gd-card{visibility:hidden}
 html[data-layout="phone"] #hud .fw-next.fw-wrap{white-space:normal;text-overflow:clip;line-height:1.05;overflow:visible}
+/* fit sweep 18 Nov: the "new!" tape on the phone bar's own buttons (More) took the bar label's 19 px, no tilt and a Thai 1.6 line, and sat over the
+   More dots (ja "NEW!", th "ใหม่!" hid two of the three); it is the 15 px tilted tape of the tiles again, in the corner above the dots */
+html[data-layout="phone"] #bar.optc > .act > span.fw-newtag{font-size:15px;line-height:1.15!important;padding:1px 5px 2px;top:1px;right:1px;transform:rotate(8deg);overflow:visible;max-width:none;text-overflow:clip}
