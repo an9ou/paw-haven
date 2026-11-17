@@ -145,3 +145,7 @@ HOOKS  (scored)
 Shooting #5: the ratio is believable, it reads in one glance on screen,
 and the number is yours.
 ```
+
+## Doodle Doggo: in-game footage (owner, 17 Nov 2026)
+
+Capture every moving game shot (scenes, walks, play, any animation) on the frozen page clock in `brand/instagram/launch/frozen_clock.js` (`freezeClock`, `stepClock` at exactly 1000/30 ms a frame, `releaseClock`). Never seek in real time and screenshot, and never screen-record. Before the Reel goes to the owner, run `checkFrames(mp4, a, b)` on every moving run: no doubled frames, and no jumps except real beat cuts. Full rule: `docs/marketing/README.md`.
