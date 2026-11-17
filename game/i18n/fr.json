@@ -8547,7 +8547,7 @@
  "pm.letter_title": "Un petit cadeau pour nos amis",
  "pm.make_account": "Créer le compte gratuit",
  "pm.note": "Le code va seulement à notre serveur, pour le vérifier.",
- "pm.placeholder": "DOGGOXXXX",
+ "pm.placeholder": "ABC123",
  "pm.restored": "Tes codes cadeaux sont revenus : {list}. Gerald t'a écrit une lettre.",
  "pm.restored_nl": "Tes codes cadeaux sont revenus : {list}.",
  "pm.title": "Un code ?",
