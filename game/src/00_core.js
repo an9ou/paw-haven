@@ -1403,6 +1403,9 @@ function toastPlace() {
     ['#fwNext', '#lvNext'].forEach((q) => { const nx = $(q); if (!modScr && !hud.hidden && nx && nx.offsetParent && !nx.hidden) { const sr = stage.getBoundingClientRect(), k = sr.width / (stage.offsetWidth || sr.width) || 1, nb = (nx.getBoundingClientRect().bottom - sr.top) / k + 8; if (nb > parseFloat(toasts.style.top)) toasts.style.top = Math.round(nb) + 'px'; } }); // v2.22: and under the town level's Next tag (51_levels.js)
     return;
   }
+  // test round B: on a phone, while a Fun Fair round runs, the toasts sit just under the header strip (and under the game's hint while it shows),
+  // never on its title, score or Done button. Once the round is over they keep the top row, clear of the result card's title
+  if (modal.hidden && cur.mode === 'fair' && !$('.ff-game.over')) { const ft = $('.ff-game .ff-top'), hn = $('#ffHint.on'); if (ft) { const sr = stage.getBoundingClientRect(); toasts.style.top = Math.round(Math.max(ft.getBoundingClientRect().bottom, hn ? hn.getBoundingClientRect().bottom : 0) - sr.top + 6) + 'px'; } }
   // layout audit: over a walk's how-to or pause card the toast sits on the HUD row, clear of the card's title
   if (modal.hidden && !modScr && !hud.hidden && $('#modHost:not([hidden]) .pw-ov:not([hidden])')) toasts.style.top = Math.max(6, (parseFloat(getComputedStyle(hud).paddingTop) || 4) + 2) + 'px';
   // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Doodle Doggo Shelter" sign or the Adopt me board
@@ -1737,6 +1740,7 @@ function go(mode, arg) {
   ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair, fryard: enterFrYard })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js). v2.19: a friend's yard, read-only (50_friends.js)
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
+  if (mode !== prevMode && toasts && toasts.children.length) toastPlace(); // test round B: a toast still up from the kitchen or garden (bottom: 18px) no longer lands on the phone bar of the next screen
 }
 
 

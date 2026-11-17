@@ -67,5 +67,7 @@ html[data-layout="phone"] .tk-tix{flex-basis:72px;width:72px;height:72px}
 /* map-mode toasts sit at the bottom, clear of the pins, beside the Stamp book button */
 #stage.tk-mapmode #toasts{top:auto;bottom:20px}
 html[data-layout="phone"] #stage.tk-mapmode #toasts{top:auto!important;bottom:calc(68px + env(safe-area-inset-bottom,0px));left:12px;transform:none;width:calc(100% - 80px)}
+/* test round B: while the "Go to ..." chip is up (tkMapPick sets --tkGoH), a toast sits above it, not across its button */
+html[data-layout="phone"] #stage.tk-mapmode:has(#mapGo:not([hidden])) #toasts{bottom:var(--tkGoH,124px)!important}
 /* phones: the zoom column moves to the bottom right, off the map's compass rose */
 html[data-layout="phone"] #stage.tk-mapmode #mapZoom{top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
