@@ -3,6 +3,19 @@
 .mood{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);background:#7CC47F;flex:none}
 .mood.amber{background:#F5B942} .mood.red{background:#E2574C}
 #hudPack{display:flex;gap:6px;margin-left:4px}
+/* test round 17 Nov 2026: a desktop stage under 1130 px (a 1024 x 768 iPad held sideways, a small window) with a big pack left the four meters no
+   room at all (they fell into one column over Bond). There the chip row gives way first: it clips (with room for the mood dot and the sex mark)
+   and phChipsFit (13_more_dogs.js) puts the dogs that do not fit into a +N chip that opens the pack, so the meters keep two by two */
+@media (max-width:1129px),(max-height:655px){
+  html:not([data-layout="phone"]) #hud .meters{min-width:136px}
+  html:not([data-layout="phone"]) #hud .who{flex-shrink:1}
+  html:not([data-layout="phone"]) #hudPack:not(:empty){flex:0 100 auto;min-width:52px;overflow:hidden;padding:7px 4px 4px 5px;margin:-7px 0 -4px -1px} /* one chip: a dog, or the +N (the name keeps its room) */
+  html:not([data-layout="phone"]) #hud .coins{flex-shrink:0} /* the count never wraps ("5,0" over "33") */
+  html:not([data-layout="phone"]) #hudPack .dchip{flex:none}
+  html:not([data-layout="phone"]) #hud:has(#hudPack > .dchip):not(:has(> #smBtn:not([hidden]))){gap:8px} /* the Story button's rule (59_scenes.css) already does this */
+  html:not([data-layout="phone"]) #hud:has(#hudPack > .dchip) .bond .track{width:56px}
+}
+.dchip.dmore{font-family:var(--font-hand);font-weight:700;font-size:20px;line-height:1;color:var(--ink);padding:0;background:var(--w-yellow,#FCE7A8)}
 .dchip{position:relative;width:42px;height:42px;padding:3px;border:2px solid var(--ink);border-radius:50% 46% 52% 48%;background:var(--paper);cursor:pointer}
 .dchip svg{width:100%;height:100%;display:block}
 .dchip .mood{position:absolute;right:-3px;bottom:-2px;width:11px;height:11px}

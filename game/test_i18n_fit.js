@@ -50,6 +50,12 @@ function sizeProfile(size) {
     iphone15: ph('iPhone 15', 393, 852, 3),
     pixel7: ph('Pixel 7', 412, 915, 2.625),
     small: ph('Pixel 7', 360, 640, 2),
+    // optional sizes (not in SIZES_ALL; name them in PAW_FIT_SIZES), test round 17 Nov 2026: the widths between the phone and the 1280 desktop
+    laptop: { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 },
+    wide: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
+    ipad: ph('iPad (gen 7)', 768, 1024, 2),                 // portrait: the phone layout (max-width 820 px)
+    ipadL: ph('iPad (gen 7) landscape', 1024, 768, 2),      // landscape: the desktop layout on a touch screen
+    air: ph('iPad (gen 7)', 820, 1180, 2),                  // iPad Air portrait: still the phone layout at exactly 820 px
   };
   if (!P[size]) throw new Error('unknown size ' + size);
   devices['FIT ' + size] = P[size]; return 'FIT ' + size;
@@ -124,7 +130,7 @@ async function worker(job) {
   })();
   try {
     await t.launch();
-    const phone = size !== 'desktop';
+    const phone = !['desktop', 'laptop', 'wide'].includes(size); // ipadL: the desktop layout, but a touch screen keeps the 44 px rule
     const cfg = { phone, stage: '#stage', skip: '#devPanel, #devBtn', captions: CAPTIONS, layers: LAYERS, svgText: '#mapInner [data-area] text, #view [data-area] text' };
     const p0 = await t.mk({ lang, device: dev, prefs: { gdTest: true, tkTest: true, jpTest: true, exTest: true, prTest: true } });
     let p = p0;

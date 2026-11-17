@@ -156,3 +156,6 @@ html[data-layout="phone"] #trainPanel .trhead{position:sticky;top:-6px;z-index:3
    The "Collected" gift line #4C9A5A was 3.4:1; #357040 is 5.7:1 on paper. (The garden's own copies of the old grey sit in mods/garden.js.) */
 html[data-layout="phone"]{--muted:#6F5B50}
 html[data-layout="phone"] .mb-gift.got{color:#357040}
+/* test round 17 Nov 2026: a tablet upright (768 x 1024, 820 x 1180) keeps the phone layout, where every sheet ran the full width: 700 px long sliders and
+   buttons, and the pencil frame, stretched with it, bulged into the titles. From 700 px wide a sheet stays at most 660 px, centred on the bar */
+@media (min-width:700px){ html[data-layout="phone"] #modal .panel{width:min(100%,660px)!important} }

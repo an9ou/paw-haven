@@ -160,11 +160,14 @@ function renderDogChips() {
   wrap.innerHTML = S.dogs.length > 1 ? others().map((d) => `<button class="dchip" data-dog="${d.id}" aria-label="${esc(tt('pack.switch_to', 'Switch to {name}', { name: d.name }))}" title="${esc(d.name)}">${headSVG(d)}<i class="mood ${moodOf(d)}"></i><span class="dsx">${d.sex === 'female' ? '♀' : '♂'}</span></button>`).join('') : '';
   wrap.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => switchDog(b.dataset.dog); });
   const md = $('#hudMood'); if (md) md.className = 'mood ' + moodOf(D());
-  if (isPhone()) requestAnimationFrame(() => phChipsFit(wrap));
+  requestAnimationFrame(() => phChipsFit(wrap)); // test round 17 Nov 2026: the desktop bar too (a stage under 1130 px clips the row, 14_pack.css)
+  if (S.dogs.length > 1) phChipsWatch(); // and the watch starts with the second dog (game:ready only comes on a load, not in a new game's first session)
 }
-// v2.3 phone HUD: show as many of the other dogs' chips as fit, then a "+N" chip that opens the pack, so no dog is hidden without a hint
+// v2.3 phone HUD: show as many of the other dogs' chips as fit, then a "+N" chip that opens the pack, so no dog is hidden without a hint.
+// Test round 17 Nov 2026: also the desktop bar on a stage under 1130 px (a 1024 x 768 tablet held sideways), where the row clips; a wider
+// desktop stage never clips it, so there the chips all show and nothing changes
 function phChipsFit(wrap) {
-  if (!wrap || !isPhone()) return;
+  if (!wrap) return;
   const old = wrap.querySelector('.dmore'); if (old) old.remove();
   const chips = [...wrap.querySelectorAll('.dchip')]; chips.forEach((c) => { c.hidden = false; });
   if (!chips.length || wrap.scrollWidth <= wrap.clientWidth + 3) return;
@@ -182,8 +185,10 @@ window.addEventListener('resize', () => { if (S && S.dogs && S.dogs.length > 1) 
 // UI/UX H6: the name line (clock, title) and the coin counter change width without a resize (garden, kitchen, more coins), so the chips refit then too
 let phChipsRO = null, phChipsRaf = 0;
 function phChipsWatch() {
-  if (phChipsRO || typeof ResizeObserver === 'undefined') return; const els = [$('#hud .namewrap'), $('#coins')].filter(Boolean); if (!els.length) return;
-  phChipsRO = new ResizeObserver(() => { cancelAnimationFrame(phChipsRaf); phChipsRaf = requestAnimationFrame(() => { if (isPhone() && S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); }); });
+  // test round 17 Nov 2026: and the chip row itself and the meters, which a desktop bar squeezes or frees when a button comes or goes (the Story
+  // book) with no resize at all
+  if (phChipsRO || typeof ResizeObserver === 'undefined') return; const els = [$('#hud .namewrap'), $('#coins'), $('#hudPack'), $('#hud .meters')].filter(Boolean); if (!els.length) return;
+  phChipsRO = new ResizeObserver(() => { cancelAnimationFrame(phChipsRaf); phChipsRaf = requestAnimationFrame(() => { if (S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); }); });
   els.forEach((e) => phChipsRO.observe(e));
 }
 on('game:ready', phChipsWatch);
