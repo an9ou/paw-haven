@@ -20,12 +20,12 @@
 const fs = require('fs'), path = require('path'), os = require('os');
 const L = require('./paw_sim_lib');
 
-const argv = process.argv.slice(2), opt = { profiles: ['light', 'regular', 'keen'], days: 7, phone: false, shots: null, out: null, start: null, build: false };
+const argv = process.argv.slice(2), opt = { profiles: ['light', 'regular', 'keen'], days: 7, phone: false, shots: null, out: null, start: null, build: false, next: false };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i], nx = () => argv[++i];
   if (a === '--profile') opt.profiles = nx().split(','); else if (a === '--days') opt.days = Math.max(1, Math.min(30, +nx() || 7)); else if (a === '--phone') opt.phone = true;
   else if (a === '--shots') opt.shots = argv[i + 1] && !argv[i + 1].startsWith('--') ? nx() : path.join(os.tmpdir(), 'paw_playtest_shots');
-  else if (a === '--out') opt.out = nx(); else if (a === '--start') opt.start = nx(); else if (a === '--build') opt.build = true;
+  else if (a === '--out') opt.out = nx(); else if (a === '--start') opt.start = nx(); else if (a === '--build') opt.build = true; else if (a === '--next') opt.next = true;
   else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 20).join('\n')); process.exit(0); }
   else { console.error('unknown option ' + a); process.exit(2); }
 }
@@ -233,23 +233,70 @@ async function doTask(p, day, P, id, how) {
   return true;
 }
 
+/* ---------------- Gerald's first-day guide ---------------- */
+// A fresh save walks Puppy's first day with Gerald (S.guide, FW_STEPS: pet, feed, ball, name tag, walk); the story (v2.29) starts after it. The scripted
+// players do those in their sessions, but not the ball or the name tag, so the guide never ended. Here it is done in the guide's own order the way a
+// player would: the real pet, feed, Play > ball, the tag sheet and the route carousel; the ball is an easy tap-throw.
+async function guide(p, day, P) {
+  const did = [];
+  for (let i = 0; i < 8; i++) {
+    const g = await ev(p, () => { const S = window.__paw.S, g = S.guide; return g && g.step >= 0 && !g.done && !g.skipped ? { step: g.step, n: window.__paw.fw ? window.__paw.fw.steps : 5 } : null; });
+    if (!g) break;
+    await clear(p, day, 'guide'); await home(p, 'yard');
+    const k = ['pet', 'feed', 'ball', 'tag', 'walk'][g.step]; if (process.env.PAW_DEBUG) process.stderr.write(`guide step ${g.step} ${k}\n`);
+    if (k === 'pet') await pet(p); else if (k === 'feed') await feed(p, day); else if (k === 'ball') await ball(p);
+    else if (k === 'tag') { await ev(p, () => window.__paw.fw.tag()); await clickJS(p, '#fwTagOk'); await L.sleep(300); } else if (k === 'walk') await walk(p, day, P);
+    await L.until(p, (st) => { const g = window.__paw.S.guide; return g.step !== st || g.done || g.skipped; }, g.step, 6000); const g2 = await ev(p, () => window.__paw.S.guide.step);
+    if (g2 === g.step && !(await ev(p, () => !!window.__paw.S.guide.done))) { day.notes.push(`guide: the "${k}" step did not finish`); break; }
+    did.push(k);
+  }
+  const done = await ev(p, () => { const g = window.__paw.S.guide; return !!(g && (g.done || g.skipped)); });
+  await clear(p, day, 'guide end');
+  if (did.length) day.acts.push(`Gerald's guide: ${did.join(', ')}${done ? ' (done)' : ' (not finished)'}`);
+}
+// Care > Play > the ball, then tap it (an easy throw); the step counts the dog's first return
+async function ball(p) {
+  await clickJS(p, '[data-act=care]'); await clickJS(p, '[data-act=play]');
+  if (!(await L.until(p, () => !!document.querySelector('[data-play^="ball:"]'), null, 3000))) { await p.keyboard.press('Escape'); return 'ball: no tray'; }
+  await clickJS(p, '[data-play^="ball:"]'); await L.sleep(800);
+  for (let r = 0; r < 4; r++) {
+    const g = await ev(p, () => window.__paw.S.guide && window.__paw.S.guide.step); if (g !== 2) return 'ball: thrown';
+    const bb = await p.locator('#blBall').boundingBox().catch(() => null); if (!bb) { await L.sleep(1500); continue; }
+    await p.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2); // a tap on the ball is an easy throw (38_ball.js)
+    if (await L.until(p, () => window.__paw.S.guide.step !== 2, null, 9000)) return 'ball: thrown';
+  }
+  return 'ball: no return';
+}
+
 /* ---------------- one profile ---------------- */
 async function playProfile(b, key, file, start) {
   const P = PROFILES[key], res = { key, label: P.label, days: [], errors: [] };
-  const page = await L.newPage(b, Object.assign({ start }, opt.phone ? { viewport: { width: 360, height: 640 } } : {}));
+  const page = await L.newPage(b, Object.assign({ start, next: opt.next }, opt.phone ? { viewport: { width: 360, height: 640 } } : {}));
   const p = page; let seenErr = 0;
   await L.adoptNew(p, file); await clear(p, null, 'start');
   let prev = null;
   try { for (let d = 1; d <= opt.days; d++) {
     const day = { d, acts: [], modals: [], letters: [], bought: [], stuck: [], notes: [], errors: [] };
     if (d > 1) {
+      // the save is written NOW, at the old time; the clock then jumps with the page's last save muted (__ptShift's 2nd argument), so the reload does not
+      // stamp the save with the new time: the day gap is a real absence ("While you were out" needs 4+ real hours) and no save lands in the future
       await ev(p, () => window.__paw.saveNow()); const json = await ev(p, () => localStorage.getItem('pawhaven_proto_v1'));
-      await ev(p, () => window.__ptShift(864e5)); await p.reload();
+      await ev(p, () => window.__ptShift(864e5, true)); await p.reload();
       // a slow load under a busy machine: one more try before giving up on the day
       if (!(await p.waitForSelector('#tNew, #tContinue', { timeout: 60000 }).catch(() => null))) { day.stuck.push('the title screen took over 60 s to load (reloaded once)'); await p.goto('file://' + file); await p.waitForSelector('#tNew, #tContinue', { timeout: 90000 }); }
-      if (!(await p.locator('#tContinue').count())) { await ev(p, (j) => localStorage.setItem('pawhaven_proto_v1', j), json); await p.reload(); await p.waitForSelector('#tContinue', { timeout: 60000 }); }
+      if (!(await p.locator('#tContinue').count())) {
+        // the save is gone after the reload: say what the page logged (removeItem / clear / empty write), put it back and load again
+        const why = await ev(p, () => { try { return sessionStorage.getItem('__lsEv') || ''; } catch (e) { return '?'; } });
+        day.notes.push(`HARNESS: the save was missing after the reload (storage log: ${why || 'no remove/clear/empty write seen'}); put back from the copy taken just before` + (json ? '' : ' (there was no copy!)'));
+        await ev(p, (j) => localStorage.setItem('pawhaven_proto_v1', j), json); await p.reload(); await p.waitForSelector('#tContinue', { timeout: 60000 });
+      }
       await clickJS(p, '#tContinue'); await L.until(p, () => window.__paw && ['yard', 'market'].includes(window.__paw.mode), null, 20000); await L.sleep(1200);
+      // "While you were out" opens once the yard has been calm for 2.5 s: wait for it so it is seen (and logged) before the session starts
+      if (await ev(p, () => !!window.__paw.S.wbPend)) { await L.until(p, () => { const m = document.getElementById('modal'); return !!(m && !m.hidden && m.querySelector('.panel')); }, null, 9000); }
+      const fut = await ev(p, () => { const S = window.__paw.S; return Math.round(((+S.lastReal || 0) - Date.now()) / 1000); });
+      if (fut > 60) day.notes.push(`HARNESS: the save is stamped ${fut} s in the future`);
     }
+    if (d === 1 || (await ev(p, () => { const g = window.__paw.S.guide; return !!(g && g.step >= 0 && !g.done && !g.skipped); }))) await safe(day, 'guide', () => guide(p, day, PROFILES[key]));
     const s0 = await snap(p); day.start = s0;
     await clear(p, day, 'arrival');
     const A = async (name, f) => { const r = await safe(day, name, f); if (typeof r === 'string') day.acts.push(r); await safe(day, 'tidy', () => clear(p, day, name)); return r; };
@@ -278,6 +325,8 @@ async function playProfile(b, key, file, start) {
     day.affordable = day.affordable || [];
     const s1 = await snap(p); day.end = s1;
     s = s1; day.msDone = s.ms.filter((x) => x.done).length + '/' + s.ms.length; day.helpsDone = s.helps.filter((x) => x.done).length + '/' + s.helps.length;
+    // the newer features, as far as the build has them (v2.26 visitors, v2.27 projects, v2.28 stories, v2.29 story): a line in the windows and letters column
+    for (const t of await ev(p, () => { const S = window.__paw.S, o = []; if (S.story && S.story.ch != null) o.push('story: chapter ' + S.story.ch); if (S.visitors) o.push('visitors: ' + (Array.isArray(S.visitors.log) ? S.visitors.log.length + ' logged' : Object.keys(S.visitors).length + ' fields')); if (S.projects) o.push('projects: ' + Object.keys(S.projects).length + ' fields'); return o; })) day.letters.unshift(t);
     day.errors = p.errors.slice(seenErr); seenErr = p.errors.length;
     if (opt.shots) { fs.mkdirSync(opt.shots, { recursive: true }); await p.screenshot({ path: path.join(opt.shots, `${key}_day${d}.png`) }).catch(() => {}); }
     // boredom and stuck signals
@@ -301,7 +350,7 @@ function report(R, start) {
     `Walks end with a measured walk's pay (${WALK.path.toFixed(0)} path + ${WALK.junk.toFixed(0)} junk raw coins, a treasure dig ${Math.round(WALK.found * 100)}% of the time, rolled by the game). Bath, tricks, toys, garden, kitchen, photos and agility are not played by the script: missions and helps that need them are listed, not counted as player problems.`, ''];
   for (const r of R) {
     o.push(`## ${r.label}`, '', '| Day | Coins start → end | Bought | Level (XP) | Bond | Mission / helps | Windows and letters | New |', '|---|---|---|---|---|---|---|---|');
-    r.days.forEach((d) => o.push(`| ${d.d} | ${d.start.coins} → ${d.end.coins} | ${d.bought.length ? d.bought.join(', ') : '-'} | ${d.end.lv} (${d.end.xp}) | ${d.end.bond} | ${d.msDone} / ${d.helpsDone} | ${[...new Set(d.modals.concat(d.letters))].slice(0, 6).join('; ') || '-'} | ${d.newThings.join(', ') || '-'} |`));
+    r.days.forEach((d) => o.push(`| ${d.d} | ${d.start.coins} → ${d.end.coins} | ${d.bought.length ? d.bought.join(', ') : '-'} | ${d.end.lv} (${d.end.xp}) | ${d.end.bond} | ${d.msDone} / ${d.helpsDone} | ${[...new Set(d.modals.concat(d.letters))].slice(0, 9).join('; ') || '-'} | ${d.newThings.join(', ') || '-'} |`));
     o.push('', '**Bored / stuck:**', '');
     const notes = []; r.days.forEach((d) => { d.notes.forEach((n) => notes.push(`day ${d.d}: ${n}`)); d.stuck.forEach((n) => notes.push(`day ${d.d}: STUCK ${n}`)); d.acts.filter((a) => /blocked|did not|not on|no route|no results|no food|: nothing to/.test(a)).forEach((a) => notes.push(`day ${d.d}: ${a}`)); });
     if (r.crash) notes.unshift('RUN ' + r.crash);

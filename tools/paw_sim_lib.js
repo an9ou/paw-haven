@@ -50,7 +50,10 @@ async function launch() {
 // every feature that is live in the shipped game but switched off under the harness (navigator.webdriver) is switched on here, so the page
 // plays like the real game. Friends stay off (they need the Worker) and so does cloud save.
 const LIVE_PREFS = { msTest: true, ms2Test: true, lvTest: true, gdTest: true, fwTest: true, fsTest: true, hwTest: true, wnTest: true, jpTest: true, mpTest: true, grTest: true,
-  tkTest: true, exTest: true, ddTest: true, ffTest: true, fmTest: true, nwTest: true, pupTest: true, rmTest: true, shopTest: true };
+  tkTest: true, exTest: true, ddTest: true, ffTest: true, fmTest: true, nwTest: true, pupTest: true, rmTest: true, shopTest: true,
+  // v2.25 welcome back, v2.26 visitors, v2.27 town projects, v2.28 stories, v2.29 story mode and its scenes. Unknown prefs are ignored, so a build
+  // without a feature (main before the v2.26-29 launch) is not changed by them. These need no date: under the harness only the pref counts.
+  wbTest: true, yvTest: true, prTest: true, stTest: true, smTest: true, scTest: true };
 
 // a page with a movable clock: page time = startMs + real time since load + sessionStorage.__ptOff (ms). shift(ms) moves it live; a reload keeps it.
 async function newPage(browser, o) {
@@ -63,7 +66,23 @@ async function newPage(browser, o) {
     const now = () => R.now() + off();
     class FakeDate extends R { constructor(...a) { if (a.length === 0) super(now()); else super(...a); } static now() { return now(); } }
     window.Date = FakeDate;
-    window.__ptShift = (ms) => { try { sessionStorage.setItem('__ptOff', String((+sessionStorage.getItem('__ptOff') || 0) + ms)); } catch (e) { /* none */ } };
+    // dated features (49c_news.js nwNext): off by default, they follow the simulated date like for a player; o.next = true opens them all early
+    if (cfg.next) window.__ddNextTest = true;
+    // the clock moves while the page is still open and then the page reloads: the game saves on pagehide, which would stamp the save with the NEW
+    // time (no real absence, so "While you were out" never shows, and a save from the future). __ptShift(ms, true) mutes that last save: the save
+    // written just before the shift (at the old time) is the one that stays. Registered first and in capture, so it runs before the game's own.
+    const mute = (e) => { try { if (sessionStorage.getItem('__ptMute') === '1') e.stopImmediatePropagation(); } catch (x) { /* none */ } };
+    window.addEventListener('pagehide', mute, true); document.addEventListener('visibilitychange', mute, true); window.addEventListener('beforeunload', mute, true); // a reload fires visibilitychange (hidden) too
+    try { sessionStorage.removeItem('__ptMute'); } catch (e) { /* none */ } // a new page saves normally again (the flag only mutes the page being left)
+    // who emptied the save? (a removeItem or clear is logged to sessionStorage, so the harness can say so after a reload)
+    try {
+      const log = (w) => { try { sessionStorage.setItem('__lsEv', (sessionStorage.getItem('__lsEv') || '') + w + ';'); } catch (x) { /* none */ } };
+      const ri = Storage.prototype.removeItem, cl = Storage.prototype.clear, si = Storage.prototype.setItem;
+      Storage.prototype.removeItem = function (k) { if (this === localStorage) log('remove:' + k); return ri.apply(this, arguments); };
+      Storage.prototype.clear = function () { if (this === localStorage) log('clear'); return cl.apply(this, arguments); };
+      Storage.prototype.setItem = function (k, v) { if (this === localStorage && k === 'pawhaven_proto_v1' && (v === '' || v == null || v === 'null')) log('empty-save'); return si.apply(this, arguments); };
+    } catch (e) { /* none */ }
+    window.__ptShift = (ms, mute) => { try { if (mute) sessionStorage.setItem('__ptMute', '1'); sessionStorage.setItem('__ptOff', String((+sessionStorage.getItem('__ptOff') || 0) + ms)); } catch (e) { /* none */ } };
     try {
       const PK = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(PK) || '{}') || {}; } catch (e) { pr = {}; }
       let ch = false; for (const k in cfg.prefs) if (!(k in pr)) { pr[k] = cfg.prefs[k]; ch = true; }
@@ -72,7 +91,7 @@ async function newPage(browser, o) {
     window.__toasts = [];
     const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-  }, { start: o.start || Date.now(), prefs: Object.assign({ lang: 'en', ovrTime: 'day', ovrWeather: 'cloudy', crOne: true }, LIVE_PREFS, o.prefs || {}) });
+  }, { start: o.start || Date.now(), next: !!o.next, prefs: Object.assign({ lang: 'en', ovrTime: 'day', ovrWeather: 'cloudy', crOne: true }, LIVE_PREFS, o.prefs || {}) });
   const page = await ctx.newPage(); page.errors = [];
   page.on('console', (m) => { if (m.type() === 'error') page.errors.push(m.text()); }); page.on('pageerror', (e) => page.errors.push(e.message));
   return page;
