@@ -1733,6 +1733,7 @@ function unlocksFor(L) {
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // test round c: the Bond card waits for a story scene too (scEnd calls this again), like the town level card
   const who = levelQueue[0].who, wid = levelQueue[0].id, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
   const party = levels.includes(2) && typeof fwParty === 'function' ? fwParty(wid) : null; // v2.16: the Bond 2 party (47_firstweek.js): confetti, a gift, then the dog does Paw
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
