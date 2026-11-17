@@ -173,7 +173,11 @@ html[data-layout="phone"] #bar .barpop.fw-tiles .act{min-width:0;max-width:none;
 html[data-layout="phone"] #bar .barpop.fw-tiles .act .ic{width:30px;height:30px}
 html[data-layout="phone"] #bar .barpop.fw-tiles .act > span:not(.ic):not(.fw-newtag){font-size:16px;line-height:1.02;max-width:100%;overflow-wrap:anywhere;hyphens:auto;padding:0 2px 2px}
 html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+1){--wash:var(--w-blue)} html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+2){--wash:var(--w-lilac)}
-html[data-layout="phone"] #bar .barpop.fw-tiles .fw-newtag{font-size:13px;padding:1px 5px 2px;top:-3px;right:-2px}
-.fw-tb{position:absolute;top:-4px;right:-3px;z-index:2;min-width:22px;padding:1px 5px 2px;box-sizing:border-box;font-family:var(--font-hand);font-weight:700;font-size:14px;line-height:1.1;text-align:center;background:#FFE3A1;color:var(--ink);border:1.5px solid var(--ink);border-radius:9px 11px 8px 10px;transform:rotate(6deg);pointer-events:none}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act > span.fw-newtag{font-size:15px;padding:1px 5px 2px;top:2px;right:2px}
+.fw-tb{position:absolute;top:2px;right:2px;z-index:2;min-width:22px;padding:1px 5px 2px;box-sizing:border-box;font-family:var(--font-hand);font-weight:700;font-size:15px;line-height:1.1;text-align:center;background:#FFE3A1;color:var(--ink);border:1.5px solid var(--ink);border-radius:9px 11px 8px 10px;transform:rotate(6deg);pointer-events:none}
 .fw-tb.done{background:#CFEBC6}
 .fw-tdot{position:absolute;top:3px;left:4px;width:10px;height:10px;border-radius:50%;background:#F28FA5;border:1.5px solid var(--ink);pointer-events:none}
+/* v2.31: the tile sheet is tall: while it is open Gerald's card steps aside (it came back on top of the tray's first row in ja and th at 360 x 640);
+   his ring still shows a tile when his step points into the tray, and the card returns as the tray closes */
+html[data-layout="phone"] #stage:has(#bar .barpop.fw-tiles:not([hidden])) #gdLayer .gd-card{visibility:hidden}
+html[data-layout="phone"] #hud .fw-next.fw-wrap{white-space:normal;text-overflow:clip;line-height:1.05;overflow:visible}

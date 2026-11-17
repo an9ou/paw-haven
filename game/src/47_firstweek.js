@@ -115,8 +115,9 @@ function fwNextSync() {
   const txt = S && fwOn() && S.bond.level < 10 ? fwNextText(S.bond.level) : '';
   if (!txt) { if (el) el.hidden = true; FW.nextKey = ''; return; }
   if (!el) { el = document.createElement('span'); el.id = 'fwNext'; el.className = 'fw-next'; b.appendChild(el); }
-  if (FW.nextKey !== txt) { FW.nextKey = txt; const sh = fwNextText(S.bond.level, true); el.innerHTML = `<span class="fw-nl">${esc(tt('fw.next', 'Next'))}</span> <span class="fw-nlong">${esc(txt)}</span><span class="fw-nshort">${esc(sh)}</span>`; el.title = txt; el.setAttribute('data-tip', txt); } // phones show the short line (one unlock)
+  if (FW.nextKey !== txt) { FW.nextKey = txt; const sh = fwNextText(S.bond.level, true); el.innerHTML = `<span class="fw-nl">${esc(tt('fw.next', 'Next'))}</span> <span class="fw-nlong">${esc(txt)}</span><span class="fw-nshort">${esc(sh)}</span>`; el.title = txt; el.setAttribute('data-tip', txt); el.classList.remove('fw-wrap'); } // phones show the short line (one unlock)
   el.hidden = false;
+  if (isPhone() && !el.classList.contains('fw-wrap') && el.scrollWidth > el.clientWidth + 1) el.classList.add('fw-wrap'); // v2.31 fit: a short line that does not fit (ko, pt-BR, th at 360 px) takes two lines instead of an ellipsis
 }
 
 /* ---------------- 3. the Bond 2 party ---------------- */
