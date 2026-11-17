@@ -246,14 +246,14 @@ require('./test_lib').run('phone_shell', async (t) => {
     await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__paw.toast('Toast while Gerald talks'); });
     ok((await tq('Gerald talks')) === 'wait', 'a toast waits while Gerald\'s card shows');
     await ev(() => document.querySelector('#gdLayer .gd-skip').click());
-    ok(await t.until(() => { const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /Gerald talks/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 9000), 'it comes in once the card goes (Skip)');
+    ok(await t.until(() => { const m = document.getElementById('modal'); if (!m.hidden && m.querySelector('.fw-calpop')) m.querySelector('.x').click(); const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /Gerald talks/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 15000), 'it comes in once the card goes (Skip; the welcome calendar that may follow holds it too, so it is closed)');
     await t.calm(); await ev(() => { document.getElementById('toasts').innerHTML = ''; document.getElementById('gearBtn').click(); });
     ok(await t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), null, 5000), 'a sheet is open (Settings)');
     await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__paw.toast('Toast behind the sheet'); window.__paw.toast('Nope on this sheet', '', { scr: 's:test' }); }); // a clear queue first: held mail and hint toasts come in one at a time
     ok((await tq('behind the sheet')) === 'wait', 'a toast waits while the sheet is up (it would sit on its title)');
     ok((await tq('Nope on this sheet')) === 'shown', 'the sheet\'s own Nope (o.scr) still shows at once');
     await t.closeX();
-    ok(await t.until(() => { const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /behind the sheet/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 12000), 'and it comes in after the sheet closes');
+    ok(await t.until(() => { const m = document.getElementById('modal'); if (!m.hidden && m.querySelector('.fw-calpop')) m.querySelector('.x').click(); const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /behind the sheet/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 15000), 'and it comes in after the sheet closes');
     await t.ctx.close();
   }
 
