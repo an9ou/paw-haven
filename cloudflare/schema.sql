@@ -178,6 +178,33 @@ create table if not exists purchases (
 create index if not exists purchases_user on purchases (user_id);
 create index if not exists purchases_pi on purchases (payment_intent);
 
+-- Stripe webhook event ids (security pass, 17 Nov 2026; V224.md 4.5). One row per event the Worker has finished, so a second delivery of
+-- the same event (a retry after a lost 200, or a resend from the Stripe Dashboard) is a no-op. Written only after the purchase row, or after
+-- a deliberate no-grant; never on a 502. tidy() drops rows older than 30 days. The Worker runs without it (schema not applied yet).
+create table if not exists shop_events (
+  id   text primary key,             -- Stripe event id (evt_...)
+  type text,
+  at   integer not null              -- ms
+);
+create index if not exists shop_events_at on shop_events (at);
+
+-- Paid Checkout Sessions the webhook would not grant (security pass, 17 Nov 2026; V224.md 4.5): the session Stripe returned has an unknown
+-- Price id (e.g. rotated while a Checkout was open and not kept in SHOP_PRICES "prev"), a quantity other than 1, more than one line, an
+-- amount of 0, an unknown item or a user mismatch. The player's hold is released; the owner settles each row by hand (grant or refund).
+-- Kept until the owner deletes it. Read: select * from shop_review order by created_at desc;
+create table if not exists shop_review (
+  id             text primary key,     -- the Checkout Session id (cs_...)
+  user_id        text,                 -- client_reference_id
+  item           text,                 -- metadata.item
+  price          text,                 -- the line item's Price id
+  quantity       integer,
+  amount         integer,              -- amount_total in the smallest unit of currency
+  currency       text,
+  payment_intent text,
+  reason         text not null,        -- session_id | item | user | lines | quantity | price | amount
+  created_at     integer not null      -- ms
+);
+
 -- Refund protection (owner, 14 Nov 2026; V224.md 4.4). Set by hand only, with tools/shop_flag.sh: the Worker reads it at POST /shop/checkout.
 -- 'block': paid items paused for that account, or for every account with that email. 'allow': lifts the auto pause (2 full refunds or
 -- 1 dispute). A block on either key wins over an allow. Kept when an account is deleted, so an email block holds for a new account.
