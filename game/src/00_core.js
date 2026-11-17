@@ -1422,9 +1422,12 @@ function toastSheetTop() {
   const safe = Math.max(0, (parseFloat(getComputedStyle(hud).paddingTop) || 4) - 4), h = toasts.offsetHeight; // the HUD's top padding is 4 px + the safe area
   if (h && top - 8 - h >= safe + 6) return Math.round(top - 8 - h); // room above the sheet (over the dimmed HUD): the sheet stays fully clear
   const pr = pn.getBoundingClientRect(), lim = pr.top + Math.min(pr.height * 0.45, 260);
-  const tabs = [...pn.querySelectorAll('.tabs, .jtabs, .mbtabs, [role=tablist]')].find((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.top < lim; });
+  // v2.30 fit: tabs scrolled out of their sheet body (the mailbox scrolls an opened letter into view) do not count, and a toast never starts above
+  // the stage (it sat 14-34 px over the top of a 360 x 640 phone, on the mailbox title)
+  const shown = (e, r) => { for (let a = e.parentElement; a && a !== pn.parentElement; a = a.parentElement) { if (getComputedStyle(a).overflowY === 'visible') continue; const ar = a.getBoundingClientRect(); if (r.bottom <= ar.top + 2 || r.top >= ar.bottom - 2) return false; } return true; };
+  const tabs = [...pn.querySelectorAll('.tabs, .jtabs, .mbtabs, [role=tablist]')].find((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.top < lim && shown(e, r); });
   const anchor = tabs || pn.querySelector(':scope > h2');
-  return Math.round(top + (anchor ? anchor.getBoundingClientRect().bottom - pr.top : 0) + 6); // under the tabs (or the title), never on them
+  return Math.max(safe + 6, Math.round(top + (anchor ? anchor.getBoundingClientRect().bottom - pr.top : 0) + 6)); // under the tabs (or the title), never on them
 }
 let toastRO = null;
 function toastWatchSheet(p) { // phones: live toasts follow the sheet as it slides in, grows or shrinks

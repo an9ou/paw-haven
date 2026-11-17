@@ -68,6 +68,7 @@ html[data-layout="phone"] .mchip{font-size:17px;line-height:1.4}
 /* mailbox: the letter list becomes a short scrolling list above the reader */
 html[data-layout="phone"] .mbox{grid-template-columns:minmax(0,1fr);gap:12px;min-height:0}
 html[data-layout="phone"] .mb-list{max-height:210px;padding:2px;touch-action:pan-y;overscroll-behavior:contain}
+html[data-layout="phone"] .mb-foot{padding-bottom:6px} /* v2.30 fit: the unread line keeps clear of the sheet's bottom pencil line (ko embed: 7 px, CJK/Hangul need 10) */
 html[data-layout="phone"] .mb-item{min-height:56px;transform:none}
 html[data-layout="phone"] .mb-item.on{transform:none}
 html[data-layout="phone"] .mb-t b{font-size:16px}
