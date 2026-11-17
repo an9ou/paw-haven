@@ -79,7 +79,7 @@ run('phone_v211_cards', async (t) => {
   const srv = makeServer();
   const p = await t.mk({ device: 'Pixel 7' });
   await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p);
-  await p.goto(URL); await p.waitForSelector('#tGuest'); await p.locator('#tGuest').tap(); await p.waitForSelector('#tNew'); await t.adopt({ sex: 'boy' });
+  await p.goto(URL); await p.waitForSelector('#tGuest, #tPlay'); if (await p.locator('#tGuest').count()) { await p.locator('#tGuest').tap(); await p.waitForSelector('#tNew'); } await t.adopt({ sex: 'boy' }); // v2.30.1: a new player's cover has one Play (t.adopt taps it)
   await t.until(() => !!window.__pawCloud.CL.uid, null, 8000);
   await ev(() => window.__pawCloud.open()); await p.waitForSelector('#dcBox');
   await phoneCheck('guest Dog Card block', '#dcBox');

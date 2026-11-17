@@ -326,7 +326,7 @@ run('v224_shop', async (t) => {
       window.open = function (u, n) { window.__ksTabs.push({ at: performance.now(), u, n }); if (window.__ksBlock) return null; const w = { closed: false, opener: 1, close() { this.closed = true; }, location: { href: '' }, document: { title: '', body: { innerHTML: '' } } }; window.__ksTabs[window.__ksTabs.length - 1].w = w; return w; };
     });
     await was.close();
-    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew'); if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
+    await t.p.goto(URL); await t.p.waitForSelector('#tGuest, #tNew, #tPlay'); if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
     await t.adopt({}); await t.calm();
     ok(await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.ks), null, 8000), 'a guest on the local Worker');
     // the guest becomes an email account on the Worker (same user id), and this device takes the new login

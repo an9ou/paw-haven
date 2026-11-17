@@ -115,7 +115,7 @@ async function start(t, o) {
   if (o.host) await t.ctx.addInitScript((h) => { window.__pawCloudHost = h; }, o.host);
   if (o.mock !== false) await t.ctx.addInitScript(mockInit);
   await t.p.goto((o.url || URL) + (o.query || ''));
-  await t.p.waitForSelector('#tNew, #tContinue, #tGuest'); // cloud on: Play as guest comes first
+  await t.p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay'); // cloud on: Play as guest comes first (v2.30.1: a new player's one Play, t.adopt taps it)
   if (o.fresh === false) return;
   if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
   await t.adopt(o);
