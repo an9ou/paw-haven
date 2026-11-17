@@ -213,6 +213,7 @@ function prReadyLine(b) {
 /* ---- the board's sheet ---- */
 function prSheetHTML() {
   const p = prS(), c = prCur(), parts = [];
+  if (typeof glLinkHTML === 'function') parts.push(glLinkHTML()); // v2.30 (owner, 17 Nov): the Town goal link at the top (58b_goal.js); '' when it is off
   parts.push(`<p class="pr-intro">${esc(tt('pr.intro', "Gerald's plans to make the town even nicer. Put in any coins you like, whenever you like. Every coin stays in the project."))}</p>`);
   if (c) {
     const frac = p.paid / c.price, pct = Math.floor(frac * 100);
@@ -236,6 +237,7 @@ function prOpen() {
   prBind(p); return p;
 }
 function prBind(p) {
+  if (typeof glLinkBind === 'function') glLinkBind(p);
   p.querySelectorAll('[data-pr-pay]').forEach((b) => { b.onclick = () => prPayUI(p, prAmount(b.dataset.prPay), false, b.dataset.prPay); });
   const put = $('#prPut', p), inp = $('#prAmt', p);
   if (put && inp) { const go = () => prPayUI(p, Math.floor(+inp.value), true); put.onclick = go; inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } }; }

@@ -1646,6 +1646,7 @@ function frExpose() {
     },
     decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
+    inviteSet: (c) => { FR.invite = c; return FR.invite; }, add: () => frAdd(), fillCode: (c) => frFillCode(c), // v2.30 tests: an add from an invite link
     yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
     note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,

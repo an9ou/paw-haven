@@ -2110,9 +2110,9 @@ function fsbHeart(c,R){const p=[];for(let i=0;i<22;i++){const t=i/22*Math.PI*2;p
 NECK2['Friendship Bandana']=function(h,s,L,HT){
   tkBand(h,s,L,HT,FSB.or,(Q,z)=>{
    h.shape([Q(0,0),Q(1,0),Q(1,.16),Q(0,.16)],FSB.orD,{noline:1,ox:0,oy:0,sc:1,famp:.3});
-   h.line([Q(.1,.08),Q(.9,.08)],Math.max(.9,z*.16),FSB.crm,.2);
-   const R=Math.max(2.8,z*.82);
-   [[.4,.33,FSB.pink],[.6,.33,FSB.yel]].forEach(([u,v,c])=>h.shape(fsbHeart(Q(u,v),R),c,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15}))})};
+   h.line([Q(.1,.12),Q(.9,.12)],Math.max(.9,z*.16),FSB.crm,.2);// art review 2: the stitch low on the hem band, clear of the knot's line
+   const R=Math.max(2.5,z*.72);// art review 1: smaller hearts, further apart, so the pink and the yellow sit side by side (not one blob)
+   [[.34,.33,FSB.pink],[.66,.33,FSB.yel]].forEach(([u,v,c])=>h.shape(fsbHeart(Q(u,v),R),c,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15}))})};
 OUT.neck.push('Friendship Bandana');
 {const fn=NECK2['Friendship Bandana'];NECK2['Friendship Bandana']=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}
 function drawEyewear(h,s,L,HT,e){if(EYES2[e])return EYES2[e](h,s,L,HT);(e==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}

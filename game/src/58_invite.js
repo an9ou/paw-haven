@@ -5,6 +5,16 @@
 // Off until NEWS_V230.date (btOn(), 49c_news.js); a guest (cloud save not on) is told kindly that the bandana waits for cloud save.
 const FI_ITEM = 'Friendship Bandana', FI_CAP = 10;
 const FI = { pollUid: null, pollP: null, joinP: null };
+// code review 1: an older Worker answers a route it does not have with 404 not_found (the v2.30 Worker never uses that word on its own routes: no_code,
+// not_friends, official...). Then both v2.30 features hide for this load (fiMode 'off', glOn false), and nothing waiting is dropped (S.fi.link, S.goal.q)
+let BT_GONE = false;
+const btGoneAns = (r) => !!r && r.status === 404 && !!r.data && r.data.error === 'not_found';
+function btGoneSet() {
+  if (BT_GONE) return; BT_GONE = true;
+  try { if (typeof glBoardDraw === 'function') glBoardDraw(); } catch (e) { /* the board just stays until the next scene */ }
+}
+// the Worker's final answers to POST /invite/join (anything else: 401 a login gone, 429, 5xx, offline, a route missing: ask again later)
+const FI_FINAL = ['no_code', 'self', 'bad', 'not_friends', 'official', 'not_new'];
 
 /* ---------------- save (additive) ---------------- */
 function fiFields(s) {
@@ -15,11 +25,13 @@ function fiFields(s) {
   if (!['', 'now', 'later', 'no'].includes(f.join)) f.join = '';
   f.mine = f.mine ? 1 : 0; f.wait = f.wait ? 1 : 0;
   if (!Number.isInteger(f.n) || f.n < 0) f.n = 0; if (f.n > FI_CAP) f.n = FI_CAP;
+  // code review 2: the joined friends already thanked, by the Worker's opaque row token t (never a user id): each is thanked once, whatever the order
+  if (!Array.isArray(f.thx)) f.thx = []; f.thx = f.thx.filter((t) => typeof t === 'string' && t && t.length <= 32).slice(0, FI_CAP);
   return s;
 }
 // 'ok' (an email account: cloud save on), 'guest' (cloud on, no account yet), 'off' (before the date, no cloud here). Tests: window.__ddFiMode
 function fiMode() {
-  if (!btOn()) return 'off';
+  if (!btOn() || BT_GONE) return 'off';
   const o = typeof window !== 'undefined' && window.__ddFiMode; if (o) return o;
   if (typeof CL === 'undefined' || !CL.on) return 'off';
   return CL.uid && !CL.anon && CL.email ? 'ok' : 'guest';
@@ -30,38 +42,43 @@ const fiOwns = () => !!(S && S.inv && Array.isArray(S.inv.clothes) && S.inv.clot
 const fiFriend = (name) => (Array.isArray(name) && typeof frPairName === 'function' && frPairName(name)) || tt('fr.a_friend', 'A friend');
 
 /* ---------------- the Worker ---------------- */
-// after a friend add that came from the invite link (50_friends.js frAdd). Offline or rate limited: S.fi.link stays and the next start asks again
-async function fiJoin(code) {
+// after a friend add that came from the invite link (50_friends.js frAdd; also when the add answers "already friends"). now: straight from the Friends
+// sheet (the card may open at once). Only a final answer clears S.fi.link: offline, a login gone (401), busy or a missing route: the next start asks again
+async function fiJoin(code, now) {
   if (!S || fiMode() === 'off' || !code) return null;
   fiFields(S); if (S.fi.join) return S.fi.join;
   if (FI.joinP) return FI.joinP;
   S.fi.link = code; markDirty();
   FI.joinP = (async () => {
     let r = null; try { r = await frApi('POST', '/invite/join', { code }); } catch (e) { return null; }
-    const err = r && r.data && r.data.error;
-    if (!r || r.status === 429 || r.status >= 500) return null;
-    S.fi.link = '';
-    const gift = r.ok && r.data && (r.data.gift === 'now' || r.data.gift === 'later') ? r.data.gift : err === 'used' ? (fiMode() === 'ok' ? 'now' : 'later') : 'no';
-    S.fi.join = gift; markDirty(); saveNow();
-    if (gift === 'later') { S.fi.wait = 1; fiWaitLetter('new'); fiCard({ wait: 'new' }); }
-    else if (gift === 'now') { FI.pollUid = null; await fiPoll(); }
+    if (btGoneAns(r)) { btGoneSet(); return null; }
+    const err = (r && r.data && r.data.error) || '';
+    let gift = null;
+    if (r && r.ok && r.data && (r.data.gift === 'now' || r.data.gift === 'later')) gift = r.data.gift;
+    else if (r && err === 'used') gift = fiMode() === 'ok' ? 'now' : 'later';
+    else if (r && !r.ok && FI_FINAL.includes(err)) gift = 'no';
+    if (!gift) return null;
+    S.fi.link = ''; S.fi.join = gift; markDirty(); saveNow();
+    if (gift === 'later') { S.fi.wait = 1; fiWaitLetter('new', true); fiCard({ wait: 'new' }, now); }
+    else if (gift === 'now') { FI.pollUid = null; await fiPoll(now); }
     return gift;
   })().finally(() => { FI.joinP = null; });
   return FI.joinP;
 }
-async function fiPoll() {
+async function fiPoll(now) {
   if (!S || fiMode() === 'off' || !fiWorker()) return null;
   if (FI.pollP) return FI.pollP;
   FI.pollP = (async () => {
     let r = null; try { r = await clApi('GET', '/invite/gifts'); } catch (e) { return null; }
+    if (btGoneAns(r)) { btGoneSet(); return null; }
     if (!r || !r.ok || !r.data || typeof r.data !== 'object') return null;
     FI.pollUid = fiKey();
-    return fiApply(r.data, true);
+    return fiApply(r.data, true, now);
   })().finally(() => { FI.pollP = null; });
   return FI.pollP;
 }
 // what the Worker said: give what this save has not had yet (once), the letters, and the card
-function fiApply(d, show) {
+function fiApply(d, show, now) {
   if (!S || !d) return null;
   fiFields(S); const f = S.fi, out = { mine: false, from: null, joined: [], bandana: false, wait: '' };
   if (d.guest) {
@@ -69,39 +86,53 @@ function fiApply(d, show) {
     return out;
   }
   if (d.mine && !f.mine) { f.mine = 1; out.mine = true; out.from = d.mine.name || null; }
-  const J = Array.isArray(d.joined) ? d.joined.slice(0, FI_CAP) : [];
-  if (J.length > f.n) { out.joined = J.slice(f.n).map((x) => (x && x.name) || null); f.n = J.length; }
+  const J = Array.isArray(d.joined) ? d.joined : [], tok = (x) => (x && typeof x.t === 'string' && x.t.length <= 32 ? x.t : '');
+  if (!f.thx.length && f.n > 0) f.thx = J.slice(0, f.n).map(tok).filter(Boolean); // a save from before the row tokens: its first n were thanked
+  J.forEach((x) => { const t = tok(x); if (!t || f.thx.includes(t) || f.thx.length >= FI_CAP) return; f.thx.push(t); out.joined.push((x && x.name) || null); });
+  f.n = f.thx.length;
   if (!out.mine && !out.joined.length) return out;
   if (!fiOwns()) { pmGive(FI_ITEM, 'clothes'); out.bandana = true; }
-  if (out.mine) fiNewLetter(out.from);
-  if (out.joined.length) fiHostLetter(out.joined, out.bandana && !out.mine, f.n);
+  // phone review 6: the "waiting" letter goes once the bandana is here; the card (or its toast) says Gerald wrote, so the letters come without a New mail toast
+  if (f.wait && S.mail) { const i = S.mail.findIndex((m) => m && m.id === 'fi_wait'); if (i >= 0) { S.mail.splice(i, 1); if (typeof mailboxRefresh === 'function') mailboxRefresh(); } }
+  if (out.mine) fiNewLetter(out.from, !!show);
+  if (out.joined.length) fiHostLetter(out.joined, out.bandana && !out.mine, f.n, !!show);
   if (S.fi.join === '') S.fi.join = out.mine ? 'now' : '';
   markDirty(); updateHUD(); saveNow();
-  if (show) fiCard(out);
+  if (show) fiCard(out, now);
   return out;
 }
 
 /* ---------------- Gerald's letters (kept to reread) ---------------- */
 const fiFrom = () => tt('ks.letter_from', 'Gerald');
-function fiNewLetter(from) {
-  return mailPush({ kind: 'news', id: 'fi_new', keep: true, from: fiFrom(), title: tt('fi.new_title', 'Welcome to town!'),
+function fiNewLetter(from, quiet) {
+  return mailPush({ kind: 'news', id: 'fi_new', keep: true, quiet, from: fiFrom(), title: tt('fi.new_title', 'Welcome to town!'),
     text: tt('fi.new_text', 'Dear friend,\n{friend} invited you to Doodle Doggo, and we are so glad you came.\nHere is a Friendship Bandana for {name}, the same one your friend\'s dog gets. Find it in the Wardrobe.\nWith a happy waddle,\nGerald', { friend: fiFriend(from), name: NAME() }) });
 }
-function fiHostLetter(names, bandana, n) {
+function fiHostLetter(names, bandana, n, quiet) {
   const list = tlist(names.map(fiFriend));
-  return mailPush({ kind: 'news', id: 'fi_host_' + n, keep: true, from: fiFrom(), title: tt('fi.host_title', '{list} joined through your invite!', { list }),
+  // phone review 5: a fixed title (a list of names does not fit a letter's title on a phone); the names are in the body
+  return mailPush({ kind: 'news', id: 'fi_host_' + n, keep: true, quiet, from: fiFrom(), title: tt('fi.host_h', 'New friends joined through your invite!'),
     text: tt('fi.host_text', 'Dear friend,\n{list} came to Doodle Doggo through your invite. Thank you for bringing new friends to town!\n{gift}\nWith a happy waddle,\nGerald', { list,
       gift: bandana ? tt('fi.host_gift', 'Here is a Friendship Bandana for {name}, to match. Find it in the Wardrobe.', { name: NAME() }) : tt('fi.host_more', 'Your dogs can wear matching bandanas now.') }) });
 }
-function fiWaitLetter(who) {
-  return mailPush({ kind: 'news', id: 'fi_wait', keep: true, from: fiFrom(), title: tt('fi.wait_title', 'A bandana is waiting for you'),
+function fiWaitLetter(who, quiet) {
+  return mailPush({ kind: 'news', id: 'fi_wait', keep: true, quiet, from: fiFrom(), title: tt('fi.wait_title', 'A bandana is waiting for you'),
     text: tt('fi.wait_text', 'Dear friend,\n{who, select, host {A new player joined Doodle Doggo through your invite. Thank you!} other {A friend invited you to Doodle Doggo, and we are so glad you came.}}\nA Friendship Bandana for {name} is waiting at the post office. It arrives as soon as you turn on cloud save (More, then Cloud save). Nothing is lost meanwhile, and there is no hurry.\nWith a happy waddle,\nGerald', { who, name: NAME() }) });
 }
 
 /* ---------------- the card ---------------- */
-function fiCard(o) {
+// phone review 1: the card never closes a window the player has open and never hides behind a story scene. Straight after a join from the Friends
+// sheet (now) it takes the sheet's place; otherwise (a background poll) it opens only when the screen is calm (nwCalmNow), else a toast says it and
+// Gerald's letter keeps it (like ksDelivered)
+function fiCard(o, now) {
   if (!o || !S) return null;
-  if (!modal.hidden) closeModal();
+  const story = typeof scPlaying === 'function' && scPlaying(), sheet = !modal.hidden && !!modal.querySelector('.fr-sheet');
+  const calm = typeof nwCalmNow === 'function' ? nwCalmNow() : modal.hidden;
+  if (story || !(calm || (now && (sheet || modal.hidden)))) {
+    toast(o.wait ? tt('fi.wait_toast', 'Your Friendship Bandana is waiting for cloud save. Gerald sent you a letter about it.') : tt('fi.got_toast', 'A Friendship Bandana for you! Gerald sent you a letter about it.'), 'gold');
+    return null;
+  }
+  if (!modal.hidden) closeModal(); // only the Friends sheet, just after the join
   SFX.boop(880);
   let body;
   if (o.wait) {
@@ -143,8 +174,9 @@ function fiStart() {
 function fiExpose() {
   if (!window.__paw || window.__paw.fi) return;
   window.__paw.fi = {
-    on: () => btOn(), mode: () => fiMode(), fields: (s) => fiFields(s), join: (c) => fiJoin(c), poll: () => { FI.pollUid = null; return fiPoll(); }, apply: (d, show) => fiApply(d, show),
-    card: (o) => fiCard(o), line: () => fiSheetLine(), item: FI_ITEM, cap: FI_CAP, owns: () => fiOwns()
+    on: () => btOn(), mode: () => fiMode(), fields: (s) => fiFields(s), join: (c, now) => fiJoin(c, now), poll: (now) => { FI.pollUid = null; return fiPoll(now); }, apply: (d, show, now) => fiApply(d, show, now),
+    card: (o, now) => fiCard(o, now), line: () => fiSheetLine(), item: FI_ITEM, cap: FI_CAP, owns: () => fiOwns(),
+    gone: (v) => { if (v !== undefined) BT_GONE = !!v; return BT_GONE; }, start: () => fiStart()
   };
 }
 on('game:ready', () => { if (S) fiFields(S); setTimeout(fiExpose, 0); setTimeout(fiStart, 1800); });

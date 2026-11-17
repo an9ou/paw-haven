@@ -71,7 +71,8 @@
 //   POST /town/goal { n }                  -> { ok, took, month, goal, n, done, mine, part }   n 1..40; one post per 2 minutes per account; a Japan day
 //     takes at most GL_DAY_U per account and GL_DAY_IP per IP (took is what counted; part: this account posted this month, even when a cap took 0).
 //     Guests count too (V230.md 6: why)
-//   GET  /town/goal                        -> { month, goal, n, done, mine, part, last: { ... } }   token optional (mine 0 without one): 120/h per
+//   GET  /town/goal                        -> { month, goal, n, done, mine, part, last: { ... }, owed: [...] }   token optional (mine 0 and no owed
+//     without one; owed: the account's months that reached the goal, the last 12): 120/h per
 //     account with a token, 120/h per IP without; the town's totals are cached for GL_CACHE_S in the isolate
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
@@ -1454,6 +1455,10 @@ const ROUTES = {
     const month = dcDay(Date.now()).slice(0, 7), town = await glPub(env, month, false);
     const st = Object.assign({}, town.cur, await glMine(env, month, me && me.id));
     st.last = Object.assign({}, town.last, await glMine(env, town.last.month, me && me.id));
+    if (me) { // the months this account took part in that reached the goal (the last 12): a treat bag earned before two or more months away still comes
+      const rows = await all(env, 'select g.month as month, g.goal as goal, g.n as n, u.n as mine from town_goal_users u join town_goal g on g.month = u.month where u.user_id = ?1 and g.done_at is not null order by g.month desc limit 12', me.id);
+      st.owed = rows.map((r) => ({ month: r.month, goal: r.goal, n: r.n, done: true, mine: r.mine, part: true }));
+    }
     return json(st);
   } }
 };

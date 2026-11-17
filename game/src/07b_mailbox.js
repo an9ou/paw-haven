@@ -88,9 +88,13 @@ function mbNm(str, m) {
   return i < 0 ? esc(s) : esc(s.slice(0, i)) + `<span class="mb-nm">${esc(n)}</span>` + esc(s.slice(i + n.length));
 }
 /* Add a message. msg: { kind: 'postcard'|'gift'|'litter'|'news', from, title, text, dog?, gift?, ... } */
+// Gerald's letters written with line breaks (Dear friend, / the body / With a happy waddle, / Gerald) keep them (v2.30 phone review 4)
+const MB_PRE = /^(ks_thanks|ks_refund_|ks_got_|fi_|gl_|pr_|wb_)/;
+// msg.quiet: no "New mail" toast (a card on screen already says Gerald sent a letter; v2.30 phone review 6). Not stored
 function mailPush(msg) {
   if (!S) return null; mailFields();
-  const m = Object.assign({ kind: 'news', from: tt('mail.default_from', 'Doodle Doggo Post'), title: tt('mail.default_title', 'A letter'), text: '' }, msg || {});
+  const quiet = !!(msg && msg.quiet);
+  const m = Object.assign({ kind: 'news', from: tt('mail.default_from', 'Doodle Doggo Post'), title: tt('mail.default_title', 'A letter'), text: '' }, msg || {}); delete m.quiet;
   m.id = m.id || 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   m.date = m.date || localISO(); m.read = false;
   if (S.mail.some((x) => x.id === m.id)) return S.mail.find((x) => x.id === m.id);
@@ -99,7 +103,9 @@ function mailPush(msg) {
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i]) && !S.mail[i].keep) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !mbOwed(S.mail[i]) && !S.mail[i].keep) S.mail.splice(i, 1); // v2.24: a kept letter (Gerald's thank-you) stays to reread // unread litter letters are kept (v2.8: and every gift still waiting for Collect, e.g. a New Year card)
   }
-  markDirty(); mailSfx();
+  markDirty();
+  if (quiet) { mailboxRefresh(); return m; }
+  mailSfx();
   const tl = toast(tt('mail.new_mail', 'New mail: {title}', { title: m.title }), 'gold', { group: 'mail', many: (n) => tt('mail.new_letters', '{n} new letters in your mailbox.', { n }) }); // phones: letters that arrive together make one note
   try { if (tl) tl.insertAdjacentHTML('afterbegin', `<span class="mail-tic" aria-hidden="true">${mailIcon()}</span>`); } catch (e) { /* toast gone */ }
   mailboxRefresh(); return m;
@@ -299,7 +305,7 @@ function letterBody(m) {
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
   const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   const paw = typeof frLetterArt === 'function' ? frLetterArt(m) : ''; // v2.19: a paw-print note or a friend's wrapped gift (50_friends.js)
-  return `<article class="letter k-${esc(m.kind)}"><header><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }), m)}</span></header>${card}${paw}${pups}<p class="mb-text"${m.id === 'ks_thanks' ? ' style="white-space:pre-line"' : ''}>${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
+  return `<article class="letter k-${esc(m.kind)}"><header><b>${mbNm(m.title, m)}</b><span class="small">${mbNm(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }), m)}</span></header>${card}${paw}${pups}<p class="mb-text"${MB_PRE.test(String(m.id || '')) ? ' style="white-space:pre-line"' : ''}>${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {
   if (!S) return; mailFields(); audioPlace('journal'); jrFields();

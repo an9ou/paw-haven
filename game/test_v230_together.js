@@ -6,6 +6,9 @@
 //   5. the bandana on the dog (screenshot) and its item card
 //   6. town goal (58b_goal.js): the Square button and sheet, pets and walks counted, the batched post, the gift once, the "so close" letter
 //   7. phone 360x640: the cards and the goal sheet fit, 44 px taps, no sideways scroll (screenshots in the scratchpad / test_logs)
+//   fix batch (17 Nov reviews): an older Worker (404 not_found) keeps the invite and the belly rubs and hides v2.30 for the load; a 401 is not final;
+//   thanks by row token (a guest who registers later); "already friends" still joins; the yard retry drops new outfits; the card never closes an
+//   open window (toast + letter); Gerald's note on the Square's notice board opens the goal; the link in Town projects
 // node game/run_tests.js v230_together
 const { run, URL } = require('./test_lib'); const { devices } = require('playwright'); const path = require('path'); const fs = require('fs'); const { makeServer, mockInit } = require('./cloud_mock');
 devices['Phone 360x640'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 640 }, screen: { width: 360, height: 640 } });
@@ -50,6 +53,13 @@ run('v230_together', async (t) => {
   const closeAll = () => ev(() => { for (let i = 0; i < 4; i++) { const x = document.querySelector('#modal:not([hidden]) .panel .x'); if (x) x.click(); } });
   const mailIds = () => ev(() => window.__paw.S.mail.map((m) => m.id));
   const has = () => ev(() => window.__paw.S.inv.clothes.includes('Friendship Bandana'));
+  // the page's Worker answers some paths differently (re: a regexp source, status, body); null puts the real one back
+  const fake = (re, status, body) => ev(([re, status, body]) => {
+    const M = window.__pawCloudMock; if (!M.realFetch) M.realFetch = M.fetch;
+    M.sent = [];
+    M.fetch = re === null ? M.realFetch : (u, o) => { M.sent.push({ u: String(u), body: o && o.body }); return new RegExp(re).test(String(u)) ? Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })) : M.realFetch(u, o); };
+  }, [re, status, body]);
+  const toasts = () => ev(() => [...document.querySelectorAll('.toast, #toasts > *')].map((e) => e.textContent).join(' | '));
 
   sec('1. gates and migration');
   await cloudPage({});
@@ -63,7 +73,7 @@ run('v230_together', async (t) => {
 
   sec('2. a new guest comes in through an invite link');
   const A = await player(true, 30, [7, 9]);
-  await cloudPage({ prefs: { btTest: true, frTest: true }, query: '?friend=' + A.code });
+  await cloudPage({ prefs: { btTest: true, frTest: true, prTest: true }, query: '?friend=' + A.code });
   await newHere();
   ok(await ev(() => window.__paw.fi.on() && window.__paw.fi.mode() === 'guest'), 'btTest on: a guest');
   // the invite opens Friends after the title: pick a name, then the code is pre-filled
@@ -74,6 +84,7 @@ run('v230_together', async (t) => {
   ok(await t.until(() => !!document.querySelector('#modal .panel.fi-got #fiCloud'), null, 8000), 'the add went through: the kind "waiting" card with Turn on cloud save');
   await shot('wait_card_desktop');
   ok(await ev(() => window.__paw.S.fi.join === 'later' && window.__paw.S.fi.wait === 1 && window.__paw.S.fi.link === ''), 'S.fi: join later, wait 1');
+  const ts2 = await toasts(); ok(!/New mail: A bandana/.test(ts2), 'phone review 6: no "New mail" toast while the card says Gerald sent a letter: ' + ts2);
   ok((await mailIds()).includes('fi_wait') && !(await has()), 'Gerald\'s waiting letter, no bandana yet');
   ok(raw.prepare('select count(*) as n from invites where inviter_id = ?').get(A.id).n === 1, 'the Worker has one invite row');
   await ev(() => document.getElementById('fiLater').click());
@@ -91,6 +102,8 @@ run('v230_together', async (t) => {
   ok(await t.until(() => !!document.querySelector('#modal .panel.fi-got #fiOk'), null, 3000), 'the Better together! card');
   await shot('got_card_desktop');
   ok((await mailIds()).includes('fi_new') && await ev(() => /Welcome to town/.test(window.__paw.S.mail.find((m) => m.id === 'fi_new').title)), 'Gerald\'s Welcome to town! letter');
+  ok(!(await mailIds()).includes('fi_wait'), 'phone review 6: the "waiting" letter goes once the bandana is here');
+  ok(await ev(() => { const l = window.__paw.S.mail.find((m) => m.id === 'fi_new'); return /\n/.test(l.text); }), 'the letter keeps its line breaks (shown pre-line)');
   await closeAll();
   const o3b = await ev(() => window.__paw.fi.poll());
   ok(o3b && !o3b.mine && !o3b.bandana && !o3b.joined.length && await ev(() => window.__paw.S.inv.clothes.filter((n) => n === 'Friendship Bandana').length === 1), 'a second look adds nothing');
@@ -100,13 +113,59 @@ run('v230_together', async (t) => {
   await ev(([k, tok]) => { const S = window.__paw.S; S.inv.clothes = S.inv.clothes.filter((n) => n !== 'Friendship Bandana'); S.fi = { link: '', join: '', mine: 0, n: 0, wait: 0 }; localStorage.setItem(k, JSON.stringify({ token: tok })); window.__pawCloud.CL.email = 'a@example.com'; window.__pawCloud.CL.anon = false; }, [AUTH, A.tok]);
   const o4 = await ev(() => window.__paw.fi.poll());
   ok(o4 && !o4.mine && o4.joined.length === 1 && o4.bandana && await has(), 'A: the first friend brings the bandana: ' + JSON.stringify(o4));
-  ok((await mailIds()).includes('fi_host_1'), 'Gerald\'s letter fi_host_1');
+  ok((await mailIds()).includes('fi_host_1') && await ev(() => window.__paw.S.mail.find((m) => m.id === 'fi_host_1').title === 'New friends joined through your invite!'), 'Gerald\'s letter fi_host_1, with the fixed title (phone review 5)');
   await closeAll();
   const C = await player(true, 0, [11, 12]);
   await api('POST', '/friends/add', { code: A.code }, C.tok); await api('POST', '/invite/join', { code: A.code }, C.tok);
   const o4b = await ev(() => window.__paw.fi.poll());
-  ok(o4b && o4b.joined.length === 1 && !o4b.bandana && (await mailIds()).includes('fi_host_2') && await ev(() => window.__paw.S.fi.n === 2), 'the next friend: a letter only');
+  ok(o4b && o4b.joined.length === 1 && !o4b.bandana && (await mailIds()).includes('fi_host_2') && await ev(() => window.__paw.S.fi.n === 2 && window.__paw.S.fi.thx.length === 2), 'the next friend: a letter only');
   await closeAll();
+  // code review 2: a guest invitee who turns on cloud save later sorts before a newer friend: each is still thanked once (row tokens, not a count)
+  const D = await player(false, 0, [13, 14]); await api('POST', '/friends/add', { code: A.code }, D.tok); await api('POST', '/invite/join', { code: A.code }, D.tok);
+  const E = await player(true, 0, [15, 16]); await api('POST', '/friends/add', { code: A.code }, E.tok); await api('POST', '/invite/join', { code: A.code }, E.tok);
+  const o4d = await ev(() => window.__paw.fi.poll()); await closeAll();
+  await api('POST', '/register', { email: 'v230-d@example.com', password: 'pupper123' }, D.tok);
+  const o4e = await ev(() => window.__paw.fi.poll()); await closeAll();
+  ok(o4d && o4d.joined.length === 1 && o4d.joined[0][0] === 15 && o4e && o4e.joined.length === 1 && o4e.joined[0][0] === 13 && await ev(() => window.__paw.S.fi.thx.length === 4), 'E thanked, then D (who registered later) too: ' + JSON.stringify([o4d && o4d.joined, o4e && o4e.joined]));
+  ok(!(await ev(() => JSON.stringify(window.__paw.S.fi))).includes(D.id) && (await ev(() => window.__paw.S.fi.thx.every((t) => /^[0-9a-f]{16}$/.test(t)))), 'the save keeps opaque tokens, never a user id');
+  const o4f = await ev(() => window.__paw.fi.poll()); await closeAll();
+  ok(o4f && !o4f.joined.length, 'nobody thanked twice');
+  // phone review 1: a background poll never closes an open window: a toast, and the letter keeps it
+  await ev(() => window.__paw.fr.open()); await t.until(() => !!document.querySelector('#modal .fr-sheet'), null, 4000);
+  await ev(() => window.__paw.fi.apply({ mine: null, joined: [{ t: 'feedbeef00000001', name: [17, 18] }] }, true));
+  ok(await ev(() => !!document.querySelector('#modal .fr-sheet') && !document.querySelector('#modal .fi-got')) && /Friendship Bandana/.test(await toasts()) && (await mailIds()).includes('fi_host_5'), 'a card from the poll while the Friends sheet is open: the sheet stays, a toast, the letter');
+  await ev(() => window.__paw.fi.apply({ mine: null, joined: [{ t: 'feedbeef00000002', name: [19, 20] }] }, true, true));
+  ok(await t.until(() => !!document.querySelector('#modal .fi-got #fiOk') && !document.querySelector('#modal .fr-sheet'), null, 3000), 'straight after a join from the Friends sheet: the card takes its place');
+  await closeAll();
+  // code review 7: "already friends" from the invite link still asks for the gift
+  await ev(() => { window.__paw.S.fi = { link: '', join: '', mine: 1, n: 0, wait: 0 }; });
+  const j7 = srv.count(null, '/invite/join');
+  await ev((c) => { window.__paw.fr.inviteSet(c); window.__paw.fr.open(); }, C.code);
+  ok(await t.until(() => !!document.getElementById('frCh0'), null, 4000), 'the invite opens Add');
+  await ev((c) => { window.__paw.fr.fillCode(c); return window.__paw.fr.add(); }, C.code);
+  ok(await t.until((n) => window.__paw.S.fi.join !== '', null, 4000) && srv.count(null, '/invite/join') === j7 + 1 && await ev(() => window.__paw.S.fi.join === 'no' && window.__paw.S.fi.link === ''), 'already friends: the join is still sent (here A is not new: a final no) ' + (await ev(() => JSON.stringify(window.__paw.S.fi))) + ' ' + (srv.count(null, '/invite/join') - j7) + ' ' + (await toasts()));
+  await closeAll();
+  // code review 1: an older Worker (404 not_found for a route it does not have): try later, keep everything, hide v2.30 for this load
+  await fake('/invite/join', 404, { error: 'not_found' });
+  await ev(() => { window.__paw.S.fi = { link: '', join: '', mine: 1, n: 0, wait: 0 }; });
+  const g1 = await ev(() => window.__paw.fi.join('DOG-QQQQQ'));
+  ok(g1 === null && await ev(() => window.__paw.S.fi.link === 'DOG-QQQQQ' && window.__paw.S.fi.join === '' && window.__paw.fi.gone() && window.__paw.fi.mode() === 'off' && !window.__paw.gl.on()), 'old Worker: S.fi.link kept, join not final, v2.30 hidden for the load');
+  await ev(() => window.__paw.fi.gone(false));
+  await fake('/town/goal', 404, { error: 'not_found' });
+  await ev(() => { window.__paw.S.goal.q = 7; });
+  await ev(() => window.__paw.gl.post(true));
+  ok(await ev(() => window.__paw.S.goal.q === 7 && window.__paw.fi.gone()), 'old Worker: the belly rubs stay waiting (7)');
+  await ev(() => window.__paw.fi.gone(false));
+  await fake('/invite/join', 404, { error: 'no_code' });
+  ok(await ev(() => window.__paw.fi.join('DOG-QQQQQ')) === 'no' && await ev(() => window.__paw.S.fi.link === '' && !window.__paw.fi.gone()), 'the new Worker\'s 404 no_code is final');
+  await fake(null); await ev(() => { window.__paw.S.goal.q = 0; window.__paw.S.fi = { link: '', join: '', mine: 1, n: 4, wait: 0, thx: [] }; });
+  // code review 8: the yard snapshot retry also drops the newer outfits (an older Worker's DC_LIM.outfit 58)
+  await ev(() => { window.__paw.S.outfit.neck = 'Friendship Bandana'; window.__paw.fr.decorOld(false); window.__paw.dc && window.__paw.dc.outfitOld && window.__paw.dc.outfitOld(false); });
+  await fake('/friends/yard', 400, { error: 'bad' });
+  await ev(() => window.__paw.fr.pushYard(true));
+  const ys = await ev(() => window.__pawCloudMock.sent.filter((x) => /\/friends\/yard/.test(x.u)).map((x) => JSON.parse(x.body).yard.dogs.map((d) => d.o)));
+  ok(ys.length === 2 && ys[0].includes(58) && ys[1].every((o) => o < 57), 'the yard snapshot: once more without the Friendship Bandana: ' + JSON.stringify(ys));
+  await fake(null); await ev(() => { window.__paw.S.outfit.neck = null; window.__paw.fr.decorOld(false); window.__paw.dc && window.__paw.dc.outfitOld && window.__paw.dc.outfitOld(false); });
   const o4c = await ev(() => { const S = window.__paw.S; S.fi = { link: '', join: '', mine: 0, n: 0, wait: 0 }; S.mail = S.mail.filter((m) => m.id !== 'fi_wait'); return window.__paw.fi.apply({ guest: true, mine: 0, joined: 2 }, false); });
   ok(o4c.wait === 'host' && await ev(() => /joined Doodle Doggo through your invite/.test(window.__paw.S.mail.find((m) => m.id === 'fi_wait').text)), 'a guest inviter: the waiting letter says a new player joined');
 
@@ -153,14 +212,26 @@ run('v230_together', async (t) => {
   ok(await ev(() => window.__paw.S.goal.q === 200), 'what waits is capped at 200');
   const row = raw.prepare('select n from town_goal where month = ?').get(month);
   ok(row && row.n === d6.took, 'the Worker counted it: ' + JSON.stringify(row));
-  // the Square: the Town goal button and Gerald's notice
+  // the Square: Gerald's note (with a meter) on the town notice board, no seventh place button (owner, 17 Nov)
   await t.home('square');
-  ok(await t.until(() => !!document.querySelector('#placeBtns [data-gl] .gl-mini'), null, 4000), 'the Square has a Town goal button with a tiny meter');
-  await ev(() => document.querySelector('#placeBtns [data-gl]').click());
+  ok(await t.until(() => !!document.querySelector('#view svg.world #glG [data-gl-hot] .gl-note-fill'), null, 4000) && await ev(() => !document.querySelector('#placeBtns [data-gl]')), 'the Square: Gerald\'s note with a meter on the notice board, no place button');
+  ok(await ev(() => +document.querySelector('#glG .gl-note-fill').getAttribute('width') > 0), 'the note\'s meter shows the town\'s count');
+  await shot('square_board_desktop');
+  await t.p.click('#glG [data-gl-hot]');
   ok(await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 5000), 'the sheet: the meter');
   ok(await ev(() => { const t = document.querySelector('.gl-sheet').textContent; return /belly rubs/.test(t) && /You added/.test(t) && /treat bag/.test(t) && !/@|#1|top 10/i.test(t); }), 'the sheet: the goal, my part, the gift; no names or ranks');
+  ok(await ev(() => !!document.querySelector('.gl-sheet .gl-page') && /<svg/.test(document.querySelector('.gl-sheet .gl-ic').innerHTML)), 'Gerald\'s notice on ruled paper, with Gerald');
   await shot('goal_sheet_desktop');
   await closeAll();
+  // the link at the top of Town projects
+  const prOk = await ev(() => !!(window.__paw.pr && window.__paw.pr.open && window.__paw.pr.open()));
+  if (prOk) {
+    ok(await t.until(() => !!document.querySelector('#modal .pr-sheet #glLink .gl-mini'), null, 3000), 'Town projects: the Town goal link with a thin meter at the top');
+    await shot('projects_link_desktop');
+    await ev(() => document.getElementById('glLink').click());
+    ok(await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 4000), 'the link opens Gerald\'s notice');
+    await closeAll();
+  } else ok(false, 'Town projects opens');
   // the town reaches the goal: the gift once
   raw.prepare('update town_goal set n = goal - 1 where month = ?').run(month);
   const food0 = await ev(() => Object.assign({}, window.__paw.S.inv.food));
@@ -179,12 +250,27 @@ run('v230_together', async (t) => {
   ok(await ev((p) => { const l = window.__paw.S.mail.find((x) => x.id === 'gl_miss_' + p); return !!l && /So close/.test(l.title) && /new goal/.test(l.text) && window.__paw.S.goal.miss === p && !window.__paw.S.goal.got.includes(p); }, prev), 'a missed month: the "So close!" letter, no gift, nothing bad');
   await ev(() => window.__paw.gl.fetch(true));
   ok(await ev((p) => window.__paw.S.mail.filter((x) => x.id === 'gl_miss_' + p).length === 1, prev), 'only once');
+  ok(await ev(([p, m]) => window.__paw.gl.gift({ month: p, goal: 10, n: 3, done: false, mine: 1 }, p) === null && window.__paw.gl.gift({ month: m, goal: 10, n: 3, done: false, mine: 1 }) === null, [prev, month]), 'code review 9: "So close!" only for a month before the Worker\'s month (never the device clock)');
+  // code review 10: a treat bag earned two or more months ago still comes (the Worker's owed list)
+  const old3 = (() => { let yy = y, mm = m - 3; if (mm < 1) { mm += 12; yy--; } return yy + '-' + String(mm).padStart(2, '0'); })();
+  raw.prepare('insert into town_goal (month, n, goal, done_at) values (?, 10000, 10000, 1)').run(old3);
+  raw.prepare('insert into town_goal_users (month, user_id, n) select ?, id, 0 from users').run(old3);
+  await ev(() => window.__paw.gl.fetch(true));
+  ok(await ev((o) => window.__paw.S.goal.got.includes(o) && window.__paw.S.mail.some((x) => x.id === 'gl_' + o && /part of it/.test(x.text)), old3), 'a month three months back that reached the goal: the treat bag still comes (took part with 0 counted: the kind wording)');
+  // code review 11: a 401 is not final (the join is asked again after the next log in)
+  const keep = await ev((k) => ({ tok: localStorage.getItem(k), uid: window.__pawCloud.CL.uid, email: window.__pawCloud.CL.email }), AUTH);
+  await fake('/invite/join', 401, { error: 'no_session' });
+  await ev(() => { window.__paw.S.fi = { link: '', join: '', mine: 1, n: 4, wait: 0, thx: [] }; });
+  await ev(() => window.__paw.fi.join('DOG-RRRRR'));
+  ok(await ev(() => window.__paw.S.fi.link === 'DOG-RRRRR' && window.__paw.S.fi.join === ''), 'a 401: not final, S.fi.link kept for after the log in');
+  await fake(null);
+  await ev(([k, o]) => { localStorage.setItem(k, o.tok); const C = window.__pawCloud.CL; C.uid = o.uid; C.email = o.email; C.anon = false; window.__paw.S.fi.link = ''; }, [AUTH, keep]);
   ok(await ev(() => { const s = window.__paw.gl.fields({ goal: { q: -3, got: 'x', sent: [], miss: 5 } }).goal; return s.q === 0 && Array.isArray(s.got) && !Array.isArray(s.sent) && s.miss === ''; }), 'glFields tidies odd values');
 
   sec('7. phone 360x640');
   const save = await ev(() => JSON.stringify(window.__paw.S));
   const tok = await ev((k) => localStorage.getItem(k), AUTH);
-  await cloudPage({ device: 'Phone 360x640', prefs: { btTest: true, frTest: true }, storage: { pawhaven_proto_v1: save, [AUTH]: tok } });
+  await cloudPage({ device: 'Phone 360x640', prefs: { btTest: true, frTest: true, prTest: true }, storage: { pawhaven_proto_v1: save, [AUTH]: tok } });
   if (await t.p.locator('#tContinue').count()) await t.p.click('#tContinue');
   await t.calm(); await t.lu();
   await t.until(() => !!(window.__paw && window.__paw.gl && window.__paw.fi), null, 8000);
@@ -213,9 +299,12 @@ run('v230_together', async (t) => {
   ok(!a.bad.length && a.pw <= 360 && !a.over, 'the town goal sheet fits: ' + JSON.stringify(a));
   await closeAll();
   await t.home('square');
-  ok(await t.until(() => !!document.querySelector('#placeBtns [data-gl]'), null, 4000), 'the phone Square has the button');
-  const b = await ev(() => { const r = document.querySelector('#placeBtns [data-gl]').getBoundingClientRect(); return { w: r.width, h: r.height, r: r.right, vw: innerWidth }; });
-  ok(b.w >= 44 && b.h >= 44 && b.r <= b.vw + 0.5, 'its button is 44 px or more and on screen: ' + JSON.stringify(b));
+  ok(await t.until(() => !!document.querySelector('#view svg.world #glG [data-gl-hot]'), null, 4000) && await ev(() => !document.querySelector('#placeBtns [data-gl]')), 'the phone Square has Gerald\'s note, no place button');
+  const b = await ev(() => { const r = document.querySelector('#glG [data-gl-hot] rect').getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; });
+  ok(b.w >= 44 && b.h >= 44, 'its tap box is 44 px or more: ' + JSON.stringify(b));
   await shot('square_phone');
+  await ev(() => { const n = document.querySelector('#glG [data-gl-hot]'); n.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  ok(await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 5000), 'a tap on the note opens Gerald\'s notice');
+  await closeAll();
 });
 
