@@ -106,7 +106,7 @@ function scSquareBuilt() {
 function scLayer() {
   let L = $('#scLayer'); if (L) return L;
   L = document.createElement('div'); L.id = 'scLayer'; L.className = 'sc-layer'; L.hidden = true;
-  L.setAttribute('role', 'dialog'); L.setAttribute('aria-modal', 'true');
+  L.setAttribute('role', 'dialog'); L.setAttribute('aria-modal', 'true'); L.tabIndex = -1; // test round d: the focus moves into the scene (Tab stays in it: 00_core.js a11yTop) and back after
   L.innerHTML = '<div class="sc-film"><svg class="sc-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g class="sc-cam"></g></svg><div class="sc-title" hidden></div><div class="sc-fade"></div></div>'
     + '<div class="sc-foot"><p class="sc-cap" aria-live="polite"></p><button class="btn sc-skip" type="button" hidden></button></div>';
   ($('#stage') || document.body).appendChild(L);
@@ -120,10 +120,11 @@ function scPlay(id, o) {
   const L = scLayer(), d = D();
   const shots = sc.shots(d).map((x) => Object.assign({ d: 4, cam: [[500, 300, 1], [500, 300, 1]], actors: [] }, x));
   const total = shots.reduce((n, x) => n + x.d * 1000, 0);
-  SC.on = { id, sc, shots, total, t0: performance.now(), shot: -1, o, dog: d, skipAt: SC_SKIP_MS, still: scStill(), hid: document.hidden ? performance.now() : 0 };
+  SC.on = { id, sc, shots, total, t0: performance.now(), shot: -1, o, dog: d, skipAt: SC_SKIP_MS, still: scStill(), hid: document.hidden ? performance.now() : 0, from: typeof a11yFrom === 'function' ? a11yFrom() : null };
   L.setAttribute('aria-label', sc.title ? sc.title() : id);
   $('.sc-skip', L).textContent = tt('sc.skip', 'Skip'); $('.sc-skip', L).hidden = true;
   L.hidden = false; L.classList.toggle('sc-still', SC.on.still);
+  try { L.focus({ preventScroll: true }); } catch (e) { /* not focusable */ }
   try { if (typeof rmPause === 'function') rmPause('scene'); } catch (e) { /* no roaming */ }
   try { if (typeof hideBubble === 'function') hideBubble(); } catch (e) { /* no bubble */ }
   try { if (typeof toastPark === 'function') toastPark(); } catch (e) { /* no toasts */ } // toasts wait until the scene ends
@@ -138,6 +139,7 @@ function scEnterShot(i) {
   x.actors.forEach((a) => { if (a.who === 'dog' && (!a.dog || a.dog === 'other' || a.dog === 'pup')) a.dog = a.dog === 'other' ? scOtherDog(P.dog) : a.dog === 'pup' ? scPup() || scOtherDog(P.dog) : P.dog; });
   const parts = x.actors.map((a, k) => scActorInner(a, P.poses[k])); P.sz = parts.map((q) => [q[1], q[2]]);
   $('.sc-cam', L).innerHTML = scBg(x.bg || 'card') + `<g class="sc-acts">${parts.map((q, k) => `<g class="sc-a" data-a="${k}">${q[0]}</g>`).join('')}</g>`;
+  $('.sc-cam', L).querySelectorAll('[tabindex]').forEach((e) => e.setAttribute('tabindex', '-1')); // test round d: the yard backdrop's own hot spots (the garden gate) are only a picture here, never a Tab stop
   const T = $('.sc-title', L), tl = x.title ? x.title() : ''; T.hidden = !tl; T.textContent = tl;
   P.bx = scMeasure(x, P.poses); P.fit = null;
   const c = $('.sc-cap', L); c.textContent = x.cap ? x.cap() : ''; c.classList.remove('sc-in'); void c.offsetWidth; c.classList.add('sc-in');
@@ -283,7 +285,8 @@ function scFrame(now) {
 }
 function scEnd(skipped) {
   const P = SC.on; if (!P) return; SC.on = null; cancelAnimationFrame(SC.raf);
-  const L = scLayer(); L.hidden = true; $('.sc-cam', L).innerHTML = ''; SC.lastEnd = Date.now(); SC.calm = 0;
+  const L = scLayer(), had = L.contains(document.activeElement); L.hidden = true; $('.sc-cam', L).innerHTML = ''; SC.lastEnd = Date.now(); SC.calm = 0;
+  if (had && typeof a11yBack === 'function') a11yBack(P.from); // a keyboard player lands back where they were (a sheet that opens next takes it from there)
   try { lastTick = performance.now(); } catch (e) { /* the loop has its own clock */ }
   try { if (typeof rmResume === 'function') rmResume('scene'); } catch (e) { /* no roaming */ }
   try { if (typeof toastNext === 'function') toastNext(); } catch (e) { /* no toasts */ }

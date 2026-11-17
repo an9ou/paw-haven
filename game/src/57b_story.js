@@ -288,7 +288,7 @@ function smMemList() { const T = S.story; return SM_MEM.concat(Object.keys(T.m).
 function smMemHTML() {
   const T = S.story, L = smMemList();
   if (!L.length) return `<p class="sm-empty">${esc(tt('sm.mem_empty', 'Your Memories album is empty for now. Every scene you see is kept here to watch again.'))}</p>`;
-  return `<ul class="sm-mem">${L.map((id) => { const sc = SC_SCRIPTS[id]; return `<li class="sm-mcard${T.w[id] ? '' : ' new'}"><span class="sm-mart" aria-hidden="true">${doodleSVG(sc.icon || 'heart')}</span><span class="sm-mt"><b>${esc(sc.title())}</b><span class="small">${esc(T.w[id] ? fmtDate(T.m[id]) : tt('sm.mem_new', 'Not watched yet'))}</span></span><button class="btn yes sm-play" type="button" data-smplay="${id}">${esc(tt('sm.watch', 'Watch'))}</button></li>`; }).join('')}</ul>`;
+  return `<ul class="sm-mem">${L.map((id) => { const sc = SC_SCRIPTS[id]; return `<li class="sm-mcard${T.w[id] ? '' : ' new'}"><span class="sm-mart" aria-hidden="true">${doodleSVG(sc.icon || 'heart')}</span><span class="sm-mt"><b>${esc(sc.title())}</b><span class="small">${esc(T.w[id] ? fmtDate(T.m[id]) : tt('sm.mem_new', 'Not watched yet'))}</span></span><button class="btn yes sm-play" type="button" data-smplay="${id}" aria-label="${esc(tt('sm.watch_aria', 'Watch: {title}', { title: sc.title() }))}">${esc(tt('sm.watch', 'Watch'))}</button></li>`; }).join('')}</ul>`;
 }
 function fmtDate(iso) { try { return new Date(iso + 'T12:00:00').toLocaleDateString(typeof I18N !== 'undefined' && I18N.intl ? I18N.intl : undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return String(iso || ''); } }
 function smOpen(tab) {

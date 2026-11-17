@@ -4,7 +4,7 @@ function enterTitle() {
   const has = !!loadSave() || !!(S && S.dog);
   const rings = `<svg viewBox="0 0 44 600" preserveAspectRatio="none">${Array.from({ length: 13 }, (_, i) => `<ellipse cx="25" cy="${24 + i * 46}" rx="6" ry="6" fill="#E6D7BF" stroke="${INKG}" stroke-width="1.6"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="#A8968A" stroke-width="3" stroke-linecap="round"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="${INKG}" stroke-width="1.3"/>`).join('')}</svg>`;
   const doodles = `<svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">${doodle('spark', 120, 70, 1.3)}${doodle('spark', 690, 120, 0.9)}${doodle('spark', 150, 330, 0.7)}${doodle('heart', 660, 62, 1.2, 12)}${doodle('heart', 718, 330, 0.8, -10)}${doodle('note', 96, 190, 1.1, -8)}${doodle('note', 700, 230, 0.9, 10)}<g class="dd-low">${doodle('flower', 640, 420, 1.2)}${doodle('flower', 100, 430, 0.9, 20)}${doodle('paw', 250, 450, 0.8, -20)}${doodle('paw', 300, 470, 0.8, -10)}${doodle('paw', 350, 455, 0.8, -25)}${doodle('bone', 560, 455, 1.1, -8)}</g></svg>`;
-  titleEl.innerHTML = `<div class="bg">${art('scene', 'yard', envNow())}</div>
+  titleEl.innerHTML = `<div class="bg" aria-hidden="true">${art('scene', 'yard', envNow())}</div>
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
       <h1 class="logo" aria-label="Doodle Doggo"><span style="transform:rotate(-3deg)">Doodle</span> <span style="transform:rotate(2deg) translateY(4px)">Doggo</span></h1>
       <div class="tagline">${tt('title.a_cozy_dog_game_sketchbook', 'a cozy dog game, sketchbook edition')}</div>
@@ -13,6 +13,7 @@ function enterTitle() {
     </div>
     <div class="tdog2" aria-hidden="true">${art('dog', 'dachs', { pose: 'idle' })}</div>
     <div class="tdog" aria-hidden="true">${art('dog', 'corgi', { pose: 'happy', facing: 'left' })}</div>`;
+  titleEl.querySelectorAll('.bg [tabindex]').forEach((e) => e.setAttribute('tabindex', '-1')); // test round d: the yard behind the cover is a picture: its garden gate is no Tab stop before Play
   tAcctKey = ''; titleAcctRender(); titleLangBind(); // v2.14: the first-run language chip (I18N CORE, 20_settings_dev.js)
 }
 

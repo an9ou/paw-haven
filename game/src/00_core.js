@@ -1652,8 +1652,9 @@ function doAct(a) {
 let modalClose = null;
 function openModal(title, bodyHTML, opts = {}) {
   if (cur.mode === 'yard' && popOpen()) S.sleeping ? sleepTray() : dockIdle();
+  if (modal.hidden) a11yOpener = a11yFrom(); // test round d: the button that opened the sheet gets the focus back when it closes (keyboard only)
   if (!modal.hidden) toastDrop('s:' + modalSeq); modalSeq++; // v2.22: a sheet that is replaced takes its "Nope" toasts with it
-  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
+  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, '').replace(/&(amp|lt|gt|quot|#39);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" }[k])))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
@@ -1661,9 +1662,44 @@ function openModal(title, bodyHTML, opts = {}) {
   return p;
 }
 function closeModal() {
-  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastDrop('s:' + modalSeq); toastWatchSheet(null); toastNext(); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
+  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastDrop('s:' + modalSeq); toastWatchSheet(null); toastNext(); toastPlace(); } audioPlace(); const back = a11yOpener; a11yOpener = null; a11yBack(back); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+/* Keyboard a11y (test round d, Nov 2026): a sheet is aria-modal, so Tab and Shift+Tab wrap inside it (the story scene and a buy box on top of a sheet
+   too) instead of walking on to the HUD behind it; a sheet closed from the keyboard puts the focus back on the button that opened it (a tile in a
+   phone tray that has closed hands it to the tray's own bar button). A mouse or a touch changes nothing: the focus is only moved after keys. */
+let a11yOpener = null, a11yKeys = false;
+window.addEventListener('keydown', (e) => { if (['Tab', 'Enter', ' ', 'Escape'].includes(e.key)) a11yKeys = true; }, true);
+window.addEventListener('pointerdown', () => { a11yKeys = false; }, true);
+let a11yLast = null; document.addEventListener('focusin', (e) => { if (!modal.contains(e.target)) a11yLast = e.target; }, true); // a phone tray tile hides as its sheet opens: its focus is gone by then
+function a11yFrom() { let a = document.activeElement; if (!a || a === document.body || a === document.documentElement) a = a11yLast && a11yLast.isConnected ? a11yLast : null; return a && !modal.contains(a) && !(a.closest && a.closest('#scLayer')) ? a : null; }
+const A11Y_FOC = 'button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
+const a11yShown = (e) => !!e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[hidden],[inert]');
+function a11yBack(el) {
+  if (!el || !a11yKeys || !el.isConnected) return;
+  if (!a11yShown(el)) { const pop = el.closest('.barpop'); el = pop ? document.querySelector(`#bar .act[data-act="${pop.dataset.pop}"]`) : null; if (!el || !a11yShown(el)) return; }
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return; // never pop a phone keyboard up
+  try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ }
+}
+// a scroll box with nothing focusable inside takes the Tab itself in Chromium (so the arrow keys can scroll it): keep it in the loop
+function a11yScroller(x) { if (x.scrollHeight <= x.clientHeight + 1 && x.scrollWidth <= x.clientWidth + 1) return false; const o = getComputedStyle(x); return /auto|scroll/.test(o.overflowY + o.overflowX) && !x.querySelector(A11Y_FOC); }
+function a11yTop() {
+  const sc = document.getElementById('scLayer'); if (sc && !sc.hidden) return sc;
+  if (modal.hidden) return null;
+  const L = [...modal.querySelectorAll('[aria-modal="true"]')].filter(a11yShown); return L[L.length - 1] || $('.panel', modal);
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+  const root = a11yTop(); if (!root) return;
+  const a = document.activeElement, f = [...root.querySelectorAll(A11Y_FOC + ',div,section,ul,ol')].filter((x) => (x.matches(A11Y_FOC) || a11yScroller(x)) && a11yShown(x));
+  const side = root.id === 'scLayer' ? [] : [...document.querySelectorAll('#gdLayer .gd-card button, #toasts button')].filter(a11yShown), si = side.indexOf(a); // Gerald's card and an Undo toast next to the sheet stay in the loop
+  if (si >= 0) { const n = si + (e.shiftKey ? -1 : 1), to = side[n] || (e.shiftKey ? f[f.length - 1] : f[0]); if (to) { e.preventDefault(); to.focus(); } return; }
+  if (!f.length) { e.preventDefault(); if (root.tabIndex >= -1 && root !== a) try { root.focus({ preventScroll: true }); } catch (x) { /* not focusable */ } return; }
+  const inRoot = !!a && root.contains(a);
+  const fwd = inRoot && f.some((x) => x !== a && a.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING), bwd = inRoot && f.some((x) => x !== a && a.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_PRECEDING);
+  if (e.shiftKey ? bwd : fwd) return; // the browser moves on inside the sheet
+  e.preventDefault(); ((inRoot && side.length) ? (e.shiftKey ? side[side.length - 1] : side[0]) : e.shiftKey ? f[f.length - 1] : f[0]).focus();
+}, true);
 function confirmIn(panel, html, yes = tt('core.yes', 'Yes'), no = tt('core.no', 'No')) {
   return new Promise((res) => {
     const old = panel.querySelector('.confirm'); if (old) old.remove();

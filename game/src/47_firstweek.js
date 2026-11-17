@@ -266,6 +266,12 @@ function fwDockApply() {
 bar.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('.act'); if (!b || !S || !S.fw || !S.fw.dockNew[b.dataset.act]) return; delete S.fw.dockNew[b.dataset.act]; markDirty(); fwDockApply(); }, true);
 // a tap anywhere outside the bar closes an open tray
 window.addEventListener('pointerdown', (e) => { if (fwBarOpen() && !(e.target.closest && e.target.closest('#bar'))) fwBarPop(null); }, { capture: true });
+// test round d: Escape closes an open bar tray (Care, More) and hands the focus back to its button when it was in the tray
+window.addEventListener('keydown', (e) => {
+  const k = e.key === 'Escape' && modal.hidden && fwBarOpen(); if (!k) return;
+  e.preventDefault(); e.stopImmediatePropagation(); const inBar = bar.contains(document.activeElement); fwBarPop(null);
+  const b = bar.querySelector(`.act[data-act="${k}"]`); if (b && inBar) try { b.focus({ preventScroll: true }); } catch (x) { /* gone */ }
+}, { capture: true });
 on('phone:layout', () => { if (S || bar.childElementCount) barLabels(); });
 /* ---------------- 4. the calendars ---------------- */
 const FW_BAG = [['Bone-shaped Biscuit', 3], ['Carrot Sticks', 2], ['Blueberry Bites', 2]]; // the treat bag: dog-safe snacks only
