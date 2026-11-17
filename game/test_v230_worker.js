@@ -169,7 +169,7 @@ const sec = (s) => console.log('--- ' + s);
     DB.raw.prepare('delete from users where id = ?').run(C.id);
     DB.raw.prepare('delete from users where id = ?').run(G.id);
     await call('GET', '/'); // btTidy runs from tidy() (after every request under TIDY), not on the v2.30 routes
-    ok(!/btTidySoon/.test(src) && /async function tidy\(env\)[\s\S]*?btTidy\(env, now\)[\s\S]*?\n\}/.test(src), 'btTidy only from tidy()');
+    ok(!/btTidySoon/.test(src) && /async function tidy\(env\)[\s\S]*?btTidySt\(env, now\)[\s\S]*?\n\}/.test(src), 'btTidy only from tidy()');
     ok(n('select count(*) as n from invites where new_id = ?', C.id) === 0, 'a deleted account: its invite row goes');
     ok(n('select count(*) as n from town_goal_users where user_id = ?', G.id) === 0, 'and its town goal rows');
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }

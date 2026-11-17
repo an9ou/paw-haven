@@ -173,8 +173,9 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
-  try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
-  if (env.TIDY || Math.random() < 0.1) try { await btTidy(env, now); } catch (e) { /* v2.30: the invites / town_goal tables not made yet (schema first) */ }
+  // v2.25.5 gift codes, and (1 in 10 of these runs) v2.30's btTidy in the same round trip; a table not made yet (schema first): the promo one alone
+  const promo = env.DB.prepare('delete from promo_redemptions where user_id not in (select id from users)');
+  try { await env.DB.batch([promo].concat(env.TIDY || Math.random() < 0.1 ? btTidySt(env, now) : [])); } catch (e) { try { await promo.run(); } catch (e2) { /* promo tables not made yet */ } }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
@@ -1498,13 +1499,13 @@ async function glMine(env, month, uid) {
 }
 // an opaque token for one invite row as its inviter sees it (the game thanks each once): a hash, never the new player's user id
 async function btRowTok(inviter, nid) { return (await sha256('inv1:' + inviter + ':' + nid)).slice(0, 16); }
-// from tidy() (1 in 10 of its runs: about 1 in 1,000 requests; every one under env.TIDY), never on a v2.30 route's own path: the NOT IN scans stay off the hot path (review 17 Nov)
-async function btTidy(env, now) {
+// btTidy: from tidy() (1 in 10 of its runs: about 1 in 1,000 requests; every one under env.TIDY), in the promo delete's batch, never on a v2.30 route's own path: the NOT IN scans stay off the hot path (review 17 Nov)
+function btTidySt(env, now) {
   const old = dcDay(now - 400 * 864e5).slice(0, 7); // about 13 months
-  await env.DB.batch([
+  return [
     env.DB.prepare('delete from invites where new_id not in (select id from users) or inviter_id not in (select id from users)'),
     env.DB.prepare('delete from town_goal_users where user_id not in (select id from users)'),
     env.DB.prepare('delete from town_goal_users where month < ?1').bind(old),
     env.DB.prepare('delete from town_goal where month < ?1').bind(old)
-  ]);
+  ];
 }
