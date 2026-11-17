@@ -175,6 +175,7 @@ function shareDog(opts) {
     SH.busy = true;
     try {
       const how = await shDeliver(rec.blob, d); SH.how = how || '';
+      if ((how === 'share' || how === 'download') && S.st) { S.st.pc = (S.st.pc || 0) + 1; markDirty(); } // the v2.28 postcard count (S.st.pc) counts the shared pictures too
       if (how === 'download') toast(tt('sh.saved', 'Picture saved. Look in your downloads.'), 'good');
       else if (how === 'share') SFX.boop(760);
       else if (how === 'hold') { const n = $('.sh-note', p); if (n) { n.textContent = tt('sh.hold', 'Press and hold the picture to save it.'); n.classList.add('sh-hold'); } }
@@ -205,7 +206,7 @@ document.addEventListener('click', (e) => {
   const b = e.target && e.target.closest && e.target.closest('[data-shmoment]'); if (!b || !S) return;
   e.stopPropagation(); const o = shMomentOpts(b.dataset.shmoment); if (!o) return;
   hideMomentChip();
-  if (!modal.hidden) { SFX.click(); closeModal(); } // the card closes as with its own button (a Bond 2 party still gets its Paw), then the sheet opens
+  if (!modal.hidden) { SFX.click(); closeModal(); } // the card closes as with its own button (its onClose runs), then the sheet opens
   setTimeout(() => shareDog(o), 80);
 });
 // after a story scene that was watched to the end: a small chip under the top bar for a few seconds
