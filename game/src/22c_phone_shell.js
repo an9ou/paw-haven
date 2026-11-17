@@ -50,11 +50,18 @@ function psSheetOpen() { return isPhone() && (!modal.hidden || (typeof popOpen =
 
 /* ---------- the "..." menu: Settings, sound, cloud status ---------- */
 function psCloud() { try { return typeof cloudStatus === 'function' ? cloudStatus() : null; } catch (e) { return null; } }
+// v2.31 review: on screens without the phone bar (the garden, the kitchen, the bath, Tokyo, a walk) the More tray is not there, so the menu keeps its
+// pages as rows, as before v2.31 (no camera, Share, Wardrobe or Journal: those belong to the yard)
+function psMoreRows() {
+  if (!bar.hidden || typeof fwPopList !== 'function' || !S) return '';
+  return fwPopList('more').filter((a) => !['photo', 'share', 'wardrobe', 'journal'].includes(a)).map((a) => `<button class="btn big" type="button" data-mt="${a}"><span class="ic">${fwActIcon(a)}</span>${esc(fwActLabel(a))}</button>`).join('');
+}
 function openMore() { // v2.31: Settings, Sound, Have a code and Cloud only; Photo, Share, Story, Calendar, News, Missions, Friends and the Kind shop are tiles in the More tray (47_firstweek.js)
   const cs = psCloud(), hasCloud = !!cs || typeof cloudOpen === 'function';
-  const p = openModal(esc(tt('phone.menu', 'Menu')), `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>${esc(tt('phone.settings', 'Settings'))}</button><button class="btn big" id="mmMute"><span class="ic">${ICON(prefs.mute ? 'sound-on' : 'sound-off')}</span>${esc(prefs.mute ? tt('phone.sound_on', 'Sound on') : tt('phone.mute', 'Mute sound'))}</button>${typeof pmMenuBtn === 'function' ? pmMenuBtn() : ''}${hasCloud ? `<button class="btn big" id="mmCloud">${esc(tt('phone.cloud', 'Cloud save'))}</button>` : ''}${cs && cs.text ? `<p class="ps-cloud" data-state="${esc(cs.state || '')}" id="mmCloudTxt">${esc(cs.text)}</p>` : ''}</div>`, { cls: 'ps-more' });
+  const p = openModal(esc(tt('phone.menu', 'Menu')), `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>${esc(tt('phone.settings', 'Settings'))}</button><button class="btn big" id="mmMute"><span class="ic">${ICON(prefs.mute ? 'sound-on' : 'sound-off')}</span>${esc(prefs.mute ? tt('phone.sound_on', 'Sound on') : tt('phone.mute', 'Mute sound'))}</button>${psMoreRows()}${typeof pmMenuBtn === 'function' ? pmMenuBtn() : ''}${hasCloud ? `<button class="btn big" id="mmCloud">${esc(tt('phone.cloud', 'Cloud save'))}</button>` : ''}${cs && cs.text ? `<p class="ps-cloud" data-state="${esc(cs.state || '')}" id="mmCloudTxt">${esc(cs.text)}</p>` : ''}</div>`, { cls: 'ps-more' });
   $('#mmSet', p).onclick = () => { closeModal(); openSettings(); };
   $('#mmMute', p).onclick = () => { closeModal(); $('#muteBtn').click(); };
+  p.querySelectorAll('[data-mt]').forEach((b) => { b.onclick = () => { const a = b.dataset.mt; closeModal(); setTimeout(() => doAct(a), 60); }; }); // v2.31 review: the More tray's pages where the bar is hidden
   const mpr = $('#mmPromo', p); if (mpr) mpr.onclick = () => { closeModal(); setTimeout(pmOpen, 60); }; // v2.25.5: Have a code? (55_promo.js)
   const cb = $('#mmCloud', p); if (cb) cb.onclick = () => { closeModal(); if (typeof cloudOpen === 'function') cloudOpen(); else openSettings(); };
   // fix batch (phone 13): with 9-10 rows the menu scrolls at 360x640; the list fades out at the bottom while there is more below, so the scroll is plain

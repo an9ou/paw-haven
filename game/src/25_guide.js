@@ -128,6 +128,9 @@ function gdPlace(force) {
 function gdRing(tray) {
   const ring = $('.gd-ring', gd.layer), tg = gdTarget(S.guide.step, tray);
   if (!tg) { ring.hidden = true; gd.ringKey = ''; return; }
+  // v2.31 review: while a phone bar tray is open (the More tile sheet covers most of the yard), a ring on anything outside that tray would sit on its
+  // tiles and their labels: it waits, and comes back on the next tick once the tray closes
+  const bo = typeof fwBarOpen === 'function' ? fwBarOpen() : null; if (bo && !(tg.e && tg.e.closest && (tg.e.closest(`#bar .barpop[data-pop="${bo}"]`) || tg.e.closest('#bar > .act')))) { ring.hidden = true; return; }
   // v2.14 fit: the ring stays inside the stage (a target on the stage's edge, like the Walk button on phones, used to push #stage sideways)
   const pad = tg.sel === '#dogHit' ? 10 : 8, r = tg.r, sw = stage.clientWidth, sh = stage.clientHeight;
   const l = Math.max(1, Math.round(r.l - pad)), t = Math.max(1, Math.round(r.t - pad)), W = Math.min(sw - 1, Math.round(r.r + pad)) - l, H = Math.min(sh - 1, Math.round(r.b + pad)) - t, key = `${S.guide.step}|${W}x${H}`;

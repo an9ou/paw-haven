@@ -208,7 +208,7 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
   ]
 };
 const NEWS_V231 = { // v2.31 "Share my dog" (first impressions + Share my dog, 58_share.js)
-  id: '2.31', date: '2026-11-18', c: '#E3DAF2', d: 'heart', pic: 'dog', // LAUNCH DATE: only this news entry waits for it; the fixes ship as they are
+  id: '2.31', date: '2026-11-19', c: '#E3DAF2', d: 'heart', pic: 'dog', // LAUNCH DATE: only this news entry waits for it; the fixes ship as they are
   title: () => tt('nw.v231.title', 'Share my dog'),
   items: [
     { ic: () => nwSafe(() => shIcon()), tx: () => tt('nw.v231.share', 'Share your dog: a big crayon picture of your dog in your own yard, ready for a post or a story') },

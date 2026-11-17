@@ -271,7 +271,7 @@ function wfTiles(rows, cls) {
 function endWalk(complete) {
   if (!W || W.ended) return; W.ended = true; pottyWalked(); cancelAnimationFrame(W.raf);
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
-  if (!W.found && !S.walks) { const ff = firstWalkFind(W.area); if (ff) W.found = ff; } // v2.30.1: the first walk always finds something
+  if (!W.found && !S.walks && frac > 0.05) { const ff = firstWalkFind(W.area); if (ff) W.found = ff; } // v2.30.1: the first walk always finds something (v2.31 review: once it covered ground; a walk turned home at the start stays uncounted, so the next one is still the first)
   const base = Math.round(RAND(R.coins[0], R.coins[1]) * frac);
   const penny = S.outfit.charm === 'Lucky Penny' ? 1.1 : 1;
   const wk = frac > 0.05 || W.found ? walkCount() : null; // Daily rhythm: a walk that counts is walk n of the Japan day; after the 5th, half coins (the pouch part stays whole)

@@ -1706,7 +1706,18 @@ const cur = { mode: null, cleanup: [] };
 function onCleanup(fn) { cur.cleanup.push(fn); }
 function setChrome(hudOn, barOn) { hud.hidden = !hudOn; bar.hidden = !barOn; stage.classList.toggle('nobar', !barOn); if (hudOn) setHudDog(); requestAnimationFrame(() => stage.style.setProperty('--hudH', (hud.hidden ? 0 : hud.offsetHeight) + 'px')); }
 let hudDogKey = '';
-function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; requestAnimationFrame(hudTitleFit); $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+// v2.31 review (phone_v222_levels): on phones a long title ("Friendly Neighbour" with 5 dogs and a 5-digit purse at 360 px) shrinks to fit the
+// room left of the level star (down to 13 px, a hair tighter), and only then ends in an ellipsis; the star keeps its 44 px box. Re-fit on resize.
+function hudTitleFit() {
+  const ht = $('#hudTitle'); if (!ht) return;
+  ht.style.fontSize = ''; ht.style.letterSpacing = ''; ht.style.paddingRight = '';
+  if (ht.hidden || !isPhone() || !ht.clientWidth || ht.scrollWidth <= ht.clientWidth + 1) return;
+  const f0 = parseFloat(getComputedStyle(ht).fontSize) || 17, pad = 4, f = Math.max(13, Math.floor(f0 * (ht.clientWidth - pad) / (ht.scrollWidth - pad) * 4) / 4);
+  ht.style.fontSize = f + 'px';
+  if (ht.scrollWidth > ht.clientWidth + 1) { ht.style.letterSpacing = '-0.02em'; ht.style.paddingRight = '2px'; }
+}
+if (typeof ResizeObserver === 'function' && $('#hudTitle')) { let hfT = 0; new ResizeObserver(() => { cancelAnimationFrame(hfT); hfT = requestAnimationFrame(hudTitleFit); }).observe($('#hudTitle')); }
 function go(mode, arg) {
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }

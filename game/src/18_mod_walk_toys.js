@@ -35,7 +35,7 @@ function enterWalkMod(area) {
 function finishWalkMod(R, r) {
   pottyWalked();
   const e = W.env, rainCoat = e.weather === 'rain' && hasRaincoat();
-  if (W.first && !(r.treasure && (r.treasure.name || r.treasure.coins))) { const ff = firstWalkFind(W.area); if (ff) r.treasure = { name: ff.item.n, dup: false, gift: true }; } // v2.30.1: the first walk always finds something
+  if (W.first && (!r.early || (+r.distance || 0) >= 2) && !(r.treasure && (r.treasure.name || r.treasure.coins))) { const ff = firstWalkFind(W.area); if (ff) r.treasure = { name: ff.item.n, dup: false, gift: true }; } // v2.30.1: the first walk always finds something
   const went = !r.early || (+r.distance || 0) >= 2 || !!r.treasure; // a walk headed home at the start covered no ground: it is not one of the day's walks, no friend coins, no letter (as the classic walk's frac > 0.05)
   const wk = went ? walkCount() : null, raw = Math.max(0, +r.coins || 0), pouch = Math.round((W.pouch || 0) * (S.outfit.charm === 'Lucky Penny' ? 1.1 : 1)); // Daily rhythm: walks after the 5th today pay half (the runner's pouch coins stay whole)
   const c0 = S.coins, pay = addCoins(pkWalkCoins(walkShare(raw, pouch, wk ? wk.share : 1))); // v2.9 PACK: one walk's pay, +10% (rounded down) when 2 or more dogs walk

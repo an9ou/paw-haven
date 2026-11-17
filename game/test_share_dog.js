@@ -58,6 +58,12 @@ run('share_dog', async (t) => {
   const d = await dl;
   ok(!!d && /^doodle-doggo-shiba-\d{4}-\d{2}-\d{2}\.png$/.test(d.suggestedFilename()) && await ev(() => window.__paw.sh.how() === 'download'), 'no share sheet (desktop): the PNG downloads: ' + (d && d.suggestedFilename()));
   ok(await t.waitToast(/Picture saved/, 3000), 'a kind toast says where it went');
+  { // v2.31 review: inside the itch.io iframe navigator.share can exist and still be refused (NotAllowedError): the picture downloads instead
+    await ev(() => { window.__shNav = [navigator.share, navigator.canShare]; navigator.share = () => Promise.reject(new DOMException('blocked in this frame', 'NotAllowedError')); navigator.canShare = () => true; });
+    const dl2 = t.p.waitForEvent('download', { timeout: 8000 }).catch(() => null); await t.p.click('#shGo'); const d2 = await dl2;
+    ok(!!d2 && await ev(() => window.__paw.sh.how() === 'download'), 'a refused share (the itch.io iframe) falls back to the download');
+    await ev(() => { navigator.share = window.__shNav[0]; navigator.canShare = window.__shNav[1]; });
+  }
   await ev(() => window.__paw.sh.force('nodownload')); await t.p.click('#shGo');
   ok(await t.until(() => window.__paw.sh.how() === 'hold' && /Press and hold/.test(document.querySelector('#modal .sh-note').textContent), null, 4000), 'no share and no download (the claude.ai sandbox): "Press and hold the picture to save it"');
   await ev(() => window.__paw.sh.force(''));
