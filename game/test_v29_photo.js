@@ -18,7 +18,7 @@ run('v29_photo', async (t) => {
   ok(await t.until(() => !!(window.__paw && window.__paw.ph), null, 5000) && await API(), 'the test hook exists');
 
   sec('the camera button: next to the sound button, only where it belongs');
-  ok(await ev(() => { const m = document.getElementById('muteBtn'), c = document.getElementById('phBtn'); return !c.hidden && m.nextElementSibling === c && !!c.querySelector('svg'); }), 'yard: the camera button sits right after #muteBtn and has an icon');
+  ok(await ev(() => { const m = document.getElementById('muteBtn'), c = document.getElementById('phBtn'); let n = m.nextElementSibling; while (n && n.id === 'smBtn') n = n.nextElementSibling; return !c.hidden && n === c && !!c.querySelector('svg'); }), 'yard: the camera button sits right after #muteBtn (after the v2.29 Story button) and has an icon');
   ok(await ev(() => /camera|photo/i.test(document.getElementById('phBtn').getAttribute('aria-label'))), 'the camera button has a label');
   const hb = await ev(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; }; return { m: r('muteBtn'), c: r('phBtn'), g: r('gearBtn') }; });
   ok(hb.c[0] >= hb.m[1] - 0.5 && hb.c[1] <= hb.g[0] + 0.5 && Math.abs(hb.c[2] - hb.m[2]) < 4, `on screen the camera sits straight after the sound button, before the gear (mute ${hb.m.map(Math.round)}, camera ${hb.c.map(Math.round)}, gear ${hb.g.map(Math.round)})`);
