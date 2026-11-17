@@ -207,8 +207,8 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
     { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
   ]
 };
-const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); date 19 Nov 2026 JST
-  id: '2.29.1', date: '2026-11-19', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
+const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); date 18 Nov 2026 JST (owner, 18 Nov: open now)
+  id: '2.29.1', date: '2026-11-18', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
   title: () => tt('nw.v2291.title', 'Little town tweaks'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2291.swap', 'The free mission swap now picks missions you can do at home or on a walk') },
@@ -216,8 +216,8 @@ const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); date 19 Nov 202
     { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2291.tmrw2', 'The note about tomorrow tells you how the town project is coming along') }
   ]
 };
-const NEWS_V231 = { // v2.31 "Share my dog" (first impressions + Share my dog, 58_share.js)
-  id: '2.31', date: '2026-11-19', c: '#E3DAF2', d: 'heart', pic: 'dog', // LAUNCH DATE: only this news entry waits for it; the fixes ship as they are
+const NEWS_V231 = { // v2.31 "Share my dog" (first impressions + Share my dog, 58_share.js) // owner 18 Nov 01:00 JST: open now (was 19 Nov)
+  id: '2.31', date: '2026-11-18', c: '#E3DAF2', d: 'heart', pic: 'dog', // LAUNCH DATE: only this news entry waits for it; the fixes ship as they are
   title: () => tt('nw.v231.title', 'Share my dog'),
   items: [
     { ic: () => nwSafe(() => shIcon()), tx: () => tt('nw.v231.share', 'Share your dog: a big crayon picture of your dog in your own yard, ready for a post or a story') },
