@@ -186,7 +186,7 @@ run('v216_first_week', async (t) => {
   };
   await fitCheck('iPhone 15 (393 px)');
   ok(await ev(() => { const n = document.getElementById('fwNext'), h = document.getElementById('hud').getBoundingClientRect(), r = n.getBoundingClientRect(); return !n.hidden && r.top >= h.top && r.bottom <= h.bottom + 1 && /Bond 2: learns Paw/.test(n.textContent); }), 'phone: the next-unlock line sits inside the HUD, under the Bond meter');
-  ok(await ev(() => document.getElementById('hud').getBoundingClientRect().height <= 104), 'the phone HUD stays about 100 px tall');
+  ok(await ev(() => document.getElementById('hud').getBoundingClientRect().height <= 108), 'the phone HUD stays about 100 px tall'); // v2.31.4 fit sweep: +4 px under the Next line on purpose (descenders of "Next Bond 10")
   await shot('guided_start_phone'); await shot('next_unlock_phone'); await shot('dock_c_yard');
   for (const [w, h] of [[390, 844], [684, 716], [360, 640]]) { await t.p.setViewportSize({ width: w, height: h }); await t.sleep(700); await fitCheck(`${w} x ${h}`); ok((await acts()) === 'caremenu,walk,map,more', `${w} px: the same four buttons`); }
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500);
