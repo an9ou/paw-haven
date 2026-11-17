@@ -99,17 +99,34 @@ run('gift_capture', async (t) => {
   await ev(() => window.__paw.sm.open('story')); await t.until(() => !!document.querySelector('#modal .sm-sheet'), null, 5000);
   await clean(true); await shoot('#modal .panel', 'sm_page'); await clean(false); await closeAll();
   // ---- 4. the crayon scenes (Story mode): a run of frames of a scene (SEQ=<id>:<from ms>-<to ms>, 30 a second, the Skip button hidden).
-  // The scene engine draws from its own clock (57_scenes.js scFrame: now - t0), so sc.seek(ms) and two animation frames give that moment.
+  // Owner, 17 Nov 2026: the first run stuttered. It was taken with sc.seek(ms) and a screenshot while the page clock kept running, so each
+  // frame landed 15-200 ms late by a different amount (frame-to-frame motion went 14..950). Now the page's clock is stepped: performance.now()
+  // and requestAnimationFrame run on a virtual clock that only moves when we say (every queued frame callback is called with the new time),
+  // and every CSS animation is paused and set to its age on that clock, so frame n is exactly from + n x 33.33 ms of the scene.
+  await ev(() => {
+    const P = performance, real = P.now.bind(P), raf = window.requestAnimationFrame.bind(window); let v = real(), q = [];
+    const born = new WeakMap();
+    window.__vclock = { now: () => v, step: (to) => { v = to; const cbs = q; q = []; for (const cb of cbs) { try { cb(v); } catch (e) { /* a game callback */ } }
+      for (const a of document.getAnimations()) { if (!born.has(a)) born.set(a, v); a.pause(); a.currentTime = Math.max(0, v - born.get(a)); } } };
+    window.__vclock.release = () => { P.now = real; window.requestAnimationFrame = raf; const cbs = q; q = []; cbs.forEach((cb) => raf(cb)); document.getAnimations().forEach((a) => a.play()); };
+    P.now = () => v; window.requestAnimationFrame = (cb) => { q.push(cb); return q.length; };
+  });
   for (const [id, rg] of (process.env.SEQ || 'prologue:4100-7900').split(';').map((x) => x.split(':'))) {
-    const [a, z] = rg.split('-').map(Number), dir = path.join(OUT, 'seq_' + id); fs.mkdirSync(dir, { recursive: true });
-    await ev((id) => window.__paw.sc.play(id), id); await t.until(() => !!document.querySelector('#scLayer') && !document.querySelector('#scLayer').hidden, null, 5000);
+    const [a, z] = rg.split('-').map(Number), dir = path.join(OUT, 'seq_' + id); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+    const t0 = await ev((id) => { const v = window.__vclock.now(); window.__paw.sc.play(id); window.__vclock.step(v); return v; }, id);
+    await t.until(() => !!document.querySelector('#scLayer') && !document.querySelector('#scLayer').hidden, null, 5000);
     const cl = await p().addStyleTag({ content: '.sc-skip,#devBtn,#toasts{display:none!important}' });
-    let n = 0; for (let m = a; m <= z; m += 1000 / 30) { await ev((m) => window.__paw.sc.seek(m), m); await p().evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-      await p().locator('#scLayer').screenshot({ path: path.join(dir, 'f' + String(n++).padStart(3, '0') + '.jpg'), type: 'jpeg', quality: 92, scale: 'css' }); }
-    facts['seq_' + id] = { from: a, to: z, n, cap: await ev(() => (document.querySelector('#scLayer .sc-cap') || {}).innerText || '') };
+    let n = 0; for (let m = a; m <= z + 0.01; m = a + (n * 1000) / 30) {
+      await ev((tt) => { window.__vclock.step(tt); }, t0 + m);
+      await p().locator('#scLayer').screenshot({ path: path.join(dir, 'f' + String(n++).padStart(3, '0') + '.jpg'), type: 'jpeg', quality: 92, scale: 'css', animations: 'allow' }); }
+    facts['seq_' + id] = { from: a, to: z, n, step: 'virtual clock, 33.33 ms a frame', cap: await ev(() => (document.querySelector('#scLayer .sc-cap') || {}).innerText || '') };
     console.log('scene', id, n, 'frames', JSON.stringify(facts['seq_' + id].cap));
-    await cl.evaluate((e) => e.remove()); await ev(() => window.__paw.sc.skip()); await p().waitForTimeout(600);
+    await cl.evaluate((e) => e.remove());
+    await ev((tt) => { window.__paw.sc.skip(); window.__vclock.step(tt); }, t0 + z + 100);
   }
+  // the real clock again for the rest
+  await ev(() => window.__vclock.release());
+  await p().waitForTimeout(600);
   // ---- 5. the code sheet: "Have a code?", the field empty with a neutral placeholder ----
   await ev(() => { window.__ddPromoMode = 'ok'; });
   await ev(() => window.__paw.pm.open()); await t.until(() => !!document.querySelector('#modal #pmCode'), null, 5000);
