@@ -158,4 +158,4 @@ html[data-layout="phone"]{--muted:#6F5B50}
 html[data-layout="phone"] .mb-gift.got{color:#357040}
 /* test round 17 Nov 2026: a tablet upright (768 x 1024, 820 x 1180) keeps the phone layout, where every sheet ran the full width: 700 px long sliders and
    buttons, and the pencil frame, stretched with it, bulged into the titles. From 700 px wide a sheet stays at most 660 px, centred on the bar */
-@media (min-width:700px){ html[data-layout="phone"] #modal .panel{width:min(100%,660px)!important} }
+@media (min-width:700px){ html[data-layout="phone"] #modal .panel{width:min(100%,660px)!important;padding-left:20px;padding-right:20px} } /* the wider frame bulges a little more: titles keep clear of it */

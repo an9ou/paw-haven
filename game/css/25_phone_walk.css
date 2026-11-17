@@ -43,4 +43,5 @@ html[data-layout="phone"] .panel.celebrate .results.compact { grid-template-colu
   #modHost .pw-root.pw-tab .pw-hud { gap: 10px; }
   #modHost .pw-root.pw-tab .pw-nose { min-width: 0; }
   #modHost .pw-root.pw-tab .pw-nose .pw-bar { width: 72px; }
+  #modHost .pw-root.pw-tab .pw-big .pw-k { font-size: 15px; } /* the Duck / Jump hints under the big buttons: 14 px there */
 }
