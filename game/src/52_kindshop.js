@@ -554,8 +554,11 @@ function ksLinkSheet(url) {
   v.querySelector('.ks-go').addEventListener('click', () => setTimeout(gone, 50));
   return v;
 }
+// the test copy at test.doodledoggo.app (tools/pages.js --test, owner 18 Nov 2026): payments are off, so Stripe is never opened there
+const ksNoPay = () => typeof window !== 'undefined' && !!window.__ddNoPay;
 function ksCheckout(id) {
   if (!KS_ITEMS[id]) return Promise.resolve(false);
+  if (ksNoPay()) { toast(KS_SOON(), 'good'); return Promise.resolve(false); }
   const mode = ksCashMode();
   if (mode !== 'ok' || !ksWorker()) { if (mode === 'guest') ksErrToast('no_account'); else toast(KS_SOON(), 'good'); return Promise.resolve(false); }
   let w = null;

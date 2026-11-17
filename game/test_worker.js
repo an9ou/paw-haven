@@ -20,11 +20,11 @@ async function checks(label, call, sql, mail) {
   ok(r.status === 200 && r.json.ok, 'GET / answers');
 
   // CORS: only the game's own origins
-  for (const o of ['https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io', 'https://html-classic.itch.zone', 'https://html.itch.zone', 'http://localhost:8765', 'http://127.0.0.1:8765']) {
+  for (const o of ['https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io', 'https://html-classic.itch.zone', 'https://html.itch.zone', 'https://test.doodledoggo.app', 'http://localhost:8765', 'http://127.0.0.1:8765']) {
     r = await call('OPTIONS', '/save', null, null, { Origin: o, 'Access-Control-Request-Method': 'PUT', 'Access-Control-Request-Headers': 'authorization,content-type' });
     ok(r.status === 204 && r.headers.get('access-control-allow-origin') === o && /Authorization/.test(r.headers.get('access-control-allow-headers')), `CORS preflight allowed for ${o}`);
   }
-  for (const o of ['https://evil.example', 'https://doodledoggo.app.evil.example', 'null', 'https://claude.ai']) {
+  for (const o of ['https://evil.example', 'https://doodledoggo.app.evil.example', 'null', 'https://claude.ai', 'https://test.doodledoggo.app.evil.example', 'http://test.doodledoggo.app']) {
     r = await call('OPTIONS', '/save', null, null, { Origin: o });
     ok(r.status === 403 && !r.headers.get('access-control-allow-origin'), `CORS refused for ${o}`);
   }

@@ -24,6 +24,9 @@ game/shots_v24_*/
 !docs/design/v215/*.png
 dist/
 _cfsite/
+# the test copy at test.doodledoggo.app (tools/cf_test_deploy.sh): its build and its Worker
+/_site_test/
+/_cftest/
 .wrangler/
 **/.wrangler/
 .claude/worktrees/

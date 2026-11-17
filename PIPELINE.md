@@ -45,6 +45,10 @@ Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (pro
 - Lanes keep conflicts rare. If two lanes must touch the same file, the coordinator merges them one after the other and re-tests.
 - Generated files (`game/paw_haven_proto.html`, `proto/paw_haven_prototype.html`) are not tracked: always run `node game/build.js` after checkout or merge.
 
+## Test copy and game server address (18 Nov 2026)
+- Test copies for the owner and testers go to **https://test.doodledoggo.app** (`bash tools/cf_test_deploy.sh [git ref]`, password-gated, payments off), not GitHub Pages: Pages is retired once the repo is private (`pages.yml` is kept, unused). Suite `test_gate`.
+- The game talks to **https://api.doodledoggo.app** (`game/src/22b_cloud_config.js`); never write the workers.dev address into new code or docs (it carries the account's name). Details: `docs/CLOUDFLARE_LOGIN.md` "api.doodledoggo.app".
+
 ## Release checklist: What's new (v2.18.2 on)
 - **Add a NEWS entry** for every release with player news: the top of `NEWS` in `game/src/49c_news.js` (3 to 5 lines, every text through `tt()`), translated in the release's one translation batch. Steps: `V218.md` section 14.
 

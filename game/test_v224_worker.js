@@ -110,6 +110,8 @@ const now = () => Math.floor(Date.now() / 1000);
     r = await call('POST', '/shop/checkout', { item: 'coins_8k' }, A.token);
     ok(r.status === 503 && r.json.error === 'shop_closed', 'an item with no Stripe price: shop_closed');
     ok(stripe.calls.length === 0, 'refusals never reach Stripe');
+    r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token, { Origin: 'https://test.doodledoggo.app' });
+    ok(r.status === 503 && r.json.error === 'shop_closed' && r.headers.get('access-control-allow-origin') === 'https://test.doodledoggo.app' && stripe.calls.length === 0, 'the test copy (test.doodledoggo.app): CORS yes, but checkout is shop_closed and never reaches Stripe');
     r = await call('POST', '/shop/checkout', { item: 'supporter' }, A.token, { Origin: 'https://html-classic.itch.zone' });
     ok(r.status === 200 && /^https:\/\/checkout\.stripe\.com\//.test(r.json.url), 'checkout returns the Stripe Checkout URL: ' + r.text);
     ok(r.headers.get('access-control-allow-origin') === 'https://html-classic.itch.zone', 'checkout answers the itch.io frame (CORS)');

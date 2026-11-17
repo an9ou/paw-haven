@@ -38,7 +38,7 @@
 //   { error: 'shop_closed' } while STRIPE_KEY is unset (the webhook also needs STRIPE_WEBHOOK_SECRET). Prices come from SHOP_ITEMS
 //   below and the SHOP_PRICES secret (JSON), never from the game. Setup: docs/design/kind-shop-stripe-setup.md.
 //   GET  /shop/catalog                     -> { items: [{ id, usd, once, on }] }   no session; usd in US cents, on: a Stripe price is set
-//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), 20/h, 409 paused (refund protection, below; every item),
+//   POST /shop/checkout { item }           -> { url }      email accounts only (403 no_account), never from the test copy (503 shop_closed), 20/h, 409 paused (refund protection, below; every item),
 //     409 owned (a one-time item owned),
 //     409 refunded (the Supporter Pack bought and fully refunded: never for sale again; any other one-time item can be bought again), 409 pending (the Comfort Kit / a tool Checkout that
 //     covers it was paid and its webhook has not landed), 503 busy. A second tap while Checkout is open returns that same url; an open
@@ -71,8 +71,10 @@
 
 const ORIGINS = new Set([
   'https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io',
-  'https://html-classic.itch.zone', 'https://html.itch.zone'
+  'https://html-classic.itch.zone', 'https://html.itch.zone',
+  'https://test.doodledoggo.app' // the password-gated test copy (owner, 18 Nov 2026; tools/cf_test_deploy.sh): cloud save yes, payments no
 ]);
+const TEST_ORIGIN = 'https://test.doodledoggo.app'; // POST /shop/checkout refuses it (shop_closed): nobody pays in the test copy
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
 const PW_MIN = 8, PW_MAX = 200, ITER = 100000, MAX_SAVE = 524288, MAX_BODY = 600000, KEEP = 5;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -1366,8 +1368,9 @@ const ROUTES = {
     return json({ items: Object.keys(SHOP_ITEMS).map((id) => { const it = shopItem(env, id); return { id, usd: it.usd, once: it.once, on: !!it.price }; }) });
   } },
 
-  'POST /shop/checkout': { auth: true, async fn({ env, body, me }) {
+  'POST /shop/checkout': { auth: true, async fn({ req, env, body, me }) {
     if (!shopOpen(env)) return fail('shop_closed', 503);
+    if (req.headers.get('Origin') === TEST_ORIGIN) return fail('shop_closed', 503); // the test copy (owner, 18 Nov 2026): never a real payment
     if (me.guest || !me.email) return fail('no_account', 403); // purchases live on an email account, so they come back on a new device
     if (!frOnly(body, ['item'])) return fail('bad_item', 400);
     const it = shopItem(env, body.item);

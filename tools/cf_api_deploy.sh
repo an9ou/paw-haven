@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Deploys the cloud save API: the Worker "pawhaven-api" (cloudflare/worker.js) with its D1 database "pawhaven".
 #   bash tools/cf_api_deploy.sh            make the D1 database if needed, apply cloudflare/schema.sql (safe to repeat), upload the Worker
-# The Worker answers at https://pawhaven-api.<workers.dev subdomain>.workers.dev (game/src/22b_cloud_config.js holds that address).
+# The Worker answers at https://api.doodledoggo.app (its Custom Domain, tools/cf_api_domain.sh; game/src/22b_cloud_config.js holds that address)
+# and still at https://pawhaven-api.<workers.dev subdomain>.workers.dev (older game copies, the Stripe webhook).
 # Needs CLOUDFLARE_ACCOUNT_ID. In a Claude cloud session the proxy adds the API token for api.cloudflare.com; anywhere else,
 # export CLOUDFLARE_API_TOKEN (Workers Scripts: Edit, D1: Edit). Never print or commit the token.
 set -euo pipefail

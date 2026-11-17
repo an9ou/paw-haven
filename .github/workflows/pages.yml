@@ -1,3 +1,6 @@
+# The GitHub Pages test copy (https://an9ou.github.io/paw-haven/). RETIRED once the repo is private (owner, 18 Nov 2026): GitHub Pages needs a
+# public repo on the free plan, so this workflow then fails or serves nothing. The test copy lives at https://test.doodledoggo.app instead
+# (bash tools/cf_test_deploy.sh: the Worker "doodle-doggo-test" with a real password gate). Kept, not deleted, in case the repo is public again.
 name: Deploy to GitHub Pages
 
 on:

@@ -50,7 +50,12 @@ check). Layout: the `paw-fit` skill. Big releases: `all` then `phone`. Known red
 ## 3. Ship, in this order
 
 1. **Worker first, only if `cloudflare/` changed:** `bash tools/cf_api_deploy.sh`, then `bash tools/cf_api_smoke.sh`.
-2. `git push origin HEAD:main` (a green push deploys GitHub Pages: check the run succeeded), and the dev branch if one is in use. Never force-push.
+2. `git push origin HEAD:main`, and the dev branch if one is in use. Never force-push. (While the repo is public a green push also deploys
+   GitHub Pages; that copy is retired once the owner makes the repo private.)
+2b. **Test copy** (for the owner and testers, replaces GitHub Pages; owner, 18 Nov 2026): `bash tools/cf_test_deploy.sh` (or
+   `bash tools/cf_test_deploy.sh <ref>` for a branch), which builds `node tools/pages.js --test` (dev button, test flags, payments off) and
+   uploads the Worker `doodle-doggo-test` on https://test.doodledoggo.app behind the password gate. It refuses until the owner has set the
+   Worker secret `TEST_PASSWORD` in the dashboard. Raises an approval prompt like the site deploy.
 3. `node tools/itch.js` (writes `dist/itch/`), then `bash tools/itch_push.sh <ver>`. It needs `BUTLER_API_KEY` and `ITCH_USER` in
    the environment (never print them), rebuilds, pushes channel `html5` and prints `butler status`. Note the build number.
 4. **Site** (also carries `/play/`, the itch build of main; split into side Workers since 18 Nov 2026, docs/design/site-split.md):
@@ -68,7 +73,7 @@ check). Layout: the `paw-fit` skill. Big releases: `all` then `phone`. Known red
 
 - **Brief Marketing:** find the session tagged `team:marketing` (`Doodle Doggo · MARKETING`, branch `marketing/launch`) with
   `list_sessions`. One short message: version and name; what is new for players (3-5 lines); new breeds or items; links
-  (https://doodledoggo.app, https://an9ou.itch.io/doodle-doggo, https://an9ou.github.io/paw-haven/); where the materials are
+  (https://doodledoggo.app, https://an9ou.itch.io/doodle-doggo; the test copy https://test.doodledoggo.app is for testers, not for posts); where the materials are
   (`brand/itch/<ver>/`, new breeds also `brand/instagram/launch/dogs/`); what not to say (no ads, nothing unreleased; "12 languages";
   "no chat, no messages", not "no typing"). Captions live in `docs/marketing/` files; the chat only says where. Special updates:
   only after the owner has set the date.

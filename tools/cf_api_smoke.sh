@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Live smoke test of the deployed Worker: guest, save PUT and GET, register (guest becomes the account), log out, log in, CORS.
-#   bash tools/cf_api_smoke.sh [api url]
+#   bash tools/cf_api_smoke.sh [api url]      (or PAW_API=<url>; default https://api.doodledoggo.app, the game's address since 18 Nov 2026;
+#                                              the old workers.dev address: PAW_API=https://pawhaven-api.<subdomain>.workers.dev)
 # Makes one throwaway account (pawhaven-smoke-<time>@example.com) and deletes nothing: the account is harmless.
 set -euo pipefail
-API=${1:-https://pawhaven-api.ansonyuen0108.workers.dev}
+API=${1:-${PAW_API:-https://api.doodledoggo.app}}
 EM="pawhaven-smoke-$(date +%s)@example.com"; PW="smoke-$(date +%s)-pw"
 j() { python3 -c "import json,sys; d=json.load(sys.stdin); print(eval(sys.argv[1]))" "$1"; }
 call() { local m=$1 p=$2 b=${3:-} t=${4:-}; local a=(-sS -X "$m" "$API$p" -H 'Origin: https://doodledoggo.app'); [ -n "$t" ] && a+=(-H "Authorization: Bearer $t"); [ -n "$b" ] && a+=(-H 'Content-Type: application/json' -d "$b"); curl "${a[@]}"; }

@@ -18,7 +18,7 @@
 process.removeAllListeners('warning');
 const path = require('path'), fs = require('fs'), zlib = require('zlib'), cp = require('child_process');
 const ROOT = path.join(__dirname, '..');
-const API = 'https://pawhaven-api.ansonyuen0108.workers.dev';
+const API = 'https://api.doodledoggo.app';
 const ITCH = 'https://an9ou.itch.io/doodle-doggo', EMBED = 'https://itch.io/embed/5163381';
 let fails = 0, passes = 0;
 const BREEDS = JSON.parse(fs.readFileSync(path.join(ROOT, 'mods', 'genes.js'), 'utf8').match(/const BREEDS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
@@ -152,7 +152,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     ok(/frame-src 'self'(;|$)/.test(csp) && !/unsafe-eval/.test(csp) && /frame-ancestors 'none'/.test(csp) && !/frame-src[^;]*(\*|http)/.test(csp) && !/itch\.io|googleapis|gstatic/.test(csp), `the CSP frames only the site itself (the game at /play/): frame-src 'self', no itch.io, no unsafe-eval, frame-ancestors 'none' (${csp})`);
     { // the game at /play/ has its own CSP: only the site may frame it, Google Fonts and the cloud save API are the only outside hosts
       const gr = await site(SITE + '/play/', { method: 'HEAD' }), gp = await get(SITE + '/play', { method: 'HEAD' }), gc = gr.headers.get('content-security-policy') || '';
-      ok(gr.status === 200 && gp.status === 301 && /\/play\/$/.test(gp.headers.get('location') || '') && /text\/html/.test(gr.headers.get('content-type')) && /frame-ancestors 'self'/.test(gc) && !/unsafe-eval/.test(gc) && !/(^|[ ;])(\*|http:)/.test(gc) && /connect-src 'self' https:\/\/pawhaven-api\./.test(gc), `/play/: 200 (/play: 301 to /play/, v2.14 PERF: the game's files are relative), the game's own CSP (frame-ancestors 'self', no unsafe-eval, cloud save API only) (${gc.slice(0, 90)}...)`);
+      ok(gr.status === 200 && gp.status === 301 && /\/play\/$/.test(gp.headers.get('location') || '') && /text\/html/.test(gr.headers.get('content-type')) && /frame-ancestors 'self'/.test(gc) && !/unsafe-eval/.test(gc) && !/(^|[ ;])(\*|http:)/.test(gc) && /connect-src 'self' https:\/\/api\.doodledoggo\.app( |;)/.test(gc), `/play/: 200 (/play: 301 to /play/, v2.14 PERF: the game's files are relative), the game's own CSP (frame-ancestors 'self', no unsafe-eval, cloud save API only) (${gc.slice(0, 90)}...)`);
     }
     const EN = {}; for (const p of PG) EN[p.id] = p.id === 'index' ? home : await (await get(SITE + p.path)).text();
     { // the dog count in the copy follows the breed list (v2.11.1: it said 14 long after 21 were in)
@@ -305,7 +305,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await page.goto(base + '/f/DOG-ABCDE', { waitUntil: 'networkidle' });
       const lay = await audit(page), code = (await page.textContent('#friendcode') || '').trim(), play = await page.getAttribute('#playhere', 'href');
       ok(code === 'DOG-ABCDE' && play === '/play/?friend=DOG-ABCDE' && lay.scroll <= 0 && !lay.small.length && !lay.tiny.length, `${w}px invite: the code, Play here, no sideways scroll, 44 px taps, 15 px text ${lay.small.concat(lay.tiny).slice(0, 3).join(', ')}`);
-      ok(!reqs.some((u) => /pawhaven-api|itch\.io|googleapis|gstatic/.test(u)), `${w}px invite: the page calls no API and loads nothing from outside`);
+      ok(!reqs.some((u) => /pawhaven-api|api\.doodledoggo\.app|itch\.io|googleapis|gstatic/.test(u)), `${w}px invite: the page calls no API and loads nothing from outside`);
       await page.goto(base + '/play/?friend=DOG-ABCDE', { waitUntil: 'commit' });
       const fr = page.frames().find((f) => f.url().includes('/play/'));
       ok(!!(fr && new URL(fr.url()).searchParams.get('friend') === 'DOG-ABCDE'), `${w}px: /play/?friend=DOG-ABCDE is the game frame (${fr ? fr.url() : 'no frame'})`);
