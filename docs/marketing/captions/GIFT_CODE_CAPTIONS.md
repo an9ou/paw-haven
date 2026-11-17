@@ -4,7 +4,7 @@
 
 Videos: `brand/instagram/launch/gift_reel/doodle-doggo-gift-code.mp4` (English: Instagram Reels, YouTube Shorts, X; cover `gift_reel/gift-cover.jpg`) and `gift_reel/doodle-doggo-gift-code-rednote.mp4` (RedNote, Simplified Chinese; 3:4 cover `brand/rednote/rednote-19-gift-code.jpg`). Neither video shows a code: they say "the code is in the caption" / "兑换码就在文案里". Script, shots and fact sources: `docs/marketing/GIFT_REEL.md`. Made, waiting for the owner; nothing posted.
 
-The gift (owner via GM, 16 Nov 2026): each platform has its own code, all four give the same gift: the Follower Star Bandana + the Paw-Print Pennant (both code-only, never sold) + 100 coins. A player can use only ONE of the four codes in total, once per cloud-save account. Valid 18 Nov 00:00 to 17 Dec 23:59 JST ("until 17 Dec" means through 17 Dec, Japan time). Redeem: in the game, Settings > "Have a code?" (on a phone, Settings is under More), needs the free cloud save (the game: "Gift codes are for players with the free account"). Codes have no hyphen (the game's field placeholder still shows `DOGGO-XXXX`; a hyphen typed or not is ignored by the game, PROMO.md 1). Item names and menu words checked against the release branch's `game/i18n/en.json` and `zh-Hans.json` (same on main).
+The gift (owner via GM, 16 Nov 2026): each platform has its own code, all four give the same gift: the Follower Star Bandana + the Paw-Print Pennant (both code-only, never sold) + 100 coins. A player can use only ONE of the four codes in total, once per cloud-save account. Valid 18 Nov 00:00 to 17 Dec 23:59 JST ("until 17 Dec" means through 17 Dec, Japan time). Redeem: in the game, Settings > "Have a code?" (on a phone, Settings is under More), needs the free cloud save (the game: "Gift codes are for players with the free account"). Codes are 6 characters (owner, 17 Nov 2026: shorter codes without "DOGGO"; the old DOGGO codes are disabled). The game's code box example is "ABC123"; hyphens and spaces typed are ignored. Never say in any caption, card or video what a code starts with. Item names and menu words checked against the release branch's `game/i18n/en.json` and `zh-Hans.json` (same on main).
 
 Rules kept: one ask per caption, no em dashes, links only https://doodledoggo.app (YouTube, X), never itch.io; RedNote has no link, domain, handle, QR or other platform name, only "搜 Doodle Doggo App".
 
@@ -55,7 +55,7 @@ free gift for you 🎁 code: {CODE_X}
 
 a Follower Star Bandana, a Paw-Print Pennant (both never sold) and 100 coins in our cozy dog game. Settings > Have a code? (free cloud save). one per player, until 17 Dec. play free https://doodledoggo.app #DoodleDoggo
 ```
-Length as X counts it (the link 23, the emoji 2): 259 with a 12-character code, 267 with 20, 287 with 40, so it fits for any code up to 32 characters. One ask: play free.
+Length as X counts it (the link 23, the emoji 2): 253 with the 6-character codes, so it fits. One ask: play free.
 
 ## RedNote / 小红书 ({CODE_RN}, no link)
 

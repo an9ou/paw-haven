@@ -54,7 +54,7 @@ Music: the game's own yard music (`mods/pawaudio.js`) about 11 dB under the voic
 | + 100 coins, one code per player, until 17 Dec | the owner's code facts (GM, 16 Nov 2026): the same gift on all four codes, one of the four per cloud-save account, valid 18 Nov 00:00 to 17 Dec 23:59 JST |
 | Settings > Have a code? (phone: More), needs the free cloud save | `settings.title`, `pm.title`, `fw.more`, `pm.guest` ("Gift codes are for players with the free account"); `pmSettingsHTML()` in Settings (`20_settings_dev.js`) |
 
-Changed from the brief: "Gerald cuts the ribbon" (true, `nw.v227.ribbon`) is not in the video (kept short); the Visitors Book is a small line; "neighbourhood" is the game's spelling. The game's code field placeholder reads `DOGGO-XXXX` (with a hyphen) while the real codes have none; the video shows `YOURCODE` instead, and the game ignores hyphens anyway (PROMO.md 1). Noodle narrates (the launch's mascot), so the README's "different dog each time" rule was not applied; Biscuit the beagle is the second dog.
+Changed from the brief: "Gerald cuts the ribbon" (true, `nw.v227.ribbon`) is not in the video (kept short); the Visitors Book is a small line; "neighbourhood" is the game's spelling. The video's code sheet shows a neutral `YOURCODE` and no real code (the game's own example is now "ABC123"; the launch codes are 6 characters, 17 Nov 2026). Noodle narrates (the launch's mascot), so the README's "different dog each time" rule was not applied; Biscuit the beagle is the second dog.
 
 ## Remake
 
