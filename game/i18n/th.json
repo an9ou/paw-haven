@@ -9740,7 +9740,7 @@
  "walk.res_pouch_txt": "มีสมบัติระดับ{rarity}จากเส้นทางนี้ครบทุกชิ้นแล้ว เลยได้เป็นเหรียญแทน: +{n}",
  "walk.res_title_done": "เดินเล่นจบแล้ว: {route}",
  "walk.res_title_found": "เจอสมบัติแล้ว: {route}",
- "walk.res_title_short": "เดินเล่นไม่จบรอบ: {route}",
+ "walk.res_title_short": "กลับบ้านก่อน: {route}",
  "walk.res_toys": "ดูได้ในสมุดบันทึก แท็บของเล่น",
  "walk.secs_left": "เหลือ {n} วิ",
  "walk.snow": "ล่าสมบัติในหิมะ! กรุบๆ",

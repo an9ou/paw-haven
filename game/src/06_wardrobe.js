@@ -19,6 +19,8 @@ const WD_HANGER = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M17.6 10
 // the picked tab is always fully in view in its row (the row scrolls sideways on narrow phones and in long languages; nothing else moves)
 function wdTabShow(p) {
   const row = $('.wd-tabs', p), b = row && $('[aria-selected="true"]', row); if (!b) return;
+  // test round E (17 Nov 2026): a desktop row whose labels run past the sheet (de "Glücksbringer", fr "Porte-bonheur" at 1280) stacks icon over label, as on phones
+  if (!row.classList.contains('wd-stack') && row.scrollWidth > row.clientWidth + 1) row.classList.add('wd-stack');
   const r = row.getBoundingClientRect(), c = b.getBoundingClientRect(), pad = 6;
   if (c.left < r.left + pad) row.scrollLeft -= r.left + pad - c.left; else if (c.right > r.right - pad) row.scrollLeft += c.right - (r.right - pad);
 }
