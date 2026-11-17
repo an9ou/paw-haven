@@ -145,12 +145,12 @@ run('v228_stories', async (t) => {
   ok(t.errors.length === 0, 'no page errors: ' + t.errors.slice(0, 3).join(' | '));
   await t.ctx.close();
 
-  sec('5. phone 360x640: the "..." menu postcard, the sheet fits, the Stories tab fits');
+  sec('5. phone 360x640: the More tray Share tile, the sheet fits, the Stories tab fits');
   await fresh({ device: 'Phone 360x640' });
   ok(await ev(() => document.documentElement.dataset.layout === 'phone' && getComputedStyle(document.getElementById('stPcBtn')).display === 'none'), 'phones: no top bar postcard icon');
-  await t.p.click('#moreBtn'); await t.until(() => !!document.querySelector('#modal #mmPc'), null, 3000);
-  ok(await ev(() => { const b = document.querySelector('#modal #mmPc'); return !!b && b.getBoundingClientRect().height >= 44; }), 'the "..." menu has "Share my dog", a 44 px row');
-  await t.p.click('#modal #mmPc');
+  await t.p.click('#bar .act[data-act=more]'); await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=share]'), null, 3000);
+  ok(await ev(() => { const b = document.querySelector('#bar .barpop:not([hidden]) .act[data-act=share]'); return !!b && b.getBoundingClientRect().height >= 44 && b.getBoundingClientRect().width >= 44; }), 'the More tray has a Share tile, 44 px (v2.31)');
+  await t.p.click('#bar .barpop:not([hidden]) .act[data-act=share]');
   ok(await t.until(() => { const i = document.querySelector('#modal .sh-img'); return !!i && i.naturalWidth === 1080; }, null, 15000), 'the phone share sheet opens and draws');
   const fit = await ev(() => { const p = document.querySelector('#modal .panel').getBoundingClientRect(), pr = document.querySelector('#modal .sh-prev').getBoundingClientRect(), g = document.getElementById('shGo').getBoundingClientRect(); return { inX: p.left >= -1 && p.right <= 361, prev: pr.top >= 0 && pr.bottom <= 641 && pr.width > 100, go: g.bottom <= 641 && g.height >= 44, noScroll: document.documentElement.scrollWidth <= 361 }; });
   ok(Object.values(fit).every(Boolean), '360 x 640: the sheet, the preview and a 44 px Share button fit, no sideways scroll ' + JSON.stringify(fit));

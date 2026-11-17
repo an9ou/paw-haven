@@ -367,23 +367,7 @@ function stPcTopSync() {
   if (on && stPcTop.title !== l) { stPcTop.title = l; stPcTop.setAttribute('aria-label', l); }
   if (stPcTop.hidden === on) stPcTop.hidden = !on;
 }
-// phones: a "Send a postcard" row in the "..." menu (22c_phone_shell.js openMore), added here so that file stays as it is
-if (typeof openMore === 'function') {
-  const stMorePrev = openMore;
-  openMore = function () {
-    const r = stMorePrev.apply(this, arguments);
-    try {
-      const m = document.querySelector('#modal .moremenu');
-      if (m && stPcYardOk() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && !m.querySelector('#mmPc')) {
-        const b = document.createElement('button'); b.className = 'btn big'; b.id = 'mmPc'; b.type = 'button';
-        b.innerHTML = `<span class="ic">${typeof shIcon === 'function' ? shIcon() : stPcIcon()}</span>${esc(typeof shareDog === 'function' ? tt('sh.btn', 'Share my dog') : tt('st.pc_menu', 'Send a postcard'))}`;
-        b.onclick = (e) => { e.stopPropagation(); closeModal(); setTimeout(() => stPcOpen('yard'), 60); };
-        const ph = m.querySelector('#mmPhoto'); if (ph) ph.insertAdjacentElement('afterend', b); else m.insertBefore(b, m.querySelector('#mmCloud') || null);
-      }
-    } catch (e) { /* the menu changed */ }
-    return r;
-  };
-}
+// phones: Share my dog is a tile in the More tray (v2.31, 47_firstweek.js); the "..." menu no longer has a postcard row
 
 /* the Framed Paw Print (the 5-star keepsake, a house wall decoration): drawn by the world kit, PawArt prop 'stpawframe' (world/pawart_world_b.js) */
 

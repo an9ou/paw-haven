@@ -91,11 +91,11 @@ async function suite(t, dev) {
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); });
   await t.untilMode('yard'); await t.calm(); await t.lu(); await t.freezeMotion(true);
   ok(await ev(() => !document.querySelector('#msCardG')), 'no clipboard in the yard');
-  await p.locator('#moreBtn').tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 5000); await settled(t, '#modal .panel');
-  const g = await ev(() => { const b = document.querySelector('#mmMs').getBoundingClientRect(); return { w: b.width, h: b.height, l: b.left, r: b.right, iw: innerWidth }; });
-  ok(g.h >= 47.5 && g.w >= 47.5 && g.l >= 0 && g.r <= g.iw, `the Missions button in the menu: 48 px, on screen (${Math.round(g.w)}x${Math.round(g.h)})`);
+  await p.locator('#bar .act[data-act=more]').tap(); await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=missions]'), null, 5000); await t.sleep(300);
+  const g = await ev(() => { const b = document.querySelector('#bar .barpop:not([hidden]) .act[data-act=missions]').getBoundingClientRect(); return { w: b.width, h: b.height, l: b.left, r: b.right, iw: innerWidth }; });
+  ok(g.h >= 47.5 && g.w >= 47.5 && g.l >= 0 && g.r <= g.iw, `the Missions tile in the More tray: 48 px, on screen (${Math.round(g.w)}x${Math.round(g.h)})`);
   await t.SH('menu_missions');
-  await p.locator('#mmMs').tap();
+  await p.locator('#bar .barpop:not([hidden]) .act[data-act=missions]').tap();
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), 'a tap opens the Missions sheet');
 
   t.sec(dev + ': the Missions sheet');

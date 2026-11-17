@@ -1626,6 +1626,7 @@ function doAct(a) {
   if (typeof fwBarPop === 'function') fwBarPop(null);
   if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
+  if (typeof fwTileAct === 'function' && fwTileAct(a)) return; // v2.31: the phone More tray's tiles (Photo, Share, Story, Calendar, News, Missions, Kind shop; 47_firstweek.js)
   if (cur.mode === 'fryard' && typeof frBarAct === 'function' && frBarAct(a)) return; // v2.19: on a visit Map goes home and the care buttons wait (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();

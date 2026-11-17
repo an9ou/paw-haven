@@ -259,8 +259,8 @@ const AUDIT = () => {
       for (const [vw, vh] of [[W, 664], [360, 740]]) {
         await t.p.setViewportSize({ width: vw, height: vh }); await t.ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.sleep(400);
         ok(await t.ev(() => !document.getElementById('msCardG')), `${dev} ${vw}x${vh}: no clipboard in the yard`);
-        await t.p.locator('#moreBtn').tap(); ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 4000), `${dev} ${vw}x${vh}: the "..." menu has Daily missions`);
-        await t.p.locator('#mmMs').tap();
+        await t.p.locator('#bar .act[data-act=more]').tap(); ok(await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=missions]'), null, 4000), `${dev} ${vw}x${vh}: the More tray has Missions`);
+        await t.p.locator('#bar .barpop:not([hidden]) .act[data-act=missions]').tap();
         ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), `${dev} ${vw}x${vh}: it opens Daily missions, not a dog switch`);
         await t.closeX(); await t.modalGone();
       }

@@ -30,8 +30,8 @@ const { run } = require('./test_lib');
 
       sec(tag + 'photo mode: the face picker');
       await ev(() => window.__paw.S.dogs.forEach((d) => window.__paw.ex.clear(d.id)));
-      await t.p.click('#moreBtn'); await t.p.waitForSelector('#mmPhoto'); await t.p.click('#mmPhoto');
-      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'photo mode opens from the "..." sheet');
+      await t.p.click('#bar .act[data-act=more]'); await t.p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]'); await t.p.click('#bar .barpop:not([hidden]) .act[data-act=photo]');
+      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'photo mode opens from the More tray');
       await t.SH('picker');
       const g = await ev(() => {
         const q = (s) => document.querySelector(s), r = (el) => el.getBoundingClientRect(), row = q('.ex-frow'), box = q('.ex-faces');

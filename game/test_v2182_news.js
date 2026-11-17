@@ -63,13 +63,13 @@ run('v2182_news', async (t) => {
   await t.p.click('#setNews'); ok(await waitNews(3000), 'and opens the sheet'); await closeNews();
   await t.ctx.close();
 
-  sec('6. phone: the "..." menu opens it; it fits at every size (393x852, 360x640, the 684 and 390 px site boxes, desktop) in en and zh-Hant');
+  sec('6. phone: the More tray opens it; it fits at every size (393x852, 360x640, the 684 and 390 px site boxes, desktop) in en and zh-Hant');
   const sizes = [['iphone15', 393, 852], ['small', 360, 640], ['box684', 684, 716], ['box390', 390, 700], ['desktop', 1280, 720]];
   for (const lang of ['en', 'zh-Hant']) {
     await t.newGame({ prefs: { nwTest: true }, device: 'iPhone 15', lang });
     if (lang === 'en') {
-      await t.p.click('#moreBtn'); ok(await t.until(() => !!document.getElementById('mmNews'), null, 3000), 'phone menu: "What\'s new" is there');
-      await t.p.click('#mmNews'); ok(await waitNews(3000), 'and opens the sheet'); await closeNews();
+      await t.p.click('#bar .act[data-act=more]'); ok(await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=news]'), null, 3000), 'phone More tray: "What\'s new" is there');
+      await t.p.click('#bar .barpop:not([hidden]) .act[data-act=news]'); ok(await waitNews(3000), 'and opens the sheet'); await closeNews();
     }
     for (const [name, w, h] of sizes) {
       await t.p.setViewportSize({ width: w, height: h }); await t.sleep(400);

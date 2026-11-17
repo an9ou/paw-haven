@@ -163,3 +163,17 @@ html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child > .fw-rews{grid-c
 html[data-layout="phone"] .fw-dg{grid-template-columns:44px minmax(0,1fr);gap:8px}
 html[data-layout="phone"] .fw-dgart{width:44px;height:44px}
 html[data-layout="phone"] .fw-dg .fw-claim,html[data-layout="phone"] .fw-dg .fw-got{grid-column:1 / -1}
+/* v2.31 the More tray is the phone's tile sheet: Photo, Share, Story, Wardrobe, Journal, Stickers, Friends, Calendar, News, Missions, Kind shop
+   (built as it opens, 47_firstweek.js fwMoreTiles). Three equal tiles a row (four on a wide phone), 44 px taps and more, a small badge in a corner */
+html[data-layout="phone"] #bar .barpop.fw-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;left:6px;right:6px;width:auto;max-width:none;padding:10px 9px 11px;transform:rotate(-.4deg)}
+@media (min-width:520px){html[data-layout="phone"] #bar .barpop.fw-tiles{grid-template-columns:repeat(4,minmax(0,1fr));left:auto;width:min(520px,calc(100vw - 12px))}}
+@media (max-height:600px){html[data-layout="phone"] #bar .barpop.fw-tiles{max-height:calc(100dvh - var(--barH) - 64px);overflow-y:auto;overscroll-behavior:contain}}
+html[data-layout="phone"] #bar .barpop.fw-tiles[hidden]{display:none}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act{min-width:0;max-width:none;width:100%;min-height:64px;gap:2px;padding:6px 3px 5px;flex:none}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act .ic{width:30px;height:30px}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act > span:not(.ic):not(.fw-newtag){font-size:16px;line-height:1.02;max-width:100%;overflow-wrap:anywhere;hyphens:auto;padding:0 2px 2px}
+html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+1){--wash:var(--w-blue)} html[data-layout="phone"] #bar .barpop.fw-tiles .act:nth-child(3n+2){--wash:var(--w-lilac)}
+html[data-layout="phone"] #bar .barpop.fw-tiles .fw-newtag{font-size:13px;padding:1px 5px 2px;top:-3px;right:-2px}
+.fw-tb{position:absolute;top:-4px;right:-3px;z-index:2;min-width:22px;padding:1px 5px 2px;box-sizing:border-box;font-family:var(--font-hand);font-weight:700;font-size:14px;line-height:1.1;text-align:center;background:#FFE3A1;color:var(--ink);border:1.5px solid var(--ink);border-radius:9px 11px 8px 10px;transform:rotate(6deg);pointer-events:none}
+.fw-tb.done{background:#CFEBC6}
+.fw-tdot{position:absolute;top:3px;left:4px;width:10px;height:10px;border-radius:50%;background:#F28FA5;border:1.5px solid var(--ink);pointer-events:none}

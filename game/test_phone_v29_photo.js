@@ -11,14 +11,14 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await t.adopt({ sex: 'girl' }); await t.patch({ bond: { level: 7, pts: 1450 }, coins: 500, stats: { hunger: 80, happy: 80, energy: 90, clean: 90 } }); await t.calm();
       await t.until(() => !!(window.__paw && window.__paw.ph), null, 5000);
 
-      sec(tag + 'the camera is in the "..." sheet');
+      sec(tag + 'the camera is a tile in the More tray (v2.31)');
       ok(await ev(() => getComputedStyle(document.getElementById('phBtn')).display === 'none'), tag + 'no camera button in the HUD (the phone HUD is tight)');
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto');
-      ok(await ev(() => { const b = document.getElementById('mmPhoto'), r = b.getBoundingClientRect(); return /Take a photo/.test(b.textContent) && r.height >= 44 && !!b.querySelector('svg'); }), tag + 'the sheet has "Take a photo" (44 px, with the icon)');
-      ok(await ev(() => !document.getElementById('modal').hidden && !window.__paw.ph.can()), tag + 'a sheet is open: photo mode cannot start under it');
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]');
+      ok(await ev(() => { const b = document.querySelector('#bar .barpop:not([hidden]) .act[data-act=photo]'), r = b.getBoundingClientRect(); return /Photo/.test(b.textContent) && r.height >= 44 && r.width >= 44 && !!b.querySelector('svg'); }), tag + 'the More tray has a Photo tile (44 px, with the icon)');
+      ok(await ev(() => document.getElementById('modal').hidden), tag + 'the tray is not a sheet');
       await t.SH('more_sheet');
-      await p.click('#mmPhoto');
-      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'the sheet closes and photo mode opens');
+      await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]');
+      ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'the tray closes and photo mode opens');
       await t.SH('photo_mode');
 
       sec(tag + 'photo mode fits the screen');
@@ -76,12 +76,12 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       sec(tag + 'not on the map, not in a walk');
       await p.click('[data-act=map]'); await p.waitForSelector('[data-area=park]');
       ok(await ev(() => !window.__paw.ph.can()), tag + 'the map: no camera');
-      if (await p.locator('#moreBtn:visible').count()) { await p.click('#moreBtn'); await t.sleep(200); ok(await p.locator('#mmPhoto').count() === 0, tag + 'the map: the "..." sheet has no camera'); await ev(() => { document.querySelector('#modal .x') && document.querySelector('#modal .x').click(); }); }
+      if (await p.locator('#bar .act[data-act=more]:visible').count()) { await p.click('#bar .act[data-act=more]'); await t.sleep(200); ok(await p.locator('#bar .barpop:not([hidden]) .act[data-act=photo]').count() === 0, tag + 'the map: the More tray has no camera'); await p.click('#bar .act[data-act=more]'); }
       await t.home();
 
       sec(tag + 'a town place');
       await t.home('market');
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'Market Street: photo mode opens');
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]'); await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]'); ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'Market Street: photo mode opens');
       ok(await ev(() => window.__paw.ph.svg().includes('Market Street')), tag + 'the frame names Market Street');
       await p.keyboard.press('Escape'); ok(await t.until(() => !window.__paw.ph.active(), null, 3000), tag + 'Esc closes it');
 
@@ -89,7 +89,7 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'dachshund', sex: 'female', months: 30 }, 'Noodle'); });
       await t.home(); await t.calm(); await t.freezeMotion(true); await t.sleep(300);
       await ev(() => { const svg = document.querySelector('#view > svg.world'), inv = svg.getScreenCTM().inverse(), sx = (x) => new DOMPoint(x, 0).matrixTransform(inv).x; const ds = [...svg.querySelectorAll('#pack .packdog')].map((g) => ({ g, r: g.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left); const lo = ds[0], hi = ds[ds.length - 1]; lo.g.style.transform = `translate(${(20 - sx(lo.r.left)).toFixed(1)}px,0)`; hi.g.style.transform = `translate(${(985 - sx(hi.r.right)).toFixed(1)}px,0)`; }); // spread the pack from edge to edge
-      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000);
+      await p.click('#bar .act[data-act=more]'); await p.waitForSelector('#bar .barpop:not([hidden]) .act[data-act=photo]'); await p.click('#bar .barpop:not([hidden]) .act[data-act=photo]'); await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000);
       if (!(await ev(() => window.__paw.ph.size().w === 1080 && window.__paw.ph.size().h === 1080))) { await p.click('#phMode [data-sq="1"]'); await t.until(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080 && window.__paw.ph.ready(); }, null, 10000); }
       const sq = await ev(() => ({ crop: window.__paw.ph.crop(), boxes: window.__paw.ph.boxes(), names: window.__paw.ph.names(), inShot: window.__paw.ph.inShot(), svg: window.__paw.ph.svg() }));
       const placed = sq.boxes.filter((b) => b[1] != null), x0 = sq.crop[0], x1 = sq.crop[0] + sq.crop[2];
