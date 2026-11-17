@@ -55,3 +55,4 @@ html[data-layout="phone"] #modal .panel.shop .tabs .btn { min-width: 44px; min-h
 /* v2.30.1 first impressions (audit 17 Nov): a shop street's buttons wrap to a second centred row instead of running off the right edge
    (Kibble Corner's "Saturday market stall" was cut), so every button is in sight; the scene above gives up the height */
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { flex-wrap: wrap; justify-content: center; row-gap: 6px; overflow: visible; padding: 6px 12px 8px; -webkit-mask-image: none; mask-image: none; }
+@media (max-width: 380px) { html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { column-gap: 6px; padding: 6px 8px 8px; } html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { font-size: 15px; padding: 4px 9px; } } /* fit sweep 18 Nov: at 360 px Market Street's six buttons (with the Kind shop) took three rows and a third of the street; two rows again */
