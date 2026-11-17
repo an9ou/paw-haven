@@ -176,7 +176,7 @@ function fiExpose() {
   window.__paw.fi = {
     on: () => btOn(), mode: () => fiMode(), fields: (s) => fiFields(s), join: (c, now) => fiJoin(c, now), poll: (now) => { FI.pollUid = null; return fiPoll(now); }, apply: (d, show, now) => fiApply(d, show, now),
     card: (o, now) => fiCard(o, now), line: () => fiSheetLine(), item: FI_ITEM, cap: FI_CAP, owns: () => fiOwns(),
-    gone: (v) => { if (v !== undefined) BT_GONE = !!v; return BT_GONE; }, start: () => fiStart()
+    gone: (v) => { if (v !== undefined) BT_GONE = !!v; return BT_GONE; }, start: () => fiStart(), busy: () => !!(FI.pollP || FI.joinP)
   };
 }
 on('game:ready', () => { if (S) fiFields(S); setTimeout(fiExpose, 0); setTimeout(fiStart, 1800); });

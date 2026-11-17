@@ -45,6 +45,7 @@ run('v230_together', async (t) => {
     await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.fi), null, 8000);
   };
   const register = async (email) => {
+    await t.until(() => !(window.__paw.fi.busy && window.__paw.fi.busy()), null, 8000); // a poll still in flight with the guest token would meet a 401 after the swap
     const tok0 = await ev((k) => JSON.parse(localStorage.getItem(k)).token, AUTH);
     const reg = (await api('POST', '/register', { email, password: 'pupper123' }, tok0)).json;
     await ev(([k, r]) => { localStorage.setItem(k, JSON.stringify({ token: r.token })); const C = window.__pawCloud.CL; C.email = r.user.email; C.anon = false; }, [AUTH, reg]);
