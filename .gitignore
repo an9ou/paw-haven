@@ -44,3 +44,6 @@ _cfsite/
 /_cfsite_img/
 /_cfsite_play/
 _i18n/
+
+# private caption files with real gift codes (never commit)
+docs/marketing/captions/*_FINAL.md
