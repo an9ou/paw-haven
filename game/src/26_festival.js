@@ -429,7 +429,7 @@ function fsParadeEnd(here) {
 function fsParadeDone() {
   fsFields(); S.fest.parade.date = localISO();
   const n = addCoins(10, { raw: true }); addStat('happy', 10); addBond(2); markDirty(); updateHUD(); SFX.kaching();
-  toast(tt('fest.best_in_show', 'Best in show: {name}. +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), n }), 'gold'); trackAct('parade', {});
+  coinFly(toast(tt('fest.best_in_show', 'Best in show: {name}. +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), n }), 'gold'), n); trackAct('parade', {});
   if (fsHere('square')) fsSquareDraw();
   const y = fsYear(); if (S.fest.parade.year === y) return;
   S.fest.parade.year = y; const fresh = !owns('clothes', 'Parade Rosette'); if (fresh) S.inv.clothes.push('Parade Rosette'); markDirty(); saveNow();

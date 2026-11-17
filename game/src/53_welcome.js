@@ -82,7 +82,9 @@ function wbGiftArt(g) {
     return fwFrameSVG(g.t === 'gold' ? '#E8B923' : '#F2C744');
   } catch (e) { return ''; }
 }
+// gives g; returns how many of its coins settled a Kind shop refund (0 for a gift with no coins)
 function wbGive(g) {
+  const s0 = coinSettleSum;
   if (g.t === 'coins') addCoins(Math.max(0, Math.min(WB_COIN_CAP, g.c)), { raw: true });
   else if (g.t === 'food') S.inv.food[g.n] = (S.inv.food[g.n] || 0) + g.q;
   else if (g.t === 'toy') { if (!owns('toys', g.n)) S.inv.toys.push(g.n); }
@@ -91,6 +93,7 @@ function wbGive(g) {
   else if (g.t === 'bag') { FW_BAG.forEach(([n, q]) => { S.inv.food[n] = (S.inv.food[n] || 0) + q; }); if (g.c) addCoins(Math.min(WB_COIN_CAP, g.c), { raw: true }); }
   else if (g.t === 'gold') S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 1;
   markDirty(); updateHUD();
+  return coinSettleSum - s0;
 }
 // each milestone once (S.daysGifts), with a letter from Gerald to keep. An old save that starts past a milestone gets it too: nothing is held back
 function wbMilestones() {
@@ -98,11 +101,12 @@ function wbMilestones() {
   const got = [];
   WB_DAYS.forEach((n) => {
     if (S.daysPlayed < n || S.daysGifts.includes(n)) return;
-    const g = wbMileGift(n); S.daysGifts.push(n); wbGive(g); got.push(n);
+    const g = wbMileGift(n), c0 = S.coins; S.daysGifts.push(n); wbGive(g); got.push(n); let te = null;
+    if (S.coins > c0) coinFly(() => te, g.c || S.coins - c0, { gain: S.coins - c0, delay: 650 + got.length * 400 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
     const what = wbGiftLabel(g);
     mailPush({ kind: 'news', id: 'wb_days_' + n, keep: true, from: tt('ks.letter_from', 'Gerald'), title: tt('wb.m_title', '{n, plural, one {# day together} other {# days together}}', { n }),
       text: tt('wb.m_text', 'Dear friend,\nYou and {name} have now played together on {n} different days. Not in a row and never in a rush, just {n} good days.\nHere is a little thank-you: {gift}.\nWith a happy waddle,\nGerald', { name: NAME(), n, gift: what }) });
-    setTimeout(() => toast(tt('wb.m_toast', '{n} days played! A gift from Gerald: {gift}.', { n, gift: what }), 'gold'), 600 + got.length * 400);
+    setTimeout(() => { te = toast(tt('wb.m_toast', '{n} days played! A gift from Gerald: {gift}.', { n, gift: what }), 'gold'); }, 600 + got.length * 400);
   });
   if (got.length) { try { SFX.kaching(); } catch (e) { /* audio off */ } saveNow(); }
   return got;
@@ -183,7 +187,7 @@ function wbGiftPick(j) {
 }
 function wbGiftToday() {
   const j = jstISO(); if (!S || (S.awayGiftISO && S.awayGiftISO >= j)) return null;
-  const g = wbGiftPick(j); S.awayGiftISO = j; wbGive(g); return g;
+  const g = wbGiftPick(j); S.awayGiftISO = j; g.sd = wbGive(g); return g; // sd: coins of this gift that settled a refund (not saved)
 }
 function wbAwayText(h) { return h >= 48 ? tt('wb.away_d', 'You were away for {n, plural, one {# day} other {# days}}', { n: Math.floor(h / 24) }) : tt('wb.away_h', 'You were away for {n, plural, one {# hour} other {# hours}}', { n: h }); }
 // v2.26 yard visitors that came during this absence and are not yet listed (read from S.visitors.log, so the order of the catch-up and the page does not matter)
@@ -199,7 +203,7 @@ function wbVisHTML(list) {
 }
 function wbHTML(pend, gift, vis) {
   const d = D(), lines = wbLines(pend, d);
-  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift))}</span></span></div>` : '';
+  const giftRow = gift ? `<div class="wb-gift"><span class="wb-gart" aria-hidden="true">${wbGiftArt(gift)}</span><span class="wb-gt"><b>${esc(tt('wb.gift_h', 'A little gift from {name}', { name: d.name }))}</b><span>${esc(wbGiftLabel(gift) + ((gift.t === 'coins' || gift.t === 'bag') && typeof ksSettleNote === 'function' ? ksSettleNote(gift.sd || 0) : ''))}</span></span></div>` : '';
   return `<div class="wb-sheet${vis && vis.length ? ' wb-hasvis' : ''}"><article class="dd-page wb-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${headSVG(d)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: d.name }))}</b><span class="small">${esc(wbAwayText(pend.h))}</span></span></header>
     <div class="dd-ptext">${lines.map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true"><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('heart', 0, 2, 1.1, -8)}</svg><svg class="dd-dpaw" viewBox="-20 -20 40 40">${doodle('paw', 0, 2, 1.1, 12)}</svg></div></article>${giftRow}${wbVisHTML(vis)}</div>`;
 }
@@ -210,6 +214,7 @@ function wbOpen(pend) {
   $('#wbOk', p).onclick = () => { SFX.click(); closeModal(); };
   try { greetBark(); } catch (e) { /* no dog on screen */ }
   if (gift) { try { SFX.kaching(); } catch (e) { /* audio off */ } }
+  if (gift && gift.c && (gift.t === 'coins' || gift.t === 'bag')) coinFly($('.wb-gift .wb-gart', p), Math.min(WB_COIN_CAP, gift.c), { gain: Math.max(0, Math.min(WB_COIN_CAP, gift.c) - (gift.sd || 0)), delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   saveNow(); return p;
 }
 // the automatic open: a calm yard, after the calendar's daily page and the What's new sheet

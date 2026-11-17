@@ -52,6 +52,7 @@ run('v225_welcome', async (t) => {
   ok(m1.n >= 3 && m1.n <= 4 && m1.seen > 0 && Array.isArray(m1.g), `it plays on with ${m1.n} days played (3 paws last month, plus today) and a last-seen stamp`);
 
   sec('2. While you were out: 4+ real hours away opens the diary page; a short absence keeps the toast');
+  await t.until(() => !!(window.__paw && window.__paw.nw), null, 5000); // the What's new hook is exposed on a 500 ms tick: wait for it (was flaky on main too)
   await ev(() => { const S = window.__paw.S; S.awayGiftISO = ''; S.newsSeen = window.__paw.nw.latest(); });
   let r = await goneAway(1 * 3600e3);
   ok(!r.pend, 'one hour away: no page');

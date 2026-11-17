@@ -33,7 +33,10 @@ bank account in HKD; the prices stay in USD. Buyers in China, Russia and a few o
 
    Turn on Adaptive Pricing if you want local currencies at checkout. Note each price id (`price_...`).
 4. Add a webhook endpoint (Developers > Webhooks): URL `https://<the API Worker's address>/shop/webhook`, events
-   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`. Note its signing secret (`whsec_...`).
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, and (refund fix, 13 Nov 2026)
+   `checkout.session.expired`, `checkout.session.async_payment_failed`, so an abandoned Checkout stops holding its item at once.
+   Without the last two a hold still ends after 24 hours. And (refund protection, 14 Nov 2026) `charge.dispute.created`, so a bank
+   dispute pauses paid items for that account (V224.md 4.4). Note its signing secret (`whsec_...`).
 
 ## 2. In the Worker (pawhaven-api)
 ```
@@ -50,7 +53,8 @@ table and the new house and outfit limits.
 
 ## 3. Test (test mode)
 1. In a test copy with the shop switched on, buy each item with the card `4242 4242 4242 4242`. The game tab should get it when you come back.
-2. Stripe Dashboard > the payment > Refund (in full): the next poll takes the item back (coins stay).
+2. Stripe Dashboard > the payment > Refund (in full): the next poll takes back what that purchase gave, its items and its Paw Coins
+   (coins already spent are settled from later coins, Gerald writes a letter); things bought with coins stay.
 3. Webhooks page: every delivery answered 200.
 
 ## 4. Launch

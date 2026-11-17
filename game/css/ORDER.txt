@@ -69,6 +69,8 @@
 55_kindshop.css
 55_wardrobe.css
 56_welcome.css
+57_coinfly.css
+58_promo.css
 56_visitors.css
 57_projects.css
 58_stories.css

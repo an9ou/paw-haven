@@ -63,6 +63,8 @@ run('v217_dog_days', async (t) => {
   ok(s.coins - c0 === 10 && s.dd.wish.coins === 10 && s.dd.wn === 1 && s.dd.wk.pet === 1, '+10 coins, counted');
   ok(s.dd.st.w1 && s.dd.st.k_pet, 'stickers: 1 wish come true, and the pet wish');
   ok(await t.until(() => { const c = document.getElementById('ddWish'); return c && c.classList.contains('done') && /Wish come true/.test(c.textContent); }, null, 3000), 'the chip says the wish came true');
+  ok(await t.until(() => { const c = document.getElementById('ddWish'); return !c || c.hidden; }, null, 12000), 'a moment later the come-true chip leaves the main screen (owner, 16 Nov 2026)');
+  await ev(() => { if (typeof render === 'function') render(); }); ok(await ev(() => { const c = document.getElementById('ddWish'); return !c || c.hidden; }), 'and stays off after the screen is drawn again');
   await shot('wish_done_desktop');
   const before = (await t.S()).dd.wn; await t.pet(() => true); await t.sleep(1600);
   ok((await t.S()).dd.wn === before, 'one wish a day: petting again gives no second wish');
@@ -261,7 +263,7 @@ run('v217_dog_days', async (t) => {
   await fresh(); await calDay();
   ok(await ev(() => { const b = document.querySelector('#modal .fw-cal'), first = b.querySelector('.fw-dg'); return !!first && [...b.children].filter((e) => !e.classList.contains('fw-hello')).indexOf(first) === 0 && !!first.querySelector('#fwDgClaim'); }), 'the calendar sheet leads with Today\'s gift and a Claim button');
   ok(await ev(() => { const n = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); return document.querySelectorAll('.fw-mgrid .fw-md .fw-dgi svg').length === n; }), 'every day circle of the month shows its gift as a tiny icon');
-  ok(await ev(() => document.querySelectorAll('.fw-spec li').length === 5), 'the 3, 7, 12, 18 and 24-day gifts show as bigger special circles');
+  ok(await ev(() => document.querySelectorAll('.fw-spec:not(.wb-spec) li').length === 5), 'the 3, 7, 12, 18 and 24-day gifts show as bigger special circles');
   await shot('daily_gift_desktop');
   const g0 = await ev(() => { const P = window.__paw, t = new Date(), ym = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; return { r: P.fw.daily(ym, t.getDate()), ym, d: t.getDate() }; });
   const before0 = await t.S();

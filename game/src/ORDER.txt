@@ -72,6 +72,8 @@
 51b_habits.js
 52_kindshop.js
 53_welcome.js
+54_coinfly.js
+55_promo.js
 54_visitors.js
 55_projects.js
 55b_projects_art.js

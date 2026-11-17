@@ -228,7 +228,7 @@ async function checks(label, call, sql, mail) {
       ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
       ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 120 })] })],
       ['a breed past the list', card({ dogs: [dog({ b: 40 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
-      ['an outfit past the list', card({ dogs: [dog({ o: 57 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 58 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })], ['a red-intensity allele not in the set', card({ dogs: [dog({ c: { I: ['I', 'x'] } })] })], ['a red-intensity locus with one allele', card({ dogs: [dog({ c: { I: ['I'] } })] })],
@@ -319,7 +319,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 35, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys), next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 36, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.25.5: + the Paw-Print Pennant at 31; v2.26: + the four yard toys at 32-35), next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);
@@ -466,7 +466,7 @@ async function checks(label, call, sql, mail) {
     ok((await frCall('PUT', '/friends/yard', { yard: yard(), extra: 1 }, yB.token)).json.error === 'bad', 'an extra field on the yard put is bad');
     const junk = [
       ['typed dog name', dog({ n: 'Mochi' })], ['dog name past the list', dog({ n: 120 })], ['breed past the list', dog({ b: 40 })],
-      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 57 })], ['outfit under -1', dog({ o: -2 })],
+      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 58 })], ['outfit under -1', dog({ o: -2 })],
       ['age not pup or adult', dog({ a: 'old' })], ['sex not m or f', dog({ s: 'x' })], ['sparkle 2', dog({ sp: 2 })],
       ['an extra dog key', Object.assign(dog(), { name: 'Pip' })], ['a missing dog key', (() => { const d = dog(); delete d.n; return d; })()],
       ['a bad allele', dog({ c: { B: ['B', 'x'] } })], ['a coat word', dog({ c: 'red' })], ['an unknown locus', dog({ c: { K: ['K', 'k'] } })],
@@ -483,7 +483,7 @@ async function checks(label, call, sql, mail) {
       ['v is 2', yard({ v: 2 })], ['no season', yard({ season: 'fall' })], ['house past the list', yard({ house: 15 })],
       ['6 dogs', yard({ dogs: [dog(), dog(), dog(), dog(), dog(), dog()] })],
       ['41 decor', yard({ decor: Array.from({ length: 41 }, (_, i) => ({ i: 0, x: i, y: 0 })) })],
-      ['decor index past the list', yard({ decor: [{ i: 35, x: 0, y: 0 }] })],
+      ['decor index past the list', yard({ decor: [{ i: 36, x: 0, y: 0 }] })],
       ['x past 1200', yard({ decor: [{ i: 0, x: 1201, y: 0 }] })], ['y past 800', yard({ decor: [{ i: 0, x: 0, y: 801 }] })],
       ['x negative', yard({ decor: [{ i: 0, x: -1, y: 0 }] })], ['x not an integer', yard({ decor: [{ i: 0, x: 1.5, y: 0 }] })],
       ['x as text', yard({ decor: [{ i: 0, x: '10', y: 0 }] })], ['an extra decor key', yard({ decor: [{ i: 0, x: 0, y: 0, z: 1 }] })],
@@ -497,7 +497,7 @@ async function checks(label, call, sql, mail) {
     ok(!yardFails.length, `anything outside the snapshot rules is bad ${yardFails.join(', ')}`);
     ok(!(await sql('select user_id from yards where user_id = ?', yB.user.id)), 'no junk yard was stored');
     const goodDogs = [dog({ b: 3 }), dog({ b: 39, o: 49, n: 119, c: '#AABBCC' }), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ e: 2, p: 123456789 }), dog({ b: 1, c: null })]; // v2.23: the fourth carries eyes and a pattern seed
-    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 34, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 35, x: i, y: i }))); // v2.26: 34 = the Bubble Fountain, the last yard toy
+    const goodDecor = [{ i: 0, x: 0, y: 0 }, { i: 35, x: 1200, y: 800 }].concat(Array.from({ length: 38 }, (_, i) => ({ i: i % 36, x: i, y: i }))); // v2.26: 31 = the Paw-Print Pennant (v2.25.5); 32-35 = the four yard toys, 35 = the Bubble Fountain, the last
     const good = { v: 1, name: [9, 9], house: 13, season: 'winter', dogs: goodDogs, decor: goodDecor };
     ok(good.dogs.length === 5 && good.decor.length === 40 && JSON.stringify(good).length < 16384, 'the accepted snapshot is 5 dogs, 40 decor and under 16 KB');
     res = await frCall('PUT', '/friends/yard', { yard: good }, yB.token);
@@ -506,7 +506,7 @@ async function checks(label, call, sql, mail) {
     ok(res.status === 200 && res.json.yard.house === 13 && res.json.yard.season === 'winter' && res.json.yard.name.join() === '9,9', 'GET /friends/yard returns the snapshot');
     ok(res.json.yard.dogs[3].e === 2 && res.json.yard.dogs[3].p === 123456789 && !('e' in res.json.yard.dogs[0]) && !('p' in res.json.yard.dogs[0]), 'v2.23: a yard dog keeps its eyes and pattern seed; a dog without them has none');
     ok(res.json.yard.dogs.length === 5 && res.json.yard.dogs[0].b === 3 && res.json.yard.dogs[1].c === '#aabbcc' && res.json.yard.dogs[2].c === null && res.json.yard.dogs[2].o === -1, 'dogs come back in the Dog Card shape, leader first, colour lower case');
-    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 34, 'decor keeps integer coordinates up to 1200 and 800, and the v2.26 yard toys (index 31-34)');
+    ok(res.json.yard.decor.length === 40 && res.json.yard.decor[1].x === 1200 && res.json.yard.decor[1].y === 800 && res.json.yard.decor[1].i === 35, 'decor keeps integer coordinates up to 1200 and 800, the Paw-Print Pennant (31) and the v2.26 yard toys (32-35)');
     ok(!res.text.includes(yB.user.id) && !/"updated_at"|"created_at"/.test(res.text), 'the yard answer has no user id and no timestamp');
     const zero = await frCall('PUT', '/friends/yard', { yard: yard({ dogs: [], decor: [], season: 'summer', house: 0 }) }, yA.token);
     ok(zero.status === 200, 'a yard may have no dogs and no decor (at most 5, at most 40)');
@@ -830,6 +830,25 @@ async function checks(label, call, sql, mail) {
     ok((await nOf('select count(*) as n from friends where user_id = ? or friend_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friends rows');
     ok((await nOf('select count(*) as n from friend_blocks where user_id = ? or blocked_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_blocks rows');
     ok((await nOf('select count(*) as n from friend_events where from_id = ? or to_id = ?', gone.user.id, gone.user.id)) === 0, 'frTidy drops friend_events rows');
+  }
+  // v2.25.5 gift codes (PROMO.md; the full suite is test_promo_worker.js): here once more on workerd's own D1, where a batch is all or nothing
+  // and the CHECK (used <= cap) must roll back the losing insert
+  {
+    const ip = '10.25.77.';
+    const acct = async (i) => { const g = (await call('POST', '/guest', {}, null, { 'CF-Connecting-IP': ip + i })).json; return (await call('POST', '/register', { email: 'promo' + i + '@example.com', password: 'pupper123' }, g.token, { 'CF-Connecting-IP': ip + i })).json; };
+    const now = Date.now();
+    await sql("insert into promo_codes (code, shown, kind, batch, reward, starts_at, ends_at, cap, used, disabled, note, created_at) values ('WFONE', 'WF-ONE', 'shared', null, ?, ?, ?, 1, 0, 0, null, ?)", JSON.stringify({ items: ['Red Bandana'], coins: 900 }), now - 1000, now + 864e5, now, true);
+    const p1 = await acct(1), p2 = await acct(2);
+    let x = await call('POST', '/promo/redeem', { code: 'wf one' }, p1.token, { 'CF-Connecting-IP': ip + 1 });
+    ok(x.status === 200 && x.json.reward.coins === 500 && x.json.code === 'WF-ONE', 'promo: redeem a cap-1 code, coins clamped to 500: ' + x.text);
+    x = await call('POST', '/promo/redeem', { code: 'WF-ONE' }, p2.token, { 'CF-Connecting-IP': ip + 2 });
+    ok(x.status === 409 && x.json.error === 'gone', 'promo: the cap is reached for the next account');
+    let thrown = null;
+    try { await sql("update promo_codes set used = used + 1 where code = 'WFONE'", true); } catch (e) { thrown = e; }
+    ok(thrown && /CHECK/i.test(String(thrown.message)), 'promo: D1 refuses used > cap (CHECK constraint): ' + (thrown && thrown.message));
+    x = await call('GET', '/promo/mine', null, p1.token, { 'CF-Connecting-IP': ip + 1 });
+    ok(x.status === 200 && x.json.redemptions.length === 1 && x.json.redemptions[0].code === 'WF-ONE' && x.json.redemptions[0].reward.coins === 500, 'promo: /promo/mine lists it as granted');
+    ok(((await sql('select count(*) as n from promo_redemptions where code = ?', 'WFONE')) || {}).n === 1, 'promo: one redemption row');
   }
 }
 

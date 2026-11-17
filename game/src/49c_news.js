@@ -168,7 +168,7 @@ const nwV225Due = () => jstISO() >= NEWS_V225.date;
 const nwNext = () => typeof window !== 'undefined' && !!window.__ddNextTest;
 const nwDue = (e) => nwNext() || jstISO() >= e.date;
 const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
-  id: '2.26', date: '2026-11-19', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE (owner, 12 Nov: all four together)
+  id: '2.26', date: '2026-11-18', c: '#E2F0D9', d: 'paw', pic: { item: 'Tug Post' }, // LAUNCH DATE (owner, 12 Nov: all four together; 16 Nov: moved to 18 Nov JST)
   title: () => tt('nw.v226.title', 'Visitors in the yard!'),
   items: [
     { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v226.come', 'While you are away, neighbourhood dogs come round to play in your yard. The last one is still there when you come back') },
@@ -178,7 +178,7 @@ const NEWS_V226 = { // v2.26 "Yard visitors" (V226.md)
   ]
 };
 const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
-  id: '2.27', date: '2026-11-19', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
+  id: '2.27', date: '2026-11-18', c: '#D3E4F4', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together; 16 Nov: moved to 18 Nov JST)
   title: () => tt('nw.v227.title', 'Town projects'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v227.board', 'A project board in the Town Square: put in coins whenever you like to build something new for the whole town') },
@@ -188,7 +188,7 @@ const NEWS_V227 = { // v2.27 "Town projects" (V227.md)
   ]
 };
 const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
-  id: '2.28', date: '2026-11-19', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE (owner, 12 Nov: all four together)
+  id: '2.28', date: '2026-11-18', c: '#FBE3D6', d: 'heart', pic: { item: 'Star Collar' }, // LAUNCH DATE (owner, 12 Nov: all four together; 16 Nov: moved to 18 Nov JST)
   title: () => tt('nw.v228.title', 'Stories and stars'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v228.stars', 'Past Bond 10 your dog keeps earning Bond stars, with a Framed Paw Print at 5 stars and a Star Collar at 10') },
@@ -198,7 +198,7 @@ const NEWS_V228 = { // v2.28 "Stories and stars" (V228.md)
   ]
 };
 const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
-  id: '2.29', date: '2026-11-19', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together)
+  id: '2.29', date: '2026-11-18', c: '#FCE6C8', d: 'star', pic: 'dog', // LAUNCH DATE (owner, 12 Nov: all four together; 16 Nov: moved to 18 Nov JST)
   title: () => tt('nw.v229.title', 'Story mode'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v229.book', 'Gerald has written a story for you and your dog: 8 chapters to play at your own pace, next to everything else') },
@@ -207,8 +207,8 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
     { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
   ]
 };
-const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); the date is a placeholder, the Game Manager sets the real one
-  id: '2.29.1', date: '2026-11-20', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
+const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); date 19 Nov 2026 JST
+  id: '2.29.1', date: '2026-11-19', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
   title: () => tt('nw.v2291.title', 'Little town tweaks'),
   items: [
     { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2291.swap', 'The free mission swap now picks missions you can do at home or on a walk') },
@@ -233,6 +233,8 @@ function nwEntryHTML(e, big) {
   return `<section class="fw-page nw-page${big ? ' big' : ''}" style="--fwc:${e.c || 'var(--paper)'}" aria-label="${esc(e.title())}">${big ? border : ''}<div class="nw-head">${big ? nwPic(e) : ''}<div><h3>${esc(e.title())}</h3><p class="small nw-ver">${esc(tt('nw.version', 'Version {v} · {date}', { v: e.id, date: nwDate(e.date) }))}</p></div></div><ul class="nw-list">${li}</ul></section>`;
 }
 // the sheet: the newest entry; "See all updates" swaps in every entry, newest first
+// the first page: the newest entry and every entry sharing its date (16 Nov: v2.26-v2.29 open together on 18 Nov, so all four are seen, newest first)
+function nwTop(lead) { lead = lead || NEWS[0]; return lead ? NEWS.filter((e) => e.date === lead.date) : []; } // v2.29.1: the group is the lead's date (the auto sheet's lead is the newest unseen non-minor entry)
 function nwOpen(auto) {
   if (!S) return false;
   nwSort();
@@ -242,7 +244,7 @@ function nwOpen(auto) {
   if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`
-      : `<div class="nw-sheet">${nwEntryHTML(lead, true)}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
+      : `<div class="nw-sheet">${nwTop(lead).map((e, i) => nwEntryHTML(e, i === 0)).join('')}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
     const p = openModal(esc(tt('nw.title', "What's new in town")), body, { cls: 'fw-calpop nw-pop', foot: `<button class="btn yes big nw-ok" id="nwOk">${esc(tt('nw.ok', 'OK!'))}</button>` });
     $('#nwOk', p).onclick = () => { SFX.click(); closeModal(); };
     const a = $('#nwAll', p); if (a) a.onclick = () => { SFX.click(); draw(true); };

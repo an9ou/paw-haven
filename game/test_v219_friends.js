@@ -208,8 +208,8 @@ run('v219_friends', async (t) => {
   const order = await ev(() => window.__paw.fr.orderOk());
   const lim = await ev(() => window.__paw.fr.lim());
   ok(order.gifts && order.decor && order.houses && order.notes, 'FR_GIFTS, FR_DECOR, FR_HOUSES and FR_NOTES match the game tables: ' + JSON.stringify(order.n));
-  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 35, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys)');
-  ok(workerLim === 'notes:12,gifts:47,decor:35,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 35 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
+  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; v2.25.5: + the Paw-Print Pennant after them)');
+  ok(workerLim === 'notes:12,gifts:47,decor:36,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
 
   // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)
@@ -377,8 +377,8 @@ run('v219_friends', async (t) => {
   const puts = decor.puts;
   ok(await ev((n) => window.__paw.fr.pushYard(false).then((x) => x === false && window.__frSrv.yards.length === n), puts), 'a second snapshot inside 10 minutes does not PUT');
 
-  // v2.26 Yard visitors: the four yard toys are FR_DECOR 31-34. They go to friends (and show in their yards) only once Yard visitors is live, and an
-  // older Worker (FR_LIM.decor 31) that refuses the snapshot gets it once more without them, so the rest of the yard still shows
+  // v2.26 Yard visitors: the four yard toys are FR_DECOR 32-35. They go to friends (and show in their yards) only once Yard visitors is live, and an
+  // older Worker (FR_LIM.decor 32) that refuses the snapshot gets it once more without them, so the rest of the yard still shows
   const toys = await ev(async () => {
     const P = window.__paw, fr = P.fr, S = P.S, srv = window.__frSrv, list = fr.lists().decor, last = () => srv.yards[srv.yards.length - 1];
     const idx = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'].map((n) => list.indexOf(n));
@@ -388,15 +388,28 @@ run('v219_friends', async (t) => {
     const snap = { v: 1, name: [0, 0], house: 0, season: 'spring', dogs: [], decor: [{ i: idx[0], x: 180, y: 410 }, { i: 19, x: 24, y: 300 }] };
     r.offSeen = fr.clean(snap).decor.map((d) => d.n);
     fr.yvTest(true); await fr.pushYard(true); r.on = last().decor.map((d) => list[d.i]); r.onSeen = fr.clean(snap).decor.map((d) => d.n);
-    srv.decorLim = 31; const n0 = srv.yards.length; r.okOld = await fr.pushYard(true); r.oldPut = srv.yards.length - n0; r.bad = srv.badYards; r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
+    srv.decorLim = 32; const n0 = srv.yards.length; r.okOld = await fr.pushYard(true); r.oldPut = srv.yards.length - n0; r.bad = srv.badYards; r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
     const b0 = srv.badYards; await fr.pushYard(true); r.bad2 = srv.badYards - b0; r.old2 = last().decor.map((d) => list[d.i]);
     delete srv.decorLim; fr.decorOld(false); fr.yvTest(false); delete S.decor['Tug Post']; await fr.pushYard(true);
     return r;
   });
-  ok(JSON.stringify(toys.idx) === '[31,32,33,34]' && toys.old === 31, 'v2.26: the four yard toys are appended to FR_DECOR (31-34); an older Worker took 31: ' + JSON.stringify(toys.idx));
+  ok(JSON.stringify(toys.idx) === '[32,33,34,35]' && toys.old === 32, 'v2.26: the four yard toys are appended to FR_DECOR (32-35); the deployed Worker took 32: ' + JSON.stringify(toys.idx));
   ok(!toys.off.includes('Tug Post') && toys.off.includes('Bird Bath') && JSON.stringify(toys.offSeen) === '["Bird Bath"]', 'before Yard visitors is live a toy is neither sent nor drawn in a friend\'s yard: ' + JSON.stringify({ off: toys.off, seen: toys.offSeen }));
   ok(toys.on.includes('Tug Post') && toys.on.includes('Bird Bath') && JSON.stringify(toys.onSeen) === '["Tug Post","Bird Bath"]', 'once live, the toy is sent and a friend\'s toy is drawn: ' + JSON.stringify({ on: toys.on, seen: toys.onSeen }));
   ok(toys.okOld === true && toys.bad === 1 && toys.oldPut === 1 && !toys.old1.includes('Tug Post') && toys.old1.includes('Bird Bath') && toys.flag === true && toys.bad2 === 0 && !toys.old2.includes('Tug Post'), 'an older Worker refuses the toy: the yard goes again without it, once, and later pushes skip it: ' + JSON.stringify(toys));
+  // v2.25.5 gift codes: the Paw-Print Pennant is FR_DECOR 31, live on main since v2.25.5 (Worker FR_LIM.decor 32): the deployed Worker takes it, so it is
+  // never left out of a snapshot
+  const pen = await ev(async () => {
+    const P = window.__paw, fr = P.fr, S = P.S, srv = window.__frSrv, list = fr.lists().decor, last = () => srv.yards[srv.yards.length - 1];
+    const r = { idx: list.indexOf('Paw-Print Pennant'), old: fr.decorOldN };
+    S.decor['Paw-Print Pennant'] = { out: true, at: [446, 516] };
+    await fr.pushYard(true); r.on = last().decor.map((d) => list[d.i]);
+    srv.decorLim = 32; const bb = srv.badYards || 0; r.okOld = await fr.pushYard(true); r.bad = (srv.badYards || 0) - bb; r.old1 = last().decor.map((d) => list[d.i]); r.flag = fr.decorOld();
+    delete srv.decorLim; fr.decorOld(false); delete S.decor['Paw-Print Pennant']; await fr.pushYard(true);
+    return r;
+  });
+  ok(pen.idx === 31 && pen.old === 32 && pen.on.includes('Paw-Print Pennant'), 'the Paw-Print Pennant is FR_DECOR 31 and goes in the snapshot: ' + JSON.stringify(pen.on));
+  ok(pen.okOld === true && pen.bad === 0 && pen.flag === false && pen.old1.includes('Paw-Print Pennant'), 'the deployed Worker (decor 32) takes it first time, nothing is dropped: ' + JSON.stringify(pen));
 
   await ev(() => { window.__frSrv.offline = true; window.__toasts.length = 0; });
   await t.closeX(); await t.modalGone();

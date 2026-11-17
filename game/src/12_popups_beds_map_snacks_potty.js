@@ -126,10 +126,10 @@ function cleanMess(i = 0) {
   const fx = $('#fx'); if (fx) { fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(tool, m.x - 32, 450, 64, 64)}</g>`); if (m.type === 'pee') fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(art('prop', 'bubbles'), m.x - 40, 505, 80, 60)}</g><g class="popfx"><svg x="${m.x + 20}" y="470" width="40" height="40" viewBox="-20 -20 40 40" overflow="visible">${doodle('spark', 0, 0, 0.9)}</svg></g>`); setTimeout(() => { [...fx.querySelectorAll('.popfx')].forEach((n) => n.remove()); }, 1100); }
   m.type === 'poop' ? SFX.boop(560) : SFX.splash(); setTimeout(() => SFX.boop(820), 220);
   ms.splice(i, 1); const owner = (m.dog && dogById(m.dog)) || D(); owner.potty.scooped++; trackAct('scoop', { type: m.type });
-  let msg;
-  if (pub) { const b = addBond(2), c = addCoins(3); msg = tt('popup.good_citizen', '{type, select, poop {Good citizen! Scooped with a poop bag and binned. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.} other {Good citizen! Flushed away with the water bottle. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.}}', { type: m.type, bond: b, coins: c }); }
+  let msg, gotC = 0;
+  if (pub) { const b = addBond(2), c = addCoins(3); gotC = c; msg = tt('popup.good_citizen', '{type, select, poop {Good citizen! Scooped with a poop bag and binned. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.} other {Good citizen! Flushed away with the water bottle. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.}}', { type: m.type, bond: b, coins: c }); }
   else { const b = addBond(1); msg = m.type === 'poop' ? tt('popup.scooped_watches_you_with_deep', 'Scooped. {name} watches you with deep respect. +{bond} Bond.', { name: NAME(), bond: b }) : tt('popup.flushed_with_the_water_bottle', 'Flushed with the water bottle. Sparkly floor! +{bond} Bond.', { bond: b }); }
-  toast(msg, 'good'); drawMess(); markDirty(); updateHUD();
+  const te = toast(msg, 'good'); jfSrc('bond', te); if (pub) coinFly(te, gotC); drawMess(); markDirty(); updateHUD(); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
 }
 let pottyBusy = false, pottyT = [], lastPottyMin = -1;
 function pottyAfter(kind) { const P = S.potty, now = S.gameMin; if (kind === 'meal') { if (P.poopDue == null) P.poopDue = now + RINT(30, 90); } else if (kind === 'water') { if (P.peeDue == null) P.peeDue = now + RINT(20, 60); } markDirty(); }

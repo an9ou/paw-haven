@@ -1030,6 +1030,7 @@
     var ac = this.ac, f = mtof(m), parts, dec, i, first = null;
     if (kind === 'box') { parts = [[1, 1, 1], [2.0, 0.22, 0.5], [4.02, 0.1, 0.2]]; dec = 0.55; }   // music-box tine
     else if (kind === 'glit') { parts = [[1, 1, 0.6], [2.756, 0.3, 0.2], [5.404, 0.12, 0.08]]; dec = 0.5; }   // glittery bell
+    else if (kind === 'warm') { parts = [[1, 1, 1], [2.0, 0.16, 0.45], [3.0, 0.04, 0.25]]; dec = 0.42; }   // v2.25.3: a soft, round pluck (the Bond heart)
     else { parts = [[1, 1, 1], [3.0, 0.2, 0.25], [5.43, 0.08, 0.06]]; dec = 0.35; }   // happy pluck
     if (!this.alloc(t, dec * 6, 2, 1)) return;
     var pk = 0.1 * vel * clamp(1.3 - (m - 72) / 40, 0.6, 1.3);
@@ -1054,6 +1055,32 @@
       E.sbell(out, t, 77, 0.85, 'pluck'); E.sbell(out, t + 0.17, 84, 1, 'pluck');
       E.sbell(out, t + 0.17, 88, 0.3, 'glit');
     }
+  };
+
+  // v2.25.2 "Shiny coins": a short soft coin chime on the sting bus (PawAudio.coin(amount), once per coin gain the game shows).
+  // Two bell notes up the F pentatonic (a pluck, then a glittery bell, a faint octave on top), about 0.6 s with the tail;
+  // a bigger gain starts one pentatonic step higher (4 steps at most), so it never gets sharp.
+  var COIN_NOTES = [[79, 84], [81, 86], [84, 89], [86, 91]];   // G-C, A-D, C-F, D-G (MIDI)
+  function coinTier(a) { a = +a || 0; return a >= 150 ? 3 : a >= 60 ? 2 : a >= 20 ? 1 : 0; }
+  EP.coinChime = function (t, amount) {
+    var E = this, out = E.stingBus(), n = COIN_NOTES[coinTier(amount)];
+    E.sbell(out, t, n[0], 0.5, 'pluck');
+    E.sbell(out, t + 0.085, n[1], 0.6, 'glit');
+    E.sbell(out, t + 0.09, n[1] + 12, 0.1, 'glit');
+  };
+
+  // v2.25.3 "Happy meters": the Bond heart lands with a warm pluck (a round low pluck up a third, F-A, an octave under the coin), the town XP
+  // star with a light sparkle (three tiny glittery bells up the F pentatonic, very short). Both quieter than the coin chime, sting bus.
+  EP.bondPluck = function (t) {
+    var E = this, out = E.stingBus();
+    E.sbell(out, t, 65, 0.36, 'warm');
+    E.sbell(out, t + 0.075, 69, 0.3, 'warm');
+  };
+  EP.xpSparkle = function (t) {
+    var E = this, out = E.stingBus();
+    E.sbell(out, t, 84, 0.28, 'glit');
+    E.sbell(out, t + 0.05, 89, 0.3, 'glit');
+    E.sbell(out, t + 0.1, 93, 0.25, 'glit');
   };
 
   /* ---------------- dog voices (v1.6): formant-filtered noise + pitched glide ---------------- */
@@ -1557,7 +1584,7 @@
       while (si < segs.length && segs[si].at <= t) { e.queue(resolve(segs[si].ctx)); si++; }
       while (gi < stings.length && stings[gi].at <= t) {
         var dt = stings[gi].at; e.duckG.gain.setTargetAtTime(0.6, dt, 0.06); e.duckG.gain.setTargetAtTime(1, dt + 1.8, 0.35);
-        if (STINGS.indexOf(stings[gi].name) >= 0) e.sting(stings[gi].name, dt + 0.03); else e.stinger(stings[gi].name, dt + 0.03);
+        if (stings[gi].name === 'coin') e.coinChime(dt + 0.03, stings[gi].amount); else if (stings[gi].name === 'bond') e.bondPluck(dt + 0.03); else if (stings[gi].name === 'xp') e.xpSparkle(dt + 0.03); else if (STINGS.indexOf(stings[gi].name) >= 0) e.sting(stings[gi].name, dt + 0.03); else e.stinger(stings[gi].name, dt + 0.03);
         gi++;
       }
       var before = e.applied;
@@ -1702,6 +1729,32 @@
         ramp(eng.duckG.gain, 0.75, now, 0.04);
         eng.duckG.gain.setTargetAtTime(1, now + len, 0.3);
       }
+    } catch (e) { /* never throws */ }
+  };
+  // v2.25.2: the coin chime (amount = the coins the game shows: a touch higher for more); sfx bus, so the sound setting and volumes apply; never throws
+  PA.coinLog = [];
+  PA.coin = function (amount) {
+    try {
+      PA.coinLog.push(Math.max(0, Math.round(+amount || 0))); if (PA.coinLog.length > 40) PA.coinLog.shift();
+      if (!eng || hidden) return;
+      resume();
+      eng.coinChime(PA.ctx.currentTime + 0.02, amount);
+    } catch (e) { /* never throws */ }
+  };
+  // v2.25.3: the Bond heart's warm pluck and the town XP star's light sparkle (54_coinfly.js, once per heart or star that lands); sfx bus, never throws
+  PA.bondLog = []; PA.xpLog = [];
+  PA.bond = function (amount) {
+    try {
+      PA.bondLog.push(Math.max(0, Math.round(+amount || 0))); if (PA.bondLog.length > 40) PA.bondLog.shift();
+      if (!eng || hidden) return;
+      resume(); eng.bondPluck(PA.ctx.currentTime + 0.02);
+    } catch (e) { /* never throws */ }
+  };
+  PA.xp = function (amount) {
+    try {
+      PA.xpLog.push(Math.max(0, Math.round(+amount || 0))); if (PA.xpLog.length > 40) PA.xpLog.shift();
+      if (!eng || hidden) return;
+      resume(); eng.xpSparkle(PA.ctx.currentTime + 0.02);
     } catch (e) { /* never throws */ }
   };
   PA.stinger = function (name) {

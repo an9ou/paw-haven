@@ -115,7 +115,11 @@ function yvGift(p) {
   if (g === 'sticker') m.stk = 1;
   else if (g === 'bone') S.inv.food['Bone-shaped Biscuit'] = (S.inv.food['Bone-shaped Biscuit'] || 0) + 1;
   else if (g === 'flower') V.flowers++;
-  else { V.cday = p.t; S.coins += YV_COIN; }
+  else { // every coin goes through addCoins (a Kind shop refund settles first, 00_core.js); v2.25.3: one coin flies to the counter from the gift's toast,
+    // the visitor or the While you were out line, whichever shows (else it pops on the counter; on the title it simply lands)
+    V.cday = p.t; YV.gD = addCoinsD(YV_COIN, { raw: true }).d; // gD: coins that settled a Kind shop refund, said once in the gift toast (ksSettleNote)
+    if (typeof coinFly === 'function') coinFly(() => [YV.gTe, $('#visitorG.yv', view), $('.wb-vis .wb-vg')].find((el) => el && el.isConnected && el.getBoundingClientRect().width > 2) || null, YV_COIN, { delay: 1600 });
+  }
   return g;
 }
 function yvArrive(p) {
@@ -145,7 +149,7 @@ function yvCatchUp(now) {
 }
 
 /* ---------------- the visitor in the yard ---------------- */
-const YV = { tick: 0, greet: false };
+const YV = { tick: 0, greet: false, gTe: null, gD: 0 };
 // fix batch (art 3, phone 4): the yard visitor has its own spot, right of the dog and clear of the mailbox (the pack's free spot stood it in front of
 // the mailbox, the mail badge on its head, and off the left edge at 390 px). Feet x 592: inside the phone crop at 360 and 390 (phHomeRefit widens the
 // crop to the right edge of visitorSpot(), which answers this spot while a yard visitor is drawn).
@@ -179,7 +183,7 @@ function yvDraw(greet) {
   if (typeof dcRoom === 'function') dcRoom();
   if (greet) setTimeout(() => {
     if (!yvHere() || !$('#visitorG.yv', view) || !modal.hidden) return; const [fx, fy, , sc] = yvSpot(); say(yvLine(e), fx, fy - 200 * sc, 4200); SFX.bark(BARK[yvDog(e.id).key] || 1);
-    if (e.g) setTimeout(() => toast(yvGiftLine(e), 'gold'), 600);
+    if (e.g) setTimeout(() => { YV.gTe = toast(yvGiftLine(e) + (e.g === 'coins' ? ksSettleNote(YV.gD) : ''), 'gold'); }, 600); // gTe: the coin gift's source (yvGift)
   }, 900);
   return e;
 }
@@ -192,7 +196,7 @@ function yvGiftLine(e) {
 }
 function yvCard(t) {
   const V = yvS(), e = V.q.find((x) => x.t === t) || V.q[V.q.length - 1]; if (!e) return;
-  const v = yvDog(e.id), m = V.met[v.id] || { n: 1 }, d = yvVisDog(v), petted = m.pet === localISO(), more = V.q.length > 1;
+  const v = yvDog(e.id), m = V.met[v.id] || { n: 1 }, d = yvVisDog(v), petted = m.pet === jstISO(), more = V.q.length > 1;
   SFX.boop(700);
   const p = openModal(esc(tt('yv.title', '{name} is visiting!', { name: v.name })), `<div class="visitcard yv-card"><span class="vzdog">${dogSVG(d, { pose: 'sit' })}</span><div><p><b>${esc(v.name)}</b> · ${esc(tbreed(v.key))}${v.rare ? ` <span class="yv-star" title="${esc(tt('yv.rare', 'Rare visitor'))}">★</span>` : ''}</p>
     <p>${esc(tt('yv.family', 'Lives with {family}.', { family: yvFam(v) }))}</p><p class="small">${esc(yvLine(e))}</p>
@@ -200,8 +204,8 @@ function yvCard(t) {
   { cls: 'yv-pop', foot: `<button class="btn" id="yvBye">${esc(more ? tt('yv.next', 'Wave bye, next!') : tt('yv.bye', 'Wave bye'))}</button><button class="btn" id="yvBookB">${esc(tt('yv.book', 'Visitors Book'))}</button><button class="btn yes big" id="yvPet" ${petted ? 'aria-disabled="true"' : ''}>${esc(petted ? tt('yv.petted', 'Petted today') : tt('yv.pet', 'Pet'))}</button>` });
   $('#yvPet', p).onclick = () => {
     const mm = V.met[v.id]; if (!mm) return;
-    if (mm.pet === localISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
-    mm.pet = localISO(); addStat('happy', 3); markDirty(); SFX.boop(820); updateHUD(); closeModal();
+    if (mm.pet === jstISO()) { nope(tt('yv.already', '{name} already got pets today. The tail says otherwise.', { name: v.name })); return; }
+    mm.pet = jstISO(); addStat('happy', 3); markDirty(); SFX.boop(820); updateHUD(); closeModal();
     const [fx, fy, , sc] = yvSpot(); fxText('♥', fx, fy - 150 * sc); setTimeout(() => fxText('♥', fx + 20, fy - 170 * sc), 200);
     toast(tt('yv.hello', '{name} and {friend} sniff hello. +3 Happiness.', { name: NAME(), friend: v.name }), 'good');
   };

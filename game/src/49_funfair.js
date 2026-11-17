@@ -270,6 +270,7 @@ function ffEnd(G) {
   end.innerHTML = `<div class="ff-card-end" role="dialog" aria-label="${esc(ffName(k))}"><h3>${esc(G.def.title ? G.def.title(G) : tt('ff.r_title', 'Well played, {name}!', { name: d.name }))}</h3><p>${lines.map(esc).join(' ')}</p>
     <div class="ff-ebtns">${again ? `<button class="btn yes" id="ffAgain">${esc(tt('ff.again', 'Play again'))}</button>` : ''}<button class="btn" id="ffBack">${esc(tt('ff.back', 'Back'))}</button></div></div>`;
   end.hidden = false; G.res = { paid, want, bp, score: G.score };
+  jfSrc('bond', $('.ff-card-end p', end)); if (paid) coinFly($('.ff-card-end p', end), paid); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   const a = $('#ffAgain'); if (a) a.onclick = () => { SFX.boop(840); if (ffCan(k, true)) go('fair', k); };
   $('#ffBack').onclick = () => { SFX.boop(700); ffBackHome(); };
   setTimeout(() => { const b = $('#ffAgain') || $('#ffBack'); if (b && FF.g === G) b.focus({ preventScroll: true }); }, 50);
@@ -353,6 +354,7 @@ function ffStallRun(goods, sel) {
   withDog(D(), () => addBond(1));
   const p = openModal(esc(ffName('stall')), `<div class="ff-stallart" aria-hidden="true">${ffArt('stall')}</div><ul class="ff-slines">${lines.map((l, i) => `<li style="animation-delay:${(i * 0.35).toFixed(2)}s">${esc(l)}</li>`).join('')}</ul><p><b>${esc(tt('ff.stall_got', 'The stall earned {n, plural, one {# coin} other {# coins}} today.', { n: got }))}</b> ${esc(tt('ff.stall_dog', '{name} greeted every neighbour with a wag.', { name: NAME() }))}</p>`, { cls: 'ff-pop ff-stallpop', foot: `<button class="btn yes" id="ffStallOk">${esc(tt('ff.ok', 'OK'))}</button>` });
   $('#ffStallOk', p).onclick = () => { SFX.boop(700); closeModal(); };
+  if (got) coinFly($('p b', p), got, { delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   try { if (typeof ddStickers === 'function') ddStickers(false); } catch (e) { /* none */ }
   return got;
 }
@@ -387,6 +389,7 @@ function ffContestCheck() {
   const p = openModal(esc(tt('ff.pc_title', 'Photo contest results')), `<div class="ff-pcres"><span class="ff-rib" aria-hidden="true">${art('item', 'Photo Contest Ribbon')}</span><div><p>${esc(tt('ff.pc_intro', 'Ms. Patel looked at all three photos with a magnifying glass and a big smile.'))}</p><ul>${P.e.map((e, i) => `<li>${esc(say(e, i))}</li>`).join('')}</ul>
     <p><b>${esc(tt('ff.pc_won', 'Prize: {n, plural, one {# coin} other {# coins}} and a photo contest ribbon for your sticker book.', { n: won }))}</b></p><p class="small">${esc(tt('ff.pc_all', 'Everyone who enters gets a ribbon. A new contest starts on Monday.'))}</p></div></div>`, { cls: 'ff-pop', foot: `<button class="btn yes" id="ffPcOk">${esc(tt('ff.ok', 'OK'))}</button>` });
   $('#ffPcOk', p).onclick = () => { SFX.boop(700); closeModal(); };
+  if (won) coinFly($('.ff-pcres p b', p), won, { delay: 420 }); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   try { if (typeof ddStickers === 'function') ddStickers(false); } catch (e) { /* none */ }
   return true;
 }

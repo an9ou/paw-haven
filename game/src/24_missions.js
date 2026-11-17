@@ -157,9 +157,9 @@ const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).l
 const msTotal = () => (S && S.missions && S.missions.list.length) || 1; // 1 a day (a forced test list may hold more)
 
 /* ---- progress ---- */
-let msQueue = [];
+let msQueue = [], msCoinEl = null; // msCoinEl (v2.25.2): where the last mission coin popped from, for the full card's coins
 const msGuideBusy = () => (typeof gdActive === 'function' && !!gdActive()) || (typeof fsActive === 'function' && !!fsActive()); // v2.5: mission toasts also wait for the costume parade walk
-function msSay(text, kind) { if (msGuideBusy()) msQueue.push([text, kind]); else toast(text, kind); }
+function msSay(text, kind) { if (msGuideBusy()) { msQueue.push([text, kind]); return null; } return toast(text, kind); } // the toast (null while it waits for Gerald)
 function msFlush() { if (!msQueue.length || msGuideBusy()) return; const q = msQueue; msQueue = []; q.forEach(([t, k], i) => setTimeout(() => toast(t, k), i * 700)); }
 // under the test harness missions only progress when a suite asks for it (prefs.msTest): a mission payout would otherwise change coin totals in older suites
 function msAllowed() { return !navigator.webdriver || !!prefs.msTest; }
@@ -172,8 +172,9 @@ function msOnAct(a) {
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
     if (it.p >= it.n) { // Daily rhythm: every finished mission pays 40 raw coins and stamps the card
-      it.done = jstISO(); const c = addCoins(MS_PAY, { raw: true }); stamp = true; m.stamps++; m.stampDay = m.date; ms2Life('ms'); if (typeof lvGain === 'function') lvGain('ms', 20); setTimeout(() => trackAct('msdone', { id: it.id }), 0); // v2.29: the story's "finish the day's mission" (57b_story.js). v2.20: the lifetime count (Mission pup badge). v2.22: town XP
-      msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
+      it.done = jstISO(); const { n: c, d: cd } = addCoinsD(MS_PAY, { raw: true }); stamp = true; m.stamps++; m.stampDay = m.date; ms2Life('ms'); if (typeof lvGain === 'function') lvGain('ms', 20); setTimeout(() => trackAct('msdone', { id: it.id }), 0); // v2.29: the story's "finish the day's mission" (57b_story.js). v2.20: the lifetime count (Mission pup badge). v2.22: town XP
+      const te = msSay(tt('missions.done_stamp', 'Mission done: {mission}. +{n} coins and a crayon stamp.', { mission: msText(it, true), n: c }) + ksSettleNote(cd), 'gold'); setTimeout(() => msHudSync(true), 0); // v2.16.1: the top-bar clipboard hops
+      msCoinEl = te || $('#msBtn:not([hidden])'); coinFly(msCoinEl, c, { gain: c - cd }); jfSrc('xp', msCoinEl); // v2.25.2: one coin pops from the toast (or the clipboard) and flies to the counter (54_coinfly.js)
     }
   });
   if (!changed) return;
@@ -188,7 +189,7 @@ function msReward() {
   const m = S.missions; let kind;
   if (!m.rewards.includes('Astronaut Helmet')) { kind = 'helmet'; m.rewards.push('Astronaut Helmet'); if (!owns('clothes', 'Astronaut Helmet')) S.inv.clothes.push('Astronaut Helmet'); }
   else if (!m.rewards.includes('Rocket Ship')) { kind = 'rocket'; m.rewards.push('Rocket Ship'); if (!owns('houses', 'Rocket Ship')) S.inv.houses.push('Rocket Ship'); }
-  else { kind = 'coins'; addCoins(MS_CARD_COINS, { raw: true }); S.inv.food.Pupcake = (S.inv.food.Pupcake || 0) + 1; }
+  else { kind = 'coins'; const c0 = S.coins, n = addCoins(MS_CARD_COINS, { raw: true }); coinFly(msCoinEl, n, { gain: S.coins - c0 }); S.inv.food.Pupcake = (S.inv.food.Pupcake || 0) + 1; } // v2.25.2: the full card's coins fly as their own coin
   markDirty(); saveNow(); msRefresh(true);
   msWhenFree(() => msRewardPop(kind));
 }

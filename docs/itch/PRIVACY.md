@@ -1,6 +1,6 @@
 # Doodle Doggo privacy policy
 
-Last updated: 7 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
+Last updated: 16 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
 
 **In short:** Doodle Doggo has no ads and no tracking. If you make an account, we keep your email, a scrambled version of your password and your game save. If you use Friends, we keep the list in that section. Nothing else.
 
@@ -33,6 +33,10 @@ You can use Friends as a guest or with an account. It starts when you pick a fri
 - **Remove and block** are quiet. The other player is not told.
 - **Leave Friends** in Settings deletes it all: your code, your friends list, the blocks you made, your yard snapshot, and the pets, notes, gifts and walks. A block someone else made stays.
 
+## Gift codes
+
+- **A gift code you type in the game** is sent only to our server, to check it. We keep which codes your account used, so their gifts can come back on a new device. Gift codes need an account; nothing about them is paid.
+
 ## Where it is kept
 
 Account data and saves are stored with Cloudflare, who run the login service. They keep the data only so the game can load and save it. Where you play (doodledoggo.app, GitHub Pages or itch.io) the game runs in your browser. itch.io has its own privacy policy for its own site.
@@ -46,6 +50,7 @@ Doodle Doggo is a gentle game for everyone. If you are young, please ask a grown
 - **Play as a guest** at any time, with no account.
 - **Export a save code** in Settings whenever you like, to keep your own copy.
 - **Delete your account and everything we hold:** contact the owner at **[CONTACT EMAIL: to be filled in by the owner]** from the email address you used to sign up, and say you want your account deleted. We delete the account, the password hash, the saves, any Dog Card and your Friends data (your code, friends list, blocks, yard snapshot, and pets, notes, gifts and walks), and tell you when it is done. Deleting your account does not remove a save code you exported or the guest save on your own device. You can clear those yourself.
+- **If an account is paused** because of refunds or bank disputes and is then deleted, we keep only a scrambled one-way code of its email, to stop payment abuse, and nothing else.
 - **Ask what we hold** about you in the same way.
 
 ## Changes

@@ -35,11 +35,13 @@ const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
   'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern',
   'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair',
-  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain' // v2.26 Yard visitors: the four yard toys (54_visitors.js; the Worker's FR_LIM.decor 35)
+  'Paw-Print Pennant', // v2.25.5 gift codes: the promo-code look, FR_DECOR 31 (live on main since v2.25.5; the Worker's FR_LIM.decor 32 there, 36 with v2.26)
+  'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain' // v2.26 Yard visitors: the four yard toys, appended after the Pennant (32-35; 54_visitors.js)
 ];
-// v2.26: the length of FR_DECOR that a Worker from before v2.26 takes (its FR_LIM.decor 31). It refuses the whole snapshot when one index is past it, so if
-// PUT /friends/yard says bad while newer items are out, frAfterPush sends the same yard once more without them (FR.decorOld) until the next load
-const FR_DECOR_OLD = 31;
+// the length of FR_DECOR that the deployed gift-codes Worker takes (its FR_LIM.decor 32: no older Worker is live). It refuses the whole snapshot
+// when one index is past it, so if PUT /friends/yard says bad while newer items are out (a v2.26 toy, index 32+), frAfterPush sends the same yard once
+// more without them (FR.decorOld) until the next load.
+const FR_DECOR_OLD = 32;
 // an item from a later release shows in friend yards (mine sent, theirs drawn) only once its feature is live here: before the v2.26 news date no toy
 function frDecorLive(n) {
   const c = typeof HM_DECOR !== 'undefined' ? HM_DECOR[n] : null; if (!c) return false;
@@ -175,7 +177,7 @@ function frAfterPush() {
     const ids = frYardDogs().map((o) => o.d.id);
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
     return put(yard).then((r) => {
-      // an older Worker (FR_LIM.decor 31) refuses a snapshot with a v2.26 toy: send it again without the newer items, the rest of the yard still shows
+      // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
       if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(Object.assign({}, yard, { decor: yard.decor.filter((d) => d.i < FR_DECOR_OLD) })); }
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
@@ -1558,7 +1560,7 @@ function frWalkEnd(tName) {
   let n = 0;
   if (!S.fr.walked.includes(o.fid) && !frSentToday(o.fid, 'walk')) { // the first walk with this friend today: the coins (2 friends a day) and the walk event
     S.fr.walked = S.fr.walked.concat(o.fid).slice(-50); markDirty();
-    if (S.fr.walks < FR_WALK_MAX) { S.fr.walks++; n = addCoins(FR_WALK_COINS); }
+    if (S.fr.walks < FR_WALK_MAX) { S.fr.walks++; n = addCoins(FR_WALK_COINS); coinFly(() => $('#modal .fr-walked'), n, { delay: 560 }); } // v2.25.3: its coin flies from the walk result's friend line
     frWalkSend(o, tName);
   }
   return `<p class="small fr-walked">${esc(n ? tt('fr.walk_paid', 'Walked with {who}: +{n}', { who, n: tnum(n) }) : tt('fr.walk_with', 'Walked with {who}.', { who }))}</p>`;

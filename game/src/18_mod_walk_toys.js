@@ -37,8 +37,8 @@ function finishWalkMod(R, r) {
   const e = W.env, rainCoat = e.weather === 'rain' && hasRaincoat();
   const went = !r.early || (+r.distance || 0) >= 2 || !!r.treasure; // a walk headed home at the start covered no ground: it is not one of the day's walks, no friend coins, no letter (as the classic walk's frac > 0.05)
   const wk = went ? walkCount() : null, raw = Math.max(0, +r.coins || 0), pouch = Math.round((W.pouch || 0) * (S.outfit.charm === 'Lucky Penny' ? 1.1 : 1)); // Daily rhythm: walks after the 5th today pay half (the runner's pouch coins stay whole)
-  const pay = addCoins(pkWalkCoins(walkShare(raw, pouch, wk ? wk.share : 1))); // v2.9 PACK: one walk's pay, +10% (rounded down) when 2 or more dogs walk
-  const ksN = typeof ksWalkBonus === 'function' ? ksWalkBonus(pay) : 0, coins = pay + ksN; // v2.24: the Supporter Pack's +20% (rounded down, after the half pay), no daily limit
+  const c0 = S.coins, pay = addCoins(pkWalkCoins(walkShare(raw, pouch, wk ? wk.share : 1))); // v2.9 PACK: one walk's pay, +10% (rounded down) when 2 or more dogs walk
+  const ksN = typeof ksWalkBonus === 'function' ? ksWalkBonus(pay) : 0, coins = pay + ksN, gained = S.coins - c0; // v2.24: the Supporter Pack's +20% (rounded down, after the half pay), no daily limit. v2.25.2: gained = what the balance really rose (a refund may take some)
   const happy = Math.round((+r.happiness || 0) + (rainCoat ? 5 : 0)); addStat('happy', happy);
   const bond = (+r.bond || 0) > 0 ? addBond(+r.bond) : 0;
   const en = Math.abs(+r.energy || 0) * (buffOn('cool') ? 0.75 : 1); addStat('energy', -en);
@@ -55,11 +55,13 @@ function finishWalkMod(R, r) {
   const wl = breedLine(WALK_LINES, D());
   const runBits = [r.cleanRun ? tt('toys.clean_run', 'Clean run! Not a single bonk.') : r.obstaclesHit ? tt('toys.bonked', 'Bonked into {n, plural, one {# thing} other {# things}}.', { n: r.obstaclesHit }) : '', r.timeLost ? tt('toys.bumps', 'Bumps cost you {n}s.', { n: Math.round(r.timeLost) }) : '', r.puddlesCleared ? tt('toys.leapt', 'Leapt over {n, plural, one {# puddle} other {# puddles}}.', { n: r.puddlesCleared }) : '', rainCoat ? tt('toys.raincoat_dry', 'The raincoat kept everything dry (+5 Happiness).') : e.weather === 'rain' ? tt('toys.soggy', 'No raincoat, so: soggy dog.') : ''].filter(Boolean);
   const frLine = typeof frWalkEnd !== 'function' ? '' : went ? frWalkEnd(r.treasure && r.treasure.name && !r.treasure.dup ? r.treasure.name : null) : (frWalkDrop(), ''); // v2.19: a walk with a friend's dog (50_friends.js)
-  const run = `${pkWalkLine(pkFol)}${frLine}${wl ? `<p class="small">${esc(wl)}</p>` : ''}<p class="small">${esc(runBits.join(' '))}</p>${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}`;
+  const run = `${pkWalkLine(pkFol)}${frLine}${wl ? `<p class="small">${esc(wl)}</p>` : ''}<p class="small">${esc(runBits.join(' '))}</p>${walkTiredLine(wk)}${typeof ksWalkLine === 'function' ? ksWalkLine(ksN) : ''}${typeof ksSettleHTML === 'function' ? ksSettleHTML() : ''}`;
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
   const p = openModal(t ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(r.early ? tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn }) : tt('walk.res_title_done', 'Walk complete: {route}', { route: rn })), `${tre}${bonus}${junk}${run}
-    ${wfTiles([[`+${tnum(coins)}`, esc(tt('walk.res_coins', 'Paw Coins')), coins], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${Math.round(en)}`, esc(tt('walk.res_energy', 'Energy')), Math.round(en)], [cl ? '-' + Math.round(cl) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cl]], 'results compact')}`,
+    ${wfTiles([[`+${tnum(coins)}`, esc(tt('walk.res_coins', 'Paw Coins')), coins, 'res-coins'], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond, 'res-bond'], [`-${Math.round(en)}`, esc(tt('walk.res_energy', 'Energy')), Math.round(en)], [cl ? '-' + Math.round(cl) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cl]], 'results compact')}`,
     { cls: 'celebrate', keep: true, foot: `${t && !dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(t && !dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
+  jfSrc('bond', $('.res-bond .v', p)); // v2.25.3: the Bond heart pops from the Bond tile
+  coinFly($('.res-coins .v', p), coins, { gain: gained, delay: 420 }); // v2.25.2: one coin pops from the Paw Coins tile and flies to the counter (54_coinfly.js)
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };
   SFX.fanfare();
@@ -88,8 +90,8 @@ function enterToy(name) {
       if (r.energy) addStat('energy', +r.energy);
       if (crew.length) pkToyFx(crew, r, k, name);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
-      dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
-      if (Math.round(hp) || b || c) toast(tt('toys.reward', '+{happy} Happiness{hasBond, select, yes {, +{bond} Bond} other {}}{hasCoins, select, yes {, +{coins} coins} other {}}{fav, select, yes { (favourite toy!)} other {}}{repeat, select, yes { (x{k}: played already today)} other {}}{crew, select, yes { (each dog)} other {}}', { happy: Math.round(hp), hasBond: b ? 'yes' : 'no', bond: b, hasCoins: c ? 'yes' : 'no', coins: c, fav: fav > 1 ? 'yes' : 'no', repeat: k < 1 ? 'yes' : 'no', k: String(k), crew: crew.length ? 'yes' : 'no' }), 'good');
+      let toyTe = null; dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
+      if (Math.round(hp) || b || c) toyTe = toast(tt('toys.reward', '+{happy} Happiness{hasBond, select, yes {, +{bond} Bond} other {}}{hasCoins, select, yes {, +{coins} coins} other {}}{fav, select, yes { (favourite toy!)} other {}}{repeat, select, yes { (x{k}: played already today)} other {}}{crew, select, yes { (each dog)} other {}}', { happy: Math.round(hp), hasBond: b ? 'yes' : 'no', bond: b, hasCoins: c ? 'yes' : 'no', coins: c, fav: fav > 1 ? 'yes' : 'no', repeat: k < 1 ? 'yes' : 'no', k: String(k), crew: crew.length ? 'yes' : 'no' }), 'good'); if (toyTe) jfSrc('bond', toyTe); if (c) coinFly(toyTe, c); // v2.25.3: the toy game's coin (and Bond heart) fly from its toast (54_coinfly.js)
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
   };

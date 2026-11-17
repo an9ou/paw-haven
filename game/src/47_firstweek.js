@@ -220,12 +220,12 @@ function fwDgArt(r) { return r.t === 'coins' ? ICON('coin') : r.t === 'seeds' ? 
 const fwDgToday = () => { const t = localISO(); return { ym: fwYM(t), d: +t.slice(8, 10) }; };
 const fwDgCan = () => { if (!S || !S.fw || !S.fw.cal) return false; const { ym, d } = fwDgToday(), c = S.fw.cal; return c.ym === ym && c.days.includes(d) && !c.dg.includes(d); };
 function fwDgClaim() {
-  if (!fwDgCan()) return false; const { ym, d } = fwDgToday(), c = S.fw.cal, r = fwDaily(ym, d); c.dg.push(d);
+  if (!fwDgCan()) return false; const { ym, d } = fwDgToday(), c = S.fw.cal, r = fwDaily(ym, d), c0 = S.coins; c.dg.push(d);
   if (r.t === 'coins') { const n = Math.max(0, Math.min(r.c, FW_DG_COIN_CAP - (c.dgc || 0))); if (n) { c.dgc = (c.dgc || 0) + n; addCoins(n, { raw: true }); } }
   else if (r.t === 'seeds') { S.inv.seeds = S.inv.seeds || {}; S.inv.seeds[r.id] = (S.inv.seeds[r.id] || 0) + r.q; }
   else S.inv.food[r.n] = (S.inv.food[r.n] || 0) + r.q;
   markDirty(); updateHUD(); saveNow(); SFX.kaching();
-  toast(tt('fw.dg_got', "Today's gift: {what}.", { what: fwDgLabel(r) }) + (r.fest ? ' ' + tt('fw.dg_fest', 'A festival treat!') : ''), 'gold');
+  const te = toast(tt('fw.dg_got', "Today's gift: {what}.", { what: fwDgLabel(r) }) + (r.fest ? ' ' + tt('fw.dg_fest', 'A festival treat!') : ''), 'gold'); if (S.coins > c0) coinFly(te, S.coins - c0); // v2.25.3 Happy meters: one coin flies to the counter (54_coinfly.js)
   return true;
 }
 function fwDgHTML() {
@@ -302,9 +302,9 @@ function fwGive(r, cal) {
   return r.t === 'coins' || (r.t === 'bag' && r.c) ? (r.bag || r.t === 'bag' ? tt('fw.got_coins_bag', 'Calendar gift: +{n} coins and a treat bag.', { n: coins }) : tt('fw.got_coins', 'Calendar gift: +{n} coins.', { n: coins })) : r.t === 'frame' ? tt('fw.got_frame', 'Calendar gift: {what}. Find it in photo mode.', { what: fwRewLabel(r) }) : tt('fw.got_item', 'Calendar gift: {what}. It is in your bag.', { what: fwRewLabel(r) });
 }
 function fwClaim(page, n) {
-  if (!S || !S.fw) return false;
-  if (page === 'wel') { const w = S.fw.wel; if (!w || w.days.length < n || w.got.includes(n) || !FW_WEL_DAYS.includes(n)) return false; w.got.push(n); if (n === 7) S.fw.frames.name = NAME(); toast(fwGive(fwReward('wel', n)), 'gold'); }
-  else { const c = S.fw.cal; if (c.days.length < n || c.got.includes(n) || !FW_CAL_DAYS.includes(n)) return false; c.got.push(n); toast(fwGive(fwReward('cal', n, c.ym), c), 'gold'); }
+  if (!S || !S.fw) return false; const c0 = S.coins, fly = (te) => { if (S.coins > c0) coinFly(te, S.coins - c0); return te; }; // v2.25.3: a gift's coins fly from its toast
+  if (page === 'wel') { const w = S.fw.wel; if (!w || w.days.length < n || w.got.includes(n) || !FW_WEL_DAYS.includes(n)) return false; w.got.push(n); if (n === 7) S.fw.frames.name = NAME(); fly(toast(fwGive(fwReward('wel', n)), 'gold')); }
+  else { const c = S.fw.cal; if (c.days.length < n || c.got.includes(n) || !FW_CAL_DAYS.includes(n)) return false; c.got.push(n); fly(toast(fwGive(fwReward('cal', n, c.ym), c), 'gold')); }
   SFX.kaching(); markDirty(); saveNow(); return true;
 }
 // a stamp for today (any real day played). A new month starts a new page; last month's unclaimed gifts go to the bag, never lost
