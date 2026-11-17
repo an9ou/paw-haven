@@ -7,10 +7,11 @@
 # (= SITE_FONTS=split SITE_IMG=split SITE_PLAY=split) moves them to three side Workers on routes of the zone, which run before the Custom Domain:
 # doodle-doggo-fonts (doodledoggo.app/fonts/i18n/* and /play/fonts/i18n/*), doodle-doggo-img (/img/map/*) and doodle-doggo-play (/play/*). The routes
 # come from _cfsite/routes.txt, which tools/cf_site.js writes.
-#   bash tools/cf_pages_deploy.sh                          inline (refuses while side routes are live: they would shadow the new files)
-#   SITE_SPLIT=1 bash tools/cf_pages_deploy.sh             split: uploads the side Workers, then their routes, then the main Worker
-#   SITE_BUILD_ONLY=1 [SITE_SPLIT=1] bash tools/cf_pages_deploy.sh   builds every bundle, prints its gzipped size and the routes, no Cloudflare call at all
-#   SITE_DROP_ROUTES=1 bash tools/cf_pages_deploy.sh       roll back a split: uploads the inline main Worker, then deletes the side routes
+# The split is live since 18 Nov 2026 (v2.31), so it is the DEFAULT now; SITE_SPLIT=0 or SITE_DROP_ROUTES=1 builds inline.
+#   bash tools/cf_pages_deploy.sh                          split (default): uploads the side Workers, then their routes, then the main Worker
+#   SITE_SPLIT=0 bash tools/cf_pages_deploy.sh             inline (refuses while side routes are live: they would shadow the new files)
+#   SITE_BUILD_ONLY=1 [SITE_SPLIT=0] bash tools/cf_pages_deploy.sh   builds every bundle, prints its gzipped size and the routes, no Cloudflare call at all
+#   SITE_DROP_ROUTES=1 bash tools/cf_pages_deploy.sh       roll back the split: uploads the inline main Worker, then deletes the side routes
 # The site is the Worker "doodle-doggo" (see tools/cf_site.js for why a Worker and not a Pages project), with Workers Custom
 # Domains for doodledoggo.app and www.doodledoggo.app (Cloudflare adds their DNS records itself).
 # Needs CLOUDFLARE_ACCOUNT_ID. In a Claude cloud session the proxy adds the API token for api.cloudflare.com; anywhere else,
@@ -26,7 +27,8 @@ if grep -qE "key: '(dalmatian|bernese|aussie|cavalier|jrt)'" tools/site_dogs.js 
   echo "  For a site change before the launch, deploy from main (35 profiles)." >&2
   exit 1
 fi
-: "${SITE_SPLIT:=}"
+: "${SITE_SPLIT:=1}"
+if [ -n "${SITE_DROP_ROUTES:-}" ] || [ "$SITE_SPLIT" = "0" ]; then SITE_SPLIT=""; fi
 if [ -n "$SITE_SPLIT" ]; then SITE_FONTS="${SITE_FONTS:-split}" SITE_IMG="${SITE_IMG:-split}" SITE_PLAY="${SITE_PLAY:-split}"; fi
 SITE_FONTS="${SITE_FONTS:-inline}" SITE_IMG="${SITE_IMG:-inline}" SITE_PLAY="${SITE_PLAY:-inline}" node tools/cf_site.js
 

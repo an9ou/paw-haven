@@ -53,12 +53,12 @@ check). Layout: the `paw-fit` skill. Big releases: `all` then `phone`. Known red
 2. `git push origin HEAD:main` (a green push deploys GitHub Pages: check the run succeeded), and the dev branch if one is in use. Never force-push.
 3. `node tools/itch.js` (writes `dist/itch/`), then `bash tools/itch_push.sh <ver>`. It needs `BUTLER_API_KEY` and `ITCH_USER` in
    the environment (never print them), rebuilds, pushes channel `html5` and prints `butler status`. Note the build number.
-4. **Site** (also carries `/play/`, the itch build of main): `SITE_GAME=$PWD/dist/itch node game/run_tests.js site`, then
-   `SITE_GAME=$PWD/dist/itch bash tools/cf_pages_deploy.sh`. In a cloud session the deploy raises an approval prompt for the
+4. **Site** (also carries `/play/`, the itch build of main; split into side Workers since 18 Nov 2026, docs/design/site-split.md):
+   `SITE_FONTS=split SITE_IMG=split SITE_PLAY=split SITE_GAME=$PWD/dist/itch node game/run_tests.js site`, then
+   `SITE_GAME=$PWD/dist/itch bash tools/cf_pages_deploy.sh` (split is the default; roll back with `SITE_DROP_ROUTES=1`). In a cloud session the deploy raises an approval prompt for the
    owner; if it waits 5 minutes, do not deploy, take the path that needs no prompt and say so. The script refuses while
    `tools/site_dogs.js` holds unreleased dog profiles.
-   - **Size budget:** the Worker limit is 10 MB gzipped; the `site` suite allows 9.8 MB and stood at 9.86 MB on 10 Nov (its only red
-     check). Add no site art or fonts without trimming; raise the test budget only with the owner.
+   - **Size budget:** the Worker limit is 10 MB gzipped per Worker. Split sizes on 18 Nov: main 1.97 MB, fonts 2.70, img 1.43, play 3.49.
    - **Fonts gotcha:** `node tools/i18n_fonts.js <lang>` without `--for game` rewrites the SITE fonts in `site/fonts/i18n/`. Game subsets need `--for game`.
 5. **Live check:** `curl -s https://doodledoggo.app/play/ | md5sum` equals `md5sum dist/itch/index.html`. After a deploy the old page can
    be served for about 15 minutes (the token cannot purge the cache): wait, do not redeploy. Also `/yue/` and `/ja/` answer 200.

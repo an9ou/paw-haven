@@ -51,6 +51,7 @@ SITE_SPLIT=1 SITE_GAME=$PWD/dist/itch bash tools/cf_pages_deploy.sh             
 Order inside: upload `doodle-doggo-fonts`, `-img`, `-play`; create (or repoint) the four routes; upload `doodle-doggo`; re-PUT the Custom Domains;
 the curl checks. From then on **every site deploy must use `SITE_SPLIT=1`** (the plain one refuses); flip the default in
 `cf_pages_deploy.sh` and the paw-release skill (`SITE_GAME=... bash tools/cf_pages_deploy.sh`) in the commit after the live check passes.
+**Done 18 Nov 2026:** split deployed with v2.31, live checks passed, `/play/` md5 matches itch, default flipped (inline = `SITE_SPLIT=0`).
 
 ## Roll back
 
