@@ -247,7 +247,7 @@ function prPayUI(p, n, typed, kind) {
   SFX.kaching();
   const done = !prS().building.every((b) => b.id !== c.id);
   const body = $('.panel-body', p); if (body) { body.innerHTML = prSheetHTML(); prBind(p); }
-  if (done) toast(tt('pr.paid_toast', 'The {name} is fully paid! The builders start today. It will be ready in {n} days.', { name: prName(c.id), n: PR_BUILD_DAYS }), 'gold');
+  if (done) toast(tt('pr.paid_toast', '{name} is fully paid! The builders start today. It will be ready in {n} days.', { name: prName(c.id), n: PR_BUILD_DAYS }), 'gold');
   else toast(tt('pr.put_toast', '{n} coins into the {name}. Thank you!', { n: tnum(got), name: prName(c.id) }), 'good');
 }
 
