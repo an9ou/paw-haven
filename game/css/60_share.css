@@ -1,0 +1,31 @@
+/* v2.31 "Share my dog" (58_share.js): the share sheet, the size and name switches, "Share this moment" on the cards and after a story scene */
+.sh{display:flex;flex-direction:column;align-items:center;gap:8px}
+.sh-prev{height:min(46vh,430px);aspect-ratio:4/5;max-width:100%;display:flex;align-items:center;justify-content:center;background:#FFFBF3;border:2.5px solid var(--ink);border-radius:10px;overflow:hidden;box-shadow:2px 3px 0 rgba(91,61,50,.14);transition:opacity .15s}
+.sh-prev[data-size="story"]{aspect-ratio:9/16}
+.sh-prev.sh-busy .sh-img{opacity:.55}
+.sh-img{width:100%;height:100%;object-fit:contain;display:block}
+.sh-wait{font-family:var(--font-hand);font-size:18px;padding:12px;text-align:center}
+.sh-opts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 12px}
+.sh-sizes{display:inline-flex;gap:6px}
+.sh-size,.sh-name{min-height:44px}
+.sh-size[aria-pressed="true"]{background:var(--sun,#FFE08A);box-shadow:inset 0 0 0 2px var(--ink)}
+.sh-name{display:inline-flex;align-items:center;gap:8px}
+.sh-tog{width:38px;height:22px;border:2px solid var(--ink);border-radius:12px;background:#EFE6DA;position:relative;flex:none}
+.sh-tog::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--ink);transition:left .15s}
+.sh-name[aria-checked="true"] .sh-tog{background:#BDE7D2}
+.sh-name[aria-checked="true"] .sh-tog::after{left:16px}
+.sh-note{margin:0;text-align:center;max-width:380px}
+.sh-note.sh-hold{font-weight:700}
+.sh-ic{width:24px;height:24px;display:inline-block;vertical-align:-5px;margin-right:6px}
+.sh-ic svg,#stPcBtn svg,#mmPc .ic svg{width:100%;height:100%;display:block}
+#shGo[aria-disabled="true"]{opacity:.55;cursor:wait}
+.sh-mrow{display:flex;justify-content:center;margin-top:10px}
+.sh-moment{min-height:44px;font-size:16px;display:inline-flex;align-items:center}
+#shMoment{position:absolute;left:50%;transform:translateX(-50%);z-index:40;pointer-events:none}
+#shMoment .sh-mrow{margin:0}
+#shMoment .sh-moment{pointer-events:auto;background:#FFF3B8;box-shadow:2px 3px 0 rgba(91,61,50,.18);animation:sh-pop .35s ease-out}
+@keyframes sh-pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){#shMoment .sh-moment{animation:none}}
+html[data-motion="off"] #shMoment .sh-moment{animation:none}
+html[data-layout="phone"] .sh-prev{height:min(40vh,330px)}
+html[data-layout="phone"] .sh-prev[data-size="story"]{height:min(42vh,360px)}

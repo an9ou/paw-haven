@@ -80,4 +80,5 @@
 56_stories.js
 57_scenes.js
 57b_story.js
+58_share.js
 23_boot.js
