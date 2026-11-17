@@ -235,7 +235,7 @@ function phPanel() {
 function phOpen() {
   if (!phCan()) return false;
   exPhoto(true); const cap = phCapture(); if (!cap) { exPhoto(false); return false; } // v2.13: the face picked for the photo goes on every dog first (41_expressions.js)
-  PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; // a clear screen: the hints that were up fold away
+  PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; if (typeof hideMomentChip === 'function') hideMomentChip(); // bug sweep 18 Nov: the story scene's "Share this moment" chip (58_share.js) sat on top of the photo // a clear screen: the hints that were up fold away
   let root = $('#phMode'); if (!root) { root = document.createElement('div'); root.id = 'phMode'; root.className = 'ph-mode'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', tt('photo.mode', 'Photo mode')); stage.appendChild(root); }
   root.hidden = false; root.classList.remove('ph-busy'); root.innerHTML = phPanel(); stage.classList.add('ph-on'); phBtn.hidden = true;
   root.querySelectorAll('[data-frame]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phFrame = b.dataset.frame; savePrefs(); root.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });

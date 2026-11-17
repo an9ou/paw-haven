@@ -212,7 +212,7 @@ document.addEventListener('click', (e) => {
 // after a story scene that was watched to the end: a small chip under the top bar for a few seconds
 function hideMomentChip() { clearTimeout(SH.moT); const c = $('#shMoment'); if (c) c.remove(); }
 function showMomentChip() {
-  hideMomentChip(); if (!S || !S.dog || cur.mode !== 'yard') return;
+  hideMomentChip(); if (!S || !S.dog || cur.mode !== 'yard' || (typeof phActive === 'function' && phActive())) return;
   const c = document.createElement('div'); c.id = 'shMoment'; c.innerHTML = shMomentBtn('story').replace('sh-mrow', 'sh-mrow sh-mchip');
   const hb = hud && !hud.hidden ? hud.getBoundingClientRect() : null, sb = stage.getBoundingClientRect();
   c.style.top = Math.max(8, Math.round((hb ? hb.bottom : sb.top + 56) - sb.top + 10)) + 'px';

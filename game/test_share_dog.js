@@ -119,8 +119,11 @@ run('share_dog', async (t) => {
   ok(await t.until(() => !!document.querySelector('#messG .mess'), null, 5000), 'there is a poop in the yard');
   await ev(() => { const S = window.__paw.S; if (S.mess && S.mess[0]) S.mess[0].t = (S.mess[0].t || 0) - 1e7; });
   ok(await t.until(() => window.__paw.ph.can(), null, 9000), 'the camera can open');
+  await ev(() => window.__paw.sh.chip()); ok(await ev(() => !!document.getElementById('shMoment')), 'the story chip is up before the camera opens');
   await ev(() => window.__paw.ph.open()); ok(await t.until(() => window.__paw.ph.ready(), null, 9000), 'the photo is ready');
-  const ph = await ev(() => ({ size: window.__paw.ph.size(), svg: window.__paw.ph.svg(), crop: window.__paw.ph.crop() }));
+  ok(await ev(() => !document.getElementById('shMoment')), 'bug sweep 18 Nov: the story chip goes when photo mode opens (it sat on top of the photo)');
+  ok(await ev(() => { window.__paw.sh.chip(); return !document.getElementById('shMoment'); }), 'and it does not come back while photo mode is open');
+  const ph =await ev(() => ({ size: window.__paw.ph.size(), svg: window.__paw.ph.svg(), crop: window.__paw.ph.crop() }));
   ok(ph.size.w === 1080 && ph.size.h === 1350, 'the postcard is 1080x1350: ' + JSON.stringify(ph.size));
   ok(ph.crop[2] < 1000 && ph.crop[3] <= 600, 'cropped round the dog: ' + JSON.stringify(ph.crop));
   ok(ph.svg.includes('Doodle Doggo · doodledoggo.app'), 'the chip is on the photo');
