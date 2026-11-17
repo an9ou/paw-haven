@@ -70,6 +70,13 @@ function shCrop(win) {
   const x = clamp(w >= sw ? SH_SPAN[0] - (w - sw) / 2 : SH_SPAN[0], 0, 1000 - w);
   return [f1(x), 0, f1(w), h];
 }
+// the chip: a little paper label with a paw, the name of the game and its address. k: the scale (1 = a 1080 px wide picture);
+// anchor 'c': (x, y) is its middle, 'br': its bottom right corner (the photo mode postcard, 35_photo.js phCompose)
+function shChip(x, y, k, anchor) {
+  k = k || 1; const cs = 30, tw = frTextW(SH_CHIP, cs, "'Caveat',cursive", 700), pw = tw + 96, ph = 58;
+  const px = anchor === 'br' ? -pw : -pw / 2, py = anchor === 'br' ? -ph : -ph / 2, path = shWob(px, py, pw, ph, 26, 7, 3);
+  return `<g class="sh-chip" transform="translate(${f1(x)} ${f1(y)}) scale(${k})"><path d="${path}" fill="#FFF3B8"/><path d="${path}" fill="none" stroke="${INKG}" stroke-width="3" stroke-linejoin="round"/>${doodle('paw', px + 36, py + ph / 2, 1.15)}<text x="${f1(px + 62)}" y="${f1(py + ph / 2 + 10)}" font-size="${cs}" font-weight="700" fill="${INKG}" style="font-family:'Caveat',cursive">${esc(SH_CHIP)}</text></g>`;
+}
 function shSVG(o) {
   o = o || {}; const d = shDog(o); if (!d) return '';
   const size = SH_SIZES[o.size === 'story' ? 'story' : 'feed'], L = SH_LAY[o.size === 'story' ? 'story' : 'feed'], W = size.w, H = size.h, win = L.win, vb = shCrop(win);
@@ -77,7 +84,7 @@ function shSVG(o) {
   try {
     const pose = o.pose || 'happy', ex = { pose, outfit: shOutfit(d, o), facing: 'right', anim: false };
     if (shWet(d, o)) ex.wet = true;
-    dog = place(dogSVG(d, ex), SH_DOG.x, SH_DOG.y, SH_DOG.w, SH_DOG.h);
+    dog = place(dogSVG(d, ex).replace(/\s(?:role|aria-label)="[^"]*"/g, ''), SH_DOG.x, SH_DOG.y, SH_DOG.w, SH_DOG.h); // the art's label carries the name: never in the file unless asked
   } catch (e) { dog = ''; }
   const scene = `<svg x="${win[0]}" y="${win[1]}" width="${win[2]}" height="${win[3]}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMax slice" overflow="hidden"><rect x="${vb[0]}" y="0" width="${vb[2]}" height="600" fill="#D3E9F6"/>${shYardInner()}${dog}${shWash(vb)}</svg>`;
   const hand = FR_FONT, cx = W / 2, name = o.name && d.name ? String(d.name) : '';
@@ -86,9 +93,7 @@ function shSVG(o) {
     name ? frPosterLine([[name, hand]], cx, L.name, 76, W - 160, { rot: -1.5 }) : '',
     frPosterLine([[shLine(d, o), hand]], cx, name ? L.line : L.lineNo, name ? 42 : 50, W - 140, { col: '#6B5046' })
   ].join('');
-  // the chip: a little paper label with a paw, the name of the game and its address
-  const cs = 30, tw = frTextW(SH_CHIP, cs, "'Caveat',cursive", 700), pw = tw + 96, ph = 58, px = cx - pw / 2, py = L.chip - ph / 2;
-  const chip = `<g class="sh-chip"><path d="${shWob(px, py, pw, ph, 26, 7, 3)}" fill="#FFF3B8"/><path d="${shWob(px, py, pw, ph, 26, 7, 3)}" fill="none" stroke="${INKG}" stroke-width="3" stroke-linejoin="round"/>${doodle('paw', px + 36, L.chip, 1.15)}<text x="${f1(px + 62)}" y="${f1(L.chip + 10)}" font-size="${cs}" font-weight="700" fill="${INKG}" style="font-family:'Caveat',cursive">${esc(SH_CHIP)}</text></g>`;
+  const chip = shChip(cx, L.chip, 1, 'c');
   const dots = `<defs><pattern id="sh-dots" width="36" height="36" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.6" fill="#E3D6C6"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#sh-dots)"/>`;
   const deco = [doodle('heart', W - 92, H - 58, 1.5, 12), doodle('spark', 80, H - 62, 1.4), doodle('spark', W - 150, H - 96, 0.9), o.size === 'story' ? doodle('heart', 120, 120, 1.4, -10) + doodle('spark', W - 120, 110, 1.3) + doodle('spark', W / 2, 96, 0.9) : ''].join('');
   const tapes = shTape(win[0] + 70, win[1] + 8, -32, '#F7B2C4') + shTape(win[0] + win[2] - 70, win[1] + 8, 32, '#BDE7D2');
@@ -157,7 +162,7 @@ function shareDog(opts) {
   try { SFX.click(); } catch (e) { /* no sound */ }
   const back = typeof o.back === 'function' ? o.back : null;
   const p = openModal(esc(tt('sh.title', 'Share my dog')), `<div class="sh"><div class="sh-prev" data-size="${shSize()}" aria-busy="true"><span class="sh-wait">${esc(tt('sh.drawing', 'Drawing your picture...'))}</span></div>`
-    + `${shOptsHTML()}<p class="small sh-note">${esc(tt('sh.note', 'The picture is made on your device. Your dog\'s name is on it only if you turn it on.'))}</p></div>`,
+    + `<div class="sh-side">${shOptsHTML()}<p class="small sh-note">${esc(tt('sh.note', 'The picture is made on your device. Your dog\'s name is on it only if you turn it on.'))}</p></div></div>`,
   { cls: 'sh-pop', foot: `${back ? `<button class="btn" type="button" id="shBack">${esc(tt('sh.back', 'Back'))}</button>` : ''}<button class="btn yes big" type="button" id="shGo" aria-disabled="true"><span class="sh-ic">${shIcon()}</span>${esc(tt('sh.share', 'Share'))}</button>` });
   p.dataset.shFrom = o.from;
   const rec = { o, blob: null, url: '', size: '', name: false }; SH.rec = rec;
@@ -217,12 +222,12 @@ new MutationObserver(() => { if (!modal.hidden) { const c = $('#shMoment'); if (
 if (typeof onCleanup === 'function') on('yard:enter', () => onCleanup(hideMomentChip));
 
 /* ---------------- test hook ---------------- */
-function shExpose() {
+function sdExpose() {
   if (!window.__paw || window.__paw.sh) return;
   window.__paw.sh = {
     open: (o) => shareDog(o), svg: (o) => shSVG(Object.assign({ size: shSize(), name: !!prefs.shName }, o || {})), draw: (o) => shDraw(Object.assign({ size: shSize() }, o || {})),
     rec: () => (SH.rec ? { from: SH.rec.o.from, blob: !!SH.rec.blob, bytes: SH.rec.blob ? SH.rec.blob.size : 0, size: SH.rec.size, name: SH.rec.name, wet: SH.rec.o.wet, pose: SH.rec.o.pose || 'happy' } : null),
-    line: (o) => { const d = shDog(o); return d ? shLine(d, o) : ''; }, how: () => SH.how, force: (f) => { SH.force = f || ''; }, chip: () => showMomentChip(), sizes: SH_SIZES, yard: () => shYardInner()
+    line: (o) => { const d = shDog(o); return d ? shLine(d, o) : ''; }, how: () => SH.how, force: (f) => { SH.force = f || ''; }, chip: () => showMomentChip(), sizes: SH_SIZES, yard: () => shYardInner(), pick: (key, i) => (typeof starterPick === 'function' ? starterPick(key, i || 0, 0) : null)
   };
 }
-on('game:ready', () => setTimeout(shExpose, 0)); on('yard:enter', shExpose);
+on('game:ready', () => setTimeout(sdExpose, 0)); on('yard:enter', sdExpose);

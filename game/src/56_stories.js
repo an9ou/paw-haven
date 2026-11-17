@@ -363,7 +363,7 @@ stPcTop.onclick = () => { firstGesture(); stPcOpen('yard'); };
 const stPcYardOk = () => (typeof shareDog === 'function' ? !!(S && S.dogs && S.dogs.length) : stReady()); // v2.31: Share my dog is not tied to the stories
 const stPcCan = () => stPcYardOk() && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && modal.hidden && !busy && !hud.hidden && !(typeof PH === 'object' && PH && PH.on) && !(typeof HO === 'object' && HO && HO.pl);
 function stPcTopSync() {
-  const on = stPcCan(), l = tt('st.pc_yard', 'Send a postcard from the yard');
+  const on = stPcCan(), l = typeof shareDog === 'function' ? tt('sh.btn', 'Share my dog') : tt('st.pc_yard', 'Send a postcard from the yard');
   if (on && stPcTop.title !== l) { stPcTop.title = l; stPcTop.setAttribute('aria-label', l); }
   if (stPcTop.hidden === on) stPcTop.hidden = !on;
 }
