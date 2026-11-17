@@ -153,6 +153,7 @@ async function limited(env, key, max, sec) {
 }
 async function tidy(env) {
   const now = Date.now();
+  try { await run(env, 'delete from shop_events where at < ?1', now - SHOP_EVENT_KEEP_MS); } catch (e) { /* security pass: shop_events not made yet (schema first) */ }
   const fill = env.DB.prepare('select id, email from users where email is not null and shop_hash is null limit 200'); // refund protection: older accounts without their one-way email code (the delete trigger needs it)
   const st = [
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
@@ -165,7 +166,6 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
   try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
-  try { await run(env, 'delete from shop_events where at < ?1', now - SHOP_EVENT_KEEP_MS); } catch (e) { /* security pass: shop_events not made yet (schema first) */ }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
