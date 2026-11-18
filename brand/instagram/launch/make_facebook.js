@@ -1,6 +1,6 @@
 // Facebook Page cover photo (1640 x 856). Desktop shows the middle 2.7:1 strip (y ~124..731), phones show the full height but crop the
 // sides (x ~59..1581), and the Page's profile picture covers the bottom-left corner on both. So the word box, the website and every dog live
-// inside x 100..1540, y 150..700, nothing important sits at x < 480 with y > 560, and the word box stays centre-right.
+// inside x 100..1540, y 150..700, nothing important sits at x < 480 with y > 560, and the word box sits in the centre.
 // Background: the game's Hilltop Meadow on a sunny autumn day (world C 'hilltop', v2.15 art: kites, the village, the river), drawn to fill.
 // Dogs are laid out from their own bounding boxes (hearts included) and checked against each other, the word box and the scene's floor props;
 // every text line is centred in the box by its ink (measured from pixels), and the script throws if anything overlaps or leaves its area.
@@ -32,8 +32,8 @@ module.exports = async function ({ render, browser, helpers: h }) {
       return [x0, y0, x1 + 1, y1 + 1]; }, png);
   };
 
-  // ---------- the word box: centre-right, over the horizon, never under the profile picture ----------
-  const BX = 905, BW = 580, BY = 228, BH = 262, CX = BX + BW / 2, CY = BY + BH / 2;
+  // ---------- the word box: centred (owner, 18 Nov 2026), over the horizon, never under the profile picture ----------
+  const BX = 820 - 290, BW = 580, BY = 244, BH = 262, CX = BX + BW / 2, CY = BY + BH / 2;
   const L = [ // [fragment maker(x, y), first-guess baseline]
     [(x, y) => wordmark(x, y, 92), BY + 100],
     [(x, y) => txt('doodledoggo.app', x, y, 72), BY + 182],
@@ -57,14 +57,14 @@ module.exports = async function ({ render, browser, helpers: h }) {
   const boxG = `<g filter="url(#dd-shadow)"><rect x="${BX}" y="${BY}" width="${BW}" height="${BH}" rx="34" fill="#FFFBF2"/></g>${box(BX, BY, BW, BH, 34, 42, 2.6, 4.6)}${tape(CX - 70, BY - 20, 140, 40, -3)}`
     + words + deco.map(([k, x, y, s, r]) => doodle(k, x, y, s, r)).join('');
 
-  // ---------- the dogs: Noodle biggest, left of the box; three friends on the grass under it ----------
+  // ---------- the dogs: Noodle biggest, right of the box; three friends on the grass under it, clear of the picnic blanket ----------
   const bbox = (svg) => mp.evaluate((sv) => { const w = document.createElement('div'); w.innerHTML = sv; document.body.appendChild(w); const e = w.querySelector('svg'); e.setAttribute('width', 240); e.setAttribute('height', 200); const b = e.getBBox(); w.remove(); return [b.x, b.y, b.width, b.height]; }, svg);
   await mp.setContent('<body></body>');
   const cast = [ // key, pose, left x, feet y, height, outfit, facing
-    ['dachs', 'happy', 486, 655, 196, { neck: 'Red Bandana' }, 'right'],
-    ['golden', 'happy', 922, 652, 134, null, 'left'],
-    ['pug', 'sit', 1120, 690, 128, null, 'left'],
-    ['corgi', 'happy', 1318, 680, 142, null, 'left'],
+    ['dachs', 'happy', 1132, 690, 186, { neck: 'Red Bandana' }, 'left'],
+    ['golden', 'happy', 506, 690, 130, null, 'right'],
+    ['pug', 'sit', 712, 660, 118, null, 'right'],
+    ['corgi', 'happy', 906, 656, 122, null, 'right'],
   ];
   let dogsG = ''; const dogR = [];
   for (const [k, pose, x, feet, hh, outfit, facing] of cast) {
