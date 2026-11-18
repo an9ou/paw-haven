@@ -18,6 +18,11 @@ Nothing was merged to `main`, deployed or pushed to itch.io. The live Worker has
 | `game/fonts/i18n/zh-Hans.*`, `yue.*` | Regenerated from the merged tables (`tools/i18n_fonts.js --for game`, all six languages in the recipe's order). `ja` came out equal to main's, `ko`, `zh-Hant` and `th` equal to the branch's: the tool is byte-stable here. |
 | `game/i18n/packed.js` | Regenerated (`tools/i18n_pack.js`), never merged by hand. `--check` is clean. |
 
+Main moved on during the review (v2.31.13 "Home screen tip"), so it was merged once more at the end: `ORDER.txt` (css and src:
+`61_a2hs.css` and `59_a2hs.js` after v2.30's files), `CHANGELOG.md` and `docs/FILES.md` (both rows), the `ko` and `zh-Hans` font subsets and
+`packed.js` (regenerated: 10,229 keys in every language). After it: `smoke` 35, `v230_together` 88, `v230_worker` 86, `worker`, `i18n`, `copy`,
+`itch_build` 34 and main's new `a2hs` 80, all pass.
+
 Merged without conflict and read through: `game/src/00_core.js` (v2.30's `toastSheetTop` change sits beside main's `toastHard` / `toastSoft`,
 the focus trap and `a11yBack`), `cloudflare/worker.js` (main's security pass and v2.30's routes; `tidy()` carries both), `50_friends.js`,
 `55_projects.js`. `FR_LIM` did not change on either side; `DC_LIM.outfit` goes 58 to 59 (the Friendship Bandana appended last, nothing
