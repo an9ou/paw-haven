@@ -1,6 +1,6 @@
 # "Share my dog" Reel: v2.31 (18 Nov 2026)
 
-The owner (18 Nov 2026): "Create share dog reels". One Reel for v2.31 "Share my dog" (live 18 Nov). The owner approved the English cut ("Good", 18 Nov); then the covers and the RedNote cut were made (same day). **Nothing posted.** No captions: the owner did not ask for them. Files in `brand/instagram/launch/share_reel/`.
+The owner (18 Nov 2026): "Create share dog reels". One Reel for v2.31 "Share my dog" (live 18 Nov). The owner approved the English cut ("Good", 18 Nov); then the covers and the RedNote cut were made (same day). **Nothing posted.** Captions: `docs/marketing/captions/SHARE_MY_DOG_CAPTIONS.md` (owner asked 18 Nov). Files in `brand/instagram/launch/share_reel/`.
 
 | File | What |
 |---|---|
