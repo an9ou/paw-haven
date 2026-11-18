@@ -263,7 +263,9 @@ function nwOpen(auto) {
   nwSort();
   // the automatic sheet leads with the newest entry the player has not seen that is not minor (a small tweaks page never hides a bigger update); after it everything up to the newest id counts as seen
   let lead = NEWS[0];
-  if (auto) { const seen = S.newsSeen || ''; lead = NEWS.find((e) => !e.minor && (!seen || nwVer(e.id, seen) > 0)) || NEWS[0]; }
+  // v2.30 (final review): "not seen" is read from the list's own order (date, then version) when the entry last seen is in it: v2.30 opens a week after
+  // v2.31, so a smaller id can be the newer entry, and a version compare would lead with v2.31 again once a later small entry arrives
+  if (auto) { const seen = S.newsSeen || '', at = seen ? NEWS.findIndex((e) => e.id === seen) : -1; lead = (at >= 0 ? NEWS.slice(0, at).find((e) => !e.minor) : NEWS.find((e) => !e.minor && (!seen || nwVer(e.id, seen) > 0))) || NEWS[0]; }
   if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`

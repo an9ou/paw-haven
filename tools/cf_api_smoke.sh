@@ -33,4 +33,6 @@ check "$(call POST /register "{\"email\":\"$EM\",\"password\":\"another-pass-1\"
 check "$(call POST /forgot "{\"email\":\"nobody-$(date +%s)@example.com\"}" | j "d.get('ok')")" True "forgot password: the same answer for an unknown email"
 check "$(call POST /reset '{"token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","password":"whatever-1"}' | j "d.get('error')")" expired "a made-up reset link is refused"
 check "$(call POST /reset-code "{\"email\":\"never-asked-$(date +%s)@example.com\",\"code\":\"123456\",\"password\":\"whatever-1\"}" | j "d.get('error')")" expired "a reset code for an email that never asked is refused (v2.9.2)"
+# v2.30 "Better together": the routes are there. Shut until the launch (the Worker's BT_FROM) they answer 404 not_found with soon: true; open, the month
+check "$(call GET /town/goal | j "'ok' if (d.get('soon') is True or 'month' in d) else d")" ok "v2.30 routes deployed (shut until the launch, or open): GET /town/goal"
 [ $fail = 0 ] && echo "LIVE SMOKE OK ($EM)" || { echo "LIVE SMOKE FAILED"; exit 1; }

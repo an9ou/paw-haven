@@ -17,7 +17,7 @@ const sec = (s) => console.log('--- ' + s);
     const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
     const DB = d1();
     DB.raw.exec(fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8'));
-    const env = { DB, TIDY: '1', RATE_SCALE: '1' };
+    const env = { DB, TIDY: '1', RATE_SCALE: '1', BT_FROM: '0' }; // BT_FROM '0': the launch gate open (section 0 checks the gate itself)
     let ipN = 0;
     const freshIp = () => '10.30.' + ((++ipN >> 8) & 255) + '.' + (ipN & 255);
     const call = async (method, p, body, token, ip) => {
@@ -40,6 +40,35 @@ const sec = (s) => console.log('--- ' + s);
     };
     const befriend = async (a, b) => (await call('POST', '/friends/add', { code: b.code }, a.tok)).status === 200;
     const join = (a, code, ip) => call('POST', '/invite/join', { code }, a.tok, ip);
+
+    sec('0. the launch gate');
+    { // final review (18 Nov): the routes open with the game, not with the deploy
+      const src = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), news = fs.readFileSync(path.join(ROOT, 'game', 'src', '49c_news.js'), 'utf8');
+      const gate = (src.match(/const BT_FROM = Date\.parse\('(\d{4}-\d{2}-\d{2})T00:00:00\+09:00'\) - 10 \* 60e3;/) || [])[1];
+      const date = (news.match(/const NEWS_V230 = \{[^\n]*\n\s*id: '2\.30', date: '(\d{4}-\d{2}-\d{2})'/) || [])[1];
+      ok(!!gate && gate === date, 'the Worker\'s BT_FROM is NEWS_V230.date at 00:00 JST, less 10 minutes (' + gate + ' / ' + date + ')');
+      const gcall = async (from, method, p, body, token) => {
+        const h = { 'CF-Connecting-IP': freshIp() }; if (token) h.Authorization = 'Bearer ' + token;
+        let b; if (body !== undefined) { b = JSON.stringify(body); h['Content-Type'] = 'application/json'; }
+        const e2 = Object.assign({}, env); if (from === undefined) delete e2.BT_FROM; else e2.BT_FROM = from;
+        const res = await worker.fetch(new Request('https://api.test' + p, { method, headers: h, body: b }), e2, { waitUntil() {} });
+        return { status: res.status, json: await res.json().catch(() => null) };
+      };
+      const g0 = (await call('POST', '/guest', {})).json;
+      const shut = (x) => x.status === 404 && x.json && x.json.error === 'not_found' && x.json.soon === true;
+      const soon = String(Date.now() + 3600e3), iso = new Date(Date.now() + 3600e3).toISOString();
+      ok(shut(await gcall(soon, 'GET', '/town/goal')) && shut(await gcall(soon, 'GET', '/town/goal', undefined, g0.token)), 'before the launch: GET /town/goal is 404 not_found (soon), with and without a token');
+      ok(shut(await gcall(soon, 'POST', '/town/goal', { n: 5 }, g0.token)) && n('select count(*) as n from town_goal') === 0 && n('select count(*) as n from town_goal_users') === 0, 'before the launch: POST /town/goal counts nothing');
+      ok(shut(await gcall(soon, 'POST', '/invite/join', { code: 'DOG-AAAAA' }, g0.token)) && shut(await gcall(soon, 'GET', '/invite/gifts', undefined, g0.token)) && shut(await gcall(soon, 'POST', '/invite/join', { code: 'DOG-AAAAA' })), 'before the launch: /invite/join and /invite/gifts are 404 not_found (never 401: no hint of a route)');
+      ok(shut(await gcall(iso, 'GET', '/town/goal')), 'env.BT_FROM as an ISO time shuts it too');
+      ok(n("select count(*) as n from rate where k like 'gl:%' or k like 'inv:%'") === 0, 'a shut route spends no rate row');
+      ok((await gcall(soon, 'GET', '/friends', undefined, g0.token)).status === 200 && (await gcall(soon, 'GET', '/me', undefined, g0.token)).status === 200, 'the other routes are open as before');
+      const dflt = await gcall(undefined, 'GET', '/town/goal'), due = Date.now() >= Date.parse(gate + 'T00:00:00+09:00') - 10 * 60e3;
+      ok(due ? dflt.status === 200 : shut(dflt), 'without env.BT_FROM the built-in date decides (today: ' + (due ? 'open' : 'shut') + ')');
+      ok((await gcall(String(Date.now() - 1000), 'GET', '/town/goal')).status === 200 && (await gcall('0', 'GET', '/town/goal')).status === 200 && (await gcall('not a date', 'GET', '/town/goal')).status === (due ? 200 : 404), 'a past env.BT_FROM (or 0) opens it, and a broken value falls back to the built-in date');
+      const plan = DB.raw.prepare("explain query plan select g.month as month, g.goal as goal, g.n as n, u.n as mine from town_goal_users u join town_goal g on g.month = u.month where u.user_id = 'x' and g.done_at is not null order by g.month desc limit 12").all().map((x) => x.detail).join(' | ');
+      ok(/SEARCH u USING INDEX town_goal_users_user/.test(plan) && !/SCAN/.test(plan), 'the owed lookup uses the account index, never a scan of town_goal_users: ' + plan);
+    }
 
     sec('1. invite join');
     const A = await player(true, 30); // the inviter: an email account, a month old

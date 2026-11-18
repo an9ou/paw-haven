@@ -36,11 +36,11 @@ run('v230_together', async (t) => {
     await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a));
     await t.ctx.addInitScript(mockInit, {});
     if (was) await was.close();
-    await t.p.goto(URL + (o.query || '')); await t.p.waitForSelector('#tGuest, #tNew, #tContinue, [data-ac="guest"]');
+    await t.p.goto(URL + (o.query || '')); await t.p.waitForSelector('#tGuest, #tNew, #tContinue, #tPlay, [data-ac="guest"]');
   };
   const newHere = async () => {
     await t.until((k) => !localStorage.getItem(k) || !!(window.__pawCloud && window.__pawCloud.CL.started && !window.__pawCloud.CL.startP), AUTH, 8000);
-    if (!(await t.p.locator('#tNew').count())) { await t.p.click('[data-ac="guest"]'); await t.p.waitForSelector('#tNew'); }
+    if (!(await t.p.locator('#tNew, #tPlay').count())) { await t.p.click('[data-ac="guest"]'); await t.p.waitForSelector('#tNew'); }
     await t.adopt({}); await t.calm(); await t.lu();
     await t.until(() => !!(window.__pawCloud.CL.uid && window.__paw && window.__paw.fi), null, 8000);
   };
@@ -71,6 +71,23 @@ run('v230_together', async (t) => {
   ok(await ev(() => { const S = window.__paw.S; return S.fi && S.fi.link === '' && S.fi.join === '' && S.fi.n === 0; }) && await ev(() => { const g = window.__paw.S.goal; return g && g.q === 0 && Array.isArray(g.got) && g.miss === ''; }), 'a new save has S.fi and S.goal');
   ok(await ev(() => { const f = window.__paw.fi.fields({ v: 1 }).fi; return f.link === '' && f.join === '' && f.mine === 0 && f.n === 0 && f.wait === 0; }), 'fiFields fills an old save');
   ok(await ev(() => { const f = window.__paw.fi.fields({ fi: { n: 99, join: 'x', mine: 'yes' } }).fi; return f.n === 10 && f.join === '' && f.mine === 1; }), 'fiFields tidies odd values');
+
+  { // final review: v2.30 opens a week after v2.31, so the newer entry has the smaller id. The automatic sheet reads "not seen" from the list's order
+    const n = await ev(() => {
+      const P = window.__paw, S = P.S, was = S.newsSeen, out = {};
+      P.nw.v230(); // v2.30 in the list, as from 25 Nov
+      const lead = (seen) => { S.newsSeen = seen; P.nw.auto(); const h = document.querySelector('#modal .nw-sheet h3'); const r = h ? h.textContent : null; const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return r; };
+      out.a = lead('2.31'); out.seenA = S.newsSeen; out.b = lead('2.29');
+      P.nw.add({ id: '2.31.99', date: '2099-01-01', minor: true, title: () => 'Small things' }); // a later small entry (this page is thrown away after this section)
+      out.c = lead('2.30'); out.d = lead('2.31'); out.e = lead('2.18.2'); out.f = lead('9.9');
+      S.newsSeen = was; return out;
+    });
+    ok(n.a === 'Better together' && n.seenA === '2.30', 'v2.31 seen: the automatic sheet leads with v2.30 and marks it seen: ' + n.a + ' / ' + n.seenA);
+    ok(n.b === 'Better together', 'v2.29 seen: v2.30 leads (the newest not seen): ' + n.b);
+    ok(n.c === 'Small things', 'v2.30 seen, then a later small entry: it shows alone, v2.31 (seen a week before) does not lead again: ' + n.c);
+    ok(n.d === 'Better together' && n.e === 'Better together', 'v2.31 or an old entry seen, with a later small entry: v2.30 leads: ' + n.d + ' / ' + n.e);
+    ok(n.f === 'Small things', 'an id that is not in the list falls back to the version compare: ' + n.f);
+  }
 
   sec('2. a new guest comes in through an invite link');
   const A = await player(true, 30, [7, 9]);
@@ -306,6 +323,39 @@ run('v230_together', async (t) => {
   await shot('square_phone');
   await ev(() => { const n = document.querySelector('#glG [data-gl-hot]'); n.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
   ok(await t.until(() => !!document.querySelector('#modal .panel.gl-sheet .gl-bar'), null, 5000), 'a tap on the note opens Gerald\'s notice');
+
+  await closeAll();
+
+  sec('8. final review: the invite link\'s code survives a reload while Gerald\'s first day holds the add card');
+  const H = await player(true, 30, [11, 4]);
+  await cloudPage({ prefs: { btTest: true, frTest: true, gdTest: true, fwTest: true }, query: '?friend=' + H.code });
+  await newHere(); // Puppy's first day is running (gdTest + fwTest): the add card waits for it (frGuideHold)
+  await t.until(() => !!window.__paw.fr, null, 8000);
+  ok(await ev(() => window.__paw.fr.invite()) === H.code && await ev(() => !/friend=/.test(location.href)), 'the code is in memory and off the address');
+  ok(await t.until((c) => window.__paw.S.fi.inv === c, H.code, 6000), 'the save keeps the code while the add card waits (S.fi.inv)');
+  ok(await ev(() => !document.getElementById('frCh0') && !document.getElementById('frOk')), 'the add card is held while Gerald\'s first day runs');
+  // "a reload" is a fresh page on a copy of this page's storage: page.reload() of the file:// harness sometimes comes back with an empty localStorage (test_promo.js, review 3)
+  const reloadKeep = async () => {
+    await ev(() => window.__paw.saveNow());
+    const keepLS = await ev(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; });
+    await cloudPage({ storage: keepLS }); await t.p.waitForSelector('#tContinue', { timeout: 8000 }); await t.p.click('#tContinue'); await t.untilMode('yard');
+  };
+  await reloadKeep();
+  ok(await t.until((c) => !!(window.__paw.fr && window.__paw.fr.invite() === c), H.code, 8000), 'after a reload (no code in the address) the code is back from the save');
+  await ev(() => { const S = window.__paw.S; S.guide.skipped = '2026-11-25'; if (S.fw) S.fw.fresh = false; document.querySelectorAll('#gdLayer').forEach((e) => e.remove()); }); // the first day ends
+  // the add card waits its turn behind the day's own windows (the welcome calendar): close them as a player would
+  let opened = false; for (let i = 0; i < 8 && !opened; i++) { opened = await t.until(() => !!document.getElementById('frOk') || !!document.getElementById('frCh0'), null, 2500); if (!opened) await closeAll(); }
+  ok(opened, 'the first day over: the invite opens Friends');
+  ok(await t.until(() => window.__paw.S.fi.inv === '', null, 3000), 'shown once: the save lets the code go');
+  if (await t.p.locator('#frOk').count()) { await t.p.click('#frOk'); await t.until(() => !!document.getElementById('frCh0'), null, 8000); }
+  ok(await ev(() => [0, 1, 2, 3, 4].map((i) => document.getElementById('frCh' + i).value).join('')) === H.code.slice(4), 'the add card is pre-filled with the friend\'s code');
+  await t.p.click('#frAdd');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.fi-got'), null, 8000) && raw.prepare('select count(*) as n from invites where inviter_id = ?').get(H.id).n === 1, 'the add goes through and the Worker records the invite');
+  await closeAll(); await reloadKeep(); await t.until(() => !!window.__paw.fr, null, 8000); await t.sleep(5000);
+  ok(await ev(() => !window.__paw.fr.invite() && window.__paw.S.fi.inv === '' && !document.getElementById('frCh0')), 'a later reload never opens Add again');
+  ok(await ev(() => { const F = window.__paw.fi.fields; return F({ fi: { inv: 'DOG-AB2CD' } }).fi.inv === 'DOG-AB2CD' && F({ fi: { inv: '<b>' } }).fi.inv === '' && F({ fi: { inv: 7 } }).fi.inv === '' && F({ v: 1 }).fi.inv === ''; }), 'fiFields keeps only a well-formed code in S.fi.inv');
+  await cloudPage({ prefs: { frTest: true, gdTest: true, fwTest: true }, query: '?friend=' + H.code }); // before the launch (no btTest): as it was
+  await newHere(); await t.until(() => !!window.__paw.fr, null, 8000); await t.sleep(4500);
+  ok(await ev((c) => window.__paw.fr.invite() === c && window.__paw.S.fi.inv === '', H.code), 'before the launch the code stays in memory only, as before');
   await closeAll();
 });
-

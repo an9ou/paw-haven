@@ -20,8 +20,8 @@ run('v2182_news', async (t) => {
   const latest = await ev(() => window.__paw.nw.latest());
   const jst = await ev(() => window.__paw.rh.jst()); // the page's Japan date (the harness pins the page clock to 10:00 local today, so near midnight in Japan it can differ from node's) // v2.23.2 Cantonese news from 9 Nov 2026 (JST)
   const ks = await ev(() => { const K = window.__paw.ks; return K ? { live: !!K.live, date: K.newsDate } : { live: false, date: '' }; }); // v2.24 Kind shop: its news leads once SHOP_LIVE is on and its date has come (JST)
-  const want = jst >= '2026-11-12' ? '2.25' : ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
-  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.25 Glad you\'re back from 12 Nov, 2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
+  const want = jst >= '2026-11-25' ? '2.30' : jst >= '2026-11-18' ? '2.31' : jst >= '2026-11-12' ? '2.25' : ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
+  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.30 Better together from 25 Nov, 2.31 Share my dog from 18 Nov, 2.25 Glad you\'re back from 12 Nov, 2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
   await t.home('yard'); ok(await noNews(5000), 'no news sheet on a new save');
 
   sec('2. an old save: S.newsSeen added by migrate(), the sheet shows once, not again after a reload');
@@ -29,7 +29,7 @@ run('v2182_news', async (t) => {
   await ev(() => { const P = window.__paw; P.S.newsSeen = ''; P.saveNow(); });
   await reload(); await watch();
   ok(await waitNews(9000), 'the news sheet opens once the yard is calm');
-  ok(await ev(() => { const n = window.__paw.nw.lines(); return n >= 2 && document.querySelectorAll('#modal .nw-list li').length === n && !!document.querySelector('#modal .nw-pic svg') && [...document.querySelectorAll('#modal .nw-ic')].filter((e) => e.querySelector('svg')).length === n; }), 'every line with crayon icons (an item card may nest an svg), and the picture');
+  ok(await ev(() => { const n = window.__paw.nw.lines(); return n >= 2 && document.querySelectorAll('#modal .nw-page.big .nw-list li').length === n && !!document.querySelector('#modal .nw-pic svg') && [...document.querySelectorAll('#modal .nw-page.big .nw-ic')].filter((e) => e.querySelector('svg')).length === n; }), 'every line of the lead entry with crayon icons (an item card may nest an svg), and the picture (entries that share its date follow on the same page: 18 Nov has five)');
   ok(await ev(() => window.__paw.S.newsSeen === window.__paw.nw.latest() && JSON.parse(localStorage.getItem('pawhaven_proto_v1')).newsSeen === window.__paw.nw.latest()), 'S.newsSeen is saved when it opens');
   await t.p.click('#nwAll'); ok(await t.until(() => !!document.querySelector('#modal .nw-all .nw-page'), null, 3000), '"See all updates" lists the entries');
   await closeNews(); ok(await noNews(5000), 'it does not open again');

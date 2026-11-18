@@ -293,3 +293,5 @@ create table if not exists town_goal_users (
   n       integer not null default 0,
   primary key (month, user_id)
 );
+-- GET /town/goal reads an account's own months ("owed"): without this it scans every row of the table on each game load (final review, 18 Nov)
+create index if not exists town_goal_users_user on town_goal_users (user_id, month);

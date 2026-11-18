@@ -660,13 +660,13 @@ async function frAdd() {
     else if (err === 'already') {
       toast(tt('fr.already', 'You are already friends.'), 'good');
       // v2.30 (code review 7): friends already (an add that went through before the join reached the Worker): still ask for the invite gift
-      if (FR.invite && FR.invite === code) { FR.invite = null; FR.wantAdd = false; if (typeof fiJoin === 'function') fiJoin(code, true); }
+      if (FR.invite && FR.invite === code) { FR.invite = null; FR.wantAdd = false; if (typeof fiLinkDone === 'function') fiLinkDone(); if (typeof fiJoin === 'function') fiJoin(code, true); }
     }
     else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
     return;
   }
   const viaLink = !!FR.invite && FR.invite === code; // v2.30: the add came from an invite link (58_invite.js asks the Worker for the gift)
-  FR.invite = null; FR.wantAdd = false;
+  FR.invite = null; FR.wantAdd = false; if (typeof fiLinkDone === 'function') fiLinkDone(); // v2.30: the save lets the link's code go with it
   await frLoad();
   const added = ((S.fr.cache && S.fr.cache.friends) || []).find((f) => f && !had.has(f.fid));
   toast(tt('fr.added', '{name} is your friend now!', { name: (added && frPairName(added.name)) || tt('fr.a_friend', 'A friend') }), 'good');
@@ -804,11 +804,13 @@ async function frOpen() {
   return true;
 }
 function frInviteTry() {
-  if (!frOn() || !S || !FR.invite || FR.inviteShown) return;
+  if (!frOn() || !S) return;
+  if (typeof fiLinkKeep === 'function') fiLinkKeep(); // v2.30: the link's code is kept in the save until the add card has shown once (58_invite.js)
+  if (!FR.invite || FR.inviteShown) return;
   if (cur.mode !== 'yard' || (titleEl && !titleEl.hidden)) return; // never over a walk, a minigame or the title
   if (frGuideHold()) return;
   if (!modal.hidden) return;
-  FR.inviteShown = true; FR.wantAdd = true; frOpen();
+  FR.inviteShown = true; FR.wantAdd = true; if (typeof fiLinkKeep === 'function') fiLinkKeep(); frOpen();
 }
 
 /* ---------- part 3: a friend's yard (V219.md section 4). Read-only: it draws their snapshot and changes nothing in this save but Bond and S.fr ----------

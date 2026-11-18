@@ -22,6 +22,7 @@ function fiFields(s) {
   if (!s.fi || typeof s.fi !== 'object' || Array.isArray(s.fi)) s.fi = {};
   const f = s.fi;
   if (typeof f.link !== 'string') f.link = '';
+  f.inv = (typeof f.inv === 'string' && typeof frNormCode === 'function' && frNormCode(f.inv)) || ''; // final review: the link's code until the add card has shown once
   if (!['', 'now', 'later', 'no'].includes(f.join)) f.join = '';
   f.mine = f.mine ? 1 : 0; f.wait = f.wait ? 1 : 0;
   if (!Number.isInteger(f.n) || f.n < 0) f.n = 0; if (f.n > FI_CAP) f.n = FI_CAP;
@@ -40,6 +41,20 @@ const fiWorker = () => typeof CL !== 'undefined' && !!CL.on && !!CL.uid;
 const fiKey = () => (typeof CL !== 'undefined' && CL.uid ? CL.uid + (CL.anon ? ':g' : ':e') : ''); // a guest who turns on cloud save keeps its user id: asked again
 const fiOwns = () => !!(S && S.inv && Array.isArray(S.inv.clothes) && S.inv.clothes.includes(FI_ITEM));
 const fiFriend = (name) => (Array.isArray(name) && typeof frPairName === 'function' && frPairName(name)) || tt('fr.a_friend', 'A friend');
+
+/* ---------------- the invite link's code survives a reload (final review, 18 Nov) ---------------- */
+// 50_friends.js keeps the code from /play/?friend= in memory only (FR.invite) and takes it off the address at once, and the add card waits for
+// Puppy's first day with Gerald (about six minutes, frGuideHold). A new player who reloads or comes back later in that time lost the code, and both
+// bandanas with it. So the code is kept in the save (S.fi.inv) until the add card has been shown once (FR.inviteShown): a reload still never opens
+// Add a second time. Called from frInviteTry (the 4 s tick). Off before the launch
+function fiLinkKeep() {
+  if (!S || !btOn() || typeof FR === 'undefined') return;
+  fiFields(S); const f = S.fi;
+  if (FR.inviteShown) { if (f.inv) { f.inv = ''; markDirty(); } return; }
+  if (FR.invite) { if (f.inv !== FR.invite) { f.inv = FR.invite; markDirty(); } }
+  else if (f.inv && !f.join && !f.link) FR.invite = f.inv;
+}
+function fiLinkDone() { if (S && S.fi && S.fi.inv) { S.fi.inv = ''; markDirty(); } } // an add used the code (or let it go): frAdd, 50_friends.js
 
 /* ---------------- the Worker ---------------- */
 // after a friend add that came from the invite link (50_friends.js frAdd; also when the add answers "already friends"). now: straight from the Friends
@@ -176,7 +191,7 @@ function fiExpose() {
   window.__paw.fi = {
     on: () => btOn(), mode: () => fiMode(), fields: (s) => fiFields(s), join: (c, now) => fiJoin(c, now), poll: (now) => { FI.pollUid = null; return fiPoll(now); }, apply: (d, show, now) => fiApply(d, show, now),
     card: (o, now) => fiCard(o, now), line: () => fiSheetLine(), item: FI_ITEM, cap: FI_CAP, owns: () => fiOwns(),
-    gone: (v) => { if (v !== undefined) BT_GONE = !!v; return BT_GONE; }, start: () => fiStart(), busy: () => !!(FI.pollP || FI.joinP)
+    gone: (v) => { if (v !== undefined) BT_GONE = !!v; return BT_GONE; }, linkKeep: () => fiLinkKeep(), start: () => fiStart(), busy: () => !!(FI.pollP || FI.joinP)
   };
 }
 on('game:ready', () => { if (S) fiFields(S); setTimeout(fiExpose, 0); setTimeout(fiStart, 1800); });

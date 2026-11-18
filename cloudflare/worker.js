@@ -66,6 +66,7 @@
 //     a unique code used), 429 rate_limited. Coins are at most PROMO_COIN_MAX (500) whatever the row says.
 //   GET  /promo/mine                       -> { redemptions: [{ code, key, at, reward }] }   120/h   what each redemption granted, oldest first
 //   v2.30 "Better together" (V230.md). Bearer token (guest or email) unless said. No coins anywhere, no names but friend names, no user ids.
+//     Shut until the launch (BT_FROM, 25 Nov 2026 00:00 JST less 10 minutes; env.BT_FROM moves it): before it all four answer 404 not_found { soon: true }.
 //   POST /invite/join { code }             -> { ok, gift: 'now' | 'later' }   after /friends/add from an invite link: records me as invited by the
 //     code's owner, once ever per new player. 10/h per account, 30/h per IP, 5 new rows a Japan day per IP. 404 no_code (unknown code; never the
 //     plain not_found, which an older Worker answers for a route it does not have), 400 self, 409 not_friends, 409 official (the game's official
@@ -124,6 +125,9 @@ async function route(req, env, ctx) {
   const ip = req.headers.get('CF-Connecting-IP') || 'local';
   if (p === '/' && m === 'GET') return json({ ok: true, name: 'pawhaven-api' });
   if (p === '/shop/webhook' && m === 'POST') return shopWebhook(req, env); // Stripe, server to server: the signature covers the raw body, so it is read before any JSON parsing
+  // v2.30 (final review): its routes open with the game (BT_FROM), not with the deploy. Before that they answer like a Worker without them (the game
+  // reads 404 not_found as "not here yet" and keeps what is waiting); soon: true tells a deployed, closed Worker from an older one
+  if (BT_PATHS.has(p) && Date.now() < btFrom(env)) return fail('not_found', 404, { soon: true });
   const R = ROUTES[m + ' ' + p];
   if (!R) return fail('not_found', 404);
   let body = null;
@@ -1553,6 +1557,16 @@ const ROUTES = {
 };
 
 /* ---------------- v2.30 "Better together" (V230.md) ---------------- */
+// The launch gate (final review, 18 Nov): the Worker is deployed before the game opens v2.30, so the routes stay shut until the launch, 25 Nov 2026
+// 00:00 JST (NEWS_V230.date in game/src/49c_news.js: test_v230_worker checks the two agree), less 10 minutes for a device clock that runs a little
+// fast. env.BT_FROM (ms, or an ISO time; '0' = open now) moves it without a new Worker: set it when the owner moves the launch date.
+const BT_FROM = Date.parse('2026-11-25T00:00:00+09:00') - 10 * 60e3;
+const BT_PATHS = new Set(['/invite/join', '/invite/gifts', '/town/goal']);
+function btFrom(env) {
+  const v = env.BT_FROM; if (v === undefined || v === null || v === '') return BT_FROM;
+  const n = /^\d+$/.test(String(v)) ? Number(v) : Date.parse(String(v));
+  return Number.isFinite(n) ? n : BT_FROM;
+}
 const INV_NEW_DAYS = 7, INV_CAP = 10, INV_IP_DAY = 5; // a new player's account is at most a week old; the inviter's credits; new invite rows per IP a Japan day
 const GL_GOAL = 10000, GL_POST_MAX = 40, GL_GAP_S = 120, GL_DAY_U = 150, GL_DAY_IP = 5000; // the town goal (belly rubs a Japan month); env.TOWN_GOAL changes it.
 // GL_DAY_IP: a school, an office or a phone carrier's shared IP is many real players (review 17 Nov: 600 was too low); the account's 150 stays
