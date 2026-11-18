@@ -1,13 +1,16 @@
 # "Share my dog" Reel: v2.31 (18 Nov 2026)
 
-The owner (18 Nov 2026): "Create share dog reels". One English Reel for v2.31 "Share my dog" (live 18 Nov). **Made, waiting for the owner; nothing posted.** No RedNote cut, no cover and no captions yet: those come only if the owner asks. Files in `brand/instagram/launch/share_reel/`.
+The owner (18 Nov 2026): "Create share dog reels". One Reel for v2.31 "Share my dog" (live 18 Nov). The owner approved the English cut ("Good", 18 Nov); then the covers and the RedNote cut were made (same day). **Nothing posted.** No captions: the owner did not ask for them. Files in `brand/instagram/launch/share_reel/`.
 
 | File | What |
 |---|---|
 | `doodle-doggo-share-my-dog.mp4` | English: Instagram Reels, YouTube Shorts, X. 1080 x 1920, 30 fps, AAC stereo, 29.60 s (888 frames): 27.10 s of Reel, then our standard end card for 2.5 s ("Play free!" over the logo, doodledoggo.app, Instagram @doodledoggo.app, X @doodledoggoapp, YouTube @DoodleDoggoApp with icons), music fading under it. Fast pace (owner, 13 Nov): each card stays up for its line + 0.4 s, 0.15 s between beats. |
+| `doodle-doggo-share-my-dog-rednote.mp4` | RedNote / 小红书: the same Reel in Simplified Chinese, 36.98 s (1109 frames): 34.48 s + the RedNote end card for 2.5 s (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App", centred at 540, 960). Every word from the game's zh-Hans text where the game has it; the game's screens captured in Chinese (`PAW_LANG=zh-Hans`); Noodle in Mandarin (Kokoro zf_073 1.0x, Noodle said 面条); subtitles of at most 14 characters; LXGW WenKai; full frame (everything in front moved 85 px right). The 18 Nov app rule applies (below). |
+| `share-cover.jpg` | English cover (1080 x 1920), its own design: the Training Ground's sand ring (not in the gift cover), "Your dog, in crayon" big in red on a cream card, a small "free" pill, Noodle's real share picture (Post, Show name on) big and tilted, Noodle begging at it on open sand, the logo on its own card. Everything inside y 250..1670 (the 3:4 grid crop is 240..1680). Checked: text centred, 28 px apart, Noodle on the floor, clear of the scene's props. |
+| `brand/rednote/rednote-20-share-my-dog.jpg` | RedNote cover (3:4, 1080 x 1440): the same design cut at y 240..1680, with 「你的狗狗变成蜡笔画」 and 「免费」 (true: the picture costs nothing, `58_share.js` has no coins), the share picture with its chip cropped off. |
 | `capture_share.js` | The clean captures from a fresh worktree of origin/main (below). |
 | `build_share.js` | Remake (below). Every frame runs `centreCheck()`, `safeCheck()` and `apartCheck()` (`../centre_text.js`), keeps every word and key art inside x 60..850, y 270..1440, stands Noodle on the scene's floor 28 px clear of the scene's own props (`KEEP`, scene units), keeps the game's pictures 28 px clear of those props too, and stops if any game fact below changed on main. `CHECK=1` runs every frame's checks without screenshots. |
-| `vo_share.json` | Noodle's lines. |
+| `vo_share.json`, `vo_share_zh.json` | Noodle's lines (English, Mandarin). |
 
 ## The hook
 
@@ -72,6 +75,29 @@ Music: the game's own park music (`mods/pawaudio.js`, place `park`, day, sunny) 
 - Noodle's sit and happy drawings have no keyframes in the game art, so a first render held him frozen after each pop-in (269 identical frames). He now breathes and sways all the time (two sines, the sway at half the breath's rate and pi/8 out of step, so he never stops dead); the game's own beg and paw keyframes still glide underneath.
 - ffprobe: h264 1080 x 1920, 30/1 fps, 888 frames, 29.60 s; AAC stereo. Voice -16 LUFS mix, music 10.8 dB down (about 11 dB under the voice).
 
+## RedNote cut (18 Nov 2026)
+
+**The app rule (owner, 18 Nov 2026: RedNote limits traffic for anything that promotes other apps; also in `REDNOTE.md`).** The cut never suggests posting or sending to another app or social network: the ask is 「画好了，就分享给朋友吧！」 (share it with your friends); no "tag us", no @handle pill, no 发帖 / 发到 / 发布到, no 快拍 or post/story wording, no platform or app names. What was covered or reworded:
+- The game's own zh-Hans size names are 帖子 (post) and 快拍 (story) (`sh.size_post`, `sh.size_story`), and `nw.v231.share` says 发帖或发快拍. They are never said or shown: the sizes are 两种尺寸 (two sizes), and the Share my dog sheet is captured with its two size buttons hidden (`display:none` on `.sh-sizes`; 显示名字 stays).
+- Every share picture carries the game's "Doodle Doggo · doodledoggo.app" chip (a domain): it is cropped off each picture (Post at y 1254 of 1350, Story at 1694 of 1920, just above the chip; the build checks the chip's place in `58_share.js`) and off the sheet's preview (`clip-path` on `.sh-img` before the capture).
+- The English "Share your doodle and tag us!" + @doodledoggo.app pill became 「画好了，就分享给朋友吧！」 with no pill; "Play free!" is not on the RedNote end card.
+- The build stops on any of: a URL or `www.` / `.app` / `.com`, `@`, Instagram, INS, ins, YouTube, TikTok, itch, 微信, 朋友圈, QQ, 微博, 抖音, 小红书, WhatsApp, 链接, 网址, 官网, 二维码, 扫码, 下载, 私信我, 加我, 主页链接, 戳, 发帖, 发到, 发布到, 快拍, 帖子, tag, in the cut's own words, the voice, the cover and the captured game text (sheet, Bond card, More tray tiles, the pictures' crayon lines). No QR anywhere.
+
+| Starts | Beat | Noodle says (zf_073 1.0x) | On screen | Scene |
+|---|---|---|---|---|
+| 0.10 s | hook | 免费！把你的狗狗变成蜡笔画，有两种尺寸。 | 你的狗狗 / 变成蜡笔画 + red 免费，两种尺寸; Noodle's share picture (chip cropped) | Dog Park |
+| 4.47 s | how | 手机上点更多，再点分享。电脑上，按钮在顶部栏。 | 分享我的狗狗 / 手机：点“更多”，/ 再点“分享” small 电脑：顶部栏的分享按钮; the game's More tray in Chinese (拍照, 分享, 衣橱 ... 更多) | Maple Woods |
+| 9.86 s | sizes | 两种尺寸任你选。要不要显示名字，你来决定。 | 两种尺寸 / “显示名字”：你来决定; the two real pictures (chips cropped) | Training Ground |
+| 14.54 s | pals | 每只狗狗都能画一张，衣服也一起画上！ | 每只狗狗都能画一张！; Maple, Pickle, Dumpling (穿戴花环的金毛寻回犬, 穿戴领结的比格犬, 穿戴爱心墨镜的巴哥犬) | Splash Pool |
+| 18.72 s | moment | 散步之后、亲密度升级时、故事场景之后，都可以分享这一刻。 | 分享这一刻 / 散步之后、亲密度升级时、/ 故事场景之后 (`nw.v231.moment`); the game's 亲密度等级8！ card with 分享这一刻 | Sunny Park |
+| 24.56 s | device | 图片只在你的设备上生成。游戏不会上传任何东西。 | 只在你的设备上生成 / 游戏不会上传任何东西 (`sh.note`); the 分享我的狗狗 sheet (size buttons hidden, preview chip cropped) | Maple Woods |
+| 29.93 s | ask | 画好了，就分享给朋友吧！对了，我叫面条。 | 画好了，/ 就分享给朋友吧！ | Hilltop Meadow (x 640: the kite's tail stays clear of the wider card) |
+| 34.48 s | end card | (music fades) | RedNote end card | |
+
+Subtitles (Noodle's words, at most 14 characters, the game's button names in quotes): 免费！ / 把你的狗狗变成蜡笔画 / 有两种尺寸。 · 手机上点“更多” / 再点“分享” / 电脑上 / 按钮在顶部栏。 · 两种尺寸任你选。 / 要不要“显示名字” / 你来决定。 · 每只狗狗都能画一张 / 衣服也一起画上！ · 散步之后 / 亲密度升级时 / 故事场景之后 / 都可以“分享这一刻”。 · 图片只在你的设备上生成。 / 游戏不会上传任何东西。 · 画好了 / 就分享给朋友吧！ / 对了，我叫面条。 They sit at y 1560 (1720 in the Dog Park and 1700 in Maple Woods, under the ball and the acorns; 1480 on the meadow, above the picnic blanket), each 28 px clear of the scene's props; Noodle stands 30 px higher than in the English cut.
+
+Checks: `CHECK=1` all 1109 frames pass centre, apart (28 px), floor, props, subtitle-vs-prop, the 50 px margin and the end card's centre (540, 960). `checkFrames()` on every beat: **0 doubled frames** (smallest change 0.04..0.17 against medians 0.12..0.76); the "jumps" are the cross-fades, picture pop-ins and subtitle fades inside each beat; the only spikes over 8 are the six beat cuts (frames 133, 294, 435, 560, 735, 897); the end card (1048..1108) is a still card. ffprobe: h264 1080 x 1920, 30 fps, 1109 frames, 36.98 s, AAC stereo. The English MP4 was not touched.
+
 ## Remake
 
 ```
@@ -79,5 +105,10 @@ git worktree add --detach <main> origin/main && cd <main> && node game/build.js 
 NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/capture_share.js <main> <caps>
 VO_LINES=brand/instagram/launch/share_reel/vo_share.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo> af_bella 1.1
 ART_ROOT=<main> CAPS=<caps> NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/build_share.js <work> <vo>
+ONLY=cover ART_ROOT=<main> CAPS=<caps> NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/build_share.js <work> <vo>
+PAW_LANG=zh-Hans NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/capture_share.js <main> <caps_zh>
+VO_LINES=brand/instagram/launch/share_reel/vo_share_zh.json PYTHONPATH=<jieba-0.42.1 sdist> python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh> zf_073 1.0
+REDNOTE=1 ART_ROOT=<main> CAPS=<caps_zh> NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/build_share.js <work_zh> <vo_zh>
+REDNOTE=1 ONLY=cover ART_ROOT=<main> CAPS=<caps_zh> NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/build_share.js <work_zh> <vo_zh>
 ```
 `ONLY=stills` key frames (`TS=a,b,...`; `LOOSE=1` prints a failed check and goes on, for layout work only), `FRAMES=a-b` re-renders only frames a..b and encodes again with the last full render's sound (`mix.wav` in the workdir), `CHECK=1` runs all checks without screenshots. The captures use the test harness on `game/test_merged.html` (page date 18 Nov 2026, autumn, sunny, day); main is not changed. The Kokoro model files are never committed.

@@ -11,11 +11,16 @@
 //     more_tray      the phone's More tray open (the Share tile), with the phone bar under it; boxes in facts.json
 //     walk_card      the walk results card with "Share this moment"
 //     bond_card      the Bond level card with "Share this moment"
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/share_reel/capture_share.js <main checkout> <outdir>
+//   NODE_PATH=$(npm root -g) [PAW_LANG=zh-Hans] node brand/instagram/launch/share_reel/capture_share.js <main checkout> <outdir>
+// PAW_LANG=zh-Hans (the RedNote cut): the game switched to Simplified Chinese after the adoption (as gift_reel/capture_gift.js). RedNote rule (owner,
+// 18 Nov 2026: never suggest posting to other apps): the sheet's size buttons (帖子 / 快拍, post / story) are hidden (display:none) and the preview's
+// bottom strip, the "Doodle Doggo · doodledoggo.app" chip, is cropped off (clip-path) before the sheet is captured. build_share.js crops the chip
+// off the share pictures themselves.
 // facts.json lists the game lines the captures carry (build_share.js checks them).
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || 'share_caps'); fs.mkdirSync(OUT, { recursive: true });
 const { run } = require(path.join(DEV, 'game', 'test_lib'));
+const LANG = process.env.PAW_LANG || '';
 const CLEAN = '#devBtn,#toasts,.sheet-grab,#modal .xbtn,#modal .x{display:none!important}'
   + 'body *:not(#modal):not(#modal *){visibility:hidden!important}#modal,#modal *{visibility:visible}'
   + '#modal,#stage,html,body{background:transparent!important;backdrop-filter:none!important;box-shadow:none}';
@@ -32,6 +37,11 @@ run('share_capture', async (t) => {
     await t.calm(); await t.lu(); await settle();
     await ev((o) => { window.__paw.S.dog.outfit = Object.assign({}, window.__paw.S.dog.outfit || {}, o); window.__paw.saveNow(); }, OUTFIT);
     await t.until(() => !!(window.__paw && window.__paw.sh), null, 8000);
+    if (LANG) { // the language, switched in the game and reloaded with the save
+      await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+      await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu(); await settle();
+      await t.until(() => !!(window.__paw && window.__paw.sh), null, 8000); facts.lang = await ev(() => document.documentElement.lang); console.log('language', facts.lang);
+    }
   };
   let cdp = null;
   const shoot = async (sel, name, scale) => {
@@ -111,6 +121,7 @@ run('share_capture', async (t) => {
   await p().click('#bar .barpop[data-pop="more"] [data-act="share"]');
   await t.until(() => !!document.querySelector('#modal .sh-pop .sh-img'), null, 10000); await p().waitForTimeout(900);
   facts.sheetFrom = await ev(() => document.querySelector('#modal .sh-pop').dataset.shFrom);
+  if (LANG) { const st = await p().addStyleTag({ content: '#modal .sh-sizes{display:none!important}#modal .sh-img{clip-path:inset(0 0 7% 0)}' }); await p().waitForTimeout(500); facts.rnCover = 'size buttons hidden, preview chip cropped'; }
   await clean(true); await shoot('#modal .panel', 'sh_sheet'); await clean(false);
   fs.writeFileSync(path.join(OUT, 'facts.json'), JSON.stringify(facts, null, 1));
 }, { date: process.env.CAP_DATE || '2026-11-18', timeout: 400000, season: 'autumn', weather: 'sunny' });
