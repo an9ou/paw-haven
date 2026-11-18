@@ -221,7 +221,7 @@ run('wm_review', async (t) => {
     ok(A.plain.sig === A.market.sig && A.plain.ambience.market === 1, 'fmarket outside the Winter Market = the market music with its crowd: ' + A.plain.label);
     ok(/wmarket/.test(A.win.label) && A.win.top === 'celesta' && A.win.prog === 'winter' && A.win.ambience.snowmkt > 0, 'fest winter at fmarket = the Winter Market style (celesta, its own chords, snow footsteps), even at night in snow: ' + A.win.label);
     ok(A.yardFest.sig === A.yard.sig, 'fest winter changes nothing at other places');
-    for (const [date, want] of [['2026-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-27', null], ['2026-10-27', null]]) {
+    for (const [date, want] of [['2026-11-22', null], ['2026-11-23', 'winter'], ['2027-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-27', null], ['2026-10-27', null]]) {
       await ev((dt) => { const P = window.__paw; P.fm.date(dt); P.S.place = 'fmarket'; P.go('yard'); }, date); await t.calm();
       const c = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
       const w2 = want && c && c.time !== 'dawn' ? want : null; // dawn: the plain market music while the stalls open (owner, 7 Nov 2026)

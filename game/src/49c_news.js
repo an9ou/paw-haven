@@ -11,7 +11,7 @@ function nwOn() { return !navigator.webdriver || !!prefs.nwTest; }
 const NW = { calm: 0, exposed: false };
 const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)), { day: 'numeric', month: 'long' });
 const nwItemArt = (n) => art('item', n);
-const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
+const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win(2026)[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
   { // v2.19.3 Puppy start (V2193.md, owner 5 Nov 2026): before the Friends news of 7 Nov, so that one stays the newest when it goes live
     id: '2.19.3', date: '2026-11-05', c: '#FBE3D6', d: 'paw', pic: 'dog',
