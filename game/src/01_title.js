@@ -4,7 +4,7 @@ function enterTitle() {
   const has = !!loadSave() || !!(S && S.dog);
   const rings = `<svg viewBox="0 0 44 600" preserveAspectRatio="none">${Array.from({ length: 13 }, (_, i) => `<ellipse cx="25" cy="${24 + i * 46}" rx="6" ry="6" fill="#E6D7BF" stroke="${INKG}" stroke-width="1.6"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="#A8968A" stroke-width="3" stroke-linecap="round"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="${INKG}" stroke-width="1.3"/>`).join('')}</svg>`;
   const doodles = `<svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">${doodle('spark', 120, 70, 1.3)}${doodle('spark', 690, 120, 0.9)}${doodle('spark', 150, 330, 0.7)}${doodle('heart', 660, 62, 1.2, 12)}${doodle('heart', 718, 330, 0.8, -10)}${doodle('note', 96, 190, 1.1, -8)}${doodle('note', 700, 230, 0.9, 10)}<g class="dd-low">${doodle('flower', 640, 420, 1.2)}${doodle('flower', 100, 430, 0.9, 20)}${doodle('paw', 250, 450, 0.8, -20)}${doodle('paw', 300, 470, 0.8, -10)}${doodle('paw', 350, 455, 0.8, -25)}${doodle('bone', 560, 455, 1.1, -8)}</g></svg>`;
-  titleEl.innerHTML = `<div class="bg">${art('scene', 'yard', envNow())}</div>
+  titleEl.innerHTML = `<div class="bg" aria-hidden="true">${art('scene', 'yard', envNow())}</div>
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
       <h1 class="logo" aria-label="Doodle Doggo"><span style="transform:rotate(-3deg)">Doodle</span> <span style="transform:rotate(2deg) translateY(4px)">Doggo</span></h1>
       <div class="tagline">${tt('title.a_cozy_dog_game_sketchbook', 'a cozy dog game, sketchbook edition')}</div>
@@ -13,6 +13,7 @@ function enterTitle() {
     </div>
     <div class="tdog2" aria-hidden="true">${art('dog', 'dachs', { pose: 'idle' })}</div>
     <div class="tdog" aria-hidden="true">${art('dog', 'corgi', { pose: 'happy', facing: 'left' })}</div>`;
+  titleEl.querySelectorAll('.bg [tabindex]').forEach((e) => e.setAttribute('tabindex', '-1')); // test round d: the yard behind the cover is a picture: its garden gate is no Tab stop before Play
   tAcctKey = ''; titleAcctRender(); titleLangBind(); // v2.14: the first-run language chip (I18N CORE, 20_settings_dev.js)
 }
 
@@ -60,13 +61,19 @@ function titleAcctRender() {
   const has = !!loadSave() || !!(S && S.dog), m = acMode(), ln = m === 'choose' ? null : acLine(m);
   const key = [m, has, ln && ln.t, ln && ln.link].join('|'); if (key === tAcctKey) return; tAcctKey = key;
   const cov = box.closest('.cover'); if (cov) cov.classList.toggle('choosing', m === 'choose');
-  if (m === 'choose') {
+  if (cov) cov.classList.toggle('tfirst', !has); // v2.30.1: a new player's cover (the big dog and one Play button)
+  if (m === 'choose' && has) { // a save on this device after a log out: the three account choices, as before
     box.innerHTML = `<div class="tchoose" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}">${acChoicesHTML('t', m)}</div>`;
     acBindChoices(box, false); return;
   }
-  box.innerHTML = `<div class="tbtns">
+  if (m === 'choose') { // v2.30.1 first impressions: one big Play (guest + new game in one tap), Log in and Make an account as small links
+    box.innerHTML = `${tBigDog()}<div class="tbtns"><button class="btn big yes" id="tPlay">${tt('title.play', 'Play')}</button></div>
+      <p class="tacct tlinks" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}"><button class="tlink" id="tLogin" data-ac="login">${tt('title.log_in', 'Log in')}</button><button class="tlink" id="tReg" data-ac="reg">${tt('title.make_an_account', 'Make an account')}</button></p>`;
+    acBindChoices(box, false); const tp = $('#tPlay'); tp.onclick = () => acPlayNow(tp); return;
+  }
+  box.innerHTML = `${has ? '' : tBigDog()}<div class="tbtns">
         ${has ? '<button class="btn big go" id="tContinue">' + tt('title.continue', 'Continue') + '</button>' : ''}
-        <button class="btn big ${has ? '' : 'yes'}" id="tNew">${tt('title.new_game', 'New game')}</button>
+        <button class="btn big ${has ? '' : 'yes'}" id="tNew">${has ? tt('title.new_game', 'New game') : tt('title.play', 'Play')}</button>
       </div>
       <p class="tacct" role="status"><span>${ln.t}</span>${ln.link ? `<button class="tlink" id="tSwitch">${ln.link}</button>` : ''}</p>`;
   const tn = $('#tNew'), tc = $('#tContinue'), sw = $('#tSwitch');
@@ -77,6 +84,18 @@ function titleAcctRender() {
   };
   if (tc) tc.onclick = () => { SFX.boop(700); if (!S) S = loadSave(); applyAway(); gardenAdvance(); birthdayCheck(); go('yard'); migNote(); setTimeout(() => greetBark(), 1200); };
   if (sw) sw.onclick = () => { SFX.click(); acOpenChoices(); };
+}
+// v2.30.1: the big crayon dog on a new player's cover (game art, no new breed)
+function tBigDog() { return `<div class="tbig" aria-hidden="true">${art('dog', 'golden', { pose: 'happy' })}</div>`; }
+// v2.30.1: Play on a new player's cover = "Play as guest" + "New game" in one tap. The guest sign-in (and a pull of a guest game the
+// cloud may already hold for this browser) runs first, as acPlayGuest did; a game that arrives shows Continue instead of the adoption.
+async function acPlayNow(btn) {
+  SFX.boop(600); if (btn) btn.disabled = true; acGuest = true;
+  const wait = (pr, ms) => Promise.race([Promise.resolve(pr).catch(() => false), new Promise((r) => setTimeout(() => r(false), ms))]);
+  try { if (acCl() && acCl().on && !clOwner() && (await wait(clEnsureUser(), 6000))) await wait(clPull(), 6000); } catch (e) { /* offline: play on this device */ }
+  if (cur.mode !== 'title') return;
+  if (loadSave()) { tAcctKey = ''; titleAcctRender(); return; }
+  go('adopt');
 }
 function acBindChoices(root, inSheet) {
   root.querySelectorAll('[data-ac]').forEach((b) => { b.onclick = () => { SFX.click(); const a = b.dataset.ac; if (a === 'guest') acPlayGuest(b.closest('.panel')); else acOpenForm(a, inSheet); }; });

@@ -33,7 +33,7 @@ The owner's decisions (13 Oct 2026, choice window):
 ## As built (v2.8.1, 16 Oct 2026, CLOUDFLARE team)
 
 - **Worker** `pawhaven-api` at https://pawhaven-api.ansonyuen0108.workers.dev, D1 `pawhaven` (`d6bacd44-9f88-4c66-9ef6-ca15417a5c97`). Deploy: `bash tools/cf_api_deploy.sh` (REST API, no wrangler needed; makes the database if missing and re-applies `cloudflare/schema.sql`, which is safe to repeat). Live check: `bash tools/cf_api_smoke.sh` (makes one throwaway `pawhaven-smoke-*@example.com` account).
-- **Endpoints** as planned, plus `POST /password` (change password), `POST /migrate` (below) and `GET /save?meta=1` (rev and changed_at only). `PUT /save` refuses a rev the cloud already has (409 `stale`), and the game then looks again, so two devices can't overwrite each other blind. Errors are short codes (`invalid_credentials`, `email_exists`, `weak_password`, `invalid_email`, `rate_limited`, `busy`) that `clErrText()` turns into the same kind messages as before.
+- **Endpoints** as planned, plus `POST /password` (change password; since 17 Nov 2026 it needs `{current, password}`, V224.md 4.5), `POST /migrate` (below) and `GET /save?meta=1` (rev and changed_at only). `PUT /save` refuses a rev the cloud already has (409 `stale`), and the game then looks again, so two devices can't overwrite each other blind. Errors are short codes (`invalid_credentials`, `email_exists`, `weak_password`, `invalid_email`, `rate_limited`, `busy`) that `clErrText()` turns into the same kind messages as before.
 - **Rate limits** (D1 table `rate`): log in 30 per 10 min per IP and 10 per 10 min per email, make an account 10 per hour per IP, guests 60 per hour per IP, save pushes 60 per minute per player.
 - **Moving old accounts.** By password: `/login` with an email the Worker doesn't know asks Supabase once (password grant with the public publishable key), then makes the user with the **same user id**, a fresh PBKDF2 hash, the save (data, rev, changed_at, device) and up to 5 backups. Verified live on 16 Oct with a throwaway Supabase account (`pawhaven-test-cf-1792112261@example.com`, made through the public sign-up; the public API can't delete it, so remove it in the Supabase dashboard).
  By session (added): a device still logged in to Supabase sends its stored Supabase tokens to `POST /migrate` on first start, and carries over with no password typed (the hash is stored on the next typed log in). Keeping the Supabase user id means the device's save stays "owned" by the same account, so nobody sees a log-out or a moved game.
@@ -92,3 +92,44 @@ Opt-in public dog cards for email accounts: other players' dogs visit the Dog Pa
 - **Deleting an account** (the owner deletes the `users` row when a player asks, see the privacy page) deletes its card and its paws: every card route joins `users`, so the card is gone at once, and `dcTidy()` removes the rows left behind (from the card routes, about 1 in 50 of their requests). `tidy()` drops paws older than 3 days (index `paws_day`). `env.TIDY` makes the tests tidy at once.
 - **Client:** `dcMode()` `'on'` with cloud save on and a session, `'fake'` on the claude.ai artifact and under the harness (without `__pawCloudMock`), `'off'` otherwise; the 8 town players `DC_FAKE` fill any scene the Worker can't. The card syncs on load, on focus (at most once a minute) and after a log in: shared and refreshed when `S.dc.on` and `S.dc.uid` is this account (re-published when it changed or is a week old; a save switched on by another account never publishes), deleted when it is off or every dog on it has left, and more paws than `S.dc.got` gives one "Your Dog Card got N new paws." toast. Settings → Cloud save has the Dog Card block (the one hook in `22b_cloud.js`).
 - **Tests:** `worker` (junk fields, strings, oversized cards, double merle, a paw a day, own card, guests can't publish, no ids or emails in answers, the rate limits, `DELETE`, a deleted account), `v211_cards` and `phone_v211_cards` (mock mode: publish, a guest's visit and paw, the paws toast, opt out deletes).
+
+## api.doodledoggo.app and test.doodledoggo.app (18 Nov 2026, owner: "prepare 2 and 3")
+
+Why: the repo becomes private. The game server's workers.dev address has the account's name in it and every player's browser sees it, and
+the GitHub Pages test copy (an9ou.github.io/paw-haven) stops once the repo is private on the free plan.
+
+**The game server address.** `game/src/22b_cloud_config.js` now calls **https://api.doodledoggo.app**, the Workers Custom Domain of
+`pawhaven-api`. `tools/cf_api_domain.sh` attaches it (idempotent; `DRY_RUN=1` prints the requests and sends none; `verify` only checks
+GET /, the CORS preflights from doodledoggo.app, www, both itch.io frames and test.doodledoggo.app, and that workers.dev still answers).
+The site's CSP (`tools/cf_site.js`) allows both addresses for the transition. **The workers.dev address stays on** (never set
+`workers_dev = false`): older game copies (itch.io builds before this change, saved pages) and the Stripe webhook use it. Once no released
+copy calls it (a few months), the workers.dev entry can leave the CSP. `bash tools/cf_api_smoke.sh` now tests the new address
+(`PAW_API=<url>` or an argument for another one). Order: attach the domain and verify it **before** a game build with the new address ships.
+
+**The Stripe webhook (owner, later, in the Stripe Dashboard).** Keep the current endpoint `https://pawhaven-api.<subdomain>.workers.dev/shop/webhook`
+until a planned switch: a new endpoint gets a **new signing secret** (`whsec_...`), and the Worker checks one secret (`STRIPE_WEBHOOK_SECRET`).
+A switch with no lost event (the Worker skips an event id it has already handled, table `shop_events`, and Stripe retries a failed delivery for 3 days):
+1. Stripe Dashboard > Developers > Webhooks > Add destination: `https://api.doodledoggo.app/shop/webhook`, the same events as the old one
+   (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`,
+   `charge.refunded`, `charge.dispute.created`, and any others the old endpoint lists). Copy its signing secret once.
+2. Cloudflare dashboard: Workers & Pages > pawhaven-api > Settings > Variables and Secrets > `STRIPE_WEBHOOK_SECRET` > Edit: the new secret > Deploy.
+   From now on the new endpoint's deliveries pass and the old one's fail (Stripe retries them; the same events also reached the new endpoint).
+3. Stripe: check a few deliveries on the new endpoint show 200, then disable and later delete the old endpoint.
+Never paste a `whsec_` secret into chat or the repo.
+
+**The test copy: https://test.doodledoggo.app** (the Worker `doodle-doggo-test`). `bash tools/cf_test_deploy.sh [git ref]` builds
+`node tools/pages.js --test --out _site_test` (the Pages build: dev button, the Friends / Cantonese / Missions v2 / What's new test flags;
+no in-page password screen; `<meta name="robots" content="noindex,nofollow">`; payments off with `window.__ddNoPay`, so `ksCheckout` never
+opens Stripe), turns it into `_cftest/` with `tools/cf_test.js` (the gate `tools/test_gate.mjs` as a module, every file a Text or Data module, about
+5.2 MB gzipped), uploads it with `keep_bindings: secret_text`, switches its workers.dev address off and attaches the Custom Domain.
+`BUILD_ONLY=1` builds only; `DRY_RUN=1` builds and prints the requests. The API answers the test origin (CORS) for cloud save, and
+`POST /shop/checkout` from it is always `shop_closed` (nobody pays in the test copy).
+- **The gate:** every path but `/robots.txt` answers the gate page (401) without a valid cookie. The password is the Worker secret `TEST_PASSWORD`,
+  compared in constant time; right: a 303 and the cookie `dd_test` (HttpOnly, Secure, SameSite=Lax, 30 days, an HMAC-SHA256 of its expiry with
+  `TEST_COOKIE_KEY`, or a key derived from the password, so a new password logs everyone out). 10 wrong tries per IP in 10 minutes then 429.
+  `X-Robots-Tag: noindex, nofollow` everywhere; the gate and the HTML are `private, no-store`, the other files `private` only. No `TEST_PASSWORD`: 503.
+  `/__gate/out` logs out. Suite `test_gate` (Node and the generated Worker in Miniflare).
+- **Owner, once:** the script refuses while `TEST_PASSWORD` is missing (it reads the secret names only). On the first run the Worker does not exist,
+  so it uploads an empty Worker that answers 503 (no domain) and stops. Then: Cloudflare dashboard > Workers & Pages > doodle-doggo-test >
+  Settings > Variables and Secrets > Add > Type Secret, Name `TEST_PASSWORD`, Value: the password > Deploy. Then run the script again.
+- GitHub Pages: `.github/workflows/pages.yml` stays in the repo (unused once private). `tools/pages_gate.js` (the in-page screen) stays for it.

@@ -20,11 +20,11 @@ async function checks(label, call, sql, mail) {
   ok(r.status === 200 && r.json.ok, 'GET / answers');
 
   // CORS: only the game's own origins
-  for (const o of ['https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io', 'https://html-classic.itch.zone', 'https://html.itch.zone', 'http://localhost:8765', 'http://127.0.0.1:8765']) {
+  for (const o of ['https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io', 'https://html-classic.itch.zone', 'https://html.itch.zone', 'https://test.doodledoggo.app', 'http://localhost:8765', 'http://127.0.0.1:8765']) {
     r = await call('OPTIONS', '/save', null, null, { Origin: o, 'Access-Control-Request-Method': 'PUT', 'Access-Control-Request-Headers': 'authorization,content-type' });
     ok(r.status === 204 && r.headers.get('access-control-allow-origin') === o && /Authorization/.test(r.headers.get('access-control-allow-headers')), `CORS preflight allowed for ${o}`);
   }
-  for (const o of ['https://evil.example', 'https://doodledoggo.app.evil.example', 'null', 'https://claude.ai']) {
+  for (const o of ['https://evil.example', 'https://doodledoggo.app.evil.example', 'null', 'https://claude.ai', 'https://test.doodledoggo.app.evil.example', 'http://test.doodledoggo.app']) {
     r = await call('OPTIONS', '/save', null, null, { Origin: o });
     ok(r.status === 403 && !r.headers.get('access-control-allow-origin'), `CORS refused for ${o}`);
   }
@@ -83,7 +83,13 @@ async function checks(label, call, sql, mail) {
   ok((await call('GET', '/save', null, d2)).json.save.data.coins === 100, 'a second device reads the same save');
   r = await call('PUT', '/save', { data: save(200), rev: 2, changed_at: new Date().toISOString(), device: 'Pixel Chrome' }, d2); ok(r.json.rev === 2, 'device 2 pushes rev 2');
   ok((await call('GET', '/save', null, a.token)).json.save.data.coins === 200, 'device 1 pulls rev 2');
-  r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 200, 'change password');
+  r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 400 && r.json.error === 'invalid_credentials', 'a bearer token alone cannot change the password');
+  ok((await call('GET', '/me', null, d2)).status === 200 && (await call('GET', '/me', null, a.token)).status === 200, 'a refused change logs nobody out');
+  r = await call('POST', '/password', { current: 'nope-nope-1', password: 'pupper456' }, a.token); ok(r.status === 400 && r.json.error === 'invalid_credentials', 'a wrong current password is refused');
+  ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 200, 'the password is unchanged');
+  r = await call('POST', '/password', { current: 'pupper123', password: 'short' }, a.token); ok(r.status === 400 && r.json.error === 'weak_password', 'a short new password is refused and costs no session');
+  ok((await call('GET', '/me', null, d2)).status === 200, 'the other device is still logged in');
+  r = await call('POST', '/password', { current: 'pupper123', password: 'pupper456' }, a.token); ok(r.status === 200, 'change password with the current password');
   ok((await call('GET', '/me', null, d2)).status === 401 && (await call('GET', '/me', null, a.token)).status === 200, 'a password change logs out every other device; this one stays logged in');
   ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 401 && (await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper456' })).status === 200, 'the old password stops working, the new one works');
   ok((await call('POST', '/password', { password: 'pupper789' }, (await call('POST', '/guest', {})).json.token)).status === 403, 'a guest has no password to change');

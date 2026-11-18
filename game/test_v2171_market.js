@@ -48,9 +48,12 @@ run('v2171_market', async (t) => {
 
   sec('2. the windows: Japan date, inclusive; overlapping markets share the place, the first to close names it');
   {
-    const W = await ev(() => { const F = window.__paw.fm, o = (d) => F.open(d).map((x) => x.id).join('+'); return { a: o('2026-10-07'), b: o('2026-10-08'), c: o('2026-10-27'), d: o('2026-11-15'), e: o('2026-11-16'), d2: o('2026-11-02'), f: o('2026-11-30'), g: o('2026-12-01'), h: o('2026-12-26'), i: o('2026-12-27'), j: o('2027-01-07'), k: o('2027-01-08'), l: o('2027-03-30'), m: o('2027-10-23'), n: o('2027-10-24') }; });
-    ok(W.a === 'harvest' && W.b === 'halloween+harvest' && W.c === 'halloween+harvest' && W.d === 'halloween+harvest' && W.d2 === 'halloween+harvest' && W.e === 'harvest' && W.f === 'harvest', 'Halloween 8 Oct to 15 Nov 2026 (open on 15 Nov, closed on 16 Nov), the Harvest Market 1 Oct to 30 Nov: ' + JSON.stringify(W));
-    ok(W.g === 'winter' && W.h === 'winter' && W.i === 'newyear' && W.j === 'newyear' && W.k === '' && W.l === '' && W.m === 'harvest' && W.n === 'halloween+harvest', 'Winter 1 to 26 Dec, New Year 27 Dec to 7 Jan, nothing in March (sakura todo), Halloween 2027 from 24 Oct');
+    const W = await ev(() => { const F = window.__paw.fm, o = (d) => F.open(d).map((x) => x.id).join('+'); return { a: o('2026-10-07'), b: o('2026-10-08'), c: o('2026-10-27'), d: o('2026-11-15'), e: o('2026-11-16'), d2: o('2026-11-02'), f: o('2026-11-30'), g: o('2026-12-01'), g0: o('2026-11-22'), g1: o('2026-11-23'), g2: o('2027-11-30'), g3: o('2027-12-01'), h: o('2026-12-26'), i: o('2026-12-27'), h1: o('2026-12-31'), i1: o('2027-01-01'), j: o('2027-01-07'), k: o('2027-01-08'), l: o('2027-03-30'), m: o('2027-10-23'), n: o('2027-10-24') }; });
+    ok(W.a === 'harvest' && W.b === 'halloween+harvest' && W.c === 'halloween+harvest' && W.d === 'halloween+harvest' && W.d2 === 'halloween+harvest' && W.e === 'harvest' && W.f === 'harvest+winter', 'Halloween 8 Oct to 15 Nov 2026 (open on 15 Nov, closed on 16 Nov), the Harvest Market 1 Oct to 30 Nov (beside the Winter Market from 23 Nov 2026): ' + JSON.stringify(W));
+    ok(W.g0 === 'harvest' && W.g1 === 'harvest+winter' && W.g2 === 'harvest' && W.g3 === 'winter', 'Winter 2026 opens 23 Nov (beside the Harvest Market until 30 Nov), other years 1 Dec: ' + JSON.stringify(W));
+    ok(await ev(() => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.main() + '|' + F.sign(); }; const r = [at('2026-12-27'), at('2026-12-31'), at('2027-01-01')]; F.date('2026-10-27'); return r.join(); }) === 'winter|Winter Market · open until 31 Dec,winter|Winter Market · open until 31 Dec,newyear|New Year Market · open until 7 Jan', 'the Winter tent until 31 Dec (the New Year items sell beside it from 27 Dec), the New Year tent from 1 Jan');
+    ok(await ev(() => { const F = window.__paw.fm; F.date('2026-11-23'); const m = F.main(), sg = F.sign(); F.date('2026-10-27'); return m === 'winter' && sg === 'Winter Market · open until 31 Dec'; }), '23 Nov 2026: the tent is the Winter Market (the market that opened last), sign "Winter Market · open until 31 Dec"');
+    ok(W.g === 'winter' && W.h === 'winter' && W.i === 'winter+newyear' && W.h1 === 'winter+newyear' && W.i1 === 'newyear' && W.j === 'newyear' && W.k === '' && W.l === '' && W.m === 'harvest' && W.n === 'halloween+harvest', 'Winter 1 to 31 Dec (owner, 18 Nov 2026), New Year 27 Dec to 7 Jan, nothing in March (sakura todo), Halloween 2027 from 24 Oct');
     ok(await ev(() => window.__paw.fm.sign() === 'Halloween Market · open until 15 Nov'), 'the sign: "Halloween Market · open until 15 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2026-11-16'); const s = F.sign(); F.date('2026-10-27'); return s === 'Harvest Market · open until 30 Nov'; }), 'after 15 Nov the sign says "Harvest Market · open until 30 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2027-10-27'); const c = F.items('clothes').map((x) => x.n), t = F.items('treats').map((x) => x.n); F.date('2026-10-27'); return !c.includes('Pumpkin Patch Suit') && c.includes('Ghost Sheet') && !t.includes('Pumpkin Patch Pupcake'); }), 'the 2026 edition items are sold in 2026 only');
@@ -162,7 +165,7 @@ run('v2171_market', async (t) => {
   sec('8. after the market packs up: the place leaves, everything bought stays');
   {
     await t.home('fmarket');
-    await ev(() => window.__paw.fm.date('2026-12-28')); // the New Year Market: a different market, the Halloween things gone from its stalls
+    await ev(() => window.__paw.fm.date('2027-01-02')); // the New Year Market: a different market, the Halloween things gone from its stalls
     ok(await ev(() => window.__paw.fm.main() === 'newyear' && !window.__paw.fm.items('clothes').some((x) => x.n === 'Pumpkin Patch Suit')), 'late December: the New Year Market');
     await ev(() => window.__paw.fm.date('2027-02-10')); await ev(() => window.__paw.fm.sync());
     ok(await t.until(() => window.__paw.S.place === 'square', null, 4000), 'no market in February: a dog standing there walks to the Square');
@@ -191,7 +194,7 @@ run('v2171_market', async (t) => {
     await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
     const W = await ev(() => ({ stalls: [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join(), boards: [...document.querySelectorAll('#sceneG .fm-stall-sign')].map((x) => x.textContent).sort().join(), sign: (document.querySelector('#sceneG .fm-sign') || {}).textContent || '', svg: (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML || '' }));
     ok(W.stalls === 'clothes,decor,homes,toys,treats', 'five winter stall buttons (the three stalls, the homes stand, the treats cart): ' + W.stalls);
-    ok(W.boards === 'Clothes,Decor,Homes,Toys,Treats' && /Winter Market · open until 26 Dec/.test(W.sign), 'each has its board with its name, and the sign: ' + W.boards);
+    ok(W.boards === 'Clothes,Decor,Homes,Toys,Treats' && /Winter Market · open until 31 Dec/.test(W.sign), 'each has its board with its name, and the sign: ' + W.boards);
     ok(W.svg.length > 20000 && !W.svg.includes('pa-wb-glow'), 'the real winter drawings in the scene, nothing glows by day');
     const cov = await ev(() => { const d = document.querySelector('#dogPos').getBoundingClientRect(), hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; return [...document.querySelectorAll('#sceneG .fm-stall-sign')].filter((x) => hit(d, x.getBoundingClientRect())).map((x) => x.textContent); });
     ok(cov.length === 0, 'the dog stands in the open snow in front, clear of every stall board (37_roam.js RM_LEAD): ' + cov.join());
@@ -202,7 +205,7 @@ run('v2171_market', async (t) => {
     }
     await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
     ok(await t.until(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 5 && (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML.includes('pa-wb-glow'), null, 4000), 'after dark: the fairy lights and the lanterns glow, the five stalls still tappable');
-    await ev(() => window.__paw.fm.date('2026-12-28')); await ev(() => { const P = window.__paw; P.go('yard'); }); await t.calm();
+    await ev(() => window.__paw.fm.date('2027-01-02')); await ev(() => { const P = window.__paw; P.go('yard'); }); await t.calm();
     ok(await ev(() => window.__paw.fm.main() === 'newyear' && [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join() === 'decor,treats'), 'the New Year Market: only its two stalls (decor, treats) are buttons');
     await t.ctx.close();
   }

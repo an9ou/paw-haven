@@ -4,12 +4,15 @@
 //   --no-minify    keep the scripts and styles as they are (easier to debug in the browser)
 //   --out <dir>    write there instead of _site/ (game/test_v219_friends.js checks the Pages-only flags with it)
 //   --itch         the itch.io / doodledoggo.app /play/ copy (tools/itch.js): no password screen, no Friends, Cantonese or Missions v2 test flag
+//   --test         the test copy at test.doodledoggo.app (tools/cf_test.js, owner 18 Nov 2026): the test flags and the dev button like Pages, but no
+//                  in-page password screen (the Worker "doodle-doggo-test" has a real one) and payments off (window.__ddNoPay: ksCheckout never
+//                  opens Stripe; the API also refuses /shop/checkout from that origin). Use with --out _site_test.
 // Writes _site/index.html (plus .nojekyll) and copies the brand kit (icons, manifest, share card) from brand/.
 // v2.14 PERF (PERF.md): by default it ships the split build from _split/ (game/build.js publish, tools/split.js): English inline, lang/<code>.<hash>.js
 // per other language and photo_fonts.<hash>.js next to index.html, and minifies index.html with tools/minify.js (esbuild; without it: a warning).
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const root = path.join(__dirname, '..');
-const SINGLE = process.argv.includes('--single'), ITCH = process.argv.includes('--itch'), MINIFY = !SINGLE && !process.argv.includes('--no-minify');
+const SINGLE = process.argv.includes('--single'), ITCH = process.argv.includes('--itch'), TEST = !ITCH && process.argv.includes('--test'), MINIFY = !SINGLE && !process.argv.includes('--no-minify');
 const SPLIT = path.join(root, '_split');
 const src = SINGLE ? path.join(root, 'paw_haven_prototype.html') : path.join(SPLIT, 'index.html');
 if (process.argv.includes('--build') || !fs.existsSync(src)) {
@@ -30,7 +33,8 @@ fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(phot
 // v2.20 "Little Helps" (owner, 4 Nov 2026): and Missions v2 on (window.__ddMs2Test: game/src/24b_missions2.js ms2On(), while MS2_LIVE is off; its What's new
 // entry stays off). Same rule: never itch.io, /play/ or the artifact.
 const NEXT_TEST_FLAG = '<script>window.__ddNextTest=1</script>', FR_TEST_FLAG = '<script>window.__ddFrTest=1</script>', YUE_TEST_FLAG = '<script>window.__ddYueTest=1</script>', MS2_TEST_FLAG = '<script>window.__ddMs2Test=1</script>';
-let html = head + (ITCH ? '' : require('./pages_gate.js').gate() + FR_TEST_FLAG + YUE_TEST_FLAG + MS2_TEST_FLAG + NEXT_TEST_FLAG) + rest + '</body></html>';
+const NOPAY_FLAG = '<script>window.__ddNoPay=1</script>', NOINDEX = '<meta name="robots" content="noindex,nofollow">';
+let html = (TEST ? head.replace('</head>', NOINDEX + '</head>') : head) + (ITCH ? '' : (TEST ? NOPAY_FLAG : require('./pages_gate.js').gate()) + FR_TEST_FLAG + YUE_TEST_FLAG + MS2_TEST_FLAG + NEXT_TEST_FLAG) + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
@@ -48,4 +52,4 @@ kit.forEach((f) => fs.copyFileSync(path.join(brand, f), path.join(out, f)));
 // v2.14: the per-language font subsets (game/fonts/i18n/*.woff2), served as fonts/i18n/<file> next to index.html (00b_i18n.js loads only the current one)
 const FD = path.join(root, 'game', 'fonts', 'i18n'), fonts = fs.existsSync(FD) ? fs.readdirSync(FD).filter((f) => /\.woff2$/.test(f)) : [];
 if (fonts.length) { fs.mkdirSync(path.join(out, 'fonts', 'i18n'), { recursive: true }); fonts.forEach((f) => fs.copyFileSync(path.join(FD, f), path.join(out, 'fonts', 'i18n', f))); }
-console.log('wrote _site/index.html', (Buffer.byteLength(html) / 1e6).toFixed(2) + ' MB', SINGLE ? '(single file)' : `+ ${side} split files`, '+', kit.length, 'brand files +', fonts.length, 'font files');
+console.log('wrote ' + (path.relative(root, out) || out) + '/index.html' + (TEST ? ' (test copy)' : ''), (Buffer.byteLength(html) / 1e6).toFixed(2) + ' MB', SINGLE ? '(single file)' : `+ ${side} split files`, '+', kit.length, 'brand files +', fonts.length, 'font files');

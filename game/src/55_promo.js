@@ -171,7 +171,7 @@ function pmBoxHTML(where) {
   const head = where === 'sheet' ? '' : `<h4 class="clh">${esc(tt('pm.title', 'Have a code?'))}</h4>`;
   if (m !== 'ok') return `<section class="pmset" id="pmBox" data-pm="guest">${head}<p class="small pm-guest">${esc(pmErrText('login'))}</p><div class="clrow"><button class="btn yes" type="button" id="pmAcct">${esc(tt('pm.make_account', 'Make the free account'))}</button></div></section>`;
   return `<section class="pmset" id="pmBox" data-pm="ok">${head}<form class="pm-form" id="pmForm" novalidate><label class="clfield pm-field" for="pmCode"><span>${esc(tt('pm.label', 'Gift code'))}</span>`
-    + `<input id="pmCode" type="text" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" maxlength="${PM_LEN}" enterkeyhint="go" placeholder="${esc(tt('pm.placeholder', 'DOGGOXXXX'))}"></label>`
+    + `<input id="pmCode" type="text" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" maxlength="${PM_LEN}" enterkeyhint="go" placeholder="${esc(tt('pm.placeholder', 'ABC123'))}"></label>`
     + `<button class="btn yes pm-go" type="submit" id="pmGo">${esc(tt('pm.use', 'Use code'))}</button></form>`
     + `<p class="pm-msg" id="pmMsg" role="status" aria-live="polite"></p><div class="clrow pm-relog" hidden><button class="btn yes" type="button" id="pmLogin">${esc(tt('cloud.log_in', 'Log in'))}</button></div><p class="small pm-note">${esc(tt('pm.note', 'The code goes only to our server, to check it.'))}</p></section>`;
 }

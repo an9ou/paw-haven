@@ -8,6 +8,7 @@ const PH_CAPS = ['Best day ever', 'Nap champions', 'Snack o\'clock', 'Zoomies lo
 const PH_SEASON_CAP = { spring: 'Spring in my paws', summer: 'Sunny paws, happy dogs', autumn: 'Leaf pile pending', winter: 'Cold noses, warm hearts' };
 const PH_LONG = 1080;
 const PH_SQ_MARGIN = 80; // scene units around the dogs in the square picture
+const PH_TALL = 1350, PH_CROP_H = 500; // v2.31: the postcard is 1080x1350 and shows the lower 500 scene units round the dogs (the sky above the house roofs is cut)
 const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size: null, blob: null, blobTok: -1, blobP: null, url: '', saving: false, said: false, force: '', obs: [], keyFn: null, lastFocus: null, timer: 0, hold: null };
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t: tdata('ph_caps.' + i, t) })).concat([{ id: 'season', t: (() => { const k = PH_SEASON_CAP[seasonNow()] ? seasonNow() : 'summer'; return tdata('ph_season_cap.' + k, PH_SEASON_CAP[k]); })() }]);
@@ -102,7 +103,7 @@ function phCapture() {
   const setStyle = (el, props) => { const c = at.get(el); if (!c) return; const cs = getComputedStyle(el); props.forEach((p) => { const v = cs.getPropertyValue(p); if (v) c.style.setProperty(p, v); }); };
   phRules(svg).forEach(([el, props]) => setStyle(el, props));
   try { svg.getAnimations({ subtree: true }).forEach((a) => { const t = a.effect && a.effect.target; if (t && at.has(t)) setStyle(t, PH_ANIM); }); } catch (e) { /* no Web Animations: the CSS values stand */ }
-  cl.querySelectorAll('#fx, .soon-tag, #dogHit').forEach((e) => e.remove());
+  cl.querySelectorAll('#fx, .soon-tag, #dogHit, .mess, .flies').forEach((e) => e.remove()); // v2.31: never a poop, a puddle or a fly in the picture
   const clean = (e) => { // no scripts, no handlers, nothing that points outside the file (a tainted canvas would stop the PNG)
     [...e.attributes].forEach((a) => {
       const n = a.name.toLowerCase(), v = a.value;
@@ -141,10 +142,12 @@ function phLayout(c, sq) { // the card size and the part of the scene the pictur
     size = { w: PH_LONG, h: PH_LONG }; const win = PA.postcardWindow(size.w, size.h), a = win.w / win.h;
     const need = c.dogs ? Math.min(c.dogs[1] - c.dogs[0] + PH_SQ_MARGIN, base[2]) : 0, w = Math.max(bh * a, need), h = w / a;
     vb = [0, by + bh - h, w, h];
-  } else if (isPhone()) {
-    const span = c.dogs ? c.dogs[1] - c.dogs[0] : 300, w = clamp(span + 110, 480, base[2]) * bh / 600;
-    vb = [0, by, w, bh]; size = PA.postcardSize(w / bh, PH_LONG);
-  } else size = PA.postcardSize(base[2] / bh, PH_LONG);
+  } else { // v2.31 Share my dog: the postcard is 1080x1350 (a feed post) on every screen, cropped round the dogs: the lower PH_CROP_H of the scene,
+    // widened (and the extra height above filled with the sky) when the dogs spread wider than that
+    size = { w: PH_LONG, h: PH_TALL }; const win = PA.postcardWindow(size.w, size.h), a = win.w / win.h, h0 = Math.min(bh, PH_CROP_H);
+    const need = c.dogs ? Math.min(c.dogs[1] - c.dogs[0] + PH_SQ_MARGIN, base[2]) : 0, w = Math.min(Math.max(h0 * a, need), base[2]), h = w / a;
+    vb = [0, by + bh - h, w, h];
+  }
   if (vb[2] < base[2] && vb[0] === 0) { // centre the crop on the dogs and keep it inside the scene
     const mid = c.dogs ? (c.dogs[0] + c.dogs[1]) / 2 : base[0] + base[2] / 2;
     vb[0] = clamp(mid - vb[2] / 2, base[0], base[0] + base[2] - vb[2]);
@@ -161,6 +164,7 @@ function phCompose(c, o) {
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
   let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : /^fw/.test(o.color || '') && typeof fwPostcard === 'function' ? fwPostcard : /^dd/.test(o.color || '') && typeof ddPostcard === 'function' ? ddPostcard : /^wb/.test(o.color || '') && typeof wbPostcard === 'function' ? wbPostcard : o.color === 'smbook' && typeof smPostcard === 'function' ? smPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}${phLangFontCSS()}*{animation:none!important;transition:none!important}</style>`);
+  if (typeof shChip === 'function') svg = svg.replace(/<\/svg>\s*$/, () => shChip(win.x + win.w - 18, win.y + win.h - 18, L.size.w / 1080, 'br') + '</svg>'); // v2.31: the "Doodle Doggo · doodledoggo.app" sticker in the picture's corner (58_share.js)
   return { svg, size: L.size, names, vb };
 }
 function phDataURL(svg) {
@@ -231,7 +235,7 @@ function phPanel() {
 function phOpen() {
   if (!phCan()) return false;
   exPhoto(true); const cap = phCapture(); if (!cap) { exPhoto(false); return false; } // v2.13: the face picked for the photo goes on every dog first (41_expressions.js)
-  PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; // a clear screen: the hints that were up fold away
+  PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; if (typeof hideMomentChip === 'function') hideMomentChip(); // bug sweep 18 Nov: the story scene's "Share this moment" chip (58_share.js) sat on top of the photo // a clear screen: the hints that were up fold away
   let root = $('#phMode'); if (!root) { root = document.createElement('div'); root.id = 'phMode'; root.className = 'ph-mode'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', tt('photo.mode', 'Photo mode')); stage.appendChild(root); }
   root.hidden = false; root.classList.remove('ph-busy'); root.innerHTML = phPanel(); stage.classList.add('ph-on'); phBtn.hidden = true;
   root.querySelectorAll('[data-frame]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phFrame = b.dataset.frame; savePrefs(); root.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });

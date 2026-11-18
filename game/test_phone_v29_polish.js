@@ -44,14 +44,14 @@ async function suite(t, W, H) {
   ok(ch.c.every((c) => c.fs >= 15 && c.b[3] - c.b[1] >= 43.5 && c.b[2] - c.b[0] >= 43.5) && ch.sw === ch.iw, `${tag}: 15 px labels, 44 px chips, no sideways scroll`);
   await t.SH('painter_' + tag); await t.closeX(); await t.modalGone();
 
-  sec(`${tag}: 3 the missions: no clipboard in the yard, a Missions button with the count in the "..." menu (v2.16.1)`);
+  sec(`${tag}: 3 the missions: no clipboard in the yard, a Missions tile with the count in the More tray (v2.31)`);
   await t.home('yard'); await t.calm(); await t.freezeMotion(true);
   ok(await ev(() => !document.querySelector('#msCardG') && (!document.querySelector('#msBtn') || getComputedStyle(document.querySelector('#msBtn')).display === 'none')), `${tag}: no clipboard in the scene, no top-bar clipboard on a phone`);
-  await p.locator('#moreBtn').tap(); ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 4000), `${tag}: the "..." menu lists the missions`);
-  const mm = await ev(() => { const b = document.getElementById('mmMs'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, txt: b.textContent.replace(/\s+/g, ' ').trim(), n: window.__paw.S.missions.list.filter((x) => x.done).length, of: window.__paw.S.missions.list.length }; }); // v2.19.2: one mission a day (0/1)
-  ok(mm.h >= 43.5 && mm.w >= 43.5 && mm.of >= 1 && mm.txt.includes(mm.n + '/' + mm.of) && /Daily missions/.test(mm.txt), `${tag}: the Missions button, 44 px, with its count: ${mm.txt} (${Math.round(mm.w)}x${Math.round(mm.h)})`);
+  await p.locator('#bar .act[data-act=more]').tap(); ok(await t.until(() => !!document.querySelector('#bar .barpop:not([hidden]) .act[data-act=missions]'), null, 4000), `${tag}: the More tray lists the missions`);
+  const mm = await ev(() => { const b = document.querySelector('#bar .barpop:not([hidden]) .act[data-act=missions]'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, txt: b.textContent.replace(/\s+/g, ' ').trim(), n: window.__paw.S.missions.list.filter((x) => x.done).length, of: window.__paw.S.missions.list.length }; }); // v2.19.2: one mission a day (0/1)
+  ok(mm.h >= 43.5 && mm.w >= 43.5 && mm.of >= 1 && mm.txt.includes(mm.n + '/' + mm.of) && /Missions/.test(mm.txt), `${tag}: the Missions tile, 44 px, with its count: ${mm.txt} (${Math.round(mm.w)}x${Math.round(mm.h)})`);
   await t.SH('missions_menu_' + tag);
-  await p.locator('#mmMs').tap();
+  await p.locator('#bar .barpop:not([hidden]) .act[data-act=missions]').tap();
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), `${tag}: a tap opens the Missions sheet`);
   await t.closeX(); await t.modalGone();
 

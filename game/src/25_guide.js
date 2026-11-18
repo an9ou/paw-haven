@@ -128,6 +128,9 @@ function gdPlace(force) {
 function gdRing(tray) {
   const ring = $('.gd-ring', gd.layer), tg = gdTarget(S.guide.step, tray);
   if (!tg) { ring.hidden = true; gd.ringKey = ''; return; }
+  // v2.31 review: while a phone bar tray is open (the More tile sheet covers most of the yard), a ring on anything outside that tray would sit on its
+  // tiles and their labels: it waits, and comes back on the next tick once the tray closes
+  const bo = typeof fwBarOpen === 'function' ? fwBarOpen() : null; if (bo && !(tg.e && tg.e.closest && (tg.e.closest(`#bar .barpop[data-pop="${bo}"]`) || tg.e.closest('#bar > .act')))) { ring.hidden = true; return; }
   // v2.14 fit: the ring stays inside the stage (a target on the stage's edge, like the Walk button on phones, used to push #stage sideways)
   const pad = tg.sel === '#dogHit' ? 10 : 8, r = tg.r, sw = stage.clientWidth, sh = stage.clientHeight;
   const l = Math.max(1, Math.round(r.l - pad)), t = Math.max(1, Math.round(r.t - pad)), W = Math.min(sw - 1, Math.round(r.r + pad)) - l, H = Math.min(sh - 1, Math.round(r.b + pad)) - t, key = `${S.guide.step}|${W}x${H}`;
@@ -142,23 +145,23 @@ function gdTick() {
   if (!fw && i === 5 && cur.mode === 'walk') return gdGo(6, true); // a walk started: the card waits for the yard
   const L = gdLayer(), c = $('.gd-card', L), ring = $('.gd-ring', L);
   const trayRing = fw && cur.mode === 'yard' && modal.hidden && popOpen() && !!gdSteps()[i].tray; L.classList.toggle('gd-tray', trayRing || (typeof fwBarOpen === 'function' && !!fwBarOpen())); // v2.16: also over the phone bar's Care / More tray (#bar.popon) // over the tray popup (z 15) while it rings a button in it
-  if (gdPaused()) { c.hidden = true; gdToasts(false); if (trayRing) gdRing(true); else { ring.hidden = true; gd.ringKey = ''; } return; } // v2.16: with the step's tray open, the ring moves onto the button in the tray
+  if (gdPaused()) { const up = !c.hidden; c.hidden = true; gdToasts(false); if (up) toastNext(); if (trayRing) gdRing(true); else { ring.hidden = true; gd.ringKey = ''; } return; } // v2.16: with the step's tray open, the ring moves onto the button in the tray
   const was = c.hidden; if (gd.shown !== i) gdRender();
   c.hidden = false; gdPlace(was || gd.force); gd.force = false; gdRing(); gdToasts(c.dataset.at === 'top');
 }
 function gdGo(i, quiet) {
-  if (!gdLive()) return; S.guide.step = i; markDirty();
+  if (!gdLive()) return; S.guide.step = i; markDirty(); saveNow(); // v2.30.1: a guide step is saved at once (a reload right after it never goes back a step)
   if (!quiet) gdTick();
 }
 function gdNext() { if (!S || !S.guide) return; const i = S.guide.step, st = gdSteps()[i]; if (st && st.act) { st.act(); return; } if (i >= gdSteps().length - 1) { gdBye(); return; } gdGo(i + 1); }
 function gdBye() {
-  if (S && S.guide) { S.guide.done = localISO(); markDirty(); }
+  if (S && S.guide) { S.guide.done = localISO(); markDirty(); saveNow(); }
   const L = gd.layer; if (L) { $('.gd-duck', L).innerHTML = gdDuck('wave'); $('.gd-ring', L).hidden = true; $('.gd-card', L).classList.add('gd-out'); }
   gd.on = false; clearInterval(gd.timer); gd.timer = 0; gdToasts(false); setTimeout(gdStop, 600);
   if (gdFw()) fwGuideEnd(false); // v2.16: Puppy's first day is done
 }
 function gdSkip() {
-  if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); gdStop();
+  if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); saveNow(); gdStop();
   toast(tt('guide.skipped', 'Gerald waddles back to the river. The guide is in your Journal, under How to play.'));
   if (gdFw()) fwGuideEnd(true); // v2.16
 }
@@ -173,7 +176,7 @@ function gdToasts(top) {
   const band = left[1] - left[0] >= right[1] - right[0] ? left : right;
   stage.style.setProperty('--gdTL', Math.round(band[0]) + 'px'); stage.style.setProperty('--gdTW', Math.max(160, Math.round(band[1] - band[0])) + 'px');
 }
-function gdStop() { gdToasts(false); gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } }
+function gdStop() { gdToasts(false); gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; setTimeout(toastNext, 0); $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } } // v2.30.1: toasts held while the card showed come in now
 function gdStart() {
   if (!S) return; gdFields(); if (!gdLive() || !gdAllowed()) return;
   gdLayer(); gd.on = true; gd.shown = -1; gd.force = true;

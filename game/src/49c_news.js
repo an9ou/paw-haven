@@ -11,7 +11,7 @@ function nwOn() { return !navigator.webdriver || !!prefs.nwTest; }
 const NW = { calm: 0, exposed: false };
 const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)), { day: 'numeric', month: 'long' });
 const nwItemArt = (n) => art('item', n);
-const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
+const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win(2026)[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
   { // v2.19.3 Puppy start (V2193.md, owner 5 Nov 2026): before the Friends news of 7 Nov, so that one stays the newest when it goes live
     id: '2.19.3', date: '2026-11-05', c: '#FBE3D6', d: 'paw', pic: 'dog',
@@ -207,6 +207,25 @@ const NEWS_V229 = { // v2.29 "Story mode" (V229.md)
     { ic: () => nwSafe(() => ICON('bond')), tx: () => tt('nw.v229.open', 'Open the story from the book button, or Story in the phone menu') }
   ]
 };
+const NEWS_V2291 = { // v2.29.1 "Balance follow-ups" (V2291.md); date 18 Nov 2026 JST (owner, 18 Nov: open now)
+  id: '2.29.1', date: '2026-11-18', minor: true, c: '#E2F0D9', d: 'paw', pic: 'dog',
+  title: () => tt('nw.v2291.title', 'Little town tweaks'),
+  items: [
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v2291.swap', 'The free mission swap now picks missions you can do at home or on a walk') },
+    { ic: () => nwSafe(() => ICON('coin')), tx: () => tt('nw.v2291.goals', 'Gerald points out the Town projects board, and the Bow-Wow Boutique shows the Kind shop looks') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v2291.tmrw2', 'The note about tomorrow tells you how the town project is coming along') }
+  ]
+};
+const NEWS_V231 = { // v2.31 "Share my dog" (first impressions + Share my dog, 58_share.js) // owner 18 Nov 01:00 JST: open now (was 19 Nov)
+  id: '2.31', date: '2026-11-18', c: '#E3DAF2', d: 'heart', pic: 'dog', // LAUNCH DATE: only this news entry waits for it; the fixes ship as they are
+  title: () => tt('nw.v231.title', 'Share my dog'),
+  items: [
+    { ic: () => nwSafe(() => shIcon()), tx: () => tt('nw.v231.share', 'Share your dog: a big crayon picture of your dog in your own yard, ready for a post or a story') },
+    { ic: () => nwSafe(() => ICON('heart')), tx: () => tt('nw.v231.moment', 'Share this moment after a walk, a new Bond level or a story scene') },
+    { ic: () => nwSafe(() => ICON('star')), tx: () => tt('nw.v231.play', 'One big Play button on the title: a new game starts in one tap') },
+    { ic: () => nwSafe(() => ICON('walk')), tx: () => tt('nw.v231.first', 'A smoother first day: a treasure on the first walk, and on phones everything is in the More tray') }
+  ]
+};
 const NEWS_V230 = { // v2.30 "Better together" (V230.md). Needs the v2.30 Worker (deploy it first); it never opens early on the Pages test copy (no nwNext)
   id: '2.30', date: '2026-11-25', c: '#FDE3C8', d: 'heart', pic: { item: 'Friendship Bandana' }, // LAUNCH DATE (owner, 17 Nov: 25 Nov 2026 JST)
   title: () => tt('nw.v230.title', 'Better together'),
@@ -222,7 +241,7 @@ const nwV230Due = () => jstISO() >= NEWS_V230.date;
 function btOn() { return (!navigator.webdriver && nwV230Due()) || !!(typeof prefs !== 'undefined' && prefs && prefs.btTest); }
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V2291, NEWS_V231].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
@@ -238,14 +257,17 @@ function nwEntryHTML(e, big) {
 }
 // the sheet: the newest entry; "See all updates" swaps in every entry, newest first
 // the first page: the newest entry and every entry sharing its date (16 Nov: v2.26-v2.29 open together on 18 Nov, so all four are seen, newest first)
-function nwTop() { return NEWS.length ? NEWS.filter((e) => e.date === NEWS[0].date) : []; }
+function nwTop(lead) { lead = lead || NEWS[0]; return lead ? NEWS.filter((e) => e.date === lead.date && (lead.minor || !e.minor)) : []; } // v2.29.1: the group is the lead's date (the auto sheet's lead is the newest unseen non-minor entry)
 function nwOpen(auto) {
   if (!S) return false;
-  if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   nwSort();
+  // the automatic sheet leads with the newest entry the player has not seen that is not minor (a small tweaks page never hides a bigger update); after it everything up to the newest id counts as seen
+  let lead = NEWS[0];
+  if (auto) { const seen = S.newsSeen || ''; lead = NEWS.find((e) => !e.minor && (!seen || nwVer(e.id, seen) > 0)) || NEWS[0]; }
+  if (auto) { S.newsSeen = nwLatest(); markDirty(); try { saveNow(); } catch (e) { /* storage */ } }
   const draw = (all) => {
     const body = all ? `<div class="nw-sheet nw-all">${NEWS.map((e) => nwEntryHTML(e, false)).join('')}</div>`
-      : `<div class="nw-sheet">${nwTop().map((e, i) => nwEntryHTML(e, i === 0)).join('')}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
+      : `<div class="nw-sheet">${nwTop(lead).map((e, i) => nwEntryHTML(e, i === 0)).join('')}${NEWS.length ? `<button class="btn nw-more" type="button" id="nwAll">${esc(tt('nw.see_all', 'See all updates'))}</button>` : ''}</div>`;
     const p = openModal(esc(tt('nw.title', "What's new in town")), body, { cls: 'fw-calpop nw-pop', foot: `<button class="btn yes big nw-ok" id="nwOk">${esc(tt('nw.ok', 'OK!'))}</button>` });
     $('#nwOk', p).onclick = () => { SFX.click(); closeModal(); };
     const a = $('#nwAll', p); if (a) a.onclick = () => { SFX.click(); draw(true); };
@@ -273,7 +295,8 @@ function nwTry() {
 function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span class="ic">${nwSafe(() => fwCalIcon())}</span>${esc(tt('nw.menu', "What's new"))}</button>` : ''; }
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
-  window.__paw.nw = { due: (v) => (v === '2.30' ? nwV230Due() : nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229 }[v])), v230: () => { if (!NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); return nwSort().map((e) => e.id); }, v230Date: () => NEWS_V230.date, dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+  window.__paw.nw = { due: (v) => (v === '2.30' ? nwV230Due() : nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229, '2.29.1': NEWS_V2291, '2.31': NEWS_V231 }[v])), v230: () => { if (!NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); return nwSort().map((e) => e.id); }, v230Date: () => NEWS_V230.date, dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), date2291: () => NEWS_V2291.date, setDates: (a, b) => { if (a) NEWS_V229.date = a; if (b) NEWS_V2291.date = b; return [NEWS_V229.date, NEWS_V2291.date]; }, auto: () => nwOpen(true), // test hooks: fix the two dates; the automatic sheet
+    on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => nwSort()[0].items.length, list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)

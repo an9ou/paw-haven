@@ -15,7 +15,7 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns::-webkit-sc
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { flex: none; scroll-snap-align: start; white-space: nowrap; }
 
 /* v2.3 TOWN-2 (phone map): the close X never covers the location chip (the chip stops short of it and wraps), and the zoom stack moves to the bottom-left edge, above the "go there" chip, clear of the places and the "go there" chip, with 44 px targets and breathing room; the "100%" pill gets the same hand-drawn frame as the buttons. */
-html[data-layout="phone"] #view:has(#mapPan) #status { max-width: calc(100% - 80px); white-space: normal; line-height: 1.15; text-wrap: balance; }
+html[data-layout="phone"] #view:has(#mapPan) #status { max-width: calc(100% - 80px); white-space: nowrap; line-height: 1.15; } /* v2.30.1: one line, no place name on the map (00_core.js), so it never covers the "Doodle Doggo Town" title */
 /* v2.5 FIXES A: the map uses the full width. The controls (X, +, 100%, -) float over the map in one column at the top right, over the hills band where no place
    label sits, with no gutter or bar behind them. mapApply lets the map over-pan 40 px at each edge of the pan box: the box starts 40 px left of the screen, so the
    west edge stops flush with the screen (no blank strip), and ends 16 px short of the right edge, so a drag can still pull the east edge (and any label under the
@@ -52,3 +52,7 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns.ps-more-l {
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns.ps-more-l.ps-more-r { -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); }
 /* v2.14 fit: a one-letter shop tab (Korean "집") is still a 44 px target */
 html[data-layout="phone"] #modal .panel.shop .tabs .btn { min-width: 44px; min-height: 44px; box-sizing: border-box; }
+/* v2.30.1 first impressions (audit 17 Nov): a shop street's buttons wrap to a second centred row instead of running off the right edge
+   (Kibble Corner's "Saturday market stall" was cut), so every button is in sight; the scene above gives up the height */
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { flex-wrap: wrap; justify-content: center; row-gap: 6px; overflow: visible; padding: 6px 12px 8px; -webkit-mask-image: none; mask-image: none; }
+@media (max-width: 380px) { html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { column-gap: 6px; padding: 6px 8px 8px; } html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { font-size: 15px; padding: 4px 9px; } } /* fit sweep 18 Nov: at 360 px Market Street's six buttons (with the Kind shop) took three rows and a third of the street; two rows again */

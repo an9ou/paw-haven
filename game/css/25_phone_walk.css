@@ -27,6 +27,7 @@ html[data-layout="phone"] .panel.celebrate .x { top: 40px; }
 /* v2.3 walkfetch: the title sits right of the pink tape in the panel's top-left corner; the found-treasure picture stacks above its text so the headline gets the full width; the last tile never ends under the footer */
 html[data-layout="phone"] .panel.celebrate h2 { margin-left: 62px; font-size: 30px; line-height: 1.05; }
 html[data-layout="phone"] .panel.celebrate h2 { margin-right: 62px; text-align: center; text-wrap: balance; } /* layout audit: centred between equal margins (the X sits in the right one) */
+.res-rt { display: inline-block; max-width: 100%; } /* test round E: the walk results route name in one piece (wkResTitle) */
 html[data-layout="phone"] .panel.celebrate .tfind { grid-template-columns: minmax(0, 1fr); gap: 4px; justify-items: stretch; text-align: left; }
 html[data-layout="phone"] .panel.celebrate .tfind .tbig { width: 124px; height: 124px; justify-self: center; }
 html[data-layout="phone"] .panel.celebrate .tfind .tbig svg { width: 104px; height: 104px; }
@@ -34,3 +35,14 @@ html[data-layout="phone"] .panel.celebrate .tfind h3 { font-size: 30px; line-hei
 html[data-layout="phone"] .panel.celebrate .tfind .ab { font-size: 17px; }
 html[data-layout="phone"] .panel.celebrate .panel-body { padding-bottom: 14px; }
 html[data-layout="phone"] .panel.celebrate .results.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* test round 17 Nov 2026: tablets in the phone layout (a 768 x 1024 or 820 x 1180 iPad upright). The route card's picture stopped at 200 px, so a
+   tall empty band sat between the card and the arrows: from 600 px wide the picture keeps the card's own 16:10 shape, as tall as the room allows */
+@media (min-width:600px){ html[data-layout="phone"] .rt-prev { height: min(calc((100vw - 84px) * .625), max(90px, calc(100cqh - 165px))); } }
+/* test round 17 Nov 2026: the runner's touch-tablet bar (.pw-tab, mods/walkrun.js: a touch screen 820 px or wider) ran past the right edge on an
+   820 px iPad Air upright once a power-up chip showed (the Pause button half off screen, Bag squeezed): narrower gaps and a shorter Nose-o-meter there */
+@media (max-width:900px){
+  #modHost .pw-root.pw-tab .pw-hud { gap: 10px; }
+  #modHost .pw-root.pw-tab .pw-nose { min-width: 0; }
+  #modHost .pw-root.pw-tab .pw-nose .pw-bar { width: 72px; }
+  #modHost .pw-root.pw-tab .pw-big .pw-k { font-size: 15px; } /* the Duck / Jump hints under the big buttons: 14 px there */
+}

@@ -172,13 +172,17 @@ require('./test_lib').run('phone_shell', async (t) => {
     await ev(() => window.__paw.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'Letter Four', text: 'Hi.' }));
     const mt2 = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
     ok(mt2.length === 1 && /4 new letters/.test(mt2[0]), `${dev}: a fourth letter while the note shows updates the count "${mt2.join(' | ')}"`);
-    // a toast that came before the sheet (the walk's daily bonus) moves off it when the sheet opens
+    // a toast that came before the sheet (the walk's daily bonus) steps back when the sheet opens; v2.30.1: toasts wait while a sheet is up
     await clearT(); await ev(() => { window.__paw.toast('Daily care bonus: +20 coins.', 'gold'); window.__paw.journal(); });
     await p.waitForSelector('.panel.journal'); await sleep(500);
     let th = await tabHit();
-    ok(th.length === 1 && th.every((x) => !x.tabs && !x.title), `${dev}: a toast from before the sheet opened covers neither its title nor its tabs ${JSON.stringify(th)}`);
+    ok(th.length === 0 && await ev(() => !!document.querySelector('#toasts .toast.tq')), `${dev}: a toast from before the sheet opened waits, off its title and tabs ${JSON.stringify(th)}`);
     await clearT(); await ev(() => window.__paw.toast('New mail: a note.', 'gold')); await sleep(300); th = await tabHit();
-    ok(th.length === 1 && th.every((x) => !x.tabs && !x.title), `${dev}: a toast while the Journal is open stays off its tab row ${JSON.stringify(th)}`);
+    ok(th.length === 0, `${dev}: a toast while the Journal is open waits, off its tab row ${JSON.stringify(th)}`);
+    // bug sweep 18 Nov: at most three wait under a sheet; a reward (gold) is kept and the oldest plain ones go
+    await clearT(); await ev(() => { const T = window.__paw.toast; T('plain one'); T('Reward A: +10 coins.', 'gold'); T('plain two'); T('plain three'); T('plain four'); });
+    const wq = await ev(() => [...document.querySelectorAll('#toasts .toast.tq')].map((e) => e.textContent));
+    ok(wq.length === 3 && wq.includes('Reward A: +10 coins.') && !wq.includes('plain one') && !wq.includes('plain two'), `${dev}: under a sheet the reward toast keeps its place in the queue, plain ones go first ${JSON.stringify(wq)}`);
     await p.locator('.panel .x').tap(); await t.modalGone(); await clearT();
 
     sec(dev + ': long-press tooltip');
@@ -238,6 +242,25 @@ require('./test_lib').run('phone_shell', async (t) => {
   }
 
   sec('desktop: never locked, never phone');
+  sec('v2.30.1: toasts wait while a sheet or Gerald\'s card is up, and come in after it closes');
+  { // the audit (17 Nov): a toast sat on the Calendar's title, the name tag sheet and Gerald's card
+    await t.newGame({ device: 'Pixel 7', sex: 'girl', prefs: { fwTest: true } }, false); await t.p.setViewportSize({ width: 360, height: 640 });
+    const tq = (re) => ev((src) => { const e = [...document.querySelectorAll('#toasts .toast')].find((x) => new RegExp(src).test(x.textContent)); return e ? (e.classList.contains('tq') ? 'wait' : 'shown') : 'gone'; }, re);
+    ok(await t.until(() => { const c = document.querySelector('#gdLayer .gd-card'); return !!c && !c.hidden; }, null, 8000), 'Gerald\'s first-day card is up');
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__paw.toast('Toast while Gerald talks'); });
+    ok((await tq('Gerald talks')) === 'wait', 'a toast waits while Gerald\'s card shows');
+    await ev(() => document.querySelector('#gdLayer .gd-skip').click());
+    ok(await t.until(() => { const m = document.getElementById('modal'); if (!m.hidden && m.querySelector('.fw-calpop')) m.querySelector('.x').click(); const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /Gerald talks/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 15000), 'it comes in once the card goes (Skip; the welcome calendar that may follow holds it too, so it is closed)');
+    await t.calm(); await ev(() => { document.getElementById('toasts').innerHTML = ''; document.getElementById('gearBtn').click(); });
+    ok(await t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), null, 5000), 'a sheet is open (Settings)');
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__paw.toast('Toast behind the sheet'); window.__paw.toast('Nope on this sheet', '', { scr: 's:test' }); }); // a clear queue first: held mail and hint toasts come in one at a time
+    ok((await tq('behind the sheet')) === 'wait', 'a toast waits while the sheet is up (it would sit on its title)');
+    ok((await tq('Nope on this sheet')) === 'shown', 'the sheet\'s own Nope (o.scr) still shows at once');
+    await t.closeX();
+    ok(await t.until(() => { const m = document.getElementById('modal'); if (!m.hidden && m.querySelector('.fw-calpop')) m.querySelector('.x').click(); const e = [...document.querySelectorAll('#toasts .toast')].find((x) => /behind the sheet/.test(x.textContent)); return !!e && !e.classList.contains('tq'); }, null, 15000), 'and it comes in after the sheet closes');
+    await t.ctx.close();
+  }
+
   const p = await t.boot(); await p.setViewportSize({ width: 852, height: 393 }); await sleep(200);
   ok(await ev(() => !document.documentElement.hasAttribute('data-pslock') && !(document.getElementById('psTurn') && !document.getElementById('psTurn').hidden)), 'a mouse pointer never sees the portrait lock (844x390)');
   await p.setViewportSize({ width: 1280, height: 720 }); await sleep(200);

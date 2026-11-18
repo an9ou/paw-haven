@@ -103,3 +103,5 @@ html[data-layout="phone"] .lv-sti .lv-sa{width:52px;height:52px}
 html[data-layout="phone"] .lv-sti:not(.on) .lv-sa{width:46px;height:46px;margin:3px}
 html[data-layout="phone"] .lv-sx{right:calc(50% - 34px)}
 html[data-layout="phone"] .lv-stkcard.one .lv-sa{width:96px;height:96px}
+/* fit sweep 18 Nov: while the ball play tray is up (desktop, top right under the bar) the HUD's Next tags step out, as in the Fun Fair: the tray sat on "Next: Level 2" */
+html:not([data-layout="phone"]) #stage:has(.bl-tray) :is(.lv-next,.fw-next){display:none}

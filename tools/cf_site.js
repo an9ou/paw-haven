@@ -8,7 +8,8 @@
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
 // Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane) and the place pictures of /map (site/img/map/, the SHOTS lane).
 // The normal build (bash tools/cf_pages_deploy.sh, v2.14) is INLINE: SITE_FONTS=inline SITE_IMG=inline, the main Worker serves both at /fonts/i18n/*
-// and /img/map/* (the account's Worker limit is the paid 10 MB; the token cannot create Worker routes, so side Workers cannot get theirs). This script
+// and /img/map/* (the account's Worker limit is the paid 10 MB). Since 16 Nov 2026 the token can create Worker routes, and the main Worker is at 9.57 MB
+// gzipped, so the split below is ready to deploy: docs/design/site-split.md (SITE_SPLIT=1 bash tools/cf_pages_deploy.sh; _cfsite/routes.txt). This script
 // run by hand still defaults to the split mode, which stays: without those variables the fonts go to a second Worker, doodle-doggo-fonts
 // (_cfsite_fonts/, route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain) and the pictures to a third, doodle-doggo-img
 // (_cfsite_img/, route doodledoggo.app/img/map/*), so they don't count against this Worker's size. Empty folder: no side Worker at all.
@@ -18,7 +19,7 @@
 // files, fonts/i18n/) is served by the main Worker (SITE_PLAY=inline, the default, like the fonts and the map pictures), or with SITE_PLAY=split by a
 // fourth Worker, doodle-doggo-play (_cfsite_play/, route doodledoggo.app/play/*), its fonts then riding in the fonts Worker on a second route,
 // doodledoggo.app/play/fonts/i18n/*. Caching: /play/ HTML max-age=300 with stale-while-revalidate, the hashed files and the versioned fonts (?v=)
-// a year, immutable, the brand files a day (main Worker) or a week (side Worker). /play (no slash) redirects to /play/: the game's files are relative.
+// a year, immutable, the brand files a day (main or side Worker). /play (no slash) redirects to /play/: the game's files are relative.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
@@ -68,6 +69,14 @@ SIDE.forEach((x) => {
   const want = process.env[x.env] || x.dflt || 'split'; // the game copy defaults to inline (the token cannot create routes); SITE_PLAY=split for its own Worker
   x.mod = !x.list.some(([u]) => x.real(u)) || (EN_ONLY && x.key === 'fonts') ? 'none' : (want === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
 });
+// site-split (17 Nov 2026): the game copy split off while the fonts stay inline (SITE_PLAY=split, SITE_FONTS=inline): the route doodledoggo.app/play/*
+// would send /play/fonts/i18n/* to doodle-doggo-play, so its font subsets ride there instead of in the main Worker (which /play/* never reaches)
+{ const [F, , P] = SIDE;
+  if (P.mod === 'split' && F.mod !== 'split' && GAME_FONTS.length) { const g = new Set(GAME_FONTS.map(([u]) => u)); F.list = F.list.filter(([u]) => !g.has(u)); P.list = P.list.concat(GAME_FONTS); } }
+// the routes each split side Worker needs (one table for tools/cf_pages_deploy.sh: the build-only report, the upload, the rollback); a route runs before
+// the Custom Domain, and of two routes the more specific wins (/play/fonts/i18n/* over /play/*)
+const ZONE = 'doodledoggo.app';
+SIDE.forEach((x) => { x.routes = x.mod !== 'split' ? [] : x.key === 'fonts' ? [ZONE + '/fonts/i18n/*'].concat(x.list.some(([u]) => u.startsWith('/play/fonts/i18n/')) ? [ZONE + '/play/fonts/i18n/*'] : []) : [ZONE + x.url + '*']; });
 // url path -> source file (or generated text)
 const files = {}, gen = {};
 const walk = (dir, base) => fs.readdirSync(dir).forEach((f) => {
@@ -166,9 +175,11 @@ for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
 // the side Workers' files, when they stay in the main Worker
 SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.list.forEach(([u, f]) => { files[u] = f; }));
 
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; frame-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+// connect-src: the cloud save API at https://api.doodledoggo.app (18 Nov 2026), plus its old workers.dev address for the transition (remove it once
+// no released copy of the game or the site calls it any more: docs/CLOUDFLARE_LOGIN.md "api.doodledoggo.app")
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; frame-src 'self'; connect-src https://api.doodledoggo.app https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 // the game (/play/) has its own: Google Fonts, data:/blob: pictures (photos, postcards), the cloud save API, and only the site may frame it
-const GAME_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' data: blob:; connect-src 'self' https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'self'; base-uri 'none'; form-action 'self'";
+const GAME_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' data: blob:; connect-src 'self' https://api.doodledoggo.app https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'self'; base-uri 'none'; form-action 'self'";
 const HEAD = (name) => `// Generated by tools/cf_site.js from site/ and brand/. Do not edit: run node tools/cf_site.js (or bash tools/cf_pages_deploy.sh). ${name}`;
 function emit(dir, entries, workerSrc) { // entries: [url, source path or {text}] -> modules + parts.txt; returns the gzipped size
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
@@ -240,7 +251,7 @@ SIDE.forEach((x) => {
   fs.rmSync(x.out, { recursive: true, force: true }); sideGz[x.key] = 0;
   if (x.mod !== 'split') return;
   const extra = x.cors ? `, 'access-control-allow-origin': 'https://doodledoggo.app'` : '';
-  // the game copy: GAME_CSP, /play -> /play/, /play/ = index.html; every side Worker: the hashed or versioned game files a year (HASHED), the rest a week
+  // the game copy: GAME_CSP, /play -> /play/, /play/ = index.html; every side Worker: the hashed or versioned game files a year (HASHED), the rest a day (as inline)
   const head = x.play ? `'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': GAME_CSP` : `'x-content-type-options': 'nosniff'${extra}`;
   sideGz[x.key] = emit(x.out, x.list.slice(), (imports, table) => `${HEAD(x.what)}
 ${imports}
@@ -259,7 +270,7 @@ export default {
     if (url.pathname === '/play' || url.pathname === '/play/index.html') return Response.redirect('https://' + url.host + '/play/' + url.search, 301);` : ''}
     const p = ${x.play ? "url.pathname === '/play/' ? '/play/index.html' : url.pathname" : 'url.pathname'}, hit = FILES[p];
     if (!hit) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-content-type-options': 'nosniff' } });
-    const cache = HASHED.test(p) ? 'public, max-age=31536000, immutable' : hit[1].startsWith('text/html') ? 'public, max-age=300, stale-while-revalidate=86400' : 'public, max-age=604800';
+    const cache = HASHED.test(p) ? 'public, max-age=31536000, immutable' : hit[1].startsWith('text/html') ? 'public, max-age=300, stale-while-revalidate=86400' : 'public, max-age=86400'; // a day, as the main Worker serves them inline (site-split: moving a file changes no caching)
     return new Response(req.method === 'HEAD' ? null : hit[0], { headers: { 'content-type': hit[1], 'cache-control': cache, ${head} } });
   }
 };
@@ -271,6 +282,8 @@ for (const [u, html] of Object.entries(gen)) { const d = u.split('/').length > 2
 const sizes = { main: mainGz, limit: 2.5e6, perLang };
 SIDE.forEach((x) => { sizes[x.key] = sideGz[x.key]; sizes[x.mode] = x.mod; });
 fs.writeFileSync(path.join(out, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
+// "<folder> <script> <route pattern>" per route of a split side Worker (empty in the inline build); tools/cf_pages_deploy.sh reads it
+fs.writeFileSync(path.join(out, 'routes.txt'), SIDE.flatMap((x) => x.routes.map((r) => `${path.basename(x.out)} ${x.script} ${r}`)).join('\n') + (SIDE.some((x) => x.routes.length) ? '\n' : ''));
 const raw = Object.values(files).reduce((n, f) => n + fs.statSync(f).size, 0) + Object.values(gen).reduce((n, h) => n + Buffer.byteLength(h), 0);
 console.log('wrote _cfsite/worker.js +', Object.keys(files).length + Object.keys(gen).length, 'files,', (raw / 1e6).toFixed(2), 'MB,', (mainGz / 1e6).toFixed(2), 'MB gzipped'
   + SIDE.map((x) => (x.mod === 'split' ? `; ${path.basename(x.out)}/worker.js + ${x.list.length} ${x.key} files, ${(sideGz[x.key] / 1e6).toFixed(2)} MB gzipped` : x.mod === 'inline' ? `; ${x.list.length} ${x.key} files inline` : '')).join(''));

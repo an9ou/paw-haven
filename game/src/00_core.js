@@ -1360,7 +1360,12 @@ function toastRun(t) { t.classList.remove('tq'); clearTimeout(t._tt); t._tt = se
 // toasts wait in the queue (and the live one steps back into it), so none lands on the card; they come in when it closes.
 // v2.29: and on every device while a story scene plays (scPlaying, 57_scenes.js): toasts wait in the queue and come in after it (scEnd calls toastNext)
 const toastScene = () => typeof scPlaying === 'function' && scPlaying();
-const toastHold = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
+const toastHard = () => toastScene() || (isPhone() && !modal.hidden && !!modal.querySelector('.panel.celebrate'));
+// v2.30.1 first impressions (audit 17 Nov): on phones toasts also wait while any sheet is up or Gerald's guide card shows, so none lands on a
+// sheet's title or on Gerald; they come in when it closes (closeModal / gdStop / a hidden card call toastNext). A screen's own "Nope" (o.scr) and
+// an Undo (o.now) still show at once: they answer a tap on that sheet.
+const toastSoft = () => isPhone() && (!modal.hidden || (typeof gdActive === 'function' && gdActive()));
+const toastHold = () => toastHard() || toastSoft();
 // a "Nope" toast belongs to the screen it came from (o.scr: 's:<sheet number>' or 'v:<mode>'); phones drop it when that screen closes (toastDrop)
 let modalSeq = 0;
 const toastScr = () => (modal.hidden ? 'v:' + cur.mode : 's:' + modalSeq);
@@ -1380,11 +1385,13 @@ function toast(text, kind = '', o = {}) {
   if (o.scr) t.dataset.scr = o.scr;
   if (o.arr) t.dataset.arr = o.arr;
   if (isPhone()) {
-    const live = toastLive(), hold = toastHold();
+    const live = toastLive(), hold = toastHard() || (toastSoft() && !o.scr && !o.now);
     if (o.now && !hold) live.forEach((e) => { clearTimeout(e._tt); e.classList.add('tq'); });
     toasts.appendChild(t);
     if (hold || (live.length && !o.now)) t.classList.add('tq'); else toastRun(t);
-    const q = toasts.querySelectorAll('.toast.tq'); for (let i = 0; i < q.length - 3; i++) q[i].remove(); // at most three wait
+    // at most three wait. Bug sweep 18 Nov: since v2.30.1 every sheet holds them, so a walk results card often ends with 6-8 waiting; the oldest plain
+    // one goes first (as on wide screens), and a gold one (a reward: a wish, a story task, a step of the first day) or a screen's own answer (o.scr) only when all are
+    const q = [...toasts.querySelectorAll('.toast.tq')]; while (q.length > 3) { const i = Math.max(0, q.findIndex((e) => !e.classList.contains('gold') && !e.dataset.scr)); q.splice(i, 1)[0].remove(); }
   } else {
     toasts.appendChild(t); if (toastScene()) t.classList.add('tq'); else toastRun(t);
     // up to three show at once; v2.29 code review: the ones held during a scene are not dropped by that cap. At most 8 wait (the oldest
@@ -1402,6 +1409,9 @@ function toastPlace() {
     ['#fwNext', '#lvNext'].forEach((q) => { const nx = $(q); if (!modScr && !hud.hidden && nx && nx.offsetParent && !nx.hidden) { const sr = stage.getBoundingClientRect(), k = sr.width / (stage.offsetWidth || sr.width) || 1, nb = (nx.getBoundingClientRect().bottom - sr.top) / k + 8; if (nb > parseFloat(toasts.style.top)) toasts.style.top = Math.round(nb) + 'px'; } }); // v2.22: and under the town level's Next tag (51_levels.js)
     return;
   }
+  // test round B: on a phone, while a Fun Fair round runs, the toasts sit just under the header strip (and under the game's hint while it shows),
+  // never on its title, score or Done button. Once the round is over they keep the top row, clear of the result card's title
+  if (modal.hidden && cur.mode === 'fair' && !$('.ff-game.over')) { const ft = $('.ff-game .ff-top'), hn = $('#ffHint.on'); if (ft) { const sr = stage.getBoundingClientRect(); toasts.style.top = Math.round(Math.max(ft.getBoundingClientRect().bottom, hn ? hn.getBoundingClientRect().bottom : 0) - sr.top + 6) + 'px'; } }
   // layout audit: over a walk's how-to or pause card the toast sits on the HUD row, clear of the card's title
   if (modal.hidden && !modScr && !hud.hidden && $('#modHost:not([hidden]) .pw-ov:not([hidden])')) toasts.style.top = Math.max(6, (parseFloat(getComputedStyle(hud).paddingTop) || 4) + 2) + 'px';
   // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Doodle Doggo Shelter" sign or the Adopt me board
@@ -1472,7 +1482,8 @@ function sayPlace(p, o) {
   const rel = (q) => ({ l: q.left - sg.left, t: q.top - sg.top, r: q.right - sg.left, b: q.bottom - sg.top });
   const soft = (o.avoid || []).slice(), hard = [], vis = (el) => el && !el.hidden && el.offsetParent !== null && el.getBoundingClientRect().height > 0; // hard: kept clear on every try (v2.14.1)
   if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); hard.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
-    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } } // UI/UX H9: nor under the look-right button
+    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } // UI/UX H9: nor under the look-right button
+    const pbs = [...view.querySelectorAll('#placeBtns > *')].filter(vis).map((e) => rel(e.getBoundingClientRect())); if (pbs.length) hard.push({ l: Math.min(...pbs.map((r) => r.l)) - 4, t: Math.min(...pbs.map((r) => r.t)) - 6, r: Math.max(...pbs.map((r) => r.r)) + 4, b: Math.max(...pbs.map((r) => r.b)) }); } // v2.30.1 (audit 17 Nov): nor on the Garden / Go inside / Yard games row (a tall Thai bubble went down over it)
   const tr = $('#dock .tray'); if (vis(tr) && getComputedStyle(dock).display !== 'none') soft.push(rel(tr.getBoundingClientRect()));
   const hit = (b, r) => b.l < r.r && b.l + b.w > r.l && b.t < r.b && b.t + b.h > r.t;
   const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !hard.some((r) => hit(b, r)) && !(useSoft && soft.some((r) => hit(b, r)));
@@ -1611,7 +1622,8 @@ function updateHUD() {
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
-  const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
+  // v2.30.1 (audit 17 Nov): on the map the chip has no place name (the map has its own title; "Home Yard" there read wrong and covered it)
+  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap; if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span> · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays)
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 
@@ -1628,6 +1640,7 @@ function doAct(a) {
   if (typeof fwBarPop === 'function') fwBarPop(null);
   if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
+  if (typeof fwTileAct === 'function' && fwTileAct(a)) return; // v2.31: the phone More tray's tiles (Photo, Share, Story, Calendar, News, Missions, Kind shop; 47_firstweek.js)
   if (cur.mode === 'fryard' && typeof frBarAct === 'function' && frBarAct(a)) return; // v2.19: on a visit Map goes home and the care buttons wait (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
@@ -1648,8 +1661,9 @@ function doAct(a) {
 let modalClose = null;
 function openModal(title, bodyHTML, opts = {}) {
   if (cur.mode === 'yard' && popOpen()) S.sleeping ? sleepTray() : dockIdle();
+  if (modal.hidden) a11yOpener = a11yFrom(); // test round d: the button that opened the sheet gets the focus back when it closes (keyboard only)
   if (!modal.hidden) toastDrop('s:' + modalSeq); modalSeq++; // v2.22: a sheet that is replaced takes its "Nope" toasts with it
-  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
+  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, '').replace(/&(amp|lt|gt|quot|#39);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" }[k])))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
@@ -1657,9 +1671,46 @@ function openModal(title, bodyHTML, opts = {}) {
   return p;
 }
 function closeModal() {
-  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastDrop('s:' + modalSeq); toastWatchSheet(null); toastNext(); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
+  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastDrop('s:' + modalSeq); toastWatchSheet(null); toastNext(); toastPlace(); } audioPlace(); const back = a11yOpener; a11yOpener = null; a11yBack(back); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+/* Keyboard a11y (test round d, Nov 2026): a sheet is aria-modal, so Tab and Shift+Tab wrap inside it (the story scene and a buy box on top of a sheet
+   too) instead of walking on to the HUD behind it; a sheet closed from the keyboard puts the focus back on the button that opened it (a tile in a
+   phone tray that has closed hands it to the tray's own bar button). A mouse or a touch changes nothing: the focus is only moved after keys. */
+let a11yOpener = null, a11yKeys = false;
+window.addEventListener('keydown', (e) => { if (['Tab', 'Enter', ' ', 'Escape'].includes(e.key)) a11yKeys = true; }, true);
+window.addEventListener('pointerdown', () => { a11yKeys = false; }, true);
+let a11yLast = null; document.addEventListener('focusin', (e) => { if (!modal.contains(e.target)) a11yLast = e.target; }, true); // a phone tray tile hides as its sheet opens: its focus is gone by then
+function a11yHid(x) { try { return x.nodeType === 1 && !a11yShown(x); } catch (e) { return false; } } // Fable review: only a tray tile that has just hidden, never a stale HUD button (Space would open it)
+function a11yFrom() { let a = document.activeElement; if (!a || a === document.body || a === document.documentElement) a = a11yLast && a11yLast.isConnected && a11yHid(a11yLast) ? a11yLast : null; /* Fable review: only a tray tile that has just hidden, never a stale HUD button (Space would open it) */ return a && !modal.contains(a) && !(a.closest && a.closest('#scLayer')) ? a : null; }
+const A11Y_FOC = 'button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
+function a11yShown(e) { return !!e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[hidden],[inert]'); } // a declaration (hoisted): a11yFrom may run before this line on boot
+function a11yBack(el) {
+  if (!el || !a11yKeys || !el.isConnected) return;
+  if (!a11yShown(el)) { const pop = el.closest('.barpop'); el = pop ? document.querySelector(`#bar .act[data-act="${pop.dataset.pop}"]`) : null; if (!el || !a11yShown(el)) return; }
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return; // never pop a phone keyboard up
+  try { el.focus({ preventScroll: true }); } catch (e) { /* gone */ }
+}
+// a scroll box with nothing focusable inside takes the Tab itself in Chromium (so the arrow keys can scroll it): keep it in the loop
+function a11yScroller(x) { if (x.scrollHeight <= x.clientHeight + 1 && x.scrollWidth <= x.clientWidth + 1) return false; const o = getComputedStyle(x); return /auto|scroll/.test(o.overflowY + o.overflowX) && !x.querySelector(A11Y_FOC); }
+function a11yTop() {
+  const sc = document.getElementById('scLayer'); if (sc && !sc.hidden) return sc;
+  if (modal.hidden) return null;
+  const L = [...modal.querySelectorAll('[aria-modal="true"]')].filter(a11yShown); return L[L.length - 1] || $('.panel', modal);
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+  const root = a11yTop(); if (!root) return;
+  const a = document.activeElement, f = [...root.querySelectorAll(A11Y_FOC + ',div,section,ul,ol')].filter((x) => (x.matches(A11Y_FOC) || a11yScroller(x)) && a11yShown(x));
+  f.forEach((x) => { if (!x.matches(A11Y_FOC) && !x.hasAttribute('tabindex')) x.tabIndex = 0; }); // Fable review: Safari and older Chromium do not focus a scroll box by themselves
+  const side = root.id === 'scLayer' ? [] : [...document.querySelectorAll('#gdLayer .gd-card button, #toasts button')].filter(a11yShown), si = side.indexOf(a); // Gerald's card and an Undo toast next to the sheet stay in the loop
+  if (si >= 0) { const n = si + (e.shiftKey ? -1 : 1), to = side[n] || (e.shiftKey ? f[f.length - 1] : f[0]); if (to) { e.preventDefault(); to.focus(); } return; }
+  if (!f.length) { e.preventDefault(); if (root.tabIndex >= -1 && root !== a) try { root.focus({ preventScroll: true }); } catch (x) { /* not focusable */ } return; }
+  const inRoot = !!a && root.contains(a);
+  const fwd = inRoot && f.some((x) => x !== a && a.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING), bwd = inRoot && f.some((x) => x !== a && a.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_PRECEDING);
+  if (e.shiftKey ? bwd : fwd) return; // the browser moves on inside the sheet
+  e.preventDefault(); ((inRoot && side.length) ? (e.shiftKey ? side[side.length - 1] : side[0]) : e.shiftKey ? f[f.length - 1] : f[0]).focus();
+}, true);
 function confirmIn(panel, html, yes = tt('core.yes', 'Yes'), no = tt('core.no', 'No')) {
   return new Promise((res) => {
     const old = panel.querySelector('.confirm'); if (old) old.remove();
@@ -1693,6 +1744,7 @@ function unlocksFor(L) {
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
+  if (typeof scPlaying === 'function' && scPlaying()) return; // test round c: the Bond card waits for a story scene too (scEnd calls this again), like the town level card
   const who = levelQueue[0].who, wid = levelQueue[0].id, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
   const party = levels.includes(2) && typeof fwParty === 'function' ? fwParty(wid) : null; // v2.16: the Bond 2 party (47_firstweek.js): confetti, a gift, then the dog does Paw
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
@@ -1707,7 +1759,18 @@ const cur = { mode: null, cleanup: [] };
 function onCleanup(fn) { cur.cleanup.push(fn); }
 function setChrome(hudOn, barOn) { hud.hidden = !hudOn; bar.hidden = !barOn; stage.classList.toggle('nobar', !barOn); if (hudOn) setHudDog(); requestAnimationFrame(() => stage.style.setProperty('--hudH', (hud.hidden ? 0 : hud.offsetHeight) + 'px')); }
 let hudDogKey = '';
-function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; requestAnimationFrame(hudTitleFit); $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
+// v2.31 review (phone_v222_levels): on phones a long title ("Friendly Neighbour" with 5 dogs and a 5-digit purse at 360 px) shrinks to fit the
+// room left of the level star (down to 13 px, a hair tighter), and only then ends in an ellipsis; the star keeps its 44 px box. Re-fit on resize.
+function hudTitleFit() {
+  const ht = $('#hudTitle'); if (!ht) return;
+  ht.style.fontSize = ''; ht.style.letterSpacing = ''; ht.style.paddingRight = '';
+  if (ht.hidden || !isPhone() || !ht.clientWidth || ht.scrollWidth <= ht.clientWidth + 1) return;
+  const f0 = parseFloat(getComputedStyle(ht).fontSize) || 17, pad = 4, f = Math.max(13, Math.floor(f0 * (ht.clientWidth - pad) / (ht.scrollWidth - pad) * 4) / 4);
+  ht.style.fontSize = f + 'px';
+  if (ht.scrollWidth > ht.clientWidth + 1) { ht.style.letterSpacing = '-0.02em'; ht.style.paddingRight = '2px'; }
+}
+if (typeof ResizeObserver === 'function' && $('#hudTitle')) { let hfT = 0; new ResizeObserver(() => { cancelAnimationFrame(hfT); hfT = requestAnimationFrame(hudTitleFit); }).observe($('#hudTitle')); }
 function go(mode, arg) {
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }
@@ -1725,6 +1788,7 @@ function go(mode, arg) {
   ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair, fryard: enterFrYard })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js). v2.19: a friend's yard, read-only (50_friends.js)
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
+  if (mode !== prevMode && toasts && toasts.children.length) toastPlace(); // test round B: a toast still up from the kitchen or garden (bottom: 18px) no longer lands on the phone bar of the next screen
 }
 
 

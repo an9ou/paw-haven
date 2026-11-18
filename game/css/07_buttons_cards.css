@@ -26,3 +26,6 @@
 :where(.btn.yes,.btn.go,.btn.red):not([style*="position"]){position:relative}
 :is(.btn):where(.yes,.go,.red)::before{content:"";position:absolute;inset:3px max(3px,2.2%) 4px max(4px,2.2%);z-index:-1;border-radius:7%/24%;background:var(--hatch),linear-gradient(var(--wash),var(--wash));pointer-events:none}
 :is(.btn):where(.yes,.go,.red)::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--fr) 0 0/100% 100% no-repeat;pointer-events:none}
+/* test round 17 Nov 2026: a touch screen held sideways (an iPad at 1024 x 768) gets the computer layout, where the place buttons (Garden, Go inside,
+   Go home ...) were 34-40 px tall: on a touch-only pointer they are 44 px tall (a mouse keeps them as they are) */
+@media (pointer:coarse){ html:not([data-layout="phone"]) #stage #placeBtns .btn{min-height:44px} } /* #stage: also over the Market Street rows (22_phone_town.css) */

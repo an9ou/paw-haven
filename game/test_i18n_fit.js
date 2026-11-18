@@ -50,6 +50,12 @@ function sizeProfile(size) {
     iphone15: ph('iPhone 15', 393, 852, 3),
     pixel7: ph('Pixel 7', 412, 915, 2.625),
     small: ph('Pixel 7', 360, 640, 2),
+    // optional sizes (not in SIZES_ALL; name them in PAW_FIT_SIZES), test round 17 Nov 2026: the widths between the phone and the 1280 desktop
+    laptop: { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 },
+    wide: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
+    ipad: ph('iPad (gen 7)', 768, 1024, 2),                 // portrait: the phone layout (max-width 820 px)
+    ipadL: ph('iPad (gen 7) landscape', 1024, 768, 2),      // landscape: the desktop layout on a touch screen
+    air: ph('iPad (gen 7)', 820, 1180, 2),                  // iPad Air portrait: still the phone layout at exactly 820 px
   };
   if (!P[size]) throw new Error('unknown size ' + size);
   devices['FIT ' + size] = P[size]; return 'FIT ' + size;
@@ -124,7 +130,7 @@ async function worker(job) {
   })();
   try {
     await t.launch();
-    const phone = size !== 'desktop';
+    const phone = !['desktop', 'laptop', 'wide'].includes(size); // ipadL: the desktop layout, but a touch screen keeps the 44 px rule
     const cfg = { phone, stage: '#stage', skip: '#devPanel, #devBtn', captions: CAPTIONS, layers: LAYERS, svgText: '#mapInner [data-area] text, #view [data-area] text' };
     const p0 = await t.mk({ lang, device: dev, prefs: { gdTest: true, tkTest: true, jpTest: true, exTest: true, prTest: true } });
     let p = p0;
@@ -399,6 +405,12 @@ async function worker(job) {
       await ev(() => { const P = window.__paw; P.st.test(true); P.st.letters(true); P.dd.journal('stories'); }); await modalUp(); await measure('st: journal stories'); await closeAll();
       await ev(() => window.__paw.st.pc('yard')); await modalUp(); await sleep(800); await measure('st: postcard'); await closeAll();
       await ev(() => window.__paw.st.test(false));
+    }, 40000);
+    await step('sh', async () => { // v2.31 Share my dog (58_share.js): the sheet in both sizes with the name on, "Share this moment" after a scene
+      await ev(() => { window.__paw.sh.open({ from: 'menu' }); }); await modalUp(); await sleep(900); await measure('sh: share my dog');
+      await ev(() => { const b = document.querySelector('#modal [data-shsize="story"]'); if (b) b.click(); const n = document.getElementById('shName'); if (n && n.getAttribute('aria-checked') !== 'true') n.click(); }); await sleep(900); await measure('sh: share my dog, story size, name on');
+      await ev(() => { const b = document.querySelector('#modal [data-shsize="feed"]'); if (b) b.click(); const n = document.getElementById('shName'); if (n && n.getAttribute('aria-checked') === 'true') n.click(); }); await closeAll();
+      await ev(() => window.__paw.sh.chip()); await sleep(500); await measure('sh: share this moment chip'); await ev(() => { const c = document.getElementById('shMoment'); if (c) c.remove(); });
     }, 40000);
     await step('sm', async () => {
       await ev(() => { const P = window.__paw; P.sm.test(true); P.sc.test(true); P.sm.start(); P.sm.goto(3); }); await closeAll();

@@ -2,7 +2,9 @@
 // Public values only: the Worker's address. Logins are bearer tokens the Worker hands out (cloudflare/worker.js).
 // Never put an API token or any other secret here.
 const CL_CFG = {
-  api: 'https://pawhaven-api.ansonyuen0108.workers.dev', // the Worker "pawhaven-api" (cloudflare/wrangler.toml)
+  // the Worker "pawhaven-api" (cloudflare/wrangler.toml) on its Workers Custom Domain (tools/cf_api_domain.sh, owner 18 Nov 2026). Its workers.dev
+  // address keeps answering for older game copies and the Stripe webhook (docs/CLOUDFLARE_LOGIN.md "api.doodledoggo.app").
+  api: 'https://api.doodledoggo.app',
   authKey: 'pawhaven_cf_auth', // { token }: this device's login
   metaKey: 'pawhaven_cloud_v1', // { rev, changedAt, pushedAt, uid, dogId, nudged }: sync bookkeeping, never part of the save itself
   backupKey: 'pawhaven_proto_v1_backup', // local backup before an import or a restore

@@ -146,7 +146,7 @@ function msbMedalPop() {
   const o = p.querySelector('#msbOk'); if (o) o.onclick = () => { SFX.click(); closeModal(); };
   return p;
 }
-function msbMedalTick() { if (S && S.missions && ms2On() && S.missions.mpop === 1 && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length)) msbMedalPop(); }
+function msbMedalTick() { if (S && S.missions && ms2On() && S.missions.mpop === 1 && cur.mode === 'yard' && modal.hidden && !msGuideBusy() && !(typeof levelQueue !== 'undefined' && levelQueue.length) && !(typeof scPlaying === 'function' && scPlaying())) msbMedalPop(); } // v2.31.3: the medal waits for a story scene to end
 // the soft dot on the clipboard: a new tier, until the Badges tab is seen
 function msBadgeDot() { ms2Mine(); return !!MSB.dot; }
 // Part D: the first full neighbour card gives the 18th sticker (S.missions.wk.cards 1, or life.boards 4)

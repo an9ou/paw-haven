@@ -39,7 +39,7 @@ function brRampPopup() { if (!brRampTip) return false; const p = openModal(tt('p
 
 /* ---- birth ---- */
 let brSnooze = 0;
-const brCanPop = () => !!S && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && modal.hidden && !busy && Date.now() > brSnooze && !(typeof TRN !== 'undefined' && TRN);
+const brCanPop = () => !!S && cur.mode === 'yard' && (S.place === 'yard' || S.place === 'house') && modal.hidden && !busy && Date.now() > brSnooze && !(typeof TRN !== 'undefined' && TRN) && !(typeof scPlaying === 'function' && scPlaying()); // v2.31.3: a birth, a choosing day or a family letter waits for a story scene to end (never under it)
 function brBirth(dam) {
   const pr = dam.preg; if (!pr) return null; brFields();
   const today = brToday(), r = seeded(hashId('names|' + dam.id + '|' + pr.since));

@@ -45,7 +45,7 @@ run('account', async (t) => {
     p.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
     if (process.env.ACC_TRACE) p.on('pageerror', (e) => console.log('PAGEERROR', e.stack));
     if (cfg !== false) { await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, cfg || {}); srv.pages.add(p); }
-    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest');
+    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay');
     return p;
   }
   const ev = (f, a) => t.p.evaluate(f, a);
@@ -53,7 +53,7 @@ run('account', async (t) => {
   const tap = async (sel) => { const l = t.p.locator(sel).first(); await l.scrollIntoViewIfNeeded(); if (touch) await l.tap(); else await l.click(); };
   const line = () => ev(() => { const e = document.querySelector('#title .tacct'); return e ? [...e.children].map((c) => c.textContent.trim()).join(' ') : ''; });
   const diag = () => ev(() => { const m = document.getElementById('acMsg'), C = window.__pawCloud.CL; const v = (i) => { const e = document.getElementById(i); return e ? JSON.stringify(e.value) : 'none'; }; return `[pw ${v('acPw')} pw2 ${v('acPw2')} em ${v('acEmail')} | msg: ${m && !m.hidden ? m.textContent : '-'} | modal ${document.getElementById('modal').hidden ? 'closed' : 'open'} | uid ${C.uid} anon ${C.anon} reg ${C.regPath}]`; });
-  const choices = () => ev(() => [...document.querySelectorAll('#title .tch b')].map((b) => b.textContent));
+  const choices = () => ev(() => [...document.querySelectorAll('#title .tch b, #title #tPlay, #title .tlinks .tlink')].map((b) => b.textContent.trim())); // v2.30.1: a new player's cover is Play + Log in / Make an account links
   const sheetOpen = () => t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel.acct'), null, 4000);
   const closed = () => t.until(() => document.getElementById('modal').hidden, null, 6000);
   const msg = async () => (await t.until(() => { const m = document.getElementById('acMsg'); return !!m && !m.hidden && !!m.textContent; }, null, 6000)) ? ev(() => document.getElementById('acMsg').textContent) : '';
@@ -74,12 +74,13 @@ run('account', async (t) => {
   const panelBox = () => ev(() => { const r = document.querySelector('#modal .panel').getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, cx: r.left + r.width / 2, W: innerWidth, H: innerHeight }; });
 
   /* ------------------------------------------------ desktop 1280x720 ------------------------------------------------ */
-  sec('desktop: cloud on, no session: three choices on the title');
+  sec('desktop: cloud on, no session: one big Play, Log in and Make an account as links (v2.30.1)');
   const d1 = await device(null); t.p = d1;
-  ok(JSON.stringify(await choices()) === JSON.stringify(['Log in', 'Make an account', 'Play as guest']), 'Log in, Make an account, Play as guest: ' + (await choices()).join(', '));
-  ok(!(await d1.locator('#tNew, #tContinue').count()), 'no Continue / New game until a choice is made');
+  ok(JSON.stringify(await choices()) === JSON.stringify(['Play', 'Log in', 'Make an account']), 'Play, Log in, Make an account: ' + (await choices()).join(', '));
+  ok(!(await d1.locator('#tNew, #tContinue, #tGuest').count()), 'no Continue / New game / guest card: Play is both');
   ok(srv.users.length === 0, 'no guest user is made before the player picks');
-  ok((await ev(() => [...document.querySelectorAll('#title .tch .tch-dog svg')].length)) === 3, 'each choice has a crayon dog');
+  ok((await ev(() => { const b = document.querySelector('#title .tbig svg'), r = b && b.getBoundingClientRect(); return !!r && r.height >= 100; })), 'a big crayon dog on the cover');
+  ok((await ev(() => { const a = document.getElementById('tPlay').getBoundingClientRect(), l = document.getElementById('tLogin').getBoundingClientRect(); return a.height > l.height && l.top >= a.bottom - 1; })), 'Play is the big button, the links sit under it');
   await layout('desktop choices'); await t.SH('desk_01_choices');
 
   sec('desktop: the log in popup, kind errors');
@@ -103,7 +104,7 @@ run('account', async (t) => {
   await t.SH('desk_02b_forgot_code');
   await tap('#rcBack'); await d1.waitForSelector('#modal .panel[data-ready] #fgEmail'); ok(true, 'Back goes to the email step');
   await tap('#fgBack'); await d1.waitForSelector('#modal .panel.acct[data-ready] #acPw'); ok(true, 'and Back again to Log in');
-  await tap('#acBack'); ok(await closed(), 'Back closes the popup'); ok((await choices()).length === 3, 'the three choices are still there');
+  await tap('#acBack'); ok(await closed(), 'Back closes the popup'); ok((await choices()).length === 3, 'Play and the two links are still there');
 
   sec('desktop: make an account, kind errors');
   srv.users.push({ id: 'uTaken', email: 'taken@example.com', password: 'taken1234' });
@@ -114,13 +115,12 @@ run('account', async (t) => {
   await form('reg', 'taken@example.com', 'pupper123'); ok(/already has an account/.test(await msg()), 'email taken: "That email already has an account. Log in instead."');
   await t.SH('desk_03_register_error');
   await tap('#acBack'); await closed();
-  ok((await choices()).length === 3, 'a failed sign-up leaves the three choices (the guest made on the way is not a pick)');
+  ok((await choices()).length === 3 && !!(await d1.locator('#tPlay').count()), 'a failed sign-up leaves Play and the links (the guest made on the way is not a pick)');
 
-  sec('desktop: play as guest (today\'s flow)');
-  await tap('#tGuest');
-  ok(await t.until(() => !!window.__pawCloud.CL.uid && window.__pawCloud.CL.anon && !!document.getElementById('tNew'), null, 6000), 'Play as guest: anonymous sign-in, then New game');
-  ok(/^Playing as guest Log in$/.test(await line()), 'small line: "Playing as guest" + Log in: ' + await line());
-  await layout('desktop guest'); await t.SH('desk_04_guest');
+  sec('desktop: Play = play as guest + new game in one tap (v2.30.1)');
+  await layout('desktop play'); await tap('#tPlay');
+  ok(await t.until(() => !!window.__pawCloud.CL.uid && window.__pawCloud.CL.anon && window.__paw.mode === 'adopt', null, 8000), 'Play: anonymous sign-in, then straight to the adoption (one tap)');
+  await t.SH('desk_04_guest');
   const g1 = await uid(); await t.adopt({ sex: 'girl' });
   ok(await synced() && !!srv.saves[g1], 'the guest game reaches the cloud');
   const name1 = await ev(() => window.__paw.S.dog.name);
@@ -198,7 +198,7 @@ run('account', async (t) => {
   ok(!srv.backups.slice(bkB).some(ofA2) && srv.saves[g1].data.dogs[0].id !== dogA2, 'no backup and no save of the old account\'s game in B');
   await ev(() => window.__pawCloud.open()); await d2.waitForSelector('[data-cl=logout]'); await tap('[data-cl=logout]'); await d2.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
   ok(await t.until(() => !window.__pawCloud.CL.uid, null, 6000), 'Settings: Log out'); await t.closeX();
-  ok((await choices()).length === 3, 'after a log out the title offers the three choices');
+  ok((await choices()).length === 3, 'after a log out the title offers Play, Log in and Make an account');
   srv.users.push({ id: 'uD', email: 'dot@example.com', password: 'dot123456' });
   await tap('#tLogin'); await sheetOpen(); await form('login', 'dot@example.com', 'dot123456');
   ok(await t.untilMode('adopt', 6000) && (await uid()) === 'uD', 'an account with no save: adoption, not B\'s dogs');
@@ -231,7 +231,7 @@ run('account', async (t) => {
   const a4 = await uid(); ok(srv.users.find((u) => u.id === a4).email === 'newbie@example.com', 'the account has the email (no email sent)');
 
   sec('desktop: register after the guest login ended on the Worker (a new account) has a push guard like log in');
-  const d5 = await device(null); t.p = d5; await tap('#tGuest'); await d5.waitForSelector('#tNew'); await t.adopt({ sex: 'boy' });
+  const d5 = await device(null); t.p = d5; await t.adopt({ sex: 'boy' });
   ok(await synced(), 'device 5 guest save is in the cloud'); const g5 = await uid(), coins5 = srv.saves[g5].data.coins;
   await ev(() => window.__paw.go('title')); await d5.waitForSelector('#tSwitch');
   await tap('#tSwitch'); await sheetOpen(); await tap('#acReg'); await d5.waitForSelector('#acPw2');
@@ -282,8 +282,8 @@ run('account', async (t) => {
     sec(`${dev} (touch): the three choices`);
     const p = await device(dev); t.p = p;
     ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', 'phone layout is on');
-    ok((await choices()).length === 3, 'three choices');
-    ok(await ev(() => { const r = [...document.querySelectorAll('#title .tch')].map((e) => e.getBoundingClientRect()); return r[1].top >= r[0].bottom - 1 && r[2].top >= r[1].bottom - 1; }), 'stacked, one under the other');
+    ok((await choices()).length === 3, 'Play and two links');
+    ok(await ev(() => { const a = document.getElementById('tPlay').getBoundingClientRect(), l = document.getElementById('tLogin').getBoundingClientRect(), r = document.getElementById('tReg').getBoundingClientRect(); return l.top >= a.bottom - 1 && Math.abs(l.top - r.top) < 4 && a.width >= 200; }), 'a wide Play, the two links side by side under it');
     await layout(`${dev} choices`); await audit(`${tag}_01_choices`);
 
     sec(`${dev}: log in sheet`);
@@ -315,10 +315,9 @@ run('account', async (t) => {
 
     if (dev === 'Phone 390x844') {
       sec(`${dev}: guest, then make an account from the Log in link`);
-      await tap('#tGuest'); await p.waitForSelector('#tNew');
-      ok(/^Playing as guest Log in$/.test(await line()), '"Playing as guest" + Log in'); await layout(`${dev} guest`); await audit(`${tag}_04_guest`);
       await t.adopt({ sex: 'girl' }); await synced(); const gp = await uid();
       await ev(() => window.__paw.go('title')); await p.waitForSelector('#tSwitch');
+      ok(/^Playing as guest Log in$/.test(await line()), '"Playing as guest" + Log in'); await layout(`${dev} guest`); await audit(`${tag}_04_guest`);
       await tap('#tSwitch'); await sheetOpen(); await audit(`${tag}_05_switch_sheet`);
       await tap('#acReg'); await p.waitForSelector('#acPw2'); await form('reg', 'phone390@example.com', 'phone3900');
       ok(await closed() && await t.until((g) => window.__pawCloud.CL.uid === g && !window.__pawCloud.CL.anon, gp, 6000), 'the guest save is upgraded onto the new account');

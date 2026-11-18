@@ -23,3 +23,13 @@
 /* reduce motion: the soft crayon highlighter stroke on the Bond number and the level number (a background, nothing moves) */
 #hud .bond.cf-glow .lbl b,#lvBtn.cf-glow .lv-n{background:linear-gradient(transparent 52%,rgba(249,208,217,.95) 52%,rgba(249,208,217,.95) 92%,transparent 92%);border-radius:3px 6px 4px 7px}
 #lvBtn.cf-glow .lv-n{background:linear-gradient(transparent 52%,rgba(255,227,161,.95) 52%,rgba(255,227,161,.95) 92%,transparent 92%)}
+/* v2.30.1 first impressions: the happy dog in the walk results' Paw Coins tile (resDog in 09_walk_classic.js), beside the coin that flies */
+.res.res-coins.has-dog{position:relative;padding-left:64px;overflow:visible}
+.res-coins .res-dog{position:absolute;left:2px;bottom:2px;width:62px;height:54px;pointer-events:none}
+.res-coins .res-dog svg{width:100%;height:100%;display:block;animation:resDogHop .9s ease-in-out 2}
+@keyframes resDogHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px) rotate(-3deg)}}
+html[data-motion="off"] .res-coins .res-dog svg{animation:none}
+@media (prefers-reduced-motion:reduce){.res-coins .res-dog svg{animation:none}}
+html:not([data-layout="phone"]) .results.compact:has(.res-coins.has-dog){grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr))}
+html:not([data-layout="phone"]) .results.compact .res.res-coins.has-dog{padding-left:58px}
+html:not([data-layout="phone"]) .results.compact .res-coins .res-dog{width:54px;height:48px}

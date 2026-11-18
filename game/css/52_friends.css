@@ -52,8 +52,6 @@ html[data-layout="phone"] .panel.fr-pop{width:100%}
 html[data-layout="phone"] .fr-sheet,#modal .fr-sheet{overflow-x:hidden}
 html[data-layout="phone"] .fr-prev{font-size:28px}
 html[data-layout="phone"] .fr-nm{font-size:22px}
-html[data-layout="phone"] #bar .barpop.fr-four{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 12px)}
-html[data-layout="phone"] #bar .barpop.fr-four .act{min-width:0;flex:1 1 calc(50% - 8px);max-width:calc(50% - 8px)}
 /* part 3: a friend's yard (cur.mode 'fryard'). Read-only: the missions, the dog switcher, the photo button and the scene's own hot spots rest; the care buttons look resting */
 #stage.frvisit :is(#msBtn,#hudPack,#mmMs,#mmPhoto,#phBtn){display:none !important}
 #stage.frvisit #view svg.world #sceneG :is([data-hot],[data-shop]){pointer-events:none;cursor:default}

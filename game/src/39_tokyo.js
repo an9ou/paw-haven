@@ -304,6 +304,7 @@ function tkMapPick(k) {
   const P = TK_PLACES[k], lock = P && !tkOpenAt(k, P.bond), here = S.place === k;
   chip.hidden = false; chip.dataset.k = k;
   chip.innerHTML = lock ? `<span>${esc(lvOn() ? tt('lv.place_chip', '{place}: opens at level {n}', { place: tkPlaceName(k), n: tkNeed(k, P.bond) }) : tt('tokyo.chip_locked', '{name}: opens at Bond {bond}', { name: tkPlaceName(k), bond: P.bond }))}</span>` : here ? `<span>${esc(tt('tokyo.chip_here', 'You are here: {name}', { name: tkPlaceName(k) }))}</span><button class="btn" id="mapStay">${esc(tt('tokyo.stay', 'Stay'))}</button>` : `<button class="btn go big" id="mapGoBtn">${esc(k === 'station' ? tt('tokyo.ride_home_pin', 'Ride home') : tt('tokyo.go_to', 'Go to {name}', { name: P ? tkPlaceName(k) : k }))}</button><button class="btn" id="mapNo" aria-label="${esc(tt('tokyo.cancel', 'Cancel'))}">x</button>`;
+  stage.style.setProperty('--tkGoH', Math.round(chip.offsetHeight + 24) + 'px'); // test round B: toasts sit above the chip (41_tokyo.css)
   const gb = $('#mapGoBtn'); if (gb) gb.onclick = () => { chip.hidden = true; tkPick(k); };
   const st = $('#mapStay'); if (st) st.onclick = () => go('yard');
   const no = $('#mapNo'); if (no) no.onclick = () => { chip.hidden = true; const hi = $('#mapHi'); if (hi) hi.hidden = true; };

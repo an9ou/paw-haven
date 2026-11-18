@@ -150,7 +150,7 @@ run('v211_cards', async (t) => {
     const p = await t.mk(devName ? { device: devName } : {});
     await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a));
     await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p);
-    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest'); return p;
+    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay'); return p;
   }
   const use = (p) => { t.p = p; return p; };
   const adopt = async (p) => { use(p); if (await p.locator('#tGuest').count()) { await p.click('#tGuest'); await p.waitForSelector('#tNew'); } await t.adopt({ sex: 'girl' }); };

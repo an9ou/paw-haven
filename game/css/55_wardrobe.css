@@ -81,3 +81,10 @@ html[data-layout="phone"] .wd-scroll .slot h4 .wd-n{font-size:15px}
 .wd-tabs.wd-t7 .wd-tab{gap:5px;padding:4px 6px 6px 9px}
 html[data-layout="phone"] .wd-tabs.wd-t7{gap:2px;padding:6px 1px 8px}
 html[data-layout="phone"] .wd-tabs.wd-t7 .wd-tab{min-width:44px;padding:6px 2px 4px;font-size:15px}
+/* test round 17 Nov 2026: on a desktop stage under 1130 px (a 1024 x 768 iPad sideways, a small window) the seven slot tabs ran past the sheet
+   ("Char|" cut, the rest only by a hidden sideways scroll): there they stack their icon over the label, as on phones, and all fit */
+@media (max-width:1129px),(max-height:655px){
+  html:not([data-layout="phone"]) .wd-tabs .wd-tab{flex-direction:column;gap:1px;min-width:44px;padding:6px 5px 4px;font-size:16px;line-height:1}
+}
+/* test round E (17 Nov 2026): any desktop width, when the labels still run past the sheet (de "Glücksbringer" at 1280), wdTabShow adds .wd-stack */
+html:not([data-layout="phone"]) .wd-tabs.wd-stack .wd-tab{flex-direction:column;gap:1px;min-width:44px;padding:6px 5px 4px;font-size:16px;line-height:1}
