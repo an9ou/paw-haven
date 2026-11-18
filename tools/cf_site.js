@@ -97,6 +97,11 @@ const UNUSED = Object.keys(files).filter((u) => { const m = u.match(/^\/img\/art
 UNUSED.forEach((u) => { delete files[u]; });
 ['favicon.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'site.webmanifest', 'logo-1200x630.png', 'doodle-doggo-logo.svg', 'doodle-doggo-icon.svg']
   .forEach((f) => { files['/' + f] = path.join(brand, f); });
+// Home screen tip (game/src/59_a2hs.js, owner 16 Nov 2026): a home screen icon made from one of the site's own pages opens the game, not the
+// introduction site. The brand manifest is relative (start_url "./": right for the game copy at /play/site.webmanifest and for itch.io), so the
+// site root gets its own copy that names the game: the same start_url, scope and icons as /play/'s, so both are one and the same web app.
+const ROOT_MANIFEST = JSON.stringify(Object.assign(JSON.parse(fs.readFileSync(path.join(brand, 'site.webmanifest'), 'utf8')), { start_url: '/play/', scope: '/play/' }), null, 2) + '\n';
+delete files['/site.webmanifest'];
 // every page of every language, from the templates
 const built = I18N.build({ pseudo: PSEUDO && !EN_ONLY, legacy: EN_ONLY });
 for (const [rel, html] of Object.entries(built.pages)) {
@@ -196,7 +201,7 @@ function emit(dir, entries, workerSrc) { // entries: [url, source path or {text}
   fs.writeFileSync(path.join(dir, 'worker.js'), worker); fs.writeFileSync(path.join(dir, 'parts.txt'), parts.join('\n') + '\n');
   return gz + zlib.gzipSync(worker).length;
 }
-const entries = Object.keys(files).map((u) => [u, files[u]]).concat(Object.keys(gen).map((u) => [u, { text: gen[u] }]));
+const entries = Object.keys(files).map((u) => [u, files[u]]).concat(Object.keys(gen).map((u) => [u, { text: gen[u] }])).concat([['/site.webmanifest', { text: ROOT_MANIFEST }]]);
 const mainGz = emit(out, entries, (imports, table) => `${HEAD('The site.')}
 ${imports}
 const FILES = {

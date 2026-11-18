@@ -153,6 +153,15 @@
   upd();
 })();
 
+/* Home screen tip (game/src/59_a2hs.js): on Android the browser hands its install event to this page, never to the game box inside it,
+   so a page with the game box keeps the event for the game. The game's own "Add to home screen" card shows it at a calm moment (and the
+   browser's own bar does not pop up on a first visit). Nothing is asked here. */
+(function () {
+  if (!document.getElementById('gameframe')) return;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__ddInstall = e; });
+  window.addEventListener('appinstalled', function () { window.__ddInstall = null; window.__ddInstalled = 1; });
+})();
+
 /* owner (site v3.2): the game plays right on the home page and starts by itself; the button makes it full screen.
    Not full screen, the game is drawn at the size it is made for and shrunk to fit the box (owner: in a small box its buttons and
    text looked too big next to the scene): 1280 px wide on computers, at least 390 px wide on phones. The browser maps taps and

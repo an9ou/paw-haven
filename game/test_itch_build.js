@@ -73,4 +73,32 @@ require('./test_lib').run('itch_build', async (t) => {
   // the same pattern as tools/itch.js: the real flags are a <script> tag of their own (tools/pages.js); the bare text also sits in the test hooks (__paw.ms2.pagesFlag, the Friends hook)
   ok(!/<script>window\.__dd(Fr|Yue|Ms2)Test=1<\/script>|dd_gate_v1|id="ddGate"/.test(html), 'dist/itch/index.html has no __ddFrTest, __ddYueTest or __ddMs2Test flag tag and no password screen');
   ok(await p.evaluate(() => !window.__ddMs2Test && !window.__ddFrTest && !!window.__paw.ms2 && window.__paw.ms2.on() === window.__paw.ms2.live() && !!window.__paw.lv && window.__paw.lv.on() === false), 'the itch.io copy runs Missions v2 exactly as MS2_LIVE says (on since 7 Nov 2026), Town levels off under the test harness, no Missions v2 or Friends test flag set (the harness sets __ddYueTest itself)');
+  // Home screen tip (game/src/59_a2hs.js): it belongs to doodledoggo.app/play/ only. The same build inside itch.io's frame (another origin) never shows it
+  sec('no Add to home screen tip inside the itch.io frame');
+  {
+    const GAME = 'https://html-classic.itch.zone/html/1/', PAGE = 'https://an9ou.itch.io/doodle-doggo', DIST = path.join(ROOT, 'dist', 'itch');
+    const TYPE = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', png: 'image/png', svg: 'image/svg+xml', woff2: 'font/woff2', webmanifest: 'application/manifest+json', css: 'text/css' };
+    const q = await t.mk({ device: 'iPhone 15', prefs: { a2Test: true, a2: { n: 0, at: 0 } } });
+    await q.route('**/*', (route) => {
+      const u = new URL(route.request().url());
+      if (u.href.split('?')[0] === PAGE) return route.fulfill({ status: 200, contentType: TYPE.html, body: `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0"><iframe id="game" src="${GAME}index.html" style="border:0;width:100vw;height:100vh" allow="fullscreen"></iframe>` });
+      if (u.href.startsWith(GAME)) { const f = path.join(DIST, decodeURIComponent(u.pathname.slice('/html/1/'.length)) || 'index.html'); return fs.existsSync(f) && f.startsWith(DIST) ? route.fulfill({ status: 200, contentType: TYPE[f.split('.').pop()] || 'application/octet-stream', body: fs.readFileSync(f) }) : route.fulfill({ status: 404, body: '' }); }
+      return route.fulfill({ status: 200, contentType: /\.css|css2/.test(u.href) ? 'text/css' : 'text/plain', body: '' }); // Google Fonts: empty
+    });
+    await q.goto(PAGE); const fr = await (await q.waitForSelector('#game')).contentFrame();
+    await fr.waitForSelector('#tNew, #tPlay, #tContinue', { timeout: 30000 });
+    await fr.click((await fr.locator('#tPlay').count()) ? '#tPlay' : '#tNew'); await fr.waitForSelector('#aAdopt'); await fr.click('#aGirl'); await fr.click('#aAdopt'); await fr.waitForSelector('#nOk'); await fr.click('#nOk');
+    for (let i = 0; i < 3; i++) { await fr.waitForSelector('#iNext'); const h = await fr.textContent('#modal .panel h2'); await fr.click('#iNext'); await fr.waitForFunction((h) => { const e = document.querySelector('#modal .panel h2'); return !e || e.textContent !== h; }, h, { timeout: 5000 }).catch(() => {}); }
+    await fr.waitForFunction(() => window.__paw && window.__paw.mode === 'yard' && document.getElementById('modal').hidden && !!window.__paw.a2, null, { timeout: 15000 });
+    // everything else says yes: an iPhone with Safari, the 3rd day played, no waiting, never shown before
+    const st = await fr.evaluate(() => { const P = window.__paw; P.S.daysPlayed = 3; P.S.daysLastISO = P.rh.jst(); P.a2.timing(0, 0); return { host: location.hostname, on: P.a2.on(), plat: P.a2.plat(), safari: P.a2.safari(), frame: P.a2.frame(), site: P.a2.site(), due: P.a2.due(), calm: P.a2.calm() }; });
+    ok(st.host === 'html-classic.itch.zone' && st.on && st.plat === 'ios' && st.safari && st.calm && st.frame === 'other' && st.site === false && st.due === false, `in itch.io's frame on an iPhone, on a calm yard on day 3: another frame, not the site, nothing due (${JSON.stringify(st)})`);
+    const ev = await fr.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); return { prevented: e.defaultPrevented, kept: window.__paw.a2.evt() }; });
+    ok(!ev.prevented && !ev.kept, "an install event there is left to the browser (not prevented, not kept)");
+    await fr.evaluate(() => { window.__paw.a2.force(true); }); // even the dev switch for test copies does nothing in another site's frame
+    await t.sleep(3200);
+    ok(await fr.evaluate(() => !document.querySelector('.a2-pop') && document.getElementById('modal').hidden && !window.__paw.a2.due() && window.__paw.a2.st().n === 0), 'three seconds later, with the waits at zero and even the dev switch on: no card, nothing counted');
+    ok(await fr.evaluate(() => !document.getElementById('dvA2') && !document.getElementById('devPanel')), 'and no dev panel there to preview it from');
+    t.errors = t.errors.filter((e) => !/Failed to load resource|net::ERR_|Blocked autofocusing on a <input> element in a cross-origin subframe/.test(e)); // the name box's autofocus: Chromium's note about any framed page, as on itch.io itself
+  }
 });
