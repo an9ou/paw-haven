@@ -30,12 +30,12 @@ const FM_MARKETS = [
     } },
   { id: 'harvest', theme: 'harvest', name: 'Harvest Market', win: () => ['10-01', '11-30'],
     items: { clothes: ['Leaf Beret', 'Autumn Scarf'], treats: ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth'] } },
-  { id: 'winter', theme: 'winter', name: 'Winter Market', win: (y) => (y === 2026 ? ['11-23', '12-26'] : ['12-01', '12-26']), // owner, 18 Nov 2026: opens 23 Nov in 2026 (1 Dec other years)
+  { id: 'winter', theme: 'winter', name: 'Winter Market', win: (y) => (y === 2026 ? ['11-23', '12-31'] : ['12-01', '12-31']), // owner, 18 Nov 2026: opens 23 Nov in 2026 (1 Dec other years), open until 31 Dec every year
     items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
         'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
       homes: ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'],
       toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs'] } },
-  { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
+  { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'], tent: '01-01', // owner, 18 Nov 2026: its 2 items sell from 27 Dec beside the Winter Market, its tent from 1 Jan
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], todo: true, items: {} }
 ];
@@ -87,7 +87,9 @@ function fmOpen(day) {
 }
 // the tent, sign and letter belong to the market that opened last (owner, 18 Nov 2026: the Winter Market takes the tent from 23 Nov while the
 // Harvest Market's items stay on sale until 30 Nov); same result as before for every other overlap (Halloween opens after Harvest and closes first)
-const fmMain = () => fmOpen().reduce((b, o) => (!b || o.from > b.from ? o : b), null);
+// A market with `tent` (an MM-DD inside its window) takes the tent only from that day; until then its items sell under the other market's tent.
+function fmTentFrom(o) { if (!o.m.tent) return o.from; const fy = +o.from.slice(0, 4); return (o.m.tent >= o.from.slice(5) ? fy : fy + 1) + '-' + o.m.tent; }
+const fmMain = () => { const L = fmOpen(), d = FM_DAY(), T = L.filter((o) => fmTentFrom(o) <= d); return (T.length ? T : L).reduce((b, o) => (!b || fmTentFrom(o) > fmTentFrom(b) ? o : b), null); };
 function fmClose(o) { const [y, mo, d] = o.to.split('-').map(Number); return tdate(new Date(y, mo - 1, d), { day: 'numeric', month: 'short' }); }
 function fmSign(o) { o = o || fmMain(); if (!o) return ''; return tt('fm.sign', '{market} · open until {date}', { market: fmMarketName(o.m), date: fmClose(o) }); }
 function fmPlaceName() { const o = fmMain(); return o ? fmMarketName(o.m) : tt('fm.m_any', 'Festive Market'); }
