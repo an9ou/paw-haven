@@ -1,0 +1,39 @@
+/* ======================= v2.32 "A letter from your dog" (V232_letters.md, game/src/59b_letters.js): the Settings row and the offer card ======================= */
+.ltset .ltr-lead,.ltset .ltr-note,.ltset .ltr-guest,.ltset .ltr-stat{margin:6px 0;overflow-wrap:anywhere}
+.ltset .ltr-stat{font-weight:600}
+.ltset .ltr-stat:empty,.ltr-msg:empty{display:none}
+.ltr-msg{margin:6px 0 0;color:#a2453a;font-weight:600;overflow-wrap:anywhere}
+.ltr-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.ltr-row .btn{min-height:44px}
+.ltset label.tog.ltr-tog{display:flex;font-size:18px}
+/* the sample letter: a sheet of ruled letter paper */
+.ltr-letter{margin:8px 0 4px;padding:14px 16px 12px;border:2px solid var(--ink);border-radius:9px 13px 10px 12px;background:#FFFBF3 repeating-linear-gradient(to bottom,transparent 0 27px,rgba(91,61,50,.13) 27px 28px);font-family:var(--font-read);font-size:17px;line-height:28px;overflow-wrap:anywhere;text-align:start}
+.ltr-letter p{margin:0 0 28px}
+.ltr-letter .ltr-subj{font-family:var(--font-hand);font-size:24px;font-weight:700;line-height:28px}
+.ltr-letter .ltr-sign{font-weight:700}
+.ltr-letter .ltr-ps{margin-bottom:0;font-style:italic;opacity:.85}
+.ltr-snote{margin:4px 0 8px;opacity:.85}
+/* the offer card */
+html:not([data-layout="phone"]) .panel.ltr-pop{width:min(520px,100%);max-width:min(520px,calc(100% - 20px))}
+.panel.ltr-pop h2{font-size:32px;overflow-wrap:anywhere}
+.ltr-offer{display:flex;flex-direction:column;gap:8px;min-width:0}
+.ltr-top{display:flex;align-items:flex-end;justify-content:center;gap:6px;min-height:0}
+.ltr-dog{flex:none;width:112px;height:112px;display:block}
+.ltr-art{flex:none;width:92px;height:69px;display:block;transform:rotate(5deg);margin-bottom:10px}
+.ltr-dog svg,.ltr-art svg{width:100%;height:100%;display:block;overflow:visible}
+.ltr-lead2{margin:0;font-family:var(--font-read);font-size:19px;line-height:1.3;text-align:center;overflow-wrap:anywhere}
+.ltr-lead2:focus{outline:none}
+.ltr-offer .ltr-free{margin:0;text-align:center;font-size:16px;opacity:.9;overflow-wrap:anywhere}
+.ltr-offer .ltr-mid{justify-content:center;margin:2px 0}
+.ltr-pop .foot{justify-content:center}
+.ltr-pop .foot .btn{min-height:48px}
+.ltr-pop .foot .ltr-yes{min-width:180px;font-size:22px}
+html[data-layout="phone"] .panel.ltr-pop h2{font-size:26px}
+html[data-layout="phone"] .ltr-dog{width:88px;height:88px}
+html[data-layout="phone"] .ltr-art{width:76px;height:57px}
+html[data-layout="phone"] .ltr-lead2{font-size:18px}
+html[data-layout="phone"] .ltr-letter{font-size:16px;padding:12px 12px 10px}
+html[data-layout="phone"] .ltr-pop .foot{flex-wrap:wrap-reverse;gap:8px;margin-top:8px}
+html[data-layout="phone"] .ltr-pop .foot .btn{flex:1 1 130px;min-width:auto;max-width:100%;white-space:nowrap}
+html[data-layout="phone"] .ltr-pop .foot .ltr-yes{flex-grow:2;min-width:auto;font-size:20px}
+html[data-layout="phone"] .ltset .ltr-row .btn{min-height:48px}

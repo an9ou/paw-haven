@@ -65,7 +65,7 @@ const MAP = [
     places: ['park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'shelter', 'fujihill', 'station'] },
   { id: 'tokyo', key: 'japan', map: { id: 'japanmap', src: '/img/map/japan-map.webp', alt: 'map.japan.alt' }, places: ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'] }
 ];
-const POLICY_DATE = Date.UTC(2026, 10, 16); // the privacy policy's "Last updated" date (16 November 2026, v2.25.5 gift codes)
+const POLICY_DATE = Date.UTC(2026, 10, 18); // the privacy policy's "Last updated" date (18 November 2026, v2.32 letters from your dog; before that 16 November, v2.25.5 gift codes). Set it to the launch day when the site is deployed
 
 // ---- the message formatter: game/i18n/msg.js (the v2.14 contract) parses; the site renders its AST as HTML (escaped text, <b>/<i>, HTML parameters)
 const MSG = require('../game/i18n/msg.js');

@@ -17,3 +17,12 @@ begin
   insert or ignore into shop_flags (key, mode, note, created_at)
     values ('h:' || old.shop_hash, 'block', 'auto: deleted while paused', cast((julianday('now') - 2440587.5) * 86400000 as integer));
 end;
+--
+-- v2.32 letters (V232_letters.md 4): a deleted account's letters row goes in the same moment, so no letter can follow a deleted account.
+-- statement
+drop trigger if exists users_letters_gone;
+-- statement
+create trigger users_letters_gone after delete on users for each row
+begin
+  delete from letters where user_id = old.id;
+end;

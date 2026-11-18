@@ -327,6 +327,7 @@ function frPetLetter(day, list) {
   if (!m.frPets || !Array.isArray(m.frPets.ids)) m.frPets = { who: [], fids: [], ids: [], dog: NAME(), bond: 0 };
   const fresh = list.filter((ev) => !m.frPets.ids.includes(ev.id));
   if (!fresh.length) return;
+  if (typeof ltNote === 'function') ltNote('v', fresh.length); // v2.32: a friend's visit, for the weekly letter's note (59b_letters.js; nothing before its launch)
   let bond = 0;
   fresh.forEach((ev) => {
     m.frPets.ids.push(ev.id);

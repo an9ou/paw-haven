@@ -16,6 +16,7 @@ function openSettings() {
     ${S && typeof nwMenuBtn === 'function' ? `<p class="nw-setrow"><button class="btn" type="button" id="setNews">${esc(tt('nw.menu', "What's new"))}</button>${typeof shareDog === 'function' && S.dogs && S.dogs.length ? ` <button class="btn" type="button" id="setShare">${esc(tt('sh.btn', 'Share my dog'))}</button>` : ''}</p>` : ''}
     ${typeof frLeaveRow === 'function' ? frLeaveRow() : ''}
     ${typeof pmSettingsHTML === 'function' ? pmSettingsHTML() : ''}
+    ${typeof ltSettingsHTML === 'function' ? ltSettingsHTML() : ''}
     ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">${esc(tt('settings.reset', 'Reset save'))}</button><button class="btn" id="setTitle">${esc(tt('settings.to_title', 'Title screen'))}</button></div>` });
   { const bd = p.querySelector('.panel-body'); if (bd) { const fade = 'linear-gradient(to bottom, #000 calc(100% - 26px), transparent)'; bd.style.webkitMaskImage = fade; bd.style.maskImage = fade; } } // a heading never sits half-cut at the foot of the scroll area
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
@@ -25,6 +26,7 @@ function openSettings() {
   mpSettingsBind(p); // v2.15: Labels on the map, the shop window on arrival (42_map215.js)
   if (typeof clBind === 'function') clBind(p);
   if (typeof pmBind === 'function') pmBind(p); // v2.25.5: Have a code? (55_promo.js)
+  if (typeof ltBind === 'function') ltBind(p); // v2.32: Letters from my dog (59b_letters.js)
   langBind(p);
   { const nb = $('#setNews', p); if (nb) nb.onclick = () => { SFX.click(); closeModal(); setTimeout(() => nwOpen(false), 60); }; } // v2.18.2: What's new
   { const sb = $('#setShare', p); if (sb) sb.onclick = () => { SFX.click(); closeModal(); setTimeout(() => shareDog({ from: 'menu' }), 60); }; } // fit sweep 18 Nov: Share my dog on a small desktop stage, where the top bar has no room for its icon (59_scenes.css)

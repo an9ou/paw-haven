@@ -84,4 +84,5 @@
 58_invite.js
 58b_goal.js
 59_a2hs.js
+59b_letters.js
 23_boot.js

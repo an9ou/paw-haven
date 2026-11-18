@@ -56,10 +56,29 @@ py "import json,re; s=open('cloudflare/schema_triggers.sql').read(); [print(json
   | while IFS= read -r Q; do curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary "$Q" | ok; done
 echo "triggers applied"
 
-# 3. the Worker, bound to D1 (no plain vars since v2.9.1: Supabase is gone)
-META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'}]}))")
+# (v2.32 "A letter from your dog": the table letters is new in schema.sql, its trigger users_letters_gone in schema_triggers.sql. No added columns.)
+
+# 3. the Worker, bound to D1. Its second module letters_text.js (v2.32: the letter's words, node tools/letters_pack.js) goes up next to worker.js.
+#    Plain variables set in the dashboard (BT_FROM, TOWN_GOAL, LETTERS_FROM, LETTERS_CAP, LETTERS_DAY, LETTERS_IMG) are kept across deploys, like the secrets
+node tools/letters_pack.js --check
+META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text','plain_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'}]}))")
 curl -sS -X PUT "$API/workers/scripts/$SCRIPT" "${AUTH[@]}" \
-  -F "metadata=$META;type=application/json" -F "worker.js=@cloudflare/worker.js;type=application/javascript+module" | ok
+  -F "metadata=$META;type=application/json" -F "worker.js=@cloudflare/worker.js;type=application/javascript+module" \
+  -F "letters_text.js=@cloudflare/letters_text.js;type=application/javascript+module" | ok
+# 3b. v2.32 letters: the two Cron Triggers (the same as cloudflare/wrangler.toml). They only wake the Worker: it sends nothing before LETTERS_FROM
+#     and outside its own window (Sundays 10:00 JST and the 48 hours after it)
+curl -sS -X PUT "$API/workers/scripts/$SCRIPT/schedules" "${AUTH[@]}" -H 'Content-Type: application/json' \
+  -d '[{"cron":"0 1-23 * * SUN"},{"cron":"0 * * * MON"}]' | ok
+echo "cron triggers set"
+# 3c. v2.32 letters: LETTERS_KEY signs the confirm and unsubscribe links. Made once, here, from random bytes, never printed, never changed afterwards
+#     (a new key would break the unsubscribe links in letters already sent). The list call returns names only
+if curl -sS "$API/workers/scripts/$SCRIPT/secrets" "${AUTH[@]}" | py "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any(x.get('name')=='LETTERS_KEY' for x in (d.get('result') or [])) else 1)"; then
+  echo "secret LETTERS_KEY is there"
+else
+  py "import json,secrets; print(json.dumps({'name':'LETTERS_KEY','text':secrets.token_urlsafe(48),'type':'secret_text'}))" \
+    | curl -sS -X PUT "$API/workers/scripts/$SCRIPT/secrets" "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @- | ok
+  echo "secret LETTERS_KEY made"
+fi
 curl -sS -X POST "$API/workers/scripts/$SCRIPT/subdomain" "${AUTH[@]}" -H 'Content-Type: application/json' -d '{"enabled":true,"previews_enabled":false}' | ok
 SUB=$(curl -sS "$API/workers/subdomain" "${AUTH[@]}" | py "import json,sys; print(json.load(sys.stdin)['result']['subdomain'])")
 echo "deployed https://$SCRIPT.$SUB.workers.dev"

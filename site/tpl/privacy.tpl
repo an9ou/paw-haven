@@ -66,6 +66,15 @@
     </ul>
     <p>{{t privacy.shop.noads}}</p>
 
+    <h2>{{t privacy.letters.title}}</h2>
+    <p>{{t privacy.letters.lead}}</p>
+    <ul>
+      <li>{{t privacy.letters.what}}</li>
+      <li>{{t privacy.letters.keep}}</li>
+      <li>{{t privacy.letters.notrack}}</li>
+      <li>{{t privacy.letters.stop}}</li>
+    </ul>
+
     <h2>{{t privacy.where.title}}</h2>
     <p>{{t privacy.where.text}}</p>
 

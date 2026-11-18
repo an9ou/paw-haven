@@ -10,3 +10,8 @@ workers_dev = true
 binding = "DB"
 database_name = "pawhaven"
 database_id = "d6bacd44-9f88-4c66-9ef6-ca15417a5c97"
+
+# v2.32 "A letter from your dog" (V232_letters.md 3): Sundays 10:00 JST (01:00 UTC) and hourly for the 48 hours after it (the backlog).
+# The Worker checks the window itself. tools/cf_api_deploy.sh sets the same two schedules.
+[triggers]
+crons = ["0 1-23 * * SUN", "0 * * * MON"]
