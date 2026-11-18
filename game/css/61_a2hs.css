@@ -1,0 +1,36 @@
+/* "Home screen tip" (59_a2hs.js): the Add to home screen card. Android: one button. iPhone and iPad: the two Safari steps with crayon icons */
+html:not([data-layout="phone"]) .panel.a2-pop{width:min(520px,100%);max-width:min(520px,calc(100% - 20px))}
+.panel.a2-pop h2{font-size:32px;overflow-wrap:anywhere}
+.a2{display:flex;flex-direction:column;gap:8px;min-width:0}
+.a2-top{display:flex;align-items:flex-end;justify-content:center;gap:10px;min-height:0}
+.a2-art{flex:none;width:84px;height:119px;display:block;transform:rotate(-4deg)}
+.a2-duck{flex:none;width:92px;height:92px;display:block}
+.a2-art svg,.a2-duck svg{width:100%;height:100%;display:block;overflow:visible}
+.a2-lead{margin:0;font-family:var(--font-read);font-size:19px;line-height:1.3;text-align:center;overflow-wrap:anywhere}
+.a2-lead:focus{outline:none}
+.a2-steps{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:a2}
+.a2-steps li{counter-increment:a2;display:flex;align-items:center;gap:10px;min-width:0;padding:8px 12px;border:2px dashed rgba(91,61,50,.45);border-radius:10px 14px 9px 12px;background:var(--w-yellow,#FFE3A1)}
+.a2-steps li::before{content:counter(a2);flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-radius:50%;background:#FFFBF3;font-family:var(--font-hand);font-weight:700;font-size:20px;line-height:1}
+.a2-steps li:nth-child(2){border-radius:13px 9px 12px 10px}
+.a2-ic{flex:none;width:40px;height:40px;display:block;overflow:visible}
+.a2-steps span{flex:1 1 auto;min-width:0;font-family:var(--font-read);font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.a2-steps small{display:block;margin-top:2px;font-size:15px;line-height:1.25;opacity:.85}
+.a2 .a2-small{margin:0;font-family:var(--font-read);font-size:16px;line-height:1.3;text-align:center;opacity:.9;overflow-wrap:anywhere}
+.a2 .a2-hint:empty{display:none}
+.a2 .a2-hint{font-weight:700;opacity:1}
+.a2-pop .foot{justify-content:center}
+.a2-pop .foot .btn{min-height:48px}
+.a2-pop .foot .a2-yes{min-width:180px;font-size:22px}
+html[data-layout="phone"] .panel.a2-pop h2{font-size:26px}
+html[data-layout="phone"] .a2-art{width:68px;height:96px}
+html[data-layout="phone"] .a2-duck{width:76px;height:76px}
+html[data-layout="phone"] .a2-lead{font-size:18px}
+html[data-layout="phone"] .a2-steps span{font-size:17px}
+html[data-layout="phone"] .a2-pop .foot{flex-wrap:wrap-reverse;gap:8px;margin-top:8px}
+html[data-layout="phone"] .a2-pop .foot .btn{flex:1 1 130px;min-width:auto;max-width:100%;white-space:nowrap}
+html[data-layout="phone"] .a2-pop .foot .a2-yes{flex-grow:2;min-width:auto;font-size:20px}
+@media (max-height:760px){html[data-layout="phone"] .a2-ios .a2-art{width:50px;height:71px}
+html[data-layout="phone"] .a2-ios .a2-duck{width:60px;height:60px}}
+html[data-layout="phone"] .a2-steps li{padding:6px 10px;gap:8px}
+html[data-layout="phone"] .a2-ic{width:36px;height:36px}
+.a2-pop.a2-tight .a2-top{display:none}
