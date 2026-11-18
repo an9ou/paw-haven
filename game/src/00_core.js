@@ -1672,9 +1672,10 @@ let a11yOpener = null, a11yKeys = false;
 window.addEventListener('keydown', (e) => { if (['Tab', 'Enter', ' ', 'Escape'].includes(e.key)) a11yKeys = true; }, true);
 window.addEventListener('pointerdown', () => { a11yKeys = false; }, true);
 let a11yLast = null; document.addEventListener('focusin', (e) => { if (!modal.contains(e.target)) a11yLast = e.target; }, true); // a phone tray tile hides as its sheet opens: its focus is gone by then
-function a11yFrom() { let a = document.activeElement; if (!a || a === document.body || a === document.documentElement) a = a11yLast && a11yLast.isConnected ? a11yLast : null; return a && !modal.contains(a) && !(a.closest && a.closest('#scLayer')) ? a : null; }
+function a11yHid(x) { try { return x.nodeType === 1 && !a11yShown(x); } catch (e) { return false; } } // Fable review: only a tray tile that has just hidden, never a stale HUD button (Space would open it)
+function a11yFrom() { let a = document.activeElement; if (!a || a === document.body || a === document.documentElement) a = a11yLast && a11yLast.isConnected && a11yHid(a11yLast) ? a11yLast : null; /* Fable review: only a tray tile that has just hidden, never a stale HUD button (Space would open it) */ return a && !modal.contains(a) && !(a.closest && a.closest('#scLayer')) ? a : null; }
 const A11Y_FOC = 'button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
-const a11yShown = (e) => !!e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[hidden],[inert]');
+function a11yShown(e) { return !!e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && !e.closest('[hidden],[inert]'); } // a declaration (hoisted): a11yFrom may run before this line on boot
 function a11yBack(el) {
   if (!el || !a11yKeys || !el.isConnected) return;
   if (!a11yShown(el)) { const pop = el.closest('.barpop'); el = pop ? document.querySelector(`#bar .act[data-act="${pop.dataset.pop}"]`) : null; if (!el || !a11yShown(el)) return; }
@@ -1692,6 +1693,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
   const root = a11yTop(); if (!root) return;
   const a = document.activeElement, f = [...root.querySelectorAll(A11Y_FOC + ',div,section,ul,ol')].filter((x) => (x.matches(A11Y_FOC) || a11yScroller(x)) && a11yShown(x));
+  f.forEach((x) => { if (!x.matches(A11Y_FOC) && !x.hasAttribute('tabindex')) x.tabIndex = 0; }); // Fable review: Safari and older Chromium do not focus a scroll box by themselves
   const side = root.id === 'scLayer' ? [] : [...document.querySelectorAll('#gdLayer .gd-card button, #toasts button')].filter(a11yShown), si = side.indexOf(a); // Gerald's card and an Undo toast next to the sheet stay in the loop
   if (si >= 0) { const n = si + (e.shiftKey ? -1 : 1), to = side[n] || (e.shiftKey ? f[f.length - 1] : f[0]); if (to) { e.preventDefault(); to.focus(); } return; }
   if (!f.length) { e.preventDefault(); if (root.tabIndex >= -1 && root !== a) try { root.focus({ preventScroll: true }); } catch (x) { /* not focusable */ } return; }

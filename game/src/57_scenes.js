@@ -11,7 +11,7 @@
    Script: { id, sting, shots: [{ d: seconds, bg: place id | 'card', cam: [[x, y, zoom], [x, y, zoom]], title: () => text (card shots),
      cap: () => text, actors: [{ who: 'dog' | 'gerald' | 'book' | 'doodle' | 'prop' (SC_PROPS, part 2), dog: 'other' | 'pup' (part 2), pose, pose2 (once the move ends), face, expr, at: [x, y] (feet),
      to: [x, y], s: scale, hop: px, t0, t1 (move window, 0-1 of the shot), k (doodle kind), open (book), fade: 'in' | 'out' }] }] } */
-const SC_SKIP_MS = 3000, SC_CALM_MS = 1500, SC_GAP_MS = 8000, SC_FADE_MS = 380, SC_JUMP_MS = 100; // SC_JUMP_MS (test round c): a frame slower than this holds the scene clock
+const SC_SKIP_MS = 3000, SC_CALM_MS = 1500, SC_GAP_MS = 8000, SC_FADE_MS = 380, SC_JUMP_MS = 100, SC_HOLD_MAX = 600; // SC_JUMP_MS (test round c): a frame slower than this holds the scene clock
 const SC_SCRIPTS = {}; // id -> script (57b_story.js)
 const SC = { on: null, raf: 0, calm: 0, lastEnd: 0, filmOld: true }; // filmOld (test round c): the film's size must be measured again (a ResizeObserver sets it)
 function scAllowed() { return !navigator.webdriver || !!(typeof prefs !== 'undefined' && prefs && prefs.scTest); }
@@ -137,7 +137,7 @@ function scPlay(id, o) {
 }
 function scShotAt(ms) { const P = SC.on; let acc = 0; for (let i = 0; i < P.shots.length; i++) { const e = acc + P.shots[i].d * 1000; if (ms < e) return [i, (ms - acc) / (P.shots[i].d * 1000)]; acc = e; } return [P.shots.length - 1, 1]; }
 function scEnterShot(i) {
-  const P = SC.on, x = P.shots[i], L = scLayer(); P.shot = i; P.poses = x.actors.map((a) => (P.still && a.pose2 ? a.pose2 : a.pose || 'idle'));
+  const P = SC.on, x = P.shots[i], L = scLayer(); P.shot = i; P.held = 0; P.poses = x.actors.map((a) => (P.still && a.pose2 ? a.pose2 : a.pose || 'idle'));
   x.actors.forEach((a) => { if (a.who === 'dog' && (!a.dog || a.dog === 'other' || a.dog === 'pup')) a.dog = a.dog === 'other' ? scOtherDog(P.dog) : a.dog === 'pup' ? scPup() || scOtherDog(P.dog) : P.dog; });
   const parts = x.actors.map((a, k) => scActorInner(a, P.poses[k])); P.sz = parts.map((q) => [q[1], q[2]]);
   $('.sc-cam', L).innerHTML = scBg(x.bg || 'card') + `<g class="sc-acts">${parts.map((q, k) => `<g class="sc-a" data-a="${k}">${q[0]}</g>`).join('')}</g>`;
@@ -265,7 +265,8 @@ function scFrame(now) {
   if (P.hid) return; // hidden tab: wait (visibilitychange restarts the frames)
   // test round c (slow phones): a slow frame (a shot's first frame builds and paints its picture, 200-400 ms on a slow phone) holds the clock
   // instead of skipping ahead, so the cut's fade-in and the moves after it still play in full
-  if (P.lastF && now - P.lastF > SC_JUMP_MS) P.t0 += now - P.lastF - 1000 / 60;
+  // Fable review: at most SC_HOLD_MAX ms of hold per shot, so a phone that is slow on every frame does not play the scene in slow motion
+  if (P.lastF && now - P.lastF > SC_JUMP_MS && (P.held || 0) < SC_HOLD_MAX) { const h = Math.min(now - P.lastF - 1000 / 60, SC_HOLD_MAX - (P.held || 0)); P.t0 += h; P.held = (P.held || 0) + h; }
   P.lastF = now;
   const ms = now - P.t0, L = scLayer();
   if (ms >= P.total) { scEnd(false); return; }
