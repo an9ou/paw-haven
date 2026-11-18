@@ -11,7 +11,7 @@ run('wm_review', async (t) => {
   await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
   await ev(() => { const P = window.__paw; P.addDog({ key: 'chihuahua', sex: 'male', months: 14 }, 'Pip'); P.addDog({ key: 'golden', sex: 'female', months: 30 }, 'Goldie'); });
   await t.calm();
-  for (const [date, th] of [['2026-10-27', 'halloween'], ['2026-12-05', 'winter'], ['2026-12-28', 'newyear']]) {
+  for (const [date, th] of [['2026-10-27', 'halloween'], ['2026-12-05', 'winter'], ['2027-01-02', 'newyear']]) {
     await ev((d) => { const P = window.__paw; P.fm.date(d); P.S.place = 'fmarket'; P.go('yard'); }, date); await t.calm(); await t.sleep(500);
     const R = await ev(() => {
       const P = window.__paw, rm = P.rm, ids = rm.dogs(), no = rm.scan(), boards = no.filter((b) => b[4] === 'board');
@@ -117,23 +117,23 @@ run('wm_review', async (t) => {
   }
   await t.ctx.close();
 
-  sec('5. a market hand-over (26 to 27 Dec): an open sheet cannot buy an item no longer on sale');
-  await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-12-26' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+  sec('5. a market hand-over (31 Dec to 1 Jan): an open sheet cannot buy an item no longer on sale');
+  await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-12-31' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
   await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
   {
     await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
     await ev(() => window.__paw.fm.sheet('decor')); await t.p.waitForSelector('#modal .fm-card[data-n="Yard Snowman"]');
     const c0 = (await t.S()).coins;
-    await ev(() => { window.__paw.fm.date('2026-12-27'); document.getElementById('toasts').innerHTML = ''; }); // the New Year Market takes over; the sheet is still open
+    await ev(() => { window.__paw.fm.date('2027-01-01'); document.getElementById('toasts').innerHTML = ''; }); // the New Year Market takes over (owner, 18 Nov 2026: Winter until 31 Dec); the sheet is still open
     await ev(() => document.querySelector('#modal .fm-card[data-n="Yard Snowman"] [data-fmbuy]').click());
     ok(await t.waitToast(/packed up/), 'the stale button: the "packed up" toast');
     ok(!(await t.S()).decor['Yard Snowman'] && (await t.S()).coins === c0, 'nothing bought, no coins taken');
     ok(await t.until(() => !document.querySelector('#modal .fm-card[data-n="Yard Snowman"]') && !!document.querySelector('#modal .fm-card[data-n="Kadomatsu Pair"]'), null, 3000), 'the sheet shows the New Year Market now');
     // the buy window open across the hand-over
-    await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fm.date('2026-12-26'));
+    await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fm.date('2026-12-31'));
     await ev(() => window.__paw.fm.sheet('decor')); await t.p.waitForSelector('#modal .fm-card[data-n="Star Lantern"]');
     await ev(() => document.querySelector('#modal .fm-card[data-n="Star Lantern"] [data-fmbuy]').click()); await t.p.waitForSelector('.buybox .bb-yes');
-    await ev(() => window.__paw.fm.date('2026-12-27')); await ev(() => document.querySelector('.buybox .bb-yes').click());
+    await ev(() => window.__paw.fm.date('2027-01-01')); await ev(() => document.querySelector('.buybox .bb-yes').click());
     ok(await t.waitToast(/packed up/) && !(await t.S()).decor['Star Lantern'] && (await t.S()).coins === c0, 'confirmed after the hand-over: the toast, nothing bought');
   }
   await t.ctx.close();
@@ -152,7 +152,7 @@ run('wm_review', async (t) => {
       ok(await t.until((c) => { const b = document.querySelector(`#modal .fm-pop [data-fmtab="${c}"]`); return !!b && b.getAttribute('aria-selected') === 'true' && document.querySelectorAll('#modal .fm-grid .fm-card').length >= 2; }, c, 4000), `the ${c} stall opens the ${c} tab`);
       await t.closeX(); await t.modalGone();
     }
-    await ev(() => { window.__paw.fm.date('2026-12-28'); window.__paw.go('yard'); }); await t.calm();
+    await ev(() => { window.__paw.fm.date('2027-01-02'); window.__paw.go('yard'); }); await t.calm();
     ok(await ev(() => [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).join() === 'decor,treats' && window.__paw.fm.svgCache().some((k) => /^newyear\|\|0\|plain\|101$/.test(k))), 'New Year: decor on the first stall, treats on the third, the middle a bare counter');
   }
   await t.ctx.close();
@@ -212,7 +212,7 @@ run('wm_review', async (t) => {
     await t.ctx.close();
   }
 
-  sec('12. music: the Festive Market is a PawAudio place (market music + crowd, never the yard); the Winter Market variant only from 1 to 26 Dec');
+  sec('12. music: the Festive Market is a PawAudio place (market music + crowd, never the yard); the Winter Market variant only from 23 Nov (2026) or 1 Dec to 31 Dec');
   await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 } });
   await t.until(() => !!(window.__paw && window.__paw.fm && window.PawAudio), null, 8000);
   {
@@ -221,7 +221,7 @@ run('wm_review', async (t) => {
     ok(A.plain.sig === A.market.sig && A.plain.ambience.market === 1, 'fmarket outside the Winter Market = the market music with its crowd: ' + A.plain.label);
     ok(/wmarket/.test(A.win.label) && A.win.top === 'celesta' && A.win.prog === 'winter' && A.win.ambience.snowmkt > 0, 'fest winter at fmarket = the Winter Market style (celesta, its own chords, snow footsteps), even at night in snow: ' + A.win.label);
     ok(A.yardFest.sig === A.yard.sig, 'fest winter changes nothing at other places');
-    for (const [date, want] of [['2026-11-22', null], ['2026-11-23', 'winter'], ['2027-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-27', null], ['2026-10-27', null]]) {
+    for (const [date, want] of [['2026-11-22', null], ['2026-11-23', 'winter'], ['2027-11-30', null], ['2026-12-01', 'winter'], ['2026-12-05', 'winter'], ['2026-12-26', 'winter'], ['2026-12-31', 'winter'], ['2027-01-01', null], ['2026-10-27', null]]) {
       await ev((dt) => { const P = window.__paw; P.fm.date(dt); P.S.place = 'fmarket'; P.go('yard'); }, date); await t.calm();
       const c = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
       const w2 = want && c && c.time !== 'dawn' ? want : null; // dawn: the plain market music while the stalls open (owner, 7 Nov 2026)
