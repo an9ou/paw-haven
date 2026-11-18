@@ -67,6 +67,43 @@ require('./test_lib').run('itch_build', async (t) => {
   await p.evaluate(() => window.__paw.ph.open());
   ok(await t.until(() => { const s = window.__paw.ph.svg && window.__paw.ph.svg(); return !!s && s.includes("font-family:'Caveat'") && s.includes('base64'); }, null, 20000), 'the first photo loads the photo fonts and the postcard carries them');
   ok((await sideFiles(p)).filter((f) => /photo_fonts/.test(f)).length === 1, 'the photo fonts file came once');
+  // v2.31.14 PERF (PERF.md 8): the rest file world_r.<hash>.js (art worlds D and E, the shop art, the walk, toy, garden, kitchen and QR modules)
+  sec('the rest file: after the title for a new player, before the game for a returning one, a kind retry when it cannot load');
+  {
+    let q; const DIST = path.join(ROOT, 'dist', 'itch'), restName = fs.readdirSync(DIST).find((f) => /^world_r\.[0-9a-f]{8}\.js$/.test(f)), idx = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+    ok(!!restName && idx.includes(restName), `dist/itch has the rest file and index.html names it (${restName})`);
+    ok(!/pa-wd-scene|TOKYO_E=|WORLD_D_SCENES=|window\.PawToys\s*=[^=]/.test(idx) && /WORLD_C_SCENES/.test(idx), 'index.html no longer carries worlds D and E or the toy, garden and kitchen modules; world C (the yard\'s Japan scenery, the Playroom) stays');
+    const have = (x) => x.evaluate(() => ({ back: window.PAW_REST.back, ready: window.PAW_REST.ready, tags: [...document.scripts].filter((e) => /^world_r\./.test(e.getAttribute('src') || '')).length,
+      all: !!(window.PawToys && window.PawWalk && window.PawGarden && window.PawKitchen && window.PawQR && window.PawArt.SHOP && window.PawArt.TOKYO_E && Array.isArray(window.PawArt.WORLD_D_SCENES)), off: typeof window.PawArt._ariaOff, mode: window.__paw && window.__paw.mode, save: !!localStorage.getItem('pawhaven_proto_v1'), card: (document.getElementById('restWait') || {}).textContent || '', role: document.getElementById('restWait') ? document.getElementById('restWait').getAttribute('role') : '' }));
+    // a new player: the title first, the file right after, one tag, everything there before the adoption
+    q = await t.mk({}); await q.goto(ITCH); await q.waitForSelector('#tNew');
+    let h = await have(q); ok(h.back === false, 'a new player: the game starts before the rest file');
+    ok(await t.until(() => window.PAW_REST.ready === true, null, 15000), 'the rest file comes right after the title'); h = await have(q);
+    ok(h.tags === 1 && h.all && h.off === 'undefined', 'one tag; worlds D and E, the shop art and the five modules are there; the title\'s aria layer copy is gone (world E brought its own)');
+    await t.adopt({ sex: 'girl' }); ok((await have(q)).mode === 'yard', 'the adoption runs as before');
+    const aria = await q.evaluate(() => [window.PawArt.scene('shibuya', { aria: 'A <b> "c"' }), window.PawArt.icon('coin', { aria: 'Münzen' }), window.PawArt.house('Golden Paw Cottage', { aria: 'x' })].map((x) => (/aria-label="([^"]*)"/.exec(x) || [])[1]));
+    ok(aria[0] === 'A &lt;b> &quot;c&quot;' && aria[1] === 'Münzen' && aria[2] !== 'x', `the aria layer sits where it did: over worlds A to E, under the shop art (${aria.join(' | ')})`);
+    // the file cannot load: the title still comes; a tap waits, then says so kindly; nothing is saved; with the file back a tap goes on
+    const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'paw-rest-')); fs.cpSync(DIST, tmp2, { recursive: true });
+    const rp = path.join(tmp2, restName), keep2 = path.join(tmp2, 'rest.keep'); fs.renameSync(rp, keep2);
+    q = await t.mk({}); await q.goto('file://' + path.join(tmp2, 'index.html')); await q.waitForSelector('#tNew', { timeout: 30000 });
+    ok(true, 'the rest file is missing: the title still comes');
+    await q.click('#tNew'); ok(await t.until(() => { const c = document.getElementById('restWait'); return !!c && c.getAttribute('role') === 'button'; }, null, 15000), 'a tap on Play waits, and after three tries the card can be tapped');
+    h = await have(q); ok(h.mode === 'title' && !h.save && /Tap to try again/.test(h.card) && !(await q.$('#aAdopt')), `still on the title, nothing saved, the card says "${h.card}"`);
+    fs.renameSync(keep2, rp); await q.click('#restWait');
+    ok(await t.until(() => !!document.getElementById('aAdopt') && !document.getElementById('restWait'), null, 20000), 'the file is back: a tap on the card loads it and the held Play goes on to the adoption');
+    h = await have(q); ok(h.all && h.ready === true, 'with everything loaded');
+    // a returning player: the game waits for the file (the old order); missing: the loading paw says so, a tap tries again
+    fs.renameSync(rp, keep2);
+    q = await t.mk({}); await q.addInitScript(() => { try { localStorage.setItem('pawhaven_cloud_v1', '{}'); } catch (e) { /* no storage */ } });
+    await q.goto('file://' + path.join(tmp2, 'index.html'));
+    ok(await t.until(() => { const e = document.getElementById('pawload'); return !!e && e.getAttribute('role') === 'button' && /Tap to try again/.test(e.textContent); }, null, 15000) && !(await q.$('#tNew')) && await q.evaluate(() => window.PAW_REST.back === true && !window.__paw), 'a returning player, file missing: the game has not started, the loading paw says "Tap to try again"');
+    fs.renameSync(keep2, rp); await q.click('#pawload'); await q.waitForSelector('#tNew, #tContinue, #tPlay', { timeout: 30000 });
+    h = await have(q); ok(h.all && h.ready === true && h.tags === 1 && !(await q.$('#pawload')), 'a tap loads it: the title comes with every module already there, as before');
+    t.errors = t.errors.filter((e) => !/ERR_FILE_NOT_FOUND|net::ERR_/.test(e)); // the failed loads above are on purpose
+    fs.rmSync(tmp2, { recursive: true, force: true });
+    t.p = p; // the checks below go on with the adopted game of the photo fonts section
+  }
   // the GitHub Pages test copy's flags (tools/pages.js) never reach itch.io or /play/: Friends, Cantonese, v2.20 Missions v2 (MS2_LIVE), the password screen
   sec('no Pages-only test flags');
   const html = fs.readFileSync(path.join(ROOT, 'dist', 'itch', 'index.html'), 'utf8');

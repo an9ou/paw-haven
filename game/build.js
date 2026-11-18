@@ -39,13 +39,16 @@ const BANNED = /nintendo|pok[eé]mon|animal crossing|任天堂|ポケモン|ポ�
 if (mode === 'publish') {
   const rd = (f) => { const s = fs.readFileSync(path.join(P, f), 'utf8'); if (/<\/script/i.test(s)) throw new Error('</script in ' + f); return s; };
   const art = ART.map(rd).join('\n'), mods = MODS.map(rd).join('\n');
-  const merge = (html, a) => html.replace('/*@@PAWART@@*/', () => a || art).replace('/*@@PAWMODS@@*/', () => mods);
+  const merge = (html, a, m) => html.replace('/*@@PAWART@@*/', () => a || art).replace('/*@@PAWMODS@@*/', () => m || mods);
   const out = merge(game);
   if (BANNED.test(out)) throw new Error('banned word in build');
   fs.writeFileSync(path.join(P, 'paw_haven_prototype.html'), out);
   // the split build -> _split/ (index.html is the same kind of body fragment as paw_haven_prototype.html; tools/pages.js wraps it)
-  const SP = require('../tools/split.js').make(P), splitArt = ART.filter((f) => !SP.lazy.includes(f)).map(rd).join('\n'); // v2.15: worlds F and G as lazy chunks
-  const splitOut = SP.fontsLink(merge(fill(SP.core, cat('css'), SP.game(cat('src'))), splitArt));
+  // v2.15: worlds F and G as lazy chunks. v2.31.14 (PERF.md 8): worlds D and E, the shop art and five modules in the rest file (SP.rest); the title's
+  // art slot keeps the dogs, worlds A, B and C and a copy of world E's aria layer (SP.ariaInline), the modules slot keeps genes and audio
+  const SP = require('../tools/split.js').make(P), splitArt = ART.filter((f) => !SP.lazy.includes(f) && !SP.rest.art.includes(f)).map(rd).concat(SP.ariaInline || []).join('\n');
+  const splitMods = MODS.filter((f) => !SP.rest.mods.includes(f)).map(rd).join('\n');
+  const splitOut = SP.fontsLink(merge(fill(SP.core, cat('css'), SP.game(cat('src'))), splitArt, splitMods));
   if (BANNED.test(splitOut) || Object.values(SP.files).some((t) => BANNED.test(t))) throw new Error('banned word in the split build');
   const SD = path.join(P, '_split'); fs.rmSync(SD, { recursive: true, force: true }); fs.mkdirSync(path.join(SD, 'lang'), { recursive: true });
   fs.writeFileSync(path.join(SD, 'index.html'), splitOut);
