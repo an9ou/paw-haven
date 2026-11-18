@@ -177,6 +177,17 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     ok(!/googleapis|gstatic|google-analytics|gtag|facebook|plausible|cdn\./i.test(allEn + js + (await (await get(SITE + '/style.css')).text())), 'no third-party fonts, scripts or trackers in the pages, the script or the CSS');
     { const ext = [...new Set([...allEn.matchAll(/\b(?:src|href)="(https?:\/\/[^"]+)"/g)].map((m) => m[1]))].filter((u) => !u.startsWith(SITE) && !u.startsWith(ITCH) && !/^https:\/\/www\.instagram\.com\/doodledoggo\.app\/?$/.test(u) && u !== 'https://ko-fi.com/doodledoggoapp');
       ok(!ext.length && !/<iframe\b/i.test(allEn) && !/embed/.test(allEn.replace(/<script[\s\S]*?<\/script>/g, '')), 'no outside src in the pages: no iframe in any HTML (the game is added by site.js, same-origin), no itch.io embed; links: itch.io, Instagram and Ko-fi only ' + ext.join(' ')); }
+    { // Home screen tip (game/src/59_a2hs.js): a home screen icon opens the game. The site's manifest and the game copy's own are one web app (/play/)
+      const mr = await get(SITE + '/site.webmanifest'), mt = /manifest\+json/.test(mr.headers.get('content-type') || ''), m = await mr.json(), gm = await (await site(SITE + '/play/site.webmanifest')).json();
+      const abs = (base, v) => new URL(v, SITE + base).pathname, icons = [];
+      for (const [base, man] of [['/site.webmanifest', m], ['/play/site.webmanifest', gm]]) for (const i of man.icons) { const r2 = await site(SITE + abs(base, i.src), { method: 'HEAD' }); icons.push(abs(base, i.src) + ' ' + r2.status); }
+      ok(mt && m.start_url === '/play/' && m.scope === '/play/' && m.display === 'standalone' && m.name === 'Doodle Doggo', `/site.webmanifest starts the game: start_url and scope /play/, standalone (${m.start_url}, ${m.scope}, ${m.display})`);
+      ok(abs('/play/site.webmanifest', gm.start_url) === '/play/' && abs('/play/site.webmanifest', gm.scope) === '/play/' && gm.display === 'standalone' && gm.name === m.name && JSON.stringify(gm.icons) === JSON.stringify(m.icons), "the game copy's own manifest (/play/site.webmanifest) is the same web app: /play/, the same name and icons");
+      ok(icons.length === 8 && icons.every((x) => / 200$/.test(x)) && m.icons.some((i) => i.sizes === '192x192') && m.icons.some((i) => i.sizes === '512x512' && !i.purpose) && m.icons.some((i) => i.purpose === 'maskable'), `every icon of both manifests is served: 192, 512 and a maskable 512 (${icons.join(', ')})`);
+      const gh = await (await site(SITE + '/play/')).text();
+      ok(/<link rel="manifest" href="site\.webmanifest">/.test(gh) && /<link rel="apple-touch-icon" href="icon-180\.png">/.test(gh) && /<meta name="theme-color" content="#FFF8EC">/.test(gh) && (await site(SITE + '/play/icon-180.png', { method: 'HEAD' })).status === 200 && /<link rel="manifest" href="\/site\.webmanifest">/.test(EN.index), 'the game page links its manifest, the 180 px touch icon and the theme colour; the home page links the site manifest');
+      ok(/addEventListener\('beforeinstallprompt'/.test(js) && /__ddInstall/.test(js), 'site.js keeps the install event for the game box');
+    }
     for (const u of ['/favicon.svg', '/logo-1200x630.png', '/icon-180.png', '/site.webmanifest', '/doodle-doggo-logo.svg', '/fonts/caveat.woff2', '/img/noodle-happy.svg', '/privacy', '/reset', '/map', '/about', '/js/site.js', '/img/art/playroom.webp', '/img/art/ball.svg', '/img/art/fuji-spring.webp', '/img/art/fuji-summer.webp', '/img/art/fuji-autumn.webp', '/img/art/fuji-winter.webp', '/img/art/momiji.svg', '/img/art/sakura.svg', '/img/art/washi.svg']
       .concat(...BREEDS.map((k) => (SCENE_KEYS.includes(k) ? ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup', 'sleep'] : ['still', 'pup']).map((p) => `/img/art/dogs/${k}-${p}.svg`)))) { // v2.14: only the playroom's dogs (KEYS in site.js) need scene poses
       r = await get(SITE + u); ok(r.status === 200, `${u}: 200 ${r.headers.get('content-type')}`); await r.arrayBuffer();
@@ -337,6 +348,13 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await page.waitForTimeout(1500);
       const gg = fh ? await fh.evaluate(() => ({ title: document.title, kids: document.body.children.length, text: document.body.innerText.length })).catch(() => null) : null;
       ok(fh && gg && /Doodle Doggo/.test(gg.title) && gg.kids > 2, `the frame is the game itself (${fh ? fh.url() : 'no frame'}, "${gg && gg.title}", ${gg && gg.kids} elements in its body)`);
+      { // Home screen tip (game/src/59_a2hs.js): the page keeps the browser's install event for the game box, and the game finds it there
+        const kept = await page.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => Promise.resolve({ outcome: 'dismissed' }); window.dispatchEvent(e); return { prevented: e.defaultPrevented, kept: window.__ddInstall === e }; });
+        const box = fh ? await fh.waitForFunction(() => !!(window.__paw && window.__paw.a2), null, { timeout: 15000 }).then(() => fh.evaluate(() => ({ frame: window.__paw.a2.frame(), evt: window.__paw.a2.evt(), site: window.__paw.a2.site(), on: window.__paw.a2.on() }))).catch(() => null) : null;
+        ok(kept.prevented && kept.kept && box && box.frame === 'site' && box.evt === true, `home screen tip: the page keeps the install event (window.__ddInstall) and the game box reads it as the site's own frame (${JSON.stringify(kept)}, ${JSON.stringify(box)})`);
+        ok(box && box.site === false && box.on === false, 'and on this test address (not doodledoggo.app) the tip stays off');
+        await page.evaluate(() => { window.__ddInstall = null; });
+      }
       // no tracking: nothing outside loads, nothing at all from itch.io; the game's own Google Fonts (its CSP allows them) are the only outside hosts
       const gfonts = (u) => /^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(u);
       ok(!frames.length && !outside.filter((u) => !gfonts(u)).length, `not one request to itch.io or any outside host except the game's Google Fonts (${outside.length} fonts requests) ` + outside.filter((u) => !gfonts(u)).slice(0, 2).join(' '));

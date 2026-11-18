@@ -83,4 +83,5 @@
 58_share.js
 58_invite.js
 58b_goal.js
+59_a2hs.js
 23_boot.js

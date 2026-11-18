@@ -389,6 +389,12 @@ async function worker(job) {
       await ev(() => { const P = window.__paw; P.wb.test(true); P.wb.open({ at: Date.now(), h: 30 }); }); await modalUp(); await measure('wb: while you were out'); await closeAll();
       await ev(() => window.__paw.wb.test(false));
     }, 30000);
+    // Home screen tip (59_a2hs.js): the Android card (and what it says when the browser cannot open its window), then the iPhone steps
+    await step('a2hs', async () => {
+      await ev(() => { const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; window.__paw.a2.open('android'); }); await modalUp(); await measure('a2hs: android');
+      await jsClick('#a2Add'); await sleep(200); await measure('a2hs: android, the menu hint'); await closeAll();
+      await ev(() => window.__paw.a2.open('ios')); await modalUp(); await measure('a2hs: ios steps'); await closeAll();
+    }, 30000);
     await step('yv', async () => {
       await ev(() => { const P = window.__paw, V = P.S.visitors, now = Date.now(); P.yv.test(true);
         Object.assign(V.met, { biscuit: { n: 3, d: '2026-11-01' }, waddles: { n: 1, d: '2026-11-05', stk: 1 }, rapunzel: { n: 2, d: '2026-11-06' } });
