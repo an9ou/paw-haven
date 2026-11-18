@@ -38,6 +38,8 @@ Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (
 
 **No QR (owner, 9 Nov 2026, after another ban; replaces the 7 Nov QR rule): RedNote end cards and posts never carry a QR code, a link or a domain. The only call to action is "搜 Doodle Doggo App". Full anti-ban checklist: docs/marketing/README.md, RedNote rule.**
 
+**Sharing = "share with your friends" (owner, 18 Nov 2026, Share my dog Reel):** RedNote limits traffic for anything that promotes sending or posting to other apps. Never say post it, tag us, send it to (an app), or post/story in a social-media sense. Say 分享给朋友 instead. Describe picture sizes neutrally (竖版 / 方版, 两种尺寸). No @handle pills. Cover or crop game screens whose text breaks this.
+
 **Update (4 Nov 2026, recommended default under the 5-minute rule; the owner can still change it): new RedNote posts, end cards and captions say "在浏览器搜 Doodle Doggo App 就能玩" (search Doodle Doggo App in the browser), the same words as the new bio, and never "DoodleDoggo.app" with a dot, which reads as a URL and is the likely reason for the bans.** Posts already made are left as they are.
 
 **Earlier update (owner, 3 Nov 2026), replaced by the line above: RedNote end cards and captions may now say "在浏览器搜索 DoodleDoggo.app 就能玩" (search DoodleDoggo.app in the browser to play).** The site appears only as text to search: still no clickable link, no QR code and no link sticker. Posts already made keep "搜索 Doodle Doggo". **Earlier rule, no game link on RedNote (owner, 29 Oct 2026).** The bio, posters, captions and videos for RedNote never show doodledoggo.app or any other link; they say "搜索 Doodle Doggo" (search Doodle Doggo) instead. RedNote also holds back posts that send people to outside sites.
