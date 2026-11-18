@@ -2,7 +2,7 @@
 
 Video: `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas.mp4` (English, one video for Instagram, TikTok, YouTube Shorts and X; a seamless loop with no end card, so the website and handles live in the captions). Cover: `costume_reel_xmas/xmas-dress-cover.jpg`. What is in it, the 41 looks and where players get each item: `docs/marketing/COSTUME_XMAS.md`. One ask everywhere: comment what Noodle got. Links only https://doodledoggo.app (YouTube and X), never itch.io. No em dashes. Made, waiting for the owner; nothing posted, the owner picks the date.
 
-Availability, as written: the Christmas costumes are sold only at the Winter Market, 23 November to 26 December (Japan date; owner moved the opening from 1 Dec to 23 Nov on 18 Nov 2026), so the captions say it "opens in the game on 23 November". The Pom-pom Beanie and the Knit Winter Sweater are in the Bow-Wow Boutique all year. If posted on or after 23 Nov, change "opens in the game on 23 November" to "is open in the game until 26 December" (and "opens 23 Nov" to "is open until 26 Dec").
+Availability, as written: the Christmas costumes are sold only at the Winter Market, 23 November to 31 December (Japan date; owner moved the close from 26 to 31 Dec on 18 Nov 2026; owner moved the opening from 1 Dec to 23 Nov on 18 Nov 2026), so the captions say it "opens in the game on 23 November". The Pom-pom Beanie and the Knit Winter Sweater are in the Bow-Wow Boutique all year. If posted on or after 23 Nov, change "opens in the game on 23 November" to "is open in the game until 31 December" (and "opens 23 Nov" to "is open until 31 Dec").
 
 ### Instagram
 
@@ -63,7 +63,7 @@ About 262 of 280 (the link counts as 23) · one ask · `ig-human` 88.7 PASS.
 
 ### RedNote / 小红书 (no link)
 
-Upload `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas-rednote.mp4` with the 3:4 cover `brand/rednote/rednote-18-xmas-dress.jpg` as its custom cover. Not posted; the owner picks the date. Availability as in the game: the 冬日市集 (Winter Market) sells the Christmas costumes 23 Nov to 26 Dec; the 毛球毛线帽 and 针织冬季毛衣 are in the 汪汪精品店 (Bow-Wow Boutique) all year. If posted on or after 23 Nov, change "11月23日起" to "现在开着，到12月26日".
+Upload `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-christmas-rednote.mp4` with the 3:4 cover `brand/rednote/rednote-18-xmas-dress.jpg` as its custom cover. Not posted; the owner picks the date. Availability as in the game: the 冬日市集 (Winter Market) sells the Christmas costumes 23 Nov to 31 Dec; the 毛球毛线帽 and 针织冬季毛衣 are in the 汪汪精品店 (Bow-Wow Boutique) all year. If posted on or after 23 Nov, change "11月23日起" to "现在开着，到12月31日".
 
 标题 (14 characters with the emoji; 20 max):
 ```
@@ -77,7 +77,7 @@ Upload `brand/instagram/launch/costume_reel_xmas/doodle-doggo-dress-noodle-chris
 
 41套圣诞和冬日造型：圣诞老人装、小精灵装、姜饼狗狗装、雪人装、北极熊兜帽、企鹅装、胡桃夹子外套和帽子、驯鹿鹿角、超丑萌毛衣……还有好多混搭。
 
-这些圣诞服装11月23日起在游戏里的冬日市集上架，一直到12月26日。毛球毛线帽和针织冬季毛衣全年都能在汪汪精品店买到。
+这些圣诞服装11月23日起在游戏里的冬日市集上架，一直到12月31日。毛球毛线帽和针织冬季毛衣全年都能在汪汪精品店买到。
 
 评论区说说你停在了哪一套👇
 搜 Doodle Doggo App
