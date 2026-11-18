@@ -586,19 +586,21 @@ function restWait(then) {
     restBusy = false;
     if (!ok) { restCard(true); return; }
     const c = document.getElementById('restWait'); if (c) c.remove();
-    const h = restHeld; restHeld = null;
+    restHere(); const h = restHeld; restHeld = null;
     if (typeof h === 'function') h(); else if (h && h.isConnected && typeof h.click === 'function') h.click();
   });
 }
+// the file ran: the taps go through again, and anything the title may have remembered about a scene is asked afresh
+function restHere() { document.removeEventListener('click', restGate, true); Object.keys(sceneReal).forEach((k) => { delete sceneReal[k]; }); }
 function restGate(e) {
-  if (restReady()) { document.removeEventListener('click', restGate, true); return; }
+  if (restReady()) { restHere(); return; }
   if (e.target && e.target.closest && e.target.closest('#restWait')) return; // the wait card's own "tap to try again"
   e.stopPropagation(); e.preventDefault(); restHeld = e.target && e.target.closest ? e.target.closest('button,a,[role="button"],[data-ac],input,label,select') || e.target : e.target; restWait();
 }
 if (REST) {
   document.addEventListener('click', restGate, true);
   // after this script (and start(), which draws the title) ran: the title is on screen, now fetch the rest; a failure waits for the next tap
-  setTimeout(() => { REST.load().then((ok) => { if (ok && !restBusy) document.removeEventListener('click', restGate, true); }); }, 0);
+  setTimeout(() => { REST.load().then((ok) => { if (ok && !restBusy) restHere(); }); }, 0);
 }
 let dogsMemo = null;
 function dogsList() {
