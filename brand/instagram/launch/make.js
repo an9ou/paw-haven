@@ -185,7 +185,8 @@ async function main() {
   if (WHAT === 'reelcover' || WHAT === 'all') await require('./make_reelcover.js')({ render, browser, helpers });
   if (WHAT === 'faces' || WHAT === 'all') await require('./make_faces.js')({ render, browser, helpers });
   if (WHAT === 'threads' || WHAT === 'all') await require('./make_threads.js')({ render, browser, helpers });
-  if (WHAT === 'trailercover') await require('./make_trailercover.js')({ render, browser, helpers });
+  if (WHAT === 'facebook') await require('./make_facebook.js')({ render, browser, helpers });
+  if (WHAT === 'trailercover')await require('./make_trailercover.js')({ render, browser, helpers });
   if (WHAT === 'updates') await require('./make_updates.js')({ render, browser, helpers });
   if (WHAT === 'rednote') await require('./make_rednote.js')({ render, browser, helpers });
   if (WHAT === 'rednoteposters') await require('./make_rednote_posters.js')({ render, browser, helpers });
