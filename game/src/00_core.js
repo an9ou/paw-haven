@@ -587,7 +587,9 @@ function restWait(then) {
     if (!ok) { restCard(true); return; }
     const c = document.getElementById('restWait'); if (c) c.remove();
     restHere(); const h = restHeld; restHeld = null;
-    if (typeof h === 'function') h(); else if (h && h.isConnected && typeof h.click === 'function') h.click();
+    // Fable review: the title may have redrawn while waiting: find the held button again by its id (or its data-ac)
+    let el = h; if (el && typeof el !== 'function' && !el.isConnected) el = (el.id && document.getElementById(el.id)) || (el.dataset && el.dataset.ac && document.querySelector(`[data-ac="${CSS.escape(el.dataset.ac)}"]`)) || null;
+    if (typeof h === 'function') h(); else if (el && el.isConnected && typeof el.click === 'function') el.click();
   });
 }
 // the file ran: the taps go through again, and anything the title may have remembered about a scene is asked afresh

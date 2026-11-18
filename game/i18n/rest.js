@@ -22,7 +22,13 @@
     return T[l] || T.en;
   };
   if (!src) { R.load = function () { return Promise.resolve(true); }; R.run = function (fn) { fn(); }; return; }
-  var busy = null;
+  var busy = null, fails = 0;
+  // Fable review: a second failed round may mean a stale page naming an old file (a deploy since this page was cached): reload once a session
+  // so a fresh page names the current file. Never more than once, so an offline phone just shows the card again
+  function reloadOnce() {
+    try { if (sessionStorage.getItem('pawRestReload')) return false; sessionStorage.setItem('pawRestReload', '1'); } catch (e) { return false; }
+    try { location.reload(); return true; } catch (e) { return false; }
+  }
   // one <script> tag -> true when the file ran to its last line (it sets PAW_REST_OK), 'net' on a network error (only that is tried again)
   function once() {
     return new Promise(function (res) {
@@ -40,7 +46,7 @@
     busy = new Promise(function (res) {
       (function go() {
         once().then(function (ok) {
-          if (ok === true) { R.ready = true; busy = null; res(true); } else if (ok === 'net' && waits.length) setTimeout(go, waits.shift()); else { busy = null; res(false); }
+          if (ok === true) { R.ready = true; busy = null; res(true); } else if (ok === 'net' && waits.length) setTimeout(go, waits.shift()); else { busy = null; fails++; if (fails >= 2 && reloadOnce()) return; res(false); }
         });
       })();
     });
@@ -48,7 +54,8 @@
   };
   // a returning player: a save or the cloud bookkeeping in this browser, a hot-reload host, or storage that cannot be read (then the old, safe order)
   var back = false;
-  try { back = !!(localStorage.getItem('pawhaven_proto_v1') || localStorage.getItem('pawhaven_cloud_v1')); } catch (e) { back = true; }
+  // Fable review: present at all (!= null), not truthy, and the backup copy and a login count too
+  try { back = ['pawhaven_proto_v1', 'pawhaven_proto_v1_backup', 'pawhaven_cloud_v1', 'pawhaven_cf_auth'].some(function (k) { return localStorage.getItem(k) != null; }); } catch (e) { back = true; }
   if (window.claude && window.claude.hot) back = true;
   R.back = back;
   function preload() { try { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = src; (document.head || document.documentElement).appendChild(l); } catch (e) { /* no preload: the tag loads it */ } }
