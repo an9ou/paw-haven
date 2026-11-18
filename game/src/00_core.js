@@ -551,6 +551,7 @@ const ART_CHUNK = {};
 const artChunkReady = (name) => { const C = window.PAW_CHUNKS; return !(C && C[name]) || ART_CHUNK[name] === true; };
 function artChunk(name) {
   if (artChunkReady(name)) return Promise.resolve(true);
+  if (!restReady()) return REST.load().then((ok) => (ok ? artChunk(name) : false)); // v2.31.14: worlds F and G wrap the art after the rest file (the old order)
   if (ART_CHUNK[name]) return ART_CHUNK[name];
   ART_CHUNK[name] = new Promise((res) => {
     const s = document.createElement('script'); s.src = window.PAW_CHUNKS[name]; s.async = true;
@@ -559,6 +560,49 @@ function artChunk(name) {
     (document.head || document.documentElement).appendChild(s);
   });
   return ART_CHUNK[name];
+}
+/* v2.31.14 PERF (PERF.md 8): the rest file of the split build (game/i18n/rest.js, window.PAW_REST; tools/split.js world_r.<hash>.js: art worlds D and E,
+   the shop art and the walk, toy, garden, kitchen and QR modules). A returning player's page loads it before this script, so nothing here runs for
+   them. A new player's title is drawn without it; it loads right after (restBoot), and until it is here every tap on the page is held (restGate):
+   the wait card shows, and the tap is given again once the file ran. So the adoption, the first save and every game screen always have all the art
+   and modules, as before. Three failed tries: the card says so kindly and a tap starts over. One-file builds and the harness: REST is null. */
+const REST = window.PAW_REST && typeof window.PAW_REST.load === 'function' && window.PAW_REST.ready !== true ? window.PAW_REST : null;
+const restReady = () => !REST || REST.ready === true;
+let restHeld = null, restBusy = false;
+function restCard(fail) {
+  let c = document.getElementById('restWait');
+  if (!c) { c = document.createElement('div'); c.id = 'restWait'; c.className = 'mp-wait'; c.style.cssText = 'position:fixed;z-index:2147482000'; document.body.appendChild(c); }
+  const lang = typeof I18N === 'object' && I18N && I18N.lang ? I18N.lang : '';
+  c.setAttribute('role', fail ? 'button' : 'status'); c.tabIndex = fail ? 0 : -1; c.style.cursor = fail ? 'pointer' : '';
+  c.innerHTML = `<div class="mp-wait-paper"><svg viewBox="0 0 120 90" aria-hidden="true"${fail ? ' style="animation:none"' : ''}><path d="M8 14 L44 6 L78 14 L112 6 V78 L78 86 L44 78 L8 86 Z" fill="#FFFBF3" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M44 6 V78 M78 14 V86" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/><path d="M18 60 Q34 40 52 52 T96 34" fill="none" stroke="#F28FA5" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 7"/></svg><b style="max-width:86vw;text-align:center">${esc(REST.msg(fail ? 'fail' : 'wait', lang))}</b></div>`;
+  c.onclick = fail ? () => restWait() : null; c.onkeydown = fail ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); restWait(); } } : null;
+  if (fail) { try { c.focus(); } catch (e) { /* not focusable yet */ } }
+}
+// restWait(then): show the wait card until the file is here, then run `then` (or give the held tap again)
+function restWait(then) {
+  if (typeof then === 'function') restHeld = then;
+  restCard(false); if (restBusy) return; restBusy = true;
+  REST.load().then((ok) => {
+    restBusy = false;
+    if (!ok) { restCard(true); return; }
+    const c = document.getElementById('restWait'); if (c) c.remove();
+    restHere(); const h = restHeld; restHeld = null;
+    // Fable review: the title may have redrawn while waiting: find the held button again by its id (or its data-ac)
+    let el = h; if (el && typeof el !== 'function' && !el.isConnected) el = (el.id && document.getElementById(el.id)) || (el.dataset && el.dataset.ac && document.querySelector(`[data-ac="${CSS.escape(el.dataset.ac)}"]`)) || null;
+    if (typeof h === 'function') h(); else if (el && el.isConnected && typeof el.click === 'function') el.click();
+  });
+}
+// the file ran: the taps go through again, and anything the title may have remembered about a scene is asked afresh
+function restHere() { document.removeEventListener('click', restGate, true); Object.keys(sceneReal).forEach((k) => { delete sceneReal[k]; }); }
+function restGate(e) {
+  if (restReady()) { restHere(); return; }
+  if (e.target && e.target.closest && e.target.closest('#restWait')) return; // the wait card's own "tap to try again"
+  e.stopPropagation(); e.preventDefault(); restHeld = e.target && e.target.closest ? e.target.closest('button,a,[role="button"],[data-ac],input,label,select') || e.target : e.target; restWait();
+}
+if (REST) {
+  document.addEventListener('click', restGate, true);
+  // after this script (and start(), which draws the title) ran: the title is on screen, now fetch the rest; a failure waits for the next tap
+  setTimeout(() => { REST.load().then((ok) => { if (ok && !restBusy) restHere(); }); }, 0);
 }
 let dogsMemo = null;
 function dogsList() {
@@ -1763,6 +1807,7 @@ function hudTitleFit() {
 }
 if (typeof ResizeObserver === 'function' && $('#hudTitle')) { let hfT = 0; new ResizeObserver(() => { cancelAnimationFrame(hfT); hfT = requestAnimationFrame(hudTitleFit); }).observe($('#hudTitle')); }
 function go(mode, arg) {
+  if (!restReady() && mode !== 'title') { restWait(() => go(mode, arg)); return; } // v2.31.14: never a game screen before the rest file (restGate holds the taps; this is the second lock)
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }
   closeTraining(); clearCurl(); clearPotty();

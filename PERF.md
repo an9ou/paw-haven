@@ -139,3 +139,74 @@ Probe: the itch build (`node tools/itch.js`) served gzipped, Chromium at 360x640
 - **Story scenes and Memories replay:** each frame searched the whole backdrop (thousands of nodes) for the actors, the fade and the Skip button, and forced a layout to measure the film (about 1 ms a frame at 4x: 275-340 ms of `getBoundingClientRect` and up to 480 ms of `querySelector` per 8 s scene). Now the elements are found once a shot and the film is measured again only when it or the card title changes size (a `ResizeObserver`): both are down to a few ms. A shot's first frame still builds and paints its picture (200-450 ms at 4-6x); that frame now holds the scene clock (`SC_JUMP_MS`), so the cut's 380 ms fade-in plays in full instead of jumping from 1 to 0.03-0.24 (measured at 6x: now 0.94 on the first frame after the cut).
 - **Share my dog:** making the picture takes about 1.0-1.3 s at 4x and 1.3-1.8 s at 6x (the first one also loads the photo fonts), with one 165-300 ms (4x) / 300-460 ms (6x) task for the SVG raster and the PNG encode while the sheet shows "Drawing your picture..."; about 5 MB of heap. Not changed: moving it off the main thread needs a worker, and an SVG image cannot be drawn in one (bigger redesign).
 - **Coin, heart and star flies, the yard with 5 dogs, visitors, While you were out:** no single task over about 300 ms at 6x. With 5 roaming dogs the main thread is 85-90 % busy at 4x, mostly paint and layerize of the SVG yard: the moving dogs repaint the world svg. Compositing them would need the dogs out of the world svg (bigger redesign).
+
+## 8. The rest file: a smaller page before the title (v2.31.14, 18 Nov 2026)
+
+Branch `claude/faster-load`. Section 7 measured a 1.52 MB gzipped `index.html`. This step moves what the title screen does not need out of it. The game itself is unchanged: same art, same save, same `migrate()`.
+
+### What is in the 1.52 MB (gzipped, each part minified on its own)
+
+| Part | KB gz | Before the title? |
+|---|---|---|
+| Game script (85 source files, one shared scope; biggest: `00_core` 49, `03_yard` 40, `50_friends` 29, `39_tokyo` 22) | 637 | yes: one scope, it cannot be cut without a rewrite |
+| Art world B (icons, items, beds, houses, props, furniture, market items) | 182 | yes: the top bar's icons and the title's tape and panels are in it |
+| Art world C (hangouts, the Playroom, the wide v2.15 scenes, the Japan scenery `PawArt.JP`) | 105 | yes: world A's yard (the title's backdrop) draws Mt. Fuji with `PawArt.JP`; the adoption needs the Playroom |
+| Dogs (`dogs/pawart_dogs.js`) | 82 | yes |
+| Art world A (yard, market, shelter, old map, four walk strips) | 62 | yes: the title's backdrop |
+| CSS | 62 | yes |
+| `mods/genes.js`, `mods/pawaudio.js` | 22 + 24 | yes: read while the game script loads |
+| i18n core, loaders, the loading paw | about 20 | yes |
+| **Art world E** (three Tokyo scenes, the market, v2.15-v2.18 and Fun Fair items, the aria layer) | 63 | **no** |
+| **Art world D** (Japan map, Shinkansen, Shibuya, Yoyogi, Asakusa) | 48 | **no** |
+| **`pawart_shop.js`** (Kind shop art) | 16 | **no** |
+| **`mods/toys.js`** | 66 | **no** |
+| **`mods/walkrun.js`** | 37 | **no** |
+| **`mods/garden.js`, `mods/kitchen.js`** | 24 + 21 | **no** |
+| **`mods/qr.js`** | 8 | **no** |
+
+The last five rows (291 KB gzipped together) are now one file, **`world_r.<hash>.js`** ("the rest"), next to `world_f` and `world_g`.
+
+### How it loads
+
+- `tools/split.js` writes the file (the sources in their old order: D, E, shop art, then the five modules) and sets `window.PAW_CHUNKS.r`. `game/build.js` leaves those sources out of the split build's art and module slots. `game/i18n/rest.js` (`window.PAW_REST`, inline before the art) loads it with a `<script>` tag, like the language files.
+- **A returning player** (a save or the cloud bookkeeping in `localStorage`, a hot-reload host, or storage that cannot be read): the download starts at the top of the page, next to the page itself (`<link rel="preload">`), and the game script waits for it (`PAW_REST.run`, around `PAW_I18N.run`). The game starts with everything loaded, in the old order, exactly as before. This matters: `migrate()`, the garden clock and the daily wish read the modules while the save loads.
+- **A new player** (nothing stored): the game script runs at once and draws the title with the dogs and worlds A, B and C. The file is fetched while the script runs and added right after the title is drawn. Until it has run, every tap on the page is held (`restGate` in `00_core.js`, a capture listener): the paper wobble card shows "Loading…" and the tap is given again once the file is here. `go()` has a second lock (no screen but the title without the file). So the adoption, the first save and every game screen always have all the art and modules, and no game code had to change.
+- **World E's aria layer** (the last wrapper over every `PawArt` call, for translated `aria-label`s) is needed on the title, so the split build keeps a copy inline; the rest file takes that copy off (`PawArt._ariaOff()`) before world D runs, and world E puts its own on, under the shop art, as in the one-file build. Worlds F and G wait for the rest file (`artChunk`), so the wrapping order stays A, B, C, D, E, shop, F, G.
+- **A failed load**: three tries (0.6 s and 2 s apart). Then a new player's card reads "That didn't load. Tap to try again." (12 languages, in `rest.js`, because the game's own texts may not be there yet) and a tap starts over; the held Play then goes on. A returning player reads the same line on the loading paw. Nothing is lost: no game has started and nothing was saved.
+- **Where it runs:** the itch.io zip (a relative `<script src>`, in the zip like `world_f`), doodledoggo.app `/play/` and the test copy (the name matches the `world_[a-z].<hash>.js` pattern of `tools/pages.js`, `tools/itch.js`, `tools/cf_site.js` and `tools/cf_test.js`: minified, copied, served for a year as immutable; `script-src 'self'` allows it; no Worker code changed). The claude.ai artifact (`tools/artifact.js`, `lazy: false`), `paw_haven_prototype.html` and the test harness keep everything inline. Offline after a first load works where it did: the file is cached like the page's other files.
+
+### Numbers
+
+Probe: the itch build served gzipped with no cache, Chromium 360x640 (DPR 2, touch), CPU 4x, Chrome's Fast 3G (1.44 Mbps, 562 ms RTT), median of 3 (single runs within 0.2 s of each other).
+
+| | Before (`1ee5911d`) | After |
+|---|---|---|
+| `index.html` | 4.57 MB, **1.523 MB gzipped** | 3.71 MB, **1.234 MB gzipped** (−19 %) |
+| Gzipped bytes before the title, English | 1.52 MB | **1.23 MB** |
+| Gzipped bytes before the title, Japanese (page + `lang/ja` 156 KB + keys 48 KB; the 207 KB font comes after) | 1.73 MB | **1.44 MB** |
+| The rest file (after the title; before the game for a returning player) | | 855 KB, 291 KB gzipped |
+| **Time to the title's Play, English** | 10.2 s | **8.7 s** (−1.5 s, −15 %) |
+| **Time to the title's Play, Japanese** | 11.4 s | **9.9 s** (−1.5 s) |
+| First paint | 0.7 s | 0.7 s |
+| Play tapped the instant it shows, to the adoption screen (the worst case), English | 11.2 s | 11.8 s (a 3.1 s wait on the card instead of 1.0 s) |
+| Same, Japanese (the rest file shares the line with the 207 KB font) | 12.4 s | 14.3 s |
+| itch.io zip | 5.04 MB | 5.05 MB |
+
+**The 0.9 MB target is not met.** What still travels before the title is the game script (637 KB), world B (182 KB), world C (105 KB), the dogs (82 KB), world A and the CSS (62 KB each). Each needs art or game work that would not be a safe, reviewable change here:
+
+1. **World C after the title (about 105 KB):** move the Japan scenery (`PawArt.JP`, used by world A's yard) into world A or a small file of its own. World C could then join the rest file (the Playroom is first needed after Play).
+2. **World B in two (about 100 of 182 KB):** the title needs 17 icons and 3 props. The market, festival and furniture items could become a second file, but they share one closure with the pencil kit, so the art lane has to split the file.
+3. **The game script in two (up to 300 of 637 KB):** it is one shared scope. Friends, Tokyo, the Fun Fair, the Kind shop, the story and the missions would each need to become a module with a declared interface.
+4. **True on-demand loading** (Tokyo on the Shinkansen, the garden on its first open): today the game reads module presence as a feature switch while it loads a save (`gkOn()`, `toySupported()`, `gardenNew()`, `tkArtReady()`), so a module that arrives late changes game state. Each switch would have to become "known but not loaded yet" first. With the rest file loaded right after the title this would save no time before Play, only data for players who never open those places.
+
+The cost is the worst case in the last two rows: a player who taps Play the instant it appears waits on the "Loading…" card until the rest file is here, and reaches the adoption 0.6 s (English) to 1.9 s (Japanese) later than before. A player who looks at the title for three seconds or more waits for nothing. A returning player's load is the same bytes as before, in two files fetched side by side.
+
+### Proof that nothing looks different
+
+- **Art, byte for byte** (Node `vm`, no browser): the one-file order against the split order (dogs, A, B, C, the aria copy, then `_ariaOff`, D, E, shop). 88 title calls made before the rest file (the yard in every time, weather and season with the Japan scenery, the 17 top-bar icons with and without `aria`, the three props, two dogs) and 1,215 calls after it (every scene, walk strip, prop, item, icon, bed, house, obstacle, collectible and Fun Fair piece of worlds A to E and the shop, plain and with `aria` / `ariaMap`): **0 differ**, and `PawArt` has the same keys. This check found that the title's yard needs world C (the first cut had it in the rest file).
+- **Screens** (page clock frozen and stepped, `Math.random` seeded, 360x640): title, adoption, first yard, map, garden, kitchen, a market, Shibuya, Ueno, the Japan map, the café, story scene 1, and a returning player's title, yard and Asakusa. Base against new: the DOM (random dog ids and the random tip line masked) and the screenshot are byte-identical on 13 of 15; two runs of the base build against each other give the same 13 of 15 (the adoption's and the kitchen's random idle poses and lines differ between any two runs). The title as a real browser sees it (not `navigator.webdriver`, so with Mt. Fuji) is identical in DOM and pixels.
+- No file under `dogs/`, `world/` or `mods/` changed (`git diff 1ee5911d -- dogs world mods` is empty), so `check_identical` and the fill sweep have nothing new to see.
+
+### Tests
+
+`itch_build` has a new section (20 checks): the file exists and the page names it; worlds D and E and the modules are not in `index.html`; a new player gets the title first, then one tag, then everything; the aria layer sits where it did; a missing file leaves the title up, a tap waits, the card says "Tap to try again", nothing is saved, and with the file back the held Play goes on; a returning player's game waits, the loading paw offers the retry, and the title then comes with every module there.
