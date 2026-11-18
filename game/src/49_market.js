@@ -30,7 +30,7 @@ const FM_MARKETS = [
     } },
   { id: 'harvest', theme: 'harvest', name: 'Harvest Market', win: () => ['10-01', '11-30'],
     items: { clothes: ['Leaf Beret', 'Autumn Scarf'], treats: ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth'] } },
-  { id: 'winter', theme: 'winter', name: 'Winter Market', win: () => ['12-01', '12-26'],
+  { id: 'winter', theme: 'winter', name: 'Winter Market', win: (y) => (y === 2026 ? ['11-23', '12-26'] : ['12-01', '12-26']), // owner, 18 Nov 2026: opens 23 Nov in 2026 (1 Dec other years)
     items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
         'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
       homes: ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'],
@@ -85,7 +85,9 @@ function fmOpen(day) {
   if (!fmOn()) return []; const d = day || FM_DAY();
   return FM_MARKETS.filter((m) => !m.todo).map((m) => { const w = fmWindow(m, d); return w ? Object.assign({ m }, w) : null; }).filter(Boolean).sort((a, b) => (a.to < b.to ? -1 : a.to > b.to ? 1 : 0));
 }
-const fmMain = () => fmOpen()[0] || null;
+// the tent, sign and letter belong to the market that opened last (owner, 18 Nov 2026: the Winter Market takes the tent from 23 Nov while the
+// Harvest Market's items stay on sale until 30 Nov); same result as before for every other overlap (Halloween opens after Harvest and closes first)
+const fmMain = () => fmOpen().reduce((b, o) => (!b || o.from > b.from ? o : b), null);
 function fmClose(o) { const [y, mo, d] = o.to.split('-').map(Number); return tdate(new Date(y, mo - 1, d), { day: 'numeric', month: 'short' }); }
 function fmSign(o) { o = o || fmMain(); if (!o) return ''; return tt('fm.sign', '{market} · open until {date}', { market: fmMarketName(o.m), date: fmClose(o) }); }
 function fmPlaceName() { const o = fmMain(); return o ? fmMarketName(o.m) : tt('fm.m_any', 'Festive Market'); }
