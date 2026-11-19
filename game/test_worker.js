@@ -234,7 +234,7 @@ async function checks(label, call, sql, mail) {
       ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
       ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 120 })] })],
       ['a breed past the list', card({ dogs: [dog({ b: 40 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
-      ['an outfit past the list', card({ dogs: [dog({ o: 58 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 59 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })], ['a tan-point allele not in the set', card({ dogs: [dog({ c: { A: ['at', 'ay'] } })] })], ['a red-intensity allele not in the set', card({ dogs: [dog({ c: { I: ['I', 'x'] } })] })], ['a red-intensity locus with one allele', card({ dogs: [dog({ c: { I: ['I'] } })] })],
@@ -472,7 +472,7 @@ async function checks(label, call, sql, mail) {
     ok((await frCall('PUT', '/friends/yard', { yard: yard(), extra: 1 }, yB.token)).json.error === 'bad', 'an extra field on the yard put is bad');
     const junk = [
       ['typed dog name', dog({ n: 'Mochi' })], ['dog name past the list', dog({ n: 120 })], ['breed past the list', dog({ b: 40 })],
-      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 58 })], ['outfit under -1', dog({ o: -2 })],
+      ['breed as text', dog({ b: 'shiba' })], ['outfit past the list', dog({ o: 59 })], ['outfit under -1', dog({ o: -2 })],
       ['age not pup or adult', dog({ a: 'old' })], ['sex not m or f', dog({ s: 'x' })], ['sparkle 2', dog({ sp: 2 })],
       ['an extra dog key', Object.assign(dog(), { name: 'Pip' })], ['a missing dog key', (() => { const d = dog(); delete d.n; return d; })()],
       ['a bad allele', dog({ c: { B: ['B', 'x'] } })], ['a coat word', dog({ c: 'red' })], ['an unknown locus', dog({ c: { K: ['K', 'k'] } })],

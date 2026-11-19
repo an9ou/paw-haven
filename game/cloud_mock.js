@@ -25,7 +25,7 @@ function fakeMail() {
 function makeServer() {
   const DB = d1(), raw = DB.raw;
   const mail = fakeMail();
-  const env = { DB, RATE_SCALE: 100, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' }; // MAIL_WAIT: the code mail is in mails[] when /forgot answers
+  const env = { DB, BT_FROM: '0', RATE_SCALE: 100, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' }; // MAIL_WAIT: the code mail is in mails[] when /forgot answers
   let worker = null;
   const ips = new Map();
   const srv = { env, mails: mail.mails, calls: [], pages: new Set(), offline: new Set() };

@@ -12,6 +12,8 @@ Suites: `promo` (the game), `promo_worker` (the Worker and the CLI), plus a few 
 - **Signed-in cloud-save accounts only** (an email account). A guest sees one kind line and "Make the free account", which opens the cloud
   sign-up. The claude.ai copy and the harness (no cloud) show no box.
 - **Nothing bad ever happens:** every error is a kind line; an expired, unknown, not-yet or disabled code all read the same.
+- **The Friendship Bandana** (v2.30, V230.md 3) is in `pmCatalog` (`promo: true`), but no gift code gives it before the v2.30 launch, **25 Nov 2026**:
+  until then the live Worker's `DC_LIM.outfit` is 58 and the bandana is not announced. After that, prefer keeping it the friend invite's gift.
 - **Privacy:** the code typed goes only to our Worker, to check it. We keep which codes an account used (and what each gave), so the gifts
   come back on a new device. A deleted account's records go with it (`tidy()`).
 

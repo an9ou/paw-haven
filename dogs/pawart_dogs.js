@@ -2102,6 +2102,19 @@ NECK2['Follower Star Bandana']=function(h,s,L,HT){
    const p=Q(.5,.6),q=Math.max(1.1,z*.27);h.dot(p[0],p[1]+q*.9,q*1.45,q*1.15,PRM.paw);[[-1.55,-.6],[-.55,-1.45],[.55,-1.45],[1.55,-.6]].forEach(([dx,dy])=>h.dot(p[0]+dx*q,p[1]+dy*q,q*.5,q*.6,PRM.paw))})};
 OUT.neck.push('Follower Star Bandana');
 {const fn=NECK2['Follower Star Bandana'];NECK2['Follower Star Bandana']=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}
+/* ---------- v2.30 "Better together" (V230.md 3): the friend invite gift, only from a friend's invite link ----------
+   neck 'Friendship Bandana': a lavender bandana (the Tokyo bandanas' crude triangle and knot), a darker violet hem band with a cream dashed
+   stitch, and two little hearts side by side, one pink and one yellow, touching like two friends holding paws, each in its own ink. */
+const FSB={or:'#A98BE3',orD:'#7458BE',pink:'#F47C9C',yel:'#FFD84A',crm:'#FFF6E4'};
+function fsbHeart(c,R){const p=[];for(let i=0;i<22;i++){const t=i/22*Math.PI*2;p.push([c[0]+16*Math.pow(Math.sin(t),3)*R/17,c[1]-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*R/17-R*.1])}return p}
+NECK2['Friendship Bandana']=function(h,s,L,HT){
+  tkBand(h,s,L,HT,FSB.or,(Q,z)=>{
+   h.shape([Q(0,0),Q(1,0),Q(1,.16),Q(0,.16)],FSB.orD,{noline:1,ox:0,oy:0,sc:1,famp:.3});
+   h.line([Q(.1,.12),Q(.9,.12)],Math.max(.9,z*.16),FSB.crm,.2);// art review 2: the stitch low on the hem band, clear of the knot's line
+   const R=Math.max(2.5,z*.72);// art review 1: smaller hearts, further apart, so the pink and the yellow sit side by side (not one blob)
+   [[.34,.33,FSB.pink],[.66,.33,FSB.yel]].forEach(([u,v,c])=>h.shape(fsbHeart(Q(u,v),R),c,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15}))})};
+OUT.neck.push('Friendship Bandana');
+{const fn=NECK2['Friendship Bandana'];NECK2['Friendship Bandana']=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}
 function drawEyewear(h,s,L,HT,e){if(EYES2[e])return EYES2[e](h,s,L,HT);(e==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
 
 function newbornL(s,L){// eyes shut, ears folded, everything soft and curled

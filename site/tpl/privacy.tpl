@@ -52,6 +52,17 @@
       <li>{{t privacy.friends.store}}</li>
       <li>{{t privacy.friends.quiet}}</li>
       <li>{{t privacy.friends.leave}}</li>
+      <li>{{t privacy.friends.invites}}</li>
+    </ul>
+
+    <h2>{{t privacy.town.title}}</h2>
+    <p>{{t privacy.town.lead}}</p>
+    <ul>
+      <li>{{t privacy.town.send}}</li>
+      <li>{{t privacy.town.keep}}</li>
+      <li>{{t privacy.town.see}}</li>
+      <li>{{t privacy.town.limits}}</li>
+      <li>{{t privacy.town.delete}}</li>
     </ul>
 
     <h2>{{t privacy.shop.title}}</h2>

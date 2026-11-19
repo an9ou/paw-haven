@@ -1,0 +1,31 @@
+/* v2.30 "Better together" (V230.md): the invite gift line and card (58_invite.js), the town goal button and sheet (58b_goal.js) */
+.fi-line { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; line-height: 1.3; }
+.fi-line .fi-ic { flex: 0 0 34px; width: 34px; height: 34px; display: inline-flex; }
+.fi-line .fi-ic svg { width: 100%; height: 100%; }
+.fi-got .ks-got-row .art svg { width: 100%; height: 100%; }
+.fi-got .panel-foot, .fi-got .modal-foot { flex-wrap: wrap; gap: 8px; }
+.fi-wait .foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+/* the town goal: the link at the top of Town projects (a thin, centred meter: phone review 3), Gerald's note on the Square's board, Gerald's notice */
+.gl-link { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-height: 44px; margin: 0 0 10px; padding: 6px 12px; }
+.gl-link .gl-link-t { font-weight: 700; }
+.gl-link .gl-link-s { line-height: 1.25; }
+.gl-mini { display: block; width: min(160px, 70%); height: 6px; margin: 0 auto; border: 1.5px solid #5B3D32; border-radius: 4px; background: #FFFDF8; overflow: hidden; }
+.gl-mini i { display: block; height: 100%; background: #F28FA5; border-radius: 3px 0 0 3px; }
+#glG .gl-hot { cursor: pointer; }
+.gl-page { position: relative; padding: 12px 14px 14px 40px; border: 2.5px solid #5B3D32; border-radius: 6px 14px 12px 8px; box-shadow: 3px 4px 0 rgba(91, 61, 50, .14);
+  background: linear-gradient(90deg, transparent 26px, rgba(232, 71, 61, .45) 26px, rgba(232, 71, 61, .45) 28px, transparent 28px), repeating-linear-gradient(180deg, #FFFDF7 0 27px, rgba(120, 150, 190, .28) 27px 28px); }
+html[data-layout="phone"] .gl-page { padding: 10px 10px 12px 34px; background: linear-gradient(90deg, transparent 22px, rgba(232, 71, 61, .45) 22px, rgba(232, 71, 61, .45) 24px, transparent 24px), repeating-linear-gradient(180deg, #FFFDF7 0 27px, rgba(120, 150, 190, .28) 27px 28px); }
+.gl { display: flex; flex-direction: column; gap: 10px; }
+.gl-head { display: flex; gap: 10px; align-items: flex-start; }
+.gl-head h3 { margin: 0 0 4px; }
+.gl-head .gl-ic { flex: 0 0 52px; width: 52px; height: 52px; display: inline-flex; }
+.gl-head .gl-ic svg { width: 100%; height: 100%; }
+.gl-bar { height: 18px; border: 2px solid #5B3D32; border-radius: 10px; background: #FFFDF8; overflow: hidden; }
+.gl-bar i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, #F7B2C4 0 7px, #F48FAA 7px 10px); border-radius: 8px 0 0 8px; }
+.gl-num { margin: 0; font-weight: 700; text-align: center; }
+.gl-mine, .gl-done, .gl-off { margin: 0; text-align: center; }
+.gl-done { font-weight: 700; }
+.gl-gift { display: flex; gap: 10px; align-items: center; background: rgba(255, 244, 214, .7); border: 1.5px dashed #C9A27A; border-radius: 12px; padding: 8px 10px; }
+.gl-gift .art { flex: 0 0 48px; width: 48px; height: 48px; display: inline-flex; }
+.gl-gift .art svg { width: 100%; height: 100%; }
+.gl-gift p { margin: 0; }

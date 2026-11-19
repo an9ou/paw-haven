@@ -178,7 +178,9 @@ function frAfterPush() {
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
     return put(yard).then((r) => {
       // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
-      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && yard.decor.some((d) => d.i >= FR_DECOR_OLD)) { FR.decorOld = true; return put(Object.assign({}, yard, { decor: yard.decor.filter((d) => d.i < FR_DECOR_OLD) })); }
+      // v2.30 (code review 8): the same for a card dog in a newer outfit (an older Worker's DC_LIM.outfit 58 refuses the Friendship Bandana): those dogs go in no outfit (DC.outfitOld, 40_dogcards.js)
+      const newer = (y) => y.decor.some((d) => d.i >= FR_DECOR_OLD) || y.dogs.some((x) => x && x.o >= DC_OUTFITS_OLD);
+      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); return y2 ? put(y2) : r; }
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
@@ -482,7 +484,7 @@ function frSheetHTML() {
   const friends = frSorted((S.fr.cache && S.fr.cache.friends) || []);
   const off = FR.offline ? `<p class="fr-off" id="frOff">${esc(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'))}</p>` : '';
   const list = friends.length ? friends.map(frRowHTML).join('') : `<p class="small">${esc(tt('fr.none', 'No friends yet. Share your code, or add one below.'))}</p>`;
-  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div>${typeof ksBadgeHTML === 'function' && ksSup() ? ksBadgeHTML() : ''}<div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div><h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
+  return `<div class="fr-sheet">${off}<div class="fr-card" id="frCard">${frCardSVG(code, parts)}</div>${typeof ksBadgeHTML === 'function' && ksSup() ? ksBadgeHTML() : ''}<div class="fr-acts"><button class="btn yes" type="button" id="frShare">${esc(tt('fr.share', 'Share invite'))}</button><button class="btn" type="button" id="frPoster">${esc(tt('fr.poster', 'Share poster'))}</button><button class="btn" type="button" id="frCopy">${esc(tt('fr.copy', 'Copy code'))}</button></div>${typeof fiSheetLine === 'function' ? fiSheetLine() : ''}<h3 class="fr-h">${esc(tt('fr.add_title', 'Add a friend'))}</h3>${frBoxesHTML()}<h3 class="fr-h">${esc(tt('fr.list_title', 'Friends'))}</h3><div class="fr-list" id="frList">${list}</div></div>`;
 }
 function frCodeChars() { return [0, 1, 2, 3, 4].map((i) => { const el = document.getElementById('frCh' + i); return el ? el.value.toUpperCase() : ''; }).join(''); }
 function frFillCode(code) {
@@ -655,15 +657,21 @@ async function frAdd() {
     if (err === 'not_found') nope(tt('fr.not_found', "We couldn't find that code. Check the letters?"));
     else if (err === 'self') nope(tt('fr.self', "That's you! Share your code with a friend."));
     else if (err === 'full') nope(tt('fr.full', 'You have 50 friends, the most for now.'));
-    else if (err === 'already') toast(tt('fr.already', 'You are already friends.'), 'good');
+    else if (err === 'already') {
+      toast(tt('fr.already', 'You are already friends.'), 'good');
+      // v2.30 (code review 7): friends already (an add that went through before the join reached the Worker): still ask for the invite gift
+      if (FR.invite && FR.invite === code) { FR.invite = null; FR.wantAdd = false; if (typeof fiLinkDone === 'function') fiLinkDone(); if (typeof fiJoin === 'function') fiJoin(code, true); }
+    }
     else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
     return;
   }
-  FR.invite = null; FR.wantAdd = false;
+  const viaLink = !!FR.invite && FR.invite === code; // v2.30: the add came from an invite link (58_invite.js asks the Worker for the gift)
+  FR.invite = null; FR.wantAdd = false; if (typeof fiLinkDone === 'function') fiLinkDone(); // v2.30: the save lets the link's code go with it
   await frLoad();
   const added = ((S.fr.cache && S.fr.cache.friends) || []).find((f) => f && !had.has(f.fid));
   toast(tt('fr.added', '{name} is your friend now!', { name: (added && frPairName(added.name)) || tt('fr.a_friend', 'A friend') }), 'good');
   frHearts(); frSheet();
+  if (viaLink && typeof fiJoin === 'function') fiJoin(code, true); // true: from the Friends sheet, the card may open at once (phone review 1)
 }
 // v2.19 (owner, 2 Nov 2026): no New code button: a player's code stays the same forever (the Worker route /friends/code/new is kept, unused)
 // Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way
@@ -796,11 +804,13 @@ async function frOpen() {
   return true;
 }
 function frInviteTry() {
-  if (!frOn() || !S || !FR.invite || FR.inviteShown) return;
+  if (!frOn() || !S) return;
+  if (typeof fiLinkKeep === 'function') fiLinkKeep(); // v2.30: the link's code is kept in the save until the add card has shown once (58_invite.js)
+  if (!FR.invite || FR.inviteShown) return;
   if (cur.mode !== 'yard' || (titleEl && !titleEl.hidden)) return; // never over a walk, a minigame or the title
   if (frGuideHold()) return;
   if (!modal.hidden) return;
-  FR.inviteShown = true; FR.wantAdd = true; frOpen();
+  FR.inviteShown = true; FR.wantAdd = true; if (typeof fiLinkKeep === 'function') fiLinkKeep(); frOpen();
 }
 
 /* ---------- part 3: a friend's yard (V219.md section 4). Read-only: it draws their snapshot and changes nothing in this save but Bond and S.fr ----------
@@ -1638,6 +1648,7 @@ function frExpose() {
     },
     decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
+    inviteSet: (c) => { FR.invite = c; return FR.invite; }, add: () => frAdd(), fillCode: (c) => frFillCode(c), // v2.30 tests: an add from an invite link
     yard: () => frYard(), walkMine: () => frWalkMine(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
     note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,

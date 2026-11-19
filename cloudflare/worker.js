@@ -65,6 +65,21 @@
 //     404 unknown (also expired, not started, disabled: one answer), 409 used (this account), 409 batch_used (another code of the batch), 409 gone (cap reached /
 //     a unique code used), 429 rate_limited. Coins are at most PROMO_COIN_MAX (500) whatever the row says.
 //   GET  /promo/mine                       -> { redemptions: [{ code, key, at, reward }] }   120/h   what each redemption granted, oldest first
+//   v2.30 "Better together" (V230.md). Bearer token (guest or email) unless said. No coins anywhere, no names but friend names, no user ids.
+//     Shut until the launch (BT_FROM, 25 Nov 2026 00:00 JST less 10 minutes; env.BT_FROM moves it): before it all four answer 404 not_found { soon: true }.
+//   POST /invite/join { code }             -> { ok, gift: 'now' | 'later' }   after /friends/add from an invite link: records me as invited by the
+//     code's owner, once ever per new player. 10/h per account, 30/h per IP, 5 new rows a Japan day per IP. 404 no_code (unknown code; never the
+//     plain not_found, which an older Worker answers for a route it does not have), 400 self, 409 not_friends, 409 official (the game's official
+//     Friends account gives no invite gift, owner 17 Nov), 409 not_new (my account older than INV_NEW_DAYS, or the inviter's newer), 409 used.
+//   GET  /invite/gifts                     -> email: { mine: { name } | null, joined: [{ t, name }] }  guest: { guest: true, mine: 0|1, joined: n }
+//     joined: new players I invited who have an email account now, oldest first, at most INV_CAP (10); t is an opaque token for the row (the game
+//     thanks each t once), never a user id; no times. 120/h
+//   POST /town/goal { n }                  -> { ok, took, month, goal, n, done, mine, part }   n 1..40; one post per 2 minutes per account; a Japan day
+//     takes at most GL_DAY_U per account and GL_DAY_IP per IP (took is what counted; part: this account posted this month, even when a cap took 0).
+//     Guests count too (V230.md 6: why)
+//   GET  /town/goal                        -> { month, goal, n, done, mine, part, last: { ... }, owed: [...] }   token optional (mine 0 and no owed
+//     without one; owed: the account's months that reached the goal, the last 12): 120/h per
+//     account with a token, 120/h per IP without; the town's totals are cached for GL_CACHE_S in the isolate
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -110,6 +125,9 @@ async function route(req, env, ctx) {
   const ip = req.headers.get('CF-Connecting-IP') || 'local';
   if (p === '/' && m === 'GET') return json({ ok: true, name: 'pawhaven-api' });
   if (p === '/shop/webhook' && m === 'POST') return shopWebhook(req, env); // Stripe, server to server: the signature covers the raw body, so it is read before any JSON parsing
+  // v2.30 (final review): its routes open with the game (BT_FROM), not with the deploy. Before that they answer like a Worker without them (the game
+  // reads 404 not_found as "not here yet" and keeps what is waiting); soon: true tells a deployed, closed Worker from an older one
+  if (BT_PATHS.has(p) && Date.now() < btFrom(env)) return fail('not_found', 404, { soon: true });
   const R = ROUTES[m + ' ' + p];
   if (!R) return fail('not_found', 404);
   let body = null;
@@ -167,7 +185,9 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
-  try { await run(env, 'delete from promo_redemptions where user_id not in (select id from users)'); } catch (e) { /* v2.25.5 gift codes: promo tables not made yet (schema first) */ }
+  // v2.25.5 gift codes, and (1 in 10 of these runs) v2.30's btTidy in the same round trip; a table not made yet (schema first): the promo one alone
+  const promo = env.DB.prepare('delete from promo_redemptions where user_id not in (select id from users)');
+  try { await env.DB.batch([promo].concat(env.TIDY || Math.random() < 0.1 ? btTidySt(env, now) : [])); } catch (e) { try { await promo.run(); } catch (e2) { /* promo tables not made yet */ } }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
@@ -235,7 +255,7 @@ async function sendMail(env, to, m) {
 /* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
-const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 58 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six); v2.25.5 gift codes: +1 outfit (the Follower Star Bandana, appended last: 57 -> 58; a game copy meeting an older Worker drops it from its card, 40_dogcards.js DC_OUTFITS_OLD)
+const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 59 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits; v2.21: 40 breeds (+5 breed words), deployed with the v2.21 launch; v2.24: 57 outfits (+ the Golden Name Tag and the Tokyo Street six); v2.25.5 gift codes: +1 outfit (the Follower Star Bandana, appended last: 57 -> 58; a game copy meeting an older Worker drops it from its card, 40_dogcards.js DC_OUTFITS_OLD); v2.30: + the Friendship Bandana (the invite gift, V230.md 3): 58 -> 59, deployed with the v2.30 launch
 // v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
 //   notes 12: the twelve FR_NOTES lines in V219.md section 4
 //   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
@@ -1464,5 +1484,131 @@ const ROUTES = {
       env.DB.prepare(`delete from save_backups where user_id = ?1 and id not in (select id from save_backups where user_id = ?1 order by created_at desc, id desc limit ${KEEP})`).bind(me.id)
     ]);
     return json({ ok: true });
+  } },
+
+  /* ---------------- v2.30 "Better together" (V230.md) ---------------- */
+  'POST /invite/join': { auth: true, async fn({ env, ip, body, me }) {
+    const overU = await limited(env, 'inv:join:' + me.id, 10, 3600), overIp = await limited(env, 'inv:joinip:' + ip, 30, 3600);
+    if (overU || overIp) return fail('rate_limited', 429);
+    if (!frOnly(body, ['code'])) return fail('bad', 400);
+    const code = frNormCode(body.code);
+    if (!code) return fail('no_code', 404); // never the plain not_found: the game reads that as an older Worker without this route (try later)
+    const them = await frByCode(env, code);
+    if (!them) return fail('no_code', 404);
+    if (them.user_id === me.id) return fail('self', 400);
+    if (!(await frFriends(env, me.id, them.user_id))) return fail('not_friends', 409); // the add goes first (a block ends the friendship: the same answer, never the word blocked)
+    if (await frIsOfficial(env, them.user_id)) return fail('official', 409); // owner, 17 Nov: the official Friends account still works as a friend, the bandana is for real friends only
+    const now = Date.now();
+    const u = await one(env, 'select a.created_at as mine, b.created_at as theirs from users a, users b where a.id = ?1 and b.id = ?2', me.id, them.user_id);
+    if (!u || now - u.mine > INV_NEW_DAYS * 864e5 || !(u.theirs < u.mine)) return fail('not_new', 409); // a new account, and the inviter was here first
+    if (await one(env, 'select 1 as x from invites where new_id = ?1', me.id)) return fail('used', 409);
+    if (await limited(env, 'inv:ipday:' + ip + ':' + dcDay(now), INV_IP_DAY, 86400)) return fail('rate_limited', 429); // counts only rows about to be made
+    try { await run(env, 'insert into invites (new_id, inviter_id, at) values (?1, ?2, ?3)', me.id, them.user_id, now); } catch (e) {
+      if (/unique|constraint/i.test(String((e && e.message) || e))) return fail('used', 409);
+      throw e;
+    }
+    return json({ ok: true, gift: btEmail(me) ? 'now' : 'later' });
+  } },
+
+  'GET /invite/gifts': { auth: true, async fn({ env, me }) {
+    if (await limited(env, 'inv:gifts:' + me.id, 120, 3600)) return fail('rate_limited', 429);
+    const mine = await one(env, 'select f.name_a, f.name_b from invites i left join friend_ids f on f.user_id = i.inviter_id where i.new_id = ?1', me.id);
+    const joined = await all(env, `select i.new_id as nid, f.name_a, f.name_b from invites i join users u on u.id = i.new_id left join friend_ids f on f.user_id = i.new_id
+      where i.inviter_id = ?1 and u.guest = 0 and u.email is not null order by i.at, i.new_id limit ${INV_CAP}`, me.id);
+    if (!btEmail(me)) return json({ guest: true, mine: mine ? 1 : 0, joined: joined.length });
+    const nm = (r) => (r.name_a == null ? null : [r.name_a | 0, r.name_b | 0]);
+    const out = [];
+    for (const r of joined) out.push({ t: await btRowTok(me.id, r.nid), name: nm(r) }); // no times (V219.md: never a clock time), no ids
+    return json({ mine: mine ? { name: nm(mine) } : null, joined: out });
+  } },
+
+  'POST /town/goal': { auth: true, async fn({ env, ip, body, me }) {
+    if (!frOnly(body, ['n']) || !Number.isInteger(body.n) || body.n < 1 || body.n > GL_POST_MAX) return fail('bad', 400);
+    if (await limited(env, 'gl:post:' + me.id, 1, GL_GAP_S)) return fail('rate_limited', 429); // one post per account at a time: the account's day key has no race
+    const now = Date.now(), day = dcDay(now), month = day.slice(0, 7), uKey = 'gl:u:' + me.id + ':' + day;
+    const u = await one(env, 'select n, reset_at from rate where k = ?1', uKey);
+    const want = Math.max(0, Math.min(body.n, GL_DAY_U - (u && u.reset_at > now ? u.n : 0)));
+    const took = await glTakeIp(env, 'gl:ip:' + ip + ':' + day, want, GL_DAY_IP, now); // one atomic upsert ... returning n
+    const goal = glGoal(env, month), st = [
+      // the account's row even when a cap took 0: it took part this month (the treat bag is for everyone who played, a shared network's IP cap aside)
+      env.DB.prepare('insert into town_goal_users (month, user_id, n) values (?1, ?2, ?3) on conflict(month, user_id) do update set n = n + ?3').bind(month, me.id, took)
+    ];
+    if (took > 0) st.unshift(
+      env.DB.prepare(`insert into rate (k, n, reset_at) values (?1, ?2, ?3) on conflict(k) do update set n = case when rate.reset_at <= ?4 then ?2 else rate.n + ?2 end,
+        reset_at = case when rate.reset_at <= ?4 then ?3 else rate.reset_at end`).bind(uKey, took, now + 864e5, now), // the account pays only what was taken
+      env.DB.prepare('insert into town_goal (month, n, goal, done_at) values (?1, 0, ?2, null) on conflict(month) do nothing').bind(month, goal),
+      env.DB.prepare('update town_goal set n = n + ?2, done_at = case when done_at is null and n + ?2 >= goal then ?3 else done_at end where month = ?1').bind(month, took, now));
+    await env.DB.batch(st);
+    const town = await glPub(env, month, true);
+    return json(Object.assign({ ok: true, took }, town.cur, await glMine(env, month, me.id)));
+  } },
+
+  'GET /town/goal': { async fn({ env, ip, me }) {
+    if (await limited(env, me ? 'gl:get:u:' + me.id : 'gl:get:' + ip, 120, 3600)) return fail('rate_limited', 429); // a token: per account (a shared network is many players)
+    const month = dcDay(Date.now()).slice(0, 7), town = await glPub(env, month, false);
+    const st = Object.assign({}, town.cur, await glMine(env, month, me && me.id));
+    st.last = Object.assign({}, town.last, await glMine(env, town.last.month, me && me.id));
+    if (me) { // the months this account took part in that reached the goal (the last 12): a treat bag earned before two or more months away still comes
+      const rows = await all(env, 'select g.month as month, g.goal as goal, g.n as n, u.n as mine from town_goal_users u join town_goal g on g.month = u.month where u.user_id = ?1 and g.done_at is not null order by g.month desc limit 12', me.id);
+      st.owed = rows.map((r) => ({ month: r.month, goal: r.goal, n: r.n, done: true, mine: r.mine, part: true }));
+    }
+    return json(st);
   } }
 };
+
+/* ---------------- v2.30 "Better together" (V230.md) ---------------- */
+// The launch gate (final review, 18 Nov): the Worker is deployed before the game opens v2.30, so the routes stay shut until the launch, 25 Nov 2026
+// 00:00 JST (NEWS_V230.date in game/src/49c_news.js: test_v230_worker checks the two agree), less 10 minutes for a device clock that runs a little
+// fast. env.BT_FROM (ms, or an ISO time; '0' = open now) moves it without a new Worker: set it when the owner moves the launch date.
+const BT_FROM = Date.parse('2026-11-25T00:00:00+09:00') - 10 * 60e3;
+const BT_PATHS = new Set(['/invite/join', '/invite/gifts', '/town/goal']);
+function btFrom(env) {
+  const v = env.BT_FROM; if (v === undefined || v === null || v === '') return BT_FROM;
+  const n = /^\d+$/.test(String(v)) ? Number(v) : Date.parse(String(v));
+  return Number.isFinite(n) ? n : BT_FROM;
+}
+const INV_NEW_DAYS = 7, INV_CAP = 10, INV_IP_DAY = 5; // a new player's account is at most a week old; the inviter's credits; new invite rows per IP a Japan day
+const GL_GOAL = 10000, GL_POST_MAX = 40, GL_GAP_S = 120, GL_DAY_U = 150, GL_DAY_IP = 5000; // the town goal (belly rubs a Japan month); env.TOWN_GOAL changes it.
+// GL_DAY_IP: a school, an office or a phone carrier's shared IP is many real players (review 17 Nov: 600 was too low); the account's 150 stays
+const GL_CACHE_S = 60; // the town's totals (the same for everyone) are kept this long in the isolate for GET /town/goal; a POST refreshes them
+const btEmail = (me) => !!me && !me.guest && !!me.email; // cloud save on: an email account
+const GL_MONTH_GOAL = { '2026-11': 2000 }; // owner, 19 Nov 2026: November 2026 has only 25-30 Nov after the launch, so a smaller first goal
+function glGoal(env, month) { const g = Math.floor(Number(env.TOWN_GOAL)); return g >= 100 && g <= 1e8 ? g : GL_MONTH_GOAL[month] || GL_GOAL; }
+function glPrevMonth(m) { const y = +m.slice(0, 4), mo = +m.slice(5, 7); return mo === 1 ? (y - 1) + '-12' : y + '-' + String(mo - 1).padStart(2, '0'); }
+// the IP's share of `want` under its daily cap, in one atomic upsert: the row counts what was offered (it may pass max), so the n it returns
+// minus `want` is exactly what came before this request, and the part under max is what this request takes
+async function glTakeIp(env, key, want, max, now) {
+  if (want <= 0) return 0;
+  const r = await one(env, `insert into rate (k, n, reset_at) values (?1, ?2, ?3)
+    on conflict(k) do update set n = case when rate.reset_at <= ?4 then ?2 else rate.n + ?2 end, reset_at = case when rate.reset_at <= ?4 then ?3 else rate.reset_at end
+    returning n`, key, want, now + 864e5, now);
+  const before = (r ? r.n : want) - want;
+  return Math.max(0, Math.min(want, max - before));
+}
+// the town's totals for this month and last month (no account in them): cached GL_CACHE_S in the isolate (env.GL_CACHE: seconds; tests under TIDY: off unless set)
+let GL_PUB = null;
+async function glPub(env, month, fresh) {
+  const ttl = (env.GL_CACHE !== undefined ? Number(env.GL_CACHE) : env.TIDY ? 0 : GL_CACHE_S) * 1000, now = Date.now();
+  if (!fresh && ttl > 0 && GL_PUB && GL_PUB.db === env.DB && GL_PUB.month === month && now - GL_PUB.at < ttl) return GL_PUB;
+  const last = glPrevMonth(month);
+  const rows = await all(env, 'select month, n, goal, done_at from town_goal where month in (?1, ?2)', month, last);
+  const of = (m) => { const g = rows.find((x) => x.month === m); return { month: m, goal: g ? g.goal : glGoal(env, m), n: g ? g.n : 0, done: !!(g && g.done_at) }; };
+  GL_PUB = { db: env.DB, month, at: now, cur: of(month), last: of(last) };
+  return GL_PUB;
+}
+async function glMine(env, month, uid) {
+  const r = uid ? await one(env, 'select n from town_goal_users where month = ?1 and user_id = ?2', month, uid) : null;
+  return { mine: r ? r.n : 0, part: !!r };
+}
+// an opaque token for one invite row as its inviter sees it (the game thanks each once): a hash, never the new player's user id
+async function btRowTok(inviter, nid) { return (await sha256('inv1:' + inviter + ':' + nid)).slice(0, 16); }
+// btTidy: from tidy() (1 in 10 of its runs: about 1 in 1,000 requests; every one under env.TIDY), in the promo delete's batch, never on a v2.30 route's own path: the NOT IN scans stay off the hot path (review 17 Nov)
+function btTidySt(env, now) {
+  const old = dcDay(now - 400 * 864e5).slice(0, 7); // about 13 months
+  return [
+    env.DB.prepare('delete from invites where new_id not in (select id from users) or inviter_id not in (select id from users)'),
+    env.DB.prepare('delete from town_goal_users where user_id not in (select id from users)'),
+    env.DB.prepare('delete from town_goal_users where month < ?1').bind(old),
+    env.DB.prepare('delete from town_goal where month < ?1').bind(old)
+  ];
+}

@@ -283,8 +283,10 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const itchPriv = fs.readFileSync(path.join(ROOT, 'docs', 'itch', 'PRIVACY.md'), 'utf8');
       const priv = await (await get(SITE + '/privacy')).text();
       const six = (t) => /two words from a list/.test(t) && /preset kind lines/.test(t) && /only by a code or an invite link/.test(t) && /30 days/.test(t) && /quiet/.test(t) && /Leave Friends/.test(t);
-      ok(/<h2>Friends<\/h2>/.test(priv) && /16 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the policy date (16 Nov 2026, v2.25.5 gift codes)');
-      ok(/## Friends/.test(itchPriv) && /16 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
+      ok(/<h2>Friends<\/h2>/.test(priv) && /19 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the policy date (19 Nov 2026, v2.30 invites and the town goal)');
+      ok(/## Friends/.test(itchPriv) && /19 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
+      const bt = (t) => /Friendship Bandana/.test(t) && /only the friend code from the link/.test(t) && /Deleting either account deletes it/.test(t) && /Town goal/.test(t) && /about 13 months/.test(t) && /Nobody else sees your number/.test(t) && /IP address/.test(t) && /for up to a day/.test(t);
+      ok(/<h2>Town goal<\/h2>/.test(priv) && bt(priv) && bt(itchPriv), 'v2.30: the site privacy page and docs/itch/PRIVACY.md say what invites and the town goal keep (the bandana link, about 13 months, the IP counts for up to a day)');
     }
     r = await get(SITE + '/reset'); ok(r.headers.get('referrer-policy') === 'no-referrer', '/reset sends no referrer'); await r.text();
     r = await get(SITE + '/map'); ok(r.headers.get('referrer-policy') !== 'no-referrer' && /frame-ancestors 'none'/.test(r.headers.get('content-security-policy') || ''), '/map: the usual headers'); await r.text();

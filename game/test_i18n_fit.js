@@ -425,6 +425,27 @@ async function worker(job) {
       await ev(() => window.__paw.sc.play('ch1', { replay: true })); await sleep(2500); await measure('sc: scene'); await ev(() => window.__paw.sc.skip());
       await sleep(400); await closeAll(); await ev(() => { window.__paw.sm.test(false); window.__paw.sc.test(false); });
     }, 50000);
+    await step('bt', async () => { // v2.30 Better together (V230.md): the invite cards, the Friends line, the town goal sheet, Gerald's note on the Square's board, the Town projects link, the letters (prefs.btTest through the test hook)
+      const mo = await ev(() => window.__paw.gl.month());
+      await ev((m) => { const P = window.__paw; P.gl.test(true); P.gl.set({ month: m, goal: 10000, n: 6234, done: false, mine: 126 }); P.fi.card({ wait: 'new' }, true); }, mo); await modalUp(); await measure('bt: invite waiting card'); await closeAll();
+      await ev(() => window.__paw.fi.card({ mine: true, from: [7, 9], joined: [], bandana: true }, true)); await modalUp(); await measure('bt: invite gift card'); await closeAll();
+      await ev(() => window.__paw.fi.card({ mine: false, joined: [[7, 9], [3, 5]], bandana: false }, true)); await modalUp(); await measure('bt: inviter card'); await closeAll();
+      await ev(() => window.__paw.gl.open()); await modalUp(); await sleep(300); await measure('bt: town goal sheet'); await closeAll();
+      await ev(() => window.__paw.gl.drop()); await ev(() => window.__paw.gl.open()); await modalUp(); await sleep(300); await measure('bt: town goal sheet offline'); await closeAll();
+      await ev((m) => window.__paw.gl.set({ month: m, goal: 10000, n: 10210, done: true, mine: 3120 }), mo); await ev(() => window.__paw.gl.open()); await modalUp(); await sleep(300); await measure('bt: town goal sheet done'); await closeAll();
+      await ev(() => window.__paw.pr.open()); await modalUp(); await measure('bt: town projects link'); await closeAll();
+      await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'square'; window.__paw.go('yard'); }); await sleep(900); await measure('bt: square board');
+      // the letters (kept, with line breaks): the new player's, the inviter's (two friends), the waiting one, the town's thank-you and "So close!"
+      const prev = await ev(() => { const m = window.__paw.gl.month(), y = +m.slice(0, 4), n = +m.slice(5, 7); return n === 1 ? (y - 1) + '-12' : y + '-' + String(n - 1).padStart(2, '0'); });
+      await ev(([m, p]) => { const P = window.__paw, S = P.S; S.fi = { link: '', join: '', mine: 0, n: 0, wait: 0, thx: [] }; S.goal.got = []; S.goal.miss = '';
+        P.fi.apply({ mine: { name: [7, 9] }, joined: [{ t: 'fit0000000000001', name: [3, 5] }, { t: 'fit0000000000002', name: [11, 12] }] }, false);
+        S.fi = { link: '', join: '', mine: 0, n: 0, wait: 0, thx: [] }; P.fi.apply({ guest: true, mine: 1, joined: 0 }, false);
+        P.gl.gift({ month: m, goal: 10000, n: 10210, done: true, mine: 3120 }, m); P.gl.gift({ month: p, goal: 10000, n: 7340, done: false, mine: 0, part: true }, m); }, [mo, prev]);
+      for (const id of ['fi_new', 'fi_host_2', 'fi_wait', 'gl_' + mo, 'gl_miss_' + prev]) {
+        await ev((i) => window.__paw.openMailbox(i), id); await modalUp(); await sleep(300); await measure('bt: letter ' + id.replace(/_\d{4}-\d{2}$/, '')); await closeAll();
+      }
+      await ev(() => window.__paw.gl.test(false));
+    }, 40000);
     await step('dog card settings', async () => { await ev(() => window.__paw.dc.settings(true)); await modalUp(); await measure('dog cards: my card settings'); await closeAll(); });
     // ---------------------------------------------------------------- photo, training, ball ----------------------------------------------------------------
     await step('photo mode', async () => { await ev(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.active(), null, 5000); await sleep(600); await measure('photo mode'); await ev(() => window.__paw.ph.close()); await t.until(() => !window.__paw.ph.active(), null, 4000); });

@@ -270,3 +270,28 @@ create table if not exists promo_redemptions (
 );
 create unique index if not exists promo_red_batch on promo_redemptions (batch, user_id) where batch is not null;
 create index if not exists promo_red_user on promo_redemptions (user_id);
+
+-- v2.30 "Better together" (V230.md 2 and 6). New tables only (no addcol). Deploy before the v2.30 game launch.
+-- Friend invite gift: one row per new player, ever (who invited them). The Worker checks the new account is at most 7 days old and newer
+-- than the inviter's. A deleted account's rows go (btTidy(), from the v2.30 routes).
+create table if not exists invites (
+  new_id     text primary key,          -- users.id of the new player
+  inviter_id text not null,             -- users.id of the friend whose invite link they came from
+  at         integer not null           -- ms
+);
+create index if not exists invites_inviter on invites (inviter_id, at);
+-- The shared town goal: one count a Japan month for every player, and each account's part (for the gift; never shown to anyone else).
+create table if not exists town_goal (
+  month   text primary key,             -- 'YYYY-MM' (JST)
+  n       integer not null default 0,
+  goal    integer not null,             -- fixed when the month's first belly rub arrives
+  done_at integer                       -- ms, when n reached goal
+);
+create table if not exists town_goal_users (
+  month   text not null,
+  user_id text not null,
+  n       integer not null default 0,
+  primary key (month, user_id)
+);
+-- GET /town/goal reads an account's own months ("owed"): without this it scans every row of the table on each game load (final review, 18 Nov)
+create index if not exists town_goal_users_user on town_goal_users (user_id, month);

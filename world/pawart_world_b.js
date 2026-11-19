@@ -7688,9 +7688,16 @@ Object.assign(ITEMS,{
   b.sh(starP(21,27,6,2.8,5,-Math.PI/2+.2),PRM_STAR,{k:.04,hatch:0,hl:0,lw:.7,base:'#FFF2C2',top:1});b.sh(starP(43,27,5.4,2.5,5,-Math.PI/2-.25),PRM_STAR,{k:.04,hatch:0,hl:0,lw:.7,base:'#FFF2C2',top:1});
   paw(b,32,40,3.3,PRM_CRM,{lw:.6});
   b.ex('spark',55,44,3.2)},
- 'Paw-Print Pennant'(b){hmPropCard(b,'prpennant',false,[6,6,94,152])}
+ 'Paw-Print Pennant'(b){hmPropCard(b,'prpennant',false,[6,6,94,152])},
+ // v2.30 (V230.md 3): the friend invite gift's card: the Red Bandana's card in lavender, a cream stitch, a pink and a yellow heart side by side
+ 'Friendship Bandana'(b){
+  const OR='#A98BE3',ORD='#7458BE';
+  b.sh([[3,12],[8,16],[3,19]],ORD,{k:0,hatch:0,hl:0,lw:.7});b.sh([[61,12],[56,16],[61,19]],ORD,{k:0,hatch:0,hl:0,lw:.7});
+  b.sh([[6,15],[58,15],[32,57]],OR,{k:.05,sh:ORD,marks:[{pts:[[0,10],[64,10],[64,21],[0,21]],fill:ORD,k:0,op:.6}],inner:`<path d="M9 19.5H55" stroke="#FFF6E4" stroke-width="1" stroke-dasharray="2.4 2"/>`});
+  b.sh(heartP(26.5,31,11),'#F47C9C',{k:.04,hatch:0,hl:0,lw:.7,base:'#FCD3DE',top:1});b.sh(heartP(37.5,31,11),'#FFD84A',{k:.04,hatch:0,hl:0,lw:.7,base:'#FFF2C2',top:1});
+  b.ex('spark',52,44,3.2)}
 });
-PA.PROMO={costumes:['Follower Star Bandana'],decor:Object.assign({},PRM_LBL)};
+PA.PROMO={costumes:['Follower Star Bandana','Friendship Bandana'],decor:Object.assign({},PRM_LBL)};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),

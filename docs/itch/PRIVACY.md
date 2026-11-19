@@ -1,8 +1,8 @@
 # Doodle Doggo privacy policy
 
-Last updated: 16 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
+Last updated: 19 November 2026. Written to go live together with the Cloudflare login. A game by an9ou.
 
-**In short:** Doodle Doggo has no ads and no tracking. If you make an account, we keep your email, a scrambled version of your password and your game save. If you use Friends, we keep the list in that section. Nothing else.
+**In short:** Doodle Doggo has no ads and no tracking. If you make an account, we keep your email, a scrambled version of your password and your game save. For Friends and the town goal, we keep the lists in those sections. Nothing else.
 
 ## What we collect
 
@@ -32,6 +32,17 @@ You can use Friends as a guest or with an account. It starts when you pick a fri
 - **What we store:** your friends list, blocks, your yard snapshot, and pets, notes, gifts and walks. Pets, notes, gifts and walks are kept for 30 days.
 - **Remove and block** are quiet. The other player is not told.
 - **Leave Friends** in Settings deletes it all: your code, your friends list, the blocks you made, your yard snapshot, and the pets, notes, gifts and walks. A block someone else made stays.
+- **Invites:** when a new player comes in through a friend's invite link and adds that friend, the game sends only the friend code from the link. We keep which account invited which, and when, so both players get the matching Friendship Bandana once. Leave Friends keeps this, so a waiting bandana is not lost. Deleting either account deletes it.
+
+## Town goal
+
+Each month (Japan time), the whole town works toward one goal of belly rubs. Petting your dog and going for walks add to it while the game is online, as a guest or with an account.
+
+- **What is sent:** only a number of belly rubs. No names and nothing you type.
+- **What we keep:** how many belly rubs your account added each month, and the town's total. We keep them for about 13 months, to show this month and last month on the board and so Gerald's treat bag can reach everyone who helped.
+- **Nobody else sees your number.** The board shows only the town's total. There are no names and no leaderboard.
+- **Fair limits:** as for logins, the server counts invites and belly rubs per account and per internet address (IP address) for up to a day, so nobody can pile them up. Then the counts are deleted.
+- **Deleting your account** deletes your numbers too. The town's total stays, with no account in it.
 
 ## Gift codes
 
