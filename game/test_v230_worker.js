@@ -141,7 +141,7 @@ const sec = (s) => console.log('--- ' + s);
     for (const b of [{ n: 0 }, { n: 41 }, { n: 2.5 }, { n: '3' }, { n: 3, x: 1 }, {}]) ok(is(await call('POST', '/town/goal', b, G.tok), 400, 'bad'), 'bad n: ' + JSON.stringify(b));
     r = await call('POST', '/town/goal', { n: 12 }, G.tok);
     const month = r.json && r.json.month;
-    ok(r.status === 200 && r.json.took === 12 && r.json.n === 12 && r.json.mine === 12 && r.json.goal === 10000 && !r.json.done && /^\d{4}-\d{2}$/.test(month), 'a guest posts 12: ' + r.text);
+    ok(r.status === 200 && r.json.took === 12 && r.json.n === 12 && r.json.mine === 12 && r.json.goal === (month === '2026-11' ? 2000 : 10000) && !r.json.done && /^\d{4}-\d{2}$/.test(month), 'a guest posts 12: ' + r.text);
     ok(is(await call('POST', '/town/goal', { n: 3 }, G.tok), 429, 'rate_limited'), 'a second post within 2 minutes: 429');
     const gap = () => DB.raw.prepare("delete from rate where k like 'gl:post:%'").run(); // the 2-minute gap passes
     gap(); r = await call('POST', '/town/goal', { n: 30 }, H.tok);
@@ -192,7 +192,13 @@ const sec = (s) => console.log('--- ' + s);
     const env2 = Object.assign({}, env, { TOWN_GOAL: '1234' });
     DB.raw.prepare("delete from town_goal where month = '2000-01'").run();
     const res = await worker.fetch(new Request('https://api.test/town/goal', { method: 'GET', headers: { 'CF-Connecting-IP': freshIp() } }), env2, { waitUntil() {} });
-    ok((await res.json()).goal === 10000, 'a month that has started keeps its goal; TOWN_GOAL only sets new months');
+    ok((await res.json()).goal === (month === '2026-11' ? 2000 : 10000), 'a month that has started keeps its goal; TOWN_GOAL only sets new months');
+    { // owner, 19 Nov 2026: November 2026 starts at 2,000, every other month at 10,000 (the clock moved for one call each)
+      const real = Date.now, at = async (ms, e) => { Date.now = () => ms; try { const x = await worker.fetch(new Request('https://api.test/town/goal', { method: 'GET', headers: { 'CF-Connecting-IP': freshIp() } }), e || env, { waitUntil() {} }); return (await x.json()).goal; } finally { Date.now = real; } };
+      DB.raw.prepare("delete from town_goal where month in ('2026-11', '2026-12', '2027-11')").run();
+      const nov = await at(Date.UTC(2026, 10, 26, 3)), dec = await at(Date.UTC(2026, 11, 5, 3)), nov27 = await at(Date.UTC(2027, 10, 26, 3)), own = await at(Date.UTC(2026, 10, 26, 3), Object.assign({}, env, { TOWN_GOAL: '1234' }));
+      ok(nov === 2000 && dec === 10000 && nov27 === 10000 && own === 1234, 'goals: Nov 2026 2,000, Dec 2026 10,000, Nov 2027 10,000, TOWN_GOAL wins: ' + [nov, dec, nov27, own].join());
+    }
 
     sec('6. tidy');
     DB.raw.prepare('delete from users where id = ?').run(C.id);

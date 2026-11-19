@@ -167,7 +167,7 @@ function glGeraldArt() { try { const s = typeof scGeraldSVG === 'function' ? scG
 function glSheetHTML() {
   glFields(S);
   const st = GL.st, parts = [], m = (st && st.month) || glMonth(), mine = Math.max((st && st.mine) | 0, S.goal.sent[m] | 0);
-  parts.push(`<div class="gl-head"><span class="gl-ic" aria-hidden="true">${glGeraldArt()}</span><div><h3>${esc(tt('gl.goal_line', '{goal} belly rubs in {month}', { goal: tnum((st && st.goal) || 10000), month: glMonthName(m) }))}</h3>`
+  parts.push(`<div class="gl-head"><span class="gl-ic" aria-hidden="true">${glGeraldArt()}</span><div><h3>${esc(tt('gl.goal_line', '{goal} belly rubs in {month}', { goal: tnum((st && st.goal) || (m === '2026-11' ? 2000 : 10000)), month: glMonthName(m) }))}</h3>`
     + `<p class="small">${esc(tt('gl.intro', 'One goal for the whole town. Every pet counts 1 and every walk counts 3. No names, no ranks: just the town together.'))}</p></div></div>`);
   if (st) {
     const f = glFill(st), pct = Math.floor(glFrac(st) * 100);

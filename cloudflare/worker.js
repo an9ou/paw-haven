@@ -1529,7 +1529,7 @@ const ROUTES = {
     const u = await one(env, 'select n, reset_at from rate where k = ?1', uKey);
     const want = Math.max(0, Math.min(body.n, GL_DAY_U - (u && u.reset_at > now ? u.n : 0)));
     const took = await glTakeIp(env, 'gl:ip:' + ip + ':' + day, want, GL_DAY_IP, now); // one atomic upsert ... returning n
-    const goal = glGoal(env), st = [
+    const goal = glGoal(env, month), st = [
       // the account's row even when a cap took 0: it took part this month (the treat bag is for everyone who played, a shared network's IP cap aside)
       env.DB.prepare('insert into town_goal_users (month, user_id, n) values (?1, ?2, ?3) on conflict(month, user_id) do update set n = n + ?3').bind(month, me.id, took)
     ];
@@ -1572,7 +1572,8 @@ const GL_GOAL = 10000, GL_POST_MAX = 40, GL_GAP_S = 120, GL_DAY_U = 150, GL_DAY_
 // GL_DAY_IP: a school, an office or a phone carrier's shared IP is many real players (review 17 Nov: 600 was too low); the account's 150 stays
 const GL_CACHE_S = 60; // the town's totals (the same for everyone) are kept this long in the isolate for GET /town/goal; a POST refreshes them
 const btEmail = (me) => !!me && !me.guest && !!me.email; // cloud save on: an email account
-function glGoal(env) { const g = Math.floor(Number(env.TOWN_GOAL)); return g >= 100 && g <= 1e8 ? g : GL_GOAL; }
+const GL_MONTH_GOAL = { '2026-11': 2000 }; // owner, 19 Nov 2026: November 2026 has only 25-30 Nov after the launch, so a smaller first goal
+function glGoal(env, month) { const g = Math.floor(Number(env.TOWN_GOAL)); return g >= 100 && g <= 1e8 ? g : GL_MONTH_GOAL[month] || GL_GOAL; }
 function glPrevMonth(m) { const y = +m.slice(0, 4), mo = +m.slice(5, 7); return mo === 1 ? (y - 1) + '-12' : y + '-' + String(mo - 1).padStart(2, '0'); }
 // the IP's share of `want` under its daily cap, in one atomic upsert: the row counts what was offered (it may pass max), so the n it returns
 // minus `want` is exactly what came before this request, and the part under max is what this request takes
@@ -1591,7 +1592,7 @@ async function glPub(env, month, fresh) {
   if (!fresh && ttl > 0 && GL_PUB && GL_PUB.db === env.DB && GL_PUB.month === month && now - GL_PUB.at < ttl) return GL_PUB;
   const last = glPrevMonth(month);
   const rows = await all(env, 'select month, n, goal, done_at from town_goal where month in (?1, ?2)', month, last);
-  const of = (m) => { const g = rows.find((x) => x.month === m); return { month: m, goal: g ? g.goal : glGoal(env), n: g ? g.n : 0, done: !!(g && g.done_at) }; };
+  const of = (m) => { const g = rows.find((x) => x.month === m); return { month: m, goal: g ? g.goal : glGoal(env, m), n: g ? g.n : 0, done: !!(g && g.done_at) }; };
   GL_PUB = { db: env.DB, month, at: now, cur: of(month), last: of(last) };
   return GL_PUB;
 }
