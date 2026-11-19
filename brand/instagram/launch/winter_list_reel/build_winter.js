@@ -1,12 +1,13 @@
 // The "Noodle's Winter Market shopping list" Reel (owner's go-ahead 18 Nov 2026; script, shot table and facts: docs/marketing/WINTER_LIST_REEL.md).
 // English cut only, 1080 x 1920, 30 fps. To post when the Winter Market opens (Mon 23 Nov 2026 00:00 JST, open until 31 Dec).
 // The picture is one continuous take of the game's own Winter Market place with Noodle the dachshund as the game's leader dog, captured on the
-// frozen page clock by capture_winter.js (the frames already hold the scene and Noodle). This script lays the words over it: the hook card, Noodle's
-// list (five real Winter Market items and "everything"), one list line per stop with the game's own item drawing, its exact price and a crayon tick,
-// the ask, then our standard end card (brand/kids/endcard.js) for 2.5 s. Every name, price and line is checked against main below; the build stops
-// if one changed. Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), every card and Noodle inside x 60..850, y 270..1440,
-// the cards 28 px clear of the market's bunting, Noodle's feet on the market floor and, whenever he stands, 28 px clear of every stall, stand, board
-// and prop (while he walks to the Toys stall and back he passes in front of the Treats cart, as dogs do in the game's front row).
+// frozen page clock by capture_winter.js (the frames already hold the scene, Noodle and the snow in front). This script lays the words over it:
+// the hook card, Noodle's list (five real Winter Market items and "everything"), one list line per stop with the game's own item drawing, its
+// exact price and a crayon tick, the ask, then our standard end card (brand/kids/endcard.js) for 2.5 s. Every name, price and line is checked
+// against main below; the build stops if one changed. Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), every card and
+// Noodle inside x 60..850, y 270..1440, the cards 28 px clear of the market's bunting and of the sky's snowflakes, and Noodle, standing or
+// walking, on the open snow in front of the market: his whole drawn box 28 px below every stall, stand, cart, board and prop of the market and
+// 28 px above the winter things on the snow in front. He crosses nothing.
 // Voice: Noodle, Kokoro af_bella 1.1x (vo_winter.json via ../friends_reel/vo_friends.py). Music: the game's own Winter Market music
 // (mods/pawaudio.js, place fmarket with fest winter) about 11 dB under the voice, the game's coin chime on every tick.
 //
@@ -21,7 +22,7 @@ const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
 const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
 const { checkFrames } = require('../frozen_clock.js');
-const { plan, ITEMS, S, OY, FLOOR_Y } = require('./capture_winter.js');
+const { plan, ITEMS, FG, FLAKE, S, OY, FLOOR_Y } = require('./capture_winter.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
 const WORK = path.resolve(process.argv[2] || 'winter_work'), VO = path.resolve(process.argv[3] || path.join(WORK, 'vo'));
@@ -73,34 +74,39 @@ need(/toys: \{ day: 30 \}/.test(FAIR), 'FF_CAPS.toys');
 const FACTS = JSON.parse(fs.readFileSync(path.join(CAPS, 'facts.json'), 'utf8')), FR = FACTS.frames;
 need(FACTS.date === '2026-11-23' && FACTS.jst === '2026-11-23' && FACTS.main === 'winter' && FACTS.place.name === 'Winter Market', 'the capture is not the Winter Market on 23 Nov 2026');
 need(FACTS.items.every((i) => i.onSale) && FACTS.open.some((o) => o.id === 'harvest' && o.to === '2026-11-30') && FACTS.open.some((o) => o.id === 'winter' && o.from === '2026-11-23' && o.to === '2026-12-31'), 'the capture: what is on sale');
-need(/frozen page clock/.test(FACTS.clock) && FACTS.n === NCAP && FR.length === NCAP && Math.abs(FACTS.S - S) < 1e-9, 'the capture is not this timeline (' + FACTS.n + ' frames, want ' + NCAP + '): capture again');
+need(/frozen page clock/.test(FACTS.clock) && FACTS.n === NCAP && FR.length === NCAP && Math.abs(FACTS.S - S) < 1e-9 && Math.abs(FACTS.OY - OY) < 1e-9, 'the capture is not this timeline (' + FACTS.n + ' frames, want ' + NCAP + '): capture again');
 for (const k of Object.keys(VOD)) need(FACTS.vo[k] === VOD[k], 'the capture was timed to another voice take: ' + k);
 need(new Set(FR.map((f) => f.dressed)).size === 1, 'the game drew the scene again during the take');
 
 // ---- the market's own things in world units (viewBox 0 0 1000 600; read off the scene: path boxes and the ink of a 4x render) ----
-const KEEP = { decorStall: [25, 160, 303, 424], clothesStall: [352, 160, 648, 424], toysStall: [700, 160, 975, 424], homesBoard: [299.5, 414, 371, 458], homesStand: [295, 477.5, 375.5, 562.2],
+const KEEP = { driftL: [91, 460, 209, 482], driftR: [854, 464, 956, 484], decorStall: [25, 160, 303, 424], clothesStall: [352, 160, 648, 424], toysStall: [700, 160, 975, 424], homesBoard: [299.5, 414, 371, 458], homesStand: [295, 477.5, 375.5, 562.2],
   treatsBoard: [631, 414, 703, 458], treatsCart: [631, 466.5, 703, 568.5], sled: [0, 533, 127, 580], starLantern: [209, 396, 289, 486], firTree: [-21, 350, 81, 445], presents: [925, 398, 1002, 456] };
 // the top of the bunting, roofs and lanterns per 25 units of x (the highest ink of the scene): the cards stay 28 px above it
 const SKYTOP = [150, 153, 155, 160, 162, 164, 167, 168, 169, 160, 160, 165, 160, 158, 154, 149, 144, 137, 134, 128, 128, 133, 136, 144, 149, 154, 158, 161, 164, 160, 160, 169, 168, 166, 165, 162, 160, 155, 153, 150];
-const ZONE = FACTS.place.zone;   // the game's own floor for dogs at the market (37_roam.js): feet y 424..588, x 60..940
-// Noodle on a frame: feet on the floor; standing: 28 px clear of everything; walking: the Treats cart may be behind him
-let passCart = 0;
+// the winter things on the snow in front (capture_winter.js FG, PawArt.prop), their drawn boxes in world units: 28 px from each other
+const FGB = FACTS.fg; need(FGB && FG.every((f) => FGB[f.prop]), 'the capture has no foreground things');
+{ const L = Object.entries(FGB); for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const a = L[i][1], b = L[j][1], g = Math.max(b[0] - a[2], a[0] - b[2], b[1] - a[3], a[1] - b[3]) * S;
+    if (g < 28) throw new Error('the foreground things ' + L[i][0] + ' and ' + L[j][0] + ' are only ' + Math.round(g) + ' px apart'); } }
+const MARKET_BOTTOM = Math.max(...Object.values(KEEP).map((q) => q[3]));   // the lowest thing of the market (the sled, world y 580)
+// Noodle on a frame, standing or walking: on the open snow in front of the market (feet below the drawing's floor), inside the safe zone, his
+// whole drawn box 28 px below everything of the market and 28 px clear of the things in front
 function noodleCheck(n) { const f = FR[Math.min(n, NCAP - 1)], [l, t, r, b] = f.box, wx = (x) => x / S + f.x0, wy = (y) => (y - OY) / S;
-  if (f.feet[1] < ZONE.y0 || f.feet[1] > ZONE.y1 || f.feet[0] < ZONE.x0 || f.feet[0] > ZONE.x1 || Math.abs(f.feet[1] - FLOOR_Y) > 0.01) return 'Noodle off the market floor: ' + f.feet;
-  if (l < 60 || r > 850 || t < 270 || b > 1440) return 'Noodle outside x 60..850, y 270..1440: ' + f.box;
-  for (const [k, q] of Object.entries(KEEP)) { const g = Math.max(q[0] - wx(r), wx(l) - q[2], q[1] - wy(b), wy(t) - q[3]) * S;
-    if (g < 28) { if (f.walk && k === 'treatsCart') { passCart++; continue; } return 'Noodle ' + (f.walk ? '(walking) ' : '') + 'too close to the market\'s ' + k + ' (' + Math.round(g) + ' px) ' + f.pose + ' ' + f.expr; } }
+  if (Math.abs(f.feet[1] - FLOOR_Y) > 0.06 || f.feet[1] < 600 + 28 / S) return 'Noodle is not on the snow in front: ' + f.feet;
+  if (l < 60 || r > 850 || t < 270 || b > 1440) return 'Noodle outside x 60..850, y 270..1440: ' + f.box + ' ' + f.pose + ' ' + f.expr;
+  if ((wy(t) - MARKET_BOTTOM) * S < 28) return 'Noodle\'s box is not 28 px below the market: ' + Math.round((wy(t) - MARKET_BOTTOM) * S) + ' px ' + f.pose + ' ' + f.expr;
+  for (const [k, q] of Object.entries(KEEP).concat(Object.entries(FGB))) { const g = Math.max(q[0] - wx(r), wx(l) - q[2], q[1] - wy(b), wy(t) - q[3]) * S;
+    if (g < 28) return 'Noodle ' + (f.walk ? '(walking) ' : '') + 'too close to ' + k + ' (' + Math.round(g) + ' px) ' + f.pose + ' ' + f.expr; }
   return ''; }
 
 // ---- the words ----
-const HOOK = { tonight: { lines: ['Only 6 things on', "your dog's list"], sub: 'The Winter Market opens tonight' }, open: { lines: ['Only 6 things on', "your dog's list"], sub: 'The Winter Market is open!' } }[OPEN ? 'open' : 'tonight'];
+const HOOK = { tonight: { lines: ['Noodle already made a', 'Winter Market list. Have you?'], sub: 'It opens tonight!' }, open: { lines: ['Noodle already made a', 'Winter Market list. Have you?'], sub: "It's open now!" } }[OPEN ? 'open' : 'tonight'];
 const CAP = { k1: ['A look, not a snack.', 'Wood all the way through.'], k2: ['Warm: no shivering', 'in the snow.'], k3: ['A snowball that', 'never melts.'],
   k4: ['Plain unsweetened yoghurt only.', 'Two or three are plenty.'], k5: ['After dark it glows and', 'puts stars on the snow.'] };
 const LIST = ITEMS.map((i) => i.n).concat(['everything']);
 const ASK = { lines: ["What's first", 'on your list?'], sub: 'Winter Market: open until 31 Dec' };
 const PLAY = 'Play free!', TITLE = "Noodle's list";
 const price = (p) => p.toLocaleString('en-US') + ' coins';
-const allText = [HOOK.lines, HOOK.sub, 'The Winter Market opens tonight', 'The Winter Market is open!', Object.values(CAP), LIST, ASK.lines, ASK.sub, PLAY, TITLE, '???', ITEMS.map((i) => price(i.price)), ' 0123456789'].flat(3).join(' ');
+const allText = [HOOK.lines, HOOK.sub, 'It opens tonight!', "It's open now!", Object.values(CAP), LIST, ASK.lines, ASK.sub, PLAY, TITLE, '???', ITEMS.map((i) => price(i.price)), ' 0123456789'].flat(3).join(' ');
 // house words (README): no em dash, no "breed" as a verb, no "sell", no itch.io, only our website
 if (/—|\bbreed(s|ing)?\b|\bsell|itch/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban: ' + allText);
 const inner = (s) => s.trim().replace(/^<\?xml[^>]*>/, '').replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>[^<]*<\/title>/g, '');
@@ -109,7 +115,7 @@ const LOGO_INNER = inner(fs.readFileSync(path.join(ROOT, 'brand', 'doodle-doggo-
 const itemSyms = ITEMS.map((it) => { const s = fs.readFileSync(path.join(CAPS, 'items', it.k + '.svg'), 'utf8'); if (!/viewBox="0 0 64 64"/.test(s) || />\?<\/text>/.test(s)) throw new Error('no item drawing for ' + it.n);
   return `<symbol id="it_${it.k}" viewBox="0 0 64 64">${inner(s)}</symbol>`; }).join('');
 const BEATS = PB.map((b) => Object.assign({}, b, { kind: b.k === 'hook' ? 'hook' : b.k === 'k6' ? 'all' : b.k === 'ask' ? 'ask' : 'stop' }));
-const LISTAT = 1.9;   // the hook card gives way to the list here (seconds from the hook's start; "The Winter Market ..." is said from 2.2 s)
+const LISTAT = 2.75;   // the hook card gives way to the list here (seconds from the hook's start, after "Have you?")
 
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>html,body{margin:0;background:#fff}svg{display:block}</style>
@@ -121,7 +127,7 @@ ${SAFE_JS}
 ${ENDCARD_JS}
 const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455, X0=60, CW=790, Y0=270, CH=250, PLAY=${JSON.stringify(PLAY)}, TITLE=${JSON.stringify(TITLE)};
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())}, HOOK=${JSON.stringify(HOOK)}, CAP=${JSON.stringify(CAP)}, LIST=${JSON.stringify(LIST)};
-const ITEMS=${JSON.stringify(ITEMS.map((i) => ({ k: i.k, n: i.n, price: price(i.price) })))}, ASK=${JSON.stringify(ASK)}, TICK=${JSON.stringify(TICK)}, LISTAT=${LISTAT}, SKYTOP=${JSON.stringify(SKYTOP)}, S=${S}, OY=${OY};
+const FLAKE=${JSON.stringify(FLAKE)}, ITEMS=${JSON.stringify(ITEMS.map((i) => ({ k: i.k, n: i.n, price: price(i.price) })))}, ASK=${JSON.stringify(ASK)}, TICK=${JSON.stringify(TICK)}, LISTAT=${LISTAT}, SKYTOP=${JSON.stringify(SKYTOP)}, S=${S}, OY=${OY};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 function fitS(s,max,w){ let z=max; while(z>20){ const k=inkOf(s,z,F); if(k.L+k.R<=w) return z; z-=2; } return z; }
 // the card's paper: one cream sheet with a soft shadow, the same box for every card (x 60..850, y 270..520)
@@ -159,7 +165,7 @@ window.frame=function(t, N){
   const b=BEATS[i], lt=t-b.at, cop=fade*(i===0?1:sm((lt+0.06)/0.14));
   if(fade>0){
     if(b.kind==='hook'){
-      if(lt<LISTAT) ov+=linesCard(fade*(1-sm((lt-LISTAT+0.12)/0.1)), HOOK.lines.map((s)=>({s,size:fitS(s,72,700),pitch:72})).concat([{s:HOOK.sub,size:fitS(HOOK.sub,56,700),fill:'${RED}',pitch:60}]));
+      if(lt<LISTAT) ov+=linesCard(fade*(1-sm((lt-LISTAT+0.12)/0.1)), HOOK.lines.map((s)=>({s,size:fitS(s,70,716),pitch:72})).concat([{s:HOOK.sub,size:fitS(HOOK.sub,56,700),fill:'${RED}',pitch:60}]));
       else ov+=listCard(fade*sm((lt-LISTAT)/0.14), [], -1);
     } else if(b.kind==='stop'){ ov+=stopCard(cop, ITEMS.find((x)=>x.k===b.k), lt);
     } else if(b.kind==='all'){ ov+=listCard(cop, [1,1,1,1,1,(lt-TICK.k6)/0.22], lt<0.3?-1:cl((lt-0.3)/0.6));
@@ -178,7 +184,9 @@ window.frame=function(t, N){
     if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round);
     // the card stays in the open sky: 28 px above the bunting, the roofs and the lanterns behind it on this frame
     if(e.getAttribute('data-apart')==='card'){ let top=1e9; for(let x=Math.floor((r.left/S+N.x0)/25); x<=Math.floor((r.right/S+N.x0)/25); x++) top=Math.min(top, SKYTOP[Math.max(0,Math.min(39,x))]);
-      if(top*S+OY-r.bottom<28) return 'the card is '+Math.round(top*S+OY-r.bottom)+' px from the market\\'s bunting'; } }
+      if(top*S+OY-r.bottom<28) return 'the card is '+Math.round(top*S+OY-r.bottom)+' px from the market\\'s bunting';
+      // ... and 28 px from the snowflake doodles in the sky (each about 32 px across; FLAKE is their middle in frame px at camera 0)
+      for(const q of FLAKE){ const fx=q[0]-N.x0*S, fy=q[1], g=Math.max(r.left-(fx+16), (fx-16)-r.right, r.top-(fy+16), (fy-16)-r.bottom); if(g<28) return 'the card is '+Math.round(g)+' px from a snowflake'; } } }
   if(end){ const lg=$('ec').querySelector('.endcard svg').getBoundingClientRect(), tx=[...$('ec').querySelectorAll(':scope>g>text')].find((e)=>e.textContent===PLAY);
     const r=tx.getBoundingClientRect(); if(lg.top-r.bottom<20) return 'end card: "'+PLAY+'" too close to the logo ('+Math.round(lg.top-r.bottom)+' px)'; }
   return ''; };
@@ -208,7 +216,7 @@ window.bg=async function(src){ const im=$('bg'); if(im.getAttribute('href')===sr
     for (const [j, t] of ts.entries()) await one(Math.round(t * FPS), true, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}${OPEN ? '_open' : ''}.png`));
     console.log(ts.length, 'stills'); await b.close(); return; }
   // CHECK=1: run every frame's checks without a screenshot (fast), then stop
-  if (process.env.CHECK) { for (let fi = 0; fi < NF; fi++) await one(fi, false); console.log('all', NF, 'frames pass the checks;', passCart, 'walking frames pass in front of the Treats cart'); await b.close(); return; }
+  if (process.env.CHECK) { for (let fi = 0; fi < NF; fi++) await one(fi, false); console.log('all', NF, 'frames pass the checks'); await b.close(); return; }
   const t0 = Date.now(), HOOKEND = Math.round(B.k1 * FPS) - 2;   // the open variant: frames 0..HOOKEND (the hook beat, up to the next card's first frame)
   let fr = [...Array(NF).keys()];
   if (OPEN) { if (!fs.existsSync(path.join(WORK, 'f', `f${String(NF - 1).padStart(5, '0')}.png`))) throw new Error('render the main cut first'); fr = fr.filter((f) => f <= HOOKEND); }
@@ -217,7 +225,6 @@ window.bg=async function(src){ const im=$('bg'); if(im.getAttribute('href')===sr
   // +1e-4 (in one()): fi/FPS can land a hair under a beat start (the gift Reel's doubled frame); every frame's checks run in one()
   for (const fi of fr) { await one(fi, true, path.join(FD, `f${String(fi).padStart(5, '0')}.png`)); if (fi % 100 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
   await b.close();
-  console.log(passCart, 'walking frames pass in front of the Treats cart');
   if (OPEN) for (let fi = HOOKEND + 1; fi < NF; fi++) { const n = `f${String(fi).padStart(5, '0')}.png`, d = path.join(FD, n); if (!fs.existsSync(d)) fs.symlinkSync(path.join(WORK, 'f', n), d); }
   for (let fi = NF; fs.existsSync(path.join(FD, `f${String(fi).padStart(5, '0')}.png`)); fi++) fs.unlinkSync(path.join(FD, `f${String(fi).padStart(5, '0')}.png`));
 
@@ -257,11 +264,11 @@ window.bg=async function(src){ const im=$('bg'); if(im.getAttribute('href')===sr
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
   const d = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', mp4]).toString();
   console.log('wrote', mp4, d.toFixed(2) + ' s', (fs.statSync(mp4).size / 1e6).toFixed(1) + ' MB');
-  // ---- frame by frame (../frozen_clock.js checkFrames): every moving run (the two walks, the four pans; a run starts after its beat cut and stops
-  // before the pan has eased out), then every hold between them (the slow creep: no two frames alike; its jumps are the card's pop at the beat cut,
+  // ---- frame by frame (../frozen_clock.js checkFrames): every moving run (the six short walks on the snow in front, the camera going along; a run
+  // starts after its beat cut and stops before the camera has eased out), then every hold between them (the slow creep: no two frames alike; its jumps are the card's pop at the beat cut,
   // the tick being drawn and the steps of the game's own crayon poses, drawn about three times a second) ----
-  const fN = (t) => Math.round(t * FPS), mv = (t0, secs) => [fN(t0) + 2, fN(t0 + secs) - 3];
-  const runs = { 'pan to Homes': mv(B.k1, 0.6), 'pan to Clothes': mv(B.k2, 0.5), 'walk to Toys': mv(B.k3 + 0.1, P.walkSecs), 'walk back': mv(B.k4 + 0.1, P.walkSecs), 'pan to Decor': mv(B.k5, 0.7), 'pan to the middle': mv(B.k6, 0.6) };
+  const fN = (t) => Math.round(t * FPS), mv = (t0, secs) => [fN(t0) + 2, Math.max(fN(t0) + 4, fN(t0 + secs) - 2)];
+  const runs = Object.fromEntries(P.walks.map((w) => ['walk to ' + w.to + ' (' + w.k + ')', mv(w.t, w.secs)]));
   let bad = 0;
   for (const [k, [a, z]] of Object.entries(runs)) { const c = checkFrames(mp4, a, z); bad += c.doubled.length + c.jumps.length; console.log('checkFrames', k, a + '..' + z, 'median', c.median, 'doubled', JSON.stringify(c.doubled), 'jumps', JSON.stringify(c.jumps)); }
   const edges = [0, ...Object.values(runs).flatMap(([a, z]) => [a - 3, z + 4]), fN(LOOP) - 1]; let dbl = [], lo = 9;
