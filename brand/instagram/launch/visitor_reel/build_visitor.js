@@ -26,7 +26,7 @@
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const { checkFrames } = require('../frozen_clock.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
@@ -35,16 +35,22 @@ const CAPS = path.resolve(process.env.CAPS || path.join(WORK, 'caps'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', RED = '#D2473C';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_visitor.json'), 'utf8'));
-for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from vo_visitor.json: ' + k);
+// REDNOTE=1: the RedNote cut (as share_reel/build_share.js): every word in Simplified Chinese (the game's own zh-Hans words, checked below), the
+// captures made with PAW_LANG=zh-Hans (CAPS), Noodle in Mandarin (../friends_reel/vo_friends_zh.py with VO_LINES=visitor_reel/vo_visitor_zh.json,
+// zf_073 1.0x), subtitles of at most 14 characters, LXGW WenKai, no safe zone (everything in front, and the yard window with it, moved 85 px right,
+// a 50 px margin), the RedNote end card (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App") centred at (540, 960).
+// Output doodle-doggo-guess-the-visitor-rednote.mp4. The build stops on any word of RN_BAN in the cut's words, the voice or the captured game text.
+const RN = !!process.env.REDNOTE, VOFILE = RN ? 'vo_visitor_zh.json' : 'vo_visitor.json';
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from ' + VOFILE + ': ' + k);
 
 // ---- the rounds: three real visitors of main, each with the hint its Visitors Book page shows under its silhouette ----
 const ROUNDS = [
-  { id: 'waddles', name: 'Sir Waddles', key: 'corgi', breed: 'Corgi', fam: 'Lady Pemberton', hintKey: 'yv.hint_bubbles', hint: 'Comes for the bubbles.', clue: ['Comes for the bubbles.'], title: 'Round 1: who is it?',
+  { id: 'waddles', breedZ: '柯基犬', famZ: '彭伯顿夫人', hintZ: '为了泡泡而来。', titleZ: '第1轮：猜猜是谁？', name: 'Sir Waddles', key: 'corgi', breed: 'Corgi', fam: 'Lady Pemberton', hintKey: 'yv.hint_bubbles', hint: 'Comes for the bubbles.', clue: ['Comes for the bubbles.'], title: 'Round 1: who is it?',
     src: "['waddles', 'Sir Waddles', 'corgi', 0, 48, 'Lady Pemberton', 'Bubble Fountain', { toy: 'Bubble Fountain' }]", v226: '| waddles | Sir Waddles | corgi | Lady Pemberton | Bubble Fountain | Bubble Fountain out |' },
-  { id: 'rapunzel', name: 'Rapunzel', key: 'afghan', breed: 'Afghan Hound', fam: 'Madame Dubois', hintKey: 'yv.hint_pool', hint: 'Comes after a paddle at the Splash Pool.', clue: ['Comes after a paddle', 'at the Splash Pool.'], title: 'Round 2: who is it?',
+  { id: 'rapunzel', breedZ: '阿富汗猎犬', famZ: '杜布瓦夫人', hintZ: '在戏水池划完水后会来。', titleZ: '第2轮：猜猜是谁？', name: 'Rapunzel', key: 'afghan', breed: 'Afghan Hound', fam: 'Madame Dubois', hintKey: 'yv.hint_pool', hint: 'Comes after a paddle at the Splash Pool.', clue: ['Comes after a paddle', 'at the Splash Pool.'], title: 'Round 2: who is it?',
     src: "['rapunzel', 'Rapunzel', 'afghan', 0, 60, 'Madame Dubois', 'Bubble Fountain', { pool: 1 }]", v226: '| rapunzel | Rapunzel | afghan | Madame Dubois | Bubble Fountain | after a paddle at the Splash Pool (`S.pool.day` not empty) |' },
-  { id: 'momiji', name: 'Momiji', key: 'shiba', breed: 'Shiba', fam: 'Mr Kimura', hintKey: 'yv.hint_autumn', hint: 'Comes when the leaves turn.', clue: ['Comes when the leaves turn.'], title: 'Round 3: the sneaky one',
+  { id: 'momiji', breedZ: '柴犬', famZ: '木村先生', hintZ: '树叶变色的时候会来。', titleZ: '第3轮：最难的一轮', name: 'Momiji', key: 'shiba', breed: 'Shiba', fam: 'Mr Kimura', hintKey: 'yv.hint_autumn', hint: 'Comes when the leaves turn.', clue: ['Comes when the leaves turn.'], title: 'Round 3: the sneaky one',
     src: "['momiji', 'Momiji', 'shiba', 0, 26, 'Mr Kimura', 'Play Tunnel', { season: 'autumn' }]", v226: '| momiji | Momiji | shiba | Mr Kimura | Play Tunnel | autumn (season) |' },
 ];
 // ---- the facts, checked against main (the game's own words, data and art) and the captures ----
@@ -63,6 +69,11 @@ for (const r of ROUNDS) {
   must(r.hintKey, r.hint); must('data.yv_dogs.' + r.id + '.5', r.fam);
   if (EN['data.breed_names.' + r.key] !== undefined && EN['data.breed_names.' + r.key] !== r.breed) throw new Error('the breed name changed: ' + r.key);
 }
+// the zh-Hans words (game/i18n/zh-Hans.json): the Visitors Book, the family line, the hints, the families, the breeds
+const ZH = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8'));
+const mustZ = (k, s) => { if (ZH[k] !== s) throw new Error('the zh-Hans game text changed: ' + k + ' is ' + JSON.stringify(ZH[k]) + ', not ' + JSON.stringify(s)); };
+if (RN) { mustZ('yv.book', '访客簿'); mustZ('yv.book_title', '访客簿'); mustZ('yv.family', '和{family}住在一起。'); mustZ('yv.rare', '稀有访客');
+  for (const r of ROUNDS) { mustZ(r.hintKey, r.hintZ); mustZ('data.yv_dogs.' + r.id + '.5', r.famZ); mustZ('data.breed_names.' + r.key, r.breedZ); } }
 if (!/if \(r\.season === 'autumn'\) return tt\('yv\.hint_autumn'/.test(YV) || !/if \(r\.pool\) return tt\('yv\.hint_pool'/.test(YV) || !/return tt\('yv\.hint_bubbles', 'Comes for the bubbles\.'\);\n\}/.test(YV)) throw new Error('yvHint changed');
 if (!/const NEWS_V226 = \{[^\n]*\n\s*id: '2\.26', date: '2026-11-18'/.test(SRC('49c_news.js'))) throw new Error('the v2.26 launch date changed (the Reel says the visitors are in the game now)');
 if (!/PA\.YARD_VISITORS=\{props:Object\.keys\(YV_LBL\),items:Object\.values\(YV_LBL\),book:\(\)=>serve\('yv:book',yvBook\)\}/.test(fs.readFileSync(path.join(ART_ROOT, 'world', 'pawart_world_b.js'), 'utf8'))) throw new Error('PawArt.YARD_VISITORS changed');
@@ -71,13 +82,18 @@ if (!CORE.includes("pop() { tone('sine', 600, 1300, 0.08, 0.5); }") || !CORE.inc
   || !CORE.includes('function env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }')) throw new Error('the game\'s pop or click sound changed');
 // the captures (capture_visitor.js)
 const FACTS = JSON.parse(fs.readFileSync(path.join(CAPS, 'facts.json'), 'utf8'));
-if (FACTS.date !== '2026-11-20' || !FACTS.yvOn || FACTS.yard.name !== 'Home Yard' || FACTS.yard.vb !== '0 0 1000 600') throw new Error('the captures: ' + JSON.stringify([FACTS.date, FACTS.yvOn, FACTS.yard]));
+if (FACTS.date !== '2026-11-20' || !FACTS.yvOn || FACTS.yard.name !== (RN ? '家里的院子' : 'Home Yard') || (FACTS.lang || 'en') !== (RN ? 'zh-Hans' : 'en') || FACTS.yard.vb !== '0 0 1000 600') throw new Error('the captures: ' + JSON.stringify([FACTS.date, FACTS.yvOn, FACTS.yard]));
 for (const r of ROUNDS) {
   const f = FACTS.rounds[r.id], d = FACTS.dogs.find((x) => x.id === r.id);
   if (!f || !d || d.name !== r.name || d.key !== r.key || d.fam !== r.fam || !d.rare) throw new Error('the game data for ' + r.id + ': ' + JSON.stringify(d));
+  if (RN) { if (!f.sameAsYard || f.tag !== r.name || f.cardTitle !== r.name + '来做客啦！' || !f.card.startsWith(r.name + ' · ' + r.breedZ + ' ★ 和' + r.famZ + '住在一起。')
+      || !f.page.includes(r.hintZ) || !FACTS.bookUnknown.some((u) => u.sil && u.txt === '??? ' + r.hintZ) || FACTS.bookTitle.indexOf('访客簿') < 0) throw new Error('the zh-Hans capture of ' + r.id + ': ' + JSON.stringify(f));
+    r.breed = r.breedZ; r.famLine = '和' + r.famZ + '住在一起。'; r.title = r.titleZ; r.clue = [r.hintZ]; }
+  else r.famLine = 'Lives with ' + r.fam + '.';
+  if (RN) { /* checked above */ } else
   if (!f.sameAsYard || f.tag !== r.name || f.cardTitle !== r.name + ' is visiting!' || !f.card.startsWith(r.name + ' · ' + r.breed + ' ★ Lives with ' + r.fam + '.')) throw new Error('the visit of ' + r.id + ': ' + JSON.stringify(f));
-  if (!f.page.includes(r.hint) || !f.page.includes('Lives with ' + r.fam + '.')) throw new Error('the Visitors Book page of ' + r.id + ': ' + f.page);
-  if (!FACTS.bookUnknown.some((u) => u.sil && u.txt === '??? ' + r.hint)) throw new Error('no silhouette page with "??? ' + r.hint + '"');
+  if (!RN && (!f.page.includes(r.hint) || !f.page.includes('Lives with ' + r.fam + '.'))) throw new Error('the Visitors Book page of ' + r.id + ': ' + f.page);
+  if (!RN && !FACTS.bookUnknown.some((u) => u.sil && u.txt === '??? ' + r.hint)) throw new Error('no silhouette page with "??? ' + r.hint + '"');
   // no black or white dog as a subject (owner, 1 Nov 2026): the coat's main colour is neither
   const c = f.coat.colours.base, rgb = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255), L = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
   if (L < 0.15 || L > 0.85 || /^(black|white)/i.test(f.coat.name)) throw new Error(r.id + ' is a black or white dog: ' + f.coat.name + ' ' + c);
@@ -96,7 +112,7 @@ if (!/viewBox="0 0 64 64"/.test(BOOK) || !/aria-label="Visitors Book"/.test(BOOK
 // GROUND: the yard's own props in scene units (x0 y0 x1 y1), read off a unit grid of the grab: the dogs stand on the floor and 28 px clear of them.
 // HANG: the washing line's pole and the washing on the line; the cards and the timer keep 28 px clear of it. The fence, the gate, and the far hills are the backdrop:
 // a visitor stands on the grass in front of the gate, its top below the washing, as the game's own yard visitor stands in front of the fence.
-const SX0 = 268, SY0 = 60, SCALE = H / 540, FLOOR = 340;
+const SCALE = H / 540, SY0 = 60, FLOOR = 340, RNX = RN ? 85 : 0, SX0 = 268 - RNX / SCALE; // RedNote: the front 85 px right, the yard window with it
 const GROUND = { dig: [470, 413, 569, 456], stone: [255, 408, 276, 428], house: [15, 100, 275, 345] };
 // WASH (owner, 20 Nov 2026: no overlapping anywhere, scene props included): the washing line, its pole and the washing on it. Nothing we draw
 // (the visitors and their silhouettes walking or standing, the reveal's burst, Noodle, the cards, the timer) comes within 28 px of them; the
@@ -113,21 +129,38 @@ ROPE.slice(1).forEach((q, i) => { const p = ROPE[i]; HANG['line' + i] = [p[0], M
 const GUESS = 2.0, PAUSE = 0.15;
 const BEATS = []; let at = 0.1;
 const beat = (o, hold, pause) => { o.at = at; o.hold = hold; BEATS.push(o); at += hold + pause; return o; };
-beat({ k: 'hook', kind: 'hook', lines: ['3 shadows at the gate.', 'Bet you can\'t name all 3!'] }, VOD.hook + 0.4, PAUSE);
+beat({ k: 'hook', kind: 'hook', lines: RN ? ['门口来了3个影子，', '你能全猜对吗？'] : ['3 shadows at the gate.', 'Bet you can\'t name all 3!'] }, VOD.hook + 0.4, PAUSE);
 ROUNDS.forEach((r, i) => {
   const c = beat({ k: 'c' + (i + 1), kind: 'clue', ri: i, title: r.title, lines: r.clue }, VOD['c' + (i + 1)] + 0.05 + GUESS, 0);
   c.guessAt = c.at + VOD['c' + (i + 1)] + 0.05; r.clueAt = c.at; r.guessAt = c.guessAt;
   const v = beat({ k: 'r' + (i + 1), kind: 'reveal', ri: i }, VOD['r' + (i + 1)] + 0.4, PAUSE); r.revealAt = v.at;
 });
-const ASK = beat({ k: 'ask', kind: 'ask', lines: ['How many did', 'you get? 👇'] }, VOD.ask + 0.4, 0);
+const ASK = beat({ k: 'ask', kind: 'ask', lines: RN ? ['你猜对了几个？', '评论区告诉我👇'] : ['How many did', 'you get? 👇'] }, VOD.ask + 0.4, 0);
 const LOOP = at + 0.1, T = LOOP + 2.5, NF = Math.round(T * FPS);
 const VOAT = BEATS.map((b) => ({ k: b.k, at: b.at }));
-const allText = BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + ROUNDS.map((r) => r.name + ' ★ ' + r.breed + ' Lives with ' + r.fam + '.').join(' ') + ' 0123456789';
+// RedNote subtitles: Noodle's line in parts of at most 14 characters, each as long as its share of the line. SAY: where the voice spells a word by
+// its sound (misaki reads 划 in 划完水 as huà; the voice says 滑, huá, the right sound), the subtitles keep the game's word.
+const SUBS_ZH = { hook: ['门口来了三个影子，', '你能全猜对吗？'], c1: ['第一轮：', '为了泡泡而来。'], r1: ['原来是柯基犬，', '和彭伯顿夫人住在一起！'],
+  c2: ['第二轮：', '在戏水池划完水后会来。'], r2: ['原来是阿富汗猎犬，', '和杜布瓦夫人住在一起！'], c3: ['第三轮，最难的来了：', '树叶变色的时候会来。'],
+  r3: ['原来是柴犬，', '和木村先生住在一起！', '不是松鼠哦。'], ask: ['你猜对了几个？', '评论区告诉我！'] };
+const SAY = [['划完水', '滑完水']];
+const SUBS = [];
+if (RN) for (const v of BEATS) { const parts = SUBS_ZH[v.k]; if (SAY.reduce((a, [x, y]) => a.replace(x, y), parts.join('')) !== VOJ.text[v.k]) throw new Error('subtitles differ from the voice: ' + v.k);
+  const wt = parts.map((x) => x.replace(/[，。！？：、]/g, '').length + 1), sum = wt.reduce((a, c) => a + c, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum, s2 = x.replace(/[，。、：]$/, '');
+    if ([...s2].length > 14) throw new Error('subtitle over 14 characters: ' + s2);
+    SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: s2 }); t0 += d; }); }
+// RedNote anti-ban (README RedNote rule, REDNOTE.md): no link, domain, handle, QR, other platform or app, off-platform word, post/story wording
+const RN_BAN = /https?:|www\.|\.app|\.com|@|instagram|youtube|tiktok|itch|微信|朋友圈|QQ|微博|抖音|小红书|WhatsApp|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|发到|发布到|快拍|帖子|tag/i, RN_BAN2 = /INS|\bins\b/;
+if (RN) { const all = JSON.stringify(BEATS) + JSON.stringify(SUBS) + JSON.stringify(VOJSON) + ROUNDS.map((r) => [r.name, r.breed, r.famLine, r.title, ...r.clue].join(' ')).join(' ')
+    + [FACTS.bookTitle, ...FACTS.bookUnknown.map((u) => u.txt), ...ROUNDS.map((r) => { const f = FACTS.rounds[r.id]; return [f.tag, f.cardTitle, f.card, f.page].join(' '); })].join(' ');
+  for (const re of [RN_BAN, RN_BAN2]) if (re.test(all)) throw new Error('a RedNote word on the ban list: ' + re.exec(all)[0]); }
+const allText = (RN ? SUBS.map((x) => x.s).join('') + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '') + BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + ROUNDS.map((r) => r.name + ' ★ ' + r.breed + ' ' + r.famLine).join(' ') + ' 0123456789';
 // house words (README): no em dash, no "breed" as a verb, no "sell", no itch.io; no made-up numbers
 if (/—|\bbreed(s|ing)?\b|\bsell|itch|%/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban: ' + allText);
-if (T < 22 || T > 32) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 22..32');
+if (T < 22 || T > (RN ? 40 : 32)) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 22..' + (RN ? 40 : 32));
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs id="defs">
 <symbol id="book" viewBox="0 0 64 64" overflow="visible">${BOOK.trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</symbol>
@@ -146,12 +179,12 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
  <feComposite in2="rr" operator="in" result="line"/>
  <feMerge><feMergeNode in="fill"/><feMergeNode in="line"/></feMerge>
 </filter></defs>
-<image id="bgimg" width="${W}" height="${H}" href="__BG__"/><g id="art"></g><g id="ov"></g><g id="ec"></g></svg>
+<image id="bgimg" width="${W}" height="${H}" href="__BG__"/><g id="fg"${RN ? ` transform="translate(${RNX} 0)"` : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455;
+const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', CX=455, SUBS=${JSON.stringify(SUBS)};
 const BEATS=${JSON.stringify(BEATS)}, ROUNDS=${JSON.stringify(ROUNDS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
 const GROUND=${JSON.stringify(GROUND)}, HANG=${JSON.stringify(HANG)}, SX0=${SX0}, SY0=${SY0}, SCALE=${SCALE}, FLOOR=${FLOOR}, GUESS=${GUESS};
 const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) => [k, d.idx])))};
@@ -194,7 +227,7 @@ function card(b, top, op){ const W0=790, x0=CX-W0/2, L=[], big=b.kind==='hook'||
   return { h: hh, svg: '<g data-box data-apart="card" data-over="1" opacity="'+f2(op)+'"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+f2(hh)+'" rx="38" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+centred(L, CX, top+hh/2, F).svg+'</g>' }; }
 // the Visitors Book card: the game's book art, then the page (name and star, breed, family) in its own box
 function bookCard(r, top, op, u){ const W0=790, x0=CX-W0/2, h=252, bx=x0+214, bw=W0-214-22, k=0.94+0.06*back(u*1.3);
-  const L=[{s:r.name+' ★', size:fitS(r.name+' ★',80,bw-60), fill:'${RED}', pitch:72},{s:r.breed, size:56, pitch:60},{s:'Lives with '+r.fam+'.', size:fitS('Lives with '+r.fam+'.',50,bw-50), fill:'#8A7468', pitch:56}];
+  const L=[{s:r.name+' ★', size:fitS(r.name+' ★',80,bw-60), fill:'${RED}', pitch:72},{s:r.breed, size:56, pitch:60},{s:r.famLine, size:fitS(r.famLine,50,bw-50), fill:'#8A7468', pitch:56}];
   const cx=x0+W0/2, cy=top+h/2;
   return '<g data-apart="card" data-over="1" data-safe opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(k)+') translate('+f2(-cx)+' '+f2(-cy)+')"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+h+'" rx="38" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'
     +'<use href="#book" x="'+(x0+24)+'" y="'+(top+(h-176)/2)+'" width="176" height="176"/>'
@@ -216,7 +249,7 @@ function layout(){ // the anchors: Noodle's idle box starts at x NX; each visito
   // at least 34 px under the washing (y 789 at this window), centred on VCX at rest
   const nb=DR.noodle_idle_right; AX.noodle=(nb.x0+nb.x1)/2; NCX=NX+(nb.x1-nb.x0)*NZ/2;
   for(const r of ROUNDS){ let x0=1e9,y0=1e9,x1=-1e9; for(const p of ['walk','idle','happy']){ const b=DR[r.id+'_'+p+'_left']; x0=Math.min(x0,b.x0); y0=Math.min(y0,b.y0); x1=Math.max(x1,b.x1); }
-    const wb=box([0,0,0,282]).b; VZ[r.id]=Math.min(2.4, 384/(x1-x0), (VFEET-wb-34)/((186-y0)*1.07)); AX[r.id]=(x0+x1)/2; } }
+    const wb=box([0,0,0,282]).b; VZ[r.id]=Math.min(2.4, 384/(x1-x0), (VFEET-wb-(RN?40:34))/((186-y0)*1.07)); AX[r.id]=(x0+x1)/2; } }
 // Noodle's pose at t: idle for the hook, sitting through each clue and guess, happy (with a hop) from each reveal on
 // Noodle's pose at t: standing (idle) through the hook, each clue and each guess, the game's play bow from each reveal on
 function noodleAt(t){ let s=0, pose='idle'; for(const r of ROUNDS){ if(t>=r.clueAt-0.06&&pose!=='idle'){ s=r.clueAt; pose='idle'; } if(t>=r.revealAt-0.06){ s=r.revealAt; pose='bow'; } } return {pose, s}; }
@@ -247,12 +280,15 @@ window.frame=function(t){
     else { const c=card(b, CARD_TOP, cop); ov+=c.svg; }
     if(b.kind==='clue'){ const g=t-b.guessAt; if(g>=-0.12&&g<GUESS){ const p=1-cl(g/GUESS), nleft=Math.max(1,Math.ceil(GUESS-Math.max(0,g)-1e-6)); ov+=timer(TX,TY,TR,p,nleft,fade*sm((g+0.12)/0.12)); } }
   }
-  // the end card (brand/kids/endcard.js)
-  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
+  // RedNote subtitles: Noodle's words in pills of at most 14 characters, under Noodle on the open grass
+  if(RN&&fade>0){ const su=SUBS.find((x)=>t>=x.a&&t<x.b); if(su){ const o=Math.min(sm((t-su.a)/0.08),sm((su.b-t)/0.08)); ov+=pill(su.s, CX, 1560, fitS(su.s,58,900), F, { fill:'${CREAM}', padX:30, op:fade*o }).replace('<g data-box','<g data-box data-apart="sub" data-over="1"'); } }
+  // the end card (brand/kids/endcard.js); RedNote: its own card (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App"), centred at (540, 960)
+  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g>'; }
   $('art').innerHTML=art_; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  if(RN&&end){ const g=$('ec').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')'); }
   // ---- the checks ----
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
   if(fade>0) for(const e of $('art').querySelectorAll('[data-feet]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), fy=+e.getAttribute('data-feet');
     if(fy/SCALE+SY0<FLOOR) return e.getAttribute('data-apart')+' stands above the floor';
@@ -265,8 +301,9 @@ window.frame=function(t){
   for(const e of $('st').querySelectorAll('[data-apart],[data-box],[data-safe]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05||e.closest('#ec')) continue;
     // a visitor walking in from the right may run past x 850 (above the buttons, which start at y 1163) until it reaches its spot
     if(e.hasAttribute('data-entering')&&r.left>=56&&r.top>=266&&r.bottom<=1163) continue;
+    if(RN){ if(e.hasAttribute('data-entering')&&r.left>=50) continue; if(r.left<50||r.right>1030||r.top<40||r.bottom>1880) return 'in the margin: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); continue; }
     if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
-  // Noodle 550..700 px wide standing (idle), the visitors never black: the silhouette is a filter on the real drawing
+  if(RN&&end){ const r=$('ec').querySelector('.endcard').getBoundingClientRect(); if(Math.abs((r.left+r.right)/2-540)>1.5||Math.abs((r.top+r.bottom)/2-960)>1.5) return 'the RedNote end card is not centred at (540, 960)'; }
   return ''; };
 </script>`;
 
@@ -288,6 +325,8 @@ window.frame=function(t){
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
   if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
   const lay = await p.evaluate((D) => window.init(D), DRAW);
   console.log('scales', JSON.stringify(lay.VZ), '| Noodle idle', ((DRAW && lay.boxes.noodle_idle_right) || ''));
@@ -341,7 +380,7 @@ window.frame=function(t){
     const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
     ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
   }
-  const mp4 = path.join(OUT, 'doodle-doggo-guess-the-visitor.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-guess-the-visitor-rednote.mp4' : 'doodle-doggo-guess-the-visitor.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });

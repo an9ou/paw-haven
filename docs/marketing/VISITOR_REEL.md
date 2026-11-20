@@ -114,3 +114,35 @@ Also checked: the Visitors Book shows a silhouette, "???" and the hint for a dog
 - The yard is shown as it is with nothing put out (no toys), so its open grass carries the dogs; the window puts the gate behind the visitor and the dig patch to the right of Noodle.
 - Noodle stands while he waits and play-bows on each reveal (not sit and happy): the lower poses leave room for the visitor between him and the washing.
 - The VO says "Mister Kimura" (the voice reads "Mr" badly); the card says "Mr Kimura" as the game does.
+
+## RedNote cut (20 Nov 2026)
+
+The owner approved the English cut ("Good") and asked for the RedNote version. Only the MP4 is made (no cover, no captions); the English MP4 is unchanged (same file, md5 checked after the RedNote render).
+
+| File | What |
+|---|---|
+| `doodle-doggo-guess-the-visitor-rednote.mp4` | RedNote / 小红书: 1080 x 1920, 30 fps, **39.23 s (1177 frames)**: 36.72 s + the RedNote end card for 2.5 s (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App", centred at 540, 960). |
+| `vo_visitor_zh.json` | Noodle in Mandarin (`../friends_reel/vo_friends_zh.py`, Kokoro v1.1-zh, zf_073 1.0x). |
+
+Remake: `PAW_LANG=zh-Hans node capture_visitor.js <main> <caps_zh>`, the voice with `VO_LINES=brand/instagram/launch/visitor_reel/vo_visitor_zh.json python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh> zf_073 1.0`, then `REDNOTE=1 CAPS=<caps_zh> node build_visitor.js <work_zh> <vo_zh>`.
+
+Every word is the game's own zh-Hans where the game has it (`game/i18n/zh-Hans.json`, checked by the build; the captures were made with the game in zh-Hans): 访客簿 (`yv.book`), the family line 和{family}住在一起。 (`yv.family`), the hints 为了泡泡而来。 / 在戏水池划完水后会来。 / 树叶变色的时候会来。 (`yv.hint_bubbles`, `yv.hint_pool`, `yv.hint_autumn`), the families 彭伯顿夫人 / 杜布瓦夫人 / 木村先生 (`data.yv_dogs.*.5`), the breeds 柯基犬 / 阿富汗猎犬 / 柴犬 (`data.breed_names.*`). The game keeps the visitors' names in Latin letters in zh-Hans (no zh name keys; the zh capture's cards say "Sir Waddles来做客啦！", "Sir Waddles · 柯基犬 ★ 和彭伯顿夫人住在一起。"), so the cards show Sir Waddles, Rapunzel and Momiji, and the voice says the breed and the family instead of a Latin name. The zh capture's Visitors Book shows "??? " + each hint under the silhouettes.
+
+| Beat | Noodle says (zf_073 1.0x) | Card |
+|---|---|---|
+| hook | 门口来了三个影子，你能全猜对吗？ | 门口来了3个影子， / 你能全猜对吗？ |
+| c1 | 第一轮：为了泡泡而来。 | 第1轮：猜猜是谁？ / 为了泡泡而来。 (timer 2, 1) |
+| r1 | 原来是柯基犬，和彭伯顿夫人住在一起！ | 访客簿 card: Sir Waddles ★ / 柯基犬 / 和彭伯顿夫人住在一起。 |
+| c2 | 第二轮：在戏水池划完水后会来。 (the voice file says 滑完水: misaki reads 划 as huà; 滑 gives the right sound, huá; subtitles and card keep the game's 划) | 第2轮：猜猜是谁？ / 在戏水池划完水后会来。 |
+| r2 | 原来是阿富汗猎犬，和杜布瓦夫人住在一起！ | Rapunzel ★ / 阿富汗猎犬 / 和杜布瓦夫人住在一起。 |
+| c3 | 第三轮，最难的来了：树叶变色的时候会来。 | 第3轮：最难的一轮 / 树叶变色的时候会来。 |
+| r3 | 原来是柴犬，和木村先生住在一起！不是松鼠哦。 | Momiji ★ / 柴犬 / 和木村先生住在一起。 |
+| ask | 你猜对了几个？评论区告诉我！ | 你猜对了几个？ / 评论区告诉我👇 |
+
+Subtitles (Noodle's words, at most 14 characters, LXGW WenKai, at y 1560 under Noodle on the open grass, 28 px clear of the yard's props): 门口来了三个影子 / 你能全猜对吗？ · 第一轮 / 为了泡泡而来。 · 原来是柯基犬 / 和彭伯顿夫人住在一起！ · 第二轮 / 在戏水池划完水后会来。 · 原来是阿富汗猎犬 / 和杜布瓦夫人住在一起！ · 第三轮，最难的来了 / 树叶变色的时候会来。 · 原来是柴犬 / 和木村先生住在一起！ / 不是松鼠哦。 · 你猜对了几个？ / 评论区告诉我！
+
+Full frame, no safe zone: everything in front (and the yard window with it, x 244..548) moved 85 px right, a 50 px margin. All the English cut's rules hold: the washing-line check (every dog, the burst, the cards, the timer and the subtitles 28 px clear of the washing, the line and the pole; the RedNote visitors keep 40 px of headroom under the washing), text centred in its boxes, Noodle 569 px wide standing, dogs 28 px apart, the frozen-clock drawings, the 0.0001 frame-index nudge, the checks on every frame. It is longer than the English cut (Mandarin at 1.0x: 27.8 s of voice), as the earlier RedNote cuts are (share: 36.98 s).
+
+Anti-ban: no QR, link, domain, @ or handle; no other app or platform; nothing about posting or sending. The build stops on any of: a URL or `www.` / `.app` / `.com`, `@`, Instagram, INS, ins, YouTube, TikTok, itch, 微信, 朋友圈, QQ, 微博, 抖音, 小红书, WhatsApp, 链接, 网址, 官网, 二维码, 扫码, 下载, 私信我, 加我, 主页链接, 戳, 发帖, 发到, 发布到, 快拍, 帖子, tag, in the cut's words, the subtitles, the voice and the captured game text (the book title, the silhouette pages, each visit's tag, card and book page).
+
+Checks: all 1177 frames pass (`CHECK=1` and the full render). `checkFrames()`: **0 doubled frames** in all eight moving runs (medians 0.25..0.45); spikes over 5 only at the six beat cuts (115, 247, 375, 532, 668, 840); everything else it flags is under 4.4: the reveal cross-fades, the walk-ins, the subtitle pills fading in and out, and the game's keyframe swaps. The end card (1115..1176) is the still RedNote card after its fade-in. ffprobe: h264 1080 x 1920, 30/1 fps, 1177 frames, 39.23 s, AAC stereo.

@@ -13,7 +13,8 @@
 //                The visitors are drawn as the game draws them in the yard (yvSVG: dogSVG of the breed's starter coat, seeded by its id):
 //                the capture checks its own drawing of pose happy, facing left, is the yard's #visitorG drawing, byte for byte.
 //                Noodle is PawArt.dog('dachs') in the Autumn Scarf, as in the share and winter Reels.
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/visitor_reel/capture_visitor.js <main checkout> <outdir>
+//   NODE_PATH=$(npm root -g) [PAW_LANG=zh-Hans] node brand/instagram/launch/visitor_reel/capture_visitor.js <main checkout> <outdir>
+// PAW_LANG=zh-Hans (the RedNote cut): the game in Simplified Chinese (switched and reloaded with the save); the drawings are the same art.
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || 'visitor_caps'); fs.mkdirSync(OUT, { recursive: true });
 const { run } = require(path.join(DEV, 'game', 'test_lib'));
@@ -21,6 +22,7 @@ const { freezeClock, stepClock, releaseClock } = require('../frozen_clock.js');
 const ROUNDS = (process.env.ROUNDS || 'waddles,rapunzel,momiji').split(',');
 const NOODLE_POSES = ['idle', 'sit', 'bow', 'happy', 'beg', 'jump'], VIS_POSES = ['walk', 'idle', 'happy', 'sit'];
 const OUTFIT = { neck: 'Autumn Scarf' };
+const LANG = process.env.PAW_LANG || '';
 // STARTER_GENES[key] of main (game/src/10_sex_age_genes.js), the loci only (coatGenes(key, ''))
 function starterGenes(key) { const src = fs.readFileSync(path.join(DEV, 'game', 'src', '10_sex_age_genes.js'), 'utf8'), m = new RegExp('[{,\\s]' + key + ': (\\{[^}]*\\})').exec(src.slice(src.indexOf('const STARTER_GENES')));
   if (!m) throw new Error('no STARTER_GENES for ' + key); const g = Function('return ' + m[1])(), out = {}; ['B', 'D', 'E', 'S', 'M', 'Bl', 'A', 'I'].forEach((k) => { if (g[k]) out[k] = g[k].slice(); }); return out; }
@@ -30,6 +32,12 @@ run('visitor_capture', async (t) => {
   const settle = async () => { await ev(() => { const S = window.__paw.S; S.newsSeen = '9.99'; S.wbPend = null; S.awayGiftISO = ''; S.backISO = ''; window.__paw.saveNow(); }); await p().waitForTimeout(900); await closeAll(); };
   await t.newGame({ map215: true, ground: true, prefs: { yvTest: true }, time: 'day', season: 'autumn', weather: 'sunny', head: '~Dachshund', sex: 'boy' }, { coins: 3000, dog: { name: 'Noodle' } });
   await t.calm(); await t.lu(); await settle();
+  // PAW_LANG=zh-Hans (the RedNote cut): the game switched to Simplified Chinese and reloaded with the save (as share_reel/capture_share.js)
+  if (LANG) {
+    await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu(); await settle();
+  }
+  facts.lang = await ev(() => document.documentElement.lang); console.log('language', facts.lang);
   facts.date = await ev(() => new Date().toISOString().slice(0, 10));
   facts.yvOn = await ev(() => window.__paw.yv.on()); if (!facts.yvOn) throw new Error('the visitors are off');
   facts.yvDate = await ev(() => window.__paw.yv.date);
