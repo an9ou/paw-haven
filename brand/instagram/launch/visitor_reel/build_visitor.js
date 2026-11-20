@@ -22,6 +22,7 @@
 //   VO_LINES=brand/instagram/launch/visitor_reel/vo_visitor.json python3 brand/instagram/launch/friends_reel/vo_friends.py <kokoro dir> <vo dir> af_bella 1.1
 //   ART_ROOT=<main> CAPS=<caps dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/visitor_reel/build_visitor.js <workdir> <vo dir>
 //   ONLY=stills: key frames (WORK/stills, TS=a,b,...). FRAMES=a-b: re-render only frames a..b, then encode again with the same sound.
+//   ONLY=cover: the cover (visitor-cover.jpg, 1080 x 1920; REDNOTE=1: brand/rednote/rednote-21-guess-the-visitor.jpg, its y 240..1680 at 3:4).
 //   CHECK=1: every frame's checks without screenshots. LOOSE=1 (stills only, for layout work): print a failed check and go on.
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
@@ -155,7 +156,10 @@ const RN_BAN = /https?:|www\.|\.app|\.com|@|instagram|youtube|tiktok|itch|微信
 if (RN) { const all = JSON.stringify(BEATS) + JSON.stringify(SUBS) + JSON.stringify(VOJSON) + ROUNDS.map((r) => [r.name, r.breed, r.famLine, r.title, ...r.clue].join(' ')).join(' ')
     + [FACTS.bookTitle, ...FACTS.bookUnknown.map((u) => u.txt), ...ROUNDS.map((r) => { const f = FACTS.rounds[r.id]; return [f.tag, f.cardTitle, f.card, f.page].join(' '); })].join(' ');
   for (const re of [RN_BAN, RN_BAN2]) if (re.test(all)) throw new Error('a RedNote word on the ban list: ' + re.exec(all)[0]); }
-const allText = (RN ? SUBS.map((x) => x.s).join('') + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '') + BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + ROUNDS.map((r) => r.name + ' ★ ' + r.breed + ' ' + r.famLine).join(' ') + ' 0123456789';
+// the covers' words (ONLY=cover): one big question and a small line; no names, no coloured dogs (the answers stay hidden)
+const CV = RN ? { head: '猜猜是哪只狗？', sub: '看影子猜狗狗' } : { head: 'Guess the dog?', sub: 'from its shadow' };
+if (RN && (RN_BAN.test(CV.head + CV.sub) || RN_BAN2.test(CV.head + CV.sub))) throw new Error('a RedNote word on the ban list in the cover');
+const allText = CV.head + ' ' + CV.sub + ' ' + (RN ? SUBS.map((x) => x.s).join('') + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App' : '') + BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + ROUNDS.map((r) => r.name + ' ★ ' + r.breed + ' ' + r.famLine).join(' ') + ' 0123456789';
 // house words (README): no em dash, no "breed" as a verb, no "sell", no itch.io; no made-up numbers
 if (/—|\bbreed(s|ing)?\b|\bsell|itch|%/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban: ' + allText);
 if (T < 22 || T > (RN ? 40 : 32)) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 22..' + (RN ? 40 : 32));
@@ -179,7 +183,7 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
  <feComposite in2="rr" operator="in" result="line"/>
  <feMerge><feMergeNode in="fill"/><feMergeNode in="line"/></feMerge>
 </filter></defs>
-<image id="bgimg" width="${W}" height="${H}" href="__BG__"/><g id="fg"${RN ? ` transform="translate(${RNX} 0)"` : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
+<image id="bgimg" width="${W}" height="${H}" href="__BG__"/><image id="bgcov" width="${W}" height="${H}" href="__BGC__" visibility="hidden"/><g id="fg"${RN ? ` transform="translate(${RNX} 0)"` : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
@@ -263,6 +267,38 @@ function visitorG(t, i, fade){ const r=ROUNDS[i], z=VZ[r.id], ax=AX[r.id], walk0
   const kh=r.id+'_happy_left', fd=sm(ru/0.18), pop=1+0.07*Math.sin(Math.PI*cl(ru/0.34));
   return dogG(r.id, [{k, i:kf(k,t,s0), sil:1, op:1-fd}, {k:kh, i:kf(kh,t,r.revealAt-0.06), sil:0, op:fd}], VCX, VFEET, z, Object.assign(base,{pop}))
     + burst(VCX, VFEET-118, 92, ru/0.45); }
+// ---- the cover (ONLY=cover): its own design, not a frame of the Reel. The yard at the English window (x 268) for both covers; the question big on a
+// cream card; the three silhouettes in a row on the grass under the washing, each with its number; Noodle big in front, happy, looking at them; the
+// logo on its own card. Everything inside x 40..1040, y 250..1670 (the 3:4 grid crop keeps 240..1680). Checks: centred text, 28 px apart, the dogs on
+// the floor, 28 px clear of the yard's props, the washing, the line and the pole.
+const SXC=268, CV=${JSON.stringify(CV)};
+window.cover=function(){ $('fg').removeAttribute('transform'); $('bgimg').setAttribute('visibility','hidden'); $('bgcov').removeAttribute('visibility'); $('ec').innerHTML='';
+  const boxC=(b)=>({l:(b[0]-SXC)*SCALE, t:(b[1]-SY0)*SCALE, r:(b[2]-SXC)*SCALE, b:(b[3]-SY0)*SCALE});
+  let a='', o='';
+  const L=[{s:CV.head,size:fitS(CV.head,RN?118:132,790),fill:'${RED}',pitch:RN?84:98},{s:CV.sub,size:fitS(CV.sub,RN?60:66,780),fill:'#8A7468'}];
+  // the card's height from the ink of the two lines, 32 px above and below it
+  const k0=inkOf(L[0].s,L[0].size,F), k1=inkOf(L[1].s,L[1].size,F), hh=k0.A+L[0].pitch+k1.D+64;
+  o+='<g data-box data-apart="title"><rect x="108" y="276" width="864" height="'+f2(hh)+'" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'+centred(L,540,276+hh/2,F).svg+'</g>';
+  // the three silhouettes (their idle drawings, facing Noodle), feet on the grass; their tops stay under the washing
+  const CXS=[205,540,872], FEETS=1098, wb=boxC([0,0,0,282]).b+34;
+  ROUNDS.forEach((r,j)=>{ const k=r.id+'_idle_left', d=DR[k], z=Math.min(292/(d.x1-d.x0), (FEETS-wb)/(186-d.y0));
+    a+=dogG('sil'+(j+1), [{k, i:0, sil:1, op:1}], CXS[j], FEETS, z, {ax:(d.x0+d.x1)/2, nt:0.9+j*0.7});
+    o+='<g data-box data-apart="tag'+(j+1)+'"><circle cx="'+CXS[j]+'" cy="1186" r="34" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/>'+centred([{s:String(j+1),size:54,fill:'${RED}'}],CXS[j],1186,F).svg+'</g>'; });
+  // Noodle, big, happy, in front on the open grass, facing them
+  const kn='noodle_happy_right', dn=DR[kn], zn=2.8, wN=(dn.x1-dn.x0)*zn;
+  a+=dogG('Noodle', [{k:kn, i:0, sil:0, op:1}], 64+wN/2, 1622, zn, {ax:(dn.x0+dn.x1)/2, nt:0.9});
+  // the logo on its own card, bottom right, clear of the dig patch
+  const lw=300, lh=lw*280/900; o+='<g data-apart="logo" data-safe><rect x="'+(865-lw/2-22)+'" y="1462" width="'+(lw+44)+'" height="'+f2(lh+24)+'" rx="26" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(865-lw/2)+'" y="1474" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
+  $('art').innerHTML=a; $('ov').innerHTML=o;
+  const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
+  const near=apartCheck($('st'),28); if(near.length) return 'cover too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
+  const props=Object.assign({},GROUND,HANG);
+  for(const e of $('st').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart');
+    if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/SCALE+SY0<FLOOR) return 'cover: '+n+' stands above the floor';
+    for(const [nm,bx] of Object.entries(props)){ const c=boxC(bx), k={l:Math.max(0,c.l),t:Math.max(0,c.t),r:Math.min(${W},c.r),b:Math.min(${H},c.b)}; if(k.r<=k.l||k.b<=k.t) continue;
+      const g=gap(r,k); if(g<28) return 'cover: '+n+' on the yard\\'s '+nm+' ('+Math.round(g)+' px)'; }
+    if(r.left<40||r.right>1040||r.top<250||r.bottom>1670) return 'cover: outside the 3:4 crop: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
+  return ''; };
 window.init=function(DRAW){ const m=initDrawings(DRAW); layout(); return {boxes:m, VZ, AX}; };
 window.frame=function(t){
   let art_='', ov='';
@@ -320,7 +356,12 @@ window.frame=function(t){
   await p.setContent(`<html><body style="margin:0"><style>[class$="-hl"]{display:none}</style>${svg}</body></html>`);
   await p.evaluate(() => document.querySelectorAll('.gr-game').forEach((e) => e.remove())); await p.waitForTimeout(300);
   await p.screenshot({ path: bgf, type: 'jpeg', quality: 93 });
-  const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html.replace('__BG__', 'data:image/jpeg;base64,' + fs.readFileSync(bgf).toString('base64')));
+  // the covers' background: the English window (x 268) for both covers
+  const bgc = path.join(WORK, 'bg_cover.jpg');
+  if (process.env.ONLY === 'cover') { const sv = fs.readFileSync(path.join(CAPS, 'yard.svg'), 'utf8').replace(/^<svg[^>]*>/, (m) => m.replace(/viewBox="[^"]*"/, `viewBox="268 ${SY0} ${W / SCALE} ${H / SCALE}"`).replace(/ (width|height|style|preserveAspectRatio)="[^"]*"/g, '').replace('<svg', `<svg width="${W}" height="${H}"`));
+    await p.setContent(`<html><body style="margin:0"><style>[class$="-hl"]{display:none}</style>${sv}</body></html>`); await p.evaluate(() => document.querySelectorAll('.gr-game').forEach((e) => e.remove())); await p.waitForTimeout(300);
+    await p.screenshot({ path: bgc, type: 'jpeg', quality: 93 }); } else fs.copyFileSync(bgf, bgc);
+  const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html.replace('__BG__', 'data:image/jpeg;base64,' + fs.readFileSync(bgf).toString('base64')).replace('__BGC__', 'data:image/jpeg;base64,' + fs.readFileSync(bgc).toString('base64')));
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
@@ -334,6 +375,10 @@ window.frame=function(t){
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.LOOSE) console.log('CHECK', t.toFixed(2), err.slice(0, 300)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (file) await p.screenshot({ path: file }); };
   // Noodle's size, standing (idle): 550..700 px wide (owner)
   { await render(1.0); const w = await p.evaluate(() => { const e = document.querySelector('[data-apart="Noodle"] use[href^="#fr_"]'); return e.getBoundingClientRect().width; }); console.log('Noodle standing', Math.round(w), 'px wide'); if (w < 550 || w > 700) throw new Error('Noodle is ' + Math.round(w) + ' px wide standing'); }
+  if (process.env.ONLY === 'cover') {
+    const err = await p.evaluate(() => window.cover()); if (err) throw new Error(err);
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-21-guess-the-visitor.jpg') : path.join(OUT, 'visitor-cover.jpg');
+    await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ...BEATS.flatMap((x) => [x.at + 0.5, x.at + x.hold * 0.9]).slice(1), ...ROUNDS.map((r) => r.guessAt + 1), LOOP + 0.15, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));

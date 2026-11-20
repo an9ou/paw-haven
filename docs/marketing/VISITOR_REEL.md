@@ -146,3 +146,14 @@ Full frame, no safe zone: everything in front (and the yard window with it, x 24
 Anti-ban: no QR, link, domain, @ or handle; no other app or platform; nothing about posting or sending. The build stops on any of: a URL or `www.` / `.app` / `.com`, `@`, Instagram, INS, ins, YouTube, TikTok, itch, 微信, 朋友圈, QQ, 微博, 抖音, 小红书, WhatsApp, 链接, 网址, 官网, 二维码, 扫码, 下载, 私信我, 加我, 主页链接, 戳, 发帖, 发到, 发布到, 快拍, 帖子, tag, in the cut's words, the subtitles, the voice and the captured game text (the book title, the silhouette pages, each visit's tag, card and book page).
 
 Checks: all 1177 frames pass (`CHECK=1` and the full render). `checkFrames()`: **0 doubled frames** in all eight moving runs (medians 0.25..0.45); spikes over 5 only at the six beat cuts (115, 247, 375, 532, 668, 840); everything else it flags is under 4.4: the reveal cross-fades, the walk-ins, the subtitle pills fading in and out, and the game's keyframe swaps. The end card (1115..1176) is the still RedNote card after its fade-in. ffprobe: h264 1080 x 1920, 30/1 fps, 1177 frames, 39.23 s, AAC stereo.
+
+## Covers (20 Nov 2026)
+
+The owner asked for both covers; the coordinator writes the captions. Made with `ONLY=cover` (English) and `REDNOTE=1 ONLY=cover` (RedNote); both MP4s unchanged (md5 checked).
+
+| File | What |
+|---|---|
+| `brand/instagram/launch/visitor_reel/visitor-cover.jpg` | English, 1080 x 1920, its own design (not a frame of the Reel): "Guess the dog?" big in red with "from its shadow" on a cream card; the three silhouettes side by side on the yard's grass (the same crayon-shaded ink-blue filter on the game's own idle drawings: big ears on short legs, the long-haired hound, the spiral tail), each with a number tag 1 / 2 / 3; Noodle big in front (happy, 568 px wide), looking at them; the logo on its own card bottom right. No names and no coloured visitors (the answers stay hidden). The game's Home Yard (window x 268, the gate and the washing behind) filled to the bottom. |
+| `brand/rednote/rednote-21-guess-the-visitor.jpg` | RedNote, 3:4 (1080 x 1440): the same design cut at y 240..1680, in LXGW WenKai: 「猜猜是哪只狗？」 and 「看影子猜狗狗」. No link, domain, handle, QR or app name (the build's RedNote ban list runs on the cover's words). |
+
+Checks (both): text centred in its box (`centreCheck`), everything 28 px apart (`apartCheck`: the three silhouettes, their tags, Noodle, the title card, the logo card), the dogs on the yard's floor, every drawn thing 28 px clear of the yard's props (the dig patch, the stone, the house) and of the washing, the line (its measured path) and the pole; everything inside x 40..1040, y 250..1670 (the 3:4 grid crop). The silhouettes are sized so their tops stay under the washing. Both looked at at 1x.
