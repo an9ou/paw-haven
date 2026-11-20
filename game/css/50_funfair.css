@@ -122,3 +122,19 @@ html[data-layout="phone"] .ff-rib{width:56px;height:56px}
 /* review fix: rinse drops fall from the jug onto the dog's back */
 .ff-drop > svg{animation:ffDrop .6s ease-in both}
 @keyframes ffDrop{from{transform:translateY(0)}to{transform:translateY(70px)}}
+/* v2.32.1 the Fun Fair sheet from the town map (49_funfair.js ffMapSheet): every game, where it is, Go */
+.ff-mintro{margin:0 0 10px;font-size:17px;line-height:1.35}
+.ff-mcards{gap:8px}
+.ff-mcard{grid-template-columns:52px minmax(0,1fr) auto;padding:6px 10px}
+.ff-mcard .ff-cic{width:52px;height:52px}
+.ff-mcard .ff-ctx b{font-size:24px}
+.ff-mcard .ff-where{font-size:16px}
+.ff-mcard .btn{min-height:44px;min-width:72px;font-size:19px}
+.ff-mcard.locked .btn{font-size:16px;white-space:normal;max-width:9.5em;text-align:center;line-height:1.15}
+html[data-layout="phone"] .ff-mcard{grid-template-columns:40px minmax(0,1fr) auto;gap:6px 10px;padding:6px 8px}
+html[data-layout="phone"] .ff-mcard .ff-cic{width:40px;height:40px}
+html[data-layout="phone"] .ff-mcard .ff-ctx b{font-size:21px}
+html[data-layout="phone"] .ff-mcard .ff-where{font-size:15px}
+html[data-layout="phone"] .ff-mcard .btn{grid-column:auto;white-space:nowrap;min-width:60px;padding:4px 12px}
+html[data-layout="phone"] .ff-mcard.locked .btn{white-space:normal;max-width:7.5em;font-size:15px}
+html[data-layout="phone"] .ff-mintro{font-size:15px}

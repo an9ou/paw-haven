@@ -313,6 +313,13 @@ async function worker(job) {
       await ev(() => { const P = window.__paw; P.S.ff.pc = { wk: '', e: [], judged: '', won: 0, rib: 0 }; for (let i = 0; i < 3; i++) P.ff.enter({ who: [[P.S.dog.name, 400, 600]], vb: [0, 0, 1000, 600] }); P.ff.judge(); }); await modalUp(); await measure('ff: photo contest results'); await closeAll();
       await ev(() => { const P = window.__paw; P.ff.setSat(null); P.ff.test(false); P.mp.allow(false); }); await t.home('yard');
     }, 150000);
+    // v2.32.1 "Where is the Fun Fair?" (49_funfair.js): the Fun Fair sign on the town map and its sheet (every game, where it is, Go / Opens at level N)
+    await step('ffmap', async () => {
+      await ev(() => { const P = window.__paw; P.mp.allow(true); P.ff.test(true); });
+      await t.home('yard'); await ev(() => window.__paw.go('map')); await waitSel('#mapInner [data-area=ffair]'); await ev(() => window.__paw.mapTo('ffair')); await sleep(400); await measure('ffmap: town map with the Fun Fair sign');
+      await ev(() => window.__paw.ff.sheet()); await modalUp(); await measure('ffmap: Fun Fair sheet'); await closeAll();
+      await ev(() => { const P = window.__paw; P.ff.test(false); P.mp.allow(false); }); await t.home('yard');
+    }, 90000);
     // v2.17.1 Festive Market (V2171.md): the market scene, its five stall sheets and the map tent (prefs.fmTest and the map through the test hooks)
     await step('fm', async () => {
       await ev(() => { const P = window.__paw; P.mp.allow(true); P.fm.date('2026-10-27'); P.fm.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 6); });

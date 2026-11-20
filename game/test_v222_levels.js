@@ -433,7 +433,7 @@ run('v222_levels', async (t) => {
   ok(c2n[1] === 'Level 6: Tokyo + a new outfit' && c2n[2] === 'Level 7: Sunflower Lanes + 2 new outfits' && c2n[7] === '', 'lvNextText: ' + JSON.stringify(c2n));
   ok(c2n.slice(0, 7).every((s) => /^Level \d+: \S/.test(s) && !/[{}]|undefined/.test(s)), 'every level 2-20 has a readable next line');
   const c2u = await ev(() => { const L = window.__paw.lv; return { u2: L.unlocksText(2), u10: L.unlocksText(10), u7: L.unlocksText(7), all: Array.from({ length: 19 }, (_, i) => L.unlocksText(i + 2)) }; });
-  ok(c2u.u2.includes('Place: Dog Park') && c2u.u2.includes('The veggie patch') && c2u.u2.includes('Fun Fair: Sniff & Seek') && c2u.u2.includes('Shop: Bow Tie'), 'the level 2 card list: ' + c2u.u2.join(' | '));
+  ok(c2u.u2.includes('Place: Dog Park') && c2u.u2.includes('The veggie patch') && c2u.u2.includes('Fun Fair: Sniff & Seek (My Yard)') && c2u.u2.includes('Shop: Bow Tie'), 'the level 2 card list: ' + c2u.u2.join(' | '));
   ok(c2u.u7.filter((s) => /Sunflower/.test(s)).length === 1 && c2u.u10.includes('Title: Friendly Neighbour'), 'a place and its walk are one line; level 10 lists the title: ' + c2u.u7.join(' | '));
   ok(c2u.all.every((a) => a.length && a.every((s) => !/[{}]|undefined/.test(s))), 'every level 2-20 lists something, no raw ICU');
   await ev(() => window.__paw.lv.gain('board', 620 - window.__paw.lv.xp() + 10)); // level 6 and 10 XP

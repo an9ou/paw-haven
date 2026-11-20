@@ -78,3 +78,8 @@ html[data-layout="phone"] .nb-step{font-size:16px}
 html[data-layout="phone"] .nb-lesson,html[data-layout="phone"] .nb-gift{font-size:15px}
 html[data-layout="phone"] .nb-flip .btn{min-width:76px}
 html[data-layout="phone"] .nb-popic{width:72px;height:72px}
+/* v2.32.1: the Show me button on page 9 (the Fun Fair sheet): the step keeps to the ruled lines (two lines tall, the text wraps on its own lines) */
+.nb-step.has-show{flex-wrap:nowrap}
+.nb-step.has-show .nb-st{flex:1 1 auto;min-width:0}
+.nb-show{flex:none;min-height:44px;min-width:44px;padding:2px 12px;font-size:16px;line-height:1.2;margin-left:auto;white-space:nowrap}
+.nb .nb-page.art .nb-step.has-show{min-height:calc(var(--L) * 2)}

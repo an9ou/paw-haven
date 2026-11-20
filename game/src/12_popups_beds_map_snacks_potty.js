@@ -198,6 +198,7 @@ function clearPotty() { pottyT.splice(0).forEach(clearTimeout); if (pottyBusy) {
 
 /* ---- town map: just the map ---- */
 function mapTipText(k) {
+  if (k === 'ffair' && typeof ffMapTip === 'function') return ffMapTip(); // v2.32.1: the Fun Fair sign on the town map
   const here = (S.place === 'house' ? 'yard' : S.place) === k;
   const names = { yard: tt('popup.my_yard', 'My Yard'), market: tt('popup.market_street', 'Market Street'), shelter: tt('popup.doodle_doggo_shelter', 'Doodle Doggo Shelter'), park: tt('popup.sunny_park', 'Sunny Park'), river: tt('popup.riverside', 'Riverside'), woods: tt('popup.maple_woods', 'Maple Woods'), beach: tt('popup.seashell_beach', 'Seashell Beach') };
   const nm = (PLACES[k] && k !== 'yard' ? placeName(k) : names[k]) || k;
