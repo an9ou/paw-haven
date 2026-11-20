@@ -94,11 +94,18 @@ if (!/viewBox="0 0 64 64"/.test(BOOK) || !/aria-label="Visitors Book"/.test(BOOK
 
 // ---- the yard: a 303.75 x 540-unit window of the game's Home Yard at 3.5556x (1920 / 540), the gate in the middle ----
 // GROUND: the yard's own props in scene units (x0 y0 x1 y1), read off a unit grid of the grab: the dogs stand on the floor and 28 px clear of them.
-// HANG: the washing line's pole and the washing on the line; the cards and the timer keep 28 px clear of it. The fence, the gate, the washing line (its pole and washing) and the far hills
-// are the backdrop: a visitor at the gate stands in front of it, and walks in past the pole, as the game's own yard visitor stands in front of the fence.
-const SX0 = 272, SY0 = 60, SCALE = H / 540, FLOOR = 340;
+// HANG: the washing line's pole and the washing on the line; the cards and the timer keep 28 px clear of it. The fence, the gate, and the far hills are the backdrop:
+// a visitor stands on the grass in front of the gate, its top below the washing, as the game's own yard visitor stands in front of the fence.
+const SX0 = 268, SY0 = 60, SCALE = H / 540, FLOOR = 340;
 const GROUND = { dig: [470, 413, 569, 456], stone: [255, 408, 276, 428], house: [15, 100, 275, 345] };
+// WASH (owner, 20 Nov 2026: no overlapping anywhere, scene props included): the washing line, its pole and the washing on it. Nothing we draw
+// (the visitors and their silhouettes walking or standing, the reveal's burst, Noodle, the cards, the timer) comes within 28 px of them; the
+// window (x from 268) leaves the pole just off the right edge, so a box only counts where it is in the frame.
 const HANG = { pole: [572, 145, 605, 341], shirtBlue: [285, 226, 335, 275], sockRed: [361, 236, 383, 279], sockYellow: [392, 238, 415, 282], towel: [433, 241, 486, 280], shirtPink: [509, 224, 559, 275] };
+// the line itself: its path in the grab (M250.1 215.8 ... 588 216, sagging to 244 at x 428), as a box per stretch between two of its points, 1.5 units
+// either side of the stroke
+const ROPE = [[250, 216], [267, 221], [283, 225], [300, 228], [317, 232], [334, 236], [351, 239], [368, 241], [385, 243], [402, 243], [419, 244], [436, 243], [453, 242], [470, 241], [487, 239], [504, 236], [521, 232], [538, 229], [555, 225], [571, 220], [588, 216]];
+ROPE.slice(1).forEach((q, i) => { const p = ROPE[i]; HANG['line' + i] = [p[0], Math.min(p[1], q[1]) - 1.5, q[0], Math.max(p[1], q[1]) + 1.5]; });
 
 // ---- the beats (each card carries the spoken words, so it works as the subtitles) ----
 // the timeline (owner, 13 Nov 2026: fast): a card stays up for its spoken line + 0.4 s, then a 0.15 s pause; a clue card stays for its line, then
@@ -151,6 +158,7 @@ const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) 
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const box=(b)=>({l:(b[0]-SX0)*SCALE, t:(b[1]-SY0)*SCALE, r:(b[2]-SX0)*SCALE, b:(b[3]-SY0)*SCALE});
+const inFrame=(k)=>{ const c={l:Math.max(0,k.l),t:Math.max(0,k.t),r:Math.min(${W},k.r),b:Math.min(${H},k.b)}; return c.r>c.l&&c.b>c.t?c:null; };
 const gap=(r,k)=>Math.max(k.l-r.right, r.left-k.r, k.t-r.bottom, r.top-k.b);
 // ---- the game's drawings: each captured SVG split into its ground shadow and its three keyframes (a symbol each), measured once ----
 const DR={};
@@ -198,18 +206,20 @@ function timer(cx, cy, R, p, n, op){ const a=-Math.PI/2, e=a+2*Math.PI*cl(p), r=
   let ticks=''; for(let j=0;j<12;j++){ const q=j/12*2*Math.PI; ticks+='<path d="M'+f2(cx+(R-3)*Math.cos(q))+' '+f2(cy+(R-3)*Math.sin(q))+'L'+f2(cx+(R-13)*Math.cos(q))+' '+f2(cy+(R-13)*Math.sin(q))+'" stroke="${PEN}" stroke-width="3" stroke-linecap="round"/>'; }
   return '<g data-box data-apart="timer" data-over="1" opacity="'+f2(op)+'"><circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+wedge+ticks+centred([{s:String(n),size:108,fill:'${RED}'}],cx,cy,F).svg+'</g>'; }
 // the reveal's pop: short crayon strokes bursting out above the visitor
-function burst(cx, cy, R, u){ if(u<=0||u>=1) return ''; let s=''; const o=sm(1-u)*1.0, d=R+60*sm(u*1.4);
-  for(let j=0;j<9;j++){ const q=Math.PI*(1.08+j*0.105); s+='<path d="M'+f2(cx+d*Math.cos(q))+' '+f2(cy+d*Math.sin(q))+'l'+f2(26*Math.cos(q))+' '+f2(26*Math.sin(q))+'" stroke="'+(j%2?'#F2B33D':'#E8735A')+'" stroke-width="9" stroke-linecap="round"/>'; }
-  return '<g opacity="'+f2(o)+'">'+s+'</g>'; }
+function burst(cx, cy, R, u){ if(u<=0||u>=1) return ''; let s=''; const o=sm(1-u)*1.0, d=R+36*sm(u*1.4);
+  for(let j=0;j<9;j++){ const q=Math.PI*(1.08+j*0.105); s+='<path d="M'+f2(cx+d*Math.cos(q))+' '+f2(cy+d*Math.sin(q))+'l'+f2(22*Math.cos(q))+' '+f2(22*Math.sin(q))+'" stroke="'+(j%2?'#F2B33D':'#E8735A')+'" stroke-width="9" stroke-linecap="round"/>'; }
+  return '<g data-wash="burst" opacity="'+f2(o)+'">'+s+'</g>'; }
 // ---- the layout ----
-const CARD_TOP=284, NFEET=1414, NZ=2.6, NX=74, VFEET=1040, VCX=640, TX=232, TY=958, TR=104;
+const CARD_TOP=276, NFEET=1412, NZ=2.6, NX=80, VFEET=1128, VCX=648, TX=232, TY=958, TR=104;
 let VZ={}, AX={}, NCX=0;
-function layout(){ // the anchors: Noodle's idle box starts at x NX; each visitor scaled to fit 384 x 345 and centred on VCX at rest
+function layout(){ // the anchors: Noodle's idle box starts at x NX; each visitor scaled to fit 384 wide with its top (and the reveal's 7 % bounce)
+  // at least 34 px under the washing (y 789 at this window), centred on VCX at rest
   const nb=DR.noodle_idle_right; AX.noodle=(nb.x0+nb.x1)/2; NCX=NX+(nb.x1-nb.x0)*NZ/2;
   for(const r of ROUNDS){ let x0=1e9,y0=1e9,x1=-1e9; for(const p of ['walk','idle','happy']){ const b=DR[r.id+'_'+p+'_left']; x0=Math.min(x0,b.x0); y0=Math.min(y0,b.y0); x1=Math.max(x1,b.x1); }
-    VZ[r.id]=Math.min(2.4, 384/(x1-x0), 345/(186-y0)); AX[r.id]=(x0+x1)/2; } }
+    const wb=box([0,0,0,282]).b; VZ[r.id]=Math.min(2.4, 384/(x1-x0), (VFEET-wb-34)/((186-y0)*1.07)); AX[r.id]=(x0+x1)/2; } }
 // Noodle's pose at t: idle for the hook, sitting through each clue and guess, happy (with a hop) from each reveal on
-function noodleAt(t){ let s=0, pose='idle'; for(const r of ROUNDS){ if(t>=r.clueAt-0.06){ s=r.clueAt; pose='sit'; } if(t>=r.revealAt-0.06){ s=r.revealAt; pose='happy'; } } return {pose, s}; }
+// Noodle's pose at t: standing (idle) through the hook, each clue and each guess, the game's play bow from each reveal on
+function noodleAt(t){ let s=0, pose='idle'; for(const r of ROUNDS){ if(t>=r.clueAt-0.06&&pose!=='idle'){ s=r.clueAt; pose='idle'; } if(t>=r.revealAt-0.06){ s=r.revealAt; pose='bow'; } } return {pose, s}; }
 // the visitor of round i at t: walking in, waiting at the gate as a silhouette, revealed; the last one fades as the next walks in
 function visitorG(t, i, fade){ const r=ROUNDS[i], z=VZ[r.id], ax=AX[r.id], walk0=i===0?0:r.clueAt+0.12, x0=i===0?880:1035, wd=i===0?1.15:1.3;
   if(t<walk0-0.001) return ''; const next=ROUNDS[i+1]; let op=fade; if(next&&t>=next.clueAt-0.06){ op*=1-sm((t-next.clueAt+0.06)/0.15); if(op<=0.001) return ''; }
@@ -219,7 +229,7 @@ function visitorG(t, i, fade){ const r=ROUNDS[i], z=VZ[r.id], ax=AX[r.id], walk0
   // the pop: the silhouette (its idle drawing) gives way to the dog in colour (happy), with a bounce and a burst of crayon strokes
   const kh=r.id+'_happy_left', fd=sm(ru/0.18), pop=1+0.07*Math.sin(Math.PI*cl(ru/0.34));
   return dogG(r.id, [{k, i:kf(k,t,s0), sil:1, op:1-fd}, {k:kh, i:kf(kh,t,r.revealAt-0.06), sil:0, op:fd}], VCX, VFEET, z, Object.assign(base,{pop}))
-    + burst(VCX, VFEET-150, 120, ru/0.45); }
+    + burst(VCX, VFEET-118, 92, ru/0.45); }
 window.init=function(DRAW){ const m=initDrawings(DRAW); layout(); return {boxes:m, VZ, AX}; };
 window.frame=function(t){
   let art_='', ov='';
@@ -230,7 +240,7 @@ window.frame=function(t){
     // the visitors: the round of the moment (and the last one fading out as the next walks in)
     for(let j=0;j<ROUNDS.length;j++) art_+=visitorG(t,j,fade);
     // Noodle, big, in front on the open grass, facing the gate
-    const n=noodleAt(t), k='noodle_'+n.pose+'_right', hop=n.pose==='happy'?-Math.abs(Math.sin((t-n.s)*7))*14:0;
+    const n=noodleAt(t), k='noodle_'+n.pose+'_right', hop=0;
     art_+=dogG('Noodle', [{k, i:kf(k,t,n.s), sil:0, op:1}], NCX, NFEET, NZ, {ax:AX.noodle, nt:t, dy:hop, op:fade});
     // the cards
     if(b.kind==='reveal'){ ov+=bookCard(ROUNDS[b.ri], CARD_TOP, cop, u); }
@@ -247,12 +257,14 @@ window.frame=function(t){
   if(fade>0) for(const e of $('art').querySelectorAll('[data-feet]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), fy=+e.getAttribute('data-feet');
     if(fy/SCALE+SY0<FLOOR) return e.getAttribute('data-apart')+' stands above the floor';
     for(const [nm,bx] of Object.entries(GROUND)){ const g=gap(r,box(bx)); if(g<28) return e.getAttribute('data-apart')+' too close to the yard\\'s '+nm+' ('+Math.round(g)+' px)'; }
-    if(e.getAttribute('data-apart')==='Noodle') for(const [nm,bx] of Object.entries(HANG)){ const g=gap(r,box(bx)); if(g<28) return 'Noodle on the '+nm; } }
+    for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return e.getAttribute('data-apart')+' on the washing: '+nm+' ('+Math.round(g)+' px)'; } }
+  for(const e of $('art').querySelectorAll('[data-wash]')){ const r=e.getBoundingClientRect(); if(!r.width) continue;
+    for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return 'the reveal burst on the washing: '+nm; } }
   for(const e of $('ov').querySelectorAll('[data-over]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect();
     for(const [nm,bx] of Object.entries(Object.assign({},GROUND,HANG))){ const g=gap(r,box(bx)); if(g<28) return e.getAttribute('data-apart')+' on the yard\\'s '+nm+' ('+Math.round(g)+' px)'; } }
   for(const e of $('st').querySelectorAll('[data-apart],[data-box],[data-safe]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05||e.closest('#ec')) continue;
-    // a visitor walking in from the right may run past x 850 (above the buttons, which start at y 1163) until it reaches the gate
-    if(e.hasAttribute('data-entering')&&r.left>=56&&r.top>=266&&r.bottom<=1150) continue;
+    // a visitor walking in from the right may run past x 850 (above the buttons, which start at y 1163) until it reaches its spot
+    if(e.hasAttribute('data-entering')&&r.left>=56&&r.top>=266&&r.bottom<=1163) continue;
     if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   // Noodle 550..700 px wide standing (idle), the visitors never black: the silhouette is a filter on the real drawing
   return ''; };
@@ -265,6 +277,7 @@ window.frame=function(t){
   // the yard: the window rendered once as a JPEG
   const bgf = path.join(WORK, 'bg_yard.jpg'); let svg = fs.readFileSync(path.join(CAPS, 'yard.svg'), 'utf8');
   if (!/class="world/.test(svg)) throw new Error('no yard grab');
+  if (!svg.includes('M250.1 215.8Q256.9 218.2 260.5 219.1Q264.1 220.1 267.4 221Q270.7 222 274.8 222.8')) throw new Error('the washing line moved: measure ROPE again');
   svg = svg.replace(/^<svg[^>]*>/, (m) => m.replace(/viewBox="[^"]*"/, `viewBox="${SX0} ${SY0} ${W / SCALE} ${H / SCALE}"`).replace(/ (width|height|style|preserveAspectRatio)="[^"]*"/g, '').replace('<svg', `<svg width="${W}" height="${H}"`));
   if (SX0 + W / SCALE > 1000 || SY0 + H / SCALE > 600.01) throw new Error('the window runs off the yard');
   await p.setContent(`<html><body style="margin:0"><style>[class$="-hl"]{display:none}</style>${svg}</body></html>`);
