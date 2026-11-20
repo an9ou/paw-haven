@@ -75,7 +75,7 @@ run('ff_map', async (t) => {
     const keys = R.map((r) => r.k);
     ok(['catch', 'seek', 'bubble', 'show', 'kite', 'paper', 'bakery', 'wash', 'stall', 'photo'].every((k) => keys.includes(k)), 'every game, job, the stall and the photo contest: ' + keys.join(' '));
     const W = Object.fromEntries(R.map((r) => [r.k, r]));
-    ok(W.catch.where === 'At Sunny Park' && W.seek.where === 'At My Yard' && W.bubble.where === 'At Splash Pool' && W.paper.where === 'At Town Square' && W.bakery.where === 'At Pupuccino Café' && W.stall.where === 'At Kibble Corner' && W.kite.where === 'At Mt. Fuji Lookout', 'each row says where: ' + R.map((r) => r.k + '=' + r.where).join(', '));
+    ok(W.catch.where === 'At Sunny Park' && W.seek.where === 'In my yard' && W.bubble.where === 'At Splash Pool' && W.paper.where === 'At Town Square' && W.bakery.where === 'At Pupuccino Café' && W.stall.where === 'At Kibble Corner' && W.kite.where === 'At Mt. Fuji Lookout', 'each row says where: ' + R.map((r) => r.k + '=' + r.where).join(', '));
     ok(!W.catch.lock && W.catch.btn === 'Go' && !W.bubble.lock && !W.paper.lock, 'open games (level 4): Go');
     ok(W.show.lock && W.show.btn === 'Opens at level 9' && W.kite.lock && W.kite.btn === 'Opens at level 11' && W.wash.lock && W.wash.btn === 'Opens at level 5', `locked rows show the level: ${W.show.btn} | ${W.kite.btn} | ${W.wash.btn}`);
     ok(R.every((r) => r.h >= 44 && r.w >= 44), 'every button is 44 px or more: ' + Math.round(Math.min(...R.map((r) => r.h))));
@@ -86,6 +86,10 @@ run('ff_map', async (t) => {
     ok(await t.until(() => (window.__toasts || []).some((s) => /level 9/.test(s)) || /level 9/.test(document.getElementById('toasts').textContent), null, 2000), 'a locked row says when it opens, and goes nowhere');
     ok(await ev(() => window.__paw.mode === 'map' && !window.__paw.mp.walking()), 'still on the map');
 
+    // the Saturday stall: its row says Saturdays on other days
+    const st = await ev(() => { const P = window.__paw, out = {}; const row = () => { P.ff.sheet(); const b = document.querySelector('#modal .ff-mcard[data-k="stall"] [data-ffmgo]'); return [b.textContent, b.getAttribute('aria-disabled')]; }; P.ff.setSat(false); out.no = row(); P.ff.setSat(true); out.yes = row(); P.ff.setSat(null); P.ff.sheet(); return out; });
+    ok(st.no[0] === 'Saturdays' && st.no[1] === 'true' && st.yes[0] === 'Go' && st.yes[1] !== 'true', 'the market stall row: "Saturdays" on other days, Go on a Saturday: ' + JSON.stringify(st));
+    await t.until(() => !!document.querySelector('#modal .ff-mpop .ff-mcards'), null, 2000);
     sec(`3. ${tag}: Go travels like a tap on the building, then the yellow button`);
     const goTo = dev ? 'park' : 'cafe', k = dev ? 'catch' : 'bakery';
     await ev((k) => document.querySelector(`#modal .ff-mcard[data-k="${k}"] [data-ffmgo]`).click(), k);
@@ -110,7 +114,7 @@ run('ff_map', async (t) => {
   const nbh = await ev(() => window.__paw.msn.html());
   ok(/data-nbshow="ff"/.test(nbh) && /Show me/.test(nbh), 'page 9 has a Show me button');
   await ev(() => window.__paw.ms.open()); await t.until(() => !!document.querySelector('#modal .ms-tab[data-mstab="notebook"]'), null, 4000);
-  await t.p.click('.ms-tab[data-mstab="notebook"]'); await t.until(() => !!document.querySelector('#modal .nb-show'), null, 3000);
+  await t.p.click('.ms-tab[data-mstab="notebook"]'); await t.until(() => !!document.querySelector('#modal .nb-show'), null, 3000); await sleep(600); // the sheet's pop-in scale settles first
   const sb = await ev(() => { const b = document.querySelector('#modal .nb-show'); const r = b.getBoundingClientRect(); return { h: r.height, w: r.width, t: b.textContent }; });
   ok(sb.h >= 44 && sb.w >= 44, `Show me is a 44 px button (${Math.round(sb.w)} x ${Math.round(sb.h)})`);
   await t.p.click('#modal .nb-show');

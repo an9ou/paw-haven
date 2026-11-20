@@ -83,7 +83,7 @@ run('v230_together', async (t) => {
       S.newsSeen = was; return out;
     });
     // owner, 20 Nov 2026: v2.32 "A letter from your dog" opens the same day as v2.30, so it leads (same date, higher id) and v2.30 is on the same sheet
-    ok(n.a === 'A letter from your dog' && n.seenA === '2.32' && /Better together/.test(n.all), 'v2.31 seen: the automatic sheet leads with v2.32, shows v2.30 with it, and marks 2.32 seen: ' + n.a + ' / ' + n.seenA + ' / ' + n.all);
+    ok(n.a === 'A letter from your dog' && n.seenA === '2.32.1' && /Better together/.test(n.all), 'v2.31 seen: the automatic sheet leads with v2.32, shows v2.30 with it, and marks the newest id (2.32.1, the minor Fun Fair note) seen: ' + n.a + ' / ' + n.seenA + ' / ' + n.all);
     ok(n.b === 'A letter from your dog', 'v2.29 seen: v2.32 leads (the newest not seen): ' + n.b);
     ok(n.c === 'A letter from your dog', 'v2.30 seen, then a later small entry: v2.32 (not seen, a big update) leads, not the small entry: ' + n.c);
     ok(n.d === 'A letter from your dog' && n.e === 'A letter from your dog', 'v2.31 or an old entry seen, with a later small entry: v2.32 leads: ' + n.d + ' / ' + n.e);

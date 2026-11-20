@@ -112,7 +112,7 @@ function ffUnlocks(L) { return ffReady() && !lvOn() ? FF_KEYS.filter((k) => FF_G
    (data-area "ffair": hover lift, press squash, long-press name, 44 px taps), drawn once the Fun Fair is on (ffReady). A tap opens ffMapSheet:
    every game and job, where it is, and Go (the same travel as a tap on that place's building, then the place's yellow Fun Fair button) or
    "Opens at level N" / "Opens at Bond N". Gerald's notebook page 9 (Show me) and the How to play card point here too. */
-const FF_SPOT = [1270, 1250];
+const FF_SPOT = [1270, 1250], FF_CLEAR = [1278, 1240, 150, 124]; // the sign and the ground the map keeps clear of its filler houses and trees for it (x, y, rx, ry)
 const ffSpotOf = (k) => (k === 'stall' ? 'market' : k === 'photo' ? 'square' : (FF_GAMES[k] || {}).place || 'yard');
 function ffPlaceName(k) { const p = ffSpotOf(k); return typeof mpName === 'function' ? mpName(p) : p === 'yard' ? tt('popup.my_yard', 'My Yard') : townPlaceName(p); }
 const ffMapName = () => tt('ff.btn_fair', 'Fun Fair');
@@ -139,17 +139,22 @@ function ffMapKeys() {
   const ks = FF_KEYS.filter(ffPlaceOk).map((k, i) => ({ k, i, n: need(k), j: FF_GAMES[k].job ? 1 : 0 })).sort((a, b) => a.j - b.j || a.n - b.n || a.i - b.i).map((x) => x.k).concat(['stall', 'photo']);
   return ks.filter((k) => !ffMapLock(k)).concat(ks.filter((k) => !!ffMapLock(k)));
 }
+// the stall opens on Saturdays only: on other days its row says so instead of Go
+const ffMapShut = (k) => k === 'stall' && !ffSaturday();
+const ffMapWhere = (k) => (ffSpotOf(k) === 'yard' ? tt('ff.map_at_yard', 'In my yard') : tt('ff.map_at', 'At {place}', { place: ffPlaceName(k) }));
 function ffMapRow(k) {
-  const lock = ffMapLock(k);
-  const btn = lock ? `<button class="btn" type="button" data-ffmgo="${k}" aria-disabled="true">${esc(lock.btn)}</button>` : `<button class="btn yes" type="button" data-ffmgo="${k}">${esc(tt('ff.map_go', 'Go'))}</button>`;
-  return `<li class="ff-card ff-mcard${lock ? ' locked' : ''}" data-k="${k}" data-place="${ffSpotOf(k)}"><span class="ff-cic" aria-hidden="true">${art('item', FF_ICON[k])}</span><div class="ff-ctx"><b>${esc(ffName(k))}</b><span class="small ff-where">${esc(tt('ff.map_at', 'At {place}', { place: ffPlaceName(k) }))}</span></div>${btn}</li>`;
+  const lock = ffMapLock(k), shut = !lock && ffMapShut(k);
+  const btn = lock ? `<button class="btn" type="button" data-ffmgo="${k}" aria-disabled="true">${esc(lock.btn)}</button>`
+    : shut ? `<button class="btn" type="button" data-ffmgo="${k}" aria-disabled="true">${esc(tt('ff.map_sat', 'Saturdays'))}</button>`
+    : `<button class="btn yes" type="button" data-ffmgo="${k}">${esc(tt('ff.map_go', 'Go'))}</button>`;
+  return `<li class="ff-card ff-mcard${lock || shut ? ' locked' : ''}" data-k="${k}" data-place="${ffSpotOf(k)}"><span class="ff-cic" aria-hidden="true">${art('item', FF_ICON[k])}</span><div class="ff-ctx"><b>${esc(ffName(k))}</b><span class="small ff-where">${esc(ffMapWhere(k))}</span></div>${btn}</li>`;
 }
 function ffMapSheet() {
   if (!ffReady()) return null;
-  const p = openModal(esc(ffMapName()), `<p class="ff-mintro">${esc(tt('ff.map_intro', 'Games and small jobs all around town. Tap Go to walk there, then tap the yellow Fun Fair button.'))}</p><ul class="ff-cards ff-mcards">${ffMapKeys().map(ffMapRow).join('')}</ul>`, { cls: 'ff-pop ff-mpop' });
+  const p = openModal(esc(ffMapName()), `<p class="ff-mintro">${esc(tt('ff.map_hint', "Games and small jobs all around town. Tap Go to walk there, then tap the yellow button with the game's name."))}</p><ul class="ff-cards ff-mcards">${ffMapKeys().map(ffMapRow).join('')}</ul>`, { cls: 'ff-pop ff-mpop' });
   p.querySelectorAll('[data-ffmgo]').forEach((b) => { b.onclick = () => {
     const k = b.dataset.ffmgo;
-    if (b.getAttribute('aria-disabled') === 'true') { const l = ffMapLock(k); nope(l ? l.line : ffLockLine(k)); return; }
+    if (b.getAttribute('aria-disabled') === 'true') { const l = ffMapLock(k); nope(l ? l.line : ffMapShut(k) ? tt('ff.stall_closed', 'The stall opens on Saturdays.') : ffLockLine(k)); return; }
     SFX.boop(840); closeModal(); ffGoTo(ffSpotOf(k));
   }; });
   return p;

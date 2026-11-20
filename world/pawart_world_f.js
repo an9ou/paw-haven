@@ -473,8 +473,12 @@ function bigMap(o,env){
   for(let y=330;y<980;y+=44)for(let x=1990+((y/44)%2)*22;x<2390;x+=44){const jx=x+k.J(10),jy=y+k.J(8);if(jx<1990+50*Math.sin(jy/110))continue;if(near(jx,jy,60)||nearB(jx,jy,1.05)||k.r()<.22)continue;
     const pine=k.r()<.68,s=.85+k.r()*.35,c=k.r()<.5?C.pine:C.pineD;put(jy,k.cap(()=>pine?mPine(k,jx,jy,s,c):mTree(k,jx,jy+6,.9,2)))}
   const pal=[[C.wall,C.roof],[C.wall2,C.lav],[C.wall3,'#9AA7B8'],[C.wall4,C.redD],['#FFF3DC',C.orange]];
+  // o.clear: [[x, y, rx, ry], ...] ellipses the game keeps clear of filler for its own sign (the Fun Fair, v2.32.1). The filler there is still drawn and
+  // dropped, so the random sequence (and every other house and tree on the map) stays exactly as before
+  const CLR=Array.isArray(o.clear)?o.clear:[],inClr=(x,y)=>CLR.some(c=>((x-c[0])/c[2])**2+((y-c[1])/c[3])**2<1);
   for(let y=150;y<1480;y+=62)for(let x=40+((y/62)%2)*34;x<2380;x+=68){const jx=x+k.J(14),jy=y+k.J(10);if(!free(jx,jy)||k.r()<.5)continue;
-    if(k.r()<.6){const c=pal[Math.floor(k.r()*pal.length)],s=.9+k.r()*.25;put(jy,k.cap(()=>mHouse(k,jx,jy,s,c[0],c[1])))}else{const s=.85+k.r()*.35,kd=k.r()<.5?0:1;put(jy,k.cap(()=>mTree(k,jx,jy,s,kd)))}}
+    const pf=inClr(jx,jy)?()=>{}:put;
+    if(k.r()<.6){const c=pal[Math.floor(k.r()*pal.length)],s=.9+k.r()*.25;pf(jy,k.cap(()=>mHouse(k,jx,jy,s,c[0],c[1])))}else{const s=.85+k.r()*.35,kd=k.r()<.5?0:1;pf(jy,k.cap(()=>mTree(k,jx,jy,s,kd)))}}
   // jp: a small vermilion torii over three footpaths (up the hill, into the bamboo, along the cliffs)
   [['sprout','hilltop',.3],['woods','bamboo',.5],['cliffs','woods',.42]].forEach(([a,b,t])=>{const e=EDGES.find(q=>q.a===a&&q.b===b),p=e.pts[Math.round((e.pts.length-1)*t)];k.jp(()=>put(p[1],k.cap(()=>torii(k,p[0],p[1]+6,.85))))});
   // a hidden place (the Station with the trip off, the Fuji Lookout with Japan off): its spot gets the town filler, on the side stream
@@ -502,7 +506,7 @@ function mkEnv(o){const S=['spring','summer','autumn','winter'],season=S.include
 const attrs=e=>(e.ssn?` data-season="${e.ssn}"`:'')+(e.hw?' data-halloween="1"':'')+(e.lt?' data-lights="1"':'')+(e.ny?' data-newyear="1"':'')+(e.jp?' data-jp="1"':'')+(e.snow?' data-snow="1"':'');
 const cache={};
 const fresh=s=>{const suf='x'+(++_n);return s.replace(/mf-(\d+)/g,m=>m+suf)};
-function v215Map(o){const env=mkEnv(o),key=JSON.stringify([env,o.names||0,o.labels||0,o.lock||0,o.stickers||0,o.hide||0,o.title||0]);if(cache[key])return fresh(cache[key]);
+function v215Map(o){const env=mkEnv(o),key=JSON.stringify([env,o.names||0,o.labels||0,o.lock||0,o.stickers||0,o.hide||0,o.title||0,o.clear||0]);if(cache[key])return fresh(cache[key]);
   const {k,pp}=bigMap(o,env),rc=recolor(env),R=s=>rc?s.replace(HEXRE,rc):s,clip=uid();// the clip keeps the sea and the rail inside the map when the svg overflows
   const svg=`<svg class="pa-wa-scene pa-wf-map" viewBox="0 0 2400 1500" preserveAspectRatio="xMidYMid meet" role="group" aria-label="${esc(o.label||'Doodle Doggo Town map')}" data-v215="1"${attrs(env)}><defs><clipPath id="${clip}"><rect width="2400" height="1500"/></clipPath>${pp.defs}${R(k.defs.join(''))}</defs><g clip-path="url(#${clip})">${pp.bg}${R(k.out.join(''))}${pp.tooth}</g></svg>`;
   cache[key]=svg;return svg}

@@ -72,7 +72,8 @@ function mpMapOpts() {
     const st = mpSticker(k); if (st) stickers[k] = { kind: st, text: st === 'new' ? tt('map215.sticker_new', 'new') : tt('map215.sticker_moved', 'moved') };
   });
   const e = envNow();
-  return { v215: true, names, labels, lock, stickers, hide, title: tt('town.map_title', 'Doodle Doggo Town'), label: tt('map215.map_label', 'Town map: tap a building to go there'),
+  const clear = typeof ffMapSpot === 'function' && ffReady() ? [FF_CLEAR] : undefined; // v2.32.1: the map's filler houses and trees leave room for the Fun Fair sign
+  return { v215: true, names, labels, lock, stickers, hide, clear, title: tt('town.map_title', 'Doodle Doggo Town'), label: tt('map215.map_label', 'Town map: tap a building to go there'),
     season: e.season, halloween: !!e.halloween, lights: !!e.lights, newyear: !!e.newyear, jp: !!e.jp, snow: weatherNow() === 'snow' };
 }
 function mpMapArt() {
