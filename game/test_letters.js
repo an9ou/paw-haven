@@ -55,7 +55,7 @@ run('letters', async (t) => {
   sec('1. off before the launch');
   await cloudPage({});
   await newHere();
-  ok(await ev(() => { const L = window.__paw.lt; return L.from === '' && !L.on() && L.mode() === 'off' && !L.due(); }), 'LT_FROM is empty: off, never due');
+  ok(await ev(() => { const L = window.__paw.lt; return L.from === '2026-11-20' && !L.on() && L.mode() === 'off'; }), 'LT_FROM is the launch date (owner, 20 Nov 2026); under webdriver without prefs.ltTest it stays off');
   await settings();
   ok((await box()) === null, 'Settings has no letters row');
   await ev(() => { const P = window.__paw; P.lt.note('w', 1); P.lt.look(); P.saveNow(); });

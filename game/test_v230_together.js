@@ -66,7 +66,7 @@ run('v230_together', async (t) => {
   await cloudPage({});
   await newHere();
   ok(await ev(() => !window.__paw.fi.on() && window.__paw.fi.mode() === 'off' && window.__paw.fi.line() === ''), 'before the date: off, no Friends line');
-  ok(await ev(() => { const d = window.__paw.nw.v230Date(), due = window.__paw.jstISO ? window.__paw.jstISO() >= d : new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) >= d; return d === '2026-11-25' && window.__paw.nw.due('2.30') === due && window.__paw.nw.list().includes('2.30') === due; }), 'NEWS 2.30 opens on its launch date (2026-11-25 JST) and not before');
+  ok(await ev(() => { const d = window.__paw.nw.v230Date(), due = window.__paw.jstISO ? window.__paw.jstISO() >= d : new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) >= d; return d === '2026-11-20' && window.__paw.nw.due('2.30') === due && window.__paw.nw.list().includes('2.30') === due; }), 'NEWS 2.30 opens on its launch date (2026-11-20 JST, owner 20 Nov) and not before');
   ok(srv.count(null, '/invite/') === 0 && srv.count(null, '/town/goal') === 0, 'no new route is asked before the date');
   ok(await ev(() => { const S = window.__paw.S; return S.fi && S.fi.link === '' && S.fi.join === '' && S.fi.n === 0; }) && await ev(() => { const g = window.__paw.S.goal; return g && g.q === 0 && Array.isArray(g.got) && g.miss === ''; }), 'a new save has S.fi and S.goal');
   ok(await ev(() => { const f = window.__paw.fi.fields({ v: 1 }).fi; return f.link === '' && f.join === '' && f.mine === 0 && f.n === 0 && f.wait === 0; }), 'fiFields fills an old save');
@@ -76,16 +76,17 @@ run('v230_together', async (t) => {
     const n = await ev(() => {
       const P = window.__paw, S = P.S, was = S.newsSeen, out = {};
       P.nw.v230(); // v2.30 in the list, as from 25 Nov
-      const lead = (seen) => { S.newsSeen = seen; P.nw.auto(); const h = document.querySelector('#modal .nw-sheet h3'); const r = h ? h.textContent : null; const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return r; };
+      const lead = (seen) => { S.newsSeen = seen; P.nw.auto(); const h = document.querySelector('#modal .nw-sheet h3'); const r = h ? h.textContent : null; out.all = out.all || [...document.querySelectorAll('#modal .nw-sheet h3')].map((x) => x.textContent).join('|'); const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return r; };
       out.a = lead('2.31'); out.seenA = S.newsSeen; out.b = lead('2.29');
       P.nw.add({ id: '2.31.99', date: '2099-01-01', minor: true, title: () => 'Small things' }); // a later small entry (this page is thrown away after this section)
       out.c = lead('2.30'); out.d = lead('2.31'); out.e = lead('2.18.2'); out.f = lead('9.9');
       S.newsSeen = was; return out;
     });
-    ok(n.a === 'Better together' && n.seenA === '2.30', 'v2.31 seen: the automatic sheet leads with v2.30 and marks it seen: ' + n.a + ' / ' + n.seenA);
-    ok(n.b === 'Better together', 'v2.29 seen: v2.30 leads (the newest not seen): ' + n.b);
-    ok(n.c === 'Small things', 'v2.30 seen, then a later small entry: it shows alone, v2.31 (seen a week before) does not lead again: ' + n.c);
-    ok(n.d === 'Better together' && n.e === 'Better together', 'v2.31 or an old entry seen, with a later small entry: v2.30 leads: ' + n.d + ' / ' + n.e);
+    // owner, 20 Nov 2026: v2.32 "A letter from your dog" opens the same day as v2.30, so it leads (same date, higher id) and v2.30 is on the same sheet
+    ok(n.a === 'A letter from your dog' && n.seenA === '2.32' && /Better together/.test(n.all), 'v2.31 seen: the automatic sheet leads with v2.32, shows v2.30 with it, and marks 2.32 seen: ' + n.a + ' / ' + n.seenA + ' / ' + n.all);
+    ok(n.b === 'A letter from your dog', 'v2.29 seen: v2.32 leads (the newest not seen): ' + n.b);
+    ok(n.c === 'A letter from your dog', 'v2.30 seen, then a later small entry: v2.32 (not seen, a big update) leads, not the small entry: ' + n.c);
+    ok(n.d === 'A letter from your dog' && n.e === 'A letter from your dog', 'v2.31 or an old entry seen, with a later small entry: v2.32 leads: ' + n.d + ' / ' + n.e);
     ok(n.f === 'Small things', 'an id that is not in the list falls back to the version compare: ' + n.f);
   }
 
