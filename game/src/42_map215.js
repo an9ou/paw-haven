@@ -35,6 +35,7 @@ function mpSceneOpts(k) { return mpOn() && k === 'market' ? { v215: true } : {};
 const mpIds = () => (window.PawArt && Array.isArray(PawArt.MAP215_AREAS) ? PawArt.MAP215_AREAS.map((a) => a.id) : []);
 function mpName(k) {
   if (k === 'yard') return tt('popup.my_yard', 'My Yard');
+  if (k === 'ffair') return tt('ff.btn_fair', 'Fun Fair'); // v2.32.1: the Fun Fair sign (49_funfair.js)
   if (k === 'shelter') return tt('popup.doodle_doggo_shelter', 'Doodle Doggo Shelter');
   if (k === 'station') return typeof tkPlaceName === 'function' ? tkPlaceName('station') : 'Station';
   if (PLACES[k]) return townPlaceName(k);
@@ -43,6 +44,7 @@ function mpName(k) {
 const mpLocked = (k) => !!(PLACES[k] && S && lvPlaceLocked(k)); // v2.22: the town level with lvOn (51_levels.js), today's Bond off
 function mpAria(k) {
   if (k === 'shelter') return tt('town.visit_shelter', 'Visit the shelter');
+  if (k === 'ffair' && typeof ffMapTip === 'function') return ffMapTip();
   if (!PLACES[k]) return mpName(k);
   if (!S) return tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: 'no', place: mpName(k), bond: PLACES[k].bond });
   return lvGoTo(k, mpName(k));
@@ -70,13 +72,16 @@ function mpMapOpts() {
     const st = mpSticker(k); if (st) stickers[k] = { kind: st, text: st === 'new' ? tt('map215.sticker_new', 'new') : tt('map215.sticker_moved', 'moved') };
   });
   const e = envNow();
-  return { v215: true, names, labels, lock, stickers, hide, title: tt('town.map_title', 'Doodle Doggo Town'), label: tt('map215.map_label', 'Town map: tap a building to go there'),
+  const clear = typeof ffMapSpot === 'function' && ffReady() ? [FF_CLEAR] : undefined; // v2.32.1: the map's filler houses and trees leave room for the Fun Fair sign
+  return { v215: true, names, labels, lock, stickers, hide, clear, title: tt('town.map_title', 'Doodle Doggo Town'), label: tt('map215.map_label', 'Town map: tap a building to go there'),
     season: e.season, halloween: !!e.halloween, lights: !!e.lights, newyear: !!e.newyear, jp: !!e.jp, snow: weatherNow() === 'snow' };
 }
 function mpMapArt() {
   const raw = art('scene', 'map', mpMapOpts());
   const tent = typeof fmMapTent === 'function' ? fmMapTent() : ''; // v2.17.1: the Festive Market's tent (49_market.js), only while a market is open
-  return { W: 2400, H: 1500, v215: true, areas: tent ? PA().MAP215_AREAS.concat([{ id: 'fmarket', x: 1010, y: 720 }]) : PA().MAP215_AREAS, svg: `<g id="sceneG" data-scene="map" data-noenv="1" class="${mpLabels() ? '' : 'mp-nolab'}">${place(tent ? raw.replace('<g class="mf-buildings">', '<g class="mf-buildings">' + tent) : raw, 0, 0, 2400, 1500)}</g><g id="mpWalkG"></g>` };
+  const fair = typeof ffMapSpot === 'function' ? ffMapSpot() : ''; // v2.32.1: the Fun Fair sign (49_funfair.js), once the Fun Fair is on
+  const areas = PA().MAP215_AREAS.concat(tent ? [{ id: 'fmarket', x: 1010, y: 720 }] : [], fair ? [{ id: 'ffair', x: FF_SPOT[0], y: FF_SPOT[1] }] : []);
+  return { W: 2400, H: 1500, v215: true, areas, svg: `<g id="sceneG" data-scene="map" data-noenv="1" class="${mpLabels() ? '' : 'mp-nolab'}">${place(tent || fair ? raw.replace('<g class="mf-buildings">', '<g class="mf-buildings">' + fair + tent) : raw, 0, 0, 2400, 1500)}</g><g id="mpWalkG"></g>` };
 }
 
 /* ---- the wait for world F (split build): a short paper wobble, then the map. A failed load draws the old map once (the next visit tries again) ---- */
@@ -187,6 +192,7 @@ function mpPanIntoView(g, then) {
 function mpPick(k) {
   if (MP.walk) return; if (Date.now() < MP.swallow) return;
   const g = mpEl(k);
+  if (k === 'ffair') { if (g && !motionOff()) mpFlash(g, 'mp-picked', 560); SFX.boop(700); ffMapSheet(); return; } // v2.32.1: the Fun Fair sign opens its sheet, no travel
   if (mpLocked(k)) { if (!motionOff()) mpFlash(g, 'mp-shake', 460); pickArea(k); return; } // the Bond line (travelTo's or pickArea's "Nope"), no travel
   if (!mpCanGo(k)) { pickArea(k); return; } // asleep, busy, a puppy at home, or already here: the usual answer, no walk
   mpPanIntoView(g || view, () => {

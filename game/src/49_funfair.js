@@ -102,7 +102,74 @@ function ffToyPay(want) {
 const ffSaturday = () => (prefs.ffSat === undefined || prefs.ffSat === null ? new Date().getDay() === 6 : !!prefs.ffSat);
 
 /* ---------------- unlocks (the level-up card and the Bond track) ---------------- */
-function ffUnlocks(L) { return ffReady() && !lvOn() ? FF_KEYS.filter((k) => FF_GAMES[k].bond === L && L > 1).map((k) => tt('ff.unlock', 'Fun Fair: {game}', { game: ffName(k) })) : []; }
+// v2.32.1 "Where is the Fun Fair?": the unlock line names the game's place too (the level card, the level sheet, the Bond card)
+function ffUnlockLine(k) { return tt('ff.unlock_at', 'Fun Fair: {game} ({place})', { game: ffName(k), place: ffPlaceName(k) }); }
+function ffUnlocks(L) { return ffReady() && !lvOn() ? FF_KEYS.filter((k) => FF_GAMES[k].bond === L && L > 1).map(ffUnlockLine) : []; }
+
+/* ---------------- v2.32.1 "Where is the Fun Fair?" (a player asked): the Fun Fair sign on the town map and its sheet ----------------
+   The sign (ffMapSpot) stands on the v2.15 map at FF_SPOT, south of the Dog Park, clear of every building, caption and the Festive Market tent
+   (FM_SPOT): the Saturday market stall drawing with a paper kite (world E's PawArt.ffArt, no new art), a building button like the others
+   (data-area "ffair": hover lift, press squash, long-press name, 44 px taps), drawn once the Fun Fair is on (ffReady). A tap opens ffMapSheet:
+   every game and job, where it is, and Go (the same travel as a tap on that place's building, then the place's yellow Fun Fair button) or
+   "Opens at level N" / "Opens at Bond N". Gerald's notebook page 9 (Show me) and the How to play card point here too. */
+const FF_SPOT = [1270, 1250], FF_CLEAR = [1278, 1240, 150, 124]; // the sign and the ground the map keeps clear of its filler houses and trees for it (x, y, rx, ry)
+const ffSpotOf = (k) => (k === 'stall' ? 'market' : k === 'photo' ? 'square' : (FF_GAMES[k] || {}).place || 'yard');
+function ffPlaceName(k) { const p = ffSpotOf(k); return typeof mpName === 'function' ? mpName(p) : p === 'yard' ? tt('popup.my_yard', 'My Yard') : townPlaceName(p); }
+const ffMapName = () => tt('ff.btn_fair', 'Fun Fair');
+const ffMapTip = () => tt('ff.map_tip', '{nm}: every game and where it is', { nm: ffMapName() });
+function ffMapSpot() {
+  if (!ffReady() || !mpOn()) return '';
+  const stall = artReal('ffArt', 'stall'), kite = artReal('ffArt', 'kite', { c: 2 });
+  return `<g class="mb ff-mb" data-area="ffair" role="button" tabindex="0" aria-label="${esc(ffMapTip())}" transform="translate(${FF_SPOT[0]} ${FF_SPOT[1]})">`
+    + `<ellipse class="mb-shadow" cx="0" cy="48" rx="92" ry="13" fill="#5B3D32" opacity=".13"/><g class="mb-lift" style="transform-box:fill-box;transform-origin:50% 80%"><rect class="mb-box" x="-120" y="-120" width="240" height="230" fill="none"/>`
+    + (stall ? place(stall, -96, -78, 192, 126) : '') + (kite ? place(kite, 102, -100, 38, 54) : '')
+    + `<text class="mb-cap" x="0" y="90" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="31" fill="#5B3D32" stroke="#FFFBF3" stroke-width="7" stroke-linejoin="round" paint-order="stroke">${esc(ffMapName())}</text></g>`
+    + `<ellipse class="mb-hit" cx="0" cy="-10" rx="115" ry="100" fill="transparent"/></g>`;
+}
+// a row's lock: the game's own level (or Bond), else its place's
+function ffMapLock(k) {
+  const g = FF_GAMES[k], p = ffSpotOf(k);
+  if (g && !lvFfOpen(k)) return { btn: lvOn() ? tt('lv.ff_btn', 'Opens at level {n}', { n: wNeed('ff', k, g.bond) }) : tt('ff.locked', 'Opens at Bond {bond}', { bond: g.bond }), line: ffLockLine(k) };
+  if (PLACES[p] && lvPlaceLocked(p)) return { btn: lvOn() ? tt('lv.ff_btn', 'Opens at level {n}', { n: lvPlaceN(p) }) : tt('ff.locked', 'Opens at Bond {bond}', { bond: PLACES[p].bond }), line: mapTipText(p) };
+  return null;
+}
+// every game and job on this map (a place that is not on it, like the Lookout with Japan off, leaves its game out), the open ones first
+function ffMapKeys() {
+  const need = (k) => (FF_GAMES[k] ? wNeed('ff', k, FF_GAMES[k].bond) : 1);
+  const ks = FF_KEYS.filter(ffPlaceOk).map((k, i) => ({ k, i, n: need(k), j: FF_GAMES[k].job ? 1 : 0 })).sort((a, b) => a.j - b.j || a.n - b.n || a.i - b.i).map((x) => x.k).concat(['stall', 'photo']);
+  return ks.filter((k) => !ffMapLock(k)).concat(ks.filter((k) => !!ffMapLock(k)));
+}
+// the stall opens on Saturdays only: on other days its row says so instead of Go
+const ffMapShut = (k) => k === 'stall' && !ffSaturday();
+const ffMapWhere = (k) => (ffSpotOf(k) === 'yard' ? tt('ff.map_at_yard', 'In my yard') : tt('ff.map_at', 'At {place}', { place: ffPlaceName(k) }));
+function ffMapRow(k) {
+  const lock = ffMapLock(k), shut = !lock && ffMapShut(k);
+  const btn = lock ? `<button class="btn" type="button" data-ffmgo="${k}" aria-disabled="true">${esc(lock.btn)}</button>`
+    : shut ? `<button class="btn" type="button" data-ffmgo="${k}" aria-disabled="true">${esc(tt('ff.map_sat', 'Saturdays'))}</button>`
+    : `<button class="btn yes" type="button" data-ffmgo="${k}">${esc(tt('ff.map_go', 'Go'))}</button>`;
+  return `<li class="ff-card ff-mcard${lock || shut ? ' locked' : ''}" data-k="${k}" data-place="${ffSpotOf(k)}"><span class="ff-cic" aria-hidden="true">${art('item', FF_ICON[k])}</span><div class="ff-ctx"><b>${esc(ffName(k))}</b><span class="small ff-where">${esc(ffMapWhere(k))}</span></div>${btn}</li>`;
+}
+function ffMapSheet() {
+  if (!ffReady()) return null;
+  const p = openModal(esc(ffMapName()), `<p class="ff-mintro">${esc(tt('ff.map_hint', "Games and small jobs all around town. Tap Go to walk there, then tap the yellow button with the game's name."))}</p><ul class="ff-cards ff-mcards">${ffMapKeys().map(ffMapRow).join('')}</ul>`, { cls: 'ff-pop ff-mpop' });
+  p.querySelectorAll('[data-ffmgo]').forEach((b) => { b.onclick = () => {
+    const k = b.dataset.ffmgo;
+    if (b.getAttribute('aria-disabled') === 'true') { const l = ffMapLock(k); nope(l ? l.line : ffMapShut(k) ? tt('ff.stall_closed', 'The stall opens on Saturdays.') : ffLockLine(k)); return; }
+    SFX.boop(840); closeModal(); ffGoTo(ffSpotOf(k));
+  }; });
+  return p;
+}
+// Go: the travel a tap on that place's building makes (mpPick: the walk on the map, then the place). From another screen the map opens first.
+// Already there: the place's own Fun Fair cards
+function ffGoTo(place) {
+  if (!S) return;
+  if (S.place === place && (cur.mode === 'yard' || cur.mode === 'market')) { if (ffHere(place).length) ffCards(); return; }
+  const pick = () => { if (typeof mpPick === 'function' && mpMapReady()) mpPick(place); else pickArea(place); };
+  if (cur.mode === 'map' && $('#mapInner .mb[data-area]')) { pick(); return; }
+  go('map'); let n = 0;
+  const wait = () => { if (cur.mode !== 'map') return; if ($('#mapInner .mb[data-area]') && $('#mpWalkG .mp-walker')) { setTimeout(pick, 60); return; } if (++n < 60) setTimeout(wait, 100); };
+  setTimeout(wait, 60);
+}
 
 /* ---------------- the place buttons and the game cards ---------------- */
 function ffHere(place) { const p = place || (S && S.place); return FF_KEYS.filter((k) => FF_GAMES[k].place === p && ffPlaceOk(k)).concat(p === 'market' ? ['stall'] : [], p === 'square' ? ['photo'] : []); }
@@ -395,7 +462,14 @@ function ffContestCheck() {
 }
 
 /* ---------------- Gerald's guide card ---------------- */
-function ffLesson() { return ffReady() ? ['funfair', 'star', tt('ff.lesson_title', 'Fun Fair'), tt('ff.lesson_text', 'Games and small jobs around town pay a few coins each day, and every round gives a little Bond. Walks still pay the most.')] : null; }
+// v2.32.1: a line naming each open game's place ("Treat Catch: Sunny Park · Sniff & Seek: My Yard"), and where the map's Fun Fair sign is
+function ffLesson() {
+  if (!ffReady()) return null;
+  const open = ffMapKeys().filter((k) => FF_GAMES[k] && !ffMapLock(k)).map((k) => tt('ff.lesson_where', '{game}: {place}', { game: ffName(k), place: ffPlaceName(k) }));
+  const text = [tt('ff.lesson_text', 'Games and small jobs around town pay a few coins each day, and every round gives a little Bond. Walks still pay the most.')]
+    .concat(open.length ? [open.join(' · ')] : [], mpOn() ? [tt('ff.lesson_map', 'Tap the Fun Fair sign on the town map to see every game and where it is.')] : []).join('\n');
+  return ['funfair', 'star', tt('ff.lesson_title', 'Fun Fair'), text];
+}
 
 /* ---------------- the loop and the test hook ---------------- */
 setInterval(() => { try { ffPagesSync(); ffExpose(); } catch (e) { /* not ready */ } }, 1000);
@@ -406,6 +480,6 @@ function ffExpose() {
     on: () => ffOn(), caps: FF_CAPS, games: FF_GAMES, keys: FF_KEYS.slice(), here: (p) => ffHere(p), left: (k) => ffLeft(k), pay: (k, n) => ffPay(k, n), toyPay: (n) => ffToyPay(n), start: (k) => ffStart(k), cards: () => ffCards(), can: (k) => ffCan(k),
     get g() { return FF.g; }, end: () => { if (FF.g) ffEnd(FF.g); }, quit: () => ffQuit(), back: () => ffBackHome(), stall: () => ffStall(), goods: () => ffStallGoods(), stallRun: (sel) => ffStallRun(ffStallGoods(), sel), sat: () => ffSaturday(), setSat: (v) => { prefs.ffSat = v; },
     contest: () => ffContest(), enter: (cap) => ffPhotoEnter(cap), judge: () => ffContestCheck(), washDog: () => ffWashDog(), name: (k) => ffName(k), unlocks: (L) => ffUnlocks(L), sync: () => ffPagesSync(), lesson: () => ffLesson(),
-    test: (v) => { prefs.ffTest = !!v; ffPagesSync(); if (cur.mode === 'yard') ffPlaceBtn(); }, bond: FF_BOND, week: (iso) => ffWeekOf(iso || localISO())
+    test: (v) => { prefs.ffTest = !!v; ffPagesSync(); if (cur.mode === 'yard') ffPlaceBtn(); }, bond: FF_BOND, spot: FF_SPOT.slice(), mapSpot: () => ffMapSpot(), sheet: () => ffMapSheet(), mapKeys: () => ffMapKeys(), mapLock: (k) => ffMapLock(k), placeName: (k) => ffPlaceName(k), goTo: (p) => ffGoTo(p), week: (iso) => ffWeekOf(iso || localISO())
   };
 }

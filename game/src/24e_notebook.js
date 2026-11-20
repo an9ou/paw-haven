@@ -68,8 +68,8 @@ const MS_NB = [
     { k: 'paddle', t: 'Paddle at the Splash Pool', m: (a) => a.kind === 'paddle', lock: () => nbPlace('pool', 2) },
     { k: 'float', t: 'Play float fetch', m: (a) => a.kind === 'floatfetch', lock: () => nbPlace('pool', 2) }] },
   { id: 'p9', t: 'Fun Fair', l: 'Play helps dogs learn and keeps them happy. A few short games a day are plenty.', how: 'funfair', st: 't:Paper Kite', steps: [
-    { k: 'game', t: 'Play a Fun Fair game', m: (a) => nbFfGame(a, false) },
-    { k: 'job', t: 'Help with a town job', m: (a) => nbFfGame(a, true), lock: nbJob }] },
+    { k: 'game', t: 'Play a Fun Fair game', m: (a) => nbFfGame(a, false), show: 'ff' },
+    { k: 'job', t: 'Help with a town job', m: (a) => nbFfGame(a, true), lock: nbJob, show: 'ff' }] }, // v2.32.1: Show me opens the Fun Fair sheet (where every game is)
   { id: 'p10', t: 'Training Ground', l: 'Agility is great fun for fit, grown-up dogs. Puppies keep to the low jumps while their joints are still growing.', how: 'agility', st: 't:Agility Tunnel', steps: [
     { k: 'agility', t: 'Run the agility course', m: (a) => a.kind === 'agility', lock: () => nbPlace('training', 3) }] },
   { id: 'p11', t: 'All aboard', l: 'Most dogs travel best with something that smells like home. Start with short trips and lots of praise.', how: 'map', st: 't:Train Ticket', steps: [
@@ -233,8 +233,9 @@ function nbPageFB() {
 }
 function nbStepHTML(n, s, i) {
   const nb = nbNb(), done = nbStepsDone(n).includes(i), lock = done ? 0 : nbLockOf(s), cnt = (s.n || 1) > 1 && !done ? Math.min(s.n, nb.p[n + '.' + i] || 0) : -1;
-  const right = done ? `<span class="nb-ok">${esc(tt('ms2n.step_done', 'Done'))}</span>` : lock ? `<span class="nb-lock">${esc(lvOn() && !s.bond ? tt('lv.nb_opens', 'Opens at level {n}', { n: lock }) : tt('ms2n.opens_at', 'Opens at Bond {n}', { n: lock }))}</span>` : cnt >= 0 ? `<span class="nb-cnt">${tnum(cnt)} / ${tnum(s.n)}</span>` : '';
-  return `<li class="nb-step${done ? ' done' : ''}${lock ? ' locked' : ''}" data-step="${esc(s.k)}">${MS_TICK}<span class="nb-st">${esc(nbStepText(nbPage(n), s))}</span>${right}</li>`;
+  const show = !done && !lock && s.show === 'ff' && typeof ffMapSheet === 'function' && typeof ffReady === 'function' && ffReady(); // v2.32.1: where the Fun Fair games are
+  const right = done ? `<span class="nb-ok">${esc(tt('ms2n.step_done', 'Done'))}</span>` : lock ? `<span class="nb-lock">${esc(lvOn() && !s.bond ? tt('lv.nb_opens', 'Opens at level {n}', { n: lock }) : tt('ms2n.opens_at', 'Opens at Bond {n}', { n: lock }))}</span>` : cnt >= 0 ? `<span class="nb-cnt">${tnum(cnt)} / ${tnum(s.n)}</span>` : show ? `<button class="btn nb-show" type="button" data-nbshow="ff">${esc(tt('ms2n.show_me', 'Show me'))}</button>` : '';
+  return `<li class="nb-step${done ? ' done' : ''}${lock ? ' locked' : ''}${show ? ' has-show' : ''}" data-step="${esc(s.k)}">${MS_TICK}<span class="nb-st">${esc(nbStepText(nbPage(n), s))}</span>${right}</li>`;
 }
 function nbGiftText(p) {
   if (p.gift === 'seeds') return tt('ms2n.gift_seeds', '3 {seeds}', { seeds: nbSeedName() });
@@ -278,6 +279,7 @@ document.addEventListener('click', (e) => {
   const t = e.target && e.target.closest; if (!t || !S) return;
   const f = e.target.closest('[data-nbpg]'); if (f && f.closest('.nb')) { e.stopPropagation(); if (f.disabled) return; SFX.click(); NB.pg = +f.dataset.nbpg; msRefresh(); return; }
   const h = e.target.closest('.nb-how[data-nbhow]'); if (h) { e.stopPropagation(); nbHowOpen(h.dataset.nbhow); return; }
+  const sm = e.target.closest('.nb-show[data-nbshow]'); if (sm) { e.stopPropagation(); SFX.click(); if (typeof ffMapSheet === 'function') ffMapSheet(); return; }
   const s = e.target.closest('.nb-fold > summary'); if (s) NB.fold = !s.parentElement.open;
 });
 

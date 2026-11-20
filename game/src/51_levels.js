@@ -314,7 +314,7 @@ function lvUnlocksFor(n) {
     if (r.kind === 'route') out.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[r.id].dig ? 'yes' : 'no', route: (typeof townRouteName === 'function' ? townRouteName(r.id) : tRoute(r.id)) }));
     else if (r.kind === 'place') out.push(lvTokyoId(r.id) ? tt('lv.u_tokyo', 'Tokyo: {place}', { place: lvPlaceName(r.id) }) : tt('lv.u_place', 'Place: {place}', { place: lvPlaceName(r.id) }));
     else if (r.kind === 'feat') out.push(lvFeatName(r.id, true));
-    else if (r.kind === 'ff') out.push(tt('ff.unlock', 'Fun Fair: {game}', { game: typeof ffName === 'function' ? ffName(r.id) : r.id }));
+    else if (r.kind === 'ff') out.push(typeof ffUnlockLine === 'function' ? ffUnlockLine(r.id) : r.id); // v2.32.1: "Fun Fair: Sniff & Seek (My Yard)", the place too
     else if (HOUSES.some((h) => h.n === r.id)) out.push(tt('core.unlock_house', 'House: {house}', { house: tItem(r.id) }));
     else out.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(r.id) }));
   });
