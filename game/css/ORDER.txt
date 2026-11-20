@@ -78,5 +78,6 @@
 60_share.css
 60_together.css
 61_a2hs.css
+62_letters.css
 50_i18n.css
 51_i18n_room.css

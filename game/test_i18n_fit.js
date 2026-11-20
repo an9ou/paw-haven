@@ -446,6 +446,21 @@ async function worker(job) {
       }
       await ev(() => window.__paw.gl.test(false));
     }, 40000);
+    await step('lt', async () => { // v2.32 A letter from your dog (V232_letters.md): the offer card (with the sample letter open too) and the Settings row in every state (prefs.ltTest and the mode through the test hook: this audit has no cloud)
+      await ev(() => { const P = window.__paw; P.lt.test(true); window.__ddLtMode = 'ok'; P.lt.fields(P.S); P.S.daysPlayed = Math.max(12, P.S.daysPlayed || 0); P.lt.note('w', 3); P.lt.note('wi', 2); P.lt.open(); });
+      await modalUp(); await measure('lt: offer card');
+      await jsClick('#ltSampleBtn'); await sleep(250); await measure('lt: offer card, sample letter'); await closeAll();
+      for (const st of ['', 'pending', 'on', 'stopped']) {
+        await ev((st) => { const P = window.__paw; P.S.ltr.st = st; P.lt.settings(); }, st); await modalUp();
+        await ev(() => { const b = document.getElementById('ltBox'); if (b) b.scrollIntoView({ block: 'start' }); }); await sleep(200); await measure('lt: settings row ' + (st || 'off')); await closeAll();
+      }
+      await ev(() => { const P = window.__paw; P.S.ltr.st = ''; P.lt.settings(); }); await modalUp();
+      await ev(() => { const b = document.getElementById('ltBox'); if (b) b.scrollIntoView({ block: 'start' }); }); await jsClick('#ltSampleBtn'); await sleep(250);
+      await ev(() => { const b = document.getElementById('ltSample'); if (b) b.scrollIntoView({ block: 'start' }); }); await sleep(150); await measure('lt: settings row, sample letter'); await closeAll();
+      await ev(() => { window.__ddLtMode = 'guest'; window.__paw.lt.settings(); }); await modalUp();
+      await ev(() => { const b = document.getElementById('ltBox'); if (b) b.scrollIntoView({ block: 'start' }); }); await sleep(200); await measure('lt: settings row guest'); await closeAll();
+      await ev(() => { window.__ddLtMode = null; window.__paw.lt.test(false); });
+    }, 60000);
     await step('dog card settings', async () => { await ev(() => window.__paw.dc.settings(true)); await modalUp(); await measure('dog cards: my card settings'); await closeAll(); });
     // ---------------------------------------------------------------- photo, training, ball ----------------------------------------------------------------
     await step('photo mode', async () => { await ev(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.active(), null, 5000); await sleep(600); await measure('photo mode'); await ev(() => window.__paw.ph.close()); await t.until(() => !window.__paw.ph.active(), null, 4000); });

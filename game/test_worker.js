@@ -895,7 +895,8 @@ async function inMiniflare() {
   if (!MF) { console.log('--- Miniflare: not installed here (npm i -g wrangler); skipped'); return; }
   const fs = require('fs'), mail = fakeMail();
   const worker = {
-    name: 'pawhaven-api', modules: true, script: require('fs').readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), // the code itself: workerd refuses paths above its starting directory compatibilityDate: '2026-08-01',
+    name: 'pawhaven-api', // the code itself, not a path: workerd refuses paths above its starting directory. v2.32: two modules (worker.js imports letters_text.js)
+    modules: ['worker.js', 'letters_text.js'].map((f) => ({ type: 'ESModule', path: f, contents: require('fs').readFileSync(path.join(ROOT, 'cloudflare', f), 'utf8') })), compatibilityDate: '2026-08-01',
     d1Databases: { DB: 'pawhaven-test-' + Date.now() },
     bindings: { RESEND_API_KEY: 're_test', MAIL_WAIT: '1', TIDY: '1' },
     outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : new Response('{}', { status: 404 }))
