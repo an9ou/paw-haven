@@ -124,7 +124,7 @@
   "privacy.collect.title": "O que coletamos",
   "privacy.collect.guest": "<b>Se você jogar sem conta:</b> seu jogo fica salvo no navegador, no seu aparelho. Nós nunca o vemos. Se você estiver on-line, uma cópia sem conta também fica guardada no serviço de login para não se perder, sem nenhum e-mail ou nome junto.",
   "privacy.collect.account": "<b>Se você criar uma conta,</b> guardamos:",
-  "privacy.collect.email": "seu <b>endereço de e-mail</b>, para você poder entrar. Só mandamos e-mail quando você pede um código de 6 dígitos para redefinir a senha (Esqueceu a senha? no jogo).",
+  "privacy.collect.email": "seu <b>endereço de e-mail</b>, para você poder entrar. Só mandamos e-mail quando você pede: o código de 6 dígitos para redefinir a senha (Esqueceu a senha? no jogo) e a carta semanal do seu cachorro, se você ligar.",
   "privacy.collect.hash": "uma <b>senha com hash</b>. Um hash é uma versão embaralhada da sua senha que não pode ser transformada de volta na senha. Nós não conseguimos ler sua senha, e ninguém mais consegue.",
   "privacy.collect.save": "seu <b>jogo salvo</b>, para você jogar o mesmo jogo em qualquer aparelho.",
   "privacy.collect.dates": "as <b>datas</b> da sua conta e do seu último salvamento.",
@@ -133,7 +133,7 @@
   "privacy.dont.ads": "Sem anúncios.",
   "privacy.dont.tracking": "Sem rastreamento, sem estatísticas de uso e sem cookies. As fontes do jogo são carregadas do Google Fonts.",
   "privacy.dont.share": "Nunca vendemos, alugamos nem compartilhamos seus dados com ninguém.",
-  "privacy.dont.email": "Sem newsletters. O único e-mail é o código de 6 dígitos para redefinir a senha, quando você pede.",
+  "privacy.dont.email": "Sem newsletters. Os únicos e-mails são o código de 6 dígitos para redefinir a senha, quando você pede, e a carta semanal do seu cachorro, se você ligar.",
   "privacy.cards.title": "Cartões do cachorro",
   "privacy.cards.lead": "Com uma conta de e-mail, você pode compartilhar um <b>Cartão do cachorro</b>, para seus cachorros visitarem o Parque dos Cães e o Cachorródromo do Parque Yoyogi de outros jogadores. Ele fica <b>desligado</b> até você ativá-lo em Configurações.",
   "privacy.cards.see": "<b>O que os outros jogadores veem:</b> o nome de duas palavras que você escolhe numa lista para o cartão, os desenhos dos seus cachorros, raças, pelagens e roupas, o nome que você escolhe para cada cachorro no cartão (o próprio nome dele só quando esse nome está na nossa lista) e quantas patinhas o cartão recebeu.",
@@ -165,8 +165,14 @@
   "privacy.shop.paused": "<b>Se uma conta estiver pausada</b> por reembolsos ou contestações bancárias e depois for excluída, guardamos só um código embaralhado do e-mail que não pode ser revertido, para impedir abuso nos pagamentos, e nada mais.",
   "privacy.shop.codes": "<b>Códigos de presente:</b> um código que você digita no jogo vai só para o nosso servidor, para ser conferido. Guardamos quais códigos a sua conta usou, para que os presentes voltem num aparelho novo.",
   "privacy.shop.noads": "Não há anúncios no jogo, e comprar algo não inicia nenhum rastreamento.",
+  "privacy.letters.title": "Cartas do seu cachorro",
+  "privacy.letters.lead": "Com uma conta, você pode pedir uma carta curta do seu cachorro por e-mail, uma vez por semana. Fica <b>desligado</b> até você ligar em Configurações e dizer sim no e-mail que mandamos para conferir o endereço.",
+  "privacy.letters.what": "<b>Do que a carta é feita:</b> o seu jogo salvo (o nome e a raça do seu cachorro, o Carinho, os dias que você jogou e algumas coisas da semana), o seu endereço de e-mail e o idioma do jogo. Nada mais, e nada de nenhum outro jogador.",
+  "privacy.letters.keep": "<b>O que guardamos:</b> que as cartas estão ligadas, quando você pediu e quando disse sim, o seu idioma e a última semana em que saiu uma carta. Não guardamos cópia das cartas.",
+  "privacy.letters.notrack": "<b>Sem rastreamento:</b> as cartas não têm pixels de rastreamento nem links rastreados, nem anúncios, nem nada para comprar. São enviadas pela Resend.",
+  "privacy.letters.stop": "<b>Para parar:</b> desligue em Configurações ou use o link de qualquer carta. Isso apaga o registro. Se você ficar 8 semanas sem jogar, chega uma última carta e nenhuma outra até você voltar a jogar. Se uma carta não puder ser entregue ou for marcada como indesejada, paramos e guardamos só uma anotação para não escrever mais para essa conta. Apagar a sua conta apaga tudo isso.",
   "privacy.where.title": "Onde fica guardado",
-  "privacy.where.text": "Os dados da conta e os jogos salvos ficam guardados na Cloudflare, que cuida do serviço de login. Os e-mails de senha são enviados pela Resend, que cuida só desse e-mail. As duas guardam os dados só para fazer esse trabalho. Você joga no itch.io, e o jogo roda no seu navegador. O itch.io tem sua própria política de privacidade para o site dele.",
+  "privacy.where.text": "Os dados da conta e os jogos salvos ficam guardados na Cloudflare, que cuida do serviço de login. Os e-mails (o código da senha e, se você ligou, a carta do seu cachorro) são enviados pela Resend, que cuida só desses e-mails. As duas guardam os dados só para fazer esse trabalho. Você joga no itch.io, e o jogo roda no seu navegador. O itch.io tem sua própria política de privacidade para o site dele.",
   "privacy.children.title": "Crianças",
   "privacy.children.text": "O Doodle Doggo é um jogo tranquilo para todo mundo. Se você for criança, peça a um adulto antes de criar uma conta. Você nunca precisa de uma conta: o jogo sem conta é completo.",
   "privacy.choices.title": "Suas escolhas",
@@ -223,7 +229,6 @@
   "play.hey": "ei!",
   "play.my_ball": "minha bola!",
   "play.hehe": "hehe.",
-
   "dog.shiba.name": "Mochi",
   "dog.shiba.quote": "Eu poderia ir embora quando quisesse. Escolho não ir.",
   "dog.shiba.personality": "Orgulhoso, independente, dramático.",
@@ -240,7 +245,6 @@
   "dog.shiba.love2": "osso de pelúcia",
   "dog.shiba.love3": "truques",
   "dog.shiba.fun": "Mochi também é o nome japonês de um bolinho macio de arroz (餅). O Shiba inu é um dos cachorros nativos do Japão.",
-
   "dog.corgi.name": "Biscuit",
   "dog.corgi.quote": "Isso é de comer? Tudo é de comer?",
   "dog.corgi.personality": "Alegre e comilão.",
@@ -256,7 +260,6 @@
   "dog.corgi.love1": "pupcake",
   "dog.corgi.love2": "comedouro interativo",
   "dog.corgi.love3": "hora da comida",
-
   "dog.golden.name": "Sunny",
   "dog.golden.quote": "Eu te amo. Quem é você?",
   "dog.golden.personality": "Amigável, adora buscar a bolinha.",
@@ -272,7 +275,6 @@
   "dog.golden.love1": "ração",
   "dog.golden.love2": "bolinha de tênis",
   "dog.golden.love3": "buscar a bolinha",
-
   "dog.dachs.name": "Noodle",
   "dog.dachs.quote": "O resto de mim já está chegando.",
   "dog.dachs.personality": "Curioso, adora cavar.",
@@ -288,7 +290,6 @@
   "dog.dachs.love1": "biscoito de ossinho",
   "dog.dachs.love2": "patinho de apito",
   "dog.dachs.love3": "cavar",
-
   "dog.husky.name": "Frost",
   "dog.husky.quote": "AUUUU.",
   "dog.husky.personality": "Cheio de energia e tagarela (uiva).",
@@ -304,7 +305,6 @@
   "dog.husky.love1": "frango com arroz",
   "dog.husky.love2": "cabo de guerra",
   "dog.husky.love3": "passeios",
-
   "dog.mutt.name": "Pepper",
   "dog.mutt.quote": "Oi. Posso ir para casa com você?",
   "dog.mutt.personality": "Leal e meiga.",
@@ -321,7 +321,6 @@
   "dog.mutt.love2": "um lar",
   "dog.mutt.love3": "você",
   "dog.mutt.fun": "Em japonês, um cachorro resgatado é 保護犬 (hogoken).",
-
   "dog.chihuahua.name": "Peanut",
   "dog.chihuahua.quote": "Eu sou o sistema de segurança.",
   "dog.chihuahua.personality": "Pequenininho, destemido e um cão de guarda muito dramático.",
@@ -337,7 +336,6 @@
   "dog.chihuahua.love1": "patê de salmão",
   "dog.chihuahua.love2": "patinho de apito",
   "dog.chihuahua.love3": "carinho",
-
   "dog.pug.name": "Dumpling",
   "dog.pug.quote": "bufada.",
   "dog.pug.personality": "Cheio de bufadas, carinhoso, preguiçoso e comilão.",
@@ -353,7 +351,6 @@
   "dog.pug.love1": "pupcake",
   "dog.pug.love2": "osso de pelúcia",
   "dog.pug.love3": "hora da comida",
-
   "dog.greyhound.name": "Rocket",
   "dog.greyhound.quote": "72 km/h. Depois, uma soneca de 20 horas.",
   "dog.greyhound.personality": "Um calmo amante do sofá que, de vez em quando, dispara correndo.",
@@ -369,7 +366,6 @@
   "dog.greyhound.love1": "frango com arroz",
   "dog.greyhound.love2": "frisbee",
   "dog.greyhound.love3": "buscar a bolinha",
-
   "dog.beagle.name": "Bagel",
   "dog.beagle.quote": "Senti esse cheiro a três ruas daqui.",
   "dog.beagle.personality": "Vai aonde o nariz manda, vive pela comida e uiva alto.",
@@ -385,7 +381,6 @@
   "dog.beagle.love1": "ração",
   "dog.beagle.love2": "comedouro interativo",
   "dog.beagle.love3": "cavar",
-
   "dog.poodle.name": "Pretzel",
   "dog.poodle.quote": "Tosa opcional. Dignidade, jamais.",
   "dog.poodle.personality": "Acha que é o mais esperto da sala. E é.",
@@ -401,7 +396,6 @@
   "dog.poodle.love1": "patê de salmão",
   "dog.poodle.love2": "comedouro interativo",
   "dog.poodle.love3": "truques",
-
   "dog.collie.name": "Scout",
   "dog.collie.quote": "Vou juntar os filhotes, os patos e os móveis.",
   "dog.collie.personality": "Já contou as ovelhas. Não tem ovelhas. Contou você.",
@@ -417,7 +411,6 @@
   "dog.collie.love1": "frango com arroz",
   "dog.collie.love2": "frisbee",
   "dog.collie.love3": "buscar a bolinha",
-
   "dog.samoyed.name": "Cloud",
   "dog.samoyed.quote": "Toda primavera, solta pelo para fazer outro cachorro.",
   "dog.samoyed.personality": "Sorri para a neve não grudar. E também só porque sim.",
@@ -433,7 +426,6 @@
   "dog.samoyed.love1": "frango com arroz",
   "dog.samoyed.love2": "cabo de guerra",
   "dog.samoyed.love3": "passeios",
-
   "dog.frenchie.name": "Brioche",
   "dog.frenchie.quote": "Sofá. Almofada. Seu pé. Tudo é um bom assento.",
   "dog.frenchie.personality": "Ronca, dá bufadas e senta no seu pé. As três coisas ao mesmo tempo.",
@@ -449,7 +441,6 @@
   "dog.frenchie.love1": "pupcake",
   "dog.frenchie.love2": "osso de pelúcia",
   "dog.frenchie.love3": "carinho",
-
   "dog.akita.name": "Kuma",
   "dog.akita.quote": "Vou esperar por você. Sou muito bom em esperar.",
   "dog.akita.personality": "Calmo, leal e orgulhoso em silêncio. Espera no portão.",
@@ -466,7 +457,6 @@
   "dog.akita.love2": "bolinha de tênis",
   "dog.akita.love3": "passeios",
   "dog.akita.fun": "O Akita inu é um cachorro nativo do Japão. O Hachikō, o famoso cachorro que esperava na estação de Shibuya, era um Akita inu.",
-
   "dog.spitz.name": "Daifuku",
   "dog.spitz.quote": "Sim, sou branco assim de propósito. Olhe para mim.",
   "dog.spitz.personality": "Uma bola de pelo branca, alegre e um pouco exibida.",
@@ -483,7 +473,6 @@
   "dog.spitz.love2": "frisbee",
   "dog.spitz.love3": "truques",
   "dog.spitz.fun": "Daifuku é um docinho de arroz macio e redondo (大福). O Spitz japonês é uma raça que surgiu no Japão, e é sempre branco.",
-
   "dog.pom.name": "Mikan",
   "dog.pom.quote": "Yip! Essa foi minha voz baixinha.",
   "dog.pom.personality": "Um alto-falante pequenininho e fofo. Gira quando está feliz.",
@@ -500,7 +489,6 @@
   "dog.pom.love2": "patinho de apito",
   "dog.pom.love3": "carinho",
   "dog.pom.fun": "Mikan é a palavra japonesa para tangerina (みかん), um bom nome para uma bola de pelo laranja.",
-
   "dog.afghan.name": "Saffron",
   "dog.afghan.quote": "Eu não busco bolinha. Eu deslizo.",
   "dog.afghan.personality": "Elegante e distante. Nem um fio fora do lugar.",
@@ -516,7 +504,6 @@
   "dog.afghan.love1": "patê de salmão",
   "dog.afghan.love2": "frisbee",
   "dog.afghan.love3": "passeios",
-
   "dog.dane.name": "Waffle",
   "dog.dane.quote": "Eu sou cachorro de colo. Seu colo é que é pequeno demais.",
   "dog.dane.personality": "Um gigante gentil que segue você de cômodo em cômodo.",
@@ -532,7 +519,6 @@
   "dog.dane.love1": "frango com arroz",
   "dog.dane.love2": "osso de pelúcia",
   "dog.dane.love3": "carinho",
-
   "dog.mastiff.name": "Crumpet",
   "dog.mastiff.quote": "Um pouquinho de baba é meu jeito de dizer que te amo.",
   "dog.mastiff.personality": "Enorme, lento e fofo. Tira soneca na maior sombra que encontra.",
@@ -548,7 +534,6 @@
   "dog.mastiff.love1": "pupcake",
   "dog.mastiff.love2": "cabo de guerra",
   "dog.mastiff.love3": "hora da comida",
-
   "dog.gsd.name": "Strudel",
   "dog.gsd.quote": "Orelhas em pé. De plantão. Aquilo foi um esquilo?",
   "dog.gsd.personality": "Esperto e atento. Adora ter um trabalho, qualquer um.",
@@ -564,7 +549,6 @@
   "dog.gsd.love1": "frango com arroz",
   "dog.gsd.love2": "comedouro interativo",
   "dog.gsd.love3": "truques",
-
   "dog.dobie.name": "Espresso",
   "dog.dobie.quote": "Estou de guarda. Por favor, me proteja com uma mantinha.",
   "dog.dobie.personality": "Um manteiga derretida de pelo elegante. Vigia tudo e depois quer carinho.",
@@ -581,7 +565,6 @@
   "dog.dobie.love2": "cabo de guerra",
   "dog.dobie.love3": "passeios",
   "dog.dobie.fun": "Espresso é o café pequeno e forte (エスプレッソ). O Dobermann daqui tem as orelhas caídas naturais e o rabo comprido, do jeitinho que a natureza desenhou.",
-
   "dog.corso.name": "Cannoli",
   "dog.corso.quote": "Eu sou muito sério. Menos quando você coça minhas orelhas.",
   "dog.corso.personality": "Um guardião calmo e gentil. Fica de olho na família toda.",
@@ -598,7 +581,6 @@
   "dog.corso.love2": "osso de pelúcia",
   "dog.corso.love3": "carinho",
   "dog.corso.fun": "Cannoli é o doce crocante da Sicília. O Cane corso é um antigo cão de guarda italiano, e muito gentil.",
-
   "dog.pitbull.name": "Peaches",
   "dog.pitbull.quote": "Minha metade de trás inteira abana. Não consigo parar.",
   "dog.pitbull.personality": "Uma palhacinha rebolante que ama gente. Todo desconhecido é um novo melhor amigo.",
@@ -614,7 +596,6 @@
   "dog.pitbull.love1": "pupcake",
   "dog.pitbull.love2": "cabo de guerra",
   "dog.pitbull.love3": "carinho",
-
   "dog.minpin.name": "Jellybean",
   "dog.minpin.quote": "Eu não sou pequeno. O resto é que é grande.",
   "dog.minpin.personality": "Um pacotinho de energia, pequenininho e destemido. Anda saltitando por toda parte.",
@@ -630,7 +611,6 @@
   "dog.minpin.love1": "patê de salmão",
   "dog.minpin.love2": "patinho de apito",
   "dog.minpin.love3": "truques",
-
   "dog.lab.name": "Butter",
   "dog.lab.quote": "É hora do jantar? Parece hora do jantar.",
   "dog.lab.personality": "Amigável, comilão e sempre pronto para nadar.",
@@ -647,7 +627,6 @@
   "dog.lab.love2": "bolinha de tênis",
   "dog.lab.love3": "buscar a bolinha",
   "dog.lab.fun": "Butter, manteiga em inglês, se diz bata (バター) em japonês. O Labrador retriever é um dos cachorros mais populares do mundo, e o cão de assistência favorito no Japão.",
-
   "dog.malamute.name": "Maple",
   "dog.malamute.quote": "Uu-uu. Isso quer dizer que eu discordo.",
   "dog.malamute.personality": "Uma grande cachorra de trenó, fofa e respondona. Adora neve e cavar.",
@@ -663,7 +642,6 @@
   "dog.malamute.love1": "frango com arroz",
   "dog.malamute.love2": "cabo de guerra",
   "dog.malamute.love3": "cavar",
-
   "dog.chow.name": "Bao",
   "dog.chow.quote": "Não estou de mau humor. É só a minha cara.",
   "dog.chow.personality": "Um leão fofo e digno, de língua azul. Escolhe os amigos com cuidado.",
@@ -680,7 +658,6 @@
   "dog.chow.love2": "osso de pelúcia",
   "dog.chow.love3": "passeios",
   "dog.chow.fun": "Bao é um pãozinho macio cozido no vapor (包). O Chow-chow vem da China, e sua língua azul-escura é totalmente real.",
-
   "dog.stdpoodle.name": "Madeleine",
   "dog.stdpoodle.quote": "Eu sou a poodle grande. O pequeno é meu primo.",
   "dog.stdpoodle.personality": "Uma atleta alta, esperta e cacheada. Aprende truques antes de você ensinar.",
@@ -697,7 +674,6 @@
   "dog.stdpoodle.love2": "frisbee",
   "dog.stdpoodle.love3": "truques",
   "dog.stdpoodle.fun": "Madeleine é o bolinho francês em formato de concha (マドレーヌ). O Poodle standard é o primo grande do Poodle miniatura, o Pretzel.",
-
   "dog.schnauzer.name": "Muesli",
   "dog.schnauzer.quote": "A barba é para a sabedoria. E para a sopa.",
   "dog.schnauzer.personality": "Barbudo, mandão e muito atento. Avisa de cada folha.",
@@ -713,7 +689,6 @@
   "dog.schnauzer.love1": "biscoito de ossinho",
   "dog.schnauzer.love2": "comedouro interativo",
   "dog.schnauzer.love3": "passeios",
-
   "dog.westie.name": "Shortbread",
   "dog.westie.quote": "Hoje de manhã eu era branco. Prometo.",
   "dog.westie.personality": "Um terrier branquinho, pequeno e alegre. Primeiro cava, depois pergunta.",
@@ -729,7 +704,6 @@
   "dog.westie.love1": "biscoito de ossinho",
   "dog.westie.love2": "patinho de apito",
   "dog.westie.love3": "cavar",
-
   "dog.yorkie.name": "Toffee",
   "dog.yorkie.quote": "Quem manda aqui sou eu. Por favor, me coloque no sofá.",
   "dog.yorkie.personality": "Uma terrier pequenininha de pelo sedoso e atitude gigante.",
@@ -745,7 +719,6 @@
   "dog.yorkie.love1": "patê de salmão",
   "dog.yorkie.love2": "osso de pelúcia",
   "dog.yorkie.love3": "carinho",
-
   "dog.bichon.name": "Meringue",
   "dog.bichon.quote": "Isso é um corte de cabelo ou uma nuvem? Sim.",
   "dog.bichon.personality": "Uma bolinha de algodão feliz que pula por toda parte.",
@@ -762,7 +735,6 @@
   "dog.bichon.love2": "patinho de apito",
   "dog.bichon.love3": "truques",
   "dog.bichon.fun": "Merengue é o doce leve e aerado (メレンゲ). Em francês, Bichon frisé quer dizer “cachorrinho de colo de pelo cacheado”.",
-
   "dog.maltese.name": "Marshmallow",
   "dog.maltese.quote": "Eu não ando. Eu flutuo, com elegância.",
   "dog.maltese.personality": "Uma cachorrinha de colo meiga, de pelo longo e branco.",
@@ -779,7 +751,6 @@
   "dog.maltese.love2": "osso de pelúcia",
   "dog.maltese.love3": "carinho",
   "dog.maltese.fun": "Marshmallow se diz mashumaro (マシュマロ) em japonês. O Maltês é um cachorro de colo muito antigo, e muito popular no Japão.",
-
   "dog.shihtzu.name": "Wonton",
   "dog.shihtzu.quote": "Chuquinha em pé. Soneca deitada.",
   "dog.shihtzu.personality": "Um cachorro de colo tranquilo, de topete e com opiniões fortes sobre sonecas.",
@@ -796,7 +767,6 @@
   "dog.shihtzu.love2": "osso de pelúcia",
   "dog.shihtzu.love3": "hora da comida",
   "dog.shihtzu.fun": "Wonton é um bolinho macio de massa recheada (ワンタン). O Shih-tzu era um cachorro de palácio na China, e seu nome quer dizer leão.",
-
   "dog.dalmatian.name": "Sprinkles",
   "dog.dalmatian.quote": "Sim, eu contei minhas pintas. Perdi a conta. Duas vezes.",
   "dog.dalmatian.personality": "Uma atleta pintadinha que ama uma corrida longa e uma plateia para se exibir.",
@@ -813,7 +783,6 @@
   "dog.dalmatian.love2": "frisbee",
   "dog.dalmatian.love3": "passeios",
   "dog.dalmatian.fun": "Sprinkles são os confeitinhos coloridos em cima do bolo (スプリンクルズ). Os filhotes de Dálmata nascem todos brancos, e as pintas aparecem nas primeiras semanas.",
-
   "dog.bernese.name": "Fondue",
   "dog.bernese.quote": "Isto não é deitar nos seus pés. É esquentar eles.",
   "dog.bernese.personality": "Um amigão grande, gentil e fofo. Mais feliz quando se encosta em quem ama.",
@@ -830,7 +799,6 @@
   "dog.bernese.love2": "osso de pelúcia",
   "dog.bernese.love3": "carinho",
   "dog.bernese.fun": "Fondue é a panela suíça de queijo derretido (フォンデュ). O Boiadeiro-bernês vem das fazendas suíças perto de Berna, onde puxava carrocinhas de leite.",
-
   "dog.aussie.name": "Pavlova",
   "dog.aussie.quote": "Juntei as almofadas. Agora estão em círculo. Agora é a sua vez.",
   "dog.aussie.personality": "Uma pastora esperta e agitada, cheia de ideias. Precisa de um trabalho, qualquer um.",
@@ -847,7 +815,6 @@
   "dog.aussie.love2": "frisbee",
   "dog.aussie.love3": "truques",
   "dog.aussie.fun": "Pavlova é a sobremesa de merengue com frutas por cima (パブロバ). O Pastor-australiano ficou famoso nos ranchos dos Estados Unidos, não na Austrália.",
-
   "dog.cavalier.name": "Scone",
   "dog.cavalier.quote": "Minhas orelhas não são cabelo. São um abraço macio para o meu rosto.",
   "dog.cavalier.personality": "Um cãozinho de colo, doce, de orelhas macias e franjadas. Amigo de todo mundo.",
@@ -864,7 +831,6 @@
   "dog.cavalier.love2": "osso de pelúcia",
   "dog.cavalier.love3": "carinho",
   "dog.cavalier.fun": "Scone é o pãozinho da hora do chá (スコーン). O Cavalier king charles spaniel tem o nome do rei Carlos II, que adorava spaniels pequenos.",
-
   "dog.jrt.name": "Pickle",
   "dog.jrt.quote": "Agitação? Não. Só prontidão. Para tudo. Agora mesmo.",
   "dog.jrt.personality": "Uma cachorrinha pequena com uma quantidade enorme de pulo. Cava, pula e nunca para.",
@@ -982,7 +948,6 @@
   "about.dog_alt": "Um dachshund de giz de cera, todo tortinho, abanando o rabo",
   "about.itch": "Deixe um comentário ou uma doação no itch.io",
   "about.mail": "Ou escreva para a gente: {mail}",
-
   "home.game_label": "Jogar Doodle Doggo",
   "home.fullscreen": "Tela cheia",
   "home.fullscreen_exit": "Sair da tela cheia",

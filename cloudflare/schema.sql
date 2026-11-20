@@ -295,3 +295,18 @@ create table if not exists town_goal_users (
 );
 -- GET /town/goal reads an account's own months ("owed"): without this it scans every row of the table on each game load (final review, 18 Nov)
 create index if not exists town_goal_users_user on town_goal_users (user_id, month);
+
+-- v2.32 "A letter from your dog" (V232_letters.md 4). A new table only (no addcol). One row per account that asked for the weekly letter;
+-- turning letters off deletes the row. Nothing else is kept: no email text, no copy of the save, no open or click data.
+-- A deleted account's row goes at once (trigger users_letters_gone, schema_triggers.sql) and again from tidy().
+create table if not exists letters (
+  user_id   text primary key,           -- users.id
+  lid       text not null unique,       -- a random id for the links in the emails, never the user id
+  state     text not null,              -- 'pending' (the confirmation email is out), 'on', 'stopped' (a bounce or a complaint)
+  lang      text not null,              -- the game's language, one of the 12 codes
+  at        integer not null,           -- ms: when the player asked
+  ok_at     integer,                    -- ms: when the address said yes
+  last_week text not null default '',   -- the last week handled (sent or skipped): 'YYYY-MM-DD', the JST Sunday of that week
+  quiet     integer not null default 0  -- 1: the last letter after 8 weeks away went out; nothing more until the save is played again
+);
+create index if not exists letters_due on letters (state, last_week);

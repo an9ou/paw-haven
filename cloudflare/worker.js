@@ -80,9 +80,20 @@
 //   GET  /town/goal                        -> { month, goal, n, done, mine, part, last: { ... }, owed: [...] }   token optional (mine 0 and no owed
 //     without one; owed: the account's months that reached the goal, the last 12): 120/h per
 //     account with a token, 120/h per IP without; the town's totals are cached for GL_CACHE_S in the isolate
+//   v2.32 "A letter from your dog" (V232_letters.md): an opt-in weekly email, built only from the account's own cloud save. Shut (404 not_found
+//     { soon: true }) until LETTERS_FROM and until the secrets RESEND_API_KEY and LETTERS_KEY are set. Texts: letters_text.js (tools/letters_pack.js).
+//   GET  /letters                          -> { state: 'off' | 'pending' | 'on' | 'stopped', lang, day, hour }   email accounts only (403 no_account), 120/h
+//   POST /letters { on?, lang? }           -> the same   on: true -> pending + one confirmation email (3 a Japan day and 6 in 30 days per account, 10/h per IP); on: false ->
+//     the row is deleted; lang alone updates the language. 409 stopped (a bounce or a complaint), 400 bad, 20/h
+//   GET  /letters/confirm?t=  /letters/unsub?t=   -> a small HTML page with one button; POST to the same address does it (also RFC 8058 one-click).
+//     A bad, forged or expired token: a kind page, 400. 60/h per IP. A valid unsubscribe link works even while the gate is shut
+//   POST /letters/hook                     -> { received: true }   Resend's webhook (Svix signature, RESEND_WEBHOOK_SECRET): a permanent bounce or a complaint stops the letters
+//   Cron (scheduled): Sundays 10:00 JST and hourly for 48 hours: at most LETTERS_CAP rows a run and LETTERS_DAY letters a UTC day, one letter per account per week
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
+
+import { LT_LANGS, LT_TEXT, LT_BREEDS, LT_TRICKS, ltFormat } from './letters_text.js'; // generated: node tools/letters_pack.js (the letter texts, 12 languages)
 
 const ORIGINS = new Set([
   'https://doodledoggo.app', 'https://www.doodledoggo.app', 'https://an9ou.github.io',
@@ -105,6 +116,12 @@ export default {
     if (env.TIDY) await tidy(env); // tests: tidy after every request
     else if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
     return res;
+  },
+  // v2.32: the weekly letters (Cron Triggers, tools/cf_api_deploy.sh). The handler itself decides whether this hour is inside the send window
+  async scheduled(event, env, ctx) {
+    const p = ltRun(env, (event && Number(event.scheduledTime)) || Date.now()).catch((e) => { console.error('pawhaven-api letters', (e && e.message) || 'unknown'); return { ran: false, why: 'error' }; });
+    if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+    return p;
   }
 };
 
@@ -128,6 +145,13 @@ async function route(req, env, ctx) {
   // v2.30 (final review): its routes open with the game (BT_FROM), not with the deploy. Before that they answer like a Worker without them (the game
   // reads 404 not_found as "not here yet" and keeps what is waiting); soon: true tells a deployed, closed Worker from an older one
   if (BT_PATHS.has(p) && Date.now() < btFrom(env)) return fail('not_found', 404, { soon: true });
+  // v2.32 letters: shut until the launch and its secrets. A valid unsubscribe link always works. The pages and the webhook are not JSON routes
+  if (LT_PATHS.has(p)) {
+    const now = Date.now();
+    if (!ltOpen(env, now) && !(p === '/letters/unsub' && (await ltTokenRead(env, url.searchParams.get('t'), 'u', now)))) return fail('not_found', 404, { soon: true });
+    if (p === '/letters/hook') return m === 'POST' ? ltHook(req, env) : fail('not_found', 404);
+    if (p !== '/letters') return m === 'GET' || m === 'POST' ? ltPage(req, env, url, p === '/letters/confirm' ? 'c' : 'u', m, ip) : fail('not_found', 404);
+  }
   const R = ROUTES[m + ' ' + p];
   if (!R) return fail('not_found', 404);
   let body = null;
@@ -185,9 +209,9 @@ async function tidy(env) {
     env.DB.prepare('delete from shop_holds where user_id not in (select id from users)'),
     env.DB.prepare('delete from shop_holds where created_at < ?1').bind(now - SHOP_HOLD_MS) // an abandoned Checkout expires with its Stripe session
   ];
-  // v2.25.5 gift codes, and (1 in 10 of these runs) v2.30's btTidy in the same round trip; a table not made yet (schema first): the promo one alone
+  // v2.25.5 gift codes, and (1 in 10 of these runs) v2.30's btTidy and v2.32's ltTidySt in the same round trip (no extra one); a table not made yet (schema first): the promo one alone
   const promo = env.DB.prepare('delete from promo_redemptions where user_id not in (select id from users)');
-  try { await env.DB.batch([promo].concat(env.TIDY || Math.random() < 0.1 ? btTidySt(env, now) : [])); } catch (e) { try { await promo.run(); } catch (e2) { /* promo tables not made yet */ } }
+  try { await env.DB.batch([promo].concat(env.TIDY || Math.random() < 0.1 ? btTidySt(env, now).concat(ltTidySt(env, now)) : [])); } catch (e) { try { await promo.run(); } catch (e2) { /* promo tables not made yet */ } }
   let out;
   try { out = await env.DB.batch(st.concat([fill])); } // the lookup rides in the same batch: no extra round trip when there is nothing to fill
   catch (e) { if (!/shop_hash/.test(String((e && e.message) || e))) throw e; await env.DB.batch(st); return; } // users.shop_hash not added yet
@@ -1553,6 +1577,43 @@ const ROUTES = {
       st.owed = rows.map((r) => ({ month: r.month, goal: r.goal, n: r.n, done: true, mine: r.mine, part: true }));
     }
     return json(st);
+  } },
+
+  /* ---------- v2.32 "A letter from your dog" (V232_letters.md 2 and 4) ---------- */
+  'GET /letters': { auth: true, async fn({ env, me }) {
+    if (!btEmail(me)) return fail('no_account', 403);
+    if (await limited(env, 'lt:get:' + me.id, 120, 3600)) return fail('rate_limited', 429);
+    return json(ltView(await ltRow(env, me.id)));
+  } },
+
+  'POST /letters': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    if (!btEmail(me)) return fail('no_account', 403);
+    const hasOn = Object.hasOwn(body, 'on'), hasLang = Object.hasOwn(body, 'lang');
+    if (!frOnly(body, [], ['on', 'lang']) || (!hasOn && !hasLang) || (hasOn && typeof body.on !== 'boolean') || (hasLang && typeof body.lang !== 'string')) return fail('bad', 400);
+    if (await limited(env, 'lt:set:' + me.id, 20, 3600)) return fail('rate_limited', 429);
+    const now = Date.now(), lang = hasLang ? ltLang(body.lang) : null, row = await ltRow(env, me.id);
+    if (!hasOn) { // the game's language changed: the next letter follows it. Never makes a row, never sends anything
+      if (row && lang && row.lang !== lang) { await run(env, 'update letters set lang = ?1 where user_id = ?2', lang, me.id); row.lang = lang; }
+      return json(ltView(row));
+    }
+    if (!body.on) { // off: the row goes (a stopped one stays, so a bounced address is not asked again)
+      if (row && row.state !== 'stopped') await run(env, "delete from letters where user_id = ?1 and state != 'stopped'", me.id);
+      return json(ltView(row && row.state === 'stopped' ? row : null));
+    }
+    if (row && row.state === 'stopped') return fail('stopped', 409, ltView(row));
+    if (row && row.state === 'on') {
+      if (lang && row.lang !== lang) { await run(env, 'update letters set lang = ?1 where user_id = ?2', lang, me.id); row.lang = lang; }
+      return json(ltView(row));
+    }
+    // new, or still waiting for the address to say yes: one confirmation email (fixed text, nothing the player typed)
+    if ((await limited(env, 'lt:c:' + me.id + ':' + dcDay(now), LT_CONFIRM_DAY, 2 * 86400)) || (await limited(env, 'lt:cm:' + me.id, LT_CONFIRM_MONTH, 30 * 86400)) || (await limited(env, 'lt:cip:' + ip, LT_CONFIRM_IP, 3600))) return fail('rate_limited', 429, ltView(row));
+    const r = await one(env, `insert into letters (user_id, lid, state, lang, at, ok_at, last_week, quiet) values (?1, ?2, 'pending', ?3, ?4, null, ?5, 0)
+      on conflict(user_id) do update set lang = excluded.lang, at = excluded.at where letters.state = 'pending'
+      returning lid, state, lang`, me.id, b64url(rnd(16)), lang || (row && row.lang) || 'en', now, ltWeek(now).id);
+    if (!r) return json(ltView(await ltRow(env, me.id))); // it changed under us (confirmed on another device): say what is true now
+    const sent = ltConfirmMail(env, r, now).then((mail) => ltSend(env, me.email, mail)).catch(() => null);
+    if (ctx && ctx.waitUntil && !env.MAIL_WAIT) ctx.waitUntil(sent); else await sent;
+    return json(ltView(r));
   } }
 };
 
@@ -1560,7 +1621,7 @@ const ROUTES = {
 // The launch gate (final review, 18 Nov): the Worker is deployed before the game opens v2.30, so the routes stay shut until the launch, 25 Nov 2026
 // 00:00 JST (NEWS_V230.date in game/src/49c_news.js: test_v230_worker checks the two agree), less 10 minutes for a device clock that runs a little
 // fast. env.BT_FROM (ms, or an ISO time; '0' = open now) moves it without a new Worker: set it when the owner moves the launch date.
-const BT_FROM = Date.parse('2026-11-25T00:00:00+09:00') - 10 * 60e3;
+const BT_FROM = Date.parse('2026-11-20T00:00:00+09:00') - 10 * 60e3; // owner, 20 Nov 2026: launch today (was 25 Nov)
 const BT_PATHS = new Set(['/invite/join', '/invite/gifts', '/town/goal']);
 function btFrom(env) {
   const v = env.BT_FROM; if (v === undefined || v === null || v === '') return BT_FROM;
@@ -1610,5 +1671,281 @@ function btTidySt(env, now) {
     env.DB.prepare('delete from town_goal_users where user_id not in (select id from users)'),
     env.DB.prepare('delete from town_goal_users where month < ?1').bind(old),
     env.DB.prepare('delete from town_goal where month < ?1').bind(old)
+  ];
+}
+
+/* ---------------- v2.32 "A letter from your dog" (V232_letters.md) ---------------- */
+// An opt-in weekly email "from" the player's dog, built only from the cloud save the account already syncs. The address says yes itself first
+// (a confirmation link: accounts have no verified email). One letter per account per week, never twice; a signed unsubscribe link in every one.
+// The launch gate: LETTERS_FROM is the same text as LT_FROM in game/src/59b_letters.js ('' = no date yet; 'YYYY-MM-DD' = 00:00 JST that day;
+// test_letters_worker checks the two agree). The Worker opens 10 minutes early for a device clock that runs a little fast. env.LETTERS_FROM (ms,
+// an ISO time, '0' = open now, 'off' = shut) moves it without a new Worker.
+const LETTERS_FROM = '2026-11-20';
+const LT_PATHS = new Set(['/letters', '/letters/confirm', '/letters/unsub', '/letters/hook']);
+const LT_DOW = 0, LT_HOUR = 10, LT_WINDOW_H = 48; // Sundays 10:00 JST; the backlog has 48 hours
+const LT_CONFIRM_S = 48 * 3600, LT_UNSUB_S = 180 * 86400; // how long a confirmation link and an unsubscribe link work
+const LT_CONFIRM_DAY = 3, LT_CONFIRM_MONTH = 6, LT_CONFIRM_IP = 10; // confirmation emails: a Japan day and 30 days per account (an address that never says yes is left alone), an hour per IP
+const LT_AWAY_D = 7, LT_BYE_D = 56, LT_AWAY_WEEKS = [1, 2, 4]; // away letters in weeks 1, 2 and 4 without play; one last letter at 8 weeks
+const LT_CAP = 20, LT_CAP_MAX = 200, LT_DAY = 80, LT_GAP = 550; // rows a run, letters a UTC day (Resend's free plan: 100 a day, and Forgot password shares it), ms between sends
+const LT_PENDING_MS = 7 * 864e5; // a row nobody confirmed is dropped after a week
+const LT_API = 'https://api.doodledoggo.app', LT_SITE = 'https://doodledoggo.app', LT_IMG = LT_SITE + '/img/mail/letter.png';
+const LT_MAIL_FROM = 'Doodle Doggo <letters@doodledoggo.app>', LT_REPLY = 'contact@doodledoggo.app';
+const LT_TOK = /^v1\.([cu])\.([A-Za-z0-9_-]{22})\.([0-9a-z]{1,9})\.([A-Za-z0-9_-]{43})$/;
+
+function ltFrom(env) {
+  const built = /^\d{4}-\d{2}-\d{2}$/.test(LETTERS_FROM) ? Date.parse(LETTERS_FROM + 'T00:00:00+09:00') - 10 * 60e3 : Infinity;
+  const v = env.LETTERS_FROM; if (v === undefined || v === null || v === '') return built;
+  const s = String(v).trim(); if (/^\d+$/.test(s)) return Number(s);
+  if (s.toLowerCase() === 'off') return Infinity;
+  const n = Date.parse(s); return Number.isFinite(n) ? n : built;
+}
+const ltOpen = (env, now) => !!env.RESEND_API_KEY && !!env.LETTERS_KEY && now >= ltFrom(env);
+const ltLang = (c) => (typeof c === 'string' && LT_LANGS.includes(c) ? c : 'en');
+const ltT = (lang, key, vars) => { const l = ltLang(lang), m = (LT_TEXT[l] && LT_TEXT[l][key]) || LT_TEXT.en[key] || ''; return ltFormat(m, vars || {}, l); };
+const ltEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const ltRow = (env, uid) => one(env, 'select lid, state, lang, last_week, quiet from letters where user_id = ?1', uid);
+const ltView = (r) => ({ state: r ? r.state : 'off', lang: r ? r.lang : null, day: LT_DOW, hour: LT_HOUR });
+const ltInt = (v, d, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= lo ? Math.min(n, hi) : d; };
+
+/* ---- the week: the latest Sunday 10:00 JST at or before now. id = that Sunday's JST date; open = still inside the send window ---- */
+function ltWeek(now) {
+  const j = now + 9 * 3600e3, d = new Date(j); // JST wall clock in the UTC fields
+  let start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - ((d.getUTCDay() - LT_DOW + 7) % 7), LT_HOUR);
+  if (start > j) start -= 7 * 864e5;
+  return { id: new Date(start).toISOString().slice(0, 10), start: start - 9 * 3600e3, open: j - start < LT_WINDOW_H * 3600e3 };
+}
+const ltDayBack = (id, n) => new Date(Date.parse(id + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10);
+
+/* ---- signed links: v1.<c|u>.<lid>.<expiry, base 36 seconds>.<HMAC-SHA256, base64url>. c = confirm, u = unsubscribe ---- */
+async function ltSig(env, text) {
+  const k = await crypto.subtle.importKey('raw', enc.encode(String(env.LETTERS_KEY)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return b64url(new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(text))));
+}
+async function ltToken(env, kind, lid, now) {
+  const e = (Math.floor(now / 1000) + (kind === 'c' ? LT_CONFIRM_S : LT_UNSUB_S)).toString(36);
+  return `v1.${kind}.${lid}.${e}.${await ltSig(env, `dd-letter-v1|${kind}|${lid}|${e}`)}`;
+}
+// -> the row's lid, or null (not a token, the other kind, a wrong signature, too old, no key)
+async function ltTokenRead(env, t, kind, now) {
+  if (!env.LETTERS_KEY || typeof t !== 'string' || t.length > 120) return null;
+  const m = t.match(LT_TOK); if (!m || m[1] !== kind) return null;
+  if (!same(await ltSig(env, `dd-letter-v1|${m[1]}|${m[2]}|${m[3]}`), m[4])) return null;
+  return parseInt(m[3], 36) * 1000 > now ? m[2] : null;
+}
+const ltUrl = (env, p, t) => String(env.LETTERS_URL || LT_API).replace(/\/+$/, '') + p + '?t=' + t;
+
+/* ---- sending (Resend). idem: Resend's Idempotency-Key, so a retry of the same letter is never a second email ---- */
+async function ltSend(env, to, m, idem) {
+  const f = env.MAIL_FETCH || fetch; // tests pass a fake
+  const h = { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' }; if (idem) h['Idempotency-Key'] = idem;
+  const body = { from: env.LETTERS_MAIL_FROM || LT_MAIL_FROM, to: [to], reply_to: LT_REPLY, subject: m.subject, text: m.text, html: m.html };
+  if (m.headers) body.headers = m.headers;
+  let r; try { r = await f('https://api.resend.com/emails', { method: 'POST', headers: h, body: JSON.stringify(body) }); } catch (e) { return { ok: false, status: 0 }; }
+  if (!r.ok) console.error('pawhaven-api letter mail', r.status); // never the address, never the text
+  return { ok: r.ok, status: r.status };
+}
+
+/* ---- the email's shell: light HTML (no scripts, no web fonts, no tracking pixel) and a plain-text twin ---- */
+function ltShell(env, lang, o) {
+  const P = (t, st) => `<p style="margin:0 0 14px${st ? ';' + st : ''}">${t}</p>`;
+  const img = String(env.LETTERS_IMG || '') === '1' && o.img ? `<img src="${LT_IMG}" width="476" alt="" style="display:block;width:100%;max-width:476px;height:auto;border:0;margin:0 0 16px">` : '';
+  const html = `<!doctype html><html lang="${ltEsc(lang === 'yue' ? 'yue-Hant-HK' : lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${ltEsc(o.subject)}</title></head>
+<body style="margin:0;padding:0;background:#FBF6EA">
+<div style="max-width:520px;margin:0 auto;padding:22px;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.55;color:#2B2622">
+${img}${o.lines.map((l) => P(ltEsc(l))).join('\n')}
+${o.button ? P(`<a href="${ltEsc(o.button.url)}" style="display:inline-block;padding:11px 20px;background:#F6C453;color:#2B2622;border:2px solid #5B3D32;border-radius:14px;text-decoration:none;font-weight:bold">${ltEsc(o.button.label)}</a>`, 'margin-top:20px') : ''}
+${o.sign ? P(o.sign.map(ltEsc).join('<br>'), 'margin-top:20px') : ''}
+${o.ps ? P(ltEsc(o.ps), 'color:#6B6058;font-style:italic') : ''}
+<p style="margin:22px 0 0;padding-top:12px;border-top:1px dashed #CDBFA8;font-size:13px;line-height:1.5;color:#6B6058">${o.foot.map(ltEsc).join('<br>')}${o.unsub ? `<br><a href="${ltEsc(o.unsub.url)}" style="color:#6B6058">${ltEsc(o.unsub.label)}</a>` : ''}<br><a href="${LT_SITE}" style="color:#6B6058">doodledoggo.app</a></p>
+</div></body></html>`;
+  const text = o.lines.concat(o.button ? [o.button.label + ': ' + o.button.url] : [], o.sign ? [o.sign.join('\n')] : [], o.ps ? [o.ps] : [],
+    ['--\n' + o.foot.join('\n') + (o.unsub ? '\n' + o.unsub.label + ': ' + o.unsub.url : '') + '\n' + LT_SITE]).join('\n\n') + '\n';
+  return { subject: o.subject, text, html };
+}
+// the confirmation email: fixed text only (no dog name, nothing the player typed), in the game's language
+async function ltConfirmMail(env, row, now) {
+  const L = row.lang, url = ltUrl(env, '/letters/confirm', await ltToken(env, 'c', row.lid, now));
+  return ltShell(env, L, { subject: ltT(L, 'm_c_subj'), lines: [ltT(L, 'm_c_text'), ltT(L, 'm_c_what')], button: { label: ltT(L, 'm_c_btn'), url }, foot: [ltT(L, 'm_c_ignore'), ltT(L, 'm_c_exp')] });
+}
+
+/* ---- the letter, from one cloud save ---- */
+// the one typed text in a letter: the dog's name. Control and direction characters and < > go, 24 characters at most; a name that looks like a
+// link gives '' (the letter then says the breed instead)
+function ltName(raw) {
+  let s = typeof raw === 'string' ? raw.slice(0, 200) : '';
+  s = s.normalize('NFC').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff<>]/g, ' ').replace(/\s+/g, ' ').trim();
+  s = Array.from(s).slice(0, 24).join('').trim();
+  return !s || /[\/\\@:]|www\./i.test(s) ? '' : s;
+}
+const ltDay = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+function ltDogOf(save) {
+  const ds = Array.isArray(save.dogs) ? save.dogs.filter((d) => d && typeof d === 'object') : save.dog && typeof save.dog === 'object' ? [save.dog] : [];
+  return ds.find((d) => d.id === save.activeId) || ds[0] || null;
+}
+// what the week held, from the game's own little notes in the save (S.ltr, V232_letters.md 5) and the story's dated chapters
+function ltFacts(save, dog, from) {
+  const f = { walks: 0, wishes: 0, market: 0, visits: 0, dogs: 0, trick: '', chapter: 0, lvWas: 0, ptsWas: 0 };
+  const n = (v) => (Number.isInteger(v) && v > 0 ? Math.min(v, 999) : 0);
+  const L = save.ltr && typeof save.ltr === 'object' ? save.ltr : {};
+  for (const e of Array.isArray(L.ev) ? L.ev.slice(-80) : []) {
+    if (!Array.isArray(e) || ltDay(e[0]) < from) continue;
+    if (e[1] === 'w') f.walks += n(e[2]); else if (e[1] === 'wi') f.wishes += n(e[2]); else if (e[1] === 'mk') f.market += n(e[2]);
+    else if (e[1] === 'v') f.visits += n(e[2]); else if (e[1] === 'dg') f.dogs += n(e[2]);
+    else if (e[1] === 't' && typeof e[2] === 'string' && e[2].length <= 40) f.trick = e[2];
+  }
+  const c = save.story && typeof save.story === 'object' && save.story.c && typeof save.story.c === 'object' ? save.story.c : {};
+  for (const k of Object.keys(c).slice(0, 40)) { const ch = Number(k); if (Number.isInteger(ch) && ch >= 1 && ch <= 99 && ltDay(c[k]) >= from && ch > f.chapter) f.chapter = ch; }
+  let first = null; // the dog's Bond at its first look in the week
+  for (const b of Array.isArray(L.b) ? L.b.slice(-40) : []) { if (Array.isArray(b) && ltDay(b[0]) >= from && b[1] === dog.id && Number.isInteger(b[2]) && (!first || b[0] < first[0])) first = b; }
+  if (first) { f.lvWas = first[2]; f.ptsWas = Number(first[3]) || 0; }
+  return f;
+}
+// -> { kind: 'week' | 'away' | 'bye', subject, text, html, headers } or null (nothing goes out this week)
+async function ltLetter(env, row, saveRow, wk, now) {
+  let save; try { save = JSON.parse(saveRow.data); } catch (e) { return null; }
+  if (!save || typeof save !== 'object') return null;
+  const dog = ltDogOf(save); if (!dog) return null;
+  const L = ltLang(row.lang), key = typeof dog.key === 'string' ? dog.key : '';
+  const breed = (LT_BREEDS[L] && LT_BREEDS[L][key]) || LT_BREEDS.en[key] || ltT(L, 'm_dog');
+  const name = ltName(dog.name) || breed;
+  const seen = Date.parse(saveRow.updated_at), days = Number.isFinite(seen) ? Math.max(0, (wk.start - seen) / 864e5) : 0; // from the week's start: the same answer all through the window
+  const away = Math.floor(days / 7);
+  let kind = 'week';
+  if (days >= LT_BYE_D) { if (row.quiet) return null; kind = 'bye'; }
+  else if (days >= LT_AWAY_D) { if (!LT_AWAY_WEEKS.includes(away)) return null; kind = 'away'; }
+  const lines = [ltT(L, 'm_hi')];
+  if (kind === 'bye') lines.push(ltT(L, 'm_bye1', { name }), ltT(L, 'm_bye2'));
+  else if (kind === 'away') lines.push(ltT(L, 'm_away' + away, { name }), ltT(L, 'm_miss'), ltT(L, 'm_any'));
+  else {
+    const bond = dog.bond && typeof dog.bond === 'object' ? dog.bond : save.bond && typeof save.bond === 'object' ? save.bond : {};
+    const lv = ltInt(bond.level, 1, 1, 10), pts = Number(bond.pts) || 0, f = ltFacts(save, dog, ltDayBack(wk.id, 7));
+    let h = 0; for (const ch of row.lid + wk.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    lines.push(ltT(L, 'm_open' + (h % 3), { name }));
+    const dp = ltInt(save.daysPlayed, 0, 0, 99999); if (dp >= 2) lines.push(ltT(L, 'm_days', { n: dp }));
+    lines.push(f.lvWas && lv > f.lvWas ? ltT(L, 'm_bond_up', { n: lv }) : lv >= 10 ? ltT(L, 'm_bond_max') : f.lvWas === lv && pts > f.ptsWas ? ltT(L, 'm_bond_grow', { n: lv }) : ltT(L, 'm_bond', { n: lv }));
+    const hl = [];
+    if (f.trick) { const id = f.trick.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''), tn = id !== 'signature' && ((LT_TRICKS[L] && LT_TRICKS[L][id]) || LT_TRICKS.en[id]); hl.push(tn ? ltT(L, 'm_trick', { trick: tn }) : ltT(L, 'm_trick0')); }
+    if (f.chapter) hl.push(ltT(L, 'm_story', { n: f.chapter }));
+    if (f.wishes) hl.push(ltT(L, 'm_wish', { n: f.wishes }));
+    if (f.dogs) hl.push(ltT(L, 'm_newdog'));
+    if (f.visits) hl.push(ltT(L, 'm_visit'));
+    if (f.market) hl.push(ltT(L, 'm_market'));
+    if (f.walks) hl.push(ltT(L, 'm_walks', { n: f.walks }));
+    lines.push(...(hl.length ? hl.slice(0, 2) : [ltT(L, 'm_plain')]), ltT(L, 'm_close'));
+  }
+  const unsub = ltUrl(env, '/letters/unsub', await ltToken(env, 'u', row.lid, now));
+  const m = ltShell(env, L, {
+    subject: ltT(L, kind === 'bye' ? 'm_subj_bye' : 'm_subj', { name }), img: true, lines,
+    sign: [ltT(L, 'm_love'), ltT(L, 'm_sig', { name, breed })], ps: ltT(L, 'm_ps'),
+    foot: [ltT(L, kind === 'bye' ? 'm_foot_bye' : 'm_foot')], unsub: { label: ltT(L, 'm_unsub'), url: unsub }
+  });
+  m.kind = kind; m.headers = { 'List-Unsubscribe': '<' + unsub + '>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
+  return m;
+}
+
+/* ---- the cron: one run (V232_letters.md 4). Claim first, then send: late or missing, never double ---- */
+async function ltRun(env, now) {
+  const out = { ran: false, week: '', due: 0, sent: 0, skipped: 0, failed: 0, back: 0, why: '' };
+  if (!ltOpen(env, now)) { out.why = 'shut'; return out; }
+  const wk = ltWeek(now); out.week = wk.id;
+  if (!wk.open) { out.why = 'window'; return out; }
+  const cap = ltInt(env.LETTERS_CAP, LT_CAP, 1, LT_CAP_MAX), dayKey = 'lt:day:' + new Date(now).toISOString().slice(0, 10);
+  const used = await one(env, 'select n from rate where k = ?1', dayKey), room = ltInt(env.LETTERS_DAY, LT_DAY, 1, 1e6) - (used ? used.n | 0 : 0);
+  if (room <= 0) { out.why = 'day'; return out; }
+  const rows = await all(env, `select l.user_id, l.lid, l.lang, l.last_week, l.quiet, u.email from letters l join users u on u.id = l.user_id
+    where l.state = 'on' and l.last_week < ?1 and u.guest = 0 and u.email is not null order by l.last_week, l.user_id limit ?2`, wk.id, cap);
+  out.due = rows.length; if (!rows.length) { out.ran = true; return out; }
+  const claim = await env.DB.batch(rows.map((r) => env.DB.prepare("update letters set last_week = ?1 where user_id = ?2 and state = 'on' and last_week = ?3 returning user_id").bind(wk.id, r.user_id, r.last_week)));
+  const mine = rows.filter((r, i) => claim[i] && Array.isArray(claim[i].results) && claim[i].results.length === 1);
+  const gap = env.LETTERS_GAP !== undefined ? ltInt(env.LETTERS_GAP, LT_GAP, 0, 5000) : env.MAIL_FETCH ? 0 : LT_GAP, back = [], st = [];
+  let stop = false;
+  for (const r of mine) {
+    if (stop || out.sent >= room) { back.push(r); continue; }
+    let m = null;
+    try { const s = await one(env, 'select data, updated_at from saves where user_id = ?1', r.user_id); m = s ? await ltLetter(env, r, s, wk, now) : null; } catch (e) { m = null; }
+    if (!m) { out.skipped++; continue; } // no dog, an away week without a letter, or quiet: the week is handled
+    if (out.sent && gap) await new Promise((res) => setTimeout(res, gap));
+    const a = await ltSend(env, r.email, m, 'dd-letter/' + r.lid + '/' + wk.id);
+    if (a.ok) {
+      out.sent++;
+      if (m.kind === 'bye') st.push(env.DB.prepare('update letters set quiet = 1 where user_id = ?1').bind(r.user_id));
+      else if (r.quiet) st.push(env.DB.prepare('update letters set quiet = 0 where user_id = ?1').bind(r.user_id));
+    } else if (a.status === 0 || a.status === 429 || a.status >= 500) { back.push(r); stop = true; out.why = 'resend ' + a.status; } // Resend is busy or the day is full: the backlog waits for the next run
+    else out.failed++; // refused for good (a broken address): this week is handled, the bounce hook stops the row
+  }
+  out.back = back.length;
+  for (const r of back) st.push(env.DB.prepare('update letters set last_week = ?1 where user_id = ?2 and last_week = ?3').bind(r.last_week, r.user_id, wk.id));
+  if (out.sent) st.push(env.DB.prepare('insert into rate (k, n, reset_at) values (?1, ?2, ?3) on conflict(k) do update set n = rate.n + ?2').bind(dayKey, out.sent, now + 2 * 864e5));
+  if (st.length) await env.DB.batch(st);
+  out.ran = true; return out;
+}
+
+/* ---- the pages behind the links: GET shows one button, POST does it (a mail scanner that only opens links changes nothing) ---- */
+function ltHtmlPage(lang, title, text, btn, status) {
+  const html = `<!doctype html><html lang="${ltEsc(lang === 'yue' ? 'yue-Hant-HK' : lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${ltEsc(title)}</title>
+<style>body{margin:0;background:#FBF6EA;color:#2B2622;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:1.5}main{max-width:460px;margin:0 auto;padding:48px 22px;text-align:center}h1{font-size:26px;margin:0 0 14px}p{margin:0 0 18px}button{font:inherit;font-weight:bold;padding:12px 24px;background:#F6C453;color:#2B2622;border:2px solid #5B3D32;border-radius:14px;cursor:pointer}a{color:#6B6058}</style></head>
+<body><main><h1>${ltEsc(title)}</h1>${text ? `<p>${ltEsc(text)}</p>` : ''}${btn ? `<form method="post"><button type="submit">${ltEsc(btn)}</button></form>` : ''}<p style="margin-top:28px;font-size:15px"><a href="${LT_SITE}">doodledoggo.app</a></p></main></body></html>`;
+  return new Response(html, { status: status || 200, headers: {
+    'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff',
+    'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+  } });
+}
+// the browser's language, for a page whose link is broken (no row to ask)
+function ltAccept(req) {
+  for (const part of String(req.headers.get('Accept-Language') || '').split(',').slice(0, 8)) {
+    const c = part.split(';')[0].trim().toLowerCase(); if (!c) continue;
+    if (c === 'zh-hk' || c === 'zh-mo' || c.startsWith('yue')) return 'yue';
+    if (c.startsWith('zh')) return /tw|hant/.test(c) ? 'zh-Hant' : 'zh-Hans';
+    if (c.startsWith('pt')) return 'pt-BR';
+    const hit = LT_LANGS.find((l) => l === c.slice(0, 2)); if (hit) return hit;
+  }
+  return 'en';
+}
+async function ltPage(req, env, url, kind, m, ip) {
+  if (await limited(env, 'lt:pg:' + ip, 60, 3600)) return ltHtmlPage(ltAccept(req), 'Doodle Doggo', ltT(ltAccept(req), 'm_p_busy'), null, 429);
+  const now = Date.now(), lid = await ltTokenRead(env, url.searchParams.get('t'), kind, now);
+  const row = lid ? await one(env, 'select user_id, state, lang from letters where lid = ?1', lid) : null;
+  const bad = () => { const L = row ? row.lang : ltAccept(req); return ltHtmlPage(L, ltT(L, 'm_p_bad_h'), ltT(L, 'm_p_bad'), null, 400); };
+  if (!lid) return bad();
+  if (kind === 'u') { // a row that is already gone is "done" too: the link did its job
+    const L = row ? row.lang : ltAccept(req);
+    if (m === 'GET' && row) return ltHtmlPage(L, ltT(L, 'm_p_unsub_h'), ltT(L, 'm_p_unsub'), ltT(L, 'm_p_unsub_btn'));
+    if (row && row.state !== 'stopped') await run(env, "delete from letters where lid = ?1 and state != 'stopped'", lid);
+    return ltHtmlPage(L, ltT(L, 'm_p_unsub_ok_h'), ltT(L, 'm_p_unsub_ok'));
+  }
+  if (!row || row.state === 'stopped') return bad();
+  const L = row.lang;
+  if (m === 'GET' && row.state === 'pending') return ltHtmlPage(L, ltT(L, 'm_p_conf_h'), ltT(L, 'm_p_conf'), ltT(L, 'm_c_btn'));
+  if (row.state === 'pending') await run(env, "update letters set state = 'on', ok_at = ?1 where lid = ?2 and state = 'pending'", now, lid);
+  return ltHtmlPage(L, ltT(L, 'm_p_conf_ok_h'), ltT(L, 'm_p_conf_ok'));
+}
+
+/* ---- Resend's webhook (Svix): a permanent bounce or a complaint stops the letters for that address ---- */
+async function ltHook(req, env) {
+  const secret = String(env.RESEND_WEBHOOK_SECRET || ''); if (!secret) return fail('not_found', 404);
+  const raw = await req.text(); if (raw.length > 65536) return fail('too_big', 413);
+  const id = req.headers.get('svix-id') || '', ts = req.headers.get('svix-timestamp') || '', sigs = (req.headers.get('svix-signature') || '').split(' ');
+  if (!id || id.length > 200 || !/^\d{1,12}$/.test(ts) || Math.abs(Date.now() / 1000 - Number(ts)) > SHOP_TOL) return fail('bad_signature', 400);
+  let keyBytes; try { keyBytes = Uint8Array.from(atob(secret.replace(/^whsec_/, '')), (c) => c.charCodeAt(0)); } catch (e) { return fail('bad_signature', 400); }
+  const k = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(id + '.' + ts + '.' + raw)));
+  let want = ''; mac.forEach((x) => { want += String.fromCharCode(x); }); want = btoa(want);
+  if (!sigs.some((s) => s.startsWith('v1,') && same(s.slice(3), want))) return fail('bad_signature', 400);
+  let ev; try { ev = JSON.parse(raw); } catch (e) { return fail('bad_json', 400); }
+  const d = ev && ev.data && typeof ev.data === 'object' ? ev.data : {};
+  const hard = ev && (ev.type === 'email.complained' || (ev.type === 'email.bounced' && !(d.bounce && /transient|temporary|soft/i.test(String(d.bounce.type || '')))));
+  if (hard) {
+    for (const to of [].concat(d.to || []).slice(0, 5)) {
+      const email = norm(to); if (!EMAIL.test(email) || email.length > 254) continue;
+      await run(env, "update letters set state = 'stopped' where user_id in (select id from users where email = ?1)", email);
+    }
+  }
+  return json({ received: true });
+}
+// a deleted account's row (the trigger users_letters_gone takes it at once: this is the backstop) and rows nobody confirmed for a week
+function ltTidySt(env, now) {
+  return [
+    env.DB.prepare('delete from letters where user_id not in (select id from users)'),
+    env.DB.prepare("delete from letters where state = 'pending' and at < ?1").bind(now - LT_PENDING_MS)
   ];
 }
