@@ -12,7 +12,8 @@
 //                 loop, read off the page on the FROZEN CLOCK (../frozen_clock.js: freezeClock, stepClock at exactly 1000/30 ms, releaseClock).
 //                 The art's frame animation loops every second (pa-d-f0..f2), so 30 frames are the whole loop; the build checks the loop is exact.
 //   facts.json    the date, the goal state the game read back, the board's boxes, the place names, the game's words on the note (aria-label)
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/town_goal_reel/capture_town.js <main checkout> <outdir>
+//   NODE_PATH=$(npm root -g) [PAW_LANG=zh-Hans] node brand/instagram/launch/town_goal_reel/capture_town.js <main checkout> <outdir>
+// PAW_LANG=zh-Hans (the RedNote cut): the game in Simplified Chinese (switched and reloaded with the save); the drawings are the same art.
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || 'town_caps'); fs.mkdirSync(OUT, { recursive: true });
 const { run } = require(path.join(DEV, 'game', 'test_lib'));
@@ -20,12 +21,19 @@ const { freezeClock, stepClock, releaseClock } = require('../frozen_clock.js');
 const PLACES = (process.env.PLACES || 'hilltop,woods,river,square,pier').split(',');
 const POSES = ['idle', 'sit', 'pet', 'happy', 'walk', 'bow'];
 const OUTFIT = { neck: 'Autumn Scarf' };
+const LANG = process.env.PAW_LANG || '';
 run('town_capture', async (t) => {
   const { ev } = t, p = () => t.p, facts = { scenes: {} }, props = {};
   const closeAll = () => ev(() => { for (let i = 0; i < 5; i++) { const m = document.getElementById('modal'); if (!m || m.hidden) break; const x = m.querySelector('.panel .x'); if (x) x.click(); else break; } });
   const settle = async () => { await ev(() => { const S = window.__paw.S; S.newsSeen = '9.99'; S.wbPend = null; S.awayGiftISO = ''; S.backISO = ''; window.__paw.saveNow(); }); await p().waitForTimeout(900); await closeAll(); };
   await t.newGame({ map215: true, ground: true, time: 'day', season: 'autumn', weather: 'sunny', head: '~Dachshund', sex: 'boy' }, { coins: 3000, dog: { name: 'Noodle' } });
   await t.calm(); await t.lu(); await settle();
+  // PAW_LANG=zh-Hans (the RedNote cut): the game switched to Simplified Chinese and reloaded with the save (as visitor_reel/capture_visitor.js)
+  if (LANG) {
+    await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+    await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu(); await settle();
+  }
+  facts.lang = await ev(() => document.documentElement.lang);
   await ev((o) => { window.__paw.S.dog.outfit = Object.assign({}, window.__paw.S.dog.outfit || {}, o); window.__paw.saveNow(); }, OUTFIT);
   facts.date = await ev(() => new Date().toISOString().slice(0, 10));
   // the town goal on (the game's own test switch), the board's state patched: an empty meter for November (the build fills it)
@@ -45,11 +53,12 @@ run('town_capture', async (t) => {
       const g = s.querySelector('#glG'), fill = g && g.querySelector('.gl-note-fill'), hot = s.querySelector('[data-hot="notice"]');
       const c = s.cloneNode(true);
       ['#pack .rmdog', '#pkFol', '#fbPackBowls', '#zzz', '#fx', '#ballLayer', '#messG', '#visitorG', '#yvHost', '#dogG', '#dogPos', '#dogHit', '.gr-game'].forEach((q) => c.querySelectorAll(q).forEach((e) => e.remove()));
-      return { svg: c.outerHTML, vb: s.getAttribute('viewBox'), place: window.__paw.S.place, name: window.__paw.placeName(window.__paw.S.place), parts,
+      const words = [...c.querySelectorAll('text')].map((e) => e.textContent).concat([...c.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('aria-label'))).filter(Boolean);
+      return { svg: c.outerHTML, words, vb: s.getAttribute('viewBox'), place: window.__paw.S.place, name: window.__paw.placeName(window.__paw.S.place), parts,
         gl: g ? { box: bb(g), fill: bb(fill), dataW: fill.getAttribute('data-w'), w: fill.getAttribute('width'), aria: g.querySelector('[data-gl-hot]').getAttribute('aria-label'), tf: g.getAttribute('transform') } : null, notice: hot ? bb(hot) : null }; });
     if (r.place !== pl) throw new Error('not at ' + pl + ': ' + r.place);
     fs.writeFileSync(path.join(OUT, pl + '.svg'), r.svg); props[pl] = r.parts;
-    facts.scenes[pl] = { vb: r.vb, name: r.name, gl: r.gl, notice: r.notice };
+    facts.scenes[pl] = { vb: r.vb, name: r.name, gl: r.gl, notice: r.notice, words: [...new Set(r.words)] };
     console.log('scene', pl, r.vb, r.name, r.gl ? JSON.stringify(r.gl) : '', r.notice ? 'notice ' + r.notice : '');
   }
   if (!facts.scenes.square.gl || +facts.scenes.square.gl.w !== 0) throw new Error('Gerald\'s paper is not on the board, or its meter is not empty');

@@ -119,3 +119,79 @@ The pace is set in `build_town.js` (`BEATS`). The voice lengths are hook 4.03, r
 - **Board beat zoom:** it ends at 5.2x, not 6x, so the paper's speckle texture stays fine.
 - **Cameras keep moving through the 0.15 s pause after each line.** The first render's checkFrames found 2 doubled frames at the ends of the walk and board beats, where the camera had stopped. I fixed that and rendered everything again.
 - **The "No names. No ranks." line was cut** to keep the Reel fast with one ask. It stays true and is in the game's sheet (`gl.intro`).
+
+## RedNote cut (21 Nov 2026)
+
+The owner approved the English cut ("Good", via the coordinator, 21 Nov). The English MP4 is unchanged. Output: `brand/instagram/launch/town_goal_reel/doodle-doggo-town-goal-rednote.mp4`. It is h264 1080x1920, 30 fps, AAC stereo, **30.31 s (909 frames)**: 27.81 s of Reel, then the RedNote end card for 2.5 s.
+
+Rebuild:
+
+```
+PAW_LANG=zh-Hans NODE_PATH=$(npm root -g) node brand/instagram/launch/town_goal_reel/capture_town.js <main> <caps_zh>
+PYTHONPATH=<jieba-0.42.1 src> VO_LINES=brand/instagram/launch/town_goal_reel/vo_town_zh.json python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh> zf_073 1.0
+REDNOTE=1 ART_ROOT=<main> CAPS=<caps_zh> NODE_PATH=$(npm root -g) node brand/instagram/launch/town_goal_reel/build_town.js <work_zh> <vo_zh>
+```
+
+- **Same build, same beats and places**, with `REDNOTE=1` (the pattern of `visitor_reel` and `share_reel`).
+  - The captures are made in zh-Hans. The place names and the board's tap label (小镇目标) are checked, and the art is the same.
+  - Noodle speaks Mandarin: Kokoro v1.1-zh, zf_073 at 1.0x.
+  - The text is set in LXGW WenKai.
+  - There is no safe zone. Everything in front, and each place's window with it, moves 85 px right, inside a 50 px margin.
+  - It ends on the RedNote end card (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App"), centred at (540, 960) and checked.
+- **Subtitles:** as in the English cut, the cards carry exactly what Noodle says, so they are the subtitles. Every line is at most 14 characters. The build checks that each card equals the voice line, with numbers read out in words: 11月30日 = 十一月三十日, 2000 = 两千, 算1 = 算一, 算3 = 算三. Each card uses one size for all its lines.
+- **Hook:** 「11月30日前，全镇要摸肚肚2000次！」. It is the English 100-point hook ("Only until 30 November: your town needs 2,000 belly rubs!") in the game's own word for a belly rub, 摸肚肚. It stays true until the goal ends.
+
+| Beat | Place | Card (= subtitles) | Noodle says |
+|---|---|---|---|
+| hook | 山顶草地 | 11月30日前， / 全镇要摸肚肚2000次！ | 十一月三十日前，全镇要摸肚肚两千次！ |
+| rub | 枫树林 | 给你的狗狗摸肚肚， / 整个小镇都会算上！ | the same |
+| walk | 河边 | 摸一次算1， / 散步一次算3！ | 摸一次算一，散步一次算三！ |
+| board | 小镇广场 | red 玩法是这样的 + 大家的摸肚肚和散步， / 都累积在小镇广场的公告板上！ | 大家的摸肚肚和散步，都累积在小镇广场的公告板上！ |
+| gift | 灯塔码头 | Gerald + 小镇达到目标时， / 每个帮过忙的人， / 都会收到杰拉德 / 送的一袋零食！; items 汪汪蛋糕 ×1, 骨头饼干 ×3 | 小镇达到目标时，每个帮过忙的人，都会收到杰拉德送的一袋零食！ |
+| ask | 山顶草地 | 快去给你的狗狗摸摸肚肚， / 为小镇加油🐾 | 快去给你的狗狗摸摸肚肚，为小镇加油！ |
+
+- **The game's zh-Hans words** (`game/i18n/zh-Hans.json` on origin/main 3950b5b1; the build stops if any changes):
+  - Town goal and belly rubs: `gl.title` 小镇目标, `gl.goal_line` {month}摸肚肚{goal}次 (摸肚肚).
+  - Weights and names: `gl.intro` 摸一次算1，散步一次算3。没有名字，没有排名…
+  - Board: `nw.v230.goal` …累积在小镇广场的公告板上.
+  - Gift: `nw.v230.gift` and `gl.gift` 小镇达到目标时，每个帮过忙的人都会收到杰拉德送的一袋零食.
+  - Petting: `gl.mine_0` 摸摸狗狗….
+  - Treat bag items: `data.food.pupcake.n` 汪汪蛋糕 (the game's Pupcake name; not 纸杯蛋糕), `data.food.bone_shaped_biscuit.n` 骨头饼干, `pm.treat_n` {item} ×{n}.
+  - Gerald: `ks.letter_from` 杰拉德.
+  - Places (`data.places.*.n`): 山顶草地, 枫树林, 河边, 小镇广场, 灯塔码头.
+  - Not a game string: the board card's title 玩法是这样的 ("how it works"). It is not spoken.
+- **Numbers:** only 11, 30, 2000, 1, 3, 1, 3 (checked). There is no live count; the meter is the same patched board as in English.
+- **Anti-ban:** the build stops on any word of `RN_BAN`/`RN_BAN2`: links, domains, @, handles, other apps and platforms, 链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳 发帖 发到 发布到 快拍 帖子, and "ins". It checks the cut's text, the voice and the captured game text: place names, the scene's labels and the board label. There is no QR code, link or domain anywhere.
+- **Checks:** `CHECK=1` passed all 909 frames. ffprobe: 909 frames, 30.31 s. Voice -16 LUFS, music 11 dB under.
+
+  checkFrames:
+
+| Run | Frames | Median | Doubled | Jumps off a cut |
+|---|---|---|---|---|
+| hook | 1-127 | 0.51 | none | none |
+| rub | 125-253 | 0.69 | none | 138, 148, 168, 178, 198, 208, 228, 238 |
+| walk | 251-356 | 2.37 | none | none |
+| board | 354-523 | 6.99 | none | none |
+| gift | 521-707 | 0.37 | none | none |
+| ask | 705-834 | 0.57 | none | 718, 728, 748, 758, 778, 788, 808, 818 |
+| end | 834-908 | 3.76 | 61 (the still end card) | none |
+
+  - The jumps off a cut are the game's pet-pose keyframe steps, every 10 frames from each beat's start (loop frames 10/20/0). They are not stutter, as in the English rub beat.
+- **Contact sheet:** `/tmp/claude-0/-home-user-paw-haven/821f93b0-fc0a-5e7e-8605-cd441828990a/scratchpad/tg/town-goal-rednote-contact-sheet.jpg` (scratchpad).
+
+## Covers (21 Nov 2026)
+
+`ONLY=cover` (English) and `REDNOTE=1 ONLY=cover` give the two covers. Each is a design of its own, not a frame of the Reel. The background is Lighthouse Pier as the game draws it (x 700..1037.5 at 3.2x, the whole height, so the scene fills to the bottom). On top of it:
+
+- The goal, big on a cream card in the sky: "2,000 belly rubs" with "help the town by 30 Nov", or 摸肚肚2000次 with 11月30日前，一起为小镇加油.
+- Gerald's treat bag under it: Gerald the duck, a Pupcake and three Bone-shaped Biscuits, all the game's art, labelled "1 Pupcake" and "3 Bone-shaped Biscuits", or 汪汪蛋糕 ×1 and 骨头饼干 ×3.
+- Noodle big in front (675 px, 3x), being petted: the game's pet pose and its hearts.
+- The logo on its own card on the planks.
+
+| File | Size |
+|---|---|
+| `brand/instagram/launch/town_goal_reel/town-goal-cover.jpg` | 1080x1920 |
+| `brand/rednote/rednote-22-town-goal.jpg` | 1080x1440 (3:4), its y 240..1680 |
+
+- **Why not the Town Square:** I tried it first. With the headline card and the board in shot, Noodle at this size cannot stand clear of the board, the bench, the lamps, the run arch and the planters. The board stays the supporting element of the Reel, and the cover uses the treat bag.
+- **Checks:** text centred, 28 px apart, Noodle on the floor, everything 28 px clear of the pier's props (bench, gull, lamp, sailboat), the hearts clear of the props and the cards, everything inside x 40..1040, y 250..1670. A little flock of sky birds sits wholly under the goal card (checked: wholly covered or clear). The RedNote cover's words pass the ban-word check, and only 2000, 11, 30, 1 and 3 appear as numbers.

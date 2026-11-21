@@ -26,7 +26,7 @@
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const { checkFrames } = require('../frozen_clock.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
@@ -35,8 +35,15 @@ const CAPS = path.resolve(process.env.CAPS || path.join(WORK, 'caps'));
 for (const d of ['f', 'stills']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', RED = '#D2473C';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_town.json'), 'utf8'));
-for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from vo_town.json: ' + k);
+// REDNOTE=1: the RedNote cut (as visitor_reel/build_visitor.js and share_reel/build_share.js): every word in Simplified Chinese (the game's own zh-Hans
+// words, checked below), the captures made with PAW_LANG=zh-Hans (CAPS), Noodle in Mandarin (../friends_reel/vo_friends_zh.py with
+// VO_LINES=town_goal_reel/vo_town_zh.json, zf_073 1.0x), every card line at most 14 characters (the cards carry the spoken words, as in the English cut,
+// so they are the subtitles), LXGW WenKai, no safe zone (everything in front, and each place's window with it, moved 85 px right, a 50 px margin), the
+// RedNote end card (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App") centred at (540, 960). Output doodle-doggo-town-goal-rednote.mp4.
+// The build stops on any word of RN_BAN in the cut's words, the voice or the captured game text.
+const RN = !!process.env.REDNOTE, VOFILE = RN ? 'vo_town_zh.json' : 'vo_town.json', RNX = RN ? 85 : 0;
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const k of Object.keys(VOJSON)) if (VOJ.text[k] !== VOJSON[k]) throw new Error('the vo dir is not made from ' + VOFILE + ': ' + k);
 
 // ---- the facts, checked against main (the game's own words, numbers and art) and the captures ----
 const EN = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'en.json'), 'utf8'));
@@ -49,6 +56,18 @@ must('gl.gift', 'When the town gets there, everyone who helped gets a treat bag 
 must('nw.v230.goal', 'A town goal every month: every belly rub and walk in town adds up on the board in the Town Square');
 must('nw.v230.gift', 'When the town reaches the goal, everyone who helped gets a treat bag from Gerald');
 must('data.food.pupcake.n', 'Pupcake'); must('data.food.bone_shaped_biscuit.n', 'Bone-shaped Biscuit');
+// the zh-Hans words (game/i18n/zh-Hans.json): the town goal, its belly rubs (摸肚肚), the weights, the board, Gerald, the treat bag's items, the places
+const ZH = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8'));
+const mustZ = (k, s) => { if (ZH[k] !== s) throw new Error('the zh-Hans game text changed: ' + k + ' is ' + JSON.stringify(ZH[k]) + ', not ' + JSON.stringify(s)); };
+mustZ('gl.title', '小镇目标'); mustZ('gl.goal_line', '{month}摸肚肚{goal}次');
+mustZ('gl.intro', '全镇一起的一个目标。摸一次算1，散步一次算3。没有名字，没有排名，只有小镇一起努力。');
+mustZ('gl.gift', '小镇达到目标时，每个帮过忙的人都会收到杰拉德送的一袋零食：{gift}。如果月底还没达到，也不会失去什么，只是开始新的目标。');
+mustZ('nw.v230.goal', '每个月一个小镇目标：全镇的摸肚肚和散步都会累积在小镇广场的公告板上');
+mustZ('nw.v230.gift', '小镇达到目标时，每个帮过忙的人都会收到杰拉德送的一袋零食');
+mustZ('gl.mine_0', '摸摸狗狗或者去散步，就能贡献第一次摸肚肚。');
+mustZ('data.food.pupcake.n', '汪汪蛋糕'); mustZ('data.food.bone_shaped_biscuit.n', '骨头饼干'); mustZ('pm.treat_n', '{item} ×{n}'); mustZ('ks.letter_from', '杰拉德');
+const NAMES_ZH = { hilltop: '山顶草地', woods: '枫树林', river: '河边', square: '小镇广场', pier: '灯塔码头' };
+for (const [k, n] of Object.entries(NAMES_ZH)) mustZ('data.places.' + k + '.n', n);
 const GLS = SRC('58b_goal.js');
 if (!GLS.includes('GL_PET = 1, GL_WALK = 3') || !GLS.includes("on('act:pet', (d) => { glAdd(") || !GLS.includes("on('act:walk', () => { glAdd(GL_WALK); });")) throw new Error('a pet no longer counts 1 or a walk 3');
 if (!GLS.includes("const GL_TREATS = [['Pupcake', 1], ['Bone-shaped Biscuit', 3]];")) throw new Error('the treat bag changed');
@@ -65,12 +84,13 @@ if (!CHL.includes('| 2026-11-20 | v2.30 Better together |') || !CHL.includes('To
 if (new Date(2026, 10, 30).getDay() !== 1) throw new Error('30 Nov 2026 is not a Monday?');
 // the captures (capture_town.js)
 const FACTS = JSON.parse(fs.readFileSync(path.join(CAPS, 'facts.json'), 'utf8'));
+if ((FACTS.lang || 'en') !== (RN ? 'zh-Hans' : 'en')) throw new Error('the captures are in ' + FACTS.lang);
 if (FACTS.date !== '2026-11-21' || !FACTS.glOn || FACTS.glMonth !== '2026-11' || JSON.stringify(FACTS.treats) !== '[["Pupcake",1],["Bone-shaped Biscuit",3]]') throw new Error('the captures: ' + JSON.stringify(FACTS));
 const NAMES = { hilltop: 'Hilltop Meadow', woods: 'Maple Woods', river: 'Riverside', square: 'Town Square', pier: 'Lighthouse Pier' };
-for (const [k, n] of Object.entries(NAMES)) { if (!FACTS.scenes[k] || FACTS.scenes[k].name !== n) throw new Error('no capture of ' + n);
+for (const [k, n] of Object.entries(RN ? NAMES_ZH : NAMES)) { if (!FACTS.scenes[k] || FACTS.scenes[k].name !== n) throw new Error('no capture of ' + n);
   if (!/data-time="day" data-weather="sunny" data-season="autumn"/.test(fs.readFileSync(path.join(CAPS, k + '.svg'), 'utf8'))) throw new Error(n + ' is not an autumn, sunny day'); }
 const GLF = FACTS.scenes.square.gl;
-if (!GLF || GLF.aria !== 'Town goal' || GLF.dataW !== '35.6' || GLF.w !== '0' || GLF.tf !== 'matrix(.8 0 0 .8 153 -17.6)') throw new Error('Gerald\'s paper on the board: ' + JSON.stringify(GLF));
+if (!GLF || GLF.aria !== (RN ? '小镇目标' : 'Town goal') || GLF.dataW !== '35.6' || GLF.w !== '0' || GLF.tf !== 'matrix(.8 0 0 .8 153 -17.6)') throw new Error('Gerald\'s paper on the board: ' + JSON.stringify(GLF));
 const DRAW = JSON.parse(fs.readFileSync(path.join(CAPS, 'draw.json'), 'utf8'));
 for (const [k, d] of Object.entries(DRAW)) {
   if (d.vis.length !== 30 || d.step !== '1000/30 ms, frozen clock') throw new Error('the drawing ' + k + ' is not a 30-frame loop off the frozen clock');
@@ -103,6 +123,8 @@ const SCN = {
     PROPS: { lamp1: [601, 258, 639, 404], lamp2: [1203, 258, 1241, 404], bench: [853, 323, 947, 397], gull: [856, 260, 907, 297], crates: [1096, 366, 1260, 489], rod: [296, 273, 352, 442],
       buoy: [348, 286, 412, 347], pumpkins: [400, 533, 470, 572], post1: [8, 418, 74, 600], post2: [1523, 403, 1587, 600], run: [1404, 232, 1536, 372], sailboat: [1023, 226, 1102, 320], sun: [1322, 42, 1432, 148] } },
 };
+// RedNote: every window moves 85 / s units left (so the place moves right with everything in front); two regions start further left for it
+if (RN) { SCN.river.R[0] = 350; SCN.square.R[0] = 570; }
 // Gerald's paper (capture: #glG, matrix(.8 0 0 .8 153 -17.6), the paper rotated 4 degrees round (792, 419) in its own units; the meter's fill rect
 // x 774.2 y 423.2, 35.6 x 4.6, rx 1.8, PRA_C.pinkD #F28FA5); its centre in scene units, for the camera
 if (JSON.stringify(FACTS.scenes.square.notice) !== '[634,226,859,400]') throw new Error('the notice board moved: ' + FACTS.scenes.square.notice);
@@ -113,6 +135,10 @@ if (!fs.readFileSync(path.join(CAPS, 'square.svg'), 'utf8').includes('<rect clas
 // the timeline (owner, 13 Nov 2026: fast): a card stays up for its spoken line + 0.4 s, then a 0.15 s pause; the board's beat 0.3 s more for its meter
 const PAUSE = 0.15, BEATS = []; let at = 0.1;
 const beat = (o, hold, pause) => { o.at = at; o.hold = hold; BEATS.push(o); at += hold + pause; return o; };
+// the words of each beat; RedNote: the game's zh-Hans words (摸肚肚, 摸一次算1，散步一次算3, 小镇广场的公告板, 杰拉德送的一袋零食, 汪汪蛋糕 ×1, 骨头饼干 ×3)
+const ZL = { hook: ['11月30日前，', '全镇要摸肚肚2000次！'], rub: ['给你的狗狗摸肚肚，', '整个小镇都会算上！'], walk: ['摸一次算1，', '散步一次算3！'],
+  board: ['大家的摸肚肚和散步，', '都累积在小镇广场的公告板上！'], gift: ['小镇达到目标时，', '每个帮过忙的人，', '都会收到杰拉德', '送的一袋零食！'], ask: ['快去给你的狗狗摸摸肚肚，', '为小镇加油🐾'] };
+const ZX = { boardTitle: '玩法是这样的', items: ['汪汪蛋糕 ×1', '骨头饼干 ×3'] };
 beat({ k: 'hook', sc: 'hilltop', pose: 'idle', big: true, size: 84, lines: ['Only until 30 November:', 'your town needs', '2,000 belly rubs!'], cam: { s: 3.5, y0: 51.4, x0: [572, 584] } }, VOD.hook + 0.4, PAUSE);
 beat({ k: 'rub', sc: 'woods', pose: 'pet', hearts: true, lines: ['Give your dog a belly rub.', 'It counts for the whole town!'], cam: { s: 4, y0: 120, x0: [654, 662] } }, VOD.rub + 0.4, PAUSE);
 beat({ k: 'walk', sc: 'river', pose: 'walk', feet: 1385, size: 84, lines: ['Every pet counts 1.', 'Every walk counts 3!'], cam: { s: 3.5, y0: 51.4, x0: [402, 466] } }, VOD.walk + 0.4, PAUSE);
@@ -120,6 +146,7 @@ beat({ k: 'board', sc: 'square', pose: null, title: 'How it works', lines: ['Wat
 beat({ k: 'gift', sc: 'pier', pose: 'happy', gift: true, cam: { s: 3.5, y0: 51.4, x0: [636, 646] },
   lines: ['When the town gets there,', 'everyone who helped gets', 'a treat bag from Gerald!'], items: ['1 Pupcake', '3 Bone-shaped Biscuits'] }, VOD.gift + 0.4, PAUSE);
 beat({ k: 'ask', sc: 'hilltop', pose: 'pet', hearts: true, big: true, lines: ['Give your dog a belly rub', 'for the town 🐾'], cam: { s: 3.5, y0: 51.4, x0: [586, 596] } }, VOD.ask + 0.4, 0);
+if (RN) for (const b of BEATS) { b.lines = ZL[b.k]; if (b.title) b.title = ZX.boardTitle; if (b.items) b.items = ZX.items; }
 const LOOP = at + 0.1, T = LOOP + 2.5, NF = Math.round(T * FPS);
 const VOAT = BEATS.map((b) => ({ k: b.k, at: b.at }));
 // the board's camera: from the whole board (s 3.5, the board in the middle) in to Gerald's paper (s 5.2); it never stops moving
@@ -131,23 +158,37 @@ const HEARTS = [];
 for (const b of BEATS) if (b.hearts) for (let t = b.at + 0.25; t < b.at + b.hold - 0.7; t += 0.3) HEARTS.push({ t, b: b.k, dx: rnd() * 2 - 1, sq: rnd() < 0.7, f: 500 + rnd() * 300 });
 // house words (README): no em dash, no "breed" as a verb, no "sell", no itch.io, no "Sunday", no "we're at"; no live numbers (only the goal and the weights)
 const allText = BEATS.map((b) => [b.title || '', ...(b.lines || []), ...(b.items || [])].join(' ')).join(' ') + ' 0123456789';
-if (/—|\bbreed(s|ing)?\b|\bsell|itch|%|sunday|we'?re at|so far/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban: ' + allText);
-const nums = (allText.replace(' 0123456789', '').match(/\d[\d,]*/g) || []); if (nums.join(' ') !== '30 2,000 1 3 1 3') throw new Error('numbers on screen: ' + nums.join(' '));
-if (T < 22 || T > 32) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 22..32');
+if (/—|\bbreed(s|ing)?\b|\bsell|itch|%|sunday|we'?re at|so far|目前/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban: ' + allText);
+const nums = (allText.replace(' 0123456789', '').match(/\d[\d,]*/g) || []); if (nums.join(' ') !== (RN ? '11 30 2000 1 3 1 3' : '30 2,000 1 3 1 3')) throw new Error('numbers on screen: ' + nums.join(' '));
+// RedNote: each card line at most 14 characters (its end punctuation and the paw emoji not counted), and the cards say exactly what Noodle says (SAY: the
+// numbers the voice reads out in words)
+const SAY = [['11月30日', '十一月三十日'], ['2000', '两千'], ['算1', '算一'], ['算3', '算三']], bare = (x) => x.replace(/[，。！？：、\s]|🐾/gu, '');
+if (RN) for (const b of BEATS) { for (const l of b.lines) if ([...bare(l)].length > 14) throw new Error('a line over 14 characters: ' + l);
+  if (SAY.reduce((a, [x, y]) => a.split(x).join(y), bare(b.lines.join(''))) !== bare(VOJ.text[b.k])) throw new Error('the card differs from the voice: ' + b.k); }
+// RedNote anti-ban (README RedNote rule, REDNOTE.md): no link, domain, handle, QR, other platform or app, off-platform word, post/story wording
+const RN_BAN = /https?:|www\.|\.app|\.com|@|instagram|youtube|tiktok|itch|微信|朋友圈|QQ|微博|抖音|小红书|WhatsApp|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|发到|发布到|快拍|帖子|tag/i, RN_BAN2 = /INS|\bins\b/;
+const RN_ALL = () => allText + JSON.stringify(VOJSON) + Object.values(FACTS.scenes).map((x) => [x.name, ...(x.words || [])].join(' ')).join(' ') + (GLF.aria || '');
+if (RN) for (const re of [RN_BAN, RN_BAN2]) { const m = re.exec(RN_ALL()); if (m) throw new Error('a RedNote word on the ban list: ' + m[0]); }
+// the covers' words (ONLY=cover): the goal big, the deadline small, the treat bag's two items (the game's words)
+const CV = RN ? { head: '摸肚肚2000次', sub: '11月30日前，一起为小镇加油', items: ZX.items } : { head: '2,000 belly rubs', sub: 'help the town by 30 Nov', items: ['1 Pupcake', '3 Bone-shaped Biscuits'] };
+if (RN) for (const re of [RN_BAN, RN_BAN2]) { const m = re.exec(JSON.stringify(CV)); if (m) throw new Error('a RedNote word on the ban list in the cover: ' + m[0]); }
+if (/—|\bbreed|\bsell|itch|%|we'?re at|so far|目前/i.test(JSON.stringify(CV))) throw new Error('a banned word in the cover');
+if (((JSON.stringify(CV).match(/\d[\d,]*/g)) || []).join(' ') !== (RN ? '2000 11 30 1 3' : '2,000 30 1 3')) throw new Error('numbers on the cover');
+if (T < 22 || T > (RN ? 40 : 32)) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 22..32');
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs id="defs">
 <symbol id="ger" viewBox="${vbOf(ART.gerald_cheer)}" overflow="visible">${inner(ART.gerald_cheer)}</symbol>
 <symbol id="cake" viewBox="${vbOf(ART.pupcake)}" overflow="visible">${inner(ART.pupcake)}</symbol>
 <symbol id="bisc" viewBox="${vbOf(ART.biscuit)}" overflow="visible">${inner(ART.biscuit)}</symbol>
 </defs>
-<g id="bg"></g><g id="fg"><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
+<g id="bg"></g><g id="fg"${RN ? ` transform="translate(${RNX} 0)"` : ''}><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', CX=455;
+const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), RN=${RN}, RNX=${RNX}, F=RN?"'LXGW WenKai'":'Caveat', CX=455;
 const BEATS=${JSON.stringify(BEATS)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
 const SCN=${JSON.stringify(SCN)}, NOTE=${JSON.stringify(NOTE)}, BOARD=${JSON.stringify(BOARD)}, HEARTS=${JSON.stringify(HEARTS)};
 const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) => [k, d.idx])))};
@@ -181,12 +222,14 @@ function fitS(s,max,w){ let z=max; while(z>20){ const k=inkOf(s,z,F); if(k.L+k.R
 // a card: optional red title, lines; the text block centred in the card
 function card(b, top, op){ const W0=790, x0=CX-W0/2, L=[], big=!!b.big, sz=b.size||(big?96:64);
   if(b.title) L.push({s:b.title, size:fitS(b.title,70,W0-90), fill:'${RED}', pitch:76});
-  (b.lines||[]).forEach((s)=>L.push({s, size:fitS(s, sz, W0-90), pitch: Math.round(sz*1.04)}));
+  // RedNote: one size for every line of a card (the smallest fit), so a long Chinese line does not shrink alone
+  const zs=RN?Math.min(...(b.lines||[]).map((s)=>fitS(s, sz, W0-90))):0;
+  (b.lines||[]).forEach((s)=>{ const z=RN?zs:fitS(s, sz, W0-90); L.push({s, size:z, pitch: Math.round((RN?z*1.12:sz*1.04))}); });
   const hh=L.reduce((a,l,i)=>a+(i<L.length-1?l.pitch:l.size*0.75),0)+(big?88:70);
   return { h: hh, svg: '<g data-box data-apart="card" data-over="1" opacity="'+f2(op)+'"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+f2(hh)+'" rx="38" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+centred(L, CX, top+hh/2, F).svg+'</g>' }; }
 // the treat bag card: Gerald (the game's art) beside the words in their own box; under them the bag's two items, each the game's own art over its label
 function giftCard(b, top, op, u){ const W0=790, x0=CX-W0/2, h=420, k=0.94+0.06*back(u*1.3), cx=x0+W0/2, cy=top+h/2;
-  const tb={x:x0+232, y:top+20, w:W0-232-20, h:200}, L=b.lines.map((s)=>({s, size:fitS(s,56,tb.w-40), pitch:60}));
+  const tb={x:x0+232, y:top+20, w:W0-232-20, h:200}, gz=RN?Math.min(...b.lines.map((s)=>fitS(s,44,tb.w-40))):0, L=b.lines.map((s)=>(RN?{s, size:gz, pitch:Math.round(gz*1.12)}:{s, size:fitS(s,56,tb.w-40), pitch:60}));
   let s='<g data-apart="card" data-over="1" data-safe opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(cy)+') scale('+f2(k)+') translate('+f2(-cx)+' '+f2(-cy)+')"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+h+'" rx="38" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'
     +'<use href="#ger" x="'+(x0+18)+'" y="'+(top+14)+'" width="206" height="206"/>'
     +'<g data-box><rect x="'+tb.x+'" y="'+tb.y+'" width="'+tb.w+'" height="'+tb.h+'" rx="22" fill="#FFF3DA" stroke="#E2C9A0" stroke-width="3"/>'+centred(L, tb.x+tb.w/2, tb.y+tb.h/2, F).svg+'</g>';
@@ -202,13 +245,53 @@ function heart(x, y, s, u){ const e=easeOut(u), fs=38*s, ty=-90*s*e, op=1-e;
 // ---- the camera of a beat at time t: s, x0, y0 (px = (u - x0) x s); every camera keeps moving (a slow drift, the board's push-in) ----
 function camAt(b, t){ const u=Math.max(0,(t-b.at)/b.hold); // not clamped at 1: the camera keeps going through the pause after the line
   if(b.cam==='board'){ const e=0.18*u+0.82*sm(u), s=BOARD.s0+(BOARD.s1-BOARD.s0)*e, c=[BOARD.c0[0]+(BOARD.c1[0]-BOARD.c0[0])*e, BOARD.c0[1]+(BOARD.c1[1]-BOARD.c0[1])*e];
-    return { s, x0: BOARD.p0[0]-c[0]/s, y0: BOARD.p0[1]-c[1]/s }; }
-  const c=b.cam; return { s:c.s, y0:c.y0, x0:c.x0[0]+(c.x0[1]-c.x0[0])*u }; }
+    return { s, x0: BOARD.p0[0]-(c[0]+RNX)/s, y0: BOARD.p0[1]-c[1]/s }; }
+  const c=b.cam; return { s:c.s, y0:c.y0, x0:c.x0[0]+(c.x0[1]-c.x0[0])*u-RNX/c.s }; }
 const NZ=2.6, NCXF=375, NFEET=1400;
 let AX=0, NCX=0;
 function layout(){ const nb=DR.noodle_idle_right; AX=(nb.x0+nb.x1)/2; NCX=NCXF; return { AX, NCX }; }
 // each pose on the same middle (its own box's middle on NCX), so the wider pet pose stays inside the safe zone too
 const axOf=(k)=>(DR[k].x0+DR[k].x1)/2;
+// ---- the cover (ONLY=cover): its own design, not a frame of the Reel. Lighthouse Pier at 3.2x (x 700..1037.5, the whole height), the logo on its own
+// card on the planks, the goal big on a cream card in the sky (it also covers the little flock of birds there completely), Gerald's treat bag under it
+// (Gerald, a Pupcake and three Bone-shaped Biscuits, the game's art, with the game's words), Noodle big in front being petted (the game's pet pose and its
+// hearts). Everything inside x 40..1040, y 250..1670 (the 3:4 crop keeps 240..1680). Checks: centred text, 28 px apart, Noodle on the floor, 28 px clear
+// of the pier's props, the hearts clear of the props and the cards.
+const CVS=3.2, CVX=700, CV=${JSON.stringify(CV)}, BIRDS=[780,110,850,136];
+window.cover=function(bgUri){ $('fg').removeAttribute('transform'); $('ec').innerHTML='';
+  const boxC=(q)=>({l:(q[0]-CVX)*CVS, t:q[1]*CVS, r:(q[2]-CVX)*CVS, b:q[3]*CVS});
+  $('bg').innerHTML='<image href="'+bgUri+'" width="${W}" height="${H}"/>';
+  let a='', o='';
+  // the goal
+  const L=[{s:CV.head,size:fitS(CV.head,RN?150:150,800),fill:'${RED}',pitch:RN?150:128},{s:CV.sub,size:fitS(CV.sub,RN?60:68,800),fill:'${PEN}'}];
+  o+='<g data-box data-apart="title"><rect x="90" y="300" width="900" height="300" rx="42" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'+centred(L,540,450,F).svg+'</g>';
+  // Gerald's treat bag
+  let bag='<g data-apart="bag" data-safe><rect x="60" y="630" width="940" height="170" rx="34" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/><use href="#ger" x="74" y="638" width="154" height="154"/>';
+  const cols=[400,760], ay=640;
+  bag+='<use href="#cake" x="'+(cols[0]-43)+'" y="'+ay+'" width="86" height="86"/>';
+  [-48,0,48].forEach((dx,j)=>{ bag+='<g transform="rotate('+[-12,0,12][j]+' '+(cols[1]+dx)+' '+(ay+43)+')"><use href="#bisc" x="'+(cols[1]+dx-40)+'" y="'+(ay+3)+'" width="80" height="80"/></g>'; });
+  CV.items.forEach((it,j)=>{ bag+=pill(it, cols[j], 770, fitS(it,36,j?330:250), F, { fill:'#FFF3DA', padX:22 }); });
+  o+=bag+'</g>';
+  // the logo on its own card, on the open planks right of Noodle
+  const lw=190, lh=lw*280/900, lx=912; o+='<g data-apart="logo" data-safe><rect x="'+(lx-lw/2-18)+'" y="1420" width="'+(lw+36)+'" height="'+f2(lh+24)+'" rx="24" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(lx-lw/2)+'" y="1432" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
+  // Noodle being petted, and the game's pet hearts
+  const k='noodle_pet_right', d=DR[k], z=3.0, cx=70+(d.x1-d.x0)*z/2, feet=1640;
+  a+=dogG('Noodle', k, 1, cx, feet, z, {ax:(d.x0+d.x1)/2, nt:0.9});
+  [[185,0.3],[300,0.12],[405,0.22]].forEach(([x,u])=>{ a+=heart(x, feet-280, CVS, u); });
+  $('art').innerHTML=a; $('ov').innerHTML=o;
+  const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
+  const near=apartCheck($('st'),28); if(near.length) return 'cover too close: '+near.join('; ');
+  const P=SCN.pier.PROPS, inF=(k)=>{ const q={l:Math.max(0,k.l),t:Math.max(0,k.t),r:Math.min(${W},k.r),b:Math.min(${H},k.b)}; return q.r>q.l&&q.b>q.t?q:null; };
+  const cards=[...$('ov').querySelectorAll('[data-apart]')].map((e)=>{ const q=e.getBoundingClientRect(); return {l:q.left,t:q.top,r:q.right,b:q.bottom}; });
+  for(const e of $('st').querySelectorAll('[data-apart],[data-wash]')){ const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart')||'heart';
+    if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/CVS<SCN.pier.FLOOR) return 'cover: '+n+' stands above the floor';
+    for(const [nm,bx] of Object.entries(P)){ const q=inF(boxC(bx)); if(!q) continue; const g=gap(r,q); if(g<28) return 'cover: '+n+' on the pier\\'s '+nm+' ('+Math.round(g)+' px)'; }
+    if(!e.hasAttribute('data-apart')) for(const q of cards){ const g=gap(r,q); if(g<28) return 'cover: a heart on a card ('+Math.round(g)+' px)'; }
+    if(r.left<40||r.right>1040||r.top<250||r.bottom>1670) return 'cover: outside x 40..1040, y 250..1670: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
+  // the flock of birds in the sky: wholly under the goal card, or 28 px clear of every card
+  const bd=boxC(BIRDS), tc=$('ov').querySelector('[data-apart="title"] rect').getBoundingClientRect();
+  if(!(bd.l>=tc.left&&bd.r<=tc.right&&bd.t>=tc.top&&bd.b<=tc.bottom)) for(const q of cards) if(gap(q.l!=null?{left:q.l,top:q.t,right:q.r,bottom:q.b}:q,bd)<28) return 'cover: a card half over the birds';
+  return ''; };
 window.init=function(DRAW){ const m=initDrawings(DRAW); return { boxes:m, lay:layout() }; };
 window.frame=function(t){
   let bg='', art_='', ov='';
@@ -232,12 +315,14 @@ window.frame=function(t){
     else ov+=card(b, 276, cop).svg;
   }
   // the end card (brand/kids/endcard.js)
-  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
+  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+(RN?endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'}):endCard('tall',HANDLES,LOGO_INNER))+'</g>'; }
   $('bg').innerHTML=bg; $('art').innerHTML=art_; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  if(RN&&end){ const g=$('ec').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')');
+    const r=g.getBoundingClientRect(); if(Math.abs((r.left+r.right)/2-540)>1.5||Math.abs((r.top+r.bottom)/2-960)>1.5) return 'the RedNote end card is not centred at (540, 960)'; }
   if(end&&fade<=0) return '';
   // ---- the checks ----
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ');
   for(const e of $('art').querySelectorAll('[data-feet]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), fy=+e.getAttribute('data-feet');
     if(fy/c.s+c.y0<S.FLOOR) return e.getAttribute('data-apart')+' stands above the floor of '+b.sc;
@@ -248,11 +333,12 @@ window.frame=function(t){
   for(const e of $('ov').querySelectorAll('[data-over]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect();
     for(const [nm,bx] of Object.entries(P)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return 'the card on the '+b.sc+'\\'s '+nm+' ('+Math.round(g)+' px)'; } }
   for(const e of $('st').querySelectorAll('[data-apart],[data-box],[data-safe]')){ const r=e.getBoundingClientRect(); if(!r.width||+(e.getAttribute('opacity')||1)<=0.05||e.closest('#ec')) continue;
+    if(RN){ if(r.left<50||r.right>1030||r.top<40||r.bottom>1880) return 'in the margin: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); continue; }
     if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+(e.getAttribute('data-apart')||'box')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
   // the board's beat: Gerald's paper (the key art) inside the safe zone, the whole board in the frame and inside it at the start
   if(b.cam==='board'){ const nb={l:(NOTE.cx-21-c.x0)*c.s, r:(NOTE.cx+21-c.x0)*c.s, t:(NOTE.cy-32-c.y0)*c.s, b:(NOTE.cy+32-c.y0)*c.s};
-    if(nb.l<60||nb.r>850||nb.t<270||nb.b>1440) return 'Gerald\\'s paper outside the safe zone: '+[nb.l,nb.t,nb.r,nb.b].map(Math.round);
-    if(lt<0.05){ const bb=box(BOARD.face); if(bb.l<56||bb.r>854) return 'the board is not in the safe zone at the start: '+[bb.l,bb.r].map(Math.round); } }
+    if(RN?(nb.l<50||nb.r>1030||nb.t<40||nb.b>1880):(nb.l<60||nb.r>850||nb.t<270||nb.b>1440)) return 'Gerald\\'s paper outside the safe zone: '+[nb.l,nb.t,nb.r,nb.b].map(Math.round);
+    if(lt<0.05){ const bb=box(BOARD.face); if(RN?(bb.l<50||bb.r>1030):(bb.l<56||bb.r>854)) return 'the board is not in the safe zone at the start: '+[bb.l,bb.r].map(Math.round); } }
   return ''; };
 function fillAt(b,t){ const u=Math.max(0,(t-b.at-0.35)/(b.hold-0.6)); return b.fill[0]+(b.fill[1]-b.fill[0])*(0.15*u+0.85*sm(u)); }
 window.fillAt=fillAt;
@@ -277,11 +363,14 @@ window.fillAt=fillAt;
     BGS[k] = 'data:image/jpeg;base64,' + fs.readFileSync(f).toString('base64');
   }
   const p = await b.newPage({ viewport: { width: W, height: H } });
+  p.on('pageerror', (e) => console.log('PAGE ERROR', e.message));
   const pageFile = path.join(WORK, `page_${process.pid}.html`); fs.writeFileSync(pageFile, html.replace('__BGS__', JSON.stringify(BGS)));
   await p.goto('file://' + pageFile); await p.waitForLoadState('networkidle');
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', ht)]), [latin, ht]);
   if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), allText + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App');
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), allText.replace(/🐾/gu, '')))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
   const lay = await p.evaluate((D) => window.init(D), DRAW);
   console.log('Noodle', JSON.stringify(lay.lay), JSON.stringify(Object.fromEntries(Object.entries(lay.boxes).filter(([k]) => k.endsWith('_right')))));
@@ -289,6 +378,16 @@ window.fillAt=fillAt;
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.LOOSE) console.log('CHECK', t.toFixed(2), err.slice(0, 300)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (file) await p.screenshot({ path: file }); };
   // Noodle's size, standing (idle): 550..700 px wide (owner)
   { await render(1.0); const w = await p.evaluate(() => { const e = document.querySelector('[data-apart="Noodle"] use[href^="#fr_"]'); return e.getBoundingClientRect().width; }); console.log('Noodle standing', Math.round(w), 'px wide'); if (w < 550 || w > 700) throw new Error('Noodle is ' + Math.round(w) + ' px wide standing'); }
+  if (process.env.ONLY === 'cover') {
+    const bp = await b.newPage({ viewport: { width: W, height: H } }); let sv = fs.readFileSync(path.join(CAPS, 'pier.svg'), 'utf8');
+    sv = sv.replace(/^<svg[^>]*>/, (m) => m.replace(/viewBox="[^"]*"/, `viewBox="700 0 ${W / 3.2} ${H / 3.2}"`).replace(/ (width|height|style|preserveAspectRatio)="[^"]*"/g, '').replace('<svg', `<svg width="${W}" height="${H}"`));
+    await bp.setContent(`<html><body style="margin:0"><style>[class$="-hl"]{display:none}</style>${sv}</body></html>`); await bp.evaluate(() => document.querySelectorAll('.gr-game').forEach((e) => e.remove())); await bp.waitForTimeout(400);
+    const bgc = path.join(WORK, 'bg_cover.jpg'); await bp.screenshot({ path: bgc, type: 'jpeg', quality: 93 }); await bp.close();
+    if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), JSON.stringify(CV)); }
+    else await p.evaluate((txt) => document.fonts.load('700 40px Caveat', txt), JSON.stringify(CV));
+    const err = await p.evaluate((u) => window.cover(u), 'data:image/jpeg;base64,' + fs.readFileSync(bgc).toString('base64')); if (err) throw new Error(err);
+    const f = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-22-town-goal.jpg') : path.join(OUT, 'town-goal-cover.jpg');
+    await p.screenshot({ path: f, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', f); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ...BEATS.flatMap((x) => [x.at + 0.5, x.at + x.hold * 0.9]).slice(1), LOOP + 0.15, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -335,7 +434,7 @@ window.fillAt=fillAt;
     const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
     ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
   }
-  const mp4 = path.join(OUT, 'doodle-doggo-town-goal.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-town-goal-rednote.mp4' : 'doodle-doggo-town-goal.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
