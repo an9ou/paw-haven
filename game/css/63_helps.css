@@ -73,7 +73,7 @@ html[data-motion="off"] :is(.hp-fx *,#hpG .hp-canart.tilt){animation:none!import
 html[data-layout="phone"] .hp-sleep .sl-dt b{font-size:21px}
 /* the guests in my yard: tappable, their tag chip and ribbon */
 #hpGuests .hp-guest{cursor:pointer;outline:none}
-#hpGuests .hp-guest:focus-visible .sl-tag rect{stroke:#F28FA5;stroke-width:4}
+#hpTags .sl-tagat.focus .sl-tag rect{stroke:#F28FA5;stroke-width:4}
 /* the diary page's picture and Share this moment */
 .dd-page .sl-pic{position:relative;margin:8px 0 4px;border:2px solid var(--ink);border-radius:10px 7px 12px 8px;overflow:hidden;background:#D3E9F6;transform:rotate(-.5deg)}
 .dd-page .sl-pic .sl-picsvg{display:block;width:100%;height:auto;aspect-ratio:760/520}
