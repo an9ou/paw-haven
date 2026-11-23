@@ -6845,6 +6845,7 @@
  "hp.l_title": "{who} helped out!",
  "hp.l_water": "watered the garden",
  "hp.l_wish": "made {dog}'s wish come true",
+ "hp.l_wish_try": "came to make {dog}'s wish come true",
  "hp.no_card": "{name} stays home tonight.",
  "hp.no_expect": "{name} is expecting and rests at home.",
  "hp.no_little": "{name} is too little for sleepovers. Yard play only.",

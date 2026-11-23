@@ -138,6 +138,14 @@ run('v233_helps', async (t) => {
   await ev(() => { window.__frSrv.hp = true; window.__paw.hp.old(false); });
   await ev(() => window.__paw.hp.load());
   ok(await ev(() => window.__paw.hp.on() === true), 'hp: 1 again: on');
+  // code review 6: a refusal for another reason (a newer decoration: an older Worker's FR_LIM.decor) does not turn hp off for the load
+  const d6 = await ev(async () => {
+    const P = window.__paw, s = window.__frSrv, S = P.S; P.fr.yvTest(true); S.decor['Tug Post'] = { out: true, at: [180, 410] }; s.decorLim = 32; s.yards = []; s.badHp = 0; s.badYards = 0;
+    const ok1 = await P.hp.push(), r = { ok1, old: P.hp.old(), decorOld: P.fr.decorOld(), sent: s.yards.map((y) => ('hp' in y ? 'hp' : '-') + '/' + y.decor.length) };
+    const ok2 = await P.hp.push(); r.ok2 = ok2; r.last = 'hp' in s.yards[s.yards.length - 1]; r.old2 = P.hp.old();
+    delete s.decorLim; delete S.decor['Tug Post']; P.fr.decorOld(false); P.fr.yvTest(false); return r;
+  });
+  ok(d6.ok1 && d6.old === false && d6.decorOld === true && d6.ok2 && d6.last && d6.old2 === false, 'refused for a newer decoration: sent without it, hp stays on, the next snapshot carries hp: ' + JSON.stringify(d6));
 
   sec('A5. ?hp=1, the acts and the claim');
   await ev((sunny) => {
@@ -180,6 +188,7 @@ run('v233_helps', async (t) => {
   await helpsPart(t);
   await claimPart(t);
   for (const [w, h] of [[360, 640], [390, 844]]) await phonePart(t, w, h);
+  await chipOffPart(t);
 
   /* ======================= part 3 (V233.md 4): the sleepover ======================= */
   await sleepPart(t);
@@ -219,6 +228,7 @@ async function helpsPart(t) {
   sec('B1. the strip: three buttons, the resting can, no wish button for a home wish (gate on, the Worker has hp)');
   await startHelps(t);
   const today = await jst(t);
+  const coins0 = await ev(() => window.__paw.S.coins), coinsSame = (n) => ev((c) => window.__paw.S.coins === c, n); // code review 4: no help adds a coin
   ok(await visit(t, SUNNY, { d: today, g: 2, w: 1 }), 'a visit to Sunny Biscuit (something grows, a ball wish) shows the strip');
   let v = await vis(t);
   ok(v.strip.map((b) => b.k).join() === 'bowl,water,wish' && v.strip.every((b) => !b.done && !b.rest), 'the strip: bowl, can, wish, none done: ' + JSON.stringify(v.strip));
@@ -229,23 +239,33 @@ async function helpsPart(t) {
   ok(await ev(() => { const c = window.__paw.fr.crop(); return c.boxes.length > 0 && !!window.__paw.hp.spots().at; }), 'the bowl is put down after the dogs stand');
   // no dog drawn over the bowl, unless the bowl stands in front of it (the bowl is then drawn over the dog: #hpTop)
   const over = await ev(() => {
-    const b = document.querySelector('#view .hp-bowl').getBoundingClientRect(), top = !!document.querySelector('#hpTop .hp-bowl');
-    const hits = [...document.querySelectorAll('#frDogs .frdog .fr-art')].map((e) => e.getBoundingClientRect()).filter((r) => r.left < b.right - 4 && r.right > b.left + 4 && r.top < b.bottom - 4 && r.bottom > b.top + 4);
-    return { top, n: hits.length };
+    const top = !!document.querySelector('#hpTop .hp-bowl'), H = window.__paw.hp, sp = H.spots(), at = sp.at, q = at[3] || 1; // the bowl's drawing (HP_INK) against every pose of every dog
+    const ink = [at[0] + sp.ink[0] * q, at[1] + sp.ink[1] * q, at[0] + sp.ink[2] * q, at[1] + sp.ink[3] * q], o = (a, c) => Math.max(0, Math.min(a[2], c[2]) - Math.max(a[0], c[0])) * Math.max(0, Math.min(a[3], c[3]) - Math.max(a[1], c[1]));
+    const b = document.querySelector('#view .hp-bowlart').getBoundingClientRect(), c = document.elementFromPoint(b.left + b.width / 2, b.top + b.height * 0.6);
+    return { top, n: H.dogs().filter((d) => d.poses.some((p) => o(ink, p) > 1)).length, tap: !!c && !!c.closest('.hp-bowl') };
   });
-  ok(over.n === 0 || over.top, 'no dog is drawn over the bowl: ' + JSON.stringify(over));
+  ok((over.n === 0 || over.top) && over.tap, 'no dog is drawn over the bowl, and none takes its taps: ' + JSON.stringify(over));
   await shot(t, 'strip_1280');
 
   sec('B2. the bowl: one send, +1 Bond, the tick, the full bowl; a second tap says done');
   await toasts0(t);
   const b0 = await ev(() => ({ pts: window.__paw.S.bond.pts, n: window.__paw.S.hp.n, bond: window.__paw.S.hp.bond, gift: window.__paw.S.fr.gift }));
+  await ev(() => { // the pour (phone review 4): when the kibble starts to fall and when the bowl turns full
+    const art = document.querySelector('#view .hp-bowlart'), W = window.__hpPour = { t0: performance.now(), fx: 0, full: 0, at0: art.getAttribute('data-full') };
+    new MutationObserver(() => { if (!W.full && art.getAttribute('data-full') === '1') W.full = performance.now(); }).observe(art, { attributes: true, attributeFilter: ['data-full'] });
+    new MutationObserver(() => { if (!W.fx && document.querySelector('#fx .hp-kib')) W.fx = performance.now(); }).observe(document.getElementById('fx'), { childList: true, subtree: true });
+  });
   ok(await ev(() => window.__paw.hp.tap('bowl', 'strip')), 'Fill the bowl: ok');
+  ok(await ev(() => document.querySelector('#view .hp-bowlart').getAttribute('data-full') === '0'), 'the bowl is still empty when the send comes back (the pour has not landed)');
   let st = await ev(() => ({ sent: window.__frSrv.sent.filter((x) => x.kind === 'bowl'), pts: window.__paw.S.bond.pts, n: window.__paw.S.hp.n, bond: window.__paw.S.hp.bond, v: window.__paw.hp.visit() }));
   ok(st.sent.length === 1 && st.sent[0].fid === SUNNY && JSON.stringify(st.sent[0].data) === '{}', 'one bowl send to Sunny Biscuit, data {}: ' + JSON.stringify(st.sent));
   ok(st.n === b0.n + 1 && st.bond === b0.bond + 1 && st.pts === b0.pts + 1, '+1 help, +1 Bond (its own count): ' + JSON.stringify([b0, st.n, st.bond, st.pts]));
   ok(await t.waitToast(/helped out! \+1 Bond/), 'the toast "… helped out! +1 Bond"');
   ok(st.v.strip.find((b) => b.k === 'bowl').done, 'the bowl button has its tick');
-  ok(await t.until(() => /Basic Kibble|kibble/i.test(document.querySelector('#view .hp-bowlart').innerHTML) || document.querySelector('#view .hp-bowlart').innerHTML.length > 2000, null, 3000), 'the bowl is full');
+  ok(await t.until(() => document.querySelector('#view .hp-bowlart').getAttribute('data-full') === '1', null, 3000), 'the bowl is full after the pour');
+  const pour = await ev(() => window.__hpPour);
+  ok(pour.at0 === '0' && pour.fx > 0 && pour.full >= pour.fx + 450, 'empty while the kibble falls, full once it lands (' + Math.round(pour.full - pour.fx) + ' ms after the scoop): ' + JSON.stringify(pour));
+  ok(await coinsSame(coins0), 'the bowl: 0 coins');
   ok(await t.until(() => !document.querySelector('#fx .hp-fx'), null, 3000), 'the scoop and kibble are gone after the pour');
   await toasts0(t);
   ok((await ev(() => window.__paw.hp.tap('bowl', 'prop'))) === false && (await t.waitToast(/You did that today/)), 'a second tap (the scene bowl): "You did that today. Come back tomorrow!"');
@@ -257,6 +277,7 @@ async function helpsPart(t) {
   ok(await ev(() => { const s = window.__frSrv.sent.filter((x) => x.kind === 'wish'); return s.length === 1 && JSON.stringify(s[0].data) === '{"w":1}'; }), 'one wish send { w: 1 }');
   ok(await ev(() => !!document.querySelector('#fx .hp-ball')), 'the ball arcs');
   ok(await t.until(() => { const b = window.__paw.hp.visit().bubble; return b && b.done && /Wish come true/.test(b.text); }, null, 3000), 'the bubble: "Wish come true!"');
+  ok(await coinsSame(coins0), 'the ball wish: 0 coins for the helper');
   await shot(t, 'ball_1280');
 
   sec('B4. water: the send, the tilt and the drops; the cap of 5 helper Bond a day');
@@ -265,6 +286,7 @@ async function helpsPart(t) {
   ok(await ev(() => window.__paw.hp.tap('water', 'strip')), 'Water the garden: ok');
   ok(await ev(() => !!document.querySelector('#fx .hp-fx .hp-drop')), 'four drops fall');
   ok(await ev((p) => window.__paw.S.hp.bond === 5 && window.__paw.S.bond.pts === p + 1, p1), 'the fifth help Bond today: +1');
+  ok(await coinsSame(coins0), 'water: 0 coins');
   await t.until(() => !document.querySelector('#fx .hp-fx'), null, 3000);
 
   sec('B5. a resting can and a home wish (Cozy Fern: nothing grows, a walk wish); the cap reached: no Bond');
@@ -284,6 +306,7 @@ async function helpsPart(t) {
   ok(await ev((p) => window.__paw.S.hp.bond === 5 && window.__paw.S.bond.pts === p, p2), 'no Bond past 5 a day');
   ok(await t.waitToast(/helped out!$/), 'the toast has no Bond part at the cap');
   ok(await ev(() => window.__paw.S.hp.n === 4), 'four helps given: ' + (await ev(() => window.__paw.S.hp.n)));
+  ok(await coinsSame(coins0), 'four helps, still 0 coins');
   // a stale snapshot (another day): the can rests, no bubble
   ok(await visit(t, FERN, { d: '2026-01-01', g: 3, w: 0 }), 'a snapshot from another day');
   v = await vis(t);
@@ -311,11 +334,13 @@ async function helpsPart(t) {
   ok(await ev(() => window.__paw.hp.tap('wish', 'strip')), 'Make the wish come true: ok');
   ok(await t.until((f) => window.__frSrv.sent.filter((x) => x.fid === f && x.kind === 'pet').length === 1, CLOVER, 3000) && pets0 === 0, 'the pet event went too (not sent today before)');
   ok(await ev((f) => { const s = window.__frSrv.sent.filter((x) => x.fid === f && x.kind === 'wish'); return s.length === 1 && s[0].data.w === 0; }, CLOVER), 'the wish { w: 0 }');
+  ok(await coinsSame(coins0), 'the pet wish (and its pet): 0 coins');
 
   sec('B8. reduced motion: the bowl just fills, no scoop');
   await ev(() => { document.documentElement.dataset.motion = 'off'; });
   ok(await ev(() => window.__paw.hp.tap('bowl', 'strip')), 'the bowl at Happy Clover: ok');
-  ok(await ev(() => !document.querySelector('#fx .hp-scoop') && !document.querySelector('#fx .hp-kib') && document.querySelector('#view .hp-bowlart').innerHTML.length > 0), 'no scoop or kibble, the bowl full at once');
+  ok(await ev(() => !document.querySelector('#fx .hp-scoop') && !document.querySelector('#fx .hp-kib') && document.querySelector('#view .hp-bowlart').getAttribute('data-full') === '1'), 'no scoop or kibble, the bowl full at once');
+  ok(await coinsSame(coins0), 'every helper send so far: 0 coins (' + (await ev(() => window.__paw.S.coins)) + ')');
   await ev(() => { delete document.documentElement.dataset.motion; });
   await t.ctx.close();
 
@@ -324,6 +349,7 @@ async function helpsPart(t) {
   const day2 = await jst(t);
   await ev(() => { const inv = window.__paw.S.inv; inv.food = { 'Basic Kibble': 2, 'Bone-shaped Biscuit': 1, 'Carrot Sticks': 3 }; inv.seeds = { carrot: 2 }; });
   ok(await visit(t, SUNNY, { d: day2, g: 0, w: 2, a: 0 }), 'Sunny Biscuit wishes for Basic Kibble');
+  const snackC0 = await ev(() => window.__paw.S.coins);
   ok(await ev(() => window.__paw.hp.tap('wish', 'strip')) && (await t.until(() => !!document.querySelector('#modal .hp-snacksheet'), null, 3000)), 'the wish button opens the snack sheet');
   ok(await ev(() => [...document.querySelectorAll('#modal [data-hpsnack]')].map((b) => +b.dataset.hpsnack).join() === '0'), 'only Basic Kibble is offered');
   ok(await ev(() => /wishes for Basic Kibble, please/.test(document.querySelector('#modal .hp-snack').textContent)), 'the lead names the wish');
@@ -340,8 +366,15 @@ async function helpsPart(t) {
   await t.p.waitForSelector('#modal .confirm .btn.yes');
   await t.p.click('#modal .confirm .btn.yes');
   ok(await t.until(() => window.__paw.S.inv.food['Basic Kibble'] === 1 && document.getElementById('modal').hidden, null, 4000), 'ok: one Basic Kibble leaves the bag, the sheet closes');
+  const tr = await ev(() => { // phone review 10: the treat on the ground under the eating dog's nose, not over its head
+    const g = document.querySelector('#fx .hp-treat'), d = window.__paw.hp.dogs().find((x) => !x.mine); if (!g || !d) return null;
+    const b = g.getBBox(), cy = b.y + b.height / 2, top = Math.min(...d.poses.map((p) => p[1])), h = d.y - top;
+    return { cy: Math.round(cy), feet: Math.round(d.y), top: Math.round(top), low: cy >= d.y - 0.35 * h && cy <= d.y + 4 };
+  });
+  ok(tr && tr.low, 'the treat is on the ground in front of the eating dog (its lowest third), not over its head: ' + JSON.stringify(tr));
   ok(await ev(() => { const s = window.__frSrv.sent.filter((x) => x.kind === 'wish'); return s.length === 1 && s[0].data.w === 2 && s[0].data.a === 0; }), 'the wish { w: 2, a: 0 }');
   ok(await ev(() => window.__paw.S.fr.gift === false && window.__paw.fr.giftUsed() === false), 'not the day\'s gift (S.fr.gift untouched)');
+  ok(await ev((c) => window.__paw.S.coins === c, snackC0), 'the snack wish: 0 coins for the helper');
   // a snack wish naming no food: every food in the bag (no seeds); an empty bag says so
   ok(await visit(t, FERN, { d: day2, g: 0, w: 2 }), 'Cozy Fern wishes for a crunchy snack');
   await ev(() => window.__paw.hp.snack());
@@ -377,6 +410,8 @@ async function claimPart(t) {
   const today = await jst(t);
   await ev(() => { const S = window.__paw.S; S.gkEarly = true; S.stats.hunger = 50; const pl = S.garden.plots; pl.forEach((p) => { p.crop = null; p.g = 0; p.water = 0; }); pl[0].crop = 'carrot'; pl[0].g = 0.2; pl[1].crop = 'peas'; pl[1].g = 0.1; pl[2].crop = 'peas'; pl[2].g = 1; });
   const act = (id, fid, name, kind, data, day) => ({ id, from: { fid, name }, kind, data: data || {}, day: day || today, claimed: false });
+  await ev(() => { window.__paw.ms.force(['walk']); }); // today's mission is not the wish one (its pay would show in the coin checks)
+  const cc0 = await ev(() => window.__paw.S.coins);
   await ev((acts) => { window.__frSrv.acts = acts; window.__frSrv.claimBodies = []; }, [act(101, SUNNY, [0, 0], 'bowl'), act(102, SUNNY, [0, 0], 'water'), act(103, FERN, [2, 11], 'bowl')]);
   await ev(() => window.__paw.hp.inbox());
   ok(await t.until(() => window.__frSrv.claimBodies.length >= 1, null, 4000), 'claimed');
@@ -387,6 +422,7 @@ async function claimPart(t) {
   ok(/\+20 Hunger\./.test(sunL.ps) && /Every growing plot is watered\./.test(sunL.ps), 'its PS: ' + sunL.ps);
   ok(L.hunger > 89.9 && L.hunger <= 90 && L.bowls === 2, 'two bowls: +40 Hunger (50 -> 90, less the minutes gone by): ' + L.hunger);
   ok(L.plots[0][0] === 3 && L.plots[0][1] === 0 && L.plots[1][0] === 3 && L.plots[2][0] !== 3, 'every growing plot gets 3 drops, a ready one not: ' + JSON.stringify(L.plots));
+  ok(await ev((c) => window.__paw.S.coins === c, cc0), 'the bowl and water claims: 0 coins (code review 4)');
   // a later read that day: the same letter grows and is unread again; the third bowl tops up (to 100), a fourth gives the letter only
   await ev(() => { const m = window.__paw.S.mail.find((x) => /^hp_help_/.test(x.id)); window.__paw.S.mail.forEach((x) => { x.read = true; }); });
   await ev((acts) => { window.__frSrv.acts.push(...acts); }, [act(104, SUNNY, [0, 0], 'wish', { w: 1 }), act(105, CLOVER, [1, 6], 'bowl'), act(106, CLOVER, [1, 6], 'water')]);
@@ -395,7 +431,7 @@ async function claimPart(t) {
   await t.until(() => window.__frSrv.acts.every((a) => a.claimed), null, 4000);
   L = await ev(() => { const S = window.__paw.S; return { m: S.mail.filter((x) => /^hp_help_/.test(x.id)).map((x) => ({ id: x.id, text: x.text, ps: x.ps || '', read: x.read })), hunger: S.stats.hunger, bowls: S.hp.bowls }; });
   const sun2 = L.m.find((x) => x.id.endsWith(SUNNY)), clo = L.m.find((x) => x.id.endsWith(CLOVER));
-  ok(L.m.length === 3 && !sun2.read && /filled .+'s bowl, watered the garden and made .+'s wish come true\./.test(sun2.text), 'the same letter grows and is unread again: ' + sun2.text);
+  ok(L.m.length === 3 && !sun2.read && /filled .+'s bowl, watered the garden and came to make .+'s wish come true\./.test(sun2.text) && /had already come true/.test(sun2.ps), 'the same letter grows and is unread again: ' + sun2.text);
   ok(L.hunger > 99.9 && L.hunger <= 100 && L.bowls === 3, 'the third bowl (Happy Clover\'s): Hunger to 100, never past: ' + L.hunger);
   ok(/\+20 Hunger\./.test(clo.ps) && !/watered\./.test(clo.ps), 'Happy Clover\'s water with nothing growing: the letter only: "' + clo.ps + '"');
   const h0 = await ev(() => { const S = window.__paw.S; S.stats.hunger = 40; return S.stats.hunger; });
@@ -405,25 +441,38 @@ async function claimPart(t) {
   ok(await ev((h) => window.__paw.S.stats.hunger <= h && window.__paw.S.hp.bowls === 3 && /stopped by: filled/.test(window.__paw.S.mail.find((x) => x.id.indexOf('hp_help_') === 0 && x.id.endsWith('cozyfernxxxxxxxxxxxxxx')).text), h0), 'a fourth bowl today: the letter only, no Hunger');
 
   sec('C2. the wish: granted once with ddWishDone; a second one (or another kind, or another day) gives +1 Bond to 5');
-  await ev(() => { window.__paw.hp.snap(); const S = window.__paw.S; S.dd.wish.w[S.dog.id] = { k: 'ball', a: null, done: 0 }; });
-  const w0 = await ev(() => ({ wn: window.__paw.S.dd.wn, pts: window.__paw.S.bond.pts }));
+  await ev(() => { window.__paw.hp.snap(); const S = window.__paw.S; S.dd.wish.w[S.dog.id] = { k: 'ball', a: null, done: 0 }; S.dd.wish.coins = 0; });
+  const w0 = await ev(() => ({ wn: window.__paw.S.dd.wn, pts: window.__paw.S.bond.pts, coins: window.__paw.S.coins }));
   await ev((a) => { window.__frSrv.acts.push(a); }, act(110, FERN, [2, 11], 'wish', { w: 1 }));
   await ev(() => window.__paw.hp.inbox());
   ok(await t.until((wn) => { const S = window.__paw.S; return S.dd.wish.w[S.dog.id].done === 1 && S.dd.wn === wn + 1; }, w0.wn, 4000), 'the ball wish came true (ddWishDone: done, the wish count)');
   ok(await t.until((p) => window.__paw.S.bond.pts > p, w0.pts, 4000) && (await t.waitToast(/Wish come true!/)), 'its double Bond and the wish toast');
   ok(await ev((id) => /'s wish came true!/.test(window.__paw.S.mail.find((x) => x.id === id).ps), 'hp_help_' + today + '_' + FERN), 'the letter\'s PS: the wish came true');
+  const wc = await ev(() => ({ coins: window.__paw.S.coins, day: window.__paw.S.dd.wish.coins }));
+  ok(wc.coins - w0.coins === 10 && wc.day === 10, 'the friend-granted wish: its own wish coins once (DD_COIN 10, inside DD_COIN_DAY): +' + (wc.coins - w0.coins) + ', S.dd.wish.coins ' + wc.day);
   const g0 = await ev(() => ({ gotB: window.__paw.S.hp.gotB, pts: window.__paw.S.bond.pts }));
   await ev((list) => { window.__frSrv.acts.push(...list); }, [act(111, CLOVER, [1, 6], 'wish', { w: 1 }), act(112, SUNNY, [0, 0], 'wish', { w: 0 }, '2026-01-02')]);
   await ev(() => window.__paw.hp.inbox());
   await t.until(() => window.__frSrv.acts.every((a) => a.claimed), null, 4000);
   ok(await t.until((g) => window.__paw.S.hp.gotB === g.gotB + 2 && window.__paw.S.bond.pts === g.pts + 2, g0, 3000), 'already granted, and another day: +1 Bond each (S.hp.gotB): ' + JSON.stringify(await ev(() => [window.__paw.S.hp.gotB, window.__paw.S.bond.pts])));
   ok(await ev(() => /had already come true, so here is \+1 Bond instead/.test(window.__paw.S.mail.find((x) => x.id === 'hp_help_2026-01-02_sunnybiscuitxxxxxxxxxx').ps)), 'the fallback PS');
+  ok(await ev(() => { const m = window.__paw.S.mail.find((x) => x.id === 'hp_help_2026-01-02_sunnybiscuitxxxxxxxxxx'); return /came to make .+'s wish come true\./.test(m.text) && !/stopped by: made/.test(m.text); }), 'its list line: "came to make …\'s wish come true" (hp.l_wish_try; phone review 12): ' + (await ev(() => window.__paw.S.mail.find((x) => x.id === 'hp_help_2026-01-02_sunnybiscuitxxxxxxxxxx').text)));
+  ok(await ev((c) => window.__paw.S.coins === c, wc.coins), 'a second grant of the wish, and another day\'s: 0 coins');
   await ev(() => { window.__paw.S.hp.gotB = 5; });
   const g1 = await ev(() => window.__paw.S.bond.pts);
   await ev((a) => { window.__frSrv.acts.push(a); }, act(113, CLOVER, [1, 6], 'wish', { w: 2, a: 0 }, '2026-01-03'));
   await ev(() => window.__paw.hp.inbox());
   await t.until(() => window.__frSrv.acts.every((a) => a.claimed), null, 4000);
   ok(await ev((p) => window.__paw.S.bond.pts === p && window.__paw.S.hp.gotB === 5, g1), 'at 5: no more Bond');
+  // code review 5 (Game Manager): a friend-granted wish may complete my daily wish mission, once
+  await ev(() => { const P = window.__paw, S = P.S; S.dd.wish.w[S.dog.id] = { k: 'ball', a: null, done: 0 }; window.__paw.hp.pref('msTest', true); P.ms.force(['wish']); });
+  ok(await ev(() => { const it = window.__paw.S.missions.list[0]; return it.id === 'wish' && !it.done; }), 'today\'s mission: Make a wish come true');
+  await ev((list) => { window.__frSrv.acts.push(...list); }, [act(114, FERN, [2, 11], 'wish', { w: 1 }), act(115, SUNNY, [0, 0], 'wish', { w: 1 })]);
+  await ev(() => window.__paw.hp.inbox());
+  await t.until(() => window.__frSrv.acts.every((a) => a.claimed), null, 4000);
+  ok(await t.until(() => { const it = window.__paw.S.missions.list[0]; return !!it.done && it.p === 1; }, null, 4000), 'the friend-granted wish completes my wish mission: ' + JSON.stringify(await ev(() => window.__paw.S.missions.list[0])));
+  await ev(() => window.__paw.ms.flush()); await t.sleep(1300);
+  ok(await ev(() => { const it = window.__paw.S.missions.list[0]; return it.p === 1 && window.__paw.S.dd.wish.w[window.__paw.S.dog.id].done === 1; }), 'a second friend\'s wish the same day counts nothing more (p 1)');
 
   sec('C3. Say thanks: note 12 to the helper, the day\'s note for that friend; a thank-you note counts once');
   const lid = 'hp_help_' + today + '_' + SUNNY;
@@ -488,8 +537,9 @@ async function phonePart(t, w, h) {
     btns.concat([strip, chip]).forEach((e) => { if (over(b, R(e))) bad.push('bowl under ' + (e.id || 'x')); });
     const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); if (!top || !bowl.contains(top)) bad.push('bowl covered');
     const st = document.querySelector('#frStampG .fr-stamp'); if (st && over(b, R(st))) bad.push('bowl on the stamp');
-    const onTop = !!document.querySelector('#hpTop .hp-bowl');
-    [...document.querySelectorAll('#frDogs .frdog .fr-art')].forEach((e, i) => { const r = R(e); if (!onTop && r.left < b.right - 4 && r.right > b.left + 4 && r.top < b.bottom - 4 && r.bottom > b.top + 4) bad.push('dog over the bowl ' + i); });
+    const onTop = !!document.querySelector('#hpTop .hp-bowl'), H = window.__paw.hp, sp = H.spots(), at = sp.at, q = (at && at[3]) || 1; // the bowl's drawing (HP_INK) against every pose of every dog, in world units
+    const ink = at ? [at[0] + sp.ink[0] * q, at[1] + sp.ink[1] * q, at[0] + sp.ink[2] * q, at[1] + sp.ink[3] * q] : null, o = (a, c) => Math.max(0, Math.min(a[2], c[2]) - Math.max(a[0], c[0])) * Math.max(0, Math.min(a[3], c[3]) - Math.max(a[1], c[1]));
+    if (ink) H.dogs().forEach((d, i) => { if (!onTop && d.poses.some((p) => o(ink, p) > 1)) bad.push('dog over the bowl ' + i); });
     const wish = document.getElementById('hpWish'), wr = wish && R(wish);
     if (!wish || wish.hidden) bad.push('no bubble'); else { if (wr.left < 0 || wr.right > iw || wr.top < sr.bottom || wr.bottom > br.top) bad.push('bubble outside'); if (wr.height < 43.5) bad.push('bubble tap'); }
     return { bad, side: document.documentElement.scrollWidth > iw + 1, strip: [sr.left, sr.top, sr.width, sr.height].map(Math.round), bowl: [b.left, b.top, b.width, b.height].map(Math.round), top: onTop };
@@ -501,6 +551,12 @@ async function phonePart(t, w, h) {
   ok(await ev(() => window.__paw.hp.tap('water', 'strip')), tag + ': water from the strip: ok');
   ok(await t.until((x) => Math.abs(window.__paw.fr.cam().x - x) > 40, cam0.x, 2000), tag + ': the camera panned to the can');
   ok(await ev(() => { const c = document.querySelector('#view .hp-can').getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(); return c.left >= v.left && c.right <= v.right && c.width >= 43.5; }), tag + ': the can is in view, a 44 px tap');
+  const wl = await ev(() => { // phone review 11: the can and where the drops land stay above the visit buttons
+    const R = (e) => e.getBoundingClientRect(), can = R(document.querySelector('#view .hp-canart')), sp = [...document.querySelectorAll('#fx .hp-splash')].map(R), patch = R(document.querySelector('#sceneG [data-hot="garden"]'));
+    const under = (r) => [...document.querySelectorAll('#placeBtns .btn')].map(R).filter((b) => b.right > r.left && b.left < r.right).reduce((m, b) => Math.min(m, b.top), 1e4);
+    return { can: Math.round(under(can) - can.bottom), splash: sp.map((r) => [Math.round(under(r) - (r.top + r.height / 2)), Math.round(r.top + r.height / 2 - patch.top)]) };
+  });
+  ok(wl.can >= 4 && wl.splash.length === 2 && wl.splash.every(([a, b]) => a >= 2 && b >= 0), tag + ': the can and the drops\' landing on the patch, above the buttons (px clear, px into the patch): ' + JSON.stringify(wl));
   await shot(t, 'water_' + tag);
   // the snack sheet fits
   await ev(() => { const inv = window.__paw.S.inv; inv.food = { 'Basic Kibble': 2, 'Bone-shaped Biscuit': 1, 'Carrot Sticks': 3, Pupcake: 1 }; });
@@ -515,6 +571,62 @@ async function phonePart(t, w, h) {
   });
   ok(!S2.side && !S2.bad.length && S2.n === 4, tag + ': the snack sheet fits, 44 px taps: ' + JSON.stringify(S2));
   await shot(t, 'snack_' + tag);
+  await t.closeX(); await t.modalGone();
+  // phone review 1, 5, 6: a crowded yard (five big dogs, every decoration) and one dog with 20: the bowl's tap box clear of the chip, strip, buttons,
+  // camera arrow and bar; over a dog only in front of its paws or legs; the wish bubble clear of the arrow, its two lines inside it
+  const all = await ev((F) => { const S = window.__paw.S; F.forEach((n) => { S.decor[n] = { out: true }; }); const y = window.__paw.hp.yard(); F.forEach((n) => delete S.decor[n]); return y.decor; }, DECOR);
+  const B = await ev(() => ['dane', 'mastiff', 'samoyed', 'husky', 'chihuahua'].map((k) => window.PawGenes.BREEDS.indexOf(k)));
+  const dg = (b, n, a) => ({ b, c: null, o: -1, a: a || 'adult', s: 'm', sp: 0, n });
+  for (const [nm, dogs, dec] of [['5 big dogs, ' + all.length + ' decorations', [dg(B[0], 3), dg(B[1], 4), dg(B[2], 5), dg(B[3], 6), dg(B[4], 7, 'pup')], all], ['1 dog, 20 decorations', [dg(B[4], 3)], all.slice(0, 20)]]) {
+    ok(await visitYard(t, FERN, { d: today, g: 1, w: 0 }, { season: 'summer', house: 5, dogs, decor: dec }), tag + ': ' + nm);
+    await t.sleep(2600); // the greeting plays
+    const C = await ev(() => {
+      const R = (e) => e.getBoundingClientRect(), ov = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top, bad = [], H = window.__paw.hp, sp = H.spots(), at = sp.at;
+      const g = document.querySelector('#view .hp-bowl'); if (!at || !g) return { bad: ['no bowl'] };
+      const tap = R(g.querySelector('rect')), top = !!document.querySelector('#hpTop .hp-bowl'), vr = R(document.getElementById('view'));
+      if (tap.width < 43.5 || tap.height < 43.5) bad.push('tap ' + Math.round(tap.width) + 'x' + Math.round(tap.height));
+      [...document.querySelectorAll('#status, #hpStrip, #phPeek, #bar:not([hidden]), #placeBtns .btn')].forEach((e) => { if (R(e).width && ov(tap, R(e))) bad.push('bowl under ' + (e.id || e.textContent.trim())); });
+      if (tap.left < vr.left - 1 || tap.right > vr.right + 1) bad.push('bowl out of view');
+      const q = at[3] || 1, ink = [at[0] + sp.ink[0] * q, at[1] + sp.ink[1] * q, at[0] + sp.ink[2] * q, at[1] + sp.ink[3] * q], o = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+      H.dogs().forEach((d, i) => d.poses.forEach((p, j) => { if (o(ink, p) <= 1) return; if (!top) bad.push('dog ' + i + ' over the bowl'); else if (at[4] < 4 && (ink[1] < d.y - (at[4] === 2 ? sp.paw : 0.3) * d.h - 0.5 || ink[3] < d.y - 2.5)) bad.push('bowl over dog ' + i + ' pose ' + j); }));
+      const ib = R(g.querySelector('.hp-bowlart')), c = document.elementFromPoint(ib.left + ib.width / 2, ib.top + ib.height * 0.6); if (!c || !g.contains(c)) bad.push('bowl covered');
+      const w = document.getElementById('hpWish'), pk = document.getElementById('phPeek');
+      if (!w || w.hidden) bad.push('no bubble'); else {
+        const wr = R(w), tr = R(w.querySelector('.dd-wt'));
+        if (pk && R(pk).width && ov(wr, R(pk))) bad.push('bubble under the arrow'); if (wr.left < vr.left || wr.right > vr.right) bad.push('bubble out');
+        if (tr.top < wr.top - 2 || tr.bottom > wr.bottom + 2 || tr.left < wr.left || tr.right > wr.right) bad.push('bubble text spills');
+        if (ov(wr, R(document.getElementById('hpStrip')))) bad.push('bubble on the strip');
+        const lines = Math.round(tr.height / parseFloat(getComputedStyle(w).lineHeight)); if (lines < 2) bad.push('one line? ' + lines);
+      }
+      return { bad, at: at.map((x) => Math.round(x * 100) / 100), top };
+    });
+    ok(!C.bad.length, tag + ': ' + nm + ': the bowl and the bubble clear of the screen\'s parts: ' + JSON.stringify(C));
+    await shot(t, 'crowd_' + tag + '_' + dogs.length);
+  }
+  await t.ctx.close();
+}
+// a visit to fid with this snapshot hp and these yard fields (dogs, decor, house, season), not from today's cache
+async function visitYard(t, fid, hp, yard) {
+  await t.ev(([f, h, y]) => { const s = window.__frSrv; Object.assign(s.yardOf[f], y); const Y = s.yardOf[f]; if (h) Y.hp = h; else delete Y.hp; const fr = s.friends.find((x) => x.fid === f); if (fr) fr.dogs = Y.dogs; const S = window.__paw.S; if (S.fr && S.fr.yards) S.fr.yards = {}; }, [fid, hp, yard]);
+  await t.ev((f) => window.__paw.fr.visit(f), fid);
+  return t.until((f) => window.__paw.mode === 'fryard' && window.__paw.fr.scene().fid === f && window.__paw.hp.visit().on && !!document.querySelector('#view .hp-bowl:not([style*="none"])'), fid, 8000);
+}
+const DECOR = ['Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland', 'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern', 'Bird Bath', 'Flower Barrel', 'String Lights', 'Garden Bench', 'Hammock', 'Wind Chime', 'Sandbox', 'Stepping Stones', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair', 'Paw-Print Pennant', 'Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain'];
+
+// code review 8: the visit chip's one-line rule also runs with the helps off (an older Worker): at 360 a long friend name fits on one line
+async function chipOffPart(t) {
+  const { ok, sec, ev } = t;
+  sec('D2. phone 360x640, the helps off: the visit chip with a long friend name stays on one line');
+  await start(t, { hp: false, test: true, vw: 360, vh: 640 });
+  await t.ev(([f, me]) => { const s = window.__frSrv; s.yardOf[f].name = [19, 13]; s.friends = [{ fid: f, name: [19, 13], dogs: s.yardOf[f].dogs, seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } }]; s.me = me; }, [FERN, ME]);
+  await ev(() => window.__paw.hp.load());
+  ok(await ev(() => window.__paw.hp.on() === false), 'the helps are off (the Worker has no hp)');
+  await ev((f) => window.__paw.fr.visit(f), FERN);
+  ok(await t.until((f) => window.__paw.mode === 'fryard' && window.__paw.fr.scene().fid === f && !!document.querySelector('#status .pname'), FERN, 8000), 'a visit');
+  await t.sleep(500);
+  const c = await ev(() => { const st = document.getElementById('status'), n = st.querySelector('.pname'), lh = parseFloat(getComputedStyle(n).lineHeight) || 24; return { name: n.textContent, fits: st.scrollWidth <= st.clientWidth + 1, nfit: n.scrollWidth <= n.clientWidth + 1, lines: Math.round(n.getBoundingClientRect().height / lh), strip: !!document.getElementById('hpStrip'), tight: st.classList.contains('tight') }; });
+  ok(!c.strip && c.fits && c.nfit && c.lines === 1 && /'s yard$/.test(c.name), '360: "' + c.name + '" on one line, nothing clipped, no strip: ' + JSON.stringify(c));
+  await shot(t, 'chip_off_360');
   await t.ctx.close();
 }
 
@@ -810,6 +922,11 @@ async function stickerPart(t) {
   await ev(() => { window.__paw.hp.srv(true); window.__paw.msb.sync(); });
   ok(await ev(() => window.__paw.hp.pages().includes('pals')) && JSON.stringify(Object.entries(await giftsByKey(t)).sort()) === JSON.stringify(Object.entries(want).sort()), 'then the page comes in: the gifts still by key');
   ok(await ev(() => window.__paw.S.v === 1), 'the save stays v: 1');
+  // code review 11: a page not in the book at a load's first sync keeps its gift aside by key (S.hp.px) until it comes back: never given twice
+  const px = await ev(() => { const H = window.__paw.hp; H.pageOut('year'); H.pgLoad(); const S = window.__paw.S; return { out: !H.pages().includes('year'), px: Object.assign({}, S.hp.px), n: Object.values(S.dd.pg).filter((g) => g === 'p11').length }; });
+  ok(px.out && px.px.year === 'p11' && px.n === 0, 'the first sync without a page: its gift kept aside by key (S.hp.px): ' + JSON.stringify(px));
+  await ev(() => { window.__paw.hp.pageIn('year'); window.__paw.msb.sync(); });
+  ok(JSON.stringify(Object.entries(await giftsByKey(t)).sort()) === JSON.stringify(Object.entries(want).sort()) && (await ev(() => !Object.keys(window.__paw.S.hp.px).length)), 'the page back in the book: its gift with it, nothing kept aside: ' + JSON.stringify(await giftsByKey(t)));
   await t.ctx.close();
 }
 

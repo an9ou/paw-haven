@@ -39,7 +39,9 @@ html[data-layout="phone"] #view .dd-wish.hp-wish{max-width:min(230px,calc(100% -
 .hp-fx .hp-kib{opacity:0;transform-box:fill-box;animation:hpKib .45s ease-in forwards}
 @keyframes hpKib{0%{opacity:1;transform:translate(0,0)}100%{opacity:1;transform:translate(6px,40px)}}
 .hp-fx .hp-drop{opacity:0;transform-box:fill-box;animation:hpDrop .55s ease-in forwards}
-@keyframes hpDrop{0%{opacity:1;transform:translate(0,0)}85%{opacity:1}100%{opacity:0;transform:translate(-8px,70px)}}
+@keyframes hpDrop{0%{opacity:1;transform:translate(0,0)}85%{opacity:1}100%{opacity:0;transform:translate(-8px,var(--fall,70px))}}
+.hp-fx .hp-splash{opacity:0;transform-box:fill-box;transform-origin:center;animation:hpSplash .5s ease-out forwards}
+@keyframes hpSplash{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.3)}}
 .hp-fx .hp-treat{transform-box:fill-box;transform-origin:center;animation:hpTreat 1s ease-out forwards}
 @keyframes hpTreat{0%{transform:scale(.4);opacity:0}25%{transform:scale(1.1);opacity:1}70%{transform:scale(.9);opacity:1}100%{transform:scale(.2);opacity:0}}
 @media (prefers-reduced-motion:reduce){html:not([data-motion="on"]) :is(.hp-fx,#hpG .hp-canart.tilt){animation:none}}

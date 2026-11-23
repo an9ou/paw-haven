@@ -182,15 +182,17 @@ function frAfterPush() {
     FR.yardAt = Date.now();
     const ids = frYardDogs().map((o) => o.d.id);
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
+    let noHp = false;
     return put(yard).then((r) => {
-      // v2.33: a Worker that went back (it said hp: 1, then refuses the field) gets the same yard again without hp, for the rest of the load (FR.hpOld)
-      if (r && !r.ok && frErr(r) === 'bad' && yard.hp && !FR.hpOld) { FR.hpOld = true; delete yard.hp; return put(yard); }
+      // v2.33: a Worker that went back (it said hp: 1, then refuses the field) gets the same yard again without hp; only when that is what it takes
+      // is hp left out for the rest of the load (FR.hpOld; code review 6: a refusal for a newer decoration or outfit does not turn the helps off)
+      if (r && !r.ok && frErr(r) === 'bad' && yard.hp && !FR.hpOld) { noHp = true; const y1 = Object.assign({}, yard); delete y1.hp; return put(y1).then((r1) => { if (r1 && r1.ok) FR.hpOld = true; return r1; }); }
       return r;
     }).then((r) => {
       // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
       // v2.30 (code review 8): the same for a card dog in a newer outfit (an older Worker's DC_LIM.outfit 58 refuses the Friendship Bandana): those dogs go in no outfit (DC.outfitOld, 40_dogcards.js)
       const newer = (y) => y.decor.some((d) => d.i >= FR_DECOR_OLD) || y.dogs.some((x) => x && x.o >= DC_OUTFITS_OLD);
-      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); return y2 ? put(y2) : r; }
+      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); if (y2 && noHp) delete y2.hp; return y2 ? put(y2) : r; } // (v2.33: without hp too when that was tried; the next push sends it again)
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
