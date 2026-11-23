@@ -122,7 +122,7 @@ function mockInit(cfg) {
         if (hpK) { // v2.33, as the Worker's hpData: bowl/water nothing, wish { w } or { w: 2, a }, sleep { dog }; a help once per friend a day, a sleepover once a day in all
           const d = body.data, ks = d && typeof d === 'object' && !Array.isArray(d) ? Object.keys(d) : null;
           const okD = body.kind === 'bowl' || body.kind === 'water' ? d === undefined || d === null || (ks && !ks.length)
-            : body.kind === 'wish' ? !!ks && ks.includes('w') && ks.every((k) => k === 'w' || k === 'a') && [0, 1, 2].includes(d.w) && (!('a' in d) || (d.w === 2 && Number.isInteger(d.a) && d.a >= 0 && d.a < 47))
+            : body.kind === 'wish' ? !!ks && ks.includes('w') && ks.every((k) => k === 'w' || k === 'a') && [0, 1, 2].includes(d.w) && (d.w !== 2 || 'a' in d) && (!('a' in d) || (d.w === 2 && Number.isInteger(d.a) && d.a >= 0 && d.a < 47)) // a snack wish always carries its treat
               : !!ks && ks.length === 1 && ks[0] === 'dog' && !!d.dog && Number.isInteger(d.dog.b) && Number.isInteger(d.dog.n) && !('name' in d.dog);
           if (!okD) return send(400, { error: 'bad' });
           if (body.kind === 'sleep' ? srv.sent.some((s) => s.kind === 'sleep') : srv.sent.some((s) => s.fid === body.fid && s.kind === body.kind)) return send(400, { error: 'limit' });
