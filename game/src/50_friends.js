@@ -384,7 +384,7 @@ async function frInbox() {
   // v2.33: the helps and sleepovers (60_helps.js hpActs), applied once (S.hp.ids) and saved before the claim, like the gifts
   const acts = hp && r.data.hp === 1 && Array.isArray(r.data.acts) ? r.data.acts : [], claimActs = [];
   const did = acts.length ? hpActs(acts, claimActs) : 0;
-  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length + acts.filter((a) => a && !claimActs.includes(a.id)).length;
+  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length + acts.filter((a) => a && !claimActs.includes(a.id) && a.kind !== 'sleep').length; // v2.33: a guest waiting for tomorrow (60b_sleep.js) is not on the badge
   frBadgeSync();
   if (gave || did) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
   if (claim.length || claimActs.length) {

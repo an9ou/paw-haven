@@ -37,7 +37,7 @@ async function start(t, o) {
 run('v233_helps', async (t) => {
   const { ok, sec, ev } = t;
   if (process.env.HP_ONLY === '4') { await stickerPart(t); await newsPart(t); await keepPart(t, 1280, 720, null); await keepPart(t, 390, 844, 'dachs'); return; } // a quick run of part 4 only
-  if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); return; } // a quick run of part 3 only
+  if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b); return; } // a quick run of part 3 only
 
   sec('A0. the gate is shut while HP_FROM has no date (the mock Worker has hp)');
   await start(t, { hp: true });
@@ -184,6 +184,7 @@ run('v233_helps', async (t) => {
   /* ======================= part 3 (V233.md 4): the sleepover ======================= */
   await sleepPart(t);
   for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l);
+  for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b);
 
   /* ======================= part 4 (V233.md 7, 10): stickers, news, the picture and the guests' keep-out ======================= */
   await stickerPart(t);
@@ -556,6 +557,7 @@ async function sleepPart(t) {
   await ev((id) => document.querySelector(`#modal [data-sldog="${id}"]`).click(), ids.lead);
   ok(await t.until(() => [...document.querySelectorAll('#modal button')].some((b) => /Not tonight/.test(b.textContent)), null, 3000), 'the confirm: Not tonight / Sleepover!');
   ok(await ev(() => /Send Mochi for a sleepover at Sunny Biscuit's yard\?/.test(document.querySelector('#modal').textContent)), 'the confirm names my dog and the friend');
+  ok(await ev(() => /Not tonight/.test((document.activeElement || {}).textContent || '')), 'the confirm focuses the safe answer, Not tonight (review 13)');
 
   sec('B2. the send: one a Japan day, the recipe (no pixels), my dog stays in my game');
   await toasts0(t);
@@ -601,14 +603,26 @@ async function sleepPart(t) {
   const gu = await ev(() => window.__paw.S.hp.gu);
   ok(gu.length === 2 && JSON.stringify(cl.acts || []) === '[500,501]', 'two guests claimed, the third left unclaimed: ' + JSON.stringify(cl));
   ok(await ev(() => window.__paw.S.hp.host) === 2 && await ev(() => window.__paw.S.mail.some((m) => m.id === 'hp_guest_500') && window.__paw.S.mail.some((m) => m.id === 'hp_guest_501')), 'host counts 2, one postcard each');
+  ok(await ev(() => window.__paw.fr.badge()) === 0, 'the third guest waiting for tomorrow is not on the Friends badge (code review 3): ' + await ev(() => window.__paw.fr.badge()));
   ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 4000), 'both guests drawn in my yard');
   await t.sleep(400);
   const dr = await ev(() => ({ d: window.__paw.hp.sl.drawn(), lead: window.__paw.hp.sl.geo().lead }));
   ok(apart(dr.d[0].box, dr.d[1].box, 2) && dr.d.every((o) => apart(o.box, dr.lead, 10)), 'no guest drawn over another dog: ' + JSON.stringify(dr));
   ok(dr.d.every((o) => (o.box[0] + o.box[2]) / 2 < (dr.lead[0] + dr.lead[2]) / 2 ? o.face === 'right' : o.face === 'left'), 'each guest faces my leader');
   ok(dr.d.every((o) => apart(o.tag, dr.lead, 2) && dr.d.every((p) => p === o || (apart(o.tag, p.box, 2) && apart(o.tag, p.tag, 2)))), 'the tags cover no dog and no other tag');
-  const tg = await ev(() => [...document.querySelectorAll('#hpGuests .sl-tag text')].map((x) => [...x.querySelectorAll('tspan')].map((s) => s.textContent).join(' ')));
+  const tg = await ev(() => [...document.querySelectorAll('#hpTags .sl-tag text')].map((x) => [...x.querySelectorAll('tspan')].map((s) => s.textContent).join(' ')));
   ok(tg.length === 2 && tg.some((x) => /^Mochi, from Sunny Biscuit$/.test(x)) && tg.some((x) => /^Bella, from Cozy Fern$/.test(x)), 'the tag chip: {dog}, from {name}: ' + JSON.stringify(tg));
+  ok(await ev(() => { const p = document.getElementById('pack'), g = document.getElementById('hpGuests'), tg = document.getElementById('hpTags'); return !!(p && g && tg) && !!(g.compareDocumentPosition(p) & 4) && !!(p.compareDocumentPosition(tg) & 4) && !g.querySelector('.sl-tag'); }), 'the guests are drawn before the pack and their tags after it (no dog ever covers a tag, review 3)');
+  // my leader's own idle moves never end on a guest or a tag (sniff, zoomies, a nap at the door, the bowl, lying beside a pack dog)
+  const idleBad = await ev(() => {
+    const P = window.__paw, id = P.S.dog.id, sz = P.rm.size(id).k, out = [];
+    for (let i = 0; i < 25; i++) ['sniff', 'zoomies', 'nap', 'drink', 'social', 'down'].forEach((n) => (P.idle.steps(n) || []).forEach((st) => {
+      if (!st || !st.move) return; const [tx, ty, sc] = st.move; if (!tx && !ty && sc === 1) return;
+      const X = 430 * sc + tx, Y = 500 * sc + ty, k = (sc === 1 ? P.rm.scale(Y) : sc / P.rm.grow) * sz; if (!P.hp.sl.clear(id, X, Y, k)) out.push(n + '@' + Math.round(X) + ',' + Math.round(Y));
+    }));
+    return out;
+  });
+  ok(!idleBad.length, 'my leader\'s idle moves keep off the guests and their tags: ' + idleBad.slice(0, 5).join(' '));
   const b0 = await ev(() => window.__paw.S.dog.bond.pts + window.__paw.S.dog.bond.level * 1e6);
   await ev(() => window.__paw.hp.sl.card(500));
   ok(await t.until(() => !!document.querySelector('#modal .hp-gcard #slPet'), null, 3000), 'the guest card opens with Pet');
@@ -625,6 +639,14 @@ async function sleepPart(t) {
   await ev(() => { window.__frSrv.acts = window.__frSrv.acts.filter((a) => a.id === 502); });
   await ev(() => window.__paw.hp.inbox());
   ok(await t.until(() => window.__paw.S.hp.gu.some((g) => g.id === 502), null, 5000), 'the third guest comes when there is room');
+  // a guest act from before yesterday (a third guest left waiting for days) is claimed and dropped: no guest, no postcard, no badge (code review 3)
+  const yday = await ev(() => new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10));
+  await ev(([d]) => { const s = window.__frSrv; s.acts = [{ id: 503, from: { fid: 'happycloverxxxxxxxxxxx', name: [1, 6] }, kind: 'sleep', data: { dog: { b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 } }, day: '2026-01-01', claimed: false }, { id: 504, from: { fid: 'cozyfernxxxxxxxxxxxxxx', name: [2, 11] }, kind: 'sleep', data: { dog: { b: 3, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 3 } }, day: d, claimed: false }]; window.__paw.S.hp.gu = []; }, [yday]);
+  const c3 = await ev(() => window.__frSrv.claimBodies.length);
+  await ev(() => window.__paw.hp.inbox());
+  ok(await t.until((c) => window.__frSrv.claimBodies.length > c, c3, 5000), 'the old act is claimed');
+  const st = await ev(() => ({ cl: window.__frSrv.claimBodies[window.__frSrv.claimBodies.length - 1].acts, gu: window.__paw.S.hp.gu.map((g) => g.id), mail: window.__paw.S.mail.some((m) => m.id === 'hp_guest_503'), badge: window.__paw.fr.badge() }));
+  ok(st.cl.includes(503) && !st.gu.includes(503) && !st.mail && st.gu.includes(504) && st.badge === 0, 'an act from before yesterday is dropped quietly; yesterday\'s still comes today: ' + JSON.stringify(st));
   await t.ctx.close();
 
   sec('B4. home by morning: a page, +2 Bond, the toast; the picture and the share have no friend name and no text; generic after a remove');
@@ -650,6 +672,10 @@ async function sleepPart(t) {
     const [a, b] = dogs.map(box); host.remove(); return { n: dogs.length, gap: Math.round(b[0] - a[1]), l: Math.round(a[0] - 46), r: Math.round(1034 - b[1]) };
   }));
   ok(gaps.every((g) => g.n === 2 && g.gap >= 8 && g.l >= 4 && g.r >= 4), 'share 1080x1350 and 1080x1920: both dogs whole, face to face, not over each other: ' + JSON.stringify(gaps));
+  // review 7: the friend's house is whole in both crops, the pair in front of it on the left; review 8: a night (no setting sun), the moon clear of the diary stamp
+  const crop = await ev(() => ['feed', 'story'].map((size) => { const sl = window.__paw.S.dd.diary.find((p) => p.sl).sl, h = document.createElement('div'); h.innerHTML = window.__paw.hp.sl.shareSvg(sl, size); const v = h.querySelector('svg > svg').getAttribute('viewBox').split(' ').map(Number); return v; }));
+  ok(crop.every((v) => v[0] <= 606 && v[0] + v[2] >= 874), 'both share crops hold the friend\'s house (x 620-860) whole: ' + JSON.stringify(crop));
+  ok(!/#F9AE6E/i.test(pic.pic) && !/#F9AE6E/i.test(pic.feed), 'the picture has no setting sun (its #F9AE6E disc)');
   await ev(() => window.__paw.journal('diary'));
   ok(await t.until(() => !!document.querySelector('#modal .sl-pic svg') && !!document.querySelector('#modal [data-slshare]'), null, 4000), 'the diary page shows the picture and Share this moment');
   await ev(() => document.querySelector('#modal [data-slshare]').click());
@@ -674,6 +700,40 @@ async function sleepPart(t) {
   await t.ctx.close();
 }
 
+// review fixes (must-fix 2 and 3, should-fix 9): a crowded yard (a pack of five, 20 decorations out): both guests drawn (smaller or without a tag
+// if need be) or behind the look chip, never under a button, a chip or the bar; no dog of mine over a guest or a tag, its tag drawn after the pack
+const SL_CROWDS = [[1280, 720, null, null], [1280, 720, null, 'dane'], [360, 640, 'de', null], [390, 844, null, 'dachs']];
+const SL_DECOR20 = ['Bird Bath', 'Flower Barrel', 'Garden Bench', 'Sandbox', 'Stepping Stones', 'Yard Snowman', 'Felt Fir Tree', 'Present Pile', 'Giant Crayon Box', 'Rocking Chair', 'Doggy Ramp', 'Red Wooden Sled', 'Hammock', 'String Lights', 'Wind Chime', 'Kadomatsu Pair', 'Star Lantern', 'Family Photo Frame', 'Paw-Print Pennant', 'Cauldron Planter'];
+async function sleepCrowd(t, w, h, lang, breed) {
+  const { ok, sec, ev } = t, tag = w + 'x' + h + (lang ? ' ' + lang : '') + ' ' + (breed || 'shiba'), ph = w < 800;
+  sec(`B7. ${tag}: a pack of five and 20 decorations: both guests drawn, clear of the buttons, chips and dogs`);
+  await startHelps(t, Object.assign(ph ? { vw: w, vh: h } : {}, lang ? { lang } : {}));
+  await ev(([br, dec]) => {
+    const P = window.__paw, S = P.S; if (br) { const d = P.addDog({ key: br, sex: 'male', months: 30 }, 'Otto'); P.switchDog(d.id); }
+    ['dachs', 'pug', 'samoyed', 'corgi'].forEach((k, i) => { if (S.dogs.length < 5) P.addDog({ key: k, sex: 'female', months: 24 }, 'P' + i); });
+    dec.forEach((n) => { S.decor[n] = { out: true }; });
+  }, [breed || null, SL_DECOR20]);
+  await ev(() => window.__paw.go('town')).catch(() => {}); await t.sleep(300);
+  await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.sleep(800);
+  await sleepActs(t, 2, 500, !!lang);
+  ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 5000), tag + ': both guests drawn (every claimed guest is reachable)');
+  await t.sleep(3500); // the first meeting ends
+  const G = await ev(() => {
+    const P = window.__paw, R = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }, hit = (a, b, m) => Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > m && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > m;
+    const guests = [...document.querySelectorAll('#hpGuests .sl-gart'), ...document.querySelectorAll('#hpTags .sl-tag')].map(R);
+    const hard = [...document.querySelectorAll('#placeBtns .btn, #status, #ddWish:not([hidden]), #bar')].filter((e) => !e.hidden && e.getClientRects().length).map((e) => [e.id || e.textContent.trim().slice(0, 12), R(e)]);
+    const dogs = [...document.querySelectorAll('#pack .rmdog')].map((g) => g.querySelector('#dogArt, .rm-art')).filter((a) => a && a.getBoundingClientRect().width).map(R);
+    const svg = document.querySelector('#view > svg.world'), vb = svg.viewBox.baseVal, d = P.hp.sl.drawn();
+    return { d: d.map((o) => [o.name, o.tier, o.notag, Math.round(o.k * 100) / 100]), under: hard.filter(([, b]) => guests.some((g) => hit(g, b, 0))).map((x) => x[0]), over: dogs.filter((a) => guests.some((g) => hit(a, g, 2))).length,
+      clear: P.rm.dogs().every((id) => { const p = P.rm.pos(id); return P.hp.sl.clear(id, p.x, p.y, p.sc); }), look: P.hp.sl.look(),
+      inView: d.map((o) => o.box[0] >= vb.x - 1 && o.box[2] <= vb.x + vb.width + 1), names: d.map((o) => o.name) };
+  });
+  ok(!G.under.length, tag + ': no guest or tag under a place button, a chip or the bar: ' + JSON.stringify(G.under) + ' ' + JSON.stringify(G.d));
+  ok(G.clear && !G.over, tag + ': every dog of mine stands clear of the guests and the tags (its reach, every pose), and none is drawn over one: ' + JSON.stringify(G));
+  ok(!ph || G.inView.every((v, i) => v || G.look.includes(G.names[i])), tag + ': each guest is in view or the look chip names it: ' + JSON.stringify(G));
+  await shot(t, 'sl_crowd_' + tag.replace(/ /g, '_'));
+  await t.ctx.close();
+}
 // phones: the four visit buttons, the sheet, two guests in the home view (or the look chip), the guest card; 44 px taps, nothing under the bar
 async function sleepPhone(t, w, h, lang) {
   const { ok, sec, ev } = t, tag = w + 'x' + h + (lang ? ' ' + lang : '');
@@ -705,9 +765,9 @@ async function sleepPhone(t, w, h, lang) {
     const ob = geo.ob.map((s) => s.split(' ')[0].split(',').map(Number)).filter((b) => b.length === 4);
     const tags = [...document.querySelectorAll('#hpGuests .sl-tag')].filter((g, i) => inV(d[i])).map((g) => { const r = g.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }); // the guests in view
     const bar = document.getElementById('bar'), bt = bar && !bar.hidden ? bar.getBoundingClientRect().top : innerHeight;
-    return { d, lead: geo.lead, inView: d.map(inV), look: P.look(), tagsIn: tags.every((r) => r[0] >= -1 && r[2] <= innerWidth + 1 && r[3] <= bt + 1), mail: ob.find((b) => b[1] === 288) || null };
+    return { d, vb: [vb.x, vb.width], lead: geo.lead, inView: d.map(inV), look: P.look(), tagsIn: tags.every((r) => r[0] >= -1 && r[2] <= innerWidth + 1 && r[3] <= bt + 1), mail: ob.find((b) => b[1] === 288) || null };
   });
-  ok(G.inView[0], tag + ': the first guest is in the home view');
+  ok(G.inView[0], tag + ': the first guest is in the home view: ' + JSON.stringify({ d: G.d.map((o) => [o.name, o.tier, o.box.map(Math.round), o.tag.map(Math.round)]), vb: G.vb, lead: G.lead }));
   ok(G.inView[1] || G.look.includes(G.d[1].name), tag + ': the second guest is in view, or the look chip names it: ' + JSON.stringify({ inView: G.inView, look: G.look }));
   ok(apart(G.d[0].box, G.d[1].box, 2) && G.d.every((o) => apart(o.box, G.lead, 10)), tag + ': no dog over another');
   ok(G.d.every((o) => G.d.every((p) => p === o || (apart(o.tag, p.box, 2) && apart(o.tag, p.tag, 2)))), tag + ': no tag over the other guest or its tag');
