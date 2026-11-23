@@ -39,8 +39,8 @@
 //     answers exactly as the v2.32 Worker: no hp, the new kinds and note 12 are 400 bad, a snapshot with hp is 400 bad, ?hp=1 is ignored, acts in a
 //     claim is 400 bad. Open:
 //   GET  /friends                          -> { me, friends, hp: 1 }   each row's sent adds bowl, water, wish, sleep (today, from friend_acts)
-//   POST /friends/send { fid, kind, data } kind also bowl | water (data {} or none), wish ({ w } or { w, a }: w in HP_WISH_DO, a an FR_GIFTS index
-//     only with w 2), sleep ({ dog }: a Dog Card dog). note takes i 0..12 (12: "Thank you for helping!"). A help once per (from, to, kind, Japan
+//   POST /friends/send { fid, kind, data } kind also bowl | water (data {} or none), wish ({ w: 0 | 1 } or { w: 2, a }: w in HP_WISH_DO, a snack
+//     always names its treat, a an FR_GIFTS index), sleep ({ dog }: a Dog Card dog). note takes i 0..12 (12: "Thank you for helping!"). A help once per (from, to, kind, Japan
 //     day), a sleep once per (from, Japan day) to anyone: 400 limit. To an official account the row is born claimed (the limits hold, nothing is delivered)
 //   PUT  /friends/yard { yard }            yard may carry hp: { d: 'YYYY-MM-DD', g: 0..6, w?: 0..12, a?: an FR_GIFTS index, only with w 2 }
 //   GET  /friends/inbox?hp=1               -> { events, acts, hp: 1 }   acts: my unclaimed friend_acts, helps before sleeps, oldest first, at most
@@ -620,14 +620,15 @@ function hpSnap(h) {
   if (ks.includes('a')) { if (out.w !== HP_WISH_SNACK || !dcInt(h.a, 0, FR_LIM.gifts - 1)) return null; out.a = h.a; }
   return out;
 }
-// POST /friends/send data for a new kind, or null (400 bad). bowl and water carry nothing, like a pet
+// POST /friends/send data for a new kind, or null (400 bad). bowl and water carry nothing, like a pet. A snack wish (w 2) always carries a,
+// the treat the visitor gave from the bag (60_helps.js hpSnackGive): { w: 2 } alone would grant a snack wish with no treat given
 function hpData(kind, data) {
   if (kind === 'bowl' || kind === 'water') return frPet(data);
   if (kind === 'wish') {
     if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
     const ks = Object.keys(data);
     if (!ks.includes('w') || ks.some((k) => k !== 'w' && k !== 'a') || !Number.isInteger(data.w) || !HP_WISH_DO.includes(data.w) || data.w >= HP_LIM.wish) return null;
-    if (!ks.includes('a')) return { w: data.w };
+    if (!ks.includes('a')) return data.w === HP_WISH_SNACK ? null : { w: data.w };
     if (data.w !== HP_WISH_SNACK || !dcInt(data.a, 0, FR_LIM.gifts - 1)) return null;
     return { w: data.w, a: data.a };
   }
@@ -645,9 +646,11 @@ async function hpSend(env, me, them, body) {
   const data = hpData(body.kind, body.data);
   if (!data) return fail('bad', 400);
   const now = Date.now(), day = dcDay(now);
+  // the kind test is written out so each pre-check reads its own partial unique index (a bound kind cannot prove the index's WHERE);
+  // test_v233_worker section 11 fails if any of these plans as a SCAN
   const dup = body.kind === 'sleep'
-    ? await one(env, 'select id from friend_acts where from_id = ?1 and kind = ?2 and day = ?3', me.id, 'sleep', day)
-    : await one(env, 'select id from friend_acts where from_id = ?1 and to_id = ?2 and kind = ?3 and day = ?4', me.id, them.user_id, body.kind, day);
+    ? await one(env, "select id from friend_acts where from_id = ?1 and kind = 'sleep' and day = ?2", me.id, day)
+    : await one(env, "select id from friend_acts where from_id = ?1 and to_id = ?2 and kind = ?3 and day = ?4 and kind != 'sleep'", me.id, them.user_id, body.kind, day);
   if (dup) return fail('limit', 400);
   const claimed = (await frIsOfficial(env, them.user_id)) ? now : null;
   try {
@@ -1474,7 +1477,7 @@ const ROUTES = {
     await run(env, 'delete from friend_acts where created_at < ?1', now - FR_KEEP); // v2.33: helps and sleepovers too
     await run(env, 'update friend_ids set seen_at = ?1 where user_id = ?2', now, me.id);
     // v2.33: a game without ?hp=1 knows FR_NOTES_OLD notes: a later one would sit unclaimed on its badge, so it is left out (and waits for the update)
-    const old = hp ? '' : ` and not (e.kind = 'note' and coalesce(json_extract(e.data, '$.i'), 0) >= ${FR_NOTES_OLD})`;
+    const old = hp ? '' : ` and not (e.kind = 'note' and json_valid(e.data) and coalesce(json_extract(e.data, '$.i'), 0) >= ${FR_NOTES_OLD})`;
     const rows = await all(env, `select e.id as id, e.kind as kind, e.data as data, e.day as day, f.fid as fid, f.name_a as name_a, f.name_b as name_b
       from friend_events e join friend_ids f on f.user_id = e.from_id
       where e.to_id = ?1 and e.claimed_at is null${old} order by (e.kind in ('gift', 'walk')) asc, e.id asc limit ${FR_INBOX}`, me.id);

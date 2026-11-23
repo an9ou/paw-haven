@@ -4,7 +4,8 @@
 // open: each help once per friend per Japan day, one sleepover a day in all, the data shapes, friends only and block = not_found, the official
 // account's rows born claimed, the sent flags, the snapshot's hp (checks and round trip), the inbox's acts (helps before sleeps, 30, no user ids),
 // notes from 12 on hidden from a game without ?hp=1, the claim with and without acts (idempotent, only my own), remove/block/leave, the 30-day
-// delete, frTidy, the shared send bucket, and the Worker's HP_FROM = the game's. Prints ALL OK when every check passes.
+// delete, frTidy, the shared send bucket, and the Worker's HP_FROM = the game's; a repeat or a race through the Worker is 400 limit, never a 500
+// (11); every friend_acts / friend_events query the friends routes run plans as an index SEARCH, never a SCAN (12). Prints ALL OK when every check passes.
 process.removeAllListeners('warning'); // node:sqlite is still "experimental" on Node 22
 const path = require('path'), fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -122,6 +123,7 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     await bad('wish', { w: 1.5 }, 'wish w 1.5: bad');
     await bad('wish', { w: '0' }, 'wish w "0": bad');
     await bad('wish', { w: 1, a: 5 }, 'a only with w 2: bad');
+    await bad('wish', { w: 2 }, 'a snack wish names its treat: { w: 2 } without a is bad');
     await bad('wish', { w: 2, a: 47 }, 'a past FR_GIFTS: bad');
     await bad('wish', { w: 2, a: -1 }, 'a -1: bad');
     await bad('wish', { w: 0, z: 1 }, 'an extra key: bad');
@@ -181,6 +183,12 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     r = await call('GET', '/friends/yard?fid=' + C.fid, undefined, A.tok);
     ok(r.json.yard && !('hp' in r.json.yard), '... and replaces the one with hp');
     ok((await call('GET', '/friends', undefined, A.tok)).json.friends.find((f) => f.fid === B.fid).dogs.length === 1, 'GET /friends still reads the dogs of a snapshot with hp');
+    // the rollback (V233.md 2a): env HP_FROM=off with yards that carry hp. Each is still visited and listed, as the v2.32 answer
+    r = await call('GET', '/friends/yard?fid=' + B.fid, undefined, A.tok, 'off');
+    ok(r.status === 200 && r.json.yard && !('hp' in r.json.yard) && r.json.yard.dogs.length === 1 && r.json.yard.v === 1, 'shut: B\'s stored yard with hp { d, g } is served without hp');
+    r = await call('GET', '/friends', undefined, A.tok, 'off');
+    ok(r.status === 200 && !('hp' in r.json) && r.json.friends.find((f) => f.fid === B.fid).dogs.length === 1, 'shut: GET /friends still lists the dogs of a yard with hp');
+    ok(JSON.parse(DB.raw.prepare('select data from yards where user_id = ?').get(B.id).data).hp.g === 2, '... and the stored hp is kept for when the gate opens again');
 
     sec('7. the inbox: acts, their order, old copies');
     r = await call('GET', '/friends/inbox?hp=1', undefined, B.tok);
@@ -259,6 +267,53 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     ok(n('select n from rate where k = ?', 'fr:send:' + L.id) === 4, 'pets and helps share the fr:send bucket (4 sends: ' + n('select n from rate where k = ?', 'fr:send:' + L.id) + ')');
     const sendLim = (src.match(/limited\(env, frKey\.send\(me\.id\), (\d+), 3600\)/) || [])[1];
     ok(sendLim === '60', 'the bucket is still 60 an hour');
+
+    sec('11. a repeat and a race through the Worker: one ok, the rest 400 limit, never a 500');
+    {
+      const P = await player(), Q = await player(), R = await player(); ok(await befriend(P, Q) && await befriend(P, R), 'P is friends with Q and R');
+      const tally = (rs) => ({ ok: rs.filter(good).length, limit: rs.filter((x) => is(x, 400, 'limit')).length, other: rs.filter((x) => !good(x) && !is(x, 400, 'limit')).map((x) => x.status + ' ' + x.text) });
+      let t = tally([await send(P, Q, 'bowl'), await send(P, Q, 'bowl')]);
+      ok(t.ok === 1 && t.limit === 1 && !t.other.length, 'the same help twice in a row: one ok, one limit ' + JSON.stringify(t));
+      t = tally(await Promise.all([1, 2, 3].map(() => send(P, Q, 'water'))));
+      ok(t.ok === 1 && t.limit === 2 && !t.other.length, 'the same help three times at once: one ok, two limit ' + JSON.stringify(t));
+      t = tally(await Promise.all([Q, R, Q].map((to) => send(P, to, 'sleep', { dog }))));
+      ok(t.ok === 1 && t.limit === 2 && !t.other.length, 'three sleepovers at once (two friends): one ok, two limit ' + JSON.stringify(t));
+      ok(n("select count(*) as n from friend_acts where from_id = ? and kind in ('water', 'sleep')", P.id) === 2, 'one water row and one sleep row');
+      // the race itself: the pre-check sees nothing (as when two sends pass it together), so the unique index answers
+      const real = env.DB;
+      env.DB = Object.assign({}, real, { prepare(sql) { return /^select id from (friend_acts|friend_events) where from_id/.test(sql) ? { bind() { return { async first() { return null; } }; } } : real.prepare(sql); } });
+      try {
+        for (const [to, kind, data] of [[Q, 'bowl'], [Q, 'water'], [R, 'sleep', { dog }], [Q, 'pet']]) {
+          if (kind === 'pet') ok(good(await send(P, Q, 'pet')), 'a first pet (the v2.32 path) is ok');
+          const x = await send(P, to, kind, data);
+          ok(is(x, 400, 'limit'), 'past the pre-check, a repeat ' + kind + ' hits the unique index: 400 limit (' + x.status + ' ' + x.text + ')');
+        }
+      } finally { env.DB = real; }
+    }
+
+    sec('12. query plans: every friend_acts / friend_events query on the friends routes is an index SEARCH');
+    {
+      const seen = new Set(), real = env.DB;
+      env.DB = Object.assign({}, real, { prepare(sql) { seen.add(sql); return real.prepare(sql); } });
+      try {
+        const S1 = await player(), S2 = await player(), S3 = await player(); await befriend(S1, S2); await befriend(S1, S3);
+        await call('GET', '/friends', undefined, S1.tok);
+        await send(S1, S2, 'bowl'); await send(S1, S2, 'wish', { w: 2, a: 3 }); await send(S1, S2, 'sleep', { dog }); await send(S1, S2, 'pet'); await send(S1, S2, 'gift', { i: 0 });
+        await call('GET', '/friends/inbox?hp=1', undefined, S2.tok); await call('GET', '/friends/inbox', undefined, S2.tok);
+        await call('POST', '/friends/inbox/claim', { ids: [1], acts: [1] }, S2.tok);
+        await call('POST', '/friends/remove', { fid: S2.fid }, S1.tok); await call('POST', '/friends/block', { fid: S3.fid }, S1.tok);
+        await call('POST', '/friends/leave', {}, S1.tok);
+      } finally { env.DB = real; }
+      // frTidy's 'not in (select id from users)' sweep reads every row on purpose (about 1 in 50 friends requests, every one under TIDY): left out
+      const qs = [...seen].filter((q) => /\bfriend_(acts|events)\b/.test(q) && !/not in \(select id from users\)/.test(q));
+      const need = ['select to_id, kind from friend_acts where from_id', 'select to_id, kind from friend_events where from_id', "from friend_acts where from_id = ?1 and kind = 'sleep'",
+        "from friend_acts where from_id = ?1 and to_id = ?2", 'from friend_acts a join', 'update friend_acts set claimed_at', 'delete from friend_acts where claimed_at is null', 'delete from friend_acts where from_id = ?1 or to_id = ?1'];
+      for (const k of need) ok(qs.some((q) => q.includes(k)), 'the run reached the query "' + k + '"');
+      for (const q of qs) {
+        const plan = DB.raw.prepare('explain query plan ' + q.replace(/\s+/g, ' ')).all().map((x) => x.detail);
+        ok((plan.length || /^insert /.test(q.trim())) && !plan.some((d) => /^SCAN /.test(d)), 'no SCAN: ' + q.replace(/\s+/g, ' ').slice(0, 90) + ' -> ' + plan.join(' | '));
+      }
+    }
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
   console.log(`${passes} passed, ${fails} failed (${((Date.now() - t0) / 1000).toFixed(1)} s)`);
   if (!fails) console.log('ALL OK');
