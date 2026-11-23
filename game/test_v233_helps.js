@@ -138,6 +138,14 @@ run('v233_helps', async (t) => {
   await ev(() => { window.__frSrv.hp = true; window.__paw.hp.old(false); });
   await ev(() => window.__paw.hp.load());
   ok(await ev(() => window.__paw.hp.on() === true), 'hp: 1 again: on');
+  // code review 6: a refusal for another reason (a newer decoration: an older Worker's FR_LIM.decor) does not turn hp off for the load
+  const d6 = await ev(async () => {
+    const P = window.__paw, s = window.__frSrv, S = P.S; P.fr.yvTest(true); S.decor['Tug Post'] = { out: true, at: [180, 410] }; s.decorLim = 32; s.yards = []; s.badHp = 0; s.badYards = 0;
+    const ok1 = await P.hp.push(), r = { ok1, old: P.hp.old(), decorOld: P.fr.decorOld(), sent: s.yards.map((y) => ('hp' in y ? 'hp' : '-') + '/' + y.decor.length) };
+    const ok2 = await P.hp.push(); r.ok2 = ok2; r.last = 'hp' in s.yards[s.yards.length - 1]; r.old2 = P.hp.old();
+    delete s.decorLim; delete S.decor['Tug Post']; P.fr.decorOld(false); P.fr.yvTest(false); return r;
+  });
+  ok(d6.ok1 && d6.old === false && d6.decorOld === true && d6.ok2 && d6.last && d6.old2 === false, 'refused for a newer decoration: sent without it, hp stays on, the next snapshot carries hp: ' + JSON.stringify(d6));
 
   sec('A5. ?hp=1, the acts and the claim');
   await ev((sunny) => {
@@ -231,11 +239,12 @@ async function helpsPart(t) {
   ok(await ev(() => { const c = window.__paw.fr.crop(); return c.boxes.length > 0 && !!window.__paw.hp.spots().at; }), 'the bowl is put down after the dogs stand');
   // no dog drawn over the bowl, unless the bowl stands in front of it (the bowl is then drawn over the dog: #hpTop)
   const over = await ev(() => {
-    const b = document.querySelector('#view .hp-bowl').getBoundingClientRect(), top = !!document.querySelector('#hpTop .hp-bowl');
-    const hits = [...document.querySelectorAll('#frDogs .frdog .fr-art')].map((e) => e.getBoundingClientRect()).filter((r) => r.left < b.right - 4 && r.right > b.left + 4 && r.top < b.bottom - 4 && r.bottom > b.top + 4);
-    return { top, n: hits.length };
+    const top = !!document.querySelector('#hpTop .hp-bowl'), H = window.__paw.hp, sp = H.spots(), at = sp.at, q = at[3] || 1; // the bowl's drawing (HP_INK) against every pose of every dog
+    const ink = [at[0] + sp.ink[0] * q, at[1] + sp.ink[1] * q, at[0] + sp.ink[2] * q, at[1] + sp.ink[3] * q], o = (a, c) => Math.max(0, Math.min(a[2], c[2]) - Math.max(a[0], c[0])) * Math.max(0, Math.min(a[3], c[3]) - Math.max(a[1], c[1]));
+    const b = document.querySelector('#view .hp-bowlart').getBoundingClientRect(), c = document.elementFromPoint(b.left + b.width / 2, b.top + b.height * 0.6);
+    return { top, n: H.dogs().filter((d) => d.poses.some((p) => o(ink, p) > 1)).length, tap: !!c && !!c.closest('.hp-bowl') };
   });
-  ok(over.n === 0 || over.top, 'no dog is drawn over the bowl: ' + JSON.stringify(over));
+  ok((over.n === 0 || over.top) && over.tap, 'no dog is drawn over the bowl, and none takes its taps: ' + JSON.stringify(over));
   await shot(t, 'strip_1280');
 
   sec('B2. the bowl: one send, +1 Bond, the tick, the full bowl; a second tap says done');
@@ -528,8 +537,9 @@ async function phonePart(t, w, h) {
     btns.concat([strip, chip]).forEach((e) => { if (over(b, R(e))) bad.push('bowl under ' + (e.id || 'x')); });
     const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); if (!top || !bowl.contains(top)) bad.push('bowl covered');
     const st = document.querySelector('#frStampG .fr-stamp'); if (st && over(b, R(st))) bad.push('bowl on the stamp');
-    const onTop = !!document.querySelector('#hpTop .hp-bowl');
-    [...document.querySelectorAll('#frDogs .frdog .fr-art')].forEach((e, i) => { const r = R(e); if (!onTop && r.left < b.right - 4 && r.right > b.left + 4 && r.top < b.bottom - 4 && r.bottom > b.top + 4) bad.push('dog over the bowl ' + i); });
+    const onTop = !!document.querySelector('#hpTop .hp-bowl'), H = window.__paw.hp, sp = H.spots(), at = sp.at, q = (at && at[3]) || 1; // the bowl's drawing (HP_INK) against every pose of every dog, in world units
+    const ink = at ? [at[0] + sp.ink[0] * q, at[1] + sp.ink[1] * q, at[0] + sp.ink[2] * q, at[1] + sp.ink[3] * q] : null, o = (a, c) => Math.max(0, Math.min(a[2], c[2]) - Math.max(a[0], c[0])) * Math.max(0, Math.min(a[3], c[3]) - Math.max(a[1], c[1]));
+    if (ink) H.dogs().forEach((d, i) => { if (!onTop && d.poses.some((p) => o(ink, p) > 1)) bad.push('dog over the bowl ' + i); });
     const wish = document.getElementById('hpWish'), wr = wish && R(wish);
     if (!wish || wish.hidden) bad.push('no bubble'); else { if (wr.left < 0 || wr.right > iw || wr.top < sr.bottom || wr.bottom > br.top) bad.push('bubble outside'); if (wr.height < 43.5) bad.push('bubble tap'); }
     return { bad, side: document.documentElement.scrollWidth > iw + 1, strip: [sr.left, sr.top, sr.width, sr.height].map(Math.round), bowl: [b.left, b.top, b.width, b.height].map(Math.round), top: onTop };

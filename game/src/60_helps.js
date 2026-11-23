@@ -210,7 +210,7 @@ function hpBowlSpot() {
         const k = [x + I[0] * s, y + I[1] * s, x + I[2] * s, y + I[3] * s], d = -Math.abs(x + w / 2 - hx - W / 2) - Math.abs(y + h - hy - H) * 1.5 - (1 - s) * 400;
         const sa = soft.reduce((n, o) => n + over(k, o) * o[4], 0), on = dogs.filter((v) => over(k, v.r) > 0);
         const way = path && over(k, path.r) > 0; if (way && k[3] < path.y - 2) continue; // never on my leader's way in, unless in front of it
-        if (s === 1 && !sa && !on.length && !way) { if (!best || d > best.s) best = { s: d, x, y, k: s }; continue; }
+        if (s === 1 && !sa && !on.length && !way && !dogs.some((v) => over(t, v.r) > 0)) { if (!best || d > best.s) best = { s: d, x, y, k: s }; continue; } // (its whole tap box clear of them too: drawn under the dogs, none takes its taps)
         const d2 = d - on.reduce((n, v) => n + over(k, v.r), 0) * 0.03; // (paws or legs hidden: a little; a full size bowl is worth more)
         if (!sa && on.every((v) => paws(k, v))) { if (!near || d2 > near.s) near = { s: d2, x, y, k: s }; continue; } // (a smaller bowl on clear ground too: drawn over, so no dog's tap box takes its taps)
         if (on.length && on.every((v) => legs(k, v))) { const d3 = d2 - sa * 0.5; if (!mid || d3 > mid.s) mid = { s: d3, x, y, k: s }; continue; } // in front of their legs (FR_LEGS, as a dog in front may hide them)
