@@ -14,3 +14,11 @@ html[data-layout="phone"] .panel.fm-pop .fm-foot{font-size:15px;margin-bottom:12
 html[data-layout="phone"] .fm-pop .fm-grid{max-height:none}
 html[data-layout="phone"] .fm-pop .fm-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 html[data-layout="phone"] .fm-pop .fm-tabs .btn{flex:none;font-size:16px}
+/* v2.32.2 Tidy market sign: at the market (#stage.fmhere, 49_market.js fmArrive) wide screens hang the HUD's Next tags (#fwNext, #lvNext) at the
+   right edge, stacked, clear of the sign over the middle stall (they hung across it, hiding the closing date); the Bond tag takes its short line there */
+html:not([data-layout="phone"]) #stage.fmhere #hud{position:relative}
+html:not([data-layout="phone"]) #stage.fmhere #hud :is(.bond,#lvBtn){position:static}
+html:not([data-layout="phone"]) #stage.fmhere #hud :is(.fw-next,.lv-next){left:auto;right:16px;top:calc(100% + 4px)}
+html:not([data-layout="phone"]) #stage.fmhere #hud:has(#fwNext:not([hidden])) .lv-next{top:calc(100% + 49px)}
+html:not([data-layout="phone"]) #stage.fmhere #hud .fw-next .fw-nlong{display:none}
+html:not([data-layout="phone"]) #stage.fmhere #hud .fw-next .fw-nshort{display:inline}

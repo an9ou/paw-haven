@@ -34,7 +34,7 @@ const NEWS = [
   },
   {
     id: '2.18.4', date: '2026-10-30', c: '#D3E4F4', d: 'snow', pic: { item: 'Snowman Suit' },
-    title: () => tt('nw.v2184.title', 'The Winter Market is coming!'),
+    title: () => (nwSafe(() => fmOpen().some((o) => o.m.id === 'winter')) ? tt('fm.letter_title', 'The {market} is open', { market: tt('fm.m_winter', 'Winter Market') }) : tt('nw.v2184.title', 'The Winter Market is coming!')), // v2.32.2: Gerald's letter title while it is open
     items: [
       { ic: () => nwItemArt('Present Pile'), tx: () => tt('nw.v2184.market', 'The {market} comes to town from {from} to {to}', { market: tt('fm.m_winter', 'Winter Market'), from: nwFmDate('winter', 0), to: nwFmDate('winter', 1) }) },
       { ic: () => nwItemArt('Puffer Jacket'), tx: () => tt('nw.v2184.costumes', '10 winter costumes from the {first} to the {last}, and two of them keep a dog warm in the snow', { first: tItem('Father Christmas Suit'), last: tItem('Penguin Suit') }) },
@@ -313,7 +313,7 @@ function nwMenuBtn() { return S ? `<button class="btn big" id="mmNews"><span cla
 function nwExpose() {
   if (!window.__paw || window.__paw.nw) return;
   window.__paw.nw = { due: (v) => (v === '2.30' ? nwV230Due() : nwDue({ '2.26': NEWS_V226, '2.27': NEWS_V227, '2.28': NEWS_V228, '2.29': NEWS_V229, '2.29.1': NEWS_V2291, '2.31': NEWS_V231 }[v])), v230: () => { if (!NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); return nwSort().map((e) => e.id); }, v230Date: () => NEWS_V230.date, dates: () => [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229].map((e) => e.date), date2291: () => NEWS_V2291.date, setDates: (a, b) => { if (a) NEWS_V229.date = a; if (b) NEWS_V2291.date = b; return [NEWS_V229.date, NEWS_V2291.date]; }, auto: () => nwOpen(true), // test hooks: fix the two dates; the automatic sheet
-    on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => (nwSort().find((e) => !e.minor) || NEWS[0]).items.length, /* the auto sheet's lead for a save that has seen nothing (a minor entry never leads it) */ list: () => nwSort().map((e) => e.id), seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
+    on: () => nwOn(), test: (v) => { prefs.nwTest = !!v; }, latest: () => nwLatest(), lines: () => (nwSort().find((e) => !e.minor) || NEWS[0]).items.length, /* the auto sheet's lead for a save that has seen nothing (a minor entry never leads it) */ list: () => nwSort().map((e) => e.id), title: (id) => { const e = nwSort().find((x) => x.id === id); return e ? e.title() : null; }, seen: () => S && S.newsSeen, open: () => nwOpen(false), calm: () => nwCalmNow(), migrate: (s) => v2182Fields(s),
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)
