@@ -7699,6 +7699,91 @@ Object.assign(ITEMS,{
 });
 PA.PROMO={costumes:['Follower Star Bandana','Friendship Bandana'],decor:Object.assign({},PRM_LBL)};
 
+/* ---------- v2.33 "Helping paws" (V233.md 12): the help scoop, the sleepover moon and the "Helping paws" sticker faces, added to PA.FRIENDS.
+   Each call is an SVG string (cached, fresh ids each time). Every colour fill sits inside its own outline (b.sh and the crude kit lay the fill on
+   the line's own points; stripes, cheeks and shades are marks clipped to their shape). No words or numbers baked in.
+   scoop()   item 64x64  a blue crayon kibble scoop heaped with kibble, the handle out to the left, the mouth up and the kibble inside the rim, so
+                         it tips as one piece; drawn over the help bowl at 40 to 60 px and turned about 35 degrees for the pour.
+   moon()    icon 48x48  a sleepy crayon crescent wearing a striped blue nightcap with a white pom-pom; bold lines for the 20 to 24 px Sleepover
+                         button, also the 48 px sheet header and the 1080 px picture's night sky.
+   stk(k)    item 64x64  the six "Helping paws" sticker faces (the book draws the round sticker frame): h5 a pink bowl of kibble and a heart,
+                         h25 a watering can and a heart, h100 three paws, the gold one in the middle under crayon rays and a star (the grandest),
+                         sl1 the nightcap moon in a little night sky, host two crayon dog heads nose to nose (the guest wears a mint friend badge),
+                         thx an envelope sealed with a heart. Any other k: ''. */
+const HP_STK=['h5','h25','h100','sl1','host','thx'];
+// the nightcap moon on the 48 grid, placed at (ox, oy) and scaled by s; w scales the pencil lines
+function hpMoonDraw(b,s,ox,oy,w){const P=pts=>pts.map(([x,y])=>[ox+x*s,oy+y*s]),X=x=>ox+x*s,Y=y=>oy+y*s;w=w||1;
+  // the crescent: the round back to the left, the horns to the right, tipped a little so the top horn wears the cap
+  const cm=rot(crescent(21,27,18.5),-.22,21,27);
+  b.sh(P(cm),'#FFE59A',{k:.16,lw:1.05*w,base:'#FFF4C2',sh:'#F2C14E',marks:[{pts:P(E(9.6,31.5,3,1.9,10)),fill:PINK,op:.6}]});
+  // a sleepy closed eye and a little smile
+  b.ln(P([[7.4,24.2],[10,26.4],[13,25.4]]),{w:1.9*s*w});
+  b.ln(P([[10.6,35],[13.4,36.4],[16,34.8]]),{w:1.5*s*w});
+  // the nightcap: a floppy cone off the top horn, stripes clipped inside, a cream brim and a pom-pom at the tip
+  const cap=[[16,13],[17,7],[21,3],[27,.8],[33.5,1],[38.6,3.6],[42,8.4],[43.6,13.6],[43.4,17.6],[39.4,17.6],[37.4,14],[34.6,11],[32,9.6]];
+  const strp=[[[20,-2],[26,-2],[23,14],[16,14]],[[30,-2],[36,-2],[34,12],[27,12]],[[40,4],[46,7],[46,12],[37,10]]].map(q=>({pts:P(q),fill:'#FFFBF3',op:.9,k:0}));
+  b.sh(P(cap),'#8FB8E8',{k:.18,lw:.8*w,hl:0,base:'#CFE0F6',marks:strp});
+  b.sh(P([[14,15.4],[23.4,11.2],[33.4,7.8],[35,12.8],[24.6,16.6],[15.4,20.6]]),'#FFF2DA',{k:.3,hatch:0,hl:0,lw:.8*w,base:'#FFFBF3'});
+  b.sh(P(E(43,19.6,3.9,3.7,12)),'#FFFFFF',{hatch:0,hl:0,lw:.85*w,base:'#FFFFFF',marks:[{pts:P(E(44,20.8,2.4,1.8,8)),fill:'#E6EEF8',op:.9}]})}
+function hpMoon(){const b=mk('icon','hp:moon');hpMoonDraw(b,1,.6,3.2,1);b.ex('spark',38.6,37.4,3.4,'#FFE59A');
+  return b.svg('0 0 48 48','','Sleepover moon')}
+function hpScoop(){const b=mk('item','hp:scoop');
+  // the handle (behind the cup), with a hanging hole at its end
+  b.sh(rot(RR(2,29.5,28,8.4,4.2),.3,16,34),'#8FB8E8',{k:.12,hatch:0,hl:0,lw:.95,base:'#CFE0F6',marks:[{pts:rot([[0,34],[34,34],[34,40],[0,40]],.3,16,34),fill:'#6E9DD6',op:.45,k:0}]});
+  b.sh(E(7.6,31.2,2.1,1.8,8,.3),PAPER,{hatch:0,hl:0,lw:.6,base:PAPER});
+  // the inside of the cup, the kibble heaped in it (inside the rim), then the front of the cup over it
+  const cx=39,cy=23.5,rx=16.5,ry=6.2;
+  b.sh(E(cx,cy,rx,ry,24),'#6E9DD6',{hatch:0,hl:0,lw:.9,base:'#9DBFE6'});
+  b.sh([[24.4,24.2],[28,18.6],[34,15.4],[40,14.4],[46,15.4],[51,18.4],[54.2,23.6],[46,28],[32,28]],'#A8682F',{k:.2,hatch:0,hl:0,lw:.7,ink:'#6A3E20'});
+  [[29,21.4,.6],[35,18,.1],[41,16.6,1.2],[47,18.6,.4],[51.4,22.4,1.6],[32.4,24.6,1.1],[38.4,21.6,.3],[44.6,22.6,.9],[49,25.6,.2],[40.4,26.4,2]].forEach(q=>nugget(b,q[0],q[1],3.5,q[2]));
+  const lip=[];for(let i=0;i<=12;i++){const a=i/12*Math.PI;lip.push([cx+Math.cos(a)*rx,cy+Math.sin(a)*ry])}
+  b.sh([...lip,[cx-rx*.96,cy+16],[cx-rx*.8,cy+23.6],[cx,cy+27],[cx+rx*.8,cy+23.6],[cx+rx*.96,cy+16]],'#B9D4F3',{k:.12,sh:'#6E9DD6',
+    marks:[{pts:[...lip.map(p=>[p[0],p[1]-.5]),...lip.slice().reverse().map(p=>[p[0]*.985+cx*.015,p[1]+4.4])],fill:'#fff',op:.45}]});
+  paw(b,cx+1,cy+14.6,2.9,'#FFFBF3',{lw:.5,a:.12});
+  nugget(b,58,47,3.2,.8);b.ex('spark',8,12,3.4,'#FFE59A');
+  return b.svg('0 0 64 64','','Kibble scoop')}
+const HP_ST={
+ h5(b){b.shadow(32,56,25,3.4);
+  bowl(b,32,38,25,7.6,15,C.pink,'#E58FA5',()=>{
+   b.sh([[10,39],[14,33],[22,29.4],[32,28.4],[42,29.4],[50,33],[54,39],[32,42]],'#A8682F',{k:.2,hatch:0,hl:0,lw:.7,ink:'#6A3E20'});
+   [[15,37.4,.7],[21,33,.2],[27,30.4,1],[33,30,1.4],[39,30.6,.3],[45,32.8,1],[49.6,36.6,.6],[24,36.6,1.2],[30,34.4,.1],[36,34.6,.8],[42,36.6,1.6]].forEach(q=>nugget(b,q[0],q[1],3.5,q[2]))});
+  b.sh(heartP(32,14,22),FR_PINK,{k:.1,hatch:0,lw:1,base:'#F9C9D4',marks:[{pts:E(38,18,6,4,10),fill:'#E5728E',op:.5}]});
+  b.ex('spark',53,12,3.6,'#FFE59A');b.ex('dots',8,14,3.4)},
+ h25(b){canV(b,.84,10,11);
+  [[57.6,41],[54.8,47],[59.6,50.6]].forEach(([x,y])=>b.sh(drop(x,y,2.6),'#8EC5EE',{hatch:0,hl:0,lw:.55,dr:.1}));
+  b.sh(heartP(14,13.6,19),FR_PINK,{k:.1,hatch:0,lw:.95,base:'#F9C9D4',marks:[{pts:E(19,17,5,3.4,10),fill:'#E5728E',op:.5}]});
+  b.sh(flowerP(8,55,6,5,.3),'#FFE08A',{k:.2,hatch:0,hl:0,lw:.6,marks:[{pts:E(8,55,2.2,2.2,8),fill:'#F29150'}]});
+  b.ex('spark',52,8,3.4,'#FFE59A')},
+ h100(b){
+  [[-2.7,1],[-2.25,.8],[-1.85,.9],[-1.29,.8],[-.88,.9],[-.44,1]].forEach(([a,l])=>{const c=Math.cos(a),s=Math.sin(a);
+    b.ln([[32+c*19,31+s*16],[32+c*(19+7*l),31+s*(16+6.4*l)]],{w:2,col:LV_ORA})});
+  b.sh(starP(32,8.4,6,2.7),LV_STAR,{k:.06,hatch:0,hl:0,lw:.75,base:'#FFF1B8'});
+  paw(b,13,45.6,6.2,'#F7B2C4',{a:-.42,lw:.9});
+  paw(b,51,45.6,6.2,FR_MINT,{a:.42,lw:.9});
+  paw(b,32,37,8.6,LV_STAR,{a:0,lw:1.05});
+  b.ex('spark',9,24,3.4,'#FFE59A');b.ex('spark',56,25,3,'#F9C7D6');b.ex('dots',46,58,3.4)},
+ sl1(b){b.sh(cloudP(32,33,28,26,6,.1,40),'#D3C6F1',{k:.16,hatch:0,hl:0,lw:.8,base:'#E9E2F8',ink:'#8A6A9C',marks:[{pts:E(42,46,22,12,14),fill:'#B9A6E8',op:.4}]});
+  hpMoonDraw(b,1.06,5,5.6,1);
+  [[50,40,4.4],[11,50,3],[54,53,2.6]].forEach(([x,y,R])=>b.sh(starP(x,y,R,R*.45),'#FFE07A',{k:.06,hatch:0,hl:0,lw:.6,base:'#FFF0B8',dr:0}))},
+ host(b){const k=crude(b.r);
+  frHead(k,30.6,36,1,'#D8CFC6','flop','#7A5E52');
+  frHead(k,33.4,36,-1,'#F6CD8E','prick','#C98E52');
+  b.raw(k.acc.join(''));
+  b.sh(E(52,54.6,7.4,7,14),FR_MINT,{hatch:0,hl:0,lw:.75,base:'#BDE7D2'});
+  b.sh(heartP(52,55.6,8),FR_PINK,{hatch:0,hl:0,lw:.5,dr:0});
+  b.sh(heartP(32,11,13),FR_PINK,{hatch:0,hl:0,lw:.75,dr:.1});
+  b.ex('spark',10,10,3.4,'#FFE59A');b.ex('spark',55,9,2.8,'#FFE59A')},
+ thx(b){b.shadow(33,56,25,3);const a=-.08,R=pts=>rot(pts,a,32,34);
+  b.sh(R(RR(6,17,52,35,3)),C.cream,{k:0,lw:1,hl:0,base:'#FFFBF3',det:[R([[8.4,49.6],[25.6,34.4]]),R([[55.6,49.6],[38.4,34.4]])],dw:1.2});
+  b.sh(R([[7.6,18.6],[56.4,18.6],[32,38.6]]),'#F6E4C8',{k:.04,hatch:0,hl:0,lw:.9});
+  b.sh(R(RR(43,22.4,9.6,11,1)),'#BDE7D2',{k:0,hatch:0,hl:0,lw:.55,dr:0});paw(b,...R([[47.8,28.6]])[0],1.8,FR_PINK,{lw:.35,a:a});
+  b.sh(heartP(32,37,17),C.pinkD,{hl:0,lw:.85,base:'#F9C9D4'});
+  b.ex('spark',57,10,3.6,'#FFE59A');b.ex('heart',9,10,2.6)}
+};
+function hpStk(k){const b=mk('item','hp:stk:'+k);HP_ST[k](b);return b.svg('0 0 64 64','',k+' sticker')}
+Object.assign(PA.FRIENDS,{scoop:()=>serve('hp:scoop',hpScoop),moon:()=>serve('hp:moon',hpMoon),
+  stk:k=>HP_STK.includes(k)?serve('hp:stk:'+k,()=>hpStk(k)):'',stickers:HP_STK.slice()});
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};
