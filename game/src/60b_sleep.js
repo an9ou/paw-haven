@@ -10,7 +10,7 @@
 // the guests' preferred spots (feet x, y, facing, scale as PACK_SPOTS; the drawn scale is the pack's own at that depth). Each guest takes the
 // free spot nearest its own that is clear of every dog, the bowl, the mailbox, a yard visitor, the place buttons and the chips, and on a phone
 // fits in one crop with my leader (slSpot), never over or under it; the phone camera then keeps them in view (slCropFit). Phone check: V233.md 4.1
-const HP_SPOTS = [[600, 456, 'left', 0.56], [258, 430, 'right', 0.55]];
+const HP_SPOTS = [[860, 470, 'left', 0.56], [200, 424, 'right', 0.55]]; // desktop: near the yard's sides, so the pack's walks across the yard need not pass them (review fix B2)
 const SL_LEAD_GAP = 20; // world units kept between a guest's drawing (in its own poses) and my leader's reach in every pose (slLeadReach): a wag, and room
 const SLV = { busy: false, came: [], drawn: [], tick: 0, play: 0, spots: [], rc: new Map() }; // rc: the pack's reach boxes this draw (slClear) // spots: the drawn guests' x spans (the one-crop rule) // came: sleepovers home this load; drawn: the guests in the scene { g, d, x, y, face, k, box, tag }
 const slToday = () => jstISO();
@@ -414,6 +414,32 @@ if (typeof rmLeast === 'function') {
       const v = rmOvFrac(d, x, y, k) + (x0 != null ? Math.hypot(x - x0, y - y0) / 5000 : 0); if (v < bv) { bv = v; best = [x, y]; }
     }
     return best || p;
+  };
+}
+// the walks too: a point whose walking dog (its tap rect, as wide as a long dog's stride) would be over a guest or a tag counts as soft, so the
+// route goes round them (rmRoute's cost, rmLineOk) and no spot is taken there (rmOk, rmLeastAt)
+if (typeof rmSoft === 'function') {
+  const slSoft0 = rmSoft;
+  rmSoft = function (x, y, k) { // eslint-disable-line no-func-assign
+    if (slSoft0.apply(this, arguments)) return true; if (!SLV.drawn.length || !slHere()) return false;
+    return slWalkHit(x, y, k);
+  };
+}
+// and a walk whose route would still pass over a guest (the soft cost only prefers the way round) is routed again with the guests' ground
+// blocked (rmHard), when that finds a way; a guest standing across the whole yard can still be passed (the walk is never stopped)
+const slWalkHit = (x, y, k) => SLV.drawn.some((o) => { const B = [x - 125 * k, y - 175 * k, x + 125 * k, y + 10 * k]; return slHit(B, o.box, 2) || (o.ty !== false && slHit(B, o.tag, 2)); });
+function slPathHits(x0, y0, path, sz) {
+  let px = x0, py = y0;
+  for (const [x, y] of path) { const n = Math.max(1, Math.ceil(Math.hypot(x - px, y - py) / 12)); for (let i = 1; i <= n; i++) { const qx = px + ((x - px) * i) / n, qy = py + ((y - py) * i) / n; if (Math.hypot(qx - x0, qy - y0) >= 16 && slWalkHit(qx, qy, rmScale(qy) * (sz || 1))) return true; } px = x; py = y; }
+  return false;
+}
+if (typeof rmHard === 'function') { const slHard0 = rmHard; rmHard = function (x, y) { return slHard0.apply(this, arguments) || (SLV.block && slWalkHit(x, y, rmScale(y))); }; } // eslint-disable-line no-func-assign
+if (typeof rmRoute === 'function') {
+  const slRoute0 = rmRoute;
+  rmRoute = function (x0, y0, x1, y1, sz) { // eslint-disable-line no-func-assign
+    const p = slRoute0.apply(this, arguments); if (!SLV.drawn.length || !slHere() || !slPathHits(x0, y0, p, sz)) return p;
+    let q = null; SLV.block = true; try { q = slRoute0.apply(this, arguments); } catch (e) { q = null; } SLV.block = false;
+    return q && !slPathHits(x0, y0, q, sz) ? q : p;
   };
 }
 function slIdleSafe(steps) {

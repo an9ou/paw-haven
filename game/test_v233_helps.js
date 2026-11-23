@@ -191,7 +191,7 @@ run('v233_helps', async (t) => {
   await newsPart(t);
   await keepPart(t, 1280, 720, null);
   await keepPart(t, 390, 844, 'dachs');
-});
+}, { timeout: 600000 }); // the runner allows 620 s (run_tests.js); the sleepover crowd checks (B7) took it past the 240 s default
 
 // three friends, each with a yard (Happy Clover gets one here); the Worker has hp and the game's gate is on
 async function startHelps(t, o) {
