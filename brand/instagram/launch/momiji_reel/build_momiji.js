@@ -17,11 +17,18 @@
 //   1) captures: NODE_PATH=$(npm root -g) node brand/instagram/launch/momiji_reel/capture_momiji.js <main checkout> <caps>
 //   2) ART_ROOT=<main checkout> CAPS=<caps> NODE_PATH=$(npm root -g) node brand/instagram/launch/momiji_reel/build_momiji.js <workdir>
 //   ONLY=stills: key frames (WORK/stills; TS=a,b,... frame numbers). FRAMES=a-b: re-render only frames a..b, then encode again with the same music.
+// REDNOTE=1 (owner, 23 Nov 2026: "Create rednote version"): the RedNote cut, the same loop with the line in Simplified Chinese (LXGW WenKai), the
+//   place named as the game names it in zh-Hans (上野公园, checked against game/i18n/zh-Hans.json on main), the full frame with a 50 px margin
+//   instead of the safe zone (the centring, prop-clearance and leaf checks stay), no QR, link, domain, @, handles or platform names (the build
+//   refuses RedNote's off-platform words). The same music (WORK's music.wav from the English build is used as is) and the same loop.
+//   Output doodle-doggo-momiji-loop-rednote.mp4.
 //   CHECK=1 runs every frame's checks without rendering. ENCODE=1 encodes WORK/f again (same music). DEBUG=1 outlines the boxes.
 // Output next to this file: doodle-doggo-momiji-loop.mp4.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
+const { RN_FONT_CSS } = require('../../../kids/endcard.js');
+const RN = !!process.env.REDNOTE;
 const { freezeClock, stepClock, releaseClock, checkFrames } = require('../frozen_clock.js');
 const OUT = __dirname;
 const ART_ROOT = path.resolve(process.env.ART_ROOT || path.join(__dirname, '..', '..', '..', '..'));
@@ -60,10 +67,17 @@ console.log('deck', PROPS.deck.map(Math.round), 'trunk', PROPS.trunk.map(Math.ro
 const K = 2.8, DX = 70, FOOT = 1430;
 const DOGX = DX, DOGY = FOOT - 193 * K;
 // ---- the line: one small soft card at the top of the safe zone ----
-const LINE = ['Your 15 seconds of Tokyo autumn,', 'no rush'];
+// RedNote: 红叶季 (RedNote's word for the season), true to the length, and the game's own zh-Hans name of the place, smaller under it
+const ZH_PLACE = (() => { const z = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8')); const n = z['data.tk_places.ueno.n'];
+  if (n !== '上野公园' || z['tokyo.pin_ueno'] !== n) throw new Error('the game\'s zh-Hans name of Ueno Park changed: ' + n); return n; })();
+const LINE = RN ? ['东京红叶季，给你15秒', ZH_PLACE] : ['Your 15 seconds of Tokyo autumn,', 'no rush'];
 const HOOK = LINE.join(' ');
 if (/itch|—|–/.test(HOOK)) throw new Error('no itch.io and no dashes on screen');
-const CARD = { cx: 455, cy: 372, w: 690, h: 150 };
+if (RN) { if (LINE.some((l) => [...l].length > 14)) throw new Error('a RedNote line over 14 characters');
+  if (!/红叶/.test(HOOK)) throw new Error('the RedNote line needs 红叶 or 红叶季');
+  if (/[A-Za-z@]|\.(app|com|io)|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|快拍|帖子|微信|朋友圈|QQ|微博|抖音|小红书|Instagram|YouTube|TikTok/i.test(HOOK)) throw new Error('a RedNote no-go word on screen: ' + HOOK); }
+const F_ = RN ? "'LXGW WenKai'" : 'Caveat', SIZES = RN ? [64, 44] : [58, 54], PITCH = RN ? 74 : 62;
+const CARD = RN ? { cx: 540, cy: 372, w: 760, h: 170 } : { cx: 455, cy: 372, w: 690, h: 150 };
 const LINE_ON = (t) => { const sm = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }; return t < 1 ? sm(t) : t < 3.4 ? 1 : 1 - sm((t - 3.4) / 0.8); }; // in over the first second, out by 4.2 s
 // ---- the face: 'curious' while the watched leaf drifts past his nose, on whole frame-flips of the wobble (every 10 frames) ----
 // The art's wobble is set 5 frames into its 1 s cycle at frame 0 (PH), so its flips land on frames 5, 15, 25 ... and the loop point (449 -> 0) is a
@@ -96,13 +110,13 @@ function leafAt(e,t){ let a=((t-e.ts)%L+L)%L; if(a>=DUR) return null; const u=a/
     e.x = X0 + (CARD.cx + CARD.w / 2 + 70) / S + (i % 3) * 6; e.dx = Math.abs(e.dx) % 25; moved++; if (hits(e)) { EVENTS.splice(i, 1); dropped++; } }
   console.log('leaves', EVENTS.length, '(moved clear of the line', moved, ', left out', dropped + ')'); }
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff;overflow:hidden}svg{display:block}${facts.dogCss}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><g id="bg"></g><g id="dog"></g><g id="lv"></g><g id="ov"></g><g id="chk"></g><g id="dbg"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const $=(i)=>document.getElementById(i), F='Caveat', f2=(x)=>(+x).toFixed(2), DEBUG=${!!process.env.DEBUG};
+const $=(i)=>document.getElementById(i), F=${JSON.stringify(F_)}, RN=${RN}, f2=(x)=>(+x).toFixed(2), DEBUG=${!!process.env.DEBUG};
 const L=${L}, FPS=${FPS}, S=${S}, X0=${X0}, Y0=${Y0}, DUR=${DUR}, EV=${JSON.stringify(EVENTS)}, LEAF=${JSON.stringify(LEAF)}, PROPS=${JSON.stringify(PROPS)};
 const CARD=${JSON.stringify(CARD)}, LINE=${JSON.stringify(LINE)}, CURIOUS=${JSON.stringify(CURIOUS)};
 const LINE_ON=${LINE_ON.toString()};
@@ -115,7 +129,7 @@ function setup(d){
   $('dog').innerHTML='<g id="dogT"><g id="fDreamy">'+d.dreamy+'</g><g id="fCurious" opacity="0">'+d.curious+'</g></g>';
   for(const s of $('dog').querySelectorAll('svg.pa-dog')){ s.setAttribute('x','${DOGX}'); s.setAttribute('y','${DOGY.toFixed(2)}'); s.setAttribute('width','${240 * K}'); s.setAttribute('height','${200 * K}'); s.setAttribute('overflow','visible'); }
   CARD_SVG='<g data-apart="line"><g data-box><rect x="'+(CARD.cx-CARD.w/2)+'" y="'+(CARD.cy-CARD.h/2)+'" width="'+CARD.w+'" height="'+CARD.h+'" rx="40" fill="${CREAM}" fill-opacity=".92" stroke="${PEN}" stroke-width="4" stroke-opacity=".75"/>'
-    +centred([{s:LINE[0],size:58,pitch:62},{s:LINE[1],size:54,fill:'${MUTED}'}],CARD.cx,CARD.cy,F).svg+'</g></g>';
+    +centred([{s:LINE[0],size:${SIZES[0]},pitch:${PITCH}},{s:LINE[1],size:${SIZES[1]},fill:'${MUTED}'}],CARD.cx,CARD.cy,F).svg+'</g></g>';
   // the props Noodle keeps clear of, as invisible boxes for apartCheck
   $('chk').innerHTML=Object.entries(PROPS).map(([k,b])=>'<rect data-apart="'+k+'" x="'+f2(b[0])+'" y="'+f2(b[1])+'" width="'+f2(b[2]-b[0])+'" height="'+f2(b[3]-b[1])+'" fill="none" stroke="'+(DEBUG?'red':'none')+'" stroke-width="3"/>').join('');
 }
@@ -138,7 +152,10 @@ function tick(now){
 window.begin=(t0)=>{ T0=t0; requestAnimationFrame(tick); };
 // every frame's checks: centring, the safe zone, Noodle 28 px clear of the deck and the trunk, no leaf over the card while it shows
 window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
-  bad.push(...centreCheck(st), ...safeCheck(st));
+  if(RN){ // the full frame with a 50 px margin: every text and box inside 50..1030 x 50..1870
+    st.querySelectorAll('#ov text,#ov [data-box]').forEach((e)=>{ const q=e.getBoundingClientRect(); if(q.left<50||q.right>1030||q.top<50||q.bottom>1870) bad.push('outside the 50 px margin: '+(e.textContent||'box').slice(0,20)); });
+    bad.push(...centreCheck(st)); }
+  else bad.push(...centreCheck(st), ...safeCheck(st));
   // Noodle's drawn box: the face on show, its shown wobble drawing's paths (strokes included), not the hidden ones
   const face=st.querySelector('[data-noodle] svg.pa-dog'); let l=1e9,t=1e9,r=-1e9,bt=-1e9;
   for(const g of face.querySelectorAll('.pa-d-f0,.pa-d-f1,.pa-d-f2')){ if(+getComputedStyle(g).opacity<0.5) continue; for(const e of g.querySelectorAll('path,ellipse,circle,text')){ const q=e.getBoundingClientRect(); if(!q.width&&!q.height) continue; l=Math.min(l,q.left);t=Math.min(t,q.top);r=Math.max(r,q.right);bt=Math.max(bt,q.bottom);} }
@@ -149,7 +166,7 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   $('chk').insertAdjacentHTML('beforeend','<rect data-apart="noodle" x="'+f2(l)+'" y="'+f2(t)+'" width="'+f2(r-l)+'" height="'+f2(bt-t)+'" fill="none" stroke="'+(DEBUG?'blue':'none')+'" stroke-width="3"/>');
   bad.push(...apartCheck(st,28));
   if(r-l<550||r-l>700) bad.push('Noodle is '+Math.round(r-l)+' px wide');
-  if(l<60||r>850||t<270||bt>1440) bad.push('Noodle outside the safe zone '+nb.map(Math.round));
+  if(RN?(l<50||r>1030||t<50||bt>1870):(l<60||r>850||t<270||bt>1440)) bad.push('Noodle outside '+(RN?'the 50 px margin ':'the safe zone ')+nb.map(Math.round));
   const card=st.querySelector('#ov rect'); if(card){ const c=card.getBoundingClientRect(); st.querySelectorAll('#lv>g').forEach((g)=>{ const q=g.getBoundingClientRect(); if(q.right>c.left-6&&q.left<c.right+6&&q.bottom>c.top-6&&q.top<c.bottom+6) bad.push('a leaf over the line card at '+[q.left,q.top].map(Math.round)); }); }
   return bad.length?bad.join(' | '):null; };
 </script>`;
@@ -167,6 +184,8 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   const bg = 'data:image/png;base64,' + fs.readFileSync(bgPng).toString('base64');
   await p.setContent(html, { waitUntil: 'networkidle' });
   await p.evaluate(async () => { await document.fonts.load('700 58px Caveat'); await document.fonts.load('700 46px Caveat'); await document.fonts.ready; });
+  if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), HOOK);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), HOOK))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate((d) => window.setup(d), { bg, dreamy: draw.dreamy.svg, curious: draw.curious.svg });
 
   const t0 = await freezeClock(p);
@@ -197,6 +216,7 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   // ---- sound: the game's music at Ueno at golden hour, rendered 2.2 s longer and crossfaded end into start (as build_xmas.js) ----
   const ff = (a) => cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', ...a], { stdio: 'inherit' });
   const raw = path.join(WORK, 'music.wav'), loopWav = path.join(WORK, 'music_loop.wav'), mixWav = path.join(WORK, 'mix.wav'), T = NF / FPS, Ts = T.toFixed(4);
+  if (RN && !fs.existsSync(raw)) throw new Error('the RedNote cut uses the English cut\'s music: copy its WORK/music.wav into ' + WORK);
   if (!fs.existsSync(raw) || process.env.REMUSIC) {
     const ab = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
     const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ART_ROOT, 'mods', 'pawaudio.js') });
@@ -206,7 +226,7 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   ff(['-i', raw, '-i', raw, '-filter_complex', `[0]atrim=1:${(1 + T).toFixed(4)},asetpts=PTS-STARTPTS,afade=t=in:d=1:curve=qsin[a];[1]atrim=${(1 + T).toFixed(4)}:${(2 + T).toFixed(4)},asetpts=PTS-STARTPTS,afade=t=out:d=1:curve=qsin,apad=whole_dur=${Ts}[b];[a][b]amix=inputs=2:duration=first:normalize=0[o]`, '-map', '[o]', loopWav]);
   const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', loopWav, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
   ff(['-i', loopWav, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
-  const mp4 = path.join(OUT, 'doodle-doggo-momiji-loop.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-momiji-loop-rednote.mp4' : 'doodle-doggo-momiji-loop.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     // keyframes on the first AND the last frame (one GOP between), at CRF 16: the last frame is coded like the first, so the codec adds no more
     // change across the seam than across any other frame step (a P-frame against the opening I-frame doubled it)

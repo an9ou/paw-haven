@@ -106,3 +106,23 @@ ART_ROOT=<scratch>/momiji_main CAPS=<scratch>/momiji/caps NODE_PATH=$(npm root -
 
 - **Dog:** the brief asked for Noodle. The README's "a different dog each time" rule is for ads; this is a calm loop, so I followed the brief.
 - **Caption (later):** the website goes in the caption (https://doodledoggo.app) and nothing else. A loop has no end card. Don't say "made in Japan" (say "Japan-style"), and no 🇯🇵 flag.
+
+## RedNote cut (23 Nov 2026)
+
+The owner asked for it ("Create rednote version"). This is the cut only, with no cover and no captions. The English MP4 is unchanged (its md5 was checked after the build).
+
+- **File:** `brand/instagram/launch/momiji_reel/doodle-doggo-momiji-loop-rednote.mp4`. It is h264 1080 x 1920, 30 fps, **15.00 s (450 frames)**, with AAC audio at -16.0 LUFS. It is the same seamless loop with no end card.
+- **Build:** `REDNOTE=1 ART_ROOT=<main> CAPS=<caps> NODE_PATH=$(npm root -g) node brand/instagram/launch/momiji_reel/build_momiji.js <workdir_rn>`. Copy the English workdir's `music.wav` into it first, so the music is the same render. The build refuses to run without it.
+- **On screen:** **东京红叶季，给你15秒** (10 characters), with **上野公园** smaller under it. 上野公园 is the game's own zh-Hans name for Ueno Park (`data.tk_places.ueno.n`, `tokyo.pin_ueno`, checked against `game/i18n/zh-Hans.json` on main).
+  - It uses 红叶季 and is true to the place and the length.
+  - The font is LXGW WenKai (`RN_FONT_CSS`). There is no emoji, because WenKai has no glyph for one and a fallback face would throw off the centring.
+- **Layout:** the full frame with a 50 px margin. The card is centred on x 540 (y 287..457, 760 wide) over the maple crown. The fade is the same: in over the first second, out by 4.2 s.
+  - The leaves are the same 26 events. The rule against crossing the card moved 9 to the right edge instead of 8, because the card is wider, and left out 1.
+- **Refused words:** the build fails if the line has any Latin letter, @, a domain, 链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳 发帖 快拍 帖子, or any app or platform name.
+- **Checks on every frame (451):** `centreCheck()`; the card, its text and Noodle inside the 50 px margin; `apartCheck()` at 28 px (Noodle against the deck and the trunk); no leaf over the card while it shows. Frame 450 is the same PNG as frame 0.
+- **checkFrames(mp4, 0, 449):** median 0.39.
+  - **doubled: none.**
+  - Jumps off a wobble step: **none**. Every flagged frame is one of the art's own crayon redraws (frames 5, 15, 25 ...; 0.87..1.56).
+  - Every other step is 0.20..0.69.
+- **Seam:** last frame to first is **0.54** (1.38x the median, inside the ordinary range). The keyframes are on frame 0 and frame 449 at CRF 16.
+- **Seen at 1x:** frame 60. Seam strip: `/tmp/claude-0/-home-user-paw-haven/821f93b0-fc0a-5e7e-8605-cd441828990a/scratchpad/momiji/momiji-rednote-seam-strip.jpg` (in the scratchpad, not committed).
