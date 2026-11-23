@@ -34,15 +34,18 @@ async function start(t, o) {
   await t.ev(() => window.__paw.hp.load());
 }
 
+let PT = null; // the suite's T, for today9 (the page clock)
 run('v233_helps', async (t) => {
+  PT = t;
   const { ok, sec, ev } = t;
   if (process.env.HP_ONLY === '4') { await stickerPart(t); await newsPart(t); await keepPart(t, 1280, 720, null); await keepPart(t, 390, 844, 'dachs'); return; } // a quick run of part 4 only
   if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b); return; } // a quick run of part 3 only
 
-  sec('A0. the gate is shut while HP_FROM has no date (the mock Worker has hp)');
+  sec('A0. under webdriver the gate stays shut without prefs.hpTest, whatever the date (the mock Worker has hp)');
   await start(t, { hp: true });
-  ok(await ev(() => window.__paw.hp.from === ''), 'HP_FROM is \'\' (no launch date yet)');
-  ok(await ev(() => window.__paw.hp.srv() === true && window.__paw.hp.on() === false), 'the Worker said hp: 1, but hpOn() is off without the date (and under webdriver)');
+  const hpFrom = await ev(() => window.__paw.hp.from);
+  ok(/^\d{4}-\d{2}-\d{2}$/.test(hpFrom) && (await ev(() => window.__paw.nw.v233Raw())) === hpFrom, 'HP_FROM is a YYYY-MM-DD and the NEWS date (' + hpFrom + ')');
+  ok(await ev(() => window.__paw.hp.srv() === true && navigator.webdriver && window.__paw.hp.on() === false), 'the Worker said hp: 1, but hpOn() is off under webdriver without prefs.hpTest (today ' + (await ev(() => window.__paw.rh.jst())) + ', before or after ' + hpFrom + ')');
   ok(await ev(() => !('hp' in window.__paw.hp.yard())), 'no hp field in the snapshot');
   await ev(() => window.__paw.hp.push());
   ok(await t.until(() => window.__frSrv.yards.length > 0, null, 4000) && (await ev(() => window.__frSrv.yards.every((y) => !('hp' in y)))), 'the snapshot sent has no hp');
@@ -632,7 +635,7 @@ async function chipOffPart(t) {
 }
 
 /* ======================= part 3 (V233.md 4, 4.1-4.3, 9): the sleepover ======================= */
-const today9 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+const today9 = () => new Date((PT ? PT.pageNow() : Date.now()) + 9 * 3600e3).toISOString().slice(0, 10); // the page's Japan day (the harness pins the page clock to 10:00 local, so near midnight in Japan node's day can differ)
 // two dog boxes [x0, y0, x1, y1] apart by at least m units
 const apart = (a, b, m) => a[2] + m <= b[0] || b[2] + m <= a[0] || a[3] + m <= b[1] || b[3] + m <= a[1];
 // n sleep acts from Sunny, Fern and Clover for today (ids 500...)
@@ -955,7 +958,7 @@ async function stickerPart(t) {
   await t.ctx.close();
   await start(t, { hp: true });
   await ev(() => window.__paw.msb.sync());
-  ok(await ev(() => !window.__paw.hp.pages().includes('pals') && JSON.stringify(window.__paw.S.hp.pk) === '[]' && window.__paw.S.hp.pg === ''), 'gate shut (no date): no page, nothing written to S.hp');
+  ok(await ev(() => !window.__paw.hp.pages().includes('pals') && JSON.stringify(window.__paw.S.hp.pk) === '[]' && window.__paw.S.hp.pg === ''), 'gate shut (under webdriver without prefs.hpTest): no page, nothing written to S.hp');
   await t.ctx.close();
 
   sec('C4. an old save\'s page gifts stay with their pages (by page key), across loads');
@@ -992,10 +995,12 @@ async function stickerPart(t) {
 
 async function newsPart(t) {
   const { ok, sec, ev } = t;
-  sec('C5. NEWS: the date is HP_FROM; with no date the entry is not in the list and never leads the sheet');
+  sec('C5. NEWS: the date is HP_FROM; in the list from that JST day; with no date the entry is not in the list and never leads the sheet');
   await start(t, { hp: true });
-  ok(await ev(() => window.__paw.nw.v233Raw() === window.__paw.hp.from), 'NEWS date = HP_FROM (' + JSON.stringify(await ev(() => window.__paw.hp.from)) + ')');
-  ok(await ev(() => !window.__paw.nw.list().includes('2.33') && window.__paw.nw.latest() !== '2.33'), 'no date: not in the list, not the latest');
+  const from = await ev(() => window.__paw.hp.from), today = await ev(() => window.__paw.rh.jst());
+  ok(/^\d{4}-\d{2}-\d{2}$/.test(from) && await ev(() => window.__paw.nw.v233Raw() === window.__paw.hp.from), 'NEWS date = HP_FROM (' + JSON.stringify(from) + ')');
+  ok((await ev(() => window.__paw.nw.v233(null).includes('2.33'))) === (today >= from), 'the real date: in the list exactly when today (JST ' + today + ') >= HP_FROM (' + from + ')');
+  ok(await ev(() => !window.__paw.nw.v233('').includes('2.33') && window.__paw.nw.latest() !== '2.33'), 'no date (the test hook): not in the list, not the latest');
   await ev(() => { window.__paw.nw.test(true); window.__paw.S.newsSeen = ''; window.__paw.nw.auto(); });
   ok(await t.until(() => !!document.querySelector('#modal .nw-sheet'), null, 3000) && await ev(() => !/Helping paws/.test(document.getElementById('modal').textContent)), 'the automatic sheet does not lead with it');
   await t.p.keyboard.press('Escape'); await t.modalGone();
@@ -1011,7 +1016,8 @@ async function newsPart(t) {
   ok(await ev(() => window.__paw.S.newsSeen === '2.33'), 'seen: 2.33');
   await shot(t, 'news_1280');
   await t.p.keyboard.press('Escape');
-  ok(!(await ev(() => window.__paw.nw.v233(null))).includes('2.33'), 'back to HP_FROM (no date): out of the list again');
+  ok(!(await ev(() => window.__paw.nw.v233(''))).includes('2.33'), 'no date again: out of the list again');
+  ok((await ev(() => window.__paw.nw.v233(null))).includes('2.33') === (today >= from) && await ev(() => window.__paw.nw.v233Date() === window.__paw.hp.from), 'back to HP_FROM (the test date cleared): in the list exactly when today >= HP_FROM');
   await t.ctx.close();
 }
 

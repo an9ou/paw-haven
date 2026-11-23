@@ -49,11 +49,13 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     const acts = (uid) => DB.raw.prepare('select * from friend_acts where to_id = ? order by id').all(uid);
 
     sec('0. the gate: the same date as the game, shut = the v2.32 Worker');
+    let builtOpen = false;
     {
       const src = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), game = fs.readFileSync(path.join(ROOT, 'game', 'src', '60_helps.js'), 'utf8');
       const w = (src.match(/^const HP_FROM = '([^']*)';/m) || [])[1], g = (game.match(/^const HP_FROM = '([^']*)';/m) || [])[1];
       ok(w !== undefined && g !== undefined && w === g, 'the Worker\'s HP_FROM is the game\'s HP_FROM (' + JSON.stringify(w) + ' / ' + JSON.stringify(g) + ')');
-      ok(w === '' || /^\d{4}-\d{2}-\d{2}$/.test(w), 'HP_FROM is \'\' (no launch date) or a YYYY-MM-DD');
+      ok(/^\d{4}-\d{2}-\d{2}$/.test(w || ''), 'HP_FROM is a YYYY-MM-DD (' + w + ')');
+      builtOpen = Date.now() >= Date.parse(w + 'T00:00:00+09:00') - 10 * 60e3; // the built-in date (00:00 JST less 10 minutes) has come: the default gate is open
       const wl = (src.match(/const HP_LIM = \{ wish: (\d+) \}/) || [])[1], wg = (game.match(/^const HP_WISH = \[([^\]]*)\]/m) || [])[1];
       ok(!!wl && !!wg && +wl === wg.split(',').length, 'HP_LIM.wish is the length of the game\'s HP_WISH (' + wl + ')');
       ok(/const HP_WISH_DO = \[0, 1, 2\]/.test(src) && /const HP_WISH_DO = \[0, 1, 2\]/.test(game), 'HP_WISH_DO is [0, 1, 2] on both sides');
@@ -64,7 +66,7 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
     const A = await player(), B = await player(), C = await player();
     ok(await befriend(A, B) && await befriend(A, C), 'A is friends with B and C');
     {
-      for (const gate of ['off', null, String(Date.now() + 3600e3), new Date(Date.now() + 3600e3).toISOString()]) {
+      for (const gate of ['off', 'OFF', String(Date.now() + 3600e3), new Date(Date.now() + 3600e3).toISOString()]) { // shut by env, whatever the built-in date
         const r = await call('GET', '/friends', undefined, A.tok, gate);
         const row = r.json && r.json.friends && r.json.friends[0];
         ok(r.status === 200 && !('hp' in r.json) && row && Object.keys(row.sent).sort().join() === 'gift,note,pet,walk', 'shut (' + gate + '): GET /friends has no hp and the four v2.32 sent flags');
@@ -86,7 +88,7 @@ const jst = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
       ok(p.json.hp === 1, 'env.HP_FROM \'0\' opens it');
       ok((await call('GET', '/friends', undefined, A.tok, String(Date.now() - 1000))).json.hp === 1, 'a past env.HP_FROM (ms) opens it');
       const brk = (await call('GET', '/friends', undefined, A.tok, 'not a date')).json.hp === 1, dflt = (await call('GET', '/friends', undefined, A.tok, null)).json.hp === 1;
-      ok(brk === dflt, 'a broken env.HP_FROM falls back to the built-in date (open: ' + dflt + ')');
+      ok(brk === dflt && dflt === builtOpen, 'a broken env.HP_FROM falls back to the built-in date, and no env.HP_FROM is the built-in date: open exactly from it (open: ' + dflt + ')');
     }
 
     sec('1. GET /friends: hp and the sent flags');

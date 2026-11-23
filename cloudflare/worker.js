@@ -35,7 +35,7 @@
 //   POST /friends/inbox/claim { ids }      -> { ok }              120/h
 //   POST /friends/leave                    -> { ok }              30/h    V219.md gives leave no limit; same as remove and block
 //   v2.33 "Helping paws" (V233.md 1 and 2): helps on a yard visit and sleepovers, in their own table friend_acts. Shut until HP_FROM (below; the
-//     same text as HP_FROM in game/src/60_helps.js, '' = no launch date; env.HP_FROM: ms, an ISO time, '0' open, 'off' shut). Shut, every route
+//     same text as HP_FROM in game/src/60_helps.js: 2026-11-26, '' = no launch date; env.HP_FROM: ms, an ISO time, '0' open, 'off' shut). Shut, every route
 //     answers exactly as the v2.32 Worker: no hp, the new kinds and note 12 are 400 bad, a snapshot with hp is 400 bad, ?hp=1 is ignored, acts in a
 //     claim is 400 bad. Open:
 //   GET  /friends                          -> { me, friends, hp: 1 }   each row's sent adds bowl, water, wish, sleep (today, from friend_acts)
@@ -591,10 +591,10 @@ function frTidySoon(env, ctx) {
 }
 
 /* ---------------- v2.33 "Helping paws" (V233.md 1 and 2): helps and sleepovers in friend_acts ---------------- */
-// The launch gate: HP_FROM is the same text as HP_FROM in game/src/60_helps.js ('' = no launch date yet: shut; 'YYYY-MM-DD' = 00:00 JST that
-// day, less 10 minutes for a device clock that runs a little fast; test_v233_worker checks the two agree). env.HP_FROM (ms, an ISO time, '0' =
+// The launch gate: HP_FROM is the same text as HP_FROM in game/src/60_helps.js ('YYYY-MM-DD' = 00:00 JST that
+// day, less 10 minutes for a device clock that runs a little fast; '' = no launch date: shut; test_v233_worker checks the two agree). env.HP_FROM (ms, an ISO time, '0' =
 // open now, 'off' = shut) moves it without a new Worker. Shut, every friends route answers exactly as the v2.32 Worker did.
-const HP_FROM = '';
+const HP_FROM = '2026-11-26'; // LAUNCH DATE (owner's go-ahead 24 Nov 2026): 26 Nov 2026 00:00 JST
 const HP_KINDS = ['bowl', 'water', 'wish', 'sleep'];
 const HP_LIM = { wish: 13 }; // the length of HP_WISH in game/src/60_helps.js (append only)
 const HP_WISH_DO = [0, 1, 2]; // the wish kinds a visitor can make come true: pet, ball, snack (a later doable kind is appended to HP_WISH and added here)

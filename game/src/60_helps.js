@@ -3,12 +3,12 @@
    for a sleepover (60b_sleep.js, tag sl). This file: the gate, the save (S.hp), the snapshot's hp field and the inbox's acts.
    Part 1 (V233.md 14.1) is the plumbing only: hpActs records and claims act ids safely, and each kind's effect is a handler in HP_DO that
    parts 2 (bowl, water, wish) and 3 (sleep, in 60b_sleep.js) fill in. No new coins (V233.md 0).
-   Gate (V233.md 1): HP_FROM. '' = no launch date yet: off. 'YYYY-MM-DD' = on from 00:00 JST that day. The Worker's HP_FROM carries the same
+   Gate (V233.md 1): HP_FROM. 'YYYY-MM-DD' = on from 00:00 JST that day ('' = no launch date: off). The Worker's HP_FROM carries the same
      text (test_v233_worker checks it). hpOn() also needs Friends (frOn) and a Worker that said hp: 1 in GET /friends (FR.hp, memory only).
      Tests turn it on with prefs.hpTest; never under webdriver otherwise. While off: no hp snapshot field, no ?hp=1, no S.hp writes beyond
      the migration defaults (v233Fields).
    Test hook: window.__paw.hp. Suites: v233_helps (game), v233_worker (Worker). */
-const HP_FROM = ''; // LAUNCH DATE (owner): 'YYYY-MM-DD' = on from 00:00 JST that day. Keep cloudflare/worker.js HP_FROM and NEWS_V233.date the same
+const HP_FROM = '2026-11-26'; // LAUNCH DATE (owner's go-ahead 24 Nov 2026: 26 Nov 2026 00:00 JST): 'YYYY-MM-DD' = on from 00:00 JST that day. Keep cloudflare/worker.js HP_FROM and NEWS_V233.date the same
 /* append only, never reorder: the Worker knows its length (HP_LIM.wish) and the doable kinds (HP_WISH_DO). The DD_WACT wish kinds (48_dogdays.js) */
 const HP_WISH = ['pet', 'ball', 'snack', 'walk', 'bath', 'nap', 'trick', 'toy', 'place', 'paddle', 'garden', 'photo', 'wear'];
 const HP_WISH_DO = [0, 1, 2]; // the wishes a visitor can make come true: pet, ball, snack
