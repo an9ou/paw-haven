@@ -34,6 +34,19 @@
 //   GET  /friends/inbox                    -> { events }          120/h   at most 30: pets and notes first, then gifts and walks, oldest first in each
 //   POST /friends/inbox/claim { ids }      -> { ok }              120/h
 //   POST /friends/leave                    -> { ok }              30/h    V219.md gives leave no limit; same as remove and block
+//   v2.33 "Helping paws" (V233.md 1 and 2): helps on a yard visit and sleepovers, in their own table friend_acts. Shut until HP_FROM (below; the
+//     same text as HP_FROM in game/src/60_helps.js, '' = no launch date; env.HP_FROM: ms, an ISO time, '0' open, 'off' shut). Shut, every route
+//     answers exactly as the v2.32 Worker: no hp, the new kinds and note 12 are 400 bad, a snapshot with hp is 400 bad, ?hp=1 is ignored, acts in a
+//     claim is 400 bad. Open:
+//   GET  /friends                          -> { me, friends, hp: 1 }   each row's sent adds bowl, water, wish, sleep (today, from friend_acts)
+//   POST /friends/send { fid, kind, data } kind also bowl | water (data {} or none), wish ({ w } or { w, a }: w in HP_WISH_DO, a an FR_GIFTS index
+//     only with w 2), sleep ({ dog }: a Dog Card dog). note takes i 0..12 (12: "Thank you for helping!"). A help once per (from, to, kind, Japan
+//     day), a sleep once per (from, Japan day) to anyone: 400 limit. To an official account the row is born claimed (the limits hold, nothing is delivered)
+//   PUT  /friends/yard { yard }            yard may carry hp: { d: 'YYYY-MM-DD', g: 0..6, w?: 0..12, a?: an FR_GIFTS index, only with w 2 }
+//   GET  /friends/inbox?hp=1               -> { events, acts, hp: 1 }   acts: my unclaimed friend_acts, helps before sleeps, oldest first, at most
+//     30, each { id, from: { fid, name }, kind, data, day }. Without ?hp=1: events without notes i >= 12 (an older game knows 12 notes)
+//   POST /friends/inbox/claim { ids, acts? }  acts: at most 30 act ids, claimed where they are mine
+//   remove / block delete the unclaimed acts between the two (both ways); leave deletes my acts, sent and received; frTidy and the 30-day delete cover them
 //   Kind shop (v2.24, V224.md 4; Stripe Managed Payments, Stripe is the merchant of record). Every /shop/* route answers 503
 //   { error: 'shop_closed' } while STRIPE_KEY is unset (the webhook also needs STRIPE_WEBHOOK_SECRET). Prices come from SHOP_ITEMS
 //   below and the SHOP_PRICES secret (JSON), never from the game. Setup: docs/design/kind-shop-stripe-setup.md.
@@ -289,7 +302,8 @@ const DC_LIM = { a: 40, b: 40, n: 120, breed: 40, outfit: 59 }; // v2.12: 35 bre
 //             deployed with the v2.26-v2.29 launch). A game copy that meets the 32 Worker sends its yard again without the toys
 //             (game/src/50_friends.js FR_DECOR_OLD 32). Sakura adds its yard items after the toys.
 //   houses 15: every HOUSES row (v2.24: + the Golden Paw Cottage, the Supporter House)
-const FR_LIM = { notes: 12, gifts: 47, decor: 36, houses: 15 }; // v2.25.5: + the Paw-Print Pennant; v2.26: + the four yard toys (after the Pennant)
+//   v2.33: notes 13 (+ "Thank you for helping!", Say thanks), taken only while the Helping paws gate is open (FR_NOTES_OLD before it)
+const FR_LIM = { notes: 13, gifts: 47, decor: 36, houses: 15 }; // v2.25.5: + the Paw-Print Pennant; v2.26: + the four yard toys (after the Pennant); v2.33: + note 12
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'], A: ['at', 'a'], I: ['I', 'i'] }; // allele tokens (mods/genes.js LOCI; v2.21: A = TAN, the Aussie's copper, sent by the game only with MS2_LIVE; I = RED_I, the fox red Lab and dark golden, optional)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -414,11 +428,17 @@ function frDogsOf(text) {
   return out;
 }
 // The snapshot from section 2, in the Worker's own shape, or null (400 bad). Anything else is refused.
-function frYard(yard) {
+// hpOk (v2.33, the Helping paws gate open): the snapshot may carry hp (hpSnap); otherwise a yard with hp is refused like any unknown key
+function frYard(yard, hpOk) {
   let raw; try { raw = JSON.stringify(yard); } catch (e) { return null; }
   if (!raw || raw.length > FR_YARD_MAX) return null;
   if (!ffOk(yard)) return null;
   yard = ffStrip(yard); // v2.24: the game may send ff; GET /friends/yard sets it from purchases
+  let hp = null;
+  if (hpOk && yard && typeof yard === 'object' && !Array.isArray(yard) && Object.hasOwn(yard, 'hp')) {
+    hp = hpSnap(yard.hp); if (!hp) return null;
+    yard = Object.assign({}, yard); delete yard.hp;
+  }
   if (!dcKeys(yard, ['v', 'name', 'house', 'season', 'dogs', 'decor'])) return null;
   if (yard.v !== 1) return null;
   const name = frName(yard.name);
@@ -432,12 +452,14 @@ function frYard(yard) {
     decor.push({ i: p.i, x: p.x, y: p.y });
   }
   const out = { v: 1, name, house: yard.house, season: yard.season, dogs, decor };
+  if (hp) out.hp = hp;
   if (JSON.stringify(out).length > FR_YARD_MAX) return null;
   return out;
 }
 function frPet(data) { if (data == null) return {}; return dcKeys(data, []) ? {} : null; }
-function frNote(data) {
-  if (!dcKeys(data, ['i']) || !dcInt(data.i, 0, FR_LIM.notes - 1)) return null;
+// n: how many notes this request may use (FR_NOTES_OLD while the Helping paws gate is shut, FR_LIM.notes once it is open)
+function frNote(data, n) {
+  if (!dcKeys(data, ['i']) || !dcInt(data.i, 0, (n || FR_NOTES_OLD) - 1)) return null;
   return { i: data.i };
 }
 function frGift(data) {
@@ -498,7 +520,8 @@ async function frRotate(env, uid) {
   }
   return null;
 }
-async function frList(env, uid) {
+// hp (v2.33, the gate open): a top-level hp: 1 and each row's sent also says bowl, water, wish, sleep (sent to that friend today, from friend_acts)
+async function frList(env, uid, hp) {
   const mine = await frMine(env, uid), day = dcDay(Date.now()), now = Date.now();
   // An official account can have thousands: it gets its newest FR_OFFICIAL_LIST only (then oldest first, like everyone else's).
   const cap = (await frIsOfficial(env, uid)) ? ` limit ${FR_OFFICIAL_LIST}` : '';
@@ -507,6 +530,7 @@ async function frList(env, uid) {
     from friends f join friend_ids fi on fi.user_id = f.friend_id left join yards y on y.user_id = f.friend_id left join users u on u.id = f.friend_id
     where f.user_id = ?1 order by f.created_at desc, fi.fid desc${cap}) order by at asc, fid asc`, uid);
   const ev = await all(env, 'select to_id, kind from friend_events where from_id = ?1 and day = ?2', uid, day);
+  if (hp) ev.push(...(await all(env, 'select to_id, kind from friend_acts where from_id = ?1 and day = ?2', uid, day)));
   const sent = new Map();
   for (const e of ev) { if (!sent.has(e.to_id)) sent.set(e.to_id, new Set()); sent.get(e.to_id).add(e.kind); }
   const friends = rows.map((r) => {
@@ -515,10 +539,13 @@ async function frList(env, uid) {
       fid: r.fid, name: [r.name_a | 0, r.name_b | 0], dogs: frDogsOf(r.yard), seen: frSeen(r.seen_at, now),
       sent: { pet: kinds.has('pet'), note: kinds.has('note'), gift: kinds.has('gift'), walk: kinds.has('walk') }
     };
+    if (hp) for (const k of HP_KINDS) f.sent[k] = kinds.has(k);
     if (r.official) f.official = true; // only on an official account's row: everyone else's answer is as before
     return f;
   });
-  return { me: mine ? frPub(mine) : null, friends };
+  const out = { me: mine ? frPub(mine) : null, friends };
+  if (hp) out.hp = 1;
+  return out;
 }
 // Both rows, or neither. The WHERE is the race backstop for the 50 cap, a block and a double add.
 // The cap is off when either side is official (the official side has none, and it does not count for the other side);
@@ -543,7 +570,8 @@ async function frLink(env, a, b) {
 async function frUnlink(env, a, b) {
   await env.DB.batch([
     env.DB.prepare('delete from friends where (user_id = ?1 and friend_id = ?2) or (user_id = ?2 and friend_id = ?1)').bind(a, b),
-    env.DB.prepare('delete from friend_events where claimed_at is null and ((from_id = ?1 and to_id = ?2) or (from_id = ?2 and to_id = ?1))').bind(a, b)
+    env.DB.prepare('delete from friend_events where claimed_at is null and ((from_id = ?1 and to_id = ?2) or (from_id = ?2 and to_id = ?1))').bind(a, b),
+    env.DB.prepare('delete from friend_acts where claimed_at is null and ((from_id = ?1 and to_id = ?2) or (from_id = ?2 and to_id = ?1))').bind(a, b) // v2.33
   ]);
 }
 // Like dcTidy: drop friend rows whose user id is gone. About 1 in 50 friend requests; every time under env.TIDY (tests).
@@ -553,12 +581,84 @@ async function frTidy(env) {
     env.DB.prepare('delete from friends where user_id not in (select id from users) or friend_id not in (select id from users)'),
     env.DB.prepare('delete from friend_blocks where user_id not in (select id from users) or blocked_id not in (select id from users)'),
     env.DB.prepare('delete from yards where user_id not in (select id from users)'),
-    env.DB.prepare('delete from friend_events where from_id not in (select id from users) or to_id not in (select id from users)')
+    env.DB.prepare('delete from friend_events where from_id not in (select id from users) or to_id not in (select id from users)'),
+    env.DB.prepare('delete from friend_acts where from_id not in (select id from users) or to_id not in (select id from users)') // v2.33
   ]);
 }
 function frTidySoon(env, ctx) {
   if (env.TIDY) return frTidy(env);
   if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(frTidy(env).catch(() => {}));
+}
+
+/* ---------------- v2.33 "Helping paws" (V233.md 1 and 2): helps and sleepovers in friend_acts ---------------- */
+// The launch gate: HP_FROM is the same text as HP_FROM in game/src/60_helps.js ('' = no launch date yet: shut; 'YYYY-MM-DD' = 00:00 JST that
+// day, less 10 minutes for a device clock that runs a little fast; test_v233_worker checks the two agree). env.HP_FROM (ms, an ISO time, '0' =
+// open now, 'off' = shut) moves it without a new Worker. Shut, every friends route answers exactly as the v2.32 Worker did.
+const HP_FROM = '';
+const HP_KINDS = ['bowl', 'water', 'wish', 'sleep'];
+const HP_LIM = { wish: 13 }; // the length of HP_WISH in game/src/60_helps.js (append only)
+const HP_WISH_DO = [0, 1, 2]; // the wish kinds a visitor can make come true: pet, ball, snack (a later doable kind is appended to HP_WISH and added here)
+const HP_WISH_SNACK = 2; // only a snack wish names a food (a), an FR_GIFTS index
+const HP_GROW_MAX = 6; // garden plots
+const FR_NOTES_OLD = 12; // the notes a game copy from before v2.33 knows: notes from 12 on are left out of an inbox read without ?hp=1
+function hpFrom(env) {
+  const built = /^\d{4}-\d{2}-\d{2}$/.test(HP_FROM) ? Date.parse(HP_FROM + 'T00:00:00+09:00') - 10 * 60e3 : Infinity;
+  const v = env.HP_FROM; if (v === undefined || v === null || v === '') return built;
+  const s = String(v).trim(); if (/^\d+$/.test(s)) return Number(s);
+  if (s.toLowerCase() === 'off') return Infinity;
+  const n = Date.parse(s); return Number.isFinite(n) ? n : built;
+}
+const hpOpen = (env) => Date.now() >= hpFrom(env);
+// the snapshot's hp: { d, g, w?, a? } in the Worker's own shape, or null (the whole snapshot is then 400 bad)
+function hpSnap(h) {
+  if (!h || typeof h !== 'object' || Array.isArray(h)) return null;
+  const ks = Object.keys(h);
+  if (!ks.includes('d') || !ks.includes('g') || ks.some((k) => !['d', 'g', 'w', 'a'].includes(k))) return null;
+  if (typeof h.d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(h.d) || !dcInt(h.g, 0, HP_GROW_MAX)) return null;
+  const out = { d: h.d, g: h.g };
+  if (ks.includes('w')) { if (!dcInt(h.w, 0, HP_LIM.wish - 1)) return null; out.w = h.w; }
+  if (ks.includes('a')) { if (out.w !== HP_WISH_SNACK || !dcInt(h.a, 0, FR_LIM.gifts - 1)) return null; out.a = h.a; }
+  return out;
+}
+// POST /friends/send data for a new kind, or null (400 bad). bowl and water carry nothing, like a pet
+function hpData(kind, data) {
+  if (kind === 'bowl' || kind === 'water') return frPet(data);
+  if (kind === 'wish') {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+    const ks = Object.keys(data);
+    if (!ks.includes('w') || ks.some((k) => k !== 'w' && k !== 'a') || !Number.isInteger(data.w) || !HP_WISH_DO.includes(data.w) || data.w >= HP_LIM.wish) return null;
+    if (!ks.includes('a')) return { w: data.w };
+    if (data.w !== HP_WISH_SNACK || !dcInt(data.a, 0, FR_LIM.gifts - 1)) return null;
+    return { w: data.w, a: data.a };
+  }
+  if (kind === 'sleep') {
+    if (!dcKeys(data, ['dog'])) return null;
+    const dog = dcDog(data.dog);
+    return dog ? { dog } : null;
+  }
+  return null;
+}
+// POST /friends/send for a help or a sleepover (the gate open, the friendship checked): one friend_acts row. A help once per (from, to, kind,
+// Japan day), a sleepover once per (from, Japan day) to anyone: a repeat is 400 limit (the pre-check, then the unique index for a race).
+// To an official account the row is born claimed: the limits hold, nothing is delivered (its yard is everyone's and must not drown)
+async function hpSend(env, me, them, body) {
+  const data = hpData(body.kind, body.data);
+  if (!data) return fail('bad', 400);
+  const now = Date.now(), day = dcDay(now);
+  const dup = body.kind === 'sleep'
+    ? await one(env, 'select id from friend_acts where from_id = ?1 and kind = ?2 and day = ?3', me.id, 'sleep', day)
+    : await one(env, 'select id from friend_acts where from_id = ?1 and to_id = ?2 and kind = ?3 and day = ?4', me.id, them.user_id, body.kind, day);
+  if (dup) return fail('limit', 400);
+  const claimed = (await frIsOfficial(env, them.user_id)) ? now : null;
+  try {
+    const row = await one(env, `insert into friend_acts (to_id, from_id, kind, data, day, created_at, claimed_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7) returning id`,
+      them.user_id, me.id, body.kind, JSON.stringify(data), day, now, claimed);
+    if (!row) return fail('limit', 400);
+  } catch (e) {
+    if (/unique/i.test(String(e && e.message))) return fail('limit', 400);
+    throw e;
+  }
+  return json({ ok: true });
 }
 
 /* ---------------- Kind shop (v2.24, V224.md 4): Stripe Checkout with Managed Payments, through fetch (no SDK) ---------------- */
@@ -1220,7 +1320,7 @@ const ROUTES = {
   'GET /friends': { auth: true, async fn({ env, ctx, me }) {
     await frTidySoon(env, ctx);
     if (await limited(env, frKey.list(me.id), 120, 3600)) return fail('rate_limited', 429);
-    return json(await frList(env, me.id));
+    return json(await frList(env, me.id, hpOpen(env)));
   } },
 
   'POST /friends/me': { auth: true, async fn({ env, ctx, body, me }) {
@@ -1307,7 +1407,7 @@ const ROUTES = {
   'PUT /friends/yard': { auth: true, async fn({ env, ctx, body, me }) {
     await frTidySoon(env, ctx);
     if (!frOnly(body, ['yard'])) return fail('bad', 400);
-    const yard = frYard(body.yard);
+    const yard = frYard(body.yard, hpOpen(env)); // v2.33: hp only while the Helping paws gate is open
     if (!yard) return fail('bad', 400);
     if (!(await frMine(env, me.id))) return fail('bad', 400);
     if (await limited(env, frKey.yard(me.id), 30, 3600)) return fail('rate_limited', 429);
@@ -1329,20 +1429,24 @@ const ROUTES = {
     if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
     const row = await one(env, 'select data from yards where user_id = ?1', them.user_id);
     if (!row) return json({ yard: null });
-    let yard = null; try { yard = frYard(JSON.parse(row.data)); } catch (e) { yard = null; }
+    let yard = null; try { yard = frYard(JSON.parse(row.data), true); } catch (e) { yard = null; } // a stored hp was checked when it came in
+    if (yard && yard.hp && !hpOpen(env)) delete yard.hp; // v2.33: shut (a gate closed again), the answer is the v2.32 one
     if (yard && (await shopFF(env, them.user_id))) yard.ff = 1; // v2.24: the Founding Friend badge, from purchases
     return json({ yard });
   } },
 
   'POST /friends/send': { auth: true, async fn({ env, ctx, body, me }) {
     await frTidySoon(env, ctx);
-    if (!frOnly(body, ['fid', 'kind'], ['data']) || !frFidOk(body.fid) || typeof body.kind !== 'string' || !FR_KINDS.includes(body.kind)) return fail('bad', 400);
+    // v2.33: the help kinds and note 12 only while the Helping paws gate is open (shut: 400 bad, as the v2.32 Worker)
+    const open = hpOpen(env), act = open && typeof body.kind === 'string' && HP_KINDS.includes(body.kind);
+    if (!frOnly(body, ['fid', 'kind'], ['data']) || !frFidOk(body.fid) || typeof body.kind !== 'string' || !(FR_KINDS.includes(body.kind) || act)) return fail('bad', 400);
     if (await limited(env, frKey.send(me.id), 60, 3600)) return fail('rate_limited', 429); // before any DB work
     if (!(await frMine(env, me.id))) return fail('bad', 400);
     const them = await frByFid(env, body.fid);
     if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
+    if (act) return hpSend(env, me, them, body);
     const dogs = body.kind === 'walk' ? await frSnapDogs(env, them.user_id) : null;
-    const data = body.kind === 'pet' ? frPet(body.data) : body.kind === 'note' ? frNote(body.data) : body.kind === 'gift' ? frGift(body.data) : frWalk(body.data, dogs);
+    const data = body.kind === 'pet' ? frPet(body.data) : body.kind === 'note' ? frNote(body.data, open ? FR_LIM.notes : FR_NOTES_OLD) : body.kind === 'gift' ? frGift(body.data) : frWalk(body.data, dogs);
     if (!data) return fail('bad', 400);
     const day = dcDay(Date.now());
     const dup = body.kind === 'gift'
@@ -1360,33 +1464,39 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'GET /friends/inbox': { auth: true, async fn({ env, ctx, me }) {
+  'GET /friends/inbox': { auth: true, async fn({ env, ctx, url, me }) {
     await frTidySoon(env, ctx);
     if (await limited(env, frKey.inbox(me.id), 120, 3600)) return fail('rate_limited', 429);
-    const now = Date.now();
+    const now = Date.now(), hp = url.searchParams.get('hp') === '1' && hpOpen(env); // v2.33: ?hp=1 (a v2.33 game) once the gate is open
     // Any inbox read drops events older than 30 days, for every player. The read itself counts as being seen today.
     // Pets and notes come first: gifts and walks over the daily letter caps stay unclaimed on purpose and must not crowd them out of the 30.
     await run(env, 'delete from friend_events where created_at < ?1', now - FR_KEEP);
+    await run(env, 'delete from friend_acts where created_at < ?1', now - FR_KEEP); // v2.33: helps and sleepovers too
     await run(env, 'update friend_ids set seen_at = ?1 where user_id = ?2', now, me.id);
+    // v2.33: a game without ?hp=1 knows FR_NOTES_OLD notes: a later one would sit unclaimed on its badge, so it is left out (and waits for the update)
+    const old = hp ? '' : ` and not (e.kind = 'note' and coalesce(json_extract(e.data, '$.i'), 0) >= ${FR_NOTES_OLD})`;
     const rows = await all(env, `select e.id as id, e.kind as kind, e.data as data, e.day as day, f.fid as fid, f.name_a as name_a, f.name_b as name_b
       from friend_events e join friend_ids f on f.user_id = e.from_id
-      where e.to_id = ?1 and e.claimed_at is null order by (e.kind in ('gift', 'walk')) asc, e.id asc limit ${FR_INBOX}`, me.id);
-    const events = [];
-    for (const r of rows) {
-      let data = null; try { data = JSON.parse(r.data); } catch (e) { data = null; }
-      events.push({ id: r.id | 0, from: { fid: r.fid, name: [r.name_a | 0, r.name_b | 0] }, kind: r.kind, data, day: r.day });
-    }
-    return json({ events });
+      where e.to_id = ?1 and e.claimed_at is null${old} order by (e.kind in ('gift', 'walk')) asc, e.id asc limit ${FR_INBOX}`, me.id);
+    const pub = (r) => { let data = null; try { data = JSON.parse(r.data); } catch (e) { data = null; } return { id: r.id | 0, from: { fid: r.fid, name: [r.name_a | 0, r.name_b | 0] }, kind: r.kind, data, day: r.day }; };
+    const events = rows.map(pub);
+    if (!hp) return json({ events });
+    // helps first, then sleepovers (a third guest of the day stays unclaimed on purpose and must not crowd the helps out of the 30)
+    const acts = (await all(env, `select a.id as id, a.kind as kind, a.data as data, a.day as day, f.fid as fid, f.name_a as name_a, f.name_b as name_b
+      from friend_acts a join friend_ids f on f.user_id = a.from_id
+      where a.to_id = ?1 and a.claimed_at is null order by (a.kind = 'sleep') asc, a.id asc limit ${FR_INBOX}`, me.id)).map(pub);
+    return json({ events, acts, hp: 1 });
   } },
 
   'POST /friends/inbox/claim': { auth: true, async fn({ env, ctx, body, me }) {
     await frTidySoon(env, ctx);
-    if (!frOnly(body, ['ids']) || !Array.isArray(body.ids) || body.ids.length > FR_INBOX) return fail('bad', 400);
-    if (body.ids.some((id) => !dcInt(id, 1, 1e15))) return fail('bad', 400);
+    const ids = (v) => Array.isArray(v) && v.length <= FR_INBOX && v.every((id) => dcInt(id, 1, 1e15));
+    if (!frOnly(body, ['ids'], hpOpen(env) ? ['acts'] : []) || !ids(body.ids) || (body.acts !== undefined && !ids(body.acts))) return fail('bad', 400); // v2.33: acts while the gate is open
     if (await limited(env, frKey.claim(me.id), 120, 3600)) return fail('rate_limited', 429);
-    const now = Date.now();
-    if (body.ids.length) await env.DB.batch(body.ids.map((id) =>
-      env.DB.prepare('update friend_events set claimed_at = ?1 where id = ?2 and to_id = ?3 and claimed_at is null').bind(now, id, me.id)));
+    const now = Date.now(), acts = body.acts || [];
+    if (body.ids.length || acts.length) await env.DB.batch(body.ids.map((id) =>
+      env.DB.prepare('update friend_events set claimed_at = ?1 where id = ?2 and to_id = ?3 and claimed_at is null').bind(now, id, me.id)).concat(acts.map((id) =>
+      env.DB.prepare('update friend_acts set claimed_at = ?1 where id = ?2 and to_id = ?3 and claimed_at is null').bind(now, id, me.id))));
     return json({ ok: true });
   } },
 
@@ -1400,6 +1510,7 @@ const ROUTES = {
       env.DB.prepare('delete from friend_blocks where user_id = ?1').bind(me.id),
       env.DB.prepare('delete from yards where user_id = ?1').bind(me.id),
       env.DB.prepare('delete from friend_events where from_id = ?1 or to_id = ?1').bind(me.id),
+      env.DB.prepare('delete from friend_acts where from_id = ?1 or to_id = ?1').bind(me.id), // v2.33
       env.DB.prepare('delete from friend_ids where user_id = ?1').bind(me.id)
     ]);
     return json({ ok: true });

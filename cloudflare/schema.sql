@@ -161,6 +161,26 @@ create unique index if not exists friend_events_gift on friend_events (from_id, 
 create index if not exists friend_events_inbox on friend_events (to_id, claimed_at);
 create index if not exists friend_events_age on friend_events (created_at); -- inbox read: delete older than 30 days
 
+-- v2.33 "Helping paws" (V233.md 2): helps (bowl, water, wish) and sleepovers. A new table, because friend_events.kind has a CHECK that
+-- SQLite cannot change without rebuilding the table. No CHECK on kind here: the Worker validates it (HP_KINDS), so a later kind needs no
+-- new table. claimed_at is null until the claim (a row to an official account is born claimed). Deleted like friend_events: the 30-day
+-- delete on an inbox read, remove/block (unclaimed, both ways), leave (sent and received) and frTidy.
+create table if not exists friend_acts (
+  id         integer primary key autoincrement,
+  to_id      text not null,
+  from_id    text not null,
+  kind       text not null,             -- bowl, water, wish or sleep (worker.js HP_KINDS)
+  data       text not null,             -- JSON, validated indexes only
+  day        text not null,             -- Japan day, YYYY-MM-DD
+  created_at integer not null,          -- ms
+  claimed_at integer                    -- ms; null until claimed
+);
+-- helps: once per (from, to, kind, Japan day). sleep: once per (from, Japan day), to anyone.
+create unique index if not exists friend_acts_pair on friend_acts (from_id, to_id, kind, day) where kind != 'sleep';
+create unique index if not exists friend_acts_sleep on friend_acts (from_id, kind, day) where kind = 'sleep';
+create index if not exists friend_acts_inbox on friend_acts (to_id, claimed_at);
+create index if not exists friend_acts_age on friend_acts (created_at);
+
 -- Kind shop (v2.24, V224.md 4). One row per paid Stripe Checkout Session, written only by the Stripe webhook (POST /shop/webhook),
 -- idempotent on the session id. refunded_at is set by charge.refunded (a full refund), matched on payment_intent.
 -- A deleted account's purchases go with it (tidy(): user_id not in users); Stripe, the merchant of record, keeps its own records.
