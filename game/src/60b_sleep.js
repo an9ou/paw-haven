@@ -179,8 +179,8 @@ function slGuestSVG(o, i) {
 // world boxes [x0, y0, x1, y1] of what a guest must keep clear of (the drawn dog and its tag): every dog in the scene, a yard visitor, the
 // Dog Card visitors, the mailbox, the bowl, every small tappable thing, the place buttons and chips
 function slObstacles(svg, M) {
-  const out = [], wb = (el) => { const b = rmWorldBox(svg, M, el); if (b && b[2] > 2 && b[3] > 2) out.push([b[0], b[1], b[0] + b[2], b[1] + b[3]]); };
-  svg.querySelectorAll('#visitorG, #mailboxG, #bowlG').forEach(wb); // my own dogs: slSpot keeps clear of my leader, the pack steps aside (rmValidate); a yard visitor stands still
+  const out = [], wb = (el, keep) => { const b = rmWorldBox(svg, M, el); if (b && b[2] > 2 && b[3] > 2) { const o = [b[0], b[1], b[0] + b[2], b[1] + b[3]]; if (keep) o.keep = 1; out.push(o); } };
+  svg.querySelectorAll('#visitorG, #mailboxG, #bowlG, #dcVis .dcvis:not([style*="none"])').forEach((el) => { wb(el, true); if (!/^(mailboxG|bowlG)$/.test(el.id)) out[out.length - 1].dog = 1; }); // my own dogs: slSpot keeps clear of my leader, the pack steps aside (rmValidate); a yard visitor stands still
   (RM.no || []).forEach((b) => { if (/^hpGuest/.test(b[4]) || b[4] === 'scene' || b[4] === 'dctag') return; const o = [b[0], b[1], b[0] + b[2], b[1] + b[3]]; if (b[4] === 'house' || b[4] === 'houseG' || b[2] * b[3] >= RM_HUGE) o.big = 1; out.push(o); });
   ['#status', '#ddWish:not([hidden])', '#placeBtns .btn', '#phPeek', '#rmLookL', '#rmLookR', '#msBtn'].forEach((q) => document.querySelectorAll(q).forEach((el) => { if (el.hidden || !el.getClientRects().length) return; wb(el); }));
   return out;
@@ -206,7 +206,7 @@ const slAt = (r, x, y) => [r[0] + x, r[1] + y, r[2] + x, r[3] + y];
 // the leader's drawn box now (world), for the one-crop rule
 function slLeadBox(svg, M) { const el = rmEl(D()) || $('#dogG'); const b = el ? rmWorldBox(svg, M, el) : null; return b ? [b[0], b[1], b[0] + b[2], b[1] + b[3]] : [343, 344, 517, 505]; }
 // where guest i stands: the free spot nearest HP_SPOTS[i] (see HP_SPOTS); null: none clear
-function slSpot(i, ext, ob, lead, win, W) {
+function slSpot(i, ext, ob, lead, win, W, lax) { // lax: only the dogs, a yard visitor, the mailbox and the bowl keep it off (its tag may touch the rest)
   const pref = HP_SPOTS[i] || HP_SPOTS[0], z = rmZoneOf(S.place);
   let best = null;
   for (let y = z.y0 + 6; y <= z.y1; y += 6) {
@@ -215,7 +215,7 @@ function slSpot(i, ext, ob, lead, win, W) {
       if (rmHard(x, y)) continue; // the feet: never on the house, the garden or anything tappable
       const face = x < (lead[0] + lead[2]) / 2 ? 'right' : 'left', e = ext[face], A = slAt(e.dog, x, y), T = slAt(e.tag, x, y);
       if (A[0] < win[0] + 4 || A[2] > win[2] - 4 || T[0] < win[0] + 4 || T[2] > win[2] - 4 || T[3] > win[3] - 2 || A[1] < win[1] + 2) continue;
-      if (ob.some((o) => (o.big ? y < o[3] + 6 && (slHit(A, o, 2) || slHit(T, o, 2)) : slHit(A, o, 4) || slHit(T, o, 4)))) continue; // a big thing (the dog house): only in front of it
+      if (ob.some((o) => (lax ? ((lax === 2 ? o.dog : o.keep) || (o.big && y < o[3] + 6)) && slHit(A, o, 2) : o.big ? y < o[3] + 6 && (slHit(A, o, 2) || slHit(T, o, 2)) : slHit(A, o, 4) || slHit(T, o, 4)))) continue; // a big thing (the dog house): only in front of it
       if (slHit(A, lead, 4) || slHit(T, lead, 4)) continue; // never over or under my leader
       if (W) { const L = Math.min(lead[0], A[0], T[0], ...SLV.spots.map((q) => q[0])), R = Math.max(lead[2], A[2], T[2], ...SLV.spots.map((q) => q[1])); if (R - L > W - 16) continue; } // phones: in one crop with my leader
       const s = -Math.hypot(x - pref[0], (y - pref[1]) * 1.4);
@@ -237,11 +237,11 @@ function slDraw() {
   const v = slView(svg, M), W = ph && vb && vb.width ? vb.width : 0, win = ph ? [0, v[1], 1000, v[3]] : v;
   list.slice(0, HP_GUESTS).forEach((g, i) => {
     const d = slGuestDog(g), pref = HP_SPOTS[i] || HP_SPOTS[0], k = slK(d, pref[1]), pose = g.pet ? 'happy' : 'sit', ext = slMeasure(svg, M, g, d, k, pose);
-    let at = slSpot(i, ext, ob, lead, win, W) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0); // no room in one crop: elsewhere in the yard (the camera pans to it)
+    let at = slSpot(i, ext, ob, lead, win, W) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0, true) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0, 2); // no room in one crop: elsewhere in the yard (the camera pans to it)
     if (!at) { const e = ext[pref[2]]; at = { x: pref[0], y: pref[1], face: pref[2], A: slAt(e.dog, pref[0], pref[1]), T: slAt(e.tag, pref[0], pref[1]) }; }
     const o = { g, d, x: at.x, y: at.y, face: at.face, k, pose, box: at.A, tag: at.T, hit: [at.A[0] - at.x, at.A[1] - at.y, at.A[2] - at.A[0], at.A[3] - at.A[1]] };
     SLV.drawn.push(o); SLV.spots.push([Math.min(at.A[0], at.T[0]), Math.max(at.A[2], at.T[2])]);
-    ob.push(at.A, at.T); // the next guest keeps clear of this one and its tag
+    const kA = at.A.slice(), kT = at.T.slice(); kA.keep = 1; kT.keep = 1; kA.dog = 1; ob.push(kA, kT); // the next guest keeps clear of this one and its tag
   });
   const keep = SLV.drawn.map((o) => { const [x0, y0, x1, y1] = o.box, h = (x1 - x0) / 2; return [0, 1].map((j) => `<rect class="hot sl-keep" x="${f1(x0 + j * h)}" y="${f1(y0)}" width="${f1(h)}" height="${f1(y1 - y0)}" fill="none" pointer-events="none"/>`).join(''); }).join(''); // the roam keeps the pack off each half (small things: 8%)
   pack.insertAdjacentHTML('beforebegin', `<g id="hpGuests">${keep}${SLV.drawn.map((o, i) => slGuestSVG(o, i)).join('')}</g>`);
@@ -260,8 +260,8 @@ function slCropFit() {
   if (!isPhone() || !slHere() || !SLV.drawn.length) return;
   const svg = $('#view > svg.world'), vb = svg && svg.viewBox.baseVal; if (!vb || !vb.width) return;
   const r = rmSt(D()), T = rmTapBox(r.hx, r.hy, rmK(r)), half = vb.width / 2;
-  const L = Math.min(T[0], ...SLV.spots.map((q) => q[0])) - 8, R = Math.max(T[0] + T[2], ...SLV.spots.map((q) => q[1])) + 8;
-  if (R - L > vb.width) return; // they do not fit together: the camera stays
+  let L = T[0] - 8, R = T[0] + T[2] + 8;
+  SLV.spots.forEach((q) => { const l = Math.min(L, q[0] - 8), r2 = Math.max(R, q[1] + 8); if (r2 - l <= vb.width) { L = l; R = r2; } }); // as many guests as fit, the first first
   const cx = clamp(clamp(phHomeCx, R - half, L + half), half, 1000 - half); if (Math.abs(cx - phHomeCx) < 1) return;
   phHomeCx = cx; if (!S.sleeping) { phCamHome = cx; camCx = cx; } camApply(camCx);
 }
