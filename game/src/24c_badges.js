@@ -159,6 +159,7 @@ function msPagesSync() {
   ms2Mine(); // a swapped S (clApply) starts with no remembered order, as a fresh load does
   try { if (typeof ffPagesSync === 'function') ffPagesSync(); } catch (e) { /* the fair is not ready */ }
   try { if (typeof nbPagesSync === 'function') nbPagesSync(); } catch (e) { /* part E: the two Notebook pages, before the Badges pages */ }
+  try { if (typeof hpPagesSync === 'function') hpPagesSync(); } catch (e) { /* v2.33: the Helping paws page, before the Badges pages (60_helps.js) */ }
   const want = ms2Ok() && Array.isArray(S.dogs) && S.dogs.length > 0, i0 = DD_PAGES.indexOf(MSB_PAGES[0]), end = DD_PAGES.length - MSB_PAGES.length;
   const old = MSB.order || DD_PAGES.slice();
   if (!want && i0 >= 0) DD_PAGES.splice(i0, MSB_PAGES.length);
@@ -168,6 +169,7 @@ function msPagesSync() {
     if (MSB.order && S.dd.pg && typeof S.dd.pg === 'object') { const g = {}; old.forEach((k, i) => { const j = DD_PAGES.indexOf(k); if (S.dd.pg[i] && j >= 0) g[j] = S.dd.pg[i]; }); Object.keys(S.dd.pg).forEach((k) => delete S.dd.pg[k]); Object.assign(S.dd.pg, g); markDirty(); }
   }
   MSB.order = DD_PAGES.slice();
+  try { if (typeof hpPagesKeep === 'function') hpPagesKeep(); } catch (e) { /* v2.33: the page gifts across loads (60_helps.js S.hp.pk) */ }
 }
 function msStickerAdd(add) {
   if (!S || !S.missions || !DD_PAGES.includes(MSB_PAGES[0])) return;

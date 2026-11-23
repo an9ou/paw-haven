@@ -17,7 +17,7 @@ const HP_BOND_MAX = 5, HP_GOTB_MAX = 5, HP_BOWLS = 3, HP_IDS = 90, HP_SL_KEEP = 
 // what each act kind does on the friend's side: HP_DO[kind](act) -> false to leave the act unclaimed for now (a third guest waits for
 // tomorrow), anything else = done (claimed, its id kept in S.hp.ids so it never applies twice). Parts 2 and 3 fill these in
 const HP_DO = {};
-const HP = { claimed: 0, gone: false }; // memory only: acts sent to the claim this load (tests); gone: a Worker that said hp: 1 then refused a help kind (V233.md 1): off for the rest of the load
+const HP = { claimed: 0, gone: false, pgFirst: false }; // memory only: acts sent to the claim this load (tests); gone: a Worker that said hp: 1 then refused a help kind (V233.md 1): off for the rest of the load
 
 function hpOn() {
   if (typeof frOn !== 'function' || !frOn()) return false;
@@ -40,6 +40,9 @@ function v233Fields(s) {
   h.sl = h.sl.filter((x) => x && typeof x === 'object' && !Array.isArray(x) && day(x.day)).slice(-HP_SL_KEEP);
   if (!Array.isArray(h.gu)) h.gu = [];
   h.gu = h.gu.filter((x) => x && typeof x === 'object' && !Array.isArray(x) && day(x.day)).slice(-HP_GUESTS);
+  // part 4 (V233.md 7): the page keys S.dd.pg is numbered by ([] = numbered without the "Helping paws" page) and that page's gift
+  if (!Array.isArray(h.pk) || h.pk.length > 80 || !h.pk.every((k) => typeof k === 'string' && k.length < 24)) h.pk = [];
+  str('pg');
   return s;
 }
 // the daily counters start again on a new Japan day (from frDay); only today's guests stay. Nothing while off
@@ -308,6 +311,7 @@ async function hpSend(kind, data) {
     if (S.hp.bond < HP_BOND_MAX) { S.hp.bond++; n = addBond(1, { raw: true }); }
     markDirty();
     toast(tt('hp.helped', '{dog} helped out!{n, plural, =0 {} other { +# Bond}}', { dog: NAME(), n }), 'good');
+    hpStick(); // 5, 25 and 100 helps
     if (cur.mode === 'fryard' && FRV.fid === fid) hpStripSync();
     return 'ok';
   }
@@ -459,6 +463,7 @@ function hpThx(ev) {
   v233Fields(S);
   if ((S.mail || []).some((m) => m && m.id === 'fr_note_' + ev.id)) return;
   S.hp.thx++; markDirty();
+  setTimeout(hpStick, 0); // the first thank-you note's sticker (after the letter is in the mailbox)
 }
 /* ---------- Say thanks on a help letter (07b_mailbox.js letterBody's action row): note 12, that day's note for that friend ---------- */
 function hpLetterAct(m) {
@@ -488,6 +493,67 @@ document.addEventListener('click', (e) => {
   hpThanks(b.dataset.hpthx, b);
 });
 
+/* ======================= part 4 (V233.md 7): the sticker page "Helping paws" =======================
+   Page key 'pals', six stickers. hpPagesSync (called by 24c_badges.js msPagesSync, after the Notebook pages) puts the page in the book while
+   hpOn(), before 'msb1' when it is there (else at the end), as nbPagesSync does; msPagesSync then moves the page gifts (S.dd.pg, by page
+   number) with their pages within this load. Across loads the page order can differ (hpOn() waits for the Worker's hp: 1, so the first sync
+   of a load may run without the page), so S.hp.pk keeps the page keys S.dd.pg was numbered by, and the first sync of a save maps the gifts
+   from that order to the book's (hpPagesKeep). The page's own gift is kept in S.hp.pg while the page is out (the gate shut again), so it is
+   never given twice. Nothing is written for a save that never had the page (the gate off: no S.hp writes). */
+const HP_PAGE = 'pals', HP_STK = ['h5', 'h25', 'h100', 'sl1', 'host', 'thx'];
+const HP_PG_COL = ['#F7B2C4', '#BDE7D2', '#FFE08A', '#CBE0F4', '#F9C99E', '#E0D5F0']; // the fallback paw stamps (TODO art fallback)
+function hpPagesSync() {
+  if (typeof DD_PAGES === 'undefined' || !S || !S.dd) return;
+  HP.pgFirst = typeof MSB === 'undefined' || !MSB.order; // msPagesSync's first sync of this save: S.dd.pg is still numbered by S.hp.pk
+  const want = hpOn() && Array.isArray(S.dogs) && S.dogs.length > 0, has = DD_PAGES.includes(HP_PAGE);
+  if (want && !has) { const i = DD_PAGES.indexOf('msb1'); if (i >= 0) DD_PAGES.splice(i, 0, HP_PAGE); else DD_PAGES.push(HP_PAGE); DD.defs = null; }
+  else if (!want && has) { DD_PAGES.splice(DD_PAGES.indexOf(HP_PAGE), 1); DD.defs = null; }
+}
+// S.dd.pg numbered by `from` -> numbered by `to` (page keys); a gift whose page is not in `to` is dropped (the page's own is in S.hp.pg)
+function hpPgMap(from, to) {
+  const pg = S.dd.pg; if (!pg || typeof pg !== 'object') return;
+  const g = {}; from.forEach((k, i) => { const j = to.indexOf(k); if (pg[i] && j >= 0) g[j] = pg[i]; });
+  Object.keys(pg).forEach((k) => delete pg[k]); Object.assign(pg, g); markDirty();
+}
+// after msPagesSync has ordered the book (24c_badges.js): the first sync of a save maps the gifts from S.hp.pk, the page's gift is kept, S.hp.pk follows the book
+function hpPagesKeep() {
+  if (typeof DD_PAGES === 'undefined' || !S || !S.dd || !S.hp) return;
+  v233Fields(S);
+  const h = S.hp, now = DD_PAGES.slice(), pk = h.pk.length ? h.pk : null, i = now.indexOf(HP_PAGE);
+  if (HP.pgFirst) {
+    HP.pgFirst = false;
+    const from = pk || now.filter((k) => k !== HP_PAGE); // no S.hp.pk: a save from before the page (numbered without it)
+    if (from.join() !== now.join()) hpPgMap(from, now);
+  }
+  if (i >= 0 && S.dd.pg) {
+    const g = S.dd.pg[i];
+    if (g && h.pg !== g) { h.pg = g; markDirty(); } else if (!g && h.pg) { S.dd.pg[i] = h.pg; markDirty(); } // back in the book: its gift with it
+  }
+  if ((i >= 0 || pk) && (!pk || pk.join() !== now.join())) { h.pk = now; markDirty(); }
+}
+// 48_dogdays.js ddStickerDefs: the six stickers, only while the page is in the book
+function hpStickerAdd(add) {
+  if (!S || !S.hp || typeof DD_PAGES === 'undefined' || !DD_PAGES.includes(HP_PAGE)) return;
+  const pg = DD_PAGES.indexOf(HP_PAGE), hp = () => (S.hp && typeof S.hp === 'object' ? S.hp : {});
+  [5, 25, 100].forEach((n) => add('hp_h' + n, pg, 'h:h' + n, () => tt('hp.st_helps', '{n, plural, one {# help} other {# helps}}', { n }), () => (hp().n || 0) >= n));
+  add('hp_sl1', pg, 'h:sl1', () => tt('hp.st_sleep', 'The first sleepover'), () => Array.isArray(hp().sl) && hp().sl.some((r) => r && r.home));
+  add('hp_host', pg, 'h:host', () => tt('hp.st_host', 'A sleepover guest'), () => (hp().host || 0) >= 1);
+  add('hp_thx', pg, 'h:thx', () => tt('hp.st_thx', 'A thank-you note'), () => (hp().thx || 0) >= 1);
+}
+function hpPageTitle() { return tt('hp.pg', 'Helping paws'); }
+// a sticker face (48_dogdays.js ddStArt, art prefix 'h:'): PawArt.FRIENDS.stk, else a paw stamp in the sticker's colour
+function hpStArt(n) {
+  let a = ''; try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.stk === 'function') a = P.FRIENDS.stk(n); } catch (e) { a = ''; }
+  if (a) return a;
+  const c = HP_PG_COL[Math.max(0, HP_STK.indexOf(n))];
+  return typeof fwPawSVG === 'function' ? fwPawSVG(c) : ICON('pet'); // TODO art fallback
+}
+// a count went up (a help, a thank-you note, a guest): the page first (it may have just come into the book), then the stickers with their toast
+function hpStick() {
+  if (!S || !hpOn()) return [];
+  try { if (typeof msPagesSync === 'function') msPagesSync(); return typeof ddStickers === 'function' ? ddStickers(false) : []; } catch (e) { return []; } // the book is not ready
+}
+
 /* ---------------- test hook ---------------- */
 function hpExpose() {
   if (!window.__paw || window.__paw.hp) return;
@@ -500,6 +566,8 @@ function hpExpose() {
     caps: { bond: HP_BOND_MAX, gotB: HP_GOTB_MAX, bowls: HP_BOWLS, ids: HP_IDS, sl: HP_SL_KEEP, guests: HP_GUESTS },
     // part 2: the visit's helps (a tap as the strip's or a prop's), the snack sheet, the spots, the state the visit shows; gone(false) undoes a rolled-back Worker
     tap: (k, from) => hpTap(k, from || 'prop'), snack: () => hpSnackSheet(), thanks: (fid) => hpThanks(fid, null), gone: (v) => { if (v !== undefined) HP.gone = !!v; return HP.gone; },
+    // part 4: the sticker page (the book's page keys, the stickers now), S.hp.pk
+    pages: () => DD_PAGES.slice(), stick: () => hpStick().map((x) => x.id), page: HP_PAGE, art: (k) => hpStArt(k),
     bowlSpot: () => hpBowlSpot(), spots: () => ({ bowl: HP_BOWL.slice(), at: HPV.bowl ? HPV.bowl.slice() : null, can: HP_CAN.slice(), hunger: HP_HUNGER, note: HP_NOTE }), busy: () => HPV.busy,
     visit: () => ({ on: hpVisitOn(), strip: [...document.querySelectorAll('#hpStrip [data-hpk]')].map((b) => ({ k: b.dataset.hpk, done: b.classList.contains('done'), rest: b.classList.contains('rest') })),
       props: [...document.querySelectorAll('#view .hp-prop[data-hp]')].map((g) => g.dataset.hp), patch: (document.querySelector('#sceneG') || { dataset: {} }).dataset.extra || '', wish: HPV.wish ? Object.assign({}, HPV.wish) : null,

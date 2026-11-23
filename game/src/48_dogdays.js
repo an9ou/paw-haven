@@ -359,6 +359,7 @@ function ddPageTitle(i) {
     case 'fair': case 'ribbons': return ffPageTitle(DD_PAGES[i]); // v2.18 (49_funfair.js)
     case 'msb1': case 'msb2': case 'msb3': return msPageTitle(DD_PAGES[i]); // v2.20 Badges (24c_badges.js)
     case 'nb1': case 'nb2': return nbPageTitle(DD_PAGES[i]); // v2.20 the notebook (24e_notebook.js)
+    case 'pals': return hpPageTitle(); // v2.33 Helping paws (60_helps.js)
     default: return tt('dd.pg_year', 'A year of paws');
   }
 }
@@ -383,7 +384,7 @@ function ddStLabel(k) {
     default: return k;
   }
 }
-// [id, page, art, label, test]. Art: 'i:name' an icon, 't:name' an item, 's:key' a Tokyo station stamp, 'c:n' a calendar, 'p:#colour' a paw stamp
+// [id, page, art, label, test]. Art: 'i:name' an icon, 't:name' an item, 's:key' a Tokyo station stamp, 'c:n' a calendar, 'p:#colour' a paw stamp, 'h:k' a Helping paws sticker
 function ddStickerDefs() {
   if (DD.defs) return DD.defs;
   const L = [], c = (k) => (S.dd.cnt[k] || 0), v = (k) => !!S.dd.pv[k], add = (id, pg, a, label, test) => L.push({ id, pg, a, label, test });
@@ -414,6 +415,7 @@ function ddStickerDefs() {
   [2, 3, 4, 6, 9, 12].forEach((n, i) => add('m' + n, 11, 'p:' + ['#C8E9CF', '#FFE3A1', '#F9C99E', '#CBE0F4', '#E0D5F0', '#F28FA5'][i], () => tt('dd.st_months', '{n, plural, one {Paws in # month} other {Paws in # months}}', { n }), () => ddArr(S.dd.mo).length >= n));
   if (typeof ffStickerAdd === 'function') ffStickerAdd(add); // v2.18: the Fun Fair and Ribbons pages (49_funfair.js), only while ffOn()
   if (typeof nbStickerAdd === 'function') nbStickerAdd(add); // v2.20: the two Notebook pages (24e_notebook.js), a new player's only
+  if (typeof hpStickerAdd === 'function') hpStickerAdd(add); // v2.33: the Helping paws page (60_helps.js), only while hpOn()
   if (typeof msStickerAdd === 'function') msStickerAdd(add); // v2.20: the three Badges pages (24c_badges.js), after the Fun Fair pages
   DD.defs = L; return L;
 }
@@ -423,6 +425,7 @@ function ddStArt(a) {
   if (t === 's') return artReal('prop', 'ekistamp', { key: n, got: true }) || ICON('star');
   if (t === 'c') return `<span class="dd-cal">${typeof fwCalIcon === 'function' ? fwCalIcon() : ICON('star')}<b>${tnum(+n)}</b></span>`;
   if (t === 'p') return typeof fwPawSVG === 'function' ? fwPawSVG(n) : ICON('pet');
+  if (t === 'h') return typeof hpStArt === 'function' ? hpStArt(n) : ICON('heart'); // v2.33: the Helping paws stickers (60_helps.js)
   return iconOr(n, doodle('paw', 0, 2, 1.1));
 }
 // award every sticker whose test now holds; a full page gives its gift. quiet: no toasts (the caller names the sticker)
