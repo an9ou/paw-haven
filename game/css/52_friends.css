@@ -60,6 +60,9 @@ html[data-layout="phone"] .fr-nm{font-size:22px}
 #view .frdog:focus,#view .frdog:focus-visible{outline:none}
 #view .frdog:focus-visible .fr-hit{stroke:#F28FA5;stroke-width:4;stroke-dasharray:8 6}
 #placeBtns.fr-pbtns .btn{min-height:44px;min-width:44px}
+/* v2.33 fit: phones keep the place chip on one line (19_phone_v15b.css), but in a friend's yard a long "<name>'s yard" wraps inside the name
+   (the time and the weather icon never get cut; the help strip #hpStrip follows the chip's height, 60_helps.js) */
+html[data-layout="phone"] #stage.frvisit #status .pname{white-space:normal;overflow-wrap:anywhere}
 #placeBtns.fr-pbtns .btn.soon{opacity:1;filter:saturate(.35);cursor:default}
 .fr-notes{display:flex;flex-direction:column;gap:8px;min-width:0}
 .fr-notes p{margin:0}
@@ -111,6 +114,7 @@ html[data-layout="phone"] #stage.frvisit #phPeek.back svg{transform:none}
 .toast.fr-undo .btn{min-height:44px;min-width:44px;padding:4px 12px}
 .fr-head.fr-nohead{padding:4px;box-sizing:border-box}
 html[data-layout="phone"] #modal .panel.frsheet .panel-body{padding-bottom:14px}
+html[data-layout="phone"] #modal .panel.frsheet .confirm p{padding:0 5px;min-width:0} /* v2.33 fit: side room from the confirm's pencil line (CJK and Thai lines ran 7 px from it at 684 px), the words wrap */
 /* fit audit (2 Nov 2026). 3: names and gift labels break between words, never inside one: the name has a zero-width space between its two words in
    ja/zh/th (frPairParts), CJK keeps each word whole (keep-all) and only a word wider than its whole line is cut; no line starts with ッ or ー (strict).
    Gift cells get two columns on CJK phones, and CJK names are 20 px in the phone list. 4: the Undo button stays on one line. 5: the count sits inside the cell's crayon line. 6: Thai marks clear the button's top line */
