@@ -91,6 +91,13 @@ function shPair(cw, pal, pex, d, ex, cx = 431, dy = 0) {
   const A = cx - (16 + wk * s) / 2 - P[0] * 300 * s, mx = A + 16 + gapK * s;
   return { pal: { x: A, y: 574 + dy - 250 * s, w: 300 * s, h: 250 * s }, me: { x: mx, y: 598 + dy - 284 * s, w: 340 * s, h: 284 * s }, span: [A + P[0] * 300 * s, mx + M[1] * 340 * s] };
 }
+// v2.33 fix (review 7): with a pal (the sleepover) the crop keeps the friend's house (FR_HOUSE_AT, x 620-860) whole at its right edge, so the
+// picture reads as their yard, and the pair stands in front of it on the left (my dog's back reaches the house's left side, SH_PAL_R); both whole
+const SH_PAL_R = 700;
+function shPalLay(win, pal, pex, d, ex) {
+  const cw = Math.min(1000, (600 * win[2]) / win[3]), hr = (typeof FR_HOUSE_AT !== 'undefined' ? FR_HOUSE_AT[0] + FR_HOUSE_AT[2] : 860) + 14, x0 = clamp(hr - cw, 0, 1000 - cw);
+  return { PR: shPair(SH_PAL_R - x0 + 16, pal, pex, d, ex, (x0 + SH_PAL_R) / 2 + 8), vb: [f1(x0), 0, f1(cw), 600] };
+}
 // the yard crop in scene units: the full height, as wide as the window's shape; the dog and its house side by side where they fit, else the whole dog first
 function shCrop(win, span) {
   span = span || SH_SPAN;
@@ -108,16 +115,16 @@ function shChip(x, y, k, anchor) {
 function shSVG(o) {
   o = o || {}; const d = shDog(o); if (!d) return '';
   const size = SH_SIZES[o.size === 'story' ? 'story' : 'feed'], L = SH_LAY[o.size === 'story' ? 'story' : 'feed'], W = size.w, H = size.h, win = L.win, pal = o.pal && o.pal.key ? o.pal : null;
-  const pose = o.pose || 'happy', ex = { pose, outfit: shOutfit(d, o), facing: pal ? 'left' : 'right', anim: false }, pex = pal ? { pose: 'sit', outfit: pal.outfit, facing: 'right', anim: false } : null; // with a pal: mine turns to it
-  if (shWet(d, o)) ex.wet = true;
-  const PR = pal ? shPair(Math.min(1000, (600 * win[2]) / win[3]), pal, pex, d, ex) : null, vb = shCrop(win, PR ? PR.span : null);
+  const pose = o.pose || 'happy', pex = pal ? { pose: 'sit', outfit: pal.outfit, facing: 'right', anim: false } : null; // with a pal: mine turns to it
+  let ex = null; try { ex = { pose, outfit: shOutfit(d, o), facing: pal ? 'left' : 'right', anim: false }; if (shWet(d, o)) ex.wet = true; } catch (e) { ex = null; } // a throw here loses the dog, never the picture
+  const PL = pal && ex ? shPalLay(win, pal, pex, d, ex) : null, PR = PL && PL.PR, vb = PL ? PL.vb : shCrop(win);
   let dog = '';
-  if (pal) { // v2.33: the friend's dog, left of mine and behind it (its art's label never goes in the file)
+  if (PR) { // v2.33: the friend's dog, left of mine and behind it (its art's label never goes in the file)
     try { dog += place(dogSVG(pal, pex).replace(/\s(?:role|aria-label)="[^"]*"/g, ''), PR.pal.x, PR.pal.y, PR.pal.w, PR.pal.h); } catch (e) { /* no pal */ }
   }
   try {
     const B = PR ? PR.me : SH_DOG;
-    dog += place(dogSVG(d, ex).replace(/\s(?:role|aria-label)="[^"]*"/g, ''), B.x, B.y, B.w, B.h); // the art's label carries the name: never in the file unless asked
+    if (ex) dog += place(dogSVG(d, ex).replace(/\s(?:role|aria-label)="[^"]*"/g, ''), B.x, B.y, B.w, B.h); // the art's label carries the name: never in the file unless asked
   } catch (e) { /* no dog */ }
   const own = typeof o.yard === 'string' && o.yard; // v2.33: a yard drawn by the caller (the sleepover's picture, scene units): no wash of today's light and weather over it
   const scene = `<svg x="${win[0]}" y="${win[1]}" width="${win[2]}" height="${win[3]}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMax slice" overflow="hidden"><rect x="${vb[0]}" y="0" width="${vb[2]}" height="600" fill="#D3E9F6"/>${own || shYardInner()}${dog}${own ? '' : shWash(vb)}</svg>`;

@@ -438,16 +438,51 @@ function slLines(p) {
 /* ---------------- the picture (drawn from the recipe at display time; nothing stored, no friend name, no text) ---------------- */
 // the yard without dogs, in scene units 0 0 1000 600: their season at dusk, their house, the decoration, the moon and three stars. Generic: the
 // default yard and house (index 1). 58_share.js draws it as the share picture's yard (opts.yard) with the dogs on top
+// review fixes: night without the sun and its clouds (slPicSky); the moon right of the diary's "Sleepover!" stamp; the decoration moved into
+// the part of the yard every crop shows (SL_PIC_X: the diary and both share sizes, 58_share.js shPalLay), on the ground beside their house
+const SL_PIC_X = [370, 870];
+function slDecorAt(at) {
+  const [x0, x1] = SL_PIC_X, w = Math.min(at[2], x1 - x0), ground = at[1] + at[3] > 470;
+  return [ground ? FR_HOUSE_AT[0] + FR_HOUSE_AT[2] + 2 - w : clamp(at[0], x0, x1 - w), at[1], w, at[3] * (w / at[2]), ground]; // on the ground: in front of the house's right side, clear of the pair
+}
 function slPicInner(sl) {
   const gen = slGeneric(sl), env = { time: 'dusk', weather: 'sunny', season: !gen && SEASONS.includes(sl.s) ? sl.s : seasonNow() };
   let s = '';
-  try { s += sceneArt('yard', env, { patch: 'empty' }); } catch (e) { s += '<rect width="1000" height="600" fill="#CFE8B8"/>'; }
-  const de = gen ? '' : slDecor(sl);
-  if (de) try { const at = HM_DECOR[de].at; s += place(frDecorArt(de), at[0], at[1], at[2], at[3]); } catch (e) { /* no decoration art */ }
+  try { s += slPicSky(sceneArt('yard', env, { patch: 'empty' }), env.season); } catch (e) { s += '<rect width="1000" height="600" fill="#CFE8B8"/>'; }
+  const de = gen ? '' : slDecor(sl); let deS = '', A = null;
+  if (de) try { A = slDecorAt(HM_DECOR[de].at); deS = place(frDecorArt(de), A[0], A[1], A[2], A[3]); } catch (e) { deS = ''; } // no decoration art
+  if (deS && !A[4]) s += deS; // hanging or at the back: behind the house
   try { s += place(art('house', FR_HOUSES[gen ? 1 : sl.h]), ...FR_HOUSE_AT); } catch (e) { /* no house art */ }
-  s += `<g class="sl-sky">${place(slMoon(), 452, 52, 88, 88)}${doodle('spark', 590, 72, 1.5)}${doodle('spark', 640, 140, 1.1)}${doodle('spark', 330, 150, 1.2)}</g>`;
+  if (deS && A[4]) s += deS; // on the ground: in front of it
+  s += `<g class="sl-sky">${place(slMoon(), 572, 50, 88, 88)}${doodle('spark', 700, 74, 1.5)}${doodle('spark', 770, 156, 1.1)}${doodle('spark', 486, 146, 1.2)}</g>`;
   s = slPicTidy(s);
   return s.replace(/<text\b[^>]*>[\s\S]*?<\/text>/g, '').replace(/\s(?:on[a-z]+|tabindex|role|aria-label)="[^"]*"/gi, '').replace(/\s(?:xlink:)?href="(?!#|data:)[^"]*"/g, '');
+}
+// the yard's dusk sky without its setting sun (its glow, face and rays), its two clouds and its birds: the picture is a night (world A's yard
+// sky: low sun 770, 268; clouds 520, 80 and 760, 140; birds 640, 70 and 668, 86, and the autumn flock by 720, 92). The sky comes first in the art, before anything below y 380;
+// only those small sky pieces wholly inside one of these circles go. Measured once per season (getBBox, off screen)
+const SL_SKY_CUT = [[770, 268, 112], [520, 80, 54], [760, 140, 40], [640, 70, 20], [668, 86, 18], [720, 92, 44]], SL_SKY_MEMO = new Map();
+function slPicSky(s, season) {
+  const key = season + '|' + s.length; if (SL_SKY_MEMO.has(key)) return SL_SKY_MEMO.get(key);
+  let out = s, host = null;
+  try {
+    host = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); host.setAttribute('viewBox', '0 0 1000 600'); host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:fixed;left:-3000px;top:0;width:1000px;height:600px;visibility:hidden;pointer-events:none'; host.innerHTML = s; document.body.appendChild(host);
+    const root = [...host.querySelectorAll('svg')].find((x) => x.querySelector(':scope > defs')) || null;
+    if (root) {
+      for (const el of [...root.children]) {
+        if (/^(defs|style|title)$/i.test(el.tagName)) continue;
+        let b = null; try { b = el.getBBox(); } catch (e) { b = null; } if (!b || (!b.width && !b.height)) continue;
+        if (b.width >= 900) continue; // the sky's own colour and its streaks
+        if (b.y + b.height > 381) break; // the yard itself: the sky is done
+        if (!el.hasAttribute('transform') && SL_SKY_CUT.some(([x, y, r]) => [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].every(([px, py]) => Math.hypot(px - x, py - y) <= r))) el.remove();
+      }
+      out = host.innerHTML;
+    }
+  } catch (e) { out = s; }
+  if (host) host.remove();
+  SL_SKY_MEMO.set(key, out); if (SL_SKY_MEMO.size > 8) SL_SKY_MEMO.delete(SL_SKY_MEMO.keys().next().value);
+  return out;
 }
 // the yard scene's game parts are not in a picture: a tappable spot (data-hot: the veggie patch's "garden" tag and the pink dashed outline the game
 // shows on hover, which a share file or the diary would draw as a box) and any hover outline; the yard under them stays as it is
@@ -473,7 +508,7 @@ function slPicSVG(sl) {
   let me = dogById(sl.my);
   if (!me && sl.me) { try { me = dcDog({ id: 'hpme:' + sl.day, name: [0, 0], dogs: [sl.me] }, 0); } catch (e) { me = null; } } // no longer mine: its card look
   let dogs = '';
-  if (pal && me) { const pe = slPicEx(pal, 'right', 'sit'), me2 = slPicEx(me, 'left', 'happy'), P = shPair(SL_PIC.vb[2] - 40, pal, pe, me, me2, SL_PIC.vb[0] + SL_PIC.vb[2] / 2, -30); dogs = slPicDog(pal, pe, P.pal) + slPicDog(me, me2, P.me); }
+  if (pal && me) { const pe = slPicEx(pal, 'right', 'sit'), me2 = slPicEx(me, 'left', 'happy'), x0 = SL_PIC.vb[0], P = shPair(SH_PAL_R - x0 + 16, pal, pe, me, me2, (x0 + SH_PAL_R) / 2 + 8, -30); dogs = slPicDog(pal, pe, P.pal) + slPicDog(me, me2, P.me); } // as the share picture: the pair left of their house (58_share.js shPalLay)
   else if (me) { const [x, y, w, h] = SL_PIC.me; dogs = slPicDog(me, slPicEx(me, 'right', 'happy'), { x, y, w, h }); }
   return `<svg class="sl-picsvg" viewBox="${SL_PIC.vb.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(tt('hp.d_title', 'Sleepover!'))}"><rect x="0" y="0" width="1000" height="600" fill="#D3E9F6"/>${slPicInner(sl)}${dogs}</svg>`;
 }
