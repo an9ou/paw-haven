@@ -163,19 +163,19 @@ function slTagLines(txt, fs, max) {
   (cut.length ? cut : [Math.ceil(txt.length / 2)]).forEach((i) => { const a = txt.slice(0, i).trim(), b = txt.slice(i).trim(), v = Math.max(W(a), W(b)); if (a && b && (!best || v < best.v)) best = { v, l: [a, b] }; });
   return best ? best.l : [txt];
 }
-function slGuestInner(g, d, k, face, pose, ty) { // ty: the tag's top (feet at 0): under the feet by default, over the head where under has no room (slMeasure)
-  const fs = slTagFs(), name = slName(g.f), lines = slTagLines(tt('hp.g_tag', '{dog}, from {name}', { dog: d.name, name }), fs, Math.max(150, 190 * k)), tw = Math.max(...lines.map((l) => frTextW(l, fs, "'Caveat',cursive", 700)));
+function slGuestInner(g, d, k, face, pose, ty, tw0) { // ty: the tag's top (feet at 0): under the feet by default, over the head where under has no room (slMeasure); tw0: the text's width as drawn (slMeasure)
+  const fs = slTagFs(), name = slName(g.f), lines = slTagLines(tt('hp.g_tag', '{dog}, from {name}', { dog: d.name, name }), fs, Math.max(150, 190 * k)), tw = Math.max(tw0 || 0, ...lines.map((l) => frTextW(l, fs, "'Caveat',cursive", 700)));
   const rb = fs * 1.5, w = tw + fs * 1.1 + rb * 0.7, h = fs * (0.42 + lines.length), x0 = -w / 2, tx = x0 + rb * 0.7 + (w - rb * 0.7) / 2;
   const dog = `<g class="sl-gart" transform="scale(${k.toFixed(3)}) translate(-430 -500)">${place(dogSVG(d, wetOpt(d, { pose, outfit: d.outfit, facing: face })), DX, DY, DW, DH)}</g>`;
   const tag = `<g class="sl-tag" pointer-events="none" transform="translate(0 ${f1(ty == null ? fs * 0.25 : ty)})"><rect x="${f1(x0)}" y="0" width="${f1(w)}" height="${f1(h)}" rx="${f1(fs * 0.42)}" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/>`
     + `<text text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">${lines.map((l, i) => `<tspan x="${f1(tx)}" y="${f1(fs * (0.98 + i))}">${esc(l)}</tspan>`).join('')}</text>`
     + `<g class="sl-rib">${place(frRibbonSVG(), x0 - rb * 0.3, h / 2 - rb / 2, rb, rb)}</g></g>`;
-  return dog + tag;
+  return ty === false ? dog : dog + tag; // false: no room for a tag anywhere (slSpot lax 3): the dog alone, its card on a tap as ever
 }
 function slGuestSVG(o, i) {
   const { g, d } = o, name = slName(g.f);
   return `<g class="hp-guest hot" id="hpGuest${i}" data-slg="${g.id}" tabindex="0" role="button" transform="translate(${f1(o.x)} ${f1(o.y)})" aria-label="${esc(tt('hp.g_aria', '{dog} from {name}, sleeping over. Tap to say hello.', { dog: d.name, name }))}">`
-    + `<rect class="sl-hit" x="${f1(o.hit[0])}" y="${f1(o.hit[1])}" width="${f1(o.hit[2])}" height="${f1(o.hit[3])}" fill="transparent"/><g class="sl-in">${slGuestInner(g, d, o.k, o.face, o.pose, o.ty)}</g></g>`;
+    + `<rect class="sl-hit" x="${f1(o.hit[0])}" y="${f1(o.hit[1])}" width="${f1(o.hit[2])}" height="${f1(o.hit[3])}" fill="transparent"/><g class="sl-in">${slGuestInner(g, d, o.k, o.face, o.pose, o.ty, o.tw)}</g></g>`;
 }
 // world boxes [x0, y0, x1, y1] of what a guest must keep clear of (the drawn dog and its tag): every dog in the scene, a yard visitor, the
 // Dog Card visitors, the mailbox, the bowl, every small tappable thing, the place buttons and chips
@@ -198,9 +198,11 @@ function slMeasure(svg, M, g, d, k, pose) {
   const out = {};
   ['left', 'right'].forEach((face) => {
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'g'); t.setAttribute('transform', 'translate(500 300)'); t.setAttribute('opacity', '0'); t.innerHTML = slGuestInner(g, d, k, face, pose); svg.appendChild(t);
+    let tw = 0; try { t.querySelectorAll('.sl-tag tspan').forEach((x) => { tw = Math.max(tw, x.getComputedTextLength()); }); } catch (e) { tw = 0; } // the text as the browser draws it (another font for the language, a wide word): the chip fits it
+    if (tw) t.innerHTML = slGuestInner(g, d, k, face, pose, null, tw + 2);
     const a = rmWorldBox(svg, M, t.querySelector('.sl-gart')) || [0, 0, 0, 0], b = rmWorldBox(svg, M, t.querySelector('.sl-tag')) || [0, 0, 0, 0]; t.remove();
     const dog = [a[0] - 500, a[1] - 300, a[0] + a[2] - 500, a[1] + a[3] - 300], tag = [b[0] - 500, b[1] - 300, b[0] + b[2] - 500, b[1] + b[3] - 300], sh = dog[1] - 6 - tag[3];
-    out[face] = { dog, tag, up: [tag[0], tag[1] + sh, tag[2], tag[3] + sh], ty: slTagFs() * 0.25, tyUp: slTagFs() * 0.25 + sh };
+    out[face] = { dog, tag, up: [tag[0], tag[1] + sh, tag[2], tag[3] + sh], ty: slTagFs() * 0.25, tyUp: slTagFs() * 0.25 + sh, tw: tw ? tw + 2 : 0 };
   });
   return out;
 }
@@ -212,8 +214,8 @@ function slLeadBox(svg, M) { const el = rmEl(D()) || $('#dogG'); const b = el ? 
 function slSpot(i, ext, ob, lead, win, W, lax) { // lax: only the dogs, a yard visitor, the mailbox and the bowl keep it off (its tag may touch the rest)
   const z = rmZoneOf(S.place), lc = (lead[0] + lead[2]) / 2, side = lc < 500 ? 1 : -1;
   const pref = W ? [side > 0 ? lead[2] + 70 + i * 150 : lead[0] - 70 - i * 150, Math.min(z.y1, 538)] : HP_SPOTS[i] || HP_SPOTS[0]; // phones: close beside my leader, the second beside the first (both in one crop)
-  const hitA = (A, y) => ob.some((o) => (lax ? ((lax === 2 ? o.dog : o.keep) || (o.big && y < o[3] + 6)) && slHit(A, o, 2) : o.big ? y < o[3] + 6 && slHit(A, o, 2) : slHit(A, o, 4))); // a big thing (the dog house): only in front of it
-  const hitT = (T, y) => !lax && ob.some((o) => (o.big ? y < o[3] + 6 && slHit(T, o, 2) : slHit(T, o, 4)));
+  const hitA = (A, y) => ob.some((o) => (lax ? ((lax === 2 ? o.dog || o.gu : o.keep) || (o.big && y < o[3] + 6)) && slHit(A, o, 2) : o.big ? y < o[3] + 6 && slHit(A, o, 2) : slHit(A, o, 4))); // a big thing (the dog house): only in front of it
+  const hitT = (T, y) => ob.some((o) => (lax ? o.gu && slHit(T, o, 2) : o.big ? y < o[3] + 6 && slHit(T, o, 2) : slHit(T, o, 4))); // lax: a tag still never covers another guest or its tag
   let best = null;
   for (let y = z.y0 + 6; y <= z.y1; y += 6) {
     for (let x = z.x0; x <= z.x1; x += 6) {
@@ -223,6 +225,7 @@ function slSpot(i, ext, ob, lead, win, W, lax) { // lax: only the dogs, a yard v
       if (best && s0 <= best.s) continue;
       if (A[0] < win[0] + 4 || A[2] > win[2] - 4 || A[1] < win[1] + 2) continue;
       if (hitA(A, y) || slHit(A, lead, SL_LEAD_GAP)) continue; // never over or under my leader (room for it to lie down or wag)
+      if (lax === 3) { best = { s: s0, x, y, face, A, T: null, up: 0 }; continue; } // the last tier: no tag (none fits anywhere)
       [0, 1].forEach((up) => { // the tag under the feet, else over the head (a little further: the tag is easier to read under the dog)
         const T = slAt(up ? e.up : e.tag, x, y), s = s0 - (up ? 40 : 0);
         if ((best && s <= best.s) || T[0] < win[0] + 4 || T[2] > win[2] - 4 || T[3] > win[3] - 2 || T[1] < win[1] + 2 || hitT(T, y) || slHit(T, lead, 4)) return;
@@ -249,11 +252,11 @@ function slDraw() {
     let k = k0, ext = slMeasure(svg, M, g, d, k, pose), at = slSpot(i, ext, ob, lead, win, W);
     // phones: a guest that has no room in one crop with my leader sits a little further back (drawn smaller, as the pack does further back)
     if (!at && W) for (const f of [0.88, 0.76]) { const e2 = slMeasure(svg, M, g, d, k0 * f, pose), a2 = slSpot(i, e2, ob, lead, win, W); if (a2) { k = k0 * f; ext = e2; at = a2; break; } }
-    at = at || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0, true) || slSpot(i, ext, ob, lead, [0, 0, 1000, 600], 0, 2); // no room in one crop: elsewhere in the yard (the camera pans to it)
-    if (!at) { const e = ext[pref[2]]; at = { x: pref[0], y: pref[1], face: pref[2], A: slAt(e.dog, pref[0], pref[1]), T: slAt(e.tag, pref[0], pref[1]), up: 0 }; }
-    const o = { g, d, x: at.x, y: at.y, face: at.face, k, pose, ty: ext[at.face][at.up ? 'tyUp' : 'ty'], up: at.up, box: at.A, tag: at.T, hit: [at.A[0] - at.x, at.A[1] - at.y, at.A[2] - at.A[0], at.A[3] - at.A[1]] };
-    SLV.drawn.push(o); SLV.spots.push([Math.min(at.A[0], at.T[0]), Math.max(at.A[2], at.T[2])]);
-    const kA = at.A.slice(), kT = at.T.slice(); kA.keep = 1; kT.keep = 1; kA.dog = 1; ob.push(kA, kT); // the next guest keeps clear of this one and its tag
+    const Y = [0, 0, 1000, 600]; at = at || slSpot(i, ext, ob, lead, Y, 0) || slSpot(i, ext, ob, lead, Y, 0, true) || slSpot(i, ext, ob, lead, Y, 0, 2) || slSpot(i, ext, ob, lead, Y, 0, 3); // no room in one crop: elsewhere in the yard (the camera pans to it); last: without its tag
+    if (!at) return; // nowhere clear of the other dogs (never seen): not drawn today rather than over a dog
+    const T = at.T || at.A, o = { g, d, x: at.x, y: at.y, face: at.face, k, pose, ty: at.T ? ext[at.face][at.up ? 'tyUp' : 'ty'] : false, tw: ext[at.face].tw, up: at.up, box: at.A, tag: T, hit: [at.A[0] - at.x, at.A[1] - at.y, at.A[2] - at.A[0], at.A[3] - at.A[1]] };
+    SLV.drawn.push(o); SLV.spots.push([Math.min(at.A[0], T[0]), Math.max(at.A[2], T[2])]);
+    const kA = at.A.slice(), kT = T.slice(); kA.keep = 1; kT.keep = 1; kA.dog = 1; kA.gu = 1; kT.gu = 1; ob.push(kA, kT); // the next guest keeps clear of this one and its tag
   });
   const keep = SLV.drawn.map((o) => { const [x0, y0, x1, y1] = o.box, p = 12, h = (x1 - x0) / 2 + p; return [0, 1].map((j) => `<rect class="hot sl-keep" x="${f1(x0 - p + j * h)}" y="${f1(y0)}" width="${f1(h)}" height="${f1(y1 - y0)}" fill="none" pointer-events="none"/>`).join(''); }).join(''); // the roam keeps the pack off each half (small things: 8%), 12 units wider each side
   pack.insertAdjacentHTML('beforebegin', `<g id="hpGuests">${keep}${SLV.drawn.map((o, i) => slGuestSVG(o, i)).join('')}</g>`);
@@ -300,7 +303,7 @@ if (typeof rmLookSync === 'function') { const slLook0 = rmLookSync; rmLookSync =
 if (typeof phHomeRefit === 'function') { const slRefit0 = phHomeRefit; phHomeRefit = function () { slRefit0.apply(this, arguments); try { slCropFit(); } catch (e) { /* the yard is changing */ } }; } // eslint-disable-line no-func-assign
 // the first meeting: my leader and the guest (already beside it) both bow, then happy with two hearts, a bark.
 // Reduced motion: no walk; the guest's bow and one heart
-function slGuestPose(o, pose) { const el = $(`#hpGuests [data-slg="${o.g.id}"] .sl-in`); o.pose = pose; if (el) el.innerHTML = slGuestInner(o.g, o.d, o.k, o.face, pose, o.ty); }
+function slGuestPose(o, pose) { const el = $(`#hpGuests [data-slg="${o.g.id}"] .sl-in`); o.pose = pose; if (el) el.innerHTML = slGuestInner(o.g, o.d, o.k, o.face, pose, o.ty, o.tw); }
 function slHearts(x, y, n) { fxText('♥', x, y); if (n > 1) setTimeout(() => fxText('♥', x + 22, y - 26), 200); }
 function slPlay(o) {
   const now = Date.now(); if (now - SLV.play < 1500) return; SLV.play = now;
@@ -465,6 +468,7 @@ function slTick() {
 }
 on('game:ready', () => { setTimeout(() => { try { slHome(); } catch (e) { console.warn('sl home', e); } }, 0); clearInterval(SLV.tick); SLV.tick = setInterval(() => { try { slTick(); } catch (e) { console.warn('sl tick', e); } }, 4000); });
 on('yard:enter', () => { if (!S || !S.hp) return; try { slHome(); slDraw(); } catch (e) { console.warn('sl draw', e); } });
+try { document.fonts.ready.then(() => { if (SLV.drawn.length && slHere()) slDraw(); }); } catch (e) { /* no font loading API */ } // the tags are measured again with the language's own font
 // test hook: window.__paw.hp.sl
 function slExpose() {
   if (!window.__paw || !window.__paw.hp || window.__paw.hp.sl) return;

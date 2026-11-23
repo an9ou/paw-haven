@@ -13,7 +13,7 @@ const SHOTS = process.env.HP_SHOTS || ''; // HP_SHOTS: a folder for the part 2 s
 // a game with Friends on (prefs.frTest + the mock). o.hp: the mock is a Worker with the gate open; o.test: prefs.hpTest (the game's gate)
 async function start(t, o) {
   o = o || {};
-  await t.mk(Object.assign({ prefs: Object.assign({ frTest: true, ddTest: true }, o.test ? { hpTest: true } : {}), storage: o.storage || null }, o.vw ? { device: 'iPhone 15' } : {})); // ddTest: the daily wish (48_dogdays.js) under webdriver
+  await t.mk(Object.assign({ prefs: Object.assign({ frTest: true, ddTest: true }, o.test ? { hpTest: true } : {}), storage: o.storage || null }, o.vw ? { device: 'iPhone 15' } : {}, o.lang ? { lang: o.lang } : {})); // ddTest: the daily wish (48_dogdays.js) under webdriver
   if (o.vw) await t.p.setViewportSize({ width: o.vw, height: o.vh }); // part 2: phones (touch, 360x640 and 390x844)
   await t.ctx.addInitScript(mockInit, { hp: !!o.hp });
   await t.p.goto(URL);
@@ -36,6 +36,7 @@ async function start(t, o) {
 
 run('v233_helps', async (t) => {
   const { ok, sec, ev } = t;
+  if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); return; } // a quick run of part 3 only
 
   sec('A0. the gate is shut while HP_FROM has no date (the mock Worker has hp)');
   await start(t, { hp: true });
@@ -178,6 +179,10 @@ run('v233_helps', async (t) => {
   await helpsPart(t);
   await claimPart(t);
   for (const [w, h] of [[360, 640], [390, 844]]) await phonePart(t, w, h);
+
+  /* ======================= part 3 (V233.md 4): the sleepover ======================= */
+  await sleepPart(t);
+  for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l);
 });
 
 // three friends, each with a yard (Happy Clover gets one here); the Worker has hp and the game's gate is on
@@ -503,5 +508,209 @@ async function phonePart(t, w, h) {
   });
   ok(!S2.side && !S2.bad.length && S2.n === 4, tag + ': the snack sheet fits, 44 px taps: ' + JSON.stringify(S2));
   await shot(t, 'snack_' + tag);
+  await t.ctx.close();
+}
+
+/* ======================= part 3 (V233.md 4, 4.1-4.3, 9): the sleepover ======================= */
+const today9 = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+// two dog boxes [x0, y0, x1, y1] apart by at least m units
+const apart = (a, b, m) => a[2] + m <= b[0] || b[2] + m <= a[0] || a[3] + m <= b[1] || b[3] + m <= a[1];
+// n sleep acts from Sunny, Fern and Clover for today (ids 500...)
+async function sleepActs(t, n, base, long) { // long: friends with long names (Bouncy Marigold, Plucky Lantern)
+  await t.ev(([n, ids, base, long]) => {
+    const s = window.__frSrv, day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), names = long ? [[9, 18], [19, 13], [1, 6]] : [[0, 0], [2, 11], [1, 6]];
+    const dogs = [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }, { b: 3, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 3 }, { b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 }];
+    s.acts = []; for (let i = 0; i < n; i++) s.acts.push({ id: base + i, from: { fid: ids[i], name: names[i] }, kind: 'sleep', data: { dog: dogs[i] }, day, claimed: false });
+  }, [n, [SUNNY, FERN, CLOVER], base || 500, !!long]);
+  const c0 = await t.ev(() => window.__frSrv.claimBodies.length);
+  await t.ev(() => window.__paw.hp.inbox());
+  return t.until((c0) => window.__frSrv.claimBodies.length > c0, c0, 5000);
+}
+async function sleepPart(t) {
+  const { ok, sec, ev } = t;
+  sec('B1. who may go: nursing, expecting and under 3 months stay home with a kind line; the sheet');
+  await startHelps(t);
+  const ids = await ev(() => {
+    const P = window.__paw, S = P.S, a = P.addDog({ key: 'dachs', sex: 'female', months: 30 }, 'Otto'), b = P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'), c = P.addDog({ key: 'corgi', sex: 'male', months: 1 }, 'Bun'), e = P.addDog({ key: 'corgi', sex: 'male', months: 3 }, 'Tom');
+    b.preg = { sire: 'x', sireKey: 'beagle', sireName: 'Rex', since: '2026-11-20', due: '2026-11-30', pups: [{}, {}], scanned: false };
+    S.litters = [{ id: 'lx', mum: a.id, born: '2026-11-20', pups: [], named: true }];
+    return { lead: S.dog.id, nurse: a.id, preg: b.id, little: c.id, pup3: e.id };
+  });
+  const why = await ev((ids) => { const h = window.__paw.hp.sl; return { lead: h.why(ids.lead), nurse: h.why(ids.nurse), preg: h.why(ids.preg), little: h.why(ids.little), pup3: h.why(ids.pup3) }; }, ids);
+  ok(why.lead === '' && why.pup3 === '', 'my leader and a 3-month puppy may go: ' + JSON.stringify([why.lead, why.pup3]));
+  ok(/stays with the puppies/.test(why.nurse) && /expecting and rests at home/.test(why.preg) && /too little for sleepovers/.test(why.little), 'nursing, expecting and under 3 months stay home: ' + JSON.stringify(why));
+  await ev(() => window.__paw.hp.sl.open('sunnybiscuitxxxxxxxxxx'));
+  ok(await t.until(() => !!document.querySelector('#modal .hp-sleep'), null, 3000), 'the Sleepover sheet opens');
+  const sh = await ev(() => ({ go: document.querySelectorAll('#modal [data-sldog]').length, no: document.querySelectorAll('#modal [data-slno]').length, lead: document.querySelector('#modal .sl-sheet p').textContent }));
+  ok(sh.go === 2 && sh.no === 3 && /Sunny Biscuit's yard tonight/.test(sh.lead), 'two dogs may go, three stay home greyed, the lead names the friend: ' + JSON.stringify(sh));
+  await ev((id) => document.querySelector(`#modal [data-slno="${id}"]`).click(), ids.nurse);
+  await t.sleep(300);
+  ok(await ev(() => !!document.querySelector('#modal .hp-sleep') && !/Send/.test(document.querySelector('#modal').textContent)), 'a dog that stays home asks nothing');
+  await ev((id) => document.querySelector(`#modal [data-sldog="${id}"]`).click(), ids.lead);
+  ok(await t.until(() => [...document.querySelectorAll('#modal button')].some((b) => /Not tonight/.test(b.textContent)), null, 3000), 'the confirm: Not tonight / Sleepover!');
+  ok(await ev(() => /Send Mochi for a sleepover at Sunny Biscuit's yard\?/.test(document.querySelector('#modal').textContent)), 'the confirm names my dog and the friend');
+
+  sec('B2. the send: one a Japan day, the recipe (no pixels), my dog stays in my game');
+  await toasts0(t);
+  await ev(() => { const b = [...document.querySelectorAll('#modal button')].find((x) => /Sleepover!/.test(x.textContent)); b.click(); });
+  ok(await t.until(() => window.__paw.S.hp.sl.length === 1, null, 5000), 'sent: one recipe');
+  ok(await t.waitToast(/packed a toothbrush/), 'the toast: packed a toothbrush');
+  const snt = await ev(() => window.__frSrv.sent.filter((s) => s.kind === 'sleep'));
+  ok(snt.length === 1 && snt[0].fid === 'sunnybiscuitxxxxxxxxxx' && Object.keys(snt[0].data).join() === 'dog' && Number.isInteger(snt[0].data.dog.b) && !('name' in snt[0].data.dog), 'POST /friends/send { kind: sleep, data: { dog: card } }, no name: ' + JSON.stringify(snt));
+  const rec = await ev(() => window.__paw.S.hp.sl[0]);
+  ok(Object.keys(rec).sort().join() === 'day,de,f,fid,h,home,k,ld,me,my,n,s'.split(',').sort().join() && rec.day === today9() && rec.my === ids.lead && rec.home === 0 && Array.isArray(rec.f) && Number.isInteger(rec.h) && !!rec.me && JSON.stringify(rec).length < 600, 'the recipe has its fields only and is small (' + JSON.stringify(rec).length + ' bytes): ' + JSON.stringify(rec));
+  ok(!/data:|<svg|base64/.test(JSON.stringify(rec)), 'the recipe holds no pixels');
+  ok(await ev(() => window.__paw.S.hp.slDay) === today9() && await ev(() => window.__paw.hp.sl.sent()), 'S.hp.slDay is today');
+  const n0 = await ev(() => window.__frSrv.sends);
+  ok(await ev(() => window.__paw.hp.sl.send('cozyfernxxxxxxxxxxxxxx', window.__paw.S.dog.id)) === 'busy' && await ev(() => window.__frSrv.sends) === n0, 'a second sleepover today sends nothing');
+  await toasts0(t); await ev(() => window.__paw.hp.sl.open('cozyfernxxxxxxxxxxxxxx'));
+  ok(await t.waitToast(/One sleepover a night\. Mochi is at Sunny Biscuit's tonight/), 'the second tap says where my dog sleeps tonight');
+  ok(await ev(() => window.__paw.S.dogs.some((d) => d.id === window.__paw.S.dog.id) && window.__paw.mode === 'yard' && !!document.querySelector(`#view [data-dog="${window.__paw.S.dog.id}"], #view #dogG`)), 'my dog is still mine, in my yard and drawn');
+  await ev(() => { const S = window.__paw.S; S.litters = []; S.dogs = S.dogs.filter((d) => d === S.dog); S.dog.stats.energy = 90; });
+  ok(await t.startWalk(), 'my dog can still go for a walk');
+  await t.quitWalk(true);
+  await visit(t, SUNNY, null);
+  ok(await ev(() => { const b = document.getElementById('hpSleepBtn'); return !!b && /Sleepover sent/.test(b.textContent) && b.getAttribute('aria-disabled') === 'true' && b.classList.contains('soon'); }), 'the visit button reads Sleepover sent');
+  await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+  await t.ctx.close();
+
+  sec('B2b. offline and a rolled-back Worker change nothing');
+  await startHelps(t);
+  await ev(() => { window.__frSrv.offline = true; });
+  await toasts0(t);
+  ok(await ev(() => window.__paw.hp.sl.send('sunnybiscuitxxxxxxxxxx', window.__paw.S.dog.id)) === 'off' && await ev(() => window.__paw.S.hp.sl.length === 0 && window.__paw.S.hp.slDay === ''), 'offline: no recipe, no day used');
+  ok(await t.waitToast(/internet connection/), 'offline: the fr.offline toast');
+  await ev(() => { window.__frSrv.offline = false; window.__frSrv.hp = false; });
+  await toasts0(t);
+  ok(await ev(() => window.__paw.hp.sl.send('sunnybiscuitxxxxxxxxxx', window.__paw.S.dog.id)) === 'bad', 'a rolled-back Worker answers bad');
+  ok(await ev(() => window.__paw.hp.on() === false && window.__paw.S.hp.sl.length === 0 && !document.getElementById('hpSleepBtn')), 'hp is off for the load, no recipe');
+  ok(await t.waitToast(/didn't reach Sunny Biscuit/), 'the hp.failed toast');
+  await t.ctx.close();
+
+  sec('B3. the host: two guests a Japan day, a third tomorrow; drawn apart, a card with Pet once; gone the next day');
+  await startHelps(t);
+  await sleepActs(t, 3);
+  const cl = await ev(() => window.__frSrv.claimBodies[window.__frSrv.claimBodies.length - 1]);
+  const gu = await ev(() => window.__paw.S.hp.gu);
+  ok(gu.length === 2 && JSON.stringify(cl.acts || []) === '[500,501]', 'two guests claimed, the third left unclaimed: ' + JSON.stringify(cl));
+  ok(await ev(() => window.__paw.S.hp.host) === 2 && await ev(() => window.__paw.S.mail.some((m) => m.id === 'hp_guest_500') && window.__paw.S.mail.some((m) => m.id === 'hp_guest_501')), 'host counts 2, one postcard each');
+  ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 4000), 'both guests drawn in my yard');
+  await t.sleep(400);
+  const dr = await ev(() => ({ d: window.__paw.hp.sl.drawn(), lead: window.__paw.hp.sl.geo().lead }));
+  ok(apart(dr.d[0].box, dr.d[1].box, 2) && dr.d.every((o) => apart(o.box, dr.lead, 10)), 'no guest drawn over another dog: ' + JSON.stringify(dr));
+  ok(dr.d.every((o) => (o.box[0] + o.box[2]) / 2 < (dr.lead[0] + dr.lead[2]) / 2 ? o.face === 'right' : o.face === 'left'), 'each guest faces my leader');
+  ok(dr.d.every((o) => apart(o.tag, dr.lead, 2) && dr.d.every((p) => p === o || (apart(o.tag, p.box, 2) && apart(o.tag, p.tag, 2)))), 'the tags cover no dog and no other tag');
+  const tg = await ev(() => [...document.querySelectorAll('#hpGuests .sl-tag text')].map((x) => [...x.querySelectorAll('tspan')].map((s) => s.textContent).join(' ')));
+  ok(tg.length === 2 && tg.some((x) => /^Mochi, from Sunny Biscuit$/.test(x)) && tg.some((x) => /^Bella, from Cozy Fern$/.test(x)), 'the tag chip: {dog}, from {name}: ' + JSON.stringify(tg));
+  const b0 = await ev(() => window.__paw.S.dog.bond.pts + window.__paw.S.dog.bond.level * 1e6);
+  await ev(() => window.__paw.hp.sl.card(500));
+  ok(await t.until(() => !!document.querySelector('#modal .hp-gcard #slPet'), null, 3000), 'the guest card opens with Pet');
+  await toasts0(t); await ev(() => document.getElementById('slPet').click());
+  ok(await t.waitToast(/play together\. \+1 Bond/), 'Pet: +1 Bond and the toast');
+  ok(await ev(() => window.__paw.S.dog.bond.pts + window.__paw.S.dog.bond.level * 1e6) > b0, 'my leader got the Bond');
+  ok(await ev(() => window.__paw.hp.sl.pet(500)) === 0, 'a second pet gives nothing');
+  await ev(() => window.__paw.hp.sl.card(500));
+  ok(await t.until(() => /Petted today/.test((document.getElementById('slPet') || {}).textContent || ''), null, 3000), 'the card reads Petted today');
+  await ev(() => document.getElementById('slOk').click());
+  // the next Japan day: the guests are gone and the third one comes
+  await ev(() => { const S = window.__paw.S; S.hp.gu.forEach((g) => { g.day = '2026-01-01'; }); });
+  ok(await ev(() => window.__paw.hp.sl.draw()) === 0 && await ev(() => document.querySelectorAll('#hpGuests .hp-guest').length === 0), 'the next day: no guest drawn, no goodbye');
+  await ev(() => { window.__frSrv.acts = window.__frSrv.acts.filter((a) => a.id === 502); });
+  await ev(() => window.__paw.hp.inbox());
+  ok(await t.until(() => window.__paw.S.hp.gu.some((g) => g.id === 502), null, 5000), 'the third guest comes when there is room');
+  await t.ctx.close();
+
+  sec('B4. home by morning: a page, +2 Bond, the toast; the picture and the share have no friend name and no text; generic after a remove');
+  await startHelps(t);
+  ok(await ev(() => window.__paw.hp.sl.send('sunnybiscuitxxxxxxxxxx', window.__paw.S.dog.id)) === 'ok', 'a sleepover sent');
+  await ev(() => { window.__paw.S.hp.sl[0].day = '2026-01-01'; });
+  await toasts0(t);
+  ok(await ev(() => window.__paw.hp.sl.home()) === 1, 'home by morning: one sleepover back');
+  ok(await t.waitToast(/home from the sleepover! \+2 Bond\. A new page in the diary/), 'the toast with +2 Bond');
+  const pg = await ev(() => window.__paw.S.dd.diary.find((p) => p.sl));
+  ok(!!pg && pg.j === '2026-01-01' && pg.sl.my === pg.id && pg.sl.fid === 'sunnybiscuitxxxxxxxxxx' && !('home' in pg.sl), 'a diary page with the recipe, placed on its night');
+  const lines = await ev(() => window.__paw.hp.sl.lines(window.__paw.S.dd.diary.find((p) => p.sl)).join(' | '));
+  ok(/slept over at Sunny Biscuit's yard/.test(lines) && /Home by breakfast/.test(lines), 'the page lines: ' + lines);
+  ok(await ev(() => window.__paw.hp.sl.home()) === 0, 'home only once');
+  const pic = await ev(() => { const sl = window.__paw.S.dd.diary.find((p) => p.sl).sl; return { pic: window.__paw.hp.sl.pic(sl), feed: window.__paw.hp.sl.shareSvg(sl, 'feed'), pal: window.__paw.hp.sl.pal(sl) }; });
+  ok(!!pic.pal && !/Sunny|Biscuit/.test(pic.pic) && !/<text\b/.test(pic.pic), 'the diary picture: no friend name, no text');
+  ok(!/Sunny|Biscuit/.test(pic.feed), 'the share picture has no friend name');
+  // both dogs whole and apart in both sizes, measured in the page
+  const gaps = await ev(() => ['feed', 'story'].map((size) => {
+    const sl = window.__paw.S.dd.diary.find((p) => p.sl).sl, host = document.createElement('div'); host.style.cssText = 'position:fixed;left:0;top:0;width:1080px'; host.innerHTML = window.__paw.hp.sl.shareSvg(sl, size); document.body.appendChild(host);
+    const root = host.querySelector('svg'); root.style.width = '1080px'; root.style.height = 'auto'; const sc = root.querySelector(':scope > svg'), dogs = [...sc.querySelectorAll(':scope > svg')].slice(-2); // the yard's own art (house, decor, moon) comes first
+    const box = (el) => { let L = 1e9, R = -1e9; el.querySelectorAll('path,ellipse,circle,polygon').forEach((c) => { if (c.closest('.pa-d-f1,.pa-d-f2')) return; const b = c.getBoundingClientRect(); if (!b.width && !b.height) return; L = Math.min(L, b.left); R = Math.max(R, b.right); }); return [L, R]; };
+    const [a, b] = dogs.map(box); host.remove(); return { n: dogs.length, gap: Math.round(b[0] - a[1]), l: Math.round(a[0] - 46), r: Math.round(1034 - b[1]) };
+  }));
+  ok(gaps.every((g) => g.n === 2 && g.gap >= 8 && g.l >= 4 && g.r >= 4), 'share 1080x1350 and 1080x1920: both dogs whole, face to face, not over each other: ' + JSON.stringify(gaps));
+  await ev(() => window.__paw.journal('diary'));
+  ok(await t.until(() => !!document.querySelector('#modal .sl-pic svg') && !!document.querySelector('#modal [data-slshare]'), null, 4000), 'the diary page shows the picture and Share this moment');
+  await ev(() => document.querySelector('#modal [data-slshare]').click());
+  ok(await t.until(() => { const r = window.__paw.sh.rec(); return !!r && r.from === 'sleep' && r.pal && r.yard; }, null, 8000), 'Share this moment: shareDog with yard and pal');
+  await ev(() => { const P = window.__paw; if (!document.getElementById('modal').hidden) P.closeModal && P.closeModal(); });
+  await t.p.keyboard.press('Escape');
+  // the While you were out line
+  const wb = await ev(() => window.__paw.hp.sl.wb({ at: Date.now(), h: 5 }));
+  ok(/went to a sleepover at Sunny Biscuit(&#39;|')s yard and came home happy/.test(wb), 'While you were out: the sleepover line: ' + wb);
+  // a remove: the page turns generic (no name, house or pal), the picture has my dog alone
+  await ev(() => { const S = window.__paw.S; S.fr.cache.friends = S.fr.cache.friends.filter((f) => f.fid !== 'sunnybiscuitxxxxxxxxxx'); });
+  const gen = await ev(() => { const p = window.__paw.S.dd.diary.find((x) => x.sl); return { l: window.__paw.hp.sl.lines(p).join(' | '), g: window.__paw.hp.sl.generic(p.sl), pic: window.__paw.hp.sl.pic(p.sl), wb: window.__paw.hp.sl.wb({ at: Date.now(), h: 5 }) }; });
+  ok(gen.g && /went to a sleepover at a friend's yard/.test(gen.l) && !/Sunny|Biscuit|Cottage/.test(gen.l), 'generic page after a remove: ' + gen.l);
+  ok(!/Sunny|Biscuit/.test(gen.pic) && (gen.pic.match(/class="pa-dog|<svg[^>]*pa-d/g) || []).length <= 1, 'the generic picture: no name, my dog alone');
+  ok(/A friend|a friend/.test(gen.wb) && !/Sunny/.test(gen.wb), 'While you were out names no removed friend: ' + gen.wb);
+  await t.ctx.close();
+
+  sec('B5. a guest in While you were out');
+  await startHelps(t);
+  await sleepActs(t, 1);
+  ok(/from Sunny Biscuit(&#39;|')s yard came for a sleepover/.test(await ev(() => window.__paw.hp.sl.wb({ at: Date.now(), h: 5 }))), 'While you were out: the guest line');
+  await t.ctx.close();
+}
+
+// phones: the four visit buttons, the sheet, two guests in the home view (or the look chip), the guest card; 44 px taps, nothing under the bar
+async function sleepPhone(t, w, h, lang) {
+  const { ok, sec, ev } = t, tag = w + 'x' + h + (lang ? ' ' + lang : '');
+  sec(`B6. phone ${tag}: the visit buttons, the sheet, two guests in my yard, the card`);
+  await startHelps(t, { vw: w, vh: h, lang });
+  await visit(t, SUNNY, null);
+  await t.sleep(500);
+  const B = await ev(() => {
+    const bs = [...document.querySelectorAll('#placeBtns .btn')].map((b) => { const r = b.getBoundingClientRect(); return { t: b.id || b.textContent.trim(), l: r.left, r: r.right, top: r.top, b: r.bottom, w: r.width, h: r.height }; });
+    const bar = document.getElementById('bar'), bt = bar && !bar.hidden ? bar.getBoundingClientRect().top : innerHeight; return { bs, bt, iw: innerWidth };
+  });
+  const last = B.bs[B.bs.length - 1], maxB = Math.max(...B.bs.map((b) => b.b)), maxR = Math.max(...B.bs.map((b) => b.r));
+  ok(B.bs.length === 4 && last.t === 'frHomeBtn' && B.bs[2].t === 'hpSleepBtn', tag + ': four buttons, Sleepover third, Go home last: ' + B.bs.map((b) => b.t).join(' / '));
+  ok(last.b >= maxB - 1 && last.r >= maxR - 1, tag + ': Go home bottom right');
+  ok(B.bs.every((b) => b.w >= 43.5 && b.h >= 43.5 && b.b <= B.bt + 0.5 && b.l >= -0.5 && b.r <= B.iw + 0.5), tag + ': 44 px, inside, above the phone bar');
+  await t.p.click('#hpSleepBtn');
+  ok(await t.until(() => !!document.querySelector('#modal .hp-sleep'), null, 3000), tag + ': the sheet opens');
+  await t.sleep(400);
+  const SH = await ev(() => { const iw = innerWidth; return [...document.querySelectorAll('#modal .sl-dog, #modal button')].map((b) => { const r = b.getBoundingClientRect(); return r.width ? (r.height < 43.5 || r.width < 43.5 || r.left < -1 || r.right > iw + 1 ? 'bad ' + b.className : '') : ''; }).filter(Boolean); });
+  ok(!SH.length, tag + ': the sheet rows and buttons are 44 px and inside: ' + JSON.stringify(SH));
+  await t.p.keyboard.press('Escape');
+  await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+  await sleepActs(t, 2, 500, !!lang);
+  ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 4000), tag + ': two guests drawn');
+  await t.sleep(1500);
+  const G = await ev(() => {
+    const svg = document.querySelector('#view > svg.world'), vb = svg.viewBox.baseVal, P = window.__paw.hp.sl, d = P.drawn(), geo = P.geo();
+    const inV = (o) => o.box[0] >= vb.x - 1 && o.box[2] <= vb.x + vb.width + 1 && o.tag[0] >= vb.x - 1 && o.tag[2] <= vb.x + vb.width + 1;
+    const ob = geo.ob.map((s) => s.split(' ')[0].split(',').map(Number)).filter((b) => b.length === 4);
+    const tags = [...document.querySelectorAll('#hpGuests .sl-tag')].filter((g, i) => inV(d[i])).map((g) => { const r = g.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }); // the guests in view
+    const bar = document.getElementById('bar'), bt = bar && !bar.hidden ? bar.getBoundingClientRect().top : innerHeight;
+    return { d, lead: geo.lead, inView: d.map(inV), look: P.look(), tagsIn: tags.every((r) => r[0] >= -1 && r[2] <= innerWidth + 1 && r[3] <= bt + 1), mail: ob.find((b) => b[1] === 288) || null };
+  });
+  ok(G.inView[0], tag + ': the first guest is in the home view');
+  ok(G.inView[1] || G.look.includes(G.d[1].name), tag + ': the second guest is in view, or the look chip names it: ' + JSON.stringify({ inView: G.inView, look: G.look }));
+  ok(apart(G.d[0].box, G.d[1].box, 2) && G.d.every((o) => apart(o.box, G.lead, 10)), tag + ': no dog over another');
+  ok(G.d.every((o) => G.d.every((p) => p === o || (apart(o.tag, p.box, 2) && apart(o.tag, p.tag, 2)))), tag + ': no tag over the other guest or its tag');
+  ok(!G.mail || G.d.every((o) => apart(o.box, G.mail, 2) && apart(o.tag, G.mail, 2)), tag + ': clear of the mailbox');
+  ok(G.tagsIn, tag + ': the tags are inside the screen and above the bar');
+  await shot(t, 'sl_guests_' + tag.replace(' ', '_'));
+  await ev(() => window.__paw.hp.sl.card(500));
+  ok(await t.until(() => !!document.querySelector('#modal .hp-gcard'), null, 3000), tag + ': the guest card');
+  await t.sleep(300);
+  const C = await ev(() => ['slPet', 'slOk'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 1; }));
+  ok(C.every(Boolean), tag + ': Pet and OK are 44 px taps');
   await t.ctx.close();
 }
