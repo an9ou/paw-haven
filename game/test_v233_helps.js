@@ -36,6 +36,7 @@ async function start(t, o) {
 
 run('v233_helps', async (t) => {
   const { ok, sec, ev } = t;
+  if (process.env.HP_ONLY === '4') { await stickerPart(t); await newsPart(t); await keepPart(t, 1280, 720, null); await keepPart(t, 390, 844, 'dachs'); return; } // a quick run of part 4 only
   if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); return; } // a quick run of part 3 only
 
   sec('A0. the gate is shut while HP_FROM has no date (the mock Worker has hp)');
@@ -183,6 +184,12 @@ run('v233_helps', async (t) => {
   /* ======================= part 3 (V233.md 4): the sleepover ======================= */
   await sleepPart(t);
   for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l);
+
+  /* ======================= part 4 (V233.md 7, 10): stickers, news, the picture and the guests' keep-out ======================= */
+  await stickerPart(t);
+  await newsPart(t);
+  await keepPart(t, 1280, 720, null);
+  await keepPart(t, 390, 844, 'dachs');
 });
 
 // three friends, each with a yard (Happy Clover gets one here); the Worker has hp and the game's gate is on
@@ -712,5 +719,155 @@ async function sleepPhone(t, w, h, lang) {
   await t.sleep(300);
   const C = await ev(() => ['slPet', 'slOk'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 1; }));
   ok(C.every(Boolean), tag + ': Pet and OK are 44 px taps');
+  await t.ctx.close();
+}
+
+/* ======================= part 4 (V233.md 7, 10): the sticker page, NEWS, the two looks fixed after part 3 ======================= */
+// the page gifts by page key (S.dd.pg is numbered by the book's pages)
+const giftsByKey = (t) => t.ev(() => { const P = window.__paw.hp.pages(), g = window.__paw.S.dd.pg || {}, o = {}; Object.keys(g).forEach((i) => { if (g[i]) o[P[i] || '#' + i] = g[i]; }); return o; });
+async function stickerPart(t) {
+  const { ok, sec, ev } = t;
+  sec('C1. the sticker page "Helping paws": in the book while on, before the Badges pages, six stickers');
+  await startHelps(t);
+  let pages = await ev(() => window.__paw.hp.pgLoad());
+  const pi = pages.indexOf('pals'), mi = pages.indexOf('msb1');
+  ok(pi >= 0 && (mi < 0 || pi === mi - 1), 'the page is in the book, just before the Badges pages: ' + pages.join(','));
+  const defs = await ev(() => window.__paw.dd.defs().filter((s) => /^hp_/.test(s.id)));
+  ok(defs.map((s) => s.id).join() === 'hp_h5,hp_h25,hp_h100,hp_sl1,hp_host,hp_thx' && defs.every((s) => s.pg === defs[0].pg) && defs[0].pg === pi, 'six stickers on it: ' + JSON.stringify(defs));
+  ok(defs.map((s) => s.label).join(' | ') === '5 helps | 25 helps | 100 helps | The first sleepover | A sleepover guest | A thank-you note', 'their names: ' + defs.map((s) => s.label).join(' | '));
+  ok(await ev(() => ['h5', 'h25', 'h100', 'sl1', 'host', 'thx'].every((k) => /<svg/.test(window.__paw.hp.art(k)))), 'each has its sticker face (PawArt.FRIENDS.stk)');
+  sec('C2. earned at the right counts');
+  const st = () => ev(() => Object.keys(window.__paw.S.dd.st).filter((k) => /^hp_/.test(k)).sort().join());
+  await ev(() => { window.__paw.S.hp.n = 4; window.__paw.hp.stick(); });
+  ok(await st() === '', '4 helps: no sticker yet');
+  await toasts0(t);
+  ok(await visit(t, SUNNY, null) && await ev(() => window.__paw.hp.tap('bowl', 'strip')), 'the fifth help (a bowl)');
+  ok(await st() === 'hp_h5' && await t.waitToast(/New sticker: 5 helps!/), '5 helps: the first sticker, with its toast');
+  await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+  await ev(() => { window.__paw.S.hp.n = 24; window.__paw.hp.stick(); });
+  ok(await st() === 'hp_h5', '24 helps: still one');
+  await ev(() => { window.__paw.S.hp.n = 25; window.__paw.hp.stick(); });
+  ok(await st() === 'hp_h25,hp_h5', '25 helps: the second');
+  await sleepActs(t, 1);
+  ok(await t.until(() => !!window.__paw.S.dd.st.hp_host, null, 4000), 'the first guest: A sleepover guest');
+  await ev((sunny) => { const s = window.__frSrv; s.events = [{ id: 77, from: { fid: sunny, name: [0, 0] }, kind: 'note', data: { i: 12 }, day: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), claimed: false }]; }, SUNNY);
+  await ev(() => window.__paw.hp.inbox());
+  ok(await t.until(() => !!window.__paw.S.dd.st.hp_thx, null, 4000), 'the first thank-you note: A thank-you note');
+  ok(await ev(() => window.__paw.hp.sl.send('cozyfernxxxxxxxxxxxxxx', window.__paw.S.dog.id)) === 'ok', 'a sleepover sent');
+  ok(!(await ev(() => !!window.__paw.S.dd.st.hp_sl1)), 'not home yet: no sleepover sticker');
+  await ev(() => { window.__paw.S.hp.sl[0].day = '2026-01-01'; window.__paw.hp.sl.home(); });
+  ok(await t.until(() => !!window.__paw.S.dd.st.hp_sl1, null, 4000), 'home by morning: The first sleepover');
+  const pi2 = await ev(() => window.__paw.hp.pages().indexOf('pals'));
+  ok(await ev((i) => !window.__paw.S.dd.pg[i], pi2), 'five of six: no page gift yet');
+  await ev(() => { window.__paw.S.hp.n = 100; window.__paw.hp.stick(); });
+  ok(await st() === 'hp_h100,hp_h25,hp_h5,hp_host,hp_sl1,hp_thx', '100 helps: all six');
+  const gift = await ev((i) => window.__paw.S.dd.pg[i], pi2), rew = await ev((i) => window.__paw.dd.reward(i), pi2);
+  ok(!!gift && (gift === rew.n || gift === rew.f || /^p\d+$/.test(gift) || typeof gift === 'string'), 'a full page gives the usual page gift: ' + gift);
+  ok(await t.waitToast(/A full sticker page: Helping paws!/, 4000), 'the full-page toast names the page');
+  await ev(() => window.__paw.dd.book());
+  ok(await t.until(() => !!document.querySelector('#modal .dd-sbook'), null, 3000), 'the sticker book opens');
+  for (let k = 0; k < 40; k++) { // flip to the page (the book's own buttons)
+    const at = await ev((i) => { const pg = document.querySelector('#modal .dd-spage'); if (!pg || +pg.dataset.pg === i) return true; const bs = [...document.querySelectorAll('#modal [data-ddsp]')].filter((b) => !b.disabled); const nx = bs.sort((a, b) => Math.abs(+a.dataset.ddsp - i) - Math.abs(+b.dataset.ddsp - i))[0]; if (nx) nx.click(); return false; }, pi2);
+    if (at) break; await t.sleep(80);
+  }
+  ok(await t.until((i) => { const pg = document.querySelector('#modal .dd-spage'); return !!pg && +pg.dataset.pg === i && /Helping paws/.test(pg.querySelector('h3').textContent) && pg.querySelectorAll('.dd-st.on').length === 6; }, pi2, 4000), 'the page in the book: Helping paws, 6 of 6');
+  await shot(t, 'stickers_1280');
+  await t.p.keyboard.press('Escape');
+
+  sec('C3. the page is not in the book while off');
+  await ev(() => { window.__paw.hp.srv(false); window.__paw.msb.sync(); });
+  ok(await ev(() => !window.__paw.hp.pages().includes('pals') && !window.__paw.dd.defs().some((s) => /^hp_/.test(s.id))), 'a Worker without hp: no page, no stickers defined');
+  ok(await ev((g) => window.__paw.S.hp.pg === g, gift), 'its gift is kept in S.hp.pg while the page is out');
+  await ev(() => { window.__paw.hp.srv(true); window.__paw.msb.sync(); });
+  ok(await ev((g) => { const P = window.__paw.hp.pages(); return P.includes('pals') && window.__paw.S.dd.pg[P.indexOf('pals')] === g; }, gift), 'on again: the page is back with its gift (never given twice)');
+  await t.ctx.close();
+  await start(t, { hp: true });
+  await ev(() => window.__paw.msb.sync());
+  ok(await ev(() => !window.__paw.hp.pages().includes('pals') && JSON.stringify(window.__paw.S.hp.pk) === '[]' && window.__paw.S.hp.pg === ''), 'gate shut (no date): no page, nothing written to S.hp');
+  await t.ctx.close();
+
+  sec('C4. an old save\'s page gifts stay with their pages (by page key), across loads');
+  await start(t, { hp: true }); // the gate shut: the book as v2.32.1 numbers it
+  await ev(() => window.__paw.msb.sync());
+  const P0 = await ev(() => window.__paw.hp.pages());
+  const want = {}; [P0[0], P0[3], P0[P0.length - 3], P0[P0.length - 1]].forEach((k, i) => { want[k] = ['Bow Tie', 'p3', 'Pyjamas', 'p' + (P0.length - 1)][i]; });
+  await ev((w) => { const P = window.__paw.hp.pages(), pg = window.__paw.S.dd.pg; Object.keys(pg).forEach((k) => delete pg[k]); Object.keys(w).forEach((k) => { pg[P.indexOf(k)] = w[k]; }); window.__paw.saveNow(); }, want);
+  const json = await ev(() => localStorage.getItem('pawhaven_proto_v1'));
+  ok(!JSON.parse(json).hp.pk.length, 'the old save has no S.hp.pk: ' + P0.slice(-4).join(','));
+  await t.ctx.close();
+  await start(t, { hp: true, test: true, storage: { pawhaven_proto_v1: json } });
+  const P1 = await ev(() => window.__paw.hp.pgLoad());
+  ok(P1.includes('pals') && P1.length === P0.length + 1, 'the page comes into the book: ' + P1.slice(-5).join(','));
+  ok(JSON.stringify(Object.entries(await giftsByKey(t)).sort()) === JSON.stringify(Object.entries(want).sort()), 'every gift stays with its page: ' + JSON.stringify(await giftsByKey(t)));
+  ok(await ev(() => { const P = window.__paw.hp.pages(); return !window.__paw.S.dd.pg[P.indexOf('pals')] && window.__paw.S.hp.pk.join() === P.join(); }), 'the new page has no gift yet; S.hp.pk is the book\'s order');
+  // a later load: its first sync runs before the Worker's hp: 1 (no page yet), then the page comes in
+  await ev(() => window.__paw.saveNow());
+  await t.reloadKeepingSave();
+  await t.p.waitForSelector('#tContinue, #tPlay'); await t.p.click('#tContinue, #tPlay'); await t.untilMode('yard');
+  await t.until(() => !!(window.__paw && window.__paw.hp && window.__paw.msb), null, 8000);
+  await ev(() => { window.__paw.hp.srv(false); window.__paw.hp.pgLoad(); });
+  ok(!(await ev(() => window.__paw.hp.pages().includes('pals'))) && JSON.stringify(Object.entries(await giftsByKey(t)).sort()) === JSON.stringify(Object.entries(want).sort()), 'reloaded, the first sync without the page: the gifts still by key: ' + JSON.stringify(await giftsByKey(t)));
+  await ev(() => { window.__paw.hp.srv(true); window.__paw.msb.sync(); });
+  ok(await ev(() => window.__paw.hp.pages().includes('pals')) && JSON.stringify(Object.entries(await giftsByKey(t)).sort()) === JSON.stringify(Object.entries(want).sort()), 'then the page comes in: the gifts still by key');
+  ok(await ev(() => window.__paw.S.v === 1), 'the save stays v: 1');
+  await t.ctx.close();
+}
+
+async function newsPart(t) {
+  const { ok, sec, ev } = t;
+  sec('C5. NEWS: the date is HP_FROM; with no date the entry is not in the list and never leads the sheet');
+  await start(t, { hp: true });
+  ok(await ev(() => window.__paw.nw.v233Raw() === window.__paw.hp.from), 'NEWS date = HP_FROM (' + JSON.stringify(await ev(() => window.__paw.hp.from)) + ')');
+  ok(await ev(() => !window.__paw.nw.list().includes('2.33') && window.__paw.nw.latest() !== '2.33'), 'no date: not in the list, not the latest');
+  await ev(() => { window.__paw.nw.test(true); window.__paw.S.newsSeen = ''; window.__paw.nw.auto(); });
+  ok(await t.until(() => !!document.querySelector('#modal .nw-sheet'), null, 3000) && await ev(() => !/Helping paws/.test(document.getElementById('modal').textContent)), 'the automatic sheet does not lead with it');
+  await t.p.keyboard.press('Escape'); await t.modalGone();
+  const d = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+  const L = await ev((d) => window.__paw.nw.v233(d), d);
+  ok(L[0] === '2.33', 'a test date (today): first in the list: ' + L.slice(0, 3).join(','));
+  ok(!(await ev(() => window.__paw.nw.v233('2099-01-01'))).includes('2.33'), 'a date to come: not yet');
+  await ev((d) => window.__paw.nw.v233(d), d);
+  await ev(() => { window.__paw.S.newsSeen = '2.32.1'; window.__paw.nw.auto(); });
+  ok(await t.until(() => !!document.querySelector('#modal .nw-page.big'), null, 3000), 'What\'s new opens');
+  const sh = await ev(() => ({ h: document.querySelector('#modal .nw-page.big h3').textContent, li: [...document.querySelectorAll('#modal .nw-page.big .nw-tx')].map((x) => x.textContent), ic: [...document.querySelectorAll('#modal .nw-page.big .nw-ic')].map((x) => !!x.querySelector('svg')) }));
+  ok(sh.h === 'Helping paws' && sh.li.length === 3 && /Fill their dog's bowl/.test(sh.li[0]) && /sleepover/.test(sh.li[1]) && /say thanks/.test(sh.li[2]) && sh.ic.every(Boolean), 'it leads with Helping paws, three lines with icons: ' + JSON.stringify(sh));
+  ok(await ev(() => window.__paw.S.newsSeen === '2.33'), 'seen: 2.33');
+  await shot(t, 'news_1280');
+  await t.p.keyboard.press('Escape');
+  ok(!(await ev(() => window.__paw.nw.v233(null))).includes('2.33'), 'back to HP_FROM (no date): out of the list again');
+  await t.ctx.close();
+}
+
+// the two looks fixed after part 3: the sleepover picture has no tap outline or tag, and a guest keeps clear of my leader in every pose
+const ovA = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+async function keepPart(t, w, h, breed) {
+  const { ok, sec, ev } = t, tag = w + 'x' + h + ' ' + (breed || 'shiba'), ph = w < 800;
+  sec(`C6. ${tag}: the picture is a plain yard; a guest is never under my leader, in any of their poses`);
+  await startHelps(t, ph ? { vw: w, vh: h } : {});
+  if (breed) { await ev((br) => { const P = window.__paw, d = P.addDog({ key: br, sex: 'male', months: 30 }, 'Otto'); P.switchDog(d.id); P.go('yard'); }, breed); await t.untilMode('yard'); await t.calm(); }
+  if (!ph) {
+    ok(await ev(() => window.__paw.hp.sl.send('sunnybiscuitxxxxxxxxxx', window.__paw.S.dog.id)) === 'ok', 'a sleepover sent');
+    const pic = await ev(() => { const sl = window.__paw.S.hp.sl[0]; return { inner: window.__paw.hp.sl.inner(sl), feed: window.__paw.hp.sl.shareSvg(sl, 'feed') }; });
+    ok(!/data-hot|pa-wa-h|stroke-dasharray="10 8"/.test(pic.inner) && !/data-hot|pa-wa-h/.test(pic.feed), 'the picture has no tap spot: no garden tag, no pink dashed outline');
+    ok(/<svg/.test(pic.inner) && pic.inner.length > 20000, 'the yard is still drawn (' + pic.inner.length + ' chars)');
+  }
+  await sleepActs(t, ph ? 1 : 2);
+  ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length >= 1, null, 5000), tag + ': the guests are drawn');
+  await t.sleep(3500); // the first meeting ends
+  const r = await ev(() => ({ d: window.__paw.hp.sl.drawn(), reach: window.__paw.hp.sl.reach() }));
+  ok(r.d.every((o) => apart(o.box, r.reach, 10)), tag + ': each guest (all its poses) clear of my leader\'s reach (all its poses, both ways): ' + JSON.stringify(r));
+  ok(r.d.every((o) => o.tag[1] >= o.box[3] - 0.5 || o.tag[3] <= o.box[1] + 0.5), tag + ': the tag never on its own guest (under its paws and tail, or over its head)');
+  const bad = [];
+  for (const g of r.d) for (const gp of ['sit', 'happy', 'bow']) {
+    const G = await ev(([id, p]) => window.__paw.hp.sl.guestPose(id, p), [g.id, gp]);
+    if (G.tag && ovA(G.tag, G.dog) > 4) bad.push(`${g.id} ${gp}: its tag on it`);
+    for (const p of ['idle', 'sit', 'down', 'happy', 'sleep', 'rollover', 'bow', 'walk']) for (const f of ['left', 'right']) {
+      const B = await ev(([p, f]) => window.__paw.hp.sl.leadPose(p, f), [p, f]); if (!B) continue;
+      if (ovA(B, G.dog) > 0 || (G.tag && ovA(B, G.tag) > 0)) bad.push(`${g.id} ${gp} x my leader ${p}/${f}`);
+    }
+  }
+  await ev(() => window.__paw.hp.sl.leadFree());
+  ok(!bad.length, tag + ': drawn, my leader in 8 poses both ways and the guest in 3 never overlap: ' + bad.slice(0, 5).join(' | '));
+  if (ph) await shot(t, 'guest_fixed_' + w);
   await t.ctx.close();
 }

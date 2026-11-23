@@ -568,6 +568,7 @@ function hpExpose() {
     tap: (k, from) => hpTap(k, from || 'prop'), snack: () => hpSnackSheet(), thanks: (fid) => hpThanks(fid, null), gone: (v) => { if (v !== undefined) HP.gone = !!v; return HP.gone; },
     // part 4: the sticker page (the book's page keys, the stickers now), S.hp.pk
     pages: () => DD_PAGES.slice(), stick: () => hpStick().map((x) => x.id), page: HP_PAGE, art: (k) => hpStArt(k),
+    pgLoad: () => { if (typeof MSB !== 'undefined') MSB.order = null; msPagesSync(); return DD_PAGES.slice(); }, // a load's first sync (the book's order not remembered yet)
     bowlSpot: () => hpBowlSpot(), spots: () => ({ bowl: HP_BOWL.slice(), at: HPV.bowl ? HPV.bowl.slice() : null, can: HP_CAN.slice(), hunger: HP_HUNGER, note: HP_NOTE }), busy: () => HPV.busy,
     visit: () => ({ on: hpVisitOn(), strip: [...document.querySelectorAll('#hpStrip [data-hpk]')].map((b) => ({ k: b.dataset.hpk, done: b.classList.contains('done'), rest: b.classList.contains('rest') })),
       props: [...document.querySelectorAll('#view .hp-prop[data-hp]')].map((g) => g.dataset.hp), patch: (document.querySelector('#sceneG') || { dataset: {} }).dataset.extra || '', wish: HPV.wish ? Object.assign({}, HPV.wish) : null,

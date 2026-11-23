@@ -291,7 +291,9 @@ function slDraw() {
     SLV.drawn.push(o); SLV.spots.push([Math.min(at.A[0], T[0]), Math.max(at.A[2], T[2])]);
     const kA = at.A.slice(), kT = T.slice(); kA.keep = 1; kT.keep = 1; kA.dog = 1; kA.gu = 1; kT.gu = 1; ob.push(kA, kT); // the next guest keeps clear of this one and its tag
   });
-  const keep = SLV.drawn.map((o) => { const [x0, y0, x1, y1] = o.box, p = 12 + slPackReach(svg, o.y), h = (x1 - x0) / 2 + p; return [0, 1].map((j) => `<rect class="hot sl-keep" x="${f1(x0 - p + j * h)}" y="${f1(y0)}" width="${f1(h)}" height="${f1(y1 - y0)}" fill="none" pointer-events="none"/>`).join(''); }).join(''); // the roam keeps the pack off each half (small things: 8%), 12 units wider each side and as far again as a pack dog's drawing reaches past its tap rect
+  // the roam keeps the pack off each piece (a small thing, under 15000 square units: at most 8% covered, 37_roam.js rmSoft), 12 units wider each side
+  // and as far again as a pack dog's drawing reaches past its tap rect; as many pieces as keep each one small
+  const keep = SLV.drawn.map((o) => { const [x0, y0, x1, y1] = o.box, p = 12 + slPackReach(svg, o.y), W0 = x1 - x0 + 2 * p, n = Math.max(2, Math.ceil(W0 * (y1 - y0) / 12000)), h = W0 / n; return Array.from({ length: n }, (_, j) => `<rect class="hot sl-keep" x="${f1(x0 - p + j * h)}" y="${f1(y0)}" width="${f1(h)}" height="${f1(y1 - y0)}" fill="none" pointer-events="none"/>`).join(''); }).join('');
   pack.insertAdjacentHTML('beforebegin', `<g id="hpGuests">${keep}${SLV.drawn.map((o, i) => slGuestSVG(o, i)).join('')}</g>`);
   document.querySelectorAll('#hpGuests .hp-guest').forEach((el) => {
     const open = (e) => { if (e) { e.stopPropagation(); e.preventDefault(); } slCard(+el.dataset.slg); };
