@@ -905,6 +905,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   if (typeof pmFields === 'function') pmFields(st); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): S.promo
   if (typeof fiFields === 'function') fiFields(st); // v2.30 Better together (V230.md 4, 58_invite.js): S.fi
   if (typeof glFields === 'function') glFields(st); // v2.30 Better together (V230.md 7, 58b_goal.js): S.goal
+  if (typeof v233Fields === 'function') v233Fields(st); // v2.33 Helping paws (V233.md 5, 60_helps.js): S.hp
   return linkDogs(st);
 }
 let S = null;
@@ -984,6 +985,7 @@ function migrate(s) {
   if (typeof pmFields === 'function') pmFields(s); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): additive, S.promo = { used: [], wait: [] }
   if (typeof fiFields === 'function') fiFields(s); // v2.30 Better together (V230.md 4, 58_invite.js): additive, S.fi
   if (typeof glFields === 'function') glFields(s); // v2.30 Better together (V230.md 7, 58b_goal.js): additive, S.goal
+  if (typeof v233Fields === 'function') v233Fields(s); // v2.33 Helping paws (V233.md 5, 60_helps.js): additive, S.hp (wrong types get defaults, arrays cut to their caps)
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save

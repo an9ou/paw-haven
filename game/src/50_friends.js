@@ -13,7 +13,9 @@ function frOn() {
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
-const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
+// hp (v2.33, 60_helps.js): the Worker said hp: 1 in GET /friends (memory only, false on every load until the first answer); hpOld: it refused a
+// snapshot with hp, so the yard goes without it for the rest of the load
+const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, hp: false, hpOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
 
 /* append only, never reorder: the Worker validates indices */
 const FR_NOTES = [
@@ -28,8 +30,11 @@ const FR_NOTES = [
   'Have a cosy day!',
   'Your garden is growing!',
   'Best buddies!',
-  'Good dog, good day!'
+  'Good dog, good day!',
+  'Thank you for helping!' // v2.33 Helping paws: note 12, sent only by "Say thanks" on a help letter (60_helps.js), never in the paw-print picker
 ];
+// the notes the paw-print picker offers (and every Worker takes): note 12 on is for Say thanks, once the Helping paws gate is open (V233.md 2)
+const FR_NOTES_OLD = 12;
 /* append only, never reorder: the Worker validates indices. Yard decor only (HM_DECOR, missing room counts as yard). Winter Market included. */
 const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
@@ -113,7 +118,7 @@ function frGuideHold() {
   if (S.fw && S.fw.fresh && typeof gdAllowed === 'function' && gdAllowed() && S.guide.step >= 0) return true;
   return false;
 }
-function frDay() { if (!S) return; const before = S.fr && S.fr.day; v219Fields(S); if (S.fr && before && before !== S.fr.day) markDirty(); }
+function frDay() { if (!S) return; const before = S.fr && S.fr.day; v219Fields(S); if (S.fr && before && before !== S.fr.day) markDirty(); if (typeof hpDay === 'function') hpDay(); } // v2.33: S.hp's daily counters (60_helps.js)
 
 async function frApi(method, path, body) {
   // the save belongs to an account that is not logged in here (a log out, or a 401): never make a new guest for Friends (code review 1)
@@ -166,6 +171,7 @@ function frYard() {
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
   const out = { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
   if (typeof KS_FR_FF !== 'undefined' && KS_FR_FF && typeof ksSup === 'function' && ksSup()) out.ff = 1; // v2.24: the Founding Friend badge, sent once the Worker takes the field (52_kindshop.js KS_FR_FF)
+  if (!FR.hpOld && typeof hpOn === 'function' && hpOn()) out.hp = hpSnap(); // v2.33: what a visitor can help with today (60_helps.js), only to a Worker that said hp: 1
   return out;
 }
 function frAfterPush() {
@@ -177,6 +183,10 @@ function frAfterPush() {
     const ids = frYardDogs().map((o) => o.d.id);
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
     return put(yard).then((r) => {
+      // v2.33: a Worker that went back (it said hp: 1, then refuses the field) gets the same yard again without hp, for the rest of the load (FR.hpOld)
+      if (r && !r.ok && frErr(r) === 'bad' && yard.hp && !FR.hpOld) { FR.hpOld = true; delete yard.hp; return put(yard); }
+      return r;
+    }).then((r) => {
       // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
       // v2.30 (code review 8): the same for a card dog in a newer outfit (an older Worker's DC_LIM.outfit 58 refuses the Friendship Bandana): those dogs go in no outfit (DC.outfitOld, 40_dogcards.js)
       const newer = (y) => y.decor.some((d) => d.i >= FR_DECOR_OLD) || y.dogs.some((x) => x && x.o >= DC_OUTFITS_OLD);
@@ -301,6 +311,7 @@ async function frLoad() {
     const r = await frApi('GET', '/friends');
     if (!r || !r.ok || !r.data) { FR.offline = true; return null; }
     FR.offline = false; FR.loadDay = frToday(); // the list's sent flags are for today
+    FR.hp = r.data.hp === 1; // v2.33: the Worker has Helping paws (an older one never says so: the game stays v2.32.1 with it)
     if (r.data.me) frApplyMe(r.data.me);
     else if (S.fr.fid || S.fr.code) { S.fr.fid = null; S.fr.code = null; S.fr.name = null; S.fr.on = false; markDirty(); } // this login has no friend id: forget the old one (code review 1)
     frCache(Array.isArray(r.data.friends) ? r.data.friends : []);
@@ -348,7 +359,8 @@ async function frInbox() {
   v219Fields(S);
   if (!S.fr.fid) return;
   let r = null;
-  try { r = await frApi('GET', '/friends/inbox'); } catch (e) { return; }
+  const hp = typeof hpOn === 'function' && hpOn(); // v2.33: ask for the helps and sleepovers (acts) only once the Worker has them
+  try { r = await frApi('GET', '/friends/inbox' + (hp ? '?hp=1' : '')); } catch (e) { return; }
   if (!r || !r.ok || !r.data || !Array.isArray(r.data.events)) return;
   frDay();
   const claim = [], pets = {};
@@ -368,10 +380,17 @@ async function frInbox() {
     claim.push(ev.id);
   });
   const gave = frGiftLetters(r.data.events, claim) + frWalkLetters(r.data.events, claim);
-  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length;
+  // v2.33: the helps and sleepovers (60_helps.js hpActs), applied once (S.hp.ids) and saved before the claim, like the gifts
+  const acts = hp && r.data.hp === 1 && Array.isArray(r.data.acts) ? r.data.acts : [], claimActs = [];
+  const did = acts.length ? hpActs(acts, claimActs) : 0;
+  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length + acts.filter((a) => a && !claimActs.includes(a.id)).length;
   frBadgeSync();
-  if (gave) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
-  if (claim.length) { try { await frApi('POST', '/friends/inbox/claim', { ids: claim.slice(0, 30) }); } catch (e) { /* the letter is already here. the next look claims it */ } }
+  if (gave || did) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
+  if (claim.length || claimActs.length) {
+    const body = { ids: claim.slice(0, 30) };
+    if (claimActs.length) { body.acts = claimActs.slice(0, 30); if (typeof HP !== 'undefined') HP.claimed += body.acts.length; } // acts only when there are some: the claim stays the v2.32 one otherwise
+    try { await frApi('POST', '/friends/inbox/claim', body); } catch (e) { /* the letter is already here. the next look claims it */ }
+  }
 }
 function frInboxSoon(force) {
   if (!frOn() || !S || !S.fr || !S.fr.fid) return;
@@ -844,7 +863,8 @@ function frYardClean(y) {
     name: Array.isArray(y.name) ? y.name.slice(0, 2) : null,
     house: Number.isInteger(y.house) && FR_HOUSES[y.house] ? FR_HOUSES[y.house] : FR_HOUSES[0],
     season: SEASONS.includes(y.season) ? y.season : seasonNow(),
-    dogs, decor, ff: y.ff === 1 // v2.24: a Founding Friend (the Supporter Pack's badge)
+    dogs, decor, ff: y.ff === 1, // v2.24: a Founding Friend (the Supporter Pack's badge)
+    ...((h) => (h ? { hp: h } : {}))(typeof hpSnapClean === 'function' ? hpSnapClean(y.hp) : null) // v2.33: what a visitor can help with today (a valid hp only)
   };
 }
 // the cache: S.fr.yards[fid] = { day, yard }. Only today's visits stay (a snapshot can be 16 KB)
@@ -1308,14 +1328,14 @@ async function frPet() {
 /* ---------- the paw-print note: one of FR_NOTES, once per friend per day ---------- */
 function frNoteSheet() {
   const name = frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
-  const list = FR_NOTES.map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tdata('fr_notes.' + i, en))}</button>`).join('');
+  const list = FR_NOTES.slice(0, FR_NOTES_OLD).map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tdata('fr_notes.' + i, en))}</button>`).join('');
   const p = openModal(esc(tt('fr.paw_leave', 'Leave a paw print')), `<div class="fr-notes"><p>${esc(tt('fr.note_lead', 'Pick a note for {name}.', { name }))}</p><div class="fr-notelist">${list}</div></div>`, { cls: 'frsheet fr-notesheet' });
   p.querySelectorAll('[data-frnote]').forEach((b) => { b.onclick = () => { SFX.click(); frNote(+b.dataset.frnote, p); }; });
   return p;
 }
 async function frNote(i, p) {
   const fid = FRV.fid;
-  if (!fid || !Number.isInteger(i) || i < 0 || i >= FR_NOTES.length || FRV.busy === 'note' || frSentToday(fid, 'note')) return false;
+  if (!fid || !Number.isInteger(i) || i < 0 || i >= FR_NOTES_OLD || FRV.busy === 'note' || frSentToday(fid, 'note')) return false;
   FRV.busy = 'note';
   const btns = p ? [...p.querySelectorAll('[data-frnote]')] : []; btns.forEach((b) => { b.disabled = true; });
   let r = null;
@@ -1645,7 +1665,7 @@ function frExpose() {
       const seeds = CROPS_FB.map((c) => c.seedItem), crops = CROPS_FB.map((c) => c.item);
       const want = food.concat(['Wild Berries', "Duck's Picnic Sandwich"], seeds, crops);
       const decor = Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard');
-      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
+      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 13 && FR_NOTES_OLD === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
     decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),

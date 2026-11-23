@@ -6,107 +6,7 @@ const SHOTS = process.env.FR_SHOTS || '/opt/cursor/artifacts/screenshots'; // FR
 const workerSrc = fs.readFileSync(path.join(__dirname, '..', 'cloudflare', 'worker.js'), 'utf8');
 const limM = workerSrc.match(/const FR_LIM = \{([^}]+)\}/);
 
-function mockInit() {
-  const fid = (s) => (s + 'xxxxxxxxxxxxxxxxxxxxxx').slice(0, 22);
-  const alph = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  function norm(s) {
-    if (typeof s !== 'string') return null;
-    let t = s.replace(/\s+/g, '').toUpperCase();
-    if (t.startsWith('DOG-')) t = t.slice(4); else if (t.startsWith('DOG')) t = t.slice(3);
-    if (t.length !== 5 || t.split('').some((c) => alph.indexOf(c) < 0)) return null;
-    return 'DOG-' + t;
-  }
-  const srv = {
-    me: null, friends: [], yards: [], forceFull: false, offline: false, unknown: [], sent: [], visits: [],
-    book: {
-      'DOG-4K7PM': { fid: fid('sunnybiscuit'), name: [0, 0], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }] },
-      'DOG-7HJKN': { fid: fid('happyclover'), name: [1, 6], dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 }] },
-      'DOG-9QRST': { fid: fid('cozyfern'), name: [2, 11], dogs: [{ b: 3, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }] },
-      // v2.22.3: the game's official yard (users.official in D1): no cap on its side, and it does not count toward my 50
-      'DOG-K3APZ': { fid: fid('officialyard'), name: [0, 0], dogs: [{ b: 1, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 1 }], official: true }
-    },
-    // part 3: the friends' yard snapshots (V219.md 2). Happy Clover has none yet
-    yardOf: {
-      [fid('sunnybiscuit')]: { v: 1, name: [0, 0], house: 2, season: 'winter', dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }, { b: 1, c: null, o: 1, a: 'pup', s: 'm', sp: 0, n: 1 }], decor: [{ i: 19, x: 24, y: 300 }, { i: 20, x: 96, y: 318 }, { i: 15, x: 330, y: 470 }] },
-      [fid('cozyfern')]: { v: 1, name: [2, 11], house: 4, season: 'spring', dogs: [{ b: 3, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 3 }], decor: [] }
-    },
-    events: [
-      { id: 1, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'note', data: { i: 0 }, day: '2026-11-01', claimed: false },
-      { id: 2, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false },
-      { id: 3, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'gift', data: { i: 0, n: 1 }, day: '2026-11-01', claimed: false },
-      { id: 4, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'walk', data: { dog: 0, mine: { b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 } }, day: '2026-11-01', claimed: false }
-    ]
-  };
-  window.__frSrv = srv;
-  const user = { id: 'user000000000000000001', guest: true, email: null };
-  window.__pawCloudMock = {
-    async fetch(url, o) {
-      o = o || {};
-      if (srv.offline) throw new TypeError('Failed to fetch');
-      const u = new URL(url, 'https://api.test'), method = o.method || 'GET', path = u.pathname;
-      let body = null; try { body = o.body ? JSON.parse(o.body) : {}; } catch (e) { body = {}; }
-      const send = (status, data) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
-      if (method === 'POST' && path === '/guest') { srv.guests = (srv.guests || 0) + 1; return send(200, { token: 'tok-test', user }); }
-      if (srv.force401 && path.indexOf('/friends') === 0) { srv.force401 = false; return send(401, { error: 'auth' }); } // fix batch: the login is gone (a reset on another device)
-      if (method === 'GET' && path === '/me') return send(200, { user });
-      if (method === 'GET' && path === '/save') return send(200, { save: null });
-      if (method === 'PUT' && path === '/save') return send(200, { ok: true });
-      if (method === 'GET' && path === '/friends') { srv.lists = (srv.lists || 0) + 1; return send(200, { me: srv.me, friends: srv.friends }); }
-      if (method === 'POST' && path === '/friends/me') {
-        if (!srv.me) srv.me = { fid: fid('owner'), code: 'DOG-23456', name: body.name };
-        else srv.me.name = body.name;
-        return send(200, { fid: srv.me.fid, code: srv.me.code, name: srv.me.name });
-      }
-      if (method === 'POST' && path === '/friends/code/new') {
-        if (!srv.me) return send(400, { error: 'bad' });
-        srv.me.code = srv.me.code === 'DOG-23456' ? 'DOG-98765' : 'DOG-23456';
-        return send(200, { fid: srv.me.fid, code: srv.me.code, name: srv.me.name });
-      }
-      if (method === 'POST' && path === '/friends/add') {
-        const code = norm(body.code);
-        if (!code) return send(404, { error: 'not_found' });
-        if (srv.me && code === srv.me.code) return send(400, { error: 'self' });
-        const who = srv.book[code];
-        if (srv.forceFull || (!(who && who.official) && srv.friends.filter((f) => !f.official).length >= 50)) return send(400, { error: 'full' }); // as the Worker: official friends don't count
-        if (!who) return send(404, { error: 'not_found' });
-        if (srv.friends.some((f) => f.fid === who.fid)) return send(409, { error: 'already' });
-        srv.friends.push(Object.assign({ fid: who.fid, name: who.name.slice(), dogs: srv.yardOf[who.fid] ? srv.yardOf[who.fid].dogs : [], seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } }, who.official ? { official: true } : {})); // as the Worker: the snapshot's dogs, [] with none
-        return send(200, { ok: true });
-      }
-      if (method === 'POST' && path === '/friends/remove') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
-      if (method === 'POST' && path === '/friends/block') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
-      if (method === 'PUT' && path === '/friends/yard') { if (srv.decorLim && body.yard.decor.some((d) => d.i >= srv.decorLim)) { srv.badYards = (srv.badYards || 0) + 1; return send(400, { error: 'bad' }); } srv.yards.push(body.yard); return send(200, { ok: true }); } // decorLim: an older Worker's FR_LIM.decor
-      if (method === 'GET' && path === '/friends/inbox') return send(200, { events: srv.events.filter((e) => !e.claimed).map((e) => ({ id: e.id, from: e.from, kind: e.kind, data: e.data, day: e.day })) });
-      if (method === 'POST' && path === '/friends/inbox/claim') { srv.claims = (srv.claims || 0) + 1; if (srv.failClaim) throw new TypeError('Failed to fetch'); (body.ids || []).forEach((id) => { const e = srv.events.find((x) => x.id === id); if (e) e.claimed = true; }); return send(200, { ok: true }); }
-      if (method === 'GET' && path === '/friends/yard') {
-        const who = u.searchParams.get('fid'); srv.visits.push(who);
-        if (!srv.friends.some((f) => f.fid === who)) return send(404, { error: 'not_found' });
-        return send(200, { yard: srv.yardOf[who] || null });
-      }
-      if (method === 'POST' && path === '/friends/send') {
-        srv.sends = (srv.sends || 0) + 1;
-        if (srv.failSend) throw new TypeError('Failed to fetch'); // part 4: a network error on the send only
-        const f = srv.friends.find((x) => x.fid === body.fid);
-        if (!f || !['pet', 'note', 'gift', 'walk'].includes(body.kind)) return send(400, { error: 'bad' });
-        if (body.kind === 'note' && !(Number.isInteger(body.data && body.data.i) && body.data.i >= 0 && body.data.i < 12)) return send(400, { error: 'bad' });
-        if (body.kind === 'gift' && !(body.data && Number.isInteger(body.data.i) && body.data.i >= 0 && body.data.i < 47 && body.data.n === 1)) return send(400, { error: 'bad' });
-        if (body.kind === 'gift' && srv.sent.some((s) => s.kind === 'gift')) return send(400, { error: 'limit' }); // one gift a day in all (from_id, kind, day)
-        if (body.kind === 'walk') { // part 5, as the Worker's frWalk: { dog, mine, t? }, dog inside their snapshot, mine a card dog, t a gift index
-          const d = body.data || {}, ks = Object.keys(d), snap = srv.yardOf[body.fid];
-          if (!snap || !ks.includes('dog') || !ks.includes('mine') || ks.some((k) => !['dog', 'mine', 't'].includes(k)) || !Number.isInteger(d.dog) || d.dog < 0 || d.dog >= snap.dogs.length) return send(400, { error: 'bad' });
-          if (!d.mine || typeof d.mine !== 'object' || !Number.isInteger(d.mine.b) || d.mine.b < 0 || !Number.isInteger(d.mine.n) || 'name' in d.mine) return send(400, { error: 'bad' });
-          if ('t' in d && !(Number.isInteger(d.t) && d.t >= 0 && d.t < 47)) return send(400, { error: 'bad' });
-        }
-        if (srv.sent.some((s) => s.fid === body.fid && s.kind === body.kind)) return send(400, { error: 'limit' });
-        srv.sent.push({ fid: body.fid, kind: body.kind, data: body.data }); f.sent[body.kind] = true;
-        return send(200, { ok: true });
-      }
-      if (method === 'POST' && path === '/friends/leave') { srv.me = null; srv.friends = []; srv.yards = []; return send(200, { ok: true }); }
-      srv.unknown.push(method + ' ' + path);
-      return send(200, { ok: true });
-    }
-  };
-}
+const { mockInit } = require('./fr_mock'); // v2.33: the Friends cloud mock lives in game/fr_mock.js (shared with test_v233_helps.js)
 
 async function start(t, o) {
   o = o || {};
@@ -208,8 +108,8 @@ run('v219_friends', async (t) => {
   const order = await ev(() => window.__paw.fr.orderOk());
   const lim = await ev(() => window.__paw.fr.lim());
   ok(order.gifts && order.decor && order.houses && order.notes, 'FR_GIFTS, FR_DECOR, FR_HOUSES and FR_NOTES match the game tables: ' + JSON.stringify(order.n));
-  ok(lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'lengths are notes 12, gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; v2.25.5: + the Paw-Print Pennant after them)');
-  ok(workerLim === 'notes:12,gifts:47,decor:36,houses:15' && lim.notes === 12 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
+  ok(lim.notes === 13 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'lengths are notes 13 (v2.33: + note 12, Say thanks), gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.26: + the four yard toys; v2.25.5: + the Paw-Print Pennant after them)');
+  ok(workerLim === 'notes:13,gifts:47,decor:36,houses:15' && lim.notes === 13 && lim.gifts === 47 && lim.decor === 36 && lim.houses === 15, 'client lengths match FR_LIM in cloudflare/worker.js (' + workerLim + ')');
   ok(await ev(() => !window.__paw.fr.lists().gifts.includes('Golden Bone') && !window.__paw.fr.lists().gifts.includes('Fresh Water') && window.__paw.fr.lists().gifts[33] === 'Wild Berries' && window.__paw.fr.lists().gifts[34] === "Duck's Picnic Sandwich"), 'Wild Berries and the sandwich follow the foods. No Golden Bone, no Fresh Water');
 
   // owner, 2 Nov 2026: Friends on by default on the GitHub Pages test copy only (tools/pages.js), never itch.io or /play/ (tools/itch.js passes --itch)
