@@ -43,6 +43,9 @@ function v233Fields(s) {
   // part 4 (V233.md 7): the page keys S.dd.pg is numbered by ([] = numbered without the "Helping paws" page) and that page's gift
   if (!Array.isArray(h.pk) || h.pk.length > 80 || !h.pk.every((k) => typeof k === 'string' && k.length < 24)) h.pk = [];
   str('pg');
+  // fix batch B1 (code review 11): page gifts whose page was not in the book at a load's first sync, by page key, until the page comes back
+  if (!h.px || typeof h.px !== 'object' || Array.isArray(h.px)) h.px = {};
+  Object.keys(h.px).forEach((k) => { if (k.length > 23 || typeof h.px[k] !== 'string' || h.px[k].length > 40) delete h.px[k]; });
   return s;
 }
 // the daily counters start again on a new Japan day (from frDay); only today's guests stay. Nothing while off
@@ -120,11 +123,15 @@ function hpActs(acts, claimActs) {
 // nearest HP_BOWL in view (hpBowlSpot: clear of every dog's drawn box in all its poses, the chip, the strip, the buttons, the bar, the paw stamp and
 // their decorations, never on the house's wall). The can shows once the camera pans to it (the strip's button does). World units x, y, w, h
 const HP_BOWL = [660, 466, 68, 68], HP_CAN = [150, 388, 56, 56];
+// the bowl's drawing inside its 68 box (x0, y0, x1, y1: the full bowl's kibble from y 21, its base at y 59), and how much of a dog's shortest drawn
+// height (its paws) a bowl in front of it may hide (hpBowlSpot's near tier), the part of its drawn width at its nose's end it never stands in front of
+const HP_INK = [2, 20, 66, 60], HP_PAW = 0.14, HP_HEAD = 0.38, HP_SCALES = [1, 0.85, 0.72, 0.6]; // and the sizes a near bowl may take to fit there
 // where no dog may put its feet, so that none is drawn over the can: its box (frScan adds 8 round it) and the ground beside it
 // (a dog's drawn half-width is about 88 x its scale: about 1 on a desktop, 0.6 on a phone)
 const HP_KEEP = { can: [0, 0, 96, 120] }, HP_KEEP_PH = { can: [0, 0, 60, 120] };
 const HP_HUNGER = 20, HP_NOTE = 12; // a bowl top-up's Hunger; the thank-you note (FR_NOTES[12])
-const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot
+const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null, pour: false, at: '', ro: null }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot,
+// pour: the bowl stays empty until the kibble lands (hpBowlFx fills it), at: what the bubble was last placed for (hpFrame), ro: the chip's ResizeObserver
 const hpSnd = (n, alt) => { try { if (typeof SFX[n] === 'function') SFX[n](); else if (alt) alt(); } catch (e) { /* audio off */ } }; // SFX.chime and SFX.page fall back
 const hpFriendName = () => frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
 // their leader on this visit (the snapshot's first dog) and its name
@@ -144,54 +151,95 @@ const hpDone = (k) => !!FRV.fid && frSentToday(FRV.fid, k);
 // frYardSVG's veggie patch: growing when the snapshot says so (the can stands on it), else empty as in v2.19
 function hpPatch(y) { const h = hpOn() && y && y.hp; return h && h.d === jstISO() && h.g > 0 ? 'growing' : 'empty'; }
 function hpCanArt() { let a = ''; try { a = art('icon', 'water-can'); } catch (e) { a = ''; } return a || `<svg viewBox="0 0 64 64">${doodle('spark', 32, 32, 1.6)}</svg>`; }
-function hpBowlSVG() { const [, , w, h] = HP_BOWL; return place(bowlArt(hpDone('bowl') ? 'Basic Kibble' : null), 0, 0, w, h); }
+function hpBowlSVG() { const [, , w, h] = HP_BOWL; return place(bowlArt(hpDone('bowl') && !HPV.pour ? 'Basic Kibble' : null), 0, 0, w, h); }
+// the scene's bowl drawn again: full once filled today, empty while the pour plays (data-full for the tests)
+function hpBowlFill() { const g = $('#view .hp-bowlart'); if (!g) return; g.innerHTML = hpBowlSVG(); g.setAttribute('data-full', hpDone('bowl') && !HPV.pour ? '1' : '0'); }
 // #hpG: the bowl (always; hidden until hpBowlSpot puts it down) and the can (something grows today). Each is a button; its box keeps the dogs' feet off it (frScan)
 function hpGSVG() {
   if (!hpOn()) return '';
   const lead = hpTheirName(), [bx, by, bw, bh] = HP_BOWL, [cx, cy, cw, ch] = HP_CAN, K = isPhone() ? HP_KEEP_PH : HP_KEEP;
   const keep = (b, o) => `<rect data-hp="keep" x="${b[0] + o[0]}" y="${b[1] + o[1]}" width="${b[2] + o[2]}" height="${Math.min(o[3], 600 - b[1])}" fill="none" pointer-events="none"/>`;
-  const bowl = `<g class="hp-prop hp-bowl" data-hp="bowl" role="button" tabindex="0" style="display:none" transform="translate(${bx} ${by})" aria-label="${esc(tt('hp.bowl_aria', "Fill {dog}'s bowl", { dog: lead }))}"><rect x="-4" y="-4" width="${bw + 8}" height="${bh + 8}" fill="transparent"/><g class="hp-bowlart">${hpBowlSVG()}</g></g>`;
+  const bowl = `<g class="hp-prop hp-bowl" data-hp="bowl" role="button" tabindex="0" style="display:none" transform="translate(${bx} ${by})" aria-label="${esc(tt('hp.bowl_aria', "Fill {dog}'s bowl", { dog: lead }))}"><rect x="-4" y="-4" width="${bw + 8}" height="${bh + 8}" fill="transparent"/><g class="hp-bowlart" data-full="${hpDone('bowl') ? 1 : 0}">${hpBowlSVG()}</g></g>`;
   const can = hpGrowing() ? keep(HP_CAN, K.can) + `<g class="hp-prop hp-can" data-hp="water" role="button" tabindex="0" aria-label="${esc(tt('hp.water_aria', 'Water the garden'))}"><rect x="${cx - 6}" y="${cy - 6}" width="${cw + 12}" height="${ch + 12}" fill="transparent"/><g class="hp-canart"><g transform="translate(${2 * cx + cw} 0) scale(-1 1)">${place(hpCanArt(), cx, cy, cw, ch)}</g></g></g>` : ''; // its spout over the patch
   return bowl + can;
 }
-// where the bowl goes on this visit, once the dogs stand: [x, y] of its top left, the free spot nearest HP_BOWL (see HP_BOWL)
+// where the bowl goes on this visit, once the dogs stand: [x, y, over, s, tier] (its top left, drawn over the dogs (#hpTop), its scale), or null
+// (no ground clear of the screen's own parts: the bowl stays hidden, the strip's button still fills it). Phone and art review (23 Nov 2026), tiers:
+//   1 clear: the free spot nearest HP_BOWL; 2 near (no clear ground: a 390 phone's greeting pair fills it): in front of the dogs it touches, its
+//   base on their foot line, hiding at most their paws (HP_PAW) in every pose they take there and never at their nose's end (HP_HEAD), drawn over
+//   them, a little smaller when only that fits (HP_SCALES, never under a 44 px tap); 3 the same in front of their legs (FR_LEGS, as a dog in front
+//   may hide them); 4 last: in front of the dogs it touches, hiding the least of them and of the standing decorations. In every tier the chip, the
+//   strip, the buttons, the camera arrow, the bar (frScan's boxes), the paw stamp, the can, the wish bubble and the house's wall are no-go for its
+//   whole tap box. Hanging decorations (lights, bunting, garlands: hoLayer 0) never block ground; flat ones (stones, a sandbox) and the scene's hot
+//   spots are kept clear in tiers 1 and 2
 function hpBowlSpot() {
-  const c = FRV.crop, svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(); if (!c || !M) return HP_BOWL.slice(0, 2);
-  const inv = M.inverse(), toW = (x, y) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv); };
-  const ob = [], was = HPV.bowl; // obstacles as [x0, y0, x1, y1] (the dogs apart, below); not the bowl's own keep from an earlier look
-  c.boxes.concat(c.feet).forEach((b) => { if (!(was && Math.abs(b[0] + 8 - was[0]) < 1 && Math.abs(b[1] + 8 - was[1]) < 1)) ob.push([b[0], b[1], b[0] + b[2], b[1] + b[3]]); });
-  const st = FR_STAMP, sy = isPhone() ? st[1] - 70 : st[1]; ob.push([st[0], sy, st[0] + st[2], sy + st[3]]);
-  [...svg.querySelectorAll('#frDecorG .fr-decor')].concat([...document.querySelectorAll('#hpWish:not([hidden])')]).forEach((el) => { /* their decorations and the wish bubble */ const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); ob.push([p.x, p.y, q.x, q.y]); });
-  const [hx, hy, w, h] = HP_BOWL, m = 6, x0 = Math.max(4, c.x0 + 6), x1 = Math.min(996, c.x1 - 6) - w, yb = Math.min(598, c.y1);
-  const hit = (x, y, o) => x - m < o[2] && x + w + m > o[0] && y - m < o[3] && y + h + m > o[1];
-  const dogs = FRV.dogs.filter((v) => v.res && !v.hidden);
-  let best = null, near = null;
-  for (let b = yb; b >= 430; b -= 4) {
-    for (let x = x0; x <= x1; x += 4) {
-      if (x + w > 628 && x < 856 && b < 528) continue; // never on the house's wall: in front of the house only from its front line
-      const y = b - h, s = -Math.abs(x - hx) - Math.abs(b - (hy + h)) * 1.5;
-      if (ob.some((o) => hit(x, y, o))) continue;
-      const on = dogs.filter((v) => hit(x, y, v.res.r));
-      if (!on.length) { if (!best || s > best.s) best = { s, x, y }; continue; }
-      // no clear ground (a 390 phone: the greeting pair fills it): in front of the dogs it touches, covering the least of them, drawn over them
-      if (on.some((v) => v.y > b + 8)) continue; // none clearly in front of it
-      const a = on.reduce((n, v) => { const e = frExt(v, frPose(v), v.face); return n + frOver([x, y, w, h], [v.x + v.k * e[0], v.y + v.k * e[1], v.k * (e[2] - e[0]), v.k * (e[3] - e[1])]); }, 0), s2 = -a * 4 + s; // as each stands now
-      if (!near || s2 > near.s) near = { s: s2, x, y };
+  const c = FRV.crop, svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(); if (!c || !M) return HP_BOWL.slice(0, 2).concat(0, 1);
+  const inv = M.inverse(), ppu = Math.hypot(M.a, M.b) || 1, toW = (el) => { const r = el.getBoundingClientRect(); if (!r.width || !r.height) return null; const p = svg.createSVGPoint(); p.x = r.left; p.y = r.top; const a = p.matrixTransform(inv); p.x = r.right; p.y = r.bottom; const b = p.matrixTransform(inv); return [a.x, a.y, b.x, b.y]; };
+  const hard = c.boxes.map((b) => [b[0], b[1], b[0] + b[2], b[1] + b[3]]), soft = []; // [x0, y0, x1, y1, weight]
+  const st = FR_STAMP, sy = isPhone() ? st[1] - 70 : st[1]; hard.push([st[0], sy, st[0] + st[2], sy + st[3]]);
+  [...svg.querySelectorAll('#hpG .hp-can, #hpG [data-hp="keep"]:not(#hpBowlKeep)')].concat([...document.querySelectorAll('#hpWish:not([hidden])')]).forEach((el) => { const r = toW(el); if (r) hard.push(r); });
+  svg.querySelectorAll('#frDecorG .fr-decor').forEach((el) => {
+    const n = el.getAttribute('data-frdecor'), l = typeof hoLayer === 'function' && HM_DECOR[n] ? hoLayer(n) : 2; if (l === 0) return; // hanging: no ground of its own
+    const r = toW(el); if (r) soft.push(r.concat(l === 1 ? 0.5 : 1));
+  });
+  svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = toW(el); if (r) soft.push(r.concat(1)); });
+  const [hx, hy, W, H] = HP_BOWL, I = HP_INK, x0 = Math.max(4, c.x0 + 6), xr = Math.min(996, c.x1 - 6), yb = Math.min(598, c.y1);
+  const over = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+  // the dogs where they stand for the visit; my leader still to walk in (the greeting) counts at its spot, and its way in is kept clear of a bowl
+  // drawn under the dogs (one drawn over them stands in front of the way: the leader walks behind it)
+  let path = null;
+  const dogs = FRV.dogs.filter((v) => v.res && v.res.r && !v.hidden).map((v) => {
+    if (!(v.gr && v.home && Math.abs(v.home[0] - v.x) > 1)) return { r: v.res.r, y: v.y, h: v.res.h, face: v.face };
+    const k = frK(v, v.home[1]), r = frEnv(v, v.home[0], v.home[1], k, v.face); path = { r: v.res.r, y: v.home[1] };
+    return { r, y: v.home[1], h: frMinH(v) * k, face: v.face };
+  });
+  // its base on or in front of its foot line, hiding no more than the bottom f of its shortest drawn height (v.res.r: every pose it takes there), and never in front of
+  // the end its nose is at (HP_HEAD: a glad dog's play bow brings its head down to the ground there)
+  const low = (k, v, f) => { const r = v.r, cut = r[0] + (r[2] - r[0]) * (v.face === 'left' ? HP_HEAD : 1 - HP_HEAD); return k[3] >= v.y - 2 && k[1] >= v.y - f * v.h && (v.face === 'left' ? k[0] >= cut : k[2] <= cut); };
+  const paws = (k, v) => low(k, v, HP_PAW), legs = (k, v) => low(k, v, FR_LEGS);
+  const head = (k, v) => { const r = v.r, a = (r[2] - r[0]) * HP_HEAD; return over(k, v.face === 'left' ? [r[0], r[1], r[0] + a, r[3]] : [r[2] - a, r[1], r[2], r[3]]); }; // in front of its nose's end
+  let best = null, near = null, mid = null, last = null;
+  HP_SCALES.forEach((s) => {
+    const T = hpBowlTap(s, ppu); // a 44 px tap at every size
+    const w = W * s, h = H * s;
+    for (let y = yb - h; y >= 430 - h; y -= 4) {
+      for (let x = x0; x <= xr - w; x += 4) {
+        if (x + w > 628 && x < 856 && y + h < 528) continue; // never on the house's wall: in front of the house only from its front line
+        const t = [x + T[0] * s, y + T[1] * s, x + (T[0] + T[2]) * s, y + (T[1] + T[3]) * s]; // its tap box (frScan's boxes have 6 px round them)
+        if (hard.some((o) => over(t, o) > 0)) continue;
+        const k = [x + I[0] * s, y + I[1] * s, x + I[2] * s, y + I[3] * s], d = -Math.abs(x + w / 2 - hx - W / 2) - Math.abs(y + h - hy - H) * 1.5 - (1 - s) * 400;
+        const sa = soft.reduce((n, o) => n + over(k, o) * o[4], 0), on = dogs.filter((v) => over(k, v.r) > 0);
+        const way = path && over(k, path.r) > 0; if (way && k[3] < path.y - 2) continue; // never on my leader's way in, unless in front of it
+        if (s === 1 && !sa && !on.length && !way) { if (!best || d > best.s) best = { s: d, x, y, k: s }; continue; }
+        const d2 = d - on.reduce((n, v) => n + over(k, v.r), 0) * 0.03; // (paws or legs hidden: a little; a full size bowl is worth more)
+        if (!sa && on.every((v) => paws(k, v))) { if (!near || d2 > near.s) near = { s: d2, x, y, k: s }; continue; } // (a smaller bowl on clear ground too: drawn over, so no dog's tap box takes its taps)
+        if (on.length && on.every((v) => legs(k, v))) { const d3 = d2 - sa * 0.5; if (!mid || d3 > mid.s) mid = { s: d3, x, y, k: s }; continue; } // in front of their legs (FR_LEGS, as a dog in front may hide them)
+        if (!on.every((v) => k[3] >= v.y - 2)) continue; // the last tier: in front of every dog it touches (drawn over them), hiding the least
+        const d4 = d - sa * 0.5 - on.reduce((n, v) => n + over(k, v.r) + head(k, v) * 4, 0);
+        if (!last || d4 > last.s) last = { s: d4, x, y, k: s };
+      }
     }
-  }
-  if (best) return [best.x, best.y, 0];
-  return near ? [near.x, near.y, 1] : HP_BOWL.slice(0, 2).concat(1);
+  });
+  if (best) return [best.x, best.y, 0, 1, 1];
+  const o = near || mid || last;
+  return o ? [o.x, o.y, 1, o.k, o === near ? 2 : o === mid ? 3 : 4] : null;
 }
-// the bowl at its spot; over the dogs (#hpTop, after #frDogs) only when it stands in front of some (no clear ground)
+// the bowl's tap box in its own units at scale s ([x, y, w, h]): round its drawing, wider and taller up when that is under 46 px on screen (over
+// the paws a near bowl stands in front of, never further down)
+function hpBowlTap(s, ppu) { const I = HP_INK, q = 46 / ((s || 1) * (ppu || 1)), th = Math.max(I[3] - I[1] + 12, q), tw = Math.max(I[2] - I[0] + 8, q); return [(I[0] + I[2] - tw) / 2, I[3] + 2 - th, tw, th]; }
+// the bowl at its spot and scale; over the dogs (#hpTop, after #frDogs) when it stands in front of those it touches. No spot: hidden
 function hpBowlPut() {
   const g = $('#hpG .hp-bowl') || $('#hpTop .hp-bowl'); if (!g) return null;
   const at = hpBowlSpot(); HPV.bowl = at;
-  g.setAttribute('transform', `translate(${f1(at[0])} ${f1(at[1])})`); g.style.display = '';
-  const dogs = $('#frDogs'), hpG = $('#hpG');
+  const dogs = $('#frDogs'), hpG = $('#hpG'), svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(); let k = $('#hpBowlKeep');
+  if (!at) { g.style.display = 'none'; if (k) k.remove(); return null; }
+  const s = at[3] || 1, T = hpBowlTap(s, M ? Math.hypot(M.a, M.b) : 1), r = g.querySelector(':scope > rect');
+  g.setAttribute('transform', `translate(${f1(at[0])} ${f1(at[1])})${s !== 1 ? ` scale(${s})` : ''}`); g.style.display = '';
+  if (r) [['x', T[0]], ['y', T[1]], ['width', T[2]], ['height', T[3]]].forEach(([n, v]) => r.setAttribute(n, f1(v)));
   if (at[2] && dogs) { let top = $('#hpTop'); if (!top) { top = document.createElementNS('http://www.w3.org/2000/svg', 'g'); top.id = 'hpTop'; dogs.after(top); } top.appendChild(g); }
   else if (hpG && g.parentNode !== hpG) hpG.insertBefore(g, hpG.firstChild);
-  if (hpG) { let k = $('#hpBowlKeep'); if (!k) { k = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); k.id = 'hpBowlKeep'; k.setAttribute('data-hp', 'keep'); k.setAttribute('fill', 'none'); k.setAttribute('pointer-events', 'none'); hpG.appendChild(k); }
-    [['x', at[0]], ['y', at[1]], ['width', HP_BOWL[2]], ['height', HP_BOWL[3]]].forEach(([n, v]) => k.setAttribute(n, f1(v))); } // the dogs keep their feet off it wherever it is drawn (frScan)
+  if (hpG) { if (!k) { k = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); k.id = 'hpBowlKeep'; k.setAttribute('data-hp', 'keep'); k.setAttribute('fill', 'none'); k.setAttribute('pointer-events', 'none'); hpG.appendChild(k); }
+    const I = HP_INK; [['x', at[0] + I[0] * s], ['y', at[1] + I[1] * s], ['width', (I[2] - I[0]) * s], ['height', (I[3] - I[1]) * s]].forEach(([n, v]) => k.setAttribute(n, f1(v))); } // the dogs keep their feet off the bowl itself, wherever it is drawn (frScan)
   return at;
 }
 // the strip: "Help out" and three round buttons (bowl, can, wish). Done today: a tick. The can rests (greyed) when nothing grows; the wish shows for a doable wish
@@ -211,12 +259,12 @@ function hpStripPlace() {
   const top = Math.round(r.bottom - vr.top + 8) + 'px', left = Math.round(Math.max(8, r.left - vr.left)) + 'px';
   if (el.style.top !== top) el.style.top = top; if (el.style.left !== left) el.style.left = left;
 }
-function hpStripSync() { const el = $('#hpStrip', view); if (el) { el.innerHTML = hpStripBtns(); hpStripPlace(); } const g = $('#view .hp-bowlart'); if (g) g.innerHTML = hpBowlSVG(); HPV.bub = ''; }
+function hpStripSync() { const el = $('#hpStrip', view); if (el) { el.innerHTML = hpStripBtns(); hpStripPlace(); } hpBowlFill(); HPV.bub = ''; HPV.at = ''; } // the bowl stays empty while it is being filled (HPV.pour)
 // the Worker went back (it said hp: 1, then refused a new kind): no helps for the rest of the load
 function hpGone() {
   FR.hp = false; HP.gone = true;
   const s = $('#hpStrip', view); if (s) s.remove(); ['#hpG', '#hpTop'].forEach((q) => { const g = $(q); if (g) g.innerHTML = ''; }); const b = $('#hpWish', view); if (b) b.remove();
-  cancelAnimationFrame(HPV.raf); HPV.raf = 0; if (cur.mode === 'fryard') frScan();
+  cancelAnimationFrame(HPV.raf); HPV.raf = 0; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } if (cur.mode === 'fryard') frScan();
 }
 
 /* ---------- the wish bubble over their leader (the #ddWish look, the tail down), moved by the frame loop ---------- */
@@ -238,7 +286,8 @@ function hpBubble() {
   }
   return el;
 }
-// over the head of their leader: the top of its drawn box, through the screen CTM; inside the view and under the strip
+// over the head of their leader: the top of its drawn box, through the screen CTM; inside the view, under the strip and clear of the camera
+// arrow (#phPeek, phone review 6: beside it when the bubble fits there, else above or below it)
 function hpBubblePlace() {
   const el = hpBubble(), v = hpTheirs(), svg = $('#view > svg.world'); if (!el) return;
   const M = svg && svg.getScreenCTM(); if (!v || v.hidden || !M) { el.hidden = true; return; }
@@ -247,15 +296,33 @@ function hpBubblePlace() {
   if (hx < 0 || hx > vr.width) { el.hidden = true; return; } // the camera looks elsewhere
   el.hidden = false;
   const w = el.offsetWidth, h = el.offsetHeight, s = $('#hpStrip', view), floor = s ? s.offsetTop + s.offsetHeight + 6 : 8;
-  const left = clamp(hx - w / 2, 8, Math.max(8, vr.width - w - 8)), top = Math.max(floor, hy - h - 16);
+  let left = clamp(hx - w / 2, 8, Math.max(8, vr.width - w - 8)), top = Math.max(floor, hy - h - 16);
+  const pk = $('#phPeek', view), pr = pk && pk.offsetWidth ? pk.getBoundingClientRect() : null;
+  if (pr) {
+    const a = [pr.left - vr.left - 11, pr.top - vr.top - 6, pr.right - vr.left + 11, pr.bottom - vr.top + 6]; // its nudge moves it 5 px
+    const hit = (l, t) => l < a[2] && l + w > a[0] && t < a[3] && t + h > a[1];
+    if (hit(left, top)) {
+      if (a[2] + w <= vr.width - 8) left = a[2]; // to its right (a visit's arrow is on the left edge)
+      else if (a[0] - w >= 8) left = a[0] - w;
+      else if (a[1] - h >= floor) top = a[1] - h;
+      else top = a[3];
+    }
+  }
   el.style.left = Math.round(left) + 'px'; el.style.top = Math.round(top) + 'px';
   el.style.setProperty('--tail', Math.round(clamp(hx - left - 7, 14, w - 28)) + 'px');
 }
-function hpFrame() { HPV.raf = 0; if (!hpVisitOn()) return; hpStripPlace(); hpBubblePlace(); HPV.raf = requestAnimationFrame(hpFrame); }
-
+// the bubble follows the leader and the camera: the layout is read and written only when one of them moved (code review 10), and only while
+// there is a bubble. The strip follows the chip (a ResizeObserver, hpVisit) and the window
+function hpFrame() {
+  HPV.raf = 0; if (!hpVisitOn() || !HPV.wish) return;
+  const v = hpTheirs(), w = HPV.wish;
+  const key = [FRC.x.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
+  if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); }
+  HPV.raf = requestAnimationFrame(hpFrame);
+}
 /* ---------- the visit (emit('fryard:enter') at the end of enterFrYard) ---------- */
 function hpVisit() {
-  cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.busy = ''; HPV.bub = '';
+  cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.busy = ''; HPV.bub = ''; HPV.at = ''; HPV.pour = false;
   if (!hpVisitOn()) { const s = $('#hpStrip', view); if (s) s.remove(); return; }
   hpDay();
   HPV.wish = hpWishOf();
@@ -269,12 +336,14 @@ function hpVisit() {
     g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
   });
   hpBubblePlace(); frScan(); hpBowlPut(); frScan(); // the bowl goes down where no dog stands; then the dogs keep their feet off it
-  HPV.raf = requestAnimationFrame(hpFrame);
-  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.wish = null; HPV.busy = ''; });
+  const st = $('#status', view); if (HPV.ro) HPV.ro.disconnect(); HPV.ro = null;
+  if (st && strip && typeof ResizeObserver === 'function') { HPV.ro = new ResizeObserver(() => { hpStripPlace(); HPV.at = ''; }); HPV.ro.observe(st); } // the chip's words change (the clock, the weather)
+  if (HPV.wish) HPV.raf = requestAnimationFrame(hpFrame);
+  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
 }
 on('fryard:enter', () => hpVisit());
 // the spot each help plays at (world x): the camera pans there on a phone first (0.5 s) when it is not well in view
-function hpSpotX(k) { if (k === 'bowl') return (HPV.bowl || HP_BOWL)[0] + HP_BOWL[2] / 2; if (k === 'water') return HP_CAN[0] + HP_CAN[2] / 2; const v = hpTheirs(); return v ? v.x : null; }
+function hpSpotX(k) { if (k === 'bowl') return (HPV.bowl || HP_BOWL)[0] + HP_BOWL[2] * ((HPV.bowl && HPV.bowl[3]) || 1) / 2; if (k === 'water') return HP_CAN[0] + HP_CAN[2] / 2; const v = hpTheirs(); return v ? v.x : null; }
 function hpPan(k) {
   const x = hpSpotX(k); if (x == null || FRC.w >= 1000) return 0;
   const m = Math.min(110, FRC.w / 4); if (x > FRC.x + m && x < FRC.x + FRC.w - m) return 0;
@@ -292,9 +361,10 @@ async function hpTap(k, from) {
   const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms);
   if (!hpVisitOn()) return false;
   if (k === 'wish' && w.k === 'pet') { const v = hpTheirs(); if (v) frPetDog(v); } // the pet first (its own pet event if not sent today), then the wish
+  if (k === 'bowl') HPV.pour = true; // the bowl stays empty until the kibble lands (hpBowlFx fills it)
   const r = await hpSend(k, k === 'wish' ? { w: w.i } : {});
-  if (r !== 'ok' || !hpVisitOn()) return r === 'ok';
-  if (k === 'bowl') hpBowlFx(); else if (k === 'water') hpWaterFx(); else if (w.k === 'ball') hpBallFx(); else hpWishFx();
+  if (r !== 'ok' || !hpVisitOn()) { if (k === 'bowl') { HPV.pour = false; hpBowlFill(); } return r === 'ok'; }
+  if (k === 'bowl') hpBowlFx(); else if (k === 'water') hpWaterFx(hpCanFit()); else if (w.k === 'ball') hpBallFx(); else hpWishFx();
   return true;
 }
 // one send. ok: marked done, a help counted, +1 Bond to my leader up to HP_BOND_MAX a day. limit: done, quietly. bad from a Worker that said hp: 1:
@@ -342,21 +412,36 @@ function hpJoy(v, jump) {
   v.happy = now + 2200; v.wait = v.happy + 2000; frPaint(v);
 }
 function hpBowlFx() {
-  const [x, y] = HPV.bowl || HP_BOWL, w = HP_BOWL[2], calm = motionOff(), fill = () => { const g = $('#view .hp-bowlart'); if (g) g.innerHTML = hpBowlSVG(); };
+  const [x, y] = HPV.bowl || HP_BOWL, k = (HPV.bowl && HPV.bowl[3]) || 1, w = HP_BOWL[2], calm = motionOff() || !HPV.bowl, fill = () => { HPV.pour = false; hpBowlFill(); };
   if (calm) { fill(); hpSnd('crunch'); hpHearts(hpTheirs(), 1); hpSnd('boop'); return; }
   let sc = ''; try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.scoop === 'function') sc = P.FRIENDS.scoop(); } catch (e) { sc = ''; }
   // the scoop (its handle left, its mouth up) up and left of the bowl turns its mouth down over the bowl; the kibble falls from the mouth into it
-  const cx = x + w / 2 - 23, cy = y - 31, dots = [0, 1, 2].map((i) => `<ellipse class="hp-kib" style="animation-delay:${0.36 + i * 0.12}s" cx="${cx + 11 + i * 5}" cy="${cy + 9 + (i % 2) * 3}" rx="5" ry="4" fill="#B07A45" stroke="${INKG}" stroke-width="1.4"/>`).join('');
-  hpFxAdd(`${sc ? `<g class="hp-scoop">${place(sc, cx - 29, cy - 29, 58, 58)}</g>` : ''}${dots}`, 1000); // TODO art fallback: the kibble dots alone
+  const cx = w / 2 - 23, cy = -31, dots = [0, 1, 2].map((i) => `<ellipse class="hp-kib" style="animation-delay:${0.36 + i * 0.12}s" cx="${cx + 11 + i * 5}" cy="${cy + 9 + (i % 2) * 3}" rx="5" ry="4" fill="#B07A45" stroke="${INKG}" stroke-width="1.4"/>`).join('');
+  hpFxAdd(`<g transform="translate(${f1(x)} ${f1(y)})${k !== 1 ? ` scale(${k})` : ''}">${sc ? `<g class="hp-scoop">${place(sc, cx - 29, cy - 29, 58, 58)}</g>` : ''}${dots}</g>`, 1000); // TODO art fallback: the kibble dots alone. In the bowl's own units, at its scale
   setTimeout(() => { fill(); hpSnd('crunch'); }, 620);
   setTimeout(() => { hpSnd('boop'); hpHearts(hpTheirs(), 2); }, 900);
 }
-function hpWaterFx() {
-  const [x, y, w, h] = HP_CAN; sfx('water');
+// the can and the edge of the patch it waters stay above the visit buttons once the camera is there (phone review 11: at 360 the buttons cover
+// the patch below its top edge): the can goes up when a button is close under it, and the drops land on the patch above the buttons
+function hpCanFit() {
+  const [x, y, w, h] = HP_CAN, svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(), out = { lift: 0, land: y + h * 0.62 + 81 };
+  const g = $('#hpG .hp-can'); if (g) g.removeAttribute('transform');
+  if (!M || !g) return out;
+  const inv = M.inverse(), P = (px, py) => { const p = svg.createSVGPoint(); p.x = px; p.y = py; return p.matrixTransform(inv); };
+  let top = 600;
+  document.querySelectorAll('#placeBtns .btn, #bar:not([hidden])').forEach((b) => { const r = b.getBoundingClientRect(); if (!r.width) return; const a = P(r.left, r.top), c = P(r.right, r.bottom); if (c.x > x - 30 && a.x < x + w + 6) top = Math.min(top, a.y); });
+  out.lift = Math.max(0, Math.round(y + h + 14 - top)); out.land = Math.min(out.land, top - 8);
+  if (out.lift) g.setAttribute('transform', `translate(0 ${-out.lift})`);
+  return out;
+}
+function hpWaterFx(fit) {
+  const [x, y, w, h] = HP_CAN, F = fit || { lift: 0, land: y + h * 0.62 + 81 }; sfx('water');
   if (motionOff()) return;
   const can = $('#hpG .hp-canart'); if (can) { can.classList.remove('tilt'); void can.getBoundingClientRect(); can.classList.add('tilt'); setTimeout(() => can.classList.remove('tilt'), 1100); }
-  const drops = [0, 1, 2, 3].map((i) => `<path class="hp-drop" style="animation-delay:${0.3 + i * 0.15}s" d="M${x - 2 - (i % 2) * 7} ${y + h * 0.62} q-5 8 0 11 q5 -3 0 -11z" fill="#8CC8F0" stroke="${INKG}" stroke-width="1.2"/>`).join(''); // from the spout, tipped over the patch
-  hpFxAdd(drops, 1300);
+  const y0 = y + h * 0.62 - F.lift, fall = Math.max(8, Math.round(F.land - y0 - 11)); // from the spout to the patch (the drop is 11 tall)
+  const drops = [0, 1, 2, 3].map((i) => `<path class="hp-drop" style="animation-delay:${0.3 + i * 0.15}s;--fall:${fall}px" d="M${x - 2 - (i % 2) * 7} ${f1(y0)} q-5 8 0 11 q5 -3 0 -11z" fill="#8CC8F0" stroke="${INKG}" stroke-width="1.2"/>`).join(''); // from the spout, tipped over the patch
+  const splash = [0, 1].map((i) => `<ellipse class="hp-splash" style="animation-delay:${0.75 + i * 0.3}s" cx="${x - 9 - i * 7}" cy="${f1(y0 + fall + 10)}" rx="9" ry="3.5" fill="none" stroke="#5BA7D9" stroke-width="2"/>`).join(''); // where they land
+  hpFxAdd(drops + splash, 1500);
 }
 function hpBallFx() {
   const a = hpMine(), b = hpTheirs(); hpSnd('squeak');
@@ -368,12 +453,14 @@ function hpBallFx() {
   requestAnimationFrame(step);
 }
 function hpWishFx() { const b = hpTheirs(); hpSnd('chime', () => SFX.boop(880)); if (b && !b.happy) hpJoy(b, false); }
+// the treat on the ground just under the eating dog's nose (phone review 10: not over its head); the happy pose brings its head down to it
 function hpEatFx(g) {
   const b = hpTheirs(); hpSnd('crunch'); if (!b) return;
   hpJoy(b, false); hpHearts(b, motionOff() ? 1 : 2);
   if (motionOff()) return;
-  const lf = b.face === 'left', mx = b.x + (lf ? -60 : 60) * b.k, my = b.y - 80 * b.k;
-  hpFxAdd(`<g class="hp-treat">${place(art('item', g.n), mx - 22, my - 22, 44, 44)}</g>`, 1000);
+  const lf = b.face === 'left', e = frExt(b, 'happy', b.face), k = b.k, s = Math.max(30, 40 * k);
+  const mx = b.x + k * (lf ? e[0] + 14 : e[2] - 14), my = b.y - 14 * k; // the nose's end, on the ground line in front of the front paws
+  hpFxAdd(`<g class="hp-treat">${place(art('item', g.n), mx - s / 2, my - s / 2, s, s)}</g>`, 1000);
 }
 /* ---------- the snack wish: a sheet like the gift sheet (my bag's FR_GIFTS foods; only the named food when the wish names one). Not the day's gift ---------- */
 function hpSnackSheet() {
@@ -435,7 +522,9 @@ HP_DO.water = (ev) => hpGot(ev, 'water');
 HP_DO.wish = (ev) => hpGot(ev, 'wish');
 function hpLetterText(m) {
   const h = m.hpHelp, who = frPairName(h.who) || tt('fr.a_friend', 'A friend'), dog = h.dog || NAME();
-  const say = { bowl: () => tt('hp.l_bowl', "filled {dog}'s bowl", { dog }), water: () => tt('hp.l_water', 'watered the garden'), wish: () => tt('hp.l_wish', "made {dog}'s wish come true", { dog }) };
+  const got = h.ps.some((p) => p && p[0] === 'wish'); // the wish came true (else it had already, or was another one: phone review 12)
+  const say = { bowl: () => tt('hp.l_bowl', "filled {dog}'s bowl", { dog }), water: () => tt('hp.l_water', 'watered the garden'),
+    wish: () => (got ? tt('hp.l_wish', "made {dog}'s wish come true", { dog }) : tt('hp.l_wish_try', "came to make {dog}'s wish come true", { dog })) };
   m.from = who;
   m.title = tt('hp.l_title', '{who} helped out!', { who });
   m.text = tt('hp.l_text', '{who} stopped by: {list}.', { who, list: tlist(h.ks.filter((k) => say[k]).map((k) => say[k]())) });
@@ -507,13 +596,19 @@ function hpPagesSync() {
   HP.pgFirst = typeof MSB === 'undefined' || !MSB.order; // msPagesSync's first sync of this save: S.dd.pg is still numbered by S.hp.pk
   const want = hpOn() && Array.isArray(S.dogs) && S.dogs.length > 0, has = DD_PAGES.includes(HP_PAGE);
   if (want && !has) { const i = DD_PAGES.indexOf('msb1'); if (i >= 0) DD_PAGES.splice(i, 0, HP_PAGE); else DD_PAGES.push(HP_PAGE); DD.defs = null; }
-  else if (!want && has) { DD_PAGES.splice(DD_PAGES.indexOf(HP_PAGE), 1); DD.defs = null; }
+  else if (!want && has) { const i = DD_PAGES.indexOf(HP_PAGE), g = S.dd.pg && S.dd.pg[i]; if (g && S.hp && S.hp.pg !== g) { S.hp.pg = g; markDirty(); } DD_PAGES.splice(i, 1); DD.defs = null; } // its gift kept (S.hp.pg) even when no sync ran since it was given
 }
-// S.dd.pg numbered by `from` -> numbered by `to` (page keys); a gift whose page is not in `to` is dropped (the page's own is in S.hp.pg)
+// S.dd.pg numbered by `from` -> numbered by `to` (page keys); a gift whose page is not in `to` is kept aside by its page key (S.hp.px; code
+// review 11: dropped, it was given again with a second toast when its page came back), the "Helping paws" page's own in S.hp.pg
 function hpPgMap(from, to) {
   const pg = S.dd.pg; if (!pg || typeof pg !== 'object') return;
-  const g = {}; from.forEach((k, i) => { const j = to.indexOf(k); if (pg[i] && j >= 0) g[j] = pg[i]; });
+  const g = {}; from.forEach((k, i) => { if (!pg[i]) return; const j = to.indexOf(k); if (j >= 0) g[j] = pg[i]; else if (k !== HP_PAGE && Object.keys(S.hp.px).length < 40) S.hp.px[k] = pg[i]; });
   Object.keys(pg).forEach((k) => delete pg[k]); Object.assign(pg, g); markDirty();
+}
+// a page kept aside is in the book again: its gift with it (never over a gift its number has now)
+function hpPgBack() {
+  const px = S.hp.px, pg = S.dd.pg; if (!pg || typeof pg !== 'object') return;
+  Object.keys(px).forEach((k) => { const j = DD_PAGES.indexOf(k); if (j < 0) return; if (!pg[j]) pg[j] = px[k]; delete px[k]; markDirty(); });
 }
 // after msPagesSync has ordered the book (24c_badges.js): the first sync of a save maps the gifts from S.hp.pk, the page's gift is kept, S.hp.pk follows the book
 function hpPagesKeep() {
@@ -525,6 +620,7 @@ function hpPagesKeep() {
     const from = pk || now.filter((k) => k !== HP_PAGE); // no S.hp.pk: a save from before the page (numbered without it)
     if (from.join() !== now.join()) hpPgMap(from, now);
   }
+  if (Object.keys(h.px).length) hpPgBack();
   if (i >= 0 && S.dd.pg) {
     const g = S.dd.pg[i];
     if (g && h.pg !== g) { h.pg = g; markDirty(); } else if (!g && h.pg) { S.dd.pg[i] = h.pg; markDirty(); } // back in the book: its gift with it
@@ -568,8 +664,11 @@ function hpExpose() {
     tap: (k, from) => hpTap(k, from || 'prop'), snack: () => hpSnackSheet(), thanks: (fid) => hpThanks(fid, null), gone: (v) => { if (v !== undefined) HP.gone = !!v; return HP.gone; },
     // part 4: the sticker page (the book's page keys, the stickers now), S.hp.pk
     pages: () => DD_PAGES.slice(), stick: () => hpStick().map((x) => x.id), page: HP_PAGE, art: (k) => hpStArt(k),
+    pageOut: (k) => { const i = DD_PAGES.indexOf(k); if (i >= 0) { DD_PAGES.splice(i, 1); DD.defs = null; } }, pageIn: (k) => { if (!DD_PAGES.includes(k)) { DD_PAGES.push(k); DD.defs = null; } }, pref: (k, v) => { prefs[k] = v; }, // tests: a page out of the book and back, a harness pref
     pgLoad: () => { if (typeof MSB !== 'undefined') MSB.order = null; msPagesSync(); return DD_PAGES.slice(); }, // a load's first sync (the book's order not remembered yet)
-    bowlSpot: () => hpBowlSpot(), spots: () => ({ bowl: HP_BOWL.slice(), at: HPV.bowl ? HPV.bowl.slice() : null, can: HP_CAN.slice(), hunger: HP_HUNGER, note: HP_NOTE }), busy: () => HPV.busy,
+    bowlSpot: () => hpBowlSpot(), spots: () => ({ bowl: HP_BOWL.slice(), at: HPV.bowl ? HPV.bowl.slice() : null, ink: HP_INK.slice(), paw: HP_PAW, can: HP_CAN.slice(), hunger: HP_HUNGER, note: HP_NOTE }), busy: () => HPV.busy,
+    // the dogs of the visit as the bowl sees them: feet y, shortest drawn height and the drawn box of every pose they take there (world units)
+    dogs: () => FRV.dogs.filter((v) => !v.hidden).map((v) => ({ mine: !!v.mine, x: v.x, y: v.y, h: v.res ? v.res.h : 0, poses: (v.play ? FR_REST.concat(FR_PLAY) : FR_REST).map((p) => { const e = frExt(v, p, v.face); return [v.x + v.k * e[0], v.y + v.k * e[1], v.x + v.k * e[2], v.y + v.k * e[3]]; }) })),
     visit: () => ({ on: hpVisitOn(), strip: [...document.querySelectorAll('#hpStrip [data-hpk]')].map((b) => ({ k: b.dataset.hpk, done: b.classList.contains('done'), rest: b.classList.contains('rest') })),
       props: [...document.querySelectorAll('#view .hp-prop[data-hp]')].map((g) => g.dataset.hp), patch: (document.querySelector('#sceneG') || { dataset: {} }).dataset.extra || '', wish: HPV.wish ? Object.assign({}, HPV.wish) : null,
       bubble: (() => { const b = document.getElementById('hpWish'); return b ? { hidden: b.hidden, done: b.classList.contains('done'), home: b.classList.contains('home'), text: b.textContent.trim() } : null; })() })
