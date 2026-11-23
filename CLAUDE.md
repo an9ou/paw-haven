@@ -20,6 +20,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
   - Small patches: no coordinator session; the Game Manager runs them with its own helpers, with **one** combined review. Big releases keep the three reviews (code, phone, art).
   - Big releases (v2.15 on): finish the parts **one at a time**, at most **2 subagents** at once, one test suite at a time.
   - **Sonnet** (`paw-fixer`) for routine fixes, docs, test runs and screenshots; art, design and reviews stay on the top model.
+  - **Fable plans, Opus works (owner, 23 Nov 2026):** the Game Manager session (planning, organising, briefs, merging, reports) runs on Fable; every working agent (builds, fixes, art, reviews) runs on Opus. A subagent without its own model inherits the Game Manager's, so pass `model: "opus"` when starting one. Details: `BUILDING.md`.
   - Check-ins at most every 3–4 hours; teams message only when a part is done or they are blocked.
   - New text is translated once, in one batch near the end of a release.
 - **Every fix launches immediately (owner, 15 Nov 2026):** a finished, reviewed and green fix (including Kind shop and Worker fixes) ships at once, without waiting for the next feature release; Worker and site deploys still need the owner to approve their prompts.
