@@ -189,9 +189,10 @@ function hpBowlSpot() {
   // drawn under the dogs (one drawn over them stands in front of the way: the leader walks behind it)
   let path = null;
   const dogs = FRV.dogs.filter((v) => v.res && v.res.r && !v.hidden).map((v) => {
-    if (!(v.gr && v.home && Math.abs(v.home[0] - v.x) > 1)) return { r: v.res.r, y: v.y, h: v.res.h, face: v.face };
+    const T = frTap(v.x, v.y, v.k), hit = v.mine ? null : [T[0], T[1], T[0] + T[2], T[1] + T[3]]; // a friend's dog's tap box (its fr-hit)
+    if (!(v.gr && v.home && Math.abs(v.home[0] - v.x) > 1)) return { r: v.res.r, y: v.y, h: v.res.h, face: v.face, hit };
     const k = frK(v, v.home[1]), r = frEnv(v, v.home[0], v.home[1], k, v.face); path = { r: v.res.r, y: v.home[1] };
-    return { r, y: v.home[1], h: frMinH(v) * k, face: v.face };
+    return { r, y: v.home[1], h: frMinH(v) * k, face: v.face, hit };
   });
   // its base on or in front of its foot line, hiding no more than the bottom f of its shortest drawn height (v.res.r: every pose it takes there), and never in front of
   // the end its nose is at (HP_HEAD: a glad dog's play bow brings its head down to the ground there)
@@ -210,7 +211,7 @@ function hpBowlSpot() {
         const k = [x + I[0] * s, y + I[1] * s, x + I[2] * s, y + I[3] * s], d = -Math.abs(x + w / 2 - hx - W / 2) - Math.abs(y + h - hy - H) * 1.5 - (1 - s) * 400;
         const sa = soft.reduce((n, o) => n + over(k, o) * o[4], 0), on = dogs.filter((v) => over(k, v.r) > 0);
         const way = path && over(k, path.r) > 0; if (way && k[3] < path.y - 2) continue; // never on my leader's way in, unless in front of it
-        if (s === 1 && !sa && !on.length && !way && !dogs.some((v) => over(t, v.r) > 0)) { if (!best || d > best.s) best = { s: d, x, y, k: s }; continue; } // (its whole tap box clear of them too: drawn under the dogs, none takes its taps)
+        if (s === 1 && !sa && !on.length && !way && !dogs.some((v) => over(t, v.r) > 0)) { if (!best || d > best.s) best = { s: d, x, y, k: s, top: dogs.some((v) => v.hit && over(t, v.hit) > 0) }; continue; } // (its tap box clear of them too; over their tap boxes it is drawn over the dogs, so none takes its taps)
         const d2 = d - on.reduce((n, v) => n + over(k, v.r), 0) * 0.03; // (paws or legs hidden: a little; a full size bowl is worth more)
         if (!sa && on.every((v) => paws(k, v))) { if (!near || d2 > near.s) near = { s: d2, x, y, k: s }; continue; } // (a smaller bowl on clear ground too: drawn over, so no dog's tap box takes its taps)
         if (on.length && on.every((v) => legs(k, v))) { const d3 = d2 - sa * 0.5; if (!mid || d3 > mid.s) mid = { s: d3, x, y, k: s }; continue; } // in front of their legs (FR_LEGS, as a dog in front may hide them)
@@ -220,7 +221,7 @@ function hpBowlSpot() {
       }
     }
   });
-  if (best) return [best.x, best.y, 0, 1, 1];
+  if (best) return [best.x, best.y, best.top ? 1 : 0, 1, 1];
   const o = near || mid || last;
   return o ? [o.x, o.y, 1, o.k, o === near ? 2 : o === mid ? 3 : 4] : null;
 }
@@ -417,9 +418,9 @@ function hpBowlFx() {
   let sc = ''; try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.scoop === 'function') sc = P.FRIENDS.scoop(); } catch (e) { sc = ''; }
   // the scoop (its handle left, its mouth up) up and left of the bowl turns its mouth down over the bowl; the kibble falls from the mouth into it
   const cx = w / 2 - 23, cy = -31, dots = [0, 1, 2].map((i) => `<ellipse class="hp-kib" style="animation-delay:${0.36 + i * 0.12}s" cx="${cx + 11 + i * 5}" cy="${cy + 9 + (i % 2) * 3}" rx="5" ry="4" fill="#B07A45" stroke="${INKG}" stroke-width="1.4"/>`).join('');
-  hpFxAdd(`<g transform="translate(${f1(x)} ${f1(y)})${k !== 1 ? ` scale(${k})` : ''}">${sc ? `<g class="hp-scoop">${place(sc, cx - 29, cy - 29, 58, 58)}</g>` : ''}${dots}</g>`, 1000); // TODO art fallback: the kibble dots alone. In the bowl's own units, at its scale
-  setTimeout(() => { fill(); hpSnd('crunch'); }, 620);
-  setTimeout(() => { hpSnd('boop'); hpHearts(hpTheirs(), 2); }, 900);
+  hpFxAdd(`<g transform="translate(${f1(x)} ${f1(y)})${k !== 1 ? ` scale(${k})` : ''}">${sc ? `<g class="hp-scoop">${place(sc, cx - 29, cy - 29, 58, 58)}</g>` : ''}${dots}</g>`, 1120); // TODO art fallback: the kibble dots alone. In the bowl's own units, at its scale
+  setTimeout(() => { fill(); hpSnd('crunch'); }, 820); // as the first kibble lands (0.36 s + its 0.45 s fall), not before
+  setTimeout(() => { hpSnd('boop'); hpHearts(hpTheirs(), 2); }, 1050);
 }
 // the can and the edge of the patch it waters stay above the visit buttons once the camera is there (phone review 11: at 360 the buttons cover
 // the patch below its top edge): the can goes up when a button is close under it, and the drops land on the patch above the buttons
