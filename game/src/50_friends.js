@@ -950,7 +950,7 @@ function frBtns() {
 function frChip() {
   const st = $('#status'); if (!st) return;
   const nm = tt('fr.yard_of', "{name}'s yard", { name: frPairName(FRV.pair) || tt('fr.a_friend', 'A friend') });
-  const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'fryard' && n && n.textContent !== nm) n.textContent = nm; };
+  const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'fryard' && n && n.textContent !== nm) { n.textContent = nm; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } }; // v2.33 fit: the longer name gets the core's one-line rule too (the weather word goes, 00_core.js)
   fix(); const mo = new MutationObserver(fix); mo.observe(st, { childList: true }); onCleanup(() => mo.disconnect());
 }
 // phones: the camera rests on the house and the middle of the yard; a drag pans the whole yard and the look-left button (#phPeek) shows
