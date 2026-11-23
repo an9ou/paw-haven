@@ -1,6 +1,7 @@
 // Winter Market code review fixes (docs/design/winter-market.md, "Code review fixes"): one section per fix.
 // node game/run_tests.js wm_review
 const { run } = require('./test_lib');
+const fs = require('fs'), path = require('path');
 const PREFS = { fmTest: true, fmDate: '2026-12-05' };
 
 run('wm_review', async (t) => {
@@ -235,6 +236,72 @@ run('wm_review', async (t) => {
     await ev(() => { const P = window.__paw; P.fm.date('2026-12-05'); P.S.place = 'yard'; P.go('yard'); }); await t.calm();
     const y = await ev(() => { const L = window.PawAudio.contexts; return L[L.length - 1]; });
     ok(y && y.place === 'yard' && y.fest === null, 'in the yard during the Winter Market: no fest');
+  }
+  await t.ctx.close();
+
+  // v2.32.2 Tidy market sign (live check, 23 Nov 2026: the Japanese sign ran off its board; the Next tags hid the closing date)
+  sec('13. the market sign never leaves its board: every market x all 12 languages x phone and wide screen; the Next tags clear of it; the leading market first; the What\'s new title');
+  const BOARD = { x0: 356, x1: 644, y0: 166, y1: 218 }; // the board is x 352-648 (top) / 358-642 (bottom), y 170-214 (world_e fmscene); a few units for the font box
+  const I18 = {}; for (const f of fs.readdirSync(path.join(__dirname, 'i18n')).filter((f) => /^[a-zA-Z-]+\.json$/.test(f))) { const j = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', f), 'utf8')); if (j['fm.sign']) I18[f.slice(0, -5)] = ['sign', 'm_halloween', 'm_harvest', 'm_winter', 'm_newyear', 'm_sakura'].map((k) => j['fm.' + k]); }
+  ok(Object.keys(I18).length === 12, '12 languages have the sign: ' + Object.keys(I18).join(' '));
+  await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-11-25', fwTest: true, lvTest: true, msTest: true }), ground: true }, { bond: { level: 3, pts: 200 }, coins: 4000 });
+  await t.until(() => !!(window.__paw && window.__paw.fm && window.__paw.nw), null, 8000);
+  await ev(() => { const g = document.querySelector('.gd-skip'); if (g) g.click(); });
+  await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+  {
+    const R = await ev((I18) => {
+      const svg = document.querySelector('#sceneG .fm-sign').ownerSVGElement, g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); svg.appendChild(g);
+      const tag = (l) => (l === 'en' ? 'en-GB' : l === 'yue' ? 'zh-HK' : l), out = [];
+      for (const [l, [sign, ...names]] of Object.entries(I18)) for (const [i, d] of [[0, [2026, 10, 15]], [1, [2026, 10, 30]], [2, [2026, 11, 31]], [3, [2027, 0, 7]], [4, [2027, 3, 10]]]) { // each market and its closing date (sakura too, though it has no items yet)
+        const date = new Intl.DateTimeFormat(tag(l), { day: 'numeric', month: 'short' }).format(new Date(d[0], d[1], d[2])), txt = sign.replace('{market}', names[i]).replace('{date}', date);
+        for (const ph of [false, true]) { g.innerHTML = window.__paw.fm.signText(txt, ph); const e = g.firstElementChild, b = e.getBBox(); out.push({ l, txt, ph, fs: +e.getAttribute('font-size'), n: e.querySelectorAll('tspan').length || 1, x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height }); }
+      }
+      g.remove(); return out;
+    }, I18);
+    const bad = R.filter((r) => r.x0 < BOARD.x0 || r.x1 > BOARD.x1 || r.y0 < BOARD.y0 || r.y1 > BOARD.y1);
+    ok(R.length === 120 && !bad.length, `all ${R.length} signs inside the board (x ${BOARD.x0}-${BOARD.x1}, y ${BOARD.y0}-${BOARD.y1})` + bad.slice(0, 6).map((r) => ` | ${r.l} ${r.ph ? 'phone' : 'wide'} "${r.txt}" ${r.fs}px ${Math.round(r.x0)}-${Math.round(r.x1)} x ${Math.round(r.y0)}-${Math.round(r.y1)}`).join(''));
+    const ph = R.filter((r) => r.ph);
+    ok(ph.every((r) => r.n === 2 && r.x0 >= 364 && r.x1 <= 536), 'a phone: two lines (split at " · " or "・"), on the part of the board a phone shows (x 364-536)');
+    const small = R.filter((r) => r.fs < 12);
+    ok(!small.length, 'no sign under 12 px' + small.map((r) => ` | ${r.l} ${r.ph ? 'phone' : 'wide'} ${r.fs}`).join(''));
+    const ja = R.find((r) => r.l === 'ja' && !r.ph && /ウィンター/.test(r.txt)), en = R.find((r) => r.l === 'en' && !r.ph && /Winter/.test(r.txt));
+    ok(ja && ja.n === 2 && en && en.n === 1, 'wide screens: English on one line, the long Japanese sign on two (' + (ja && ja.fs) + ' px)');
+    for (const [d, m] of [['2026-10-27', 'Halloween Market'], ['2026-11-20', 'Harvest Market'], ['2026-11-25', 'Winter Market'], ['2027-01-02', 'New Year Market']]) {
+      await ev((d) => { const P = window.__paw; P.fm.date(d); P.S.place = 'fmarket'; P.go('yard'); }, d); await t.calm();
+      const b = await ev(() => { const e = document.querySelector('#sceneG .fm-sign'), b = e.getBBox(); return { t: e.textContent, x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height }; });
+      ok(b.t.startsWith(m) && b.x0 >= BOARD.x0 && b.x1 <= BOARD.x1 && b.y0 >= BOARD.y0 && b.y1 <= BOARD.y1, d + ': the scene\'s sign "' + b.t + '" inside its board');
+    }
+    await ev(() => { const P = window.__paw; P.fm.date('2026-11-25'); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    for (const [w, h] of [[1280, 720], [1366, 768], [1440, 900]]) {
+      await t.p.setViewportSize({ width: w, height: h }); await t.sleep(300);
+      const o = await ev(() => {
+        const s = document.querySelector('#sceneG .fm-sign'), M = s.getScreenCTM(), a = new DOMPoint(352, 170).matrixTransform(M), b = new DOMPoint(648, 214).matrixTransform(M), v = document.querySelector('#view').getBoundingClientRect();
+        return ['#fwNext', '#lvNext'].map((q) => { const e = document.querySelector(q), r = e && e.getBoundingClientRect(); return { q, on: !!(e && !e.hidden && r.width), hit: !!r && !(r.right < a.x || r.left > b.x || r.bottom < a.y || r.top > b.y), inV: !!r && r.right <= v.right && r.left >= v.left, r: r ? [r.left, r.top, r.right, r.bottom].map(Math.round) : null }; });
+      });
+      ok(o.every((x) => x.on && !x.hit && x.inV), `${w}x${h}: the Bond and Level Next tags show, inside the scene and clear of the sign board: ` + JSON.stringify(o.map((x) => x.q + ' ' + x.r)));
+    }
+    await t.p.setViewportSize({ width: 1280, height: 720 });
+    ok(await ev(() => { const P = window.__paw; P.S.place = 'yard'; P.go('yard'); return !document.querySelector('#stage').classList.contains('fmhere') && getComputedStyle(document.querySelector('#hud .bond')).position === 'relative'; }), 'back in the yard: the tags hang where they always did (no #stage.fmhere)');
+    await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    for (const c of ['clothes', 'treats']) {
+      const it = await ev((c) => window.__paw.fm.items(c).map((x) => x.n), c), H = await ev((c) => window.__paw.fm.markets.find((m) => m.id === 'harvest').items[c], c);
+      const fh = it.findIndex((n) => H.includes(n));
+      ok(fh > 0 && it.slice(fh).every((n) => H.includes(n)), `${c}: the Winter Market's items first, then the Harvest Market's (${it.slice(0, 2).join(', ')} … ${it.slice(fh).join(', ')})`);
+    }
+    ok(await ev(() => window.__paw.nw.title('2.18.4')) === 'The Winter Market is open', 'What\'s new 2.18.4 while the Winter Market is open: "The Winter Market is open" (Gerald\'s letter title)');
+    await ev(() => window.__paw.fm.date('2026-11-20'));
+    ok(await ev(() => window.__paw.nw.title('2.18.4')) === 'The Winter Market is coming!', 'before it opens: "The Winter Market is coming!"');
+  }
+  await t.ctx.close();
+
+  sec('14. the Japanese sign on a 360 x 640 phone, in the real scene');
+  await t.newGame({ device: 'Pixel 7', lang: 'ja', prefs: Object.assign({}, PREFS, { fmDate: '2026-11-25' }), ground: true }, { bond: { level: 8, pts: 1600 } });
+  await t.p.setViewportSize({ width: 360, height: 640 });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
+  await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+  {
+    const b = await ev(() => { const e = document.querySelector('#sceneG .fm-sign'), b = e.getBBox(); return { t: e.textContent, n: e.querySelectorAll('tspan').length, x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height }; });
+    ok(/ウィンターマーケット/.test(b.t) && b.n === 2 && b.x0 >= BOARD.x0 && b.x1 <= BOARD.x1 && b.y0 >= BOARD.y0 && b.y1 <= BOARD.y1, 'ja phone: "' + b.t + '" on two lines inside the board: ' + [b.x0, b.x1, b.y0, b.y1].map(Math.round).join(' '));
   }
   await t.ctx.close();
 }, { prefs: {} });

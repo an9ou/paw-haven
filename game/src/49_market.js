@@ -9,7 +9,7 @@
    API
      fmOn()            the market system is on (prefs.fmTest under the harness, the v2.15 map)
      fmOpen(day)       the open markets on that Japan date (default today), the one closing first first
-     fmItems(cat)      the open markets' items of a stall: { n, kind, cat, price, bond, name, desc }
+     fmItems(cat)      the open markets' items of a stall, the leading market's (fmMain) first: { n, kind, cat, price, bond, name, desc }
      fmSheet(cat)      the stall sheet (the shop sheet pattern, tabs, scrollable)
      fmSync()          adds or removes PLACES.fmarket (a save standing there when it closes goes to the Square) */
 function fmOn() { return (!navigator.webdriver || !!prefs.fmTest) && typeof mpOn === 'function' && mpOn(); }
@@ -108,8 +108,9 @@ function fmRow(n) {
   return { n, kind: k, price: r.price || 0, bond: r.bond || 1, ed: r.ed || 0, name, desc, tip: k === 'food' && r.tip ? tdata('food.' + tid(n) + '.tip', r.tip) : '' };
 }
 function fmItems(cat, list) {
-  const out = [], seen = new Set();
-  (list || fmOpen()).forEach((o) => ((o.m.items || {})[cat] || []).forEach((n) => { if (seen.has(n)) return; const r = fmRow(n); if (!r || (r.ed && r.ed !== o.y)) return; seen.add(n); out.push(Object.assign({ cat, mk: o.m.id }, r)); }));
+  const out = [], seen = new Set(), L = list || fmOpen(), m = !list && fmMain();
+  // v2.32.2: the leading market's items first (fmMain: the one that names the place and the sheet), then the other open market's
+  (m ? [m].concat(L.filter((o) => o.m !== m.m)) : L).forEach((o) => ((o.m.items || {})[cat] || []).forEach((n) => { if (seen.has(n)) return; const r = fmRow(n); if (!r || (r.ed && r.ed !== o.y)) return; seen.add(n); out.push(Object.assign({ cat, mk: o.m.id }, r)); }));
   return out;
 }
 function fmOwned(it) { return it.kind === 'decor' ? !!(S.decor && S.decor[it.n]) : it.kind === 'food' ? false : it.kind === 'beds' ? (S.beds || []).includes(it.n) : owns(it.kind, it.n); }
@@ -145,9 +146,7 @@ function fmSceneArt() {
   if (plain) { const rest = cats.filter((c) => !pick.includes(c)); for (let i = pick.length - 1; i >= 0 && rest.length; i--) if (!pick[i]) pick[i] = rest.shift(); }
   // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
   const sv = fmSceneSvg(th, W ? timePhase() : '', lit, plain, pick.map(Boolean));
-  const [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], sl = isPhone() ? fmSign(o).split(' · ') : [fmSign(o)]; // phone review: on a phone the sign takes two lines (name, closing date), centred on the part of the board a phone shows
-  const two = sl.length === 2, fs = two ? Math.min(19, Math.max(13, sw * 2.1 / Math.max(10, ...sl.map((l) => [...l].length)))) : Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
-  const sign = two ? sl.map((l, i) => `<tspan x="${sx - 50}" y="${sy + (i ? 17 : -3)}">${esc(l)}</tspan>`).join('') : esc(fmSign(o));
+  const sign = fmSignText(fmSign(o), isPhone());
   // v2.17.2 Spooky Stalls: the Halloween scene has a little board per stall (PawArt.FM_STALL_SIGNS) with the stall's short name, and the homes stand
   // and the treats cart in front are buttons too (when that stall has items). Winter Market part 6: the winter scene too (all five stalls)
   const SB = !plain && sv && window.PawArt && PawArt.FM_STALL_SIGNS;
@@ -156,7 +155,39 @@ function fmSceneArt() {
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
   return (sv || '<rect width="1000" height="600" fill="#FFFBF3"/>')
-    + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${stalls}${front}`;
+    + `${sign}${boards}${stalls}${front}`;
+}
+/* v2.32.2 Tidy market sign: the sign is sized by how wide it is drawn, not by its number of characters (a full-width kana, hanzi or hangul is about
+   twice a Latin letter), and never leaves its board in any language or market. The board (world_e fmscene, PawArt.FM_SIGN) is x 352-648 at the top,
+   358-642 at the bottom, y 170-214: one line takes up to 250 units of it (a little air at the ends). Wide screens write one line when it fits at 17 px or more, else the name and
+   the date on two lines (split at " · " or the Japanese "・"); a phone always takes two lines, centred at x 450 on the part of the board a phone
+   shows (phone review), 164 units wide. Measured with the sign's own font on a canvas (the fallback face when Caveat is still loading is wider, so
+   the first draw errs small), counted when there is no canvas. */
+const FM_SIGN_ROOM = { one: 250, ph: 164, phDx: -50 };
+let fmSignCtx = null;
+function fmSignW(t) { // the drawn width of t at 1 px
+  try {
+    if (fmSignCtx === null) fmSignCtx = document.createElement('canvas').getContext('2d') || false;
+    if (fmSignCtx) { fmSignCtx.font = "700 100px 'Caveat', cursive"; const w = fmSignCtx.measureText(t).width / 100; if (w > 0) return w; }
+  } catch (e) { fmSignCtx = false; }
+  return [...t].reduce((n, c) => n + (/[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/.test(c) ? 1
+    : /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/.test(c) ? 0 : c === ' ' ? 0.25 : /[A-Z0-9\u0E00-\u0E7F]/.test(c) ? 0.55 : 0.45), 0);
+}
+// { lines, fs, dx }: the sign's lines, its font size and its offset from the board's centre
+function fmSignLayout(t, phone) {
+  const R = FM_SIGN_ROOM, p = String(t || '').split(/\s+·\s+|\s*・\s*/), two = p.length > 1 ? [p[0], p.slice(1).join(' · ')] : null;
+  const fit = (lines, room, max) => Math.min(max, room / Math.max(0.01, ...lines.map(fmSignW)));
+  if (phone) return { lines: two || [t], fs: fit(two || [t], R.ph, 19), dx: R.phDx };
+  const one = fit([t], R.one, 26);
+  return one >= 17 || !two ? { lines: [t], fs: one, dx: 0 } : { lines: two, fs: fit(two, R.one, 19), dx: 0 };
+}
+// the sign's <text>: one or two lines, centred on the board (the glyphs' middle on the board's middle line, sy)
+function fmSignText(t, phone) {
+  if (!t) return '';
+  const [sx, sy] = (window.PawArt && PawArt.FM_SIGN) || [500, 192], L = fmSignLayout(t, phone), fs = L.fs, x = sx + L.dx, gap = fs * 1.05;
+  const y0 = sy + 0.35 * fs - (L.lines.length - 1) * gap / 2;
+  const body = L.lines.length > 1 ? L.lines.map((l, i) => `<tspan x="${x}" y="${(y0 + i * gap).toFixed(1)}">${esc(l)}</tspan>`).join('') : esc(t);
+  return `<text class="fm-sign" x="${x}" y="${y0.toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${body}</text>`;
 }
 function fmPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return; pb.querySelectorAll('[data-fmb]').forEach((b) => b.remove());
@@ -188,6 +219,7 @@ function fmStallBind() {
 }
 function fmArrive() {
   if (!fmOn() || !S || S.place !== 'fmarket') return; fmPlaceBtn();
+  stage.classList.add('fmhere'); onCleanup(() => stage.classList.remove('fmhere')); // v2.32.2: wide screens hang the HUD's Next tags at the right, clear of the sign (50_market.css)
   const o = fmMain(); if (!o) return; const key = o.m.id + '_' + o.y;
   if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket' && modal.hidden) FM.hello = toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
 }
@@ -292,7 +324,7 @@ on('game:ready', () => { setTimeout(() => { fmSync(); fmExpose(); }, 0); });
 function fmExpose() {
   if (!window.__paw || window.__paw.fm) return;
   window.__paw.fm = {
-    on: () => fmOn(), markets: FM_MARKETS, open: (d) => fmOpen(d).map((o) => ({ id: o.m.id, from: o.from, to: o.to, y: o.y })), main: () => { const o = fmMain(); return o ? o.m.id : null; }, sign: () => fmSign(), name: () => fmPlaceName(),
+    on: () => fmOn(), markets: FM_MARKETS, open: (d) => fmOpen(d).map((o) => ({ id: o.m.id, from: o.from, to: o.to, y: o.y })), main: () => { const o = fmMain(); return o ? o.m.id : null; }, sign: () => fmSign(), name: () => fmPlaceName(), signLayout: (t, ph) => fmSignLayout(t, !!ph), signText: (t, ph) => fmSignText(t, !!ph),
     items: (c) => fmItems(c).map((x) => ({ n: x.n, kind: x.kind, price: x.price, bond: x.bond })), cats: () => fmCats(), sheet: (c) => fmSheet(c), svgCache: () => [...FM_SVG.keys()], sync: () => fmSync(), owned: (n) => { const r = fmRow(n); return r ? fmOwned(r) : false; }, row: (n) => fmRow(n),
     date: (d) => { prefs.fmDate = d || null; fmSync(); }, allow: (v) => { prefs.fmTest = !!v; fmSync(); }, letter: () => fmLetter(), get letters() { return FM.letters; }, tent: () => fmMapTent(), spot: FM_SPOT.slice(), cats0: FM_CATS.slice()
   };
