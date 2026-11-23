@@ -224,7 +224,7 @@ const DD_XC = { fetch: 'l', floatfetch: 's', toy: 'y', bath: 'b', nap: 'z', padd
 const DD_XORDER = 'nlasyrjebzpgchvmq'; // v2.20: q, Gerald's treat pouch (24b_missions2.js), drawn as a pink paw first
 const DD_XIC = { n: 'family', l: 'ball', a: 't:Agility Tunnel', s: 'water-spray', y: 't:Squeaky Duck', r: 't:Train Ticket', j: 'w-dawn', e: 'leaf', b: 'tub', z: 'zzz', p: 'pet', g: 'garden', c: 'kitchen', h: 'camera', v: 'dogpark', m: 'mail' }; // the diary doodle: the game's own icons
 function ddPageNew() { const d = D(); return { g: day(), j: jstISO(), d: localISO(), id: d.id, n: d.name, k: d.key, w: [], p: [], f: [], t: [], x: '', wi: '', fr: S.dogs.filter((x) => x.id !== d.id).slice(0, 3).map((x) => x.name) }; }
-const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi || ddArr(p.gu).length || ddArr(p.hb).length)); // v2.20: gu, growing up moments (24f_grow.js). v2.22: hb, habits found out (51b_habits.js)
+const ddPageHas = (p) => !!(p && (ddArr(p.w).length || ddArr(p.p).length || ddArr(p.f).length || ddArr(p.t).length || p.x || p.wi || ddArr(p.gu).length || ddArr(p.hb).length || !!p.sl)); // v2.33: sl, a sleepover's page (60b_sleep.js). v2.20: gu, growing up moments (24f_grow.js). v2.22: hb, habits found out (51b_habits.js)
 function ddDiaryClose() {
   const t = S.dd.today; if (!t || (t.j || '') === jstISO()) return; // Daily rhythm: a page a Japan day (was a game day; a page from before has no j and closes once)
   if (ddPageHas(t)) { S.dd.diary.push(t); if (S.dd.diary.length > DD_DIARY_MAX) S.dd.diary.splice(0, S.dd.diary.length - DD_DIARY_MAX); }
@@ -298,6 +298,7 @@ function ddXLine(c) {
 }
 const ddTrickName = (n, key) => (n === 'Signature' ? tSig(key) : tTrick(n));
 function ddPageLines(p) {
+  if (p && p.sl && typeof slLines === 'function') return slLines(p); // v2.33: a sleepover's page (60b_sleep.js)
   const v = ddVoice(p.k), r = seeded(hashId('dd|' + p.g + '|' + p.id)), L = [ddOpener(v, Math.floor(r() * 2) % 2)], ev = [];
   if (ddArr(p.gu).length && typeof msGrowLines === 'function') ev.push(...msGrowLines(p)); // v2.20: growing up moments, first (24f_grow.js)
   if (ddArr(p.hb).length) ev.push(...hbDiaryLines(p)); // v2.22: a habit found out at a new Bond level, the Bond 10 secret as the line (51b_habits.js)
@@ -329,7 +330,7 @@ function ddDiaryHTML() {
   const i = DD.dpg < 0 || DD.dpg >= P.length ? P.length - 1 : DD.dpg, p = P[i], dog = dogById(p.id); DD.dpg = i;
   const date = p.now ? tt('dd.d_today', 'Today so far') : tdate(new Date(p.d + 'T12:00:00'), { day: 'numeric', month: 'long' });
   return `<div class="dd-book"><article class="dd-page" aria-label="${esc(tt('dd.d_title', "{name}'s diary", { name: p.n }))}"><header class="dd-phead"><span class="dd-dhead" aria-hidden="true">${dog ? headSVG(dog) : art('dogHead', p.k)}</span><span class="dd-pt"><b>${esc(tt('dd.d_title', "{name}'s diary", { name: p.n }))}</b><span class="small">${esc(tt('core.status_day', 'Day {day}', { day: p.g }))} · ${esc(date)}</span></span></header>
-    <div class="dd-ptext">${ddPageLines(p).map((l) => `<p>${esc(l)}</p>`).join('')}</div><div class="dd-doodle" aria-hidden="true">${ddDoodle(p)}</div></article>
+    <div class="dd-ptext">${ddPageLines(p).map((l) => `<p>${esc(l)}</p>`).join('')}</div>${p.sl && typeof slPageHTML === 'function' ? slPageHTML(p) : ''}<div class="dd-doodle" aria-hidden="true">${ddDoodle(p)}</div></article>
     ${ddFlip('ddpg', i, P.length, tt('dd.d_page', 'Page {i} of {n}', { i: i + 1, n: P.length }))}${typeof stPcBtnHTML === 'function' ? `<div class="st-pcrow">${stPcBtnHTML('diary', p.id, p.g)}</div>` : ''}</div>`; // v2.28: the postcard (56_stories.js)
 }
 function ddFlip(attr, i, n, label) {

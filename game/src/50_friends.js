@@ -497,7 +497,7 @@ const frOfficialHTML = (f) => (f && f.official === true ? `<span class="fr-ofc">
 function frRowHTML(f) {
   const name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
   const s = f.sent || {};
-  return `<div class="fr-row${f.official === true ? ' fr-isofc' : ''}" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}${frOfficialHTML(f)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
+  return `<div class="fr-row${f.official === true ? ' fr-isofc' : ''}" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}${frOfficialHTML(f)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop">${typeof slRowHTML === 'function' ? slRowHTML() : ''}<button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
 }
 function frSheetHTML() {
   v219Fields(S);
@@ -782,6 +782,7 @@ function frRowsBind(p) {
       if (act === 'visit') { frVisit(fid); return; }
       if (act === 'gift') { const b = P.querySelector('.panel-body'); FR.listTop = b ? b.scrollTop : 0; frGiftSheet(fid, 'list'); return; }
       if (act === 'more') { const was = FR.menu; FR.menu = FR.menu === fid ? '' : fid; frRowPatch(P, was); frRowPatch(P, fid); frPopShow(P); return; }
+      if (act === 'sleep') { FR.menu = ''; slTap(fid); return; } // v2.33: Sleepover tonight (60b_sleep.js)
       if (act === 'remove') frRemove(fid);
       if (act === 'block') frBlock(fid, P);
     };
@@ -939,9 +940,10 @@ function frNoteBtnHTML() {
 }
 function frBtns() {
   const pb = $('#placeBtns'); if (!pb) return;
-  pb.innerHTML = (FRV.yard && FRV.yard.ff && typeof ksBadgeHTML === 'function' ? ksBadgeHTML() : '') + frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
+  pb.innerHTML = (FRV.yard && FRV.yard.ff && typeof ksBadgeHTML === 'function' ? ksBadgeHTML() : '') + frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + (typeof slBtnHTML === 'function' ? slBtnHTML() : '') + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
   $('#frNoteBtn', pb).onclick = () => { SFX.click(); if (!frSentToday(FRV.fid, 'note')) frNoteSheet(); };
   $('#frGiftBtn', pb).onclick = () => { SFX.click(); frGiftSheet(FRV.fid, 'yard'); };
+  const sb = $('#hpSleepBtn', pb); if (sb) sb.onclick = () => { if (sb.getAttribute('aria-disabled') === 'true') { SFX.click(); slUsed(); return; } slTap(FRV.fid); }; // v2.33: the Sleepover button (60b_sleep.js), Go home always last
   $('#frHomeBtn', pb).onclick = () => { SFX.click(); frHome(); };
 }
 // the place chip says "<name>'s yard" (the core writes the chip: the name is put back after every rewrite, as the Tokyo map does)
