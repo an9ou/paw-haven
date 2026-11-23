@@ -376,6 +376,7 @@ async function frInbox() {
     const i = ev.data && ev.data.i;
     if (!Number.isInteger(i) || i < 0 || i >= FR_NOTES.length) return;
     const name = frPairName(ev.from && ev.from.name) || tt('fr.a_friend', 'A friend');
+    if (i === FR_NOTES_OLD && typeof hpThx === 'function') hpThx(ev); // v2.33: a thank-you note (note 12) counts in S.hp.thx, once (60_helps.js)
     if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tdata('fr_notes.' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
@@ -927,9 +928,10 @@ function frStampSVG() {
 }
 function frYardSVG(y) {
   const stamp = frSentToday(FRV.fid, 'note') ? frStampSVG() : '';
-  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('yard', { patch: 'empty', season: y.season })}<g id="frDecorG" pointer-events="none">${frDecorSVG(y.decor)}</g>`
+  const hp = typeof hpOn === 'function' && hpOn(); // v2.33 Helping paws (60_helps.js): the veggie patch growing when the snapshot says so, the help bowl and can (#hpG), the help strip
+  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('yard', { patch: hp ? hpPatch(y) : 'empty', season: y.season })}<g id="frDecorG" pointer-events="none">${frDecorSVG(y.decor)}</g>`
     + `<g id="houseG" class="fr-house${isNight() ? ' night' : ''}" pointer-events="none" aria-hidden="true">${place(art('house', y.house), ...FR_HOUSE_AT)}</g><g id="frStampG" pointer-events="none">${stamp}</g>`
-    + `<g id="frDogs"></g><g id="fx"></g></svg><div id="status"></div><div id="placeBtns" class="fr-pbtns"></div>`;
+    + `${hp ? `<g id="hpG">${hpGSVG()}</g>` : ''}<g id="frDogs"></g><g id="fx"></g></svg><div id="status"></div>${hp ? hpStripHTML() : ''}<div id="placeBtns" class="fr-pbtns"></div>`;
 }
 function frNoteBtnHTML() {
   const done = frSentToday(FRV.fid, 'note');
@@ -1004,12 +1006,12 @@ function frScan() {
   const inv = M.inverse(), toW = (x, y) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv); };
   const vr = view.getBoundingClientRect(), a = toW(vr.left, vr.top), b = toW(vr.right, vr.bottom);
   const boxes = [];
-  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])', '#phPeek'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
+  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])', '#phPeek', '#hpStrip'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
     const p = toW(r.left - 6, r.top - 6), q = toW(r.right + 6, r.bottom + 6); boxes.push([p.x, p.y, q.x - p.x, q.y - p.y]);
   }));
   const feet = []; // the scene's own spots (the veggie patch, the mailbox post): inert here, but the dogs keep their feet off them as at home
-  svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
+  svg.querySelectorAll('#sceneG [data-hot], #hpG [data-hp]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
   FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet };
 }
 // each dog's drawn box per pose and way it faces, in its own units around the feet (430, 500): drawn hidden all at once, then measured. Facing
@@ -1650,6 +1652,7 @@ function enterFrYard() {
   const onSize = () => { const pk = $('#phPeek'); frCam(); frScan(); if (pk) pk.classList.remove('back'); };
   window.addEventListener('resize', onSize);
   onCleanup(() => { cur.key = null; cancelAnimationFrame(FRV.raf); FRV.raf = 0; FRV.dogs = []; FRV.gr = null; document.removeEventListener('visibilitychange', onHide); window.removeEventListener('resize', onSize); });
+  emit('fryard:enter'); // v2.33: the help strip, the props and the wish bubble (60_helps.js hpVisit)
 }
 
 /* ---------- boot ---------- */

@@ -17,11 +17,11 @@ const HP_BOND_MAX = 5, HP_GOTB_MAX = 5, HP_BOWLS = 3, HP_IDS = 90, HP_SL_KEEP = 
 // what each act kind does on the friend's side: HP_DO[kind](act) -> false to leave the act unclaimed for now (a third guest waits for
 // tomorrow), anything else = done (claimed, its id kept in S.hp.ids so it never applies twice). Parts 2 and 3 fill these in
 const HP_DO = {};
-const HP = { claimed: 0 }; // memory only: acts sent to the claim this load (tests)
+const HP = { claimed: 0, gone: false }; // memory only: acts sent to the claim this load (tests); gone: a Worker that said hp: 1 then refused a help kind (V233.md 1): off for the rest of the load
 
 function hpOn() {
   if (typeof frOn !== 'function' || !frOn()) return false;
-  if (typeof FR === 'undefined' || !FR.hp) return false; // an older Worker never says hp: 1, so the game stays v2.32.1 with it
+  if (typeof FR === 'undefined' || !FR.hp || HP.gone) return false; // an older Worker never says hp: 1, so the game stays v2.32.1 with it
   return (!navigator.webdriver && !!HP_FROM && jstISO() >= HP_FROM) || !!(typeof prefs !== 'undefined' && prefs && prefs.hpTest);
 }
 
@@ -107,6 +107,387 @@ function hpActs(acts, claimActs) {
   return made;
 }
 
+/* ======================= part 2 (V233.md 3.1-3.3, 8, 9): the three helps on a friend's yard visit =======================
+   The helper's side: the help strip #hpStrip under the place chip, the bowl and the watering can in #hpG (50_friends.js frYardSVG), the friend
+   leader's wish bubble. A help goes to the Worker first; every effect waits for { ok: true } (the bag, Bond, the tick). The friend's side:
+   HP_DO.bowl / water / wish on the claim, one letter per helper per Japan day, Say thanks (note 12) on it. No coins anywhere but ddWishDone's own. */
+// the help bowl: HP_BOWL is its spot by the house's left corner on its front line (y 530); the can stands on the veggie patch's top edge. Phone check
+// (23 Nov 2026): on a 390 phone the greeting pair fills the whole ground the camera shows (x 411..770, y 427..544), on a 360 one the three dogs
+// fill it above the buttons, so no one spot is clear on every screen: the bowl waits until the dogs stand (frDrawDogs), then takes the free spot
+// nearest HP_BOWL in view (hpBowlSpot: clear of every dog's drawn box in all its poses, the chip, the strip, the buttons, the bar, the paw stamp and
+// their decorations, never on the house's wall). The can shows once the camera pans to it (the strip's button does). World units x, y, w, h
+const HP_BOWL = [660, 466, 68, 68], HP_CAN = [150, 388, 56, 56];
+// where no dog may put its feet, so that none is drawn over the can: its box (frScan adds 8 round it) and the ground beside it
+// (a dog's drawn half-width is about 88 x its scale: about 1 on a desktop, 0.6 on a phone)
+const HP_KEEP = { can: [0, 0, 96, 120] }, HP_KEEP_PH = { can: [0, 0, 60, 120] };
+const HP_HUNGER = 20, HP_NOTE = 12; // a bowl top-up's Hunger; the thank-you note (FR_NOTES[12])
+const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot
+const hpSnd = (n, alt) => { try { if (typeof SFX[n] === 'function') SFX[n](); else if (alt) alt(); } catch (e) { /* audio off */ } }; // SFX.chime and SFX.page fall back
+const hpFriendName = () => frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
+// their leader on this visit (the snapshot's first dog) and its name
+const hpTheirs = () => FRV.dogs.find((v) => !v.mine && v.i === 0) || null;
+const hpMine = () => FRV.dogs.find((v) => v.mine) || null;
+function hpTheirName() { const v = hpTheirs(); if (v) return v.dog.name; try { const d = FRV.card && dcDog(FRV.card, 0); return d ? d.name : ''; } catch (e) { return ''; } }
+// the snapshot says (today, JST): something grows (the can), the leader's wish (the bubble)
+const hpYardHp = () => { const h = FRV.yard && FRV.yard.hp; return h && h.d === jstISO() ? h : null; };
+const hpGrowing = () => { const h = hpYardHp(); return !!(h && h.g > 0); };
+function hpWishOf() {
+  const h = hpYardHp(); if (!h || !Number.isInteger(h.w) || !HP_WISH[h.w]) return null;
+  const a = h.w === 2 && Number.isInteger(h.a) && FR_GIFTS[h.a] ? FR_GIFTS[h.a] : null;
+  return { i: h.w, k: HP_WISH[h.w], a, do: HP_WISH_DO.includes(h.w) };
+}
+const hpVisitOn = () => cur.mode === 'fryard' && !!FRV.fid && !!FRV.yard && hpOn();
+const hpDone = (k) => !!FRV.fid && frSentToday(FRV.fid, k);
+// frYardSVG's veggie patch: growing when the snapshot says so (the can stands on it), else empty as in v2.19
+function hpPatch(y) { const h = hpOn() && y && y.hp; return h && h.d === jstISO() && h.g > 0 ? 'growing' : 'empty'; }
+function hpCanArt() { let a = ''; try { a = art('icon', 'water-can'); } catch (e) { a = ''; } return a || `<svg viewBox="0 0 64 64">${doodle('spark', 32, 32, 1.6)}</svg>`; }
+function hpBowlSVG() { const [, , w, h] = HP_BOWL; return place(bowlArt(hpDone('bowl') ? 'Basic Kibble' : null), 0, 0, w, h); }
+// #hpG: the bowl (always; hidden until hpBowlSpot puts it down) and the can (something grows today). Each is a button; its box keeps the dogs' feet off it (frScan)
+function hpGSVG() {
+  if (!hpOn()) return '';
+  const lead = hpTheirName(), [bx, by, bw, bh] = HP_BOWL, [cx, cy, cw, ch] = HP_CAN, K = isPhone() ? HP_KEEP_PH : HP_KEEP;
+  const keep = (b, o) => `<rect data-hp="keep" x="${b[0] + o[0]}" y="${b[1] + o[1]}" width="${b[2] + o[2]}" height="${Math.min(o[3], 600 - b[1])}" fill="none" pointer-events="none"/>`;
+  const bowl = `<g class="hp-prop hp-bowl" data-hp="bowl" role="button" tabindex="0" style="display:none" transform="translate(${bx} ${by})" aria-label="${esc(tt('hp.bowl_aria', "Fill {dog}'s bowl", { dog: lead }))}"><rect x="-4" y="-4" width="${bw + 8}" height="${bh + 8}" fill="transparent"/><g class="hp-bowlart">${hpBowlSVG()}</g></g>`;
+  const can = hpGrowing() ? keep(HP_CAN, K.can) + `<g class="hp-prop hp-can" data-hp="water" role="button" tabindex="0" aria-label="${esc(tt('hp.water_aria', 'Water the garden'))}"><rect x="${cx - 6}" y="${cy - 6}" width="${cw + 12}" height="${ch + 12}" fill="transparent"/><g class="hp-canart"><g transform="translate(${2 * cx + cw} 0) scale(-1 1)">${place(hpCanArt(), cx, cy, cw, ch)}</g></g></g>` : ''; // its spout over the patch
+  return bowl + can;
+}
+// where the bowl goes on this visit, once the dogs stand: [x, y] of its top left, the free spot nearest HP_BOWL (see HP_BOWL)
+function hpBowlSpot() {
+  const c = FRV.crop, svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(); if (!c || !M) return HP_BOWL.slice(0, 2);
+  const inv = M.inverse(), toW = (x, y) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv); };
+  const ob = [], was = HPV.bowl; // obstacles as [x0, y0, x1, y1] (the dogs apart, below); not the bowl's own keep from an earlier look
+  c.boxes.concat(c.feet).forEach((b) => { if (!(was && Math.abs(b[0] + 8 - was[0]) < 1 && Math.abs(b[1] + 8 - was[1]) < 1)) ob.push([b[0], b[1], b[0] + b[2], b[1] + b[3]]); });
+  const st = FR_STAMP, sy = isPhone() ? st[1] - 70 : st[1]; ob.push([st[0], sy, st[0] + st[2], sy + st[3]]);
+  [...svg.querySelectorAll('#frDecorG .fr-decor')].concat([...document.querySelectorAll('#hpWish:not([hidden])')]).forEach((el) => { /* their decorations and the wish bubble */ const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); ob.push([p.x, p.y, q.x, q.y]); });
+  const [hx, hy, w, h] = HP_BOWL, m = 6, x0 = Math.max(4, c.x0 + 6), x1 = Math.min(996, c.x1 - 6) - w, yb = Math.min(598, c.y1);
+  const hit = (x, y, o) => x - m < o[2] && x + w + m > o[0] && y - m < o[3] && y + h + m > o[1];
+  const dogs = FRV.dogs.filter((v) => v.res && !v.hidden);
+  let best = null, near = null;
+  for (let b = yb; b >= 430; b -= 4) {
+    for (let x = x0; x <= x1; x += 4) {
+      if (x + w > 628 && x < 856 && b < 528) continue; // never on the house's wall: in front of the house only from its front line
+      const y = b - h, s = -Math.abs(x - hx) - Math.abs(b - (hy + h)) * 1.5;
+      if (ob.some((o) => hit(x, y, o))) continue;
+      const on = dogs.filter((v) => hit(x, y, v.res.r));
+      if (!on.length) { if (!best || s > best.s) best = { s, x, y }; continue; }
+      // no clear ground (a 390 phone: the greeting pair fills it): in front of the dogs it touches, covering the least of them, drawn over them
+      if (on.some((v) => v.y > b + 8)) continue; // none clearly in front of it
+      const a = on.reduce((n, v) => { const e = frExt(v, frPose(v), v.face); return n + frOver([x, y, w, h], [v.x + v.k * e[0], v.y + v.k * e[1], v.k * (e[2] - e[0]), v.k * (e[3] - e[1])]); }, 0), s2 = -a * 4 + s; // as each stands now
+      if (!near || s2 > near.s) near = { s: s2, x, y };
+    }
+  }
+  if (best) return [best.x, best.y, 0];
+  return near ? [near.x, near.y, 1] : HP_BOWL.slice(0, 2).concat(1);
+}
+// the bowl at its spot; over the dogs (#hpTop, after #frDogs) only when it stands in front of some (no clear ground)
+function hpBowlPut() {
+  const g = $('#hpG .hp-bowl') || $('#hpTop .hp-bowl'); if (!g) return null;
+  const at = hpBowlSpot(); HPV.bowl = at;
+  g.setAttribute('transform', `translate(${f1(at[0])} ${f1(at[1])})`); g.style.display = '';
+  const dogs = $('#frDogs'), hpG = $('#hpG');
+  if (at[2] && dogs) { let top = $('#hpTop'); if (!top) { top = document.createElementNS('http://www.w3.org/2000/svg', 'g'); top.id = 'hpTop'; dogs.after(top); } top.appendChild(g); }
+  else if (hpG && g.parentNode !== hpG) hpG.insertBefore(g, hpG.firstChild);
+  if (hpG) { let k = $('#hpBowlKeep'); if (!k) { k = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); k.id = 'hpBowlKeep'; k.setAttribute('data-hp', 'keep'); k.setAttribute('fill', 'none'); k.setAttribute('pointer-events', 'none'); hpG.appendChild(k); }
+    [['x', at[0]], ['y', at[1]], ['width', HP_BOWL[2]], ['height', HP_BOWL[3]]].forEach(([n, v]) => k.setAttribute(n, f1(v))); } // the dogs keep their feet off it wherever it is drawn (frScan)
+  return at;
+}
+// the strip: "Help out" and three round buttons (bowl, can, wish). Done today: a tick. The can rests (greyed) when nothing grows; the wish shows for a doable wish
+function hpStripBtns() {
+  const w = hpWishOf(), lead = hpTheirName(), tick = `<i class="hp-tick" aria-hidden="true">${ICON('check')}</i>`;
+  const b = (k, icon, label, rest) => { const done = hpDone(k); return `<button class="hp-b${done ? ' done' : ''}${rest && !done ? ' rest' : ''}" type="button" data-hpk="${k}" aria-label="${esc(label)}"${rest && !done ? ' aria-disabled="true"' : ''}><span class="hp-ic" aria-hidden="true">${icon}</span>${done ? tick : ''}</button>`; };
+  return `<span class="hp-lbl">${esc(tt('hp.help_out', 'Help out'))}</span>`
+    + b('bowl', art('prop', 'bowl-empty'), tt('hp.bowl_aria', "Fill {dog}'s bowl", { dog: lead }))
+    + b('water', hpCanArt(), tt('hp.water_aria', 'Water the garden'), !hpGrowing())
+    + (w && w.do ? b('wish', ICON('heart'), tt('hp.wish_aria', "Make {dog}'s wish come true", { dog: lead })) : '');
+}
+function hpStripHTML() { return hpOn() ? `<div id="hpStrip" class="hp-strip" role="group" aria-label="${esc(tt('hp.help_out', 'Help out'))}">${hpStripBtns()}</div>` : ''; }
+// under the place chip (as #ddWish sits at home)
+function hpStripPlace() {
+  const el = $('#hpStrip', view), st = $('#status', view); if (!el || !st) return;
+  const vr = view.getBoundingClientRect(), r = st.getBoundingClientRect(); if (!r.height) return;
+  const top = Math.round(r.bottom - vr.top + 8) + 'px', left = Math.round(Math.max(8, r.left - vr.left)) + 'px';
+  if (el.style.top !== top) el.style.top = top; if (el.style.left !== left) el.style.left = left;
+}
+function hpStripSync() { const el = $('#hpStrip', view); if (el) { el.innerHTML = hpStripBtns(); hpStripPlace(); } const g = $('#view .hp-bowlart'); if (g) g.innerHTML = hpBowlSVG(); HPV.bub = ''; }
+// the Worker went back (it said hp: 1, then refused a new kind): no helps for the rest of the load
+function hpGone() {
+  FR.hp = false; HP.gone = true;
+  const s = $('#hpStrip', view); if (s) s.remove(); ['#hpG', '#hpTop'].forEach((q) => { const g = $(q); if (g) g.innerHTML = ''; }); const b = $('#hpWish', view); if (b) b.remove();
+  cancelAnimationFrame(HPV.raf); HPV.raf = 0; if (cur.mode === 'fryard') frScan();
+}
+
+/* ---------- the wish bubble over their leader (the #ddWish look, the tail down), moved by the frame loop ---------- */
+function hpBubbleHTML(w) {
+  const done = hpDone('wish'), txt = ddWishText(w.k, w.a);
+  return `<span class="dd-wt">${done ? `<b>${esc(tt('dd.chip_done', 'Wish come true!'))}</b>` : esc(tt('hp.wish_chip', 'Today I wish for {wish}', { wish: txt }))}</span>${done ? `<span class="dd-wok" aria-hidden="true">${ICON('check')}</span>` : ''}<i class="dd-tail" aria-hidden="true"></i>`;
+}
+function hpBubble() {
+  const w = HPV.wish; let el = $('#hpWish', view);
+  if (!w || !hpVisitOn()) { if (el) el.remove(); return null; }
+  if (!el) {
+    el = document.createElement('button'); el.id = 'hpWish'; el.type = 'button'; el.className = 'dd-wish hp-wish'; el.hidden = true;
+    el.onclick = (e) => { e.stopPropagation(); hpTap('wish', 'bubble'); }; view.appendChild(el); HPV.bub = '';
+  }
+  const key = [hpDone('wish'), w.k, w.a, I18N.lang].join('|');
+  if (HPV.bub !== key) {
+    HPV.bub = key; el.innerHTML = hpBubbleHTML(w); el.classList.toggle('done', hpDone('wish')); el.classList.toggle('home', !w.do);
+    el.setAttribute('aria-label', tt('dd.chip_aria', '{name} wishes for {wish}', { name: hpTheirName(), wish: ddWishText(w.k, w.a) }));
+  }
+  return el;
+}
+// over the head of their leader: the top of its drawn box, through the screen CTM; inside the view and under the strip
+function hpBubblePlace() {
+  const el = hpBubble(), v = hpTheirs(), svg = $('#view > svg.world'); if (!el) return;
+  const M = svg && svg.getScreenCTM(); if (!v || v.hidden || !M) { el.hidden = true; return; }
+  const e = frExt(v, frPose(v), v.face), p = svg.createSVGPoint(); p.x = v.x + v.k * (e[0] + e[2]) / 2; p.y = v.y + v.k * e[1];
+  const q = p.matrixTransform(M), vr = view.getBoundingClientRect(), hx = q.x - vr.left, hy = q.y - vr.top;
+  if (hx < 0 || hx > vr.width) { el.hidden = true; return; } // the camera looks elsewhere
+  el.hidden = false;
+  const w = el.offsetWidth, h = el.offsetHeight, s = $('#hpStrip', view), floor = s ? s.offsetTop + s.offsetHeight + 6 : 8;
+  const left = clamp(hx - w / 2, 8, Math.max(8, vr.width - w - 8)), top = Math.max(floor, hy - h - 16);
+  el.style.left = Math.round(left) + 'px'; el.style.top = Math.round(top) + 'px';
+  el.style.setProperty('--tail', Math.round(clamp(hx - left - 7, 14, w - 28)) + 'px');
+}
+function hpFrame() { HPV.raf = 0; if (!hpVisitOn()) return; hpStripPlace(); hpBubblePlace(); HPV.raf = requestAnimationFrame(hpFrame); }
+
+/* ---------- the visit (emit('fryard:enter') at the end of enterFrYard) ---------- */
+function hpVisit() {
+  cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.busy = ''; HPV.bub = '';
+  if (!hpVisitOn()) { const s = $('#hpStrip', view); if (s) s.remove(); return; }
+  hpDay();
+  HPV.wish = hpWishOf();
+  const strip = $('#hpStrip', view);
+  if (strip) {
+    hpStripPlace();
+    strip.addEventListener('click', (e) => { const b = e.target.closest('[data-hpk]'); if (!b) return; e.stopPropagation(); hpTap(b.dataset.hpk, 'strip'); });
+  }
+  document.querySelectorAll('#view .hp-prop[data-hp]').forEach((g) => {
+    const go = (e) => { if (e) { e.stopPropagation(); e.preventDefault(); } hpTap(g.dataset.hp, 'prop'); };
+    g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
+  });
+  hpBubblePlace(); frScan(); hpBowlPut(); frScan(); // the bowl goes down where no dog stands; then the dogs keep their feet off it
+  HPV.raf = requestAnimationFrame(hpFrame);
+  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.wish = null; HPV.busy = ''; });
+}
+on('fryard:enter', () => hpVisit());
+// the spot each help plays at (world x): the camera pans there on a phone first (0.5 s) when it is not well in view
+function hpSpotX(k) { if (k === 'bowl') return (HPV.bowl || HP_BOWL)[0] + HP_BOWL[2] / 2; if (k === 'water') return HP_CAN[0] + HP_CAN[2] / 2; const v = hpTheirs(); return v ? v.x : null; }
+function hpPan(k) {
+  const x = hpSpotX(k); if (x == null || FRC.w >= 1000) return 0;
+  const m = Math.min(110, FRC.w / 4); if (x > FRC.x + m && x < FRC.x + FRC.w - m) return 0;
+  frCamTo(x - FRC.w / 2, 0.5); return motionOff() ? 0 : 520;
+}
+const hpWait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function hpTap(k, from) {
+  if (!hpVisitOn() || HPV.busy) return false;
+  SFX.click();
+  if (hpDone(k)) { toast(tt('hp.done_today', 'You did that today. Come back tomorrow!'), 'good'); return false; }
+  if (k === 'water' && !hpGrowing()) { toast(tt('hp.garden_rest', 'The garden is resting.'), 'good'); return false; }
+  const w = HPV.wish;
+  if (k === 'wish' && (!w || !w.do)) { toast(tt('hp.wish_home', 'That wish is one for home.'), 'good'); return false; }
+  if (k === 'wish' && w.k === 'snack') { const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms); hpSnackSheet(); return true; }
+  const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms);
+  if (!hpVisitOn()) return false;
+  if (k === 'wish' && w.k === 'pet') { const v = hpTheirs(); if (v) frPetDog(v); } // the pet first (its own pet event if not sent today), then the wish
+  const r = await hpSend(k, k === 'wish' ? { w: w.i } : {});
+  if (r !== 'ok' || !hpVisitOn()) return r === 'ok';
+  if (k === 'bowl') hpBowlFx(); else if (k === 'water') hpWaterFx(); else if (w.k === 'ball') hpBallFx(); else hpWishFx();
+  return true;
+}
+// one send. ok: marked done, a help counted, +1 Bond to my leader up to HP_BOND_MAX a day. limit: done, quietly. bad from a Worker that said hp: 1:
+// it went back (hpGone). 404: not a friend now. Else offline: nothing changes
+async function hpSend(kind, data) {
+  const fid = FRV.fid, name = hpFriendName(); if (!fid || HPV.busy) return 'busy';
+  HPV.busy = kind;
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid, kind, data }); } catch (e) { r = null; }
+  HPV.busy = '';
+  if (r && r.ok) {
+    frMarkSent(fid, kind); frDay(); hpDay(); v233Fields(S);
+    S.hp.n++; let n = 0;
+    if (S.hp.bond < HP_BOND_MAX) { S.hp.bond++; n = addBond(1, { raw: true }); }
+    markDirty();
+    toast(tt('hp.helped', '{dog} helped out!{n, plural, =0 {} other { +# Bond}}', { dog: NAME(), n }), 'good');
+    if (cur.mode === 'fryard' && FRV.fid === fid) hpStripSync();
+    return 'ok';
+  }
+  const err = frErr(r);
+  if (err === 'limit') { frMarkSent(fid, kind); if (cur.mode === 'fryard') hpStripSync(); return 'limit'; }
+  if (err === 'bad') { hpGone(); toast(tt('hp.failed', "That didn't reach {name}. Try again later.", { name }), 'bad'); return 'bad'; }
+  if (r && r.status === 404) toast(tt('fr.not_friend', 'That friend is not on your list any more.'), '');
+  else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
+  return 'off';
+}
+
+/* ---------- the animations (reduced motion: the bowl just fills, the dog just turns happy, one heart each) ---------- */
+function hpFxAdd(html, ms) {
+  const fx = $('#fx'); if (!fx) return null;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('class', 'hp-fx'); g.setAttribute('pointer-events', 'none'); g.innerHTML = html; fx.appendChild(g);
+  setTimeout(() => g.remove(), ms); return g;
+}
+function hpHearts(v, n) {
+  if (!v) return; const lf = v.face === 'left', hx = v.x + (lf ? -43 : 43) * v.k, hy = v.y - 175 * v.k;
+  fxText('♥', hx, hy - 20); if (n > 1 && !motionOff()) setTimeout(() => fxText('♥', hx + 18, hy - 50), 180);
+}
+// a dog of theirs glad (and first a jump): the frame loop goes on from there
+function hpJoy(v, jump) {
+  if (!v) return;
+  if (v.tw) { v.x = v.tw.x1; v.y = v.tw.y1; v.k = frK(v, v.y); v.tw = null; frHold(v); }
+  const now = performance.now();
+  if (jump && !motionOff() && !v.gr) { const was = v.pose; v.pose = 'jump'; frPaint(v); setTimeout(() => { v.pose = was === 'jump' ? 'idle' : was; v.happy = performance.now() + 1800; v.wait = v.happy + 2000; frPaint(v); }, 520); return; }
+  v.happy = now + 2200; v.wait = v.happy + 2000; frPaint(v);
+}
+function hpBowlFx() {
+  const [x, y] = HPV.bowl || HP_BOWL, w = HP_BOWL[2], calm = motionOff(), fill = () => { const g = $('#view .hp-bowlart'); if (g) g.innerHTML = hpBowlSVG(); };
+  if (calm) { fill(); hpSnd('crunch'); hpHearts(hpTheirs(), 1); hpSnd('boop'); return; }
+  let sc = ''; try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.scoop === 'function') sc = P.FRIENDS.scoop(); } catch (e) { sc = ''; }
+  // the scoop (its handle left, its mouth up) up and left of the bowl turns its mouth down over the bowl; the kibble falls from the mouth into it
+  const cx = x + w / 2 - 23, cy = y - 31, dots = [0, 1, 2].map((i) => `<ellipse class="hp-kib" style="animation-delay:${0.36 + i * 0.12}s" cx="${cx + 11 + i * 5}" cy="${cy + 9 + (i % 2) * 3}" rx="5" ry="4" fill="#B07A45" stroke="${INKG}" stroke-width="1.4"/>`).join('');
+  hpFxAdd(`${sc ? `<g class="hp-scoop">${place(sc, cx - 29, cy - 29, 58, 58)}</g>` : ''}${dots}`, 1000); // TODO art fallback: the kibble dots alone
+  setTimeout(() => { fill(); hpSnd('crunch'); }, 620);
+  setTimeout(() => { hpSnd('boop'); hpHearts(hpTheirs(), 2); }, 900);
+}
+function hpWaterFx() {
+  const [x, y, w, h] = HP_CAN; sfx('water');
+  if (motionOff()) return;
+  const can = $('#hpG .hp-canart'); if (can) { can.classList.remove('tilt'); void can.getBoundingClientRect(); can.classList.add('tilt'); setTimeout(() => can.classList.remove('tilt'), 1100); }
+  const drops = [0, 1, 2, 3].map((i) => `<path class="hp-drop" style="animation-delay:${0.3 + i * 0.15}s" d="M${x - 2 - (i % 2) * 7} ${y + h * 0.62} q-5 8 0 11 q5 -3 0 -11z" fill="#8CC8F0" stroke="${INKG}" stroke-width="1.2"/>`).join(''); // from the spout, tipped over the patch
+  hpFxAdd(drops, 1300);
+}
+function hpBallFx() {
+  const a = hpMine(), b = hpTheirs(); hpSnd('squeak');
+  if (!b) return;
+  if (motionOff() || !a) { hpJoy(b, false); hpHearts(b, 1); return; }
+  const g = hpFxAdd(`<g class="hp-ball">${place(art('item', 'Tennis Ball'), -20, -20, 40, 40)}</g>`, 900); if (!g) return;
+  const x0 = a.x, y0 = a.y - 90 * a.k, x1 = b.x, y1 = b.y - 120 * b.k, t0 = performance.now(), ms = 800, ball = g.firstChild;
+  const step = (t) => { const k = Math.min(1, (t - t0) / ms), x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(Math.PI * k) * 120; if (ball) ball.setAttribute('transform', `translate(${f1(x)} ${f1(y)}) rotate(${Math.round(k * 540)})`); if (k < 1) requestAnimationFrame(step); else { hpJoy(b, true); hpHearts(b, 2); } };
+  requestAnimationFrame(step);
+}
+function hpWishFx() { const b = hpTheirs(); hpSnd('chime', () => SFX.boop(880)); if (b && !b.happy) hpJoy(b, false); }
+function hpEatFx(g) {
+  const b = hpTheirs(); hpSnd('crunch'); if (!b) return;
+  hpJoy(b, false); hpHearts(b, motionOff() ? 1 : 2);
+  if (motionOff()) return;
+  const lf = b.face === 'left', mx = b.x + (lf ? -60 : 60) * b.k, my = b.y - 80 * b.k;
+  hpFxAdd(`<g class="hp-treat">${place(art('item', g.n), mx - 22, my - 22, 44, 44)}</g>`, 1000);
+}
+/* ---------- the snack wish: a sheet like the gift sheet (my bag's FR_GIFTS foods; only the named food when the wish names one). Not the day's gift ---------- */
+function hpSnackSheet() {
+  const w = HPV.wish; if (!w || w.k !== 'snack' || !hpVisitOn()) return null;
+  const fid = FRV.fid, dog = hpTheirName();
+  const own = frGiftsOwned().filter((g) => g.cat === 'food' && (!w.a || g.n === w.a));
+  const cell = (g) => { const k = frGiftHave(g); return `<button class="btn fr-gift" type="button" data-hpsnack="${g.i}" aria-label="${esc(tt('fr.gift_aria', '{item}, you have {n}', { item: g.name, n: k }))}"><span class="fr-gic" aria-hidden="true">${art('item', g.n)}</span><span class="fr-gnm">${esc(g.name)}</span><b class="fr-gn" aria-hidden="true">${esc(tt('fr.gift_n', '×{n}', { n: k }))}</b></button>`; };
+  const none = w.a ? tt('hp.snack_none', "You don't have {food} in your bag.", { food: shNameAny(w.a) }) : tt('hp.snack_empty', 'No treats in your bag right now.');
+  const body = `<p>${esc(tt('hp.snack_lead', '{dog} wishes for {wish}. Pick a treat from your bag.', { dog, wish: ddWishText(w.k, w.a) }))}</p>` + (own.length ? `<div class="fr-giftgrid">${own.map(cell).join('')}</div>` : `<p class="fr-gempty">${esc(none)}</p>`);
+  const p = openModal(esc(tt('hp.snack_title', 'A treat for {dog}', { dog })), `<div class="fr-gifts hp-snack">${body}</div>`, { cls: 'frsheet hp-snacksheet' });
+  p.querySelectorAll('[data-hpsnack]').forEach((b) => {
+    b.onclick = async () => {
+      SFX.click();
+      const g = frGiftRef(+b.dataset.hpsnack); if (!g || HPV.busy) return;
+      const ok = await confirmIn(p, esc(tt('hp.snack_ask', 'Give 1 {food} to {dog}?', { food: g.name, dog })), esc(tt('hp.give', 'Give')), esc(tt('fr.gift_no', 'Not now')));
+      if (ok) hpSnackGive(fid, g, p);
+    };
+  });
+  return p;
+}
+async function hpSnackGive(fid, g, p) {
+  const w = HPV.wish; if (!w || FRV.fid !== fid || frGiftHave(g) < 1 || HPV.busy) return false;
+  const btns = p ? [...p.querySelectorAll('[data-hpsnack]')] : []; btns.forEach((b) => { b.disabled = true; });
+  const r = await hpSend('wish', { w: w.i, a: g.i });
+  btns.forEach((b) => { b.disabled = false; });
+  if (r === 'ok') { frGiftTake(g); markDirty(); } // only now does the treat leave the bag (not the day's gift: S.fr.gift stays)
+  if (r === 'ok' || r === 'limit' || r === 'bad') { if (!modal.hidden && modal.querySelector('.hp-snacksheet')) closeModal(); }
+  if (r === 'ok' && cur.mode === 'fryard') { hpEatFx(g); hpWishFx(); }
+  return r === 'ok';
+}
+
+/* ---------- the friend's side (V233.md 3.2): the claim's effects, one letter per helper per Japan day ---------- */
+// my leader as my friends see it (the snapshot's first dog), else the active dog
+function hpLead() { const id = S.fr && Array.isArray(S.fr.snap) ? S.fr.snap[0] : null; return (id && typeof dogById === 'function' && dogById(id)) || D(); }
+function hpWaterAll() {
+  if (!(typeof gkOn === 'function' && gkOn() && typeof gardenUnlocked === 'function' && gardenUnlocked())) return 0;
+  try { gardenAdvance(); } catch (e) { /* the plots as they are */ }
+  const pl = S.garden && Array.isArray(S.garden.plots) ? S.garden.plots : []; let n = 0;
+  pl.forEach((p) => { if (p && p.crop && Number(p.g) < 1) { p.water = 3; p.wd = 0; n++; } }); // a full can, as PawGarden.water
+  if (n) { markDirty(); if (gardenCtl && gardenCtl.update) { try { gardenCtl.update({ state: S.garden }); } catch (e) { /* the garden redraws on its next tick */ } } }
+  return n;
+}
+function hpGot(ev, kind) {
+  const d = hpLead(); if (!d) return true;
+  let ps = null;
+  if (kind === 'bowl') { if (S.hp.bowls < HP_BOWLS) { S.hp.bowls++; withDog(d, () => addStat('hunger', HP_HUNGER)); ps = ['bowl', HP_HUNGER]; } } // more: the letter only
+  else if (kind === 'water') { const n = hpWaterAll(); if (n) ps = ['water', n]; }
+  else {
+    const a = ev.data || {}, w = typeof ddReady === 'function' && ddReady() ? withDog(d, () => ddWish(d)) : null;
+    const same = !!w && !w.done && ev.day === jstISO() && Number.isInteger(a.w) && HP_WISH[a.w] === w.k && (w.k !== 'snack' || !w.a || FR_GIFTS[a.a] === w.a);
+    if (same) { ddWishDone(d, w); ps = ['wish', 0]; } // its normal reward (double Bond, the count, stickers, its usual wish coins inside DD_COIN_DAY)
+    else if (S.hp.gotB < HP_GOTB_MAX) { S.hp.gotB++; const n = withDog(d, () => addBond(1, { raw: true })); ps = ['bond', n]; }
+  }
+  hpHelpLetter(ev, kind, d, ps);
+  return true;
+}
+HP_DO.bowl = (ev) => hpGot(ev, 'bowl');
+HP_DO.water = (ev) => hpGot(ev, 'water');
+HP_DO.wish = (ev) => hpGot(ev, 'wish');
+function hpLetterText(m) {
+  const h = m.hpHelp, who = frPairName(h.who) || tt('fr.a_friend', 'A friend'), dog = h.dog || NAME();
+  const say = { bowl: () => tt('hp.l_bowl', "filled {dog}'s bowl", { dog }), water: () => tt('hp.l_water', 'watered the garden'), wish: () => tt('hp.l_wish', "made {dog}'s wish come true", { dog }) };
+  m.from = who;
+  m.title = tt('hp.l_title', '{who} helped out!', { who });
+  m.text = tt('hp.l_text', '{who} stopped by: {list}.', { who, list: tlist(h.ks.filter((k) => say[k]).map((k) => say[k]())) });
+  const ps = h.ps.map(([k, n]) => (k === 'bowl' ? tt('hp.l_ps_bowl', '{dog}: +{n} Hunger.', { dog, n }) : k === 'water' ? tt('hp.l_ps_water', 'Every growing plot is watered.')
+    : k === 'wish' ? tt('hp.l_ps_wish', "{dog}'s wish came true!", { dog }) : tt('hp.l_ps_bond', "{dog}'s wish had already come true, so here is +{n} Bond instead.", { dog, n })));
+  if (ps.length) m.ps = ps.join(' '); else delete m.ps;
+}
+// id hp_help_<day>_<fid>: a later read that day adds the new helps to it and marks it unread (as frPetLetter)
+function hpHelpLetter(ev, kind, d, ps) {
+  if (typeof mailPush !== 'function') return;
+  if (typeof mailFields === 'function') mailFields();
+  const fid = ev.from.fid, id = 'hp_help_' + ev.day + '_' + fid, old = (S.mail || []).find((x) => x && x.id === id);
+  const m = old || { kind: 'postcard', id, from: '', frPaw: true, hpHelp: null };
+  if (!m.hpHelp || !Array.isArray(m.hpHelp.ids)) m.hpHelp = { fid, who: Array.isArray(ev.from.name) ? ev.from.name.slice(0, 2) : [0, 0], day: ev.day, ks: [], ids: [], ps: [], dog: d.name };
+  const h = m.hpHelp; if (h.ids.includes(ev.id)) return;
+  h.ids.push(ev.id); if (!h.ks.includes(kind)) h.ks.push(kind); if (ps) h.ps.push(ps); h.dog = d.name;
+  hpLetterText(m);
+  if (!old) { mailPush(m); return; }
+  old.read = false; markDirty();
+  if (typeof mailboxRefresh === 'function') mailboxRefresh();
+}
+// frInbox: a thank-you note (note 12) counts once in S.hp.thx (an event that comes back after a failed claim is the same letter)
+function hpThx(ev) {
+  if (!S || !ev || !Number.isInteger(ev.id)) return;
+  v233Fields(S);
+  if ((S.mail || []).some((m) => m && m.id === 'fr_note_' + ev.id)) return;
+  S.hp.thx++; markDirty();
+}
+/* ---------- Say thanks on a help letter (07b_mailbox.js letterBody's action row): note 12, that day's note for that friend ---------- */
+function hpLetterAct(m) {
+  if (!m || !m.hpHelp || typeof m.hpHelp.fid !== 'string' || !hpOn()) return '';
+  const done = frSentToday(m.hpHelp.fid, 'note');
+  return `<div class="mb-acts hp-acts"><button class="btn${done ? ' soon' : ' yes'}" type="button" data-hpthx="${esc(m.hpHelp.fid)}"${done ? ' aria-disabled="true"' : ''}>${esc(done ? tt('hp.thanked', 'Thanked today') : tt('hp.thanks', 'Say thanks'))}</button></div>`;
+}
+async function hpThanks(fid, btn) {
+  if (!S || !fid || !hpOn() || HPV.busy) return false;
+  if (frSentToday(fid, 'note')) { SFX.click(); return false; }
+  SFX.click(); HPV.busy = 'note'; if (btn) btn.disabled = true;
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid, kind: 'note', data: { i: HP_NOTE } }); } catch (e) { r = null; }
+  HPV.busy = ''; if (btn) btn.disabled = false;
+  const shown = () => { if (btn && btn.isConnected) btn.outerHTML = hpLetterAct({ hpHelp: { fid } }).replace(/^<div[^>]*>|<\/div>$/g, ''); };
+  if (r && r.ok) { frMarkSent(fid, 'note'); frDay(); S.fr.notes++; markDirty(); shown(); hpSnd('page', () => SFX.pop()); toast(tt('hp.thanks_ok', 'Thank-you note sent!'), 'good'); return true; }
+  const err = frErr(r);
+  if (err === 'limit') { frMarkSent(fid, 'note'); shown(); return false; }
+  if (r && r.status === 404) { toast(tt('fr.not_friend', 'That friend is not on your list any more.'), ''); return false; }
+  if (err === 'bad') { hpGone(); shown(); const f = frFriend(fid); toast(tt('hp.failed', "That didn't reach {name}. Try again later.", { name: frPairName(f && f.name) || tt('fr.a_friend', 'A friend') }), 'bad'); return false; }
+  toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
+  return false;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target && e.target.closest ? e.target.closest('[data-hpthx]') : null; if (!b) return;
+  e.stopPropagation(); if (b.getAttribute('aria-disabled') === 'true') { SFX.click(); return; }
+  hpThanks(b.dataset.hpthx, b);
+});
+
 /* ---------------- test hook ---------------- */
 function hpExpose() {
   if (!window.__paw || window.__paw.hp) return;
@@ -116,7 +497,13 @@ function hpExpose() {
     acts: (list) => { const c = []; const n = hpActs(list, c); return { n, claim: c }; }, claimed: () => HP.claimed,
     srv: (v) => { if (v !== undefined) FR.hp = !!v; return FR.hp; }, old: (v) => { if (v !== undefined) FR.hpOld = !!v; return FR.hpOld; },
     load: () => frLoad(), inbox: () => frInbox(), yard: () => frYard(), push: () => { FR.yardAt = 0; return frAfterPush(); }, // the Friends plumbing (50_friends.js)
-    caps: { bond: HP_BOND_MAX, gotB: HP_GOTB_MAX, bowls: HP_BOWLS, ids: HP_IDS, sl: HP_SL_KEEP, guests: HP_GUESTS }
+    caps: { bond: HP_BOND_MAX, gotB: HP_GOTB_MAX, bowls: HP_BOWLS, ids: HP_IDS, sl: HP_SL_KEEP, guests: HP_GUESTS },
+    // part 2: the visit's helps (a tap as the strip's or a prop's), the snack sheet, the spots, the state the visit shows; gone(false) undoes a rolled-back Worker
+    tap: (k, from) => hpTap(k, from || 'prop'), snack: () => hpSnackSheet(), thanks: (fid) => hpThanks(fid, null), gone: (v) => { if (v !== undefined) HP.gone = !!v; return HP.gone; },
+    bowlSpot: () => hpBowlSpot(), spots: () => ({ bowl: HP_BOWL.slice(), at: HPV.bowl ? HPV.bowl.slice() : null, can: HP_CAN.slice(), hunger: HP_HUNGER, note: HP_NOTE }), busy: () => HPV.busy,
+    visit: () => ({ on: hpVisitOn(), strip: [...document.querySelectorAll('#hpStrip [data-hpk]')].map((b) => ({ k: b.dataset.hpk, done: b.classList.contains('done'), rest: b.classList.contains('rest') })),
+      props: [...document.querySelectorAll('#view .hp-prop[data-hp]')].map((g) => g.dataset.hp), patch: (document.querySelector('#sceneG') || { dataset: {} }).dataset.extra || '', wish: HPV.wish ? Object.assign({}, HPV.wish) : null,
+      bubble: (() => { const b = document.getElementById('hpWish'); return b ? { hidden: b.hidden, done: b.classList.contains('done'), home: b.classList.contains('home'), text: b.textContent.trim() } : null; })() })
   };
 }
 on('game:ready', () => { setTimeout(hpExpose, 0); });

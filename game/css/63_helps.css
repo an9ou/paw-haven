@@ -1,0 +1,50 @@
+/* v2.33 "Helping paws" (V233.md 3.1, 9; 60_helps.js): the help strip under the place chip on a friend's yard visit, the bowl and the can in the
+   scene, the leader's wish bubble (the #ddWish look, its tail pointing down at the dog), the help animations, Say thanks on the help letter */
+#hpStrip{position:absolute;left:14px;top:58px;z-index:3;display:flex;align-items:center;gap:8px;max-width:calc(100% - 28px);box-sizing:border-box;padding:4px 8px 4px 12px;
+  background:var(--paper);border:2px solid var(--ink);border-radius:13px 9px 15px 8px;box-shadow:2px 3px 0 rgba(91,61,50,.18);transform:rotate(-.6deg)}
+#hpStrip .hp-lbl{font-family:var(--font-hand);font-size:21px;font-weight:700;line-height:1;white-space:nowrap;color:var(--ink);padding-right:2px}
+#hpStrip .hp-b{position:relative;flex:none;width:44px;height:44px;min-width:44px;padding:0;margin:0;border-radius:50%;border:2px solid var(--ink);background:var(--w-cream);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:transform .12s}
+#hpStrip .hp-b:hover{transform:rotate(-4deg) scale(1.05)}
+#hpStrip .hp-b:active{transform:scale(.94)}
+#hpStrip .hp-b:focus-visible{outline:3px dashed #F28FA5;outline-offset:2px}
+#hpStrip .hp-ic{width:32px;height:32px;display:block;pointer-events:none}
+#hpStrip .hp-ic svg{width:100%;height:100%;display:block}
+#hpStrip .hp-b[data-hpk="wish"]{background:#FDE3EA}
+#hpStrip .hp-b.done{background:var(--w-mint)}
+#hpStrip .hp-b.done .hp-ic{opacity:.55}
+#hpStrip .hp-b.rest{filter:grayscale(1);opacity:.45;cursor:default}
+#hpStrip .hp-b.rest:hover{transform:none}
+#hpStrip .hp-tick{position:absolute;right:-6px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;pointer-events:none}
+#hpStrip .hp-tick svg{width:16px;height:16px;display:block}
+html[data-layout="phone"] #hpStrip{left:10px;max-width:min(344px,calc(100% - 20px));padding:3px 7px 3px 10px}
+html[data-layout="phone"] #hpStrip .hp-lbl{font-size:19px}
+#stage.slimhud #hpStrip{display:none}
+#stage.ph-on #hpStrip,#stage.ph-on #hpWish{visibility:hidden}
+/* the scene props: tappable, the dogs keep their feet off them (frScan) */
+#view svg.world .hp-prop{cursor:pointer;outline:none}
+#view svg.world .hp-prop:focus-visible > rect{stroke:#F28FA5;stroke-width:4;stroke-dasharray:8 6}
+#hpG .hp-canart{transform-box:fill-box;transform-origin:88% 92%}
+#hpG .hp-canart.tilt{animation:hpTilt 1.05s ease-in-out}
+@keyframes hpTilt{0%{transform:rotate(0)}25%,75%{transform:rotate(-38deg)}100%{transform:rotate(0)}}
+/* the wish bubble over their leader */
+#view .dd-wish.hp-wish{max-width:min(250px,calc(100% - 16px));min-height:44px;padding:6px 12px 7px;z-index:3;--tail:40px}
+#view .dd-wish.hp-wish .dd-tail{left:var(--tail);bottom:-13px}
+#view .dd-wish.hp-wish .dd-tail::after{left:3px;top:10px}
+#view .dd-wish.hp-wish.home{cursor:default}
+html[data-layout="phone"] #view .dd-wish.hp-wish{max-width:min(230px,calc(100% - 16px));font-size:15px}
+/* the help animations (#fx): the scoop tips over the bowl and three kibble fall; four drops from the can; a ball arcs (JS); the treat */
+.hp-fx .hp-scoop{transform-box:fill-box;transform-origin:50% 50%;animation:hpScoop .95s ease-in-out forwards}
+@keyframes hpScoop{0%{transform:translateY(-14px) rotate(0);opacity:0}16%{transform:translateY(0) rotate(0);opacity:1}40%,72%{transform:rotate(105deg);opacity:1}100%{transform:translateY(-10px) rotate(60deg);opacity:0}}
+.hp-fx .hp-kib{opacity:0;transform-box:fill-box;animation:hpKib .45s ease-in forwards}
+@keyframes hpKib{0%{opacity:1;transform:translate(0,0)}100%{opacity:1;transform:translate(6px,40px)}}
+.hp-fx .hp-drop{opacity:0;transform-box:fill-box;animation:hpDrop .55s ease-in forwards}
+@keyframes hpDrop{0%{opacity:1;transform:translate(0,0)}85%{opacity:1}100%{opacity:0;transform:translate(-8px,70px)}}
+.hp-fx .hp-treat{transform-box:fill-box;transform-origin:center;animation:hpTreat 1s ease-out forwards}
+@keyframes hpTreat{0%{transform:scale(.4);opacity:0}25%{transform:scale(1.1);opacity:1}70%{transform:scale(.9);opacity:1}100%{transform:scale(.2);opacity:0}}
+@media (prefers-reduced-motion:reduce){html:not([data-motion="on"]) :is(.hp-fx,#hpG .hp-canart.tilt){animation:none}}
+html[data-motion="off"] :is(.hp-fx *,#hpG .hp-canart.tilt){animation:none!important}
+/* the snack sheet (the gift sheet's grid, 52_friends.css) and Say thanks in the letter's action row */
+.hp-snack .fr-giftgrid{margin-top:2px}
+.mb-acts.hp-acts .btn{min-height:44px}
+.mb-acts.hp-acts .btn.soon{opacity:1;filter:saturate(.35);cursor:default}
