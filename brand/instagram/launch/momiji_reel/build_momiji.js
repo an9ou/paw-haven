@@ -22,6 +22,7 @@
 //   instead of the safe zone (the centring, prop-clearance and leaf checks stay), no QR, link, domain, @, handles or platform names (the build
 //   refuses RedNote's off-platform words). The same music (WORK's music.wav from the English build is used as is) and the same loop.
 //   Output doodle-doggo-momiji-loop-rednote.mp4.
+//   ONLY=cover: the cover (momiji-cover.jpg; REDNOTE=1: brand/rednote/rednote-23-momiji.jpg, 3:4).
 //   CHECK=1 runs every frame's checks without rendering. ENCODE=1 encodes WORK/f again (same music). DEBUG=1 outlines the boxes.
 // Output next to this file: doodle-doggo-momiji-loop.mp4.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -182,6 +183,56 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
     await p.setContent(`<!doctype html><style>html,body{margin:0}svg{display:block}.pa-wc-hl{opacity:0!important}</style>${sv}`);
     await p.screenshot({ path: bgPng }); }
   const bg = 'data:image/png;base64,' + fs.readFileSync(bgPng).toString('base64');
+  // ---- the covers (ONLY=cover; owner, 23 Nov 2026: "both banner and captions"): their own design, not a frame of the loop. The same Ueno window
+  // (the red crown at the top, the scene to the foot); the headline big on a cream card; Noodle big and dreamy on the open sand, under the trunk;
+  // six of the game's falling momiji (the Momiji walk leaf) placed still; the logo on its own card. Everything 28 px apart (apartCheck: the card,
+  // Noodle, the leaves, the logo, the deck and the trunk), text centred by its ink, everything inside x 40..1040, y 250..1670 (the 3:4 crop keeps
+  // 240..1680). English: momiji-cover.jpg (1080 x 1920). REDNOTE=1: brand/rednote/rednote-23-momiji.jpg, its y 240..1680 (1080 x 1440, 3:4).
+  if (process.env.ONLY === 'cover') {
+    // the place on its own small pill under the card (the game's name: 上野公园 / Ueno Park)
+    const CV = RN ? { lines: [{ s: '东京红叶季', size: 116, fill: '#D2473C', pitch: 88 }, { s: '给你15秒，慢慢看', size: 60, fill: MUTED }], place: ZH_PLACE }
+      : { lines: [{ s: 'Tokyo autumn', size: 134, fill: '#D2473C', pitch: 92 }, { s: '15 seconds, no rush', size: 66, fill: MUTED }], place: 'Ueno Park' };
+    const cvText = CV.lines.map((l) => l.s).join(' ') + ' ' + CV.place;
+    if (RN && /[A-Za-z@]|\.(app|com|io)|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|快拍|帖子|微信|朋友圈|QQ|微博|抖音|小红书|Instagram|YouTube|TikTok/i.test(cvText)) throw new Error('a RedNote no-go word on the cover: ' + cvText);
+    if (/itch|—|–/.test(cvText)) throw new Error('no itch.io and no dashes on the cover');
+    const LOGO_INNER = fs.readFileSync(path.join(ART_ROOT, 'brand', 'doodle-doggo-logo.svg'), 'utf8').trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>[^<]*<\/title>/g, '').replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, '');
+    const CK = 3.1, CDX = 60, CFOOT = 1600; // Noodle: the art's box at 3.1 px a unit, its shadow's foot on y 1600
+    const LEAVES = [[610, 730, 30], [650, 930, 155], [1000, 650, 250], [300, 1215, 75], [560, 1185, 200], [985, 1320, 320]];
+    const page = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
+<style>html,body{margin:0;background:#fff;overflow:hidden}svg{display:block}${facts.dogCss}.pa-dog .pa-d-f0,.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{animation:none!important}.pa-dog .pa-d-f0{opacity:1}.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{opacity:0}</style>
+<svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image href="${bg}" x="0" y="0" width="${W}" height="${H}"/><g id="art"></g><g id="ov"></g><g id="chk"></g></svg>
+<script>${CENTRE_JS}
+${SAFE_JS}
+const $=(i)=>document.getElementById(i), F=${JSON.stringify(F_)}, f2=(x)=>(+x).toFixed(2);
+window.cover=function(d){
+  const L=${JSON.stringify(CV.lines)}; let top=1e9,bot=-1e9,b=0; L.forEach((l,i)=>{ const k=inkOf(l.s,l.size,F); top=Math.min(top,b-k.A); bot=Math.max(bot,b+k.D); b+=l.pitch||0; });
+  const hh=bot-top+56, y0=262;
+  let o='<g data-box data-apart="title"><rect x="108" y="'+y0+'" width="864" height="'+f2(hh)+'" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'+centred(L,540,y0+hh/2,F).svg+'</g>';
+  o+='<g data-apart="place">'+pill(${JSON.stringify(CV.place)},540,y0+hh+64,${RN ? 44 : 50},F,{fill:'${CREAM}',padX:30,color:'${PEN}'})+'</g>';
+  const lw=200, lh=lw*280/900; o+='<g data-apart="logo"><rect x="'+(912-lw/2-22)+'" y="1440" width="'+(lw+44)+'" height="'+f2(lh+28)+'" rx="24" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(912-lw/2)+'" y="1454" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+d.logo+'</svg></g>';
+  let a=d.leaves.map(([x,y,r],i)=>'<g data-apart="leaf'+(i+1)+'" transform="translate('+x+' '+y+') scale('+(0.75*${S})+') rotate('+r+')"><path d="'+d.leaf.d+'" fill="'+d.leaf.fill+'" stroke="'+d.leaf.stroke+'" stroke-width="'+d.leaf.sw+'" stroke-linejoin="round"/></g>').join('');
+  a+='<g id="cdog">'+d.dog+'</g>';
+  $('art').innerHTML=a; $('ov').innerHTML=o;
+  const s=$('cdog').querySelector('svg'); s.setAttribute('x',${CDX}); s.setAttribute('y',${(CFOOT - 193 * CK).toFixed(2)}); s.setAttribute('width',${240 * CK}); s.setAttribute('height',${200 * CK}); s.setAttribute('overflow','visible');
+  // Noodle's drawn box: the shown drawing's paths and its shadow
+  let l=1e9,t=1e9,r=-1e9,bt=-1e9; for(const e of s.querySelectorAll('.pa-d-f0 *, :scope>g>ellipse, :scope>g>path')){ if(!/^(path|ellipse|circle|text)$/.test(e.tagName)) continue; const q=e.getBoundingClientRect(); if(!q.width&&!q.height) continue; l=Math.min(l,q.left);t=Math.min(t,q.top);r=Math.max(r,q.right);bt=Math.max(bt,q.bottom); }
+  $('chk').innerHTML='<rect data-apart="noodle" x="'+f2(l)+'" y="'+f2(t)+'" width="'+f2(r-l)+'" height="'+f2(bt-t)+'" fill="none"/>'+Object.entries(d.props).map(([k,b])=>'<rect data-apart="'+k+'" x="'+f2(b[0])+'" y="'+f2(b[1])+'" width="'+f2(b[2]-b[0])+'" height="'+f2(b[3]-b[1])+'" fill="none"/>').join('');
+  const bad=[...centreCheck($('st')), ...apartCheck($('st'),28)];
+  for(const e of $('st').querySelectorAll('#ov [data-apart],#chk [data-apart="noodle"]')){ const q=e.getBoundingClientRect(); if(q.left<40||q.right>1040||q.top<250||q.bottom>1670) bad.push('outside the 3:4 crop: '+e.getAttribute('data-apart')+' '+[q.left,q.top,q.right,q.bottom].map(Math.round)); }
+  if(r-l<550||r-l>760) bad.push('Noodle is '+Math.round(r-l)+' px wide');
+  return {bad, noodle:[l,t,r,bt].map(Math.round), card:[108,y0,972,Math.round(y0+hh)]}; };
+</script>`;
+    await p.setContent(page, { waitUntil: 'networkidle' });
+    await p.evaluate(async () => { await document.fonts.load('700 70px Caveat'); await document.fonts.ready; });
+    if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), cvText);
+      if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt), cvText))) throw new Error('LXGW WenKai did not load'); }
+    const res = await p.evaluate((d) => window.cover(d), { logo: LOGO_INNER, leaves: LEAVES, leaf: LEAF, dog: draw.dreamy.svg, props: PROPS });
+    console.log('cover', JSON.stringify(res));
+    if (res.bad.length) throw new Error('cover: ' + res.bad.join(' | '));
+    const png = path.join(WORK, 'cover.png'); await p.screenshot({ path: png });
+    const f = RN ? path.join(ART_ROOT === path.resolve(__dirname, '..', '..', '..', '..') ? ART_ROOT : path.resolve(__dirname, '..', '..', '..', '..'), 'brand', 'rednote', 'rednote-23-momiji.jpg') : path.join(OUT, 'momiji-cover.jpg');
+    cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, ...(RN ? ['-vf', 'crop=1080:1440:0:240'] : []), '-q:v', '2', f]);
+    console.log('wrote', f); await b.close(); return; }
   await p.setContent(html, { waitUntil: 'networkidle' });
   await p.evaluate(async () => { await document.fonts.load('700 58px Caveat'); await document.fonts.load('700 46px Caveat'); await document.fonts.ready; });
   if (RN) { await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), HOOK);

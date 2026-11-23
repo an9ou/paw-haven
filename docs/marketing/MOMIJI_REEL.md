@@ -126,3 +126,28 @@ The owner asked for it ("Create rednote version"). This is the cut only, with no
   - Every other step is 0.20..0.69.
 - **Seam:** last frame to first is **0.54** (1.38x the median, inside the ordinary range). The keyframes are on frame 0 and frame 449 at CRF 16.
 - **Seen at 1x:** frame 60. Seam strip: `/tmp/claude-0/-home-user-paw-haven/821f93b0-fc0a-5e7e-8605-cd441828990a/scratchpad/momiji/momiji-rednote-seam-strip.jpg` (in the scratchpad, not committed).
+
+## Covers (23 Nov 2026)
+
+The owner asked for "both banner and captions". The coordinator writes the captions, so this section covers the covers only. Both MP4s are unchanged.
+
+Each cover is its own design, not a frame of the loop:
+- The same Ueno window as the loop, with the red maple crown at the top and the real scene running to its foot.
+- The headline is big and red on a cream card, with a small line under it.
+- The place is on its own pill, using the game's own name.
+- Noodle is big (653 px) and dreamy on the open sand, below the trunk.
+- Six of the game's own falling momiji (the Momiji walk leaf) are placed still.
+- The logo is on its own card, bottom right.
+
+Checks:
+- `centreCheck()` on the card and the pill.
+- `apartCheck()` at 28 px between the card, the pill, Noodle, every leaf, the logo, the hanami deck and the maple's trunk.
+- Everything sits inside x 40..1040, y 250..1670.
+- The RedNote words pass the ban-word check.
+
+Build: `ONLY=cover [REDNOTE=1] ART_ROOT=<main> CAPS=<caps> NODE_PATH=$(npm root -g) node brand/instagram/launch/momiji_reel/build_momiji.js <workdir>`.
+
+- **English:** `brand/instagram/launch/momiji_reel/momiji-cover.jpg` (1080 x 1920). **Tokyo autumn** / *15 seconds, no rush*, with the pill **Ueno Park**.
+- **RedNote:** `brand/rednote/rednote-23-momiji.jpg` (1080 x 1440, 3:4: the same design's y 240..1680). **东京红叶季** / 给你15秒，慢慢看, with the pill **上野公园** (the game's zh-Hans name).
+  - The font is LXGW WenKai, with no emoji.
+  - There is no link, domain, handle, QR code or app name. The only Latin letters are the ones in the logo drawing.
