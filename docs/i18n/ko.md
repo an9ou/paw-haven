@@ -448,3 +448,8 @@ TODO(native):
 - map215.place_pool: 물놀이장 for Splash Pool (short for the map caption).
 - ground.play_3: 플레이 바우 (the play bow as a loanword): known to kids?
 - map215.sticker_new / sticker_moved: 새로 생김 / 이사함 on the map stickers.
+
+v2.33 "Helping paws" (`hp.*`, `nw.v233.*`, `data.fr_notes.12`): sleepover 파자마 파티 (the diary says 하룻밤 잤어, a guest 자고 가는 손님), Help out 도와주기, the page and news title 발 벗고 도와요 (from 발 벗고 나서다).
+TODO(native):
+- 파자마 파티 for one dog staying a night in a friend's yard (alternatives 하룻밤 놀러 가기, 외박).
+- hp.sleep_done_btn 파티 약속 완료 for "Sleepover sent".

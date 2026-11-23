@@ -731,3 +731,6 @@ Each rule comes from one or more of the friend's changes and was swept across `g
 | English names stay English where HK kids say them: **Gary** | 加利 | Other NPC names keep their Cantonese names. |
 
 Still open (not asked): moving the Mandarin-leak patterns of section 10 into `bans` now that both tables hold no zh-Hant placeholders (`tools/yue_chunks.js --leaks game/i18n/yue.json`: 0 leaks).
+
+v2.33 "Helping paws" (`hp.*`, `nw.v233.*`, `data.fr_notes.12`): sleepover **過夜** (button 過夜, done 約好過夜), guest **過夜小客人**, Help out **幫手**, the page and news title **爪爪幫手**, Say thanks **講多謝**, thank-you note **多謝卡**.
+- TODO(native): 過夜 for a dog's sleepover at a friend's yard (HK kids may just say sleepover).
