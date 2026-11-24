@@ -121,4 +121,25 @@ require('./test_lib').run('phone_v211_tokyo', async (t) => {
     await t.SH(device.replace(' ', '') + '_odaiba_roam');
     await t.ctx.close();
   }
-});
+
+  /* overlap leftovers (24 Nov 2026): at 360 x 640 the status chip shows each Tokyo place in the player's language (it showed the English
+     "Asakusa and Sensō-ji" in every language) and fits on one line without an ellipsis: a long name takes its short pin name, then "Day N" goes.
+     PAW_TK_LANGS=ko,de narrows the languages (default: all 12). */
+  const langs = process.env.PAW_TK_LANGS ? process.env.PAW_TK_LANGS.split(',') : ['en', 'ja', 'zh-Hans', 'zh-Hant', 'yue', 'ko', 'es', 'pt-BR', 'fr', 'de', 'th', 'id'];
+  for (const lang of langs) {
+    sec(lang + ', 360 x 640: the status chip in every Tokyo place');
+    await t.newGame({ device: 'Pixel 7', lang, prefs: { tkTest: true } }, { coins: 2000, bond: { level: 6, pts: 1500 } });
+    await p().setViewportSize({ width: 360, height: 640 }); await t.calm();
+    const bad = [];
+    for (const k of ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba']) {
+      await at(k);
+      const c = await ev((k) => { const st = document.getElementById('status'), n = st.querySelector('.pname'), P = window.__paw; return { k, sw: st.scrollWidth, cw: st.clientWidth, name: n ? n.textContent : '', lang: P.i18n.lang, long: P.placeName(k), text: st.textContent }; }, k);
+      const en = { shibuya: 'Shibuya Crossing', yoyogi: 'Yoyogi Park Dog Run', asakusa: 'Asakusa and Sensō-ji', ueno: 'Ueno Park', tokyotower: 'Tokyo Tower', odaiba: 'Odaiba Seaside' }[k];
+      const own = lang === 'en' || lang === 'de' && k === 'tokyotower' || c.name !== en; // German keeps "Tokyo Tower"
+      if (c.sw > c.cw + 1 || !own || c.lang !== lang) bad.push(`${k} "${c.text}" ${c.sw}/${c.cw}${own ? '' : ' (English)'}`);
+    }
+    ok(!bad.length, `${lang}: the chip fits at 360 and names every Tokyo place in ${lang} (${bad.join('; ')})`);
+    if (['ko', 'th', 'de'].includes(lang)) await t.SH('status360_' + lang);
+    await t.ctx.close();
+  }
+}, { timeout: 480000 });

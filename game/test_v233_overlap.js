@@ -52,6 +52,7 @@ function toastLook() {
 run('v233_overlap', async (t) => {
   const { ok, sec, ev } = t;
   const today = () => jst(t);
+  if (process.env.OVL_ONLY === 'bath') { await bathPart(t); return; } // OVL_ONLY=bath: review N5 alone
 
   /* ---------- S5: the toast after a help, on a visit ---------- */
   for (const lang of LANGS) {
@@ -155,4 +156,36 @@ run('v233_overlap', async (t) => {
     ok(n > 0 && !bad.length, tag + `: ${n} lines, none drawn over the guest's tag (${subs} under it as the last resort): ` + bad.join(' | '));
     await t.ctx.close();
   }
-}, { timeout: 400000 });
+  await bathPart(t);
+}, { timeout: 520000 });
+
+/* review N5 (24 Nov 2026): in the bath a Great Dane pack dog lay pressed against the tub with its nose in the suds (360x640), a dachshund's head
+   under its rim. The tub and the suds over it are a prop for the pack (37_roam.js rmScan): no waiting dog's drawing lies over the tub's by more than
+   15% of itself (before: 40% and 55%). 360x640 and 390x844, a Shiba in the tub, a dachshund and a Great Dane waiting, three baths each */
+function bathLook() {
+  const ink = (svg) => { let b = null; [...svg.children].forEach((c) => { if (['defs', 'title'].includes(c.tagName)) return; const q = c.getBoundingClientRect(); if (!q.width) return; b = b ? [Math.min(b[0], q.left), Math.min(b[1], q.top), Math.max(b[2], q.right), Math.max(b[3], q.bottom)] : [q.left, q.top, q.right, q.bottom]; }); return b; };
+  const tub = document.querySelector('#tubG svg'), T = tub && ink(tub), lead = window.__paw.S.dog, out = [];
+  if (!T) return { bad: ['no tub'] };
+  document.querySelectorAll('#pack [data-dog]').forEach((g) => { if (g.dataset.dog === lead.id) return; const s = g.querySelector('svg.pa-dog'), b = s && ink(s); if (!b) return; const o = Math.max(0, Math.min(b[2], T[2]) - Math.max(b[0], T[0])) * Math.max(0, Math.min(b[3], T[3]) - Math.max(b[1], T[1])), A = (b[2] - b[0]) * (b[3] - b[1]); if (o > 0.15 * A) out.push(Math.round(100 * o / A) + '%'); });
+  return { bad: out };
+}
+async function bathPart(t) {
+  const { ok, sec, ev } = t;
+  for (const [w, h] of [[360, 640], [390, 844]]) {
+    sec(`N5. ${w}x${h}: in the bath the pack waits a step away from the tub`);
+    await t.newGame({ device: 'Pixel 7', dsf: 2, prefs: { rmTest: true }, map215: true, ground: true }, { coins: 5000 });
+    await t.p.setViewportSize({ width: w, height: h });
+    await ev(() => { const P = window.__paw; P.addDog({ key: 'dachs', sex: 'female', months: 30 }, 'Otto'); P.addDog({ key: 'dane', sex: 'male', months: 30 }, 'Bruno'); });
+    await t.calm(); await t.home('yard'); await t.lu();
+    const bad = [];
+    for (let run = 0; run < 3; run++) {
+      await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.clean = 20; }); window.__paw.go('bath'); });
+      await t.until(() => window.__paw.mode === 'bath' && !!document.getElementById('tubG'), null, 6000);
+      for (let i = 0; i < 3; i++) { await t.sleep(1200); bad.push(...(await ev(bathLook)).bad); }
+      if (run === 0) await shot(t, `bath_${w}`);
+      await ev(() => window.__paw.go('yard')); await t.until(() => window.__paw.mode === 'yard', null, 6000); await t.sleep(600);
+    }
+    ok(!bad.length, `${w}x${h}: 3 baths, 9 samples: no waiting dog drawn over the tub by more than 15% of itself (${bad.join(', ')})`);
+    await t.ctx.close();
+  }
+}

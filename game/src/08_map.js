@@ -40,7 +40,7 @@ const MAP_SETTLE_MS = 320;
 let mapSettleT = 0, mapSettleEl = null, mapSettleDown = 0;
 function mapSettleRun() {
   mapSettleT = 0;
-  if (cur.mode !== 'map' || !isPhone() || !MAPV || mapSettleDown > 0) return;
+  if (cur.mode !== 'map' || !MAPV || mapSettleDown > 0) return; // overlap leftovers (24 Nov 2026): the desktop too, where the zoom column lay on "Training Ground" at 1280 (step 1 only: its column stays at the bottom)
   const pan = $('#mapPan'), inner = $('#mapInner'), zoom = $('#mapZoom'); if (!pan || !inner || !zoom || pan.classList.contains('dragging')) return;
   const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
   const over = (r, c, dx, dy) => r.right + dx > c.left && r.left + dx < c.right && r.bottom + dy > c.top && r.top + dy < c.bottom;
@@ -59,7 +59,7 @@ function mapSettleRun() {
   for (const [dx, dy] of cand.slice(0, 24)) { M.tx = tx0 + dx; M.ty = ty0 + dy; mapApply(); if (clear()) { done = true; break; } } // the clamp may stop the slide short: look at the real result
   if (!done) { M.tx = tx0; M.ty = ty0; mapApply(); }
   if (!motionOff() && inner.style.transform !== t0 && typeof inner.animate === 'function') inner.animate([{ transform: t0 }, { transform: inner.style.transform }], { duration: 250, easing: 'ease-out' });
-  if (done) return;
+  if (done || !isPhone()) return;
   // 2) a name in the map's corner cannot be slid away (the edge stops the map): the zoom column steps down below it instead (the X stays)
   const now = labels().map(box), z = box(zoom), top0 = parseFloat(getComputedStyle(zoom).top) || z.top - pan.getBoundingClientRect().top, room = pan.getBoundingClientRect().bottom - 12 - z.bottom;
   if (now.some((r) => over(r, box($('#mapX')), 0, 0))) return;

@@ -130,8 +130,9 @@ const HP_INK = [2, 20, 66, 60], HP_PAW = 0.14, HP_HEAD = 0.38, HP_SCALES = [1, 0
 // (a dog's drawn half-width is about 88 x its scale: about 1 on a desktop, 0.6 on a phone)
 const HP_KEEP = { can: [0, 0, 96, 120] }, HP_KEEP_PH = { can: [0, 0, 60, 120] };
 const HP_HUNGER = 20, HP_NOTE = 12; // a bowl top-up's Hunger; the thank-you note (FR_NOTES[12])
-const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null, pour: false, at: '', ro: null }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot,
-// pour: the bowl stays empty until the kibble lands (hpBowlFx fills it), at: what the bubble was last placed for (hpFrame), ro: the chip's ResizeObserver
+const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null, pour: false, at: '', ro: null, panX: null, backT: 0 }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot,
+// pour: the bowl stays empty until the kibble lands (hpBowlFx fills it), at: what the bubble was last placed for (hpFrame), ro: the chip's ResizeObserver,
+// panX / backT: where a help panned the phone camera to, and the timer that brings it back home (hpPanBack)
 const hpSnd = (n, alt) => { try { if (typeof SFX[n] === 'function') SFX[n](); else if (alt) alt(); } catch (e) { /* audio off */ } }; // SFX.chime and SFX.page fall back
 const hpFriendName = () => frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
 // their leader on this visit (the snapshot's first dog) and its name
@@ -341,7 +342,7 @@ function hpVisit() {
   const st = $('#status', view); if (HPV.ro) HPV.ro.disconnect(); HPV.ro = null;
   if (st && strip && typeof ResizeObserver === 'function') { HPV.ro = new ResizeObserver(() => { hpStripPlace(); HPV.at = ''; }); HPV.ro.observe(st); } // the chip's words change (the clock, the weather)
   if (HPV.wish) HPV.raf = requestAnimationFrame(hpFrame);
-  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; clearTimeout(HPV.liftT); HPV.liftT = 0; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
+  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; clearTimeout(HPV.liftT); HPV.liftT = 0; clearTimeout(HPV.backT); HPV.backT = 0; HPV.panX = null; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
 }
 on('fryard:enter', () => hpVisit());
 // the spot each help plays at (world x): the camera pans there on a phone first (0.5 s) when it is not well in view
@@ -349,7 +350,18 @@ function hpSpotX(k) { if (k === 'bowl') return (HPV.bowl || HP_BOWL)[0] + HP_BOW
 function hpPan(k) {
   const x = hpSpotX(k); if (x == null || FRC.w >= 1000) return 0;
   const m = Math.min(110, FRC.w / 4); if (x > FRC.x + m && x < FRC.x + FRC.w - m) return 0;
-  frCamTo(x - FRC.w / 2, 0.5); return motionOff() ? 0 : 520;
+  frCamTo(x - FRC.w / 2, 0.5); HPV.panX = clamp(x - FRC.w / 2, 0, 1000 - FRC.w); return motionOff() ? 0 : 520;
+}
+// overlap leftovers: once a help that panned the phone camera has played (HP_BACK_MS; the water's lift holds HP_LIFT_HOLD), the view goes back to the
+// visit's home crop, where my leader and theirs are both in view (FRC.home, 50_friends.js frLayout). A drag or the look-around button in between keeps the player's view
+const HP_BACK_MS = 2400;
+function hpPanBack(ms) {
+  clearTimeout(HPV.backT); HPV.backT = 0; if (HPV.panX == null) return;
+  HPV.backT = setTimeout(() => {
+    HPV.backT = 0; const px = HPV.panX; HPV.panX = null;
+    if (cur.mode !== 'fryard' || FRC.w >= 1000 || Math.abs(FRC.x - px) > 8) return;
+    clearTimeout(HPV.liftT); HPV.liftT = 0; frCamTo(FRC.home, 0.6, 0); setTimeout(() => { const b = $('#phPeek'); if (b && typeof b.frSync === 'function') b.frSync(); }, 650);
+  }, ms);
 }
 const hpWait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function hpTap(k, from) {
@@ -368,6 +380,7 @@ async function hpTap(k, from) {
   const r = await hpSend(k, k === 'wish' ? { w: w.i } : {});
   if (r !== 'ok' || !hpVisitOn()) { if (k === 'bowl') { HPV.pour = false; hpBowlFill(); } return r === 'ok'; }
   if (k === 'bowl') hpBowlFx(); else if (k === 'water') hpWaterFx(hpCanFit()); else if (w.k === 'ball') hpBallFx(); else hpWishFx();
+  hpPanBack(k === 'water' && HPV.liftT ? HP_LIFT_HOLD : HP_BACK_MS);
   return true;
 }
 // one send. ok: marked done, a help counted, +1 Bond to my leader up to HP_BOND_MAX a day. limit: done, quietly. bad from a Worker that said hp: 1:
@@ -515,7 +528,7 @@ async function hpSnackGive(fid, g, p) {
   btns.forEach((b) => { b.disabled = false; });
   if (r === 'ok') { frGiftTake(g); markDirty(); } // only now does the treat leave the bag (not the day's gift: S.fr.gift stays)
   if (r === 'ok' || r === 'limit' || r === 'bad') { if (!modal.hidden && modal.querySelector('.hp-snacksheet')) closeModal(); }
-  if (r === 'ok' && cur.mode === 'fryard') { hpEatFx(g); hpWishFx(); }
+  if (r === 'ok' && cur.mode === 'fryard') { hpEatFx(g); hpWishFx(); hpPanBack(HP_BACK_MS); }
   return r === 'ok';
 }
 

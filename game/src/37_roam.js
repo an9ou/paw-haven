@@ -66,6 +66,7 @@ function rmWorldBox(svg, M, el) {
 }
 // a seasonal decoration (a festival item: fest in HM_DECOR, the Halloween 2026 ones; tag 'fest') keeps every dog's tap rect off it, as the seasonal props do
 const rmFestDecor = (el) => { const n = el.closest('[data-decor]').dataset.decor; return !!(HM_DECOR[n] && HM_DECOR[n].fest); };
+const RM_TUB_SUDS = 40; // the suds and the dog in the tub stand this far above the tub's rim (world units)
 function rmScan() {
   RM.noAt = performance.now() + 3000; const svg = $('#view > svg.world'); if (!svg || !svg.getScreenCTM()) { RM.no = null; return; }
   const M = svg.getScreenCTM().inverse(), out = [];
@@ -81,6 +82,9 @@ function rmScan() {
   rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)
   grBackNo(svg, M, out); // v2.19 fix: indoors, the floor behind and beside the placed beds, furniture and decorations (43_ground.js)
+  // overlap review N5 (24 Nov 2026): in the bath a pack dog lay pressed against the tub (a Great Dane's nose in the suds at 360): the tub's drawing
+  // and the suds over it are a prop (no tap rect on it, 37_roam.js rmSoft), so the others wait a step away
+  if (cur.mode === 'bath') { const tub = svg.querySelector('#tubG svg'); let tb = null; [...(tub ? tub.children : [])].forEach((c) => { const b = rmWorldBox(svg, M, c); if (b) tb = tb ? [Math.min(tb[0], b[0]), Math.min(tb[1], b[1]), Math.max(tb[0] + tb[2], b[0] + b[2]) - Math.min(tb[0], b[0]), Math.max(tb[1] + tb[3], b[1] + b[3]) - Math.min(tb[1], b[1])] : b; }); if (tb) out.push([tb[0], tb[1] - RM_TUB_SUDS, tb[2], tb[3] + RM_TUB_SUDS, 'prop']); }
   RM.no = out; RM.keep = rmKeepScan(svg, M);
 }
 /* keep clear (overlap review S2, 24 Nov 2026): a dog resting in front of the mailbox hid it and its new-letter badge (the deep yard sorts the
@@ -677,10 +681,29 @@ function rmLookSync() {
     }
     // a dog chip, not the scene's look-around arrow (#phPeek): the head of the dog out there (as in the HUD row) with a small arrow pointing to it
     const key = l.map((d) => d.id + coatNameOf(d)).join(); if (b.dataset.k !== key) { b.dataset.k = key; b.innerHTML = `<span class="rm-head">${headSVG(l[0])}</span><svg class="rm-arrow" viewBox="0 0 20 24" aria-hidden="true"><path d="M6 4 Q13 10 14 12 Q12 15 6 20" fill="none" stroke="#5B3D32" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${l.length > 1 ? `<i class="rm-n">${l.length}</i>` : ''}`; }
-    b.hidden = false; const n = l.map((d) => d.name); b.setAttribute('aria-label', tt('roam.look', '{side, select, left {Look left: {names}} other {Look right: {names}}}', { side: side < 0 ? 'left' : 'right', names: tlist(n) })); b.title = n.join(', ');
+    b.hidden = false; rmLookPlace(b); const n = l.map((d) => d.name); b.setAttribute('aria-label', tt('roam.look', '{side, select, left {Look left: {names}} other {Look right: {names}}}', { side: side < 0 ? 'left' : 'right', names: tlist(n) })); b.title = n.join(', ');
   });
 }
 
+// overlap leftovers (24 Nov 2026): on a narrow phone a look chip at its usual height (39_roam.css) can sit over a decoration or the yard visitor
+// and its name chip. It moves up or down the screen's side, by the least, to where it covers none of them (nor the house, the mailbox, the bowl)
+// and none of the buttons and chips on the view; with no clear height, to the one that covers the least of them. Measured again only when the crop, the view or what is out there changes
+const RM_LOOK_STEP = 8, RM_LOOK_REACH = 200;
+function rmLookPlace(b) {
+  const svg = $('#view > svg.world'), vb = svg && svg.viewBox.baseVal; if (!svg || !vb) return;
+  const art = [...svg.querySelectorAll('[data-decor], #visitorG, #houseG, #mailboxG, #bowlG')].filter((e) => !e.closest('#pack')), vr = view.getBoundingClientRect();
+  const box = (e) => { const r = e.getBoundingClientRect(); return r.width && r.height ? [r.left, r.top, r.right, r.bottom] : null; };
+  const hard = [...document.querySelectorAll('#status, #placeBtns .btn, #ddWish:not([hidden]), #phPeek, #msBtn:not([hidden]), #hpStrip, #hpWish:not([hidden]), #slLook, #bar:not([hidden]), #view .rm-look')].filter((e) => e !== b && !e.hidden && e.getClientRects().length > 0).map(box).filter(Boolean);
+  const key = [Math.round(vb.x), Math.round(vb.width), Math.round(vr.width), Math.round(vr.height), art.length, b.className, hard.map((q) => Math.round(q[1]) + ':' + Math.round(q[0])).join(' ')].join();
+  if (b.dataset.at === key) return; b.dataset.at = key; b.style.top = '';
+  const soft = art.map(box).filter(Boolean);
+  const r0 = b.getBoundingClientRect(); if (!r0.height) return;
+  const at = (dy) => [r0.left, r0.top + dy, r0.right, r0.bottom + dy], ov = (a, q) => Math.max(0, Math.min(a[2], q[2]) - Math.max(a[0], q[0])) * Math.max(0, Math.min(a[3], q[3]) - Math.max(a[1], q[1]));
+  const cost = (dy) => { const a = at(dy); if (a[1] < vr.top + 4 || a[3] > vr.bottom - 4 || hard.some((q) => ov(a, q) > 0)) return null; return soft.reduce((m, q) => m + ov(a, q), 0); };
+  let best = { dy: 0, c: cost(0) }; if (best.c === 0) return; if (best.c == null) best.c = 1e9;
+  for (let d = RM_LOOK_STEP; d <= RM_LOOK_REACH && best.c > 0; d += RM_LOOK_STEP) for (const dy of [d, -d]) { const c = cost(dy); if (c != null && c < best.c) { best = { dy, c }; if (!c) break; } } // the first clear height, else the one that covers the least
+  if (best.dy) b.style.top = (r0.top - vr.top + best.dy) + 'px';
+}
 // the colour above the scene when the phone zooms out: the top of the scene's sky (or wall) rect
 function rmSky() {
   const svg = $('#view > svg.world'); if (!svg) return ''; let col = '';
