@@ -16,21 +16,27 @@ MERCH session's own work on `merch/shop`, in new files.
 - English first. Translation is one batch at the end (one line in the other 11 languages: "Merch ships to ... in English").
 - Words: "Put your dog on a mug". Never words that sound like selling dogs. Money screens as calm as the Kind shop.
 
-## What waits for which answer
+## What the owner decided (24 Nov 2026), and what it changes here
 
-| Owner's answer | Parts it changes |
+| Decision | What it changes |
 |---|---|
-| UK at launch | 3 (countries list), 7 (UK legal text), 10 (VAT registration first) |
-| Currencies | 2 (currency switch), 3 (catalog) |
-| First products | 1 (which layouts to finish), 2 (tiles), 5 (variants) |
-| Returns | 2 (promise text), 7 (terms) |
-| Delivery included | 2 (price lines), 3 (catalog prices) |
-| Cloudflare plan | 4 (render in a Worker, or a render step outside Cloudflare) |
+| Ship everywhere | Zones, not one country: `COUNTRIES.md` tiers. The UK, the EU and Brazil stay shut until a registration (owner + accountant). Parts 2, 3, 7. |
+| USD prices only; buyers may pay in their own currency on Stripe | One USD list, Adaptive Pricing on, no GBP list. Needs USD payouts on the Stripe account. Parts 2, 3. |
+| Mug, tee, sticker sheet | Part 1 finishes those three layouts only. |
+| No returns; free reprint or refund; 1-hour cancel | Parts 2, 6, 7 as TRANSACTIONS.md 4. |
+| A shipping fee, free over a threshold | **A basket** (up to 6 lines) replaces "one item per order": `SHIPPING.md` section 6. A "Ship to" choice comes first. Parts 2, 3, 5, 6. |
+| Free Cloudflare plan | No resvg in a Worker, no R2. Part 4 is the Browser Run + KV pipeline of `RENDER_FREE.md`, proven by one test deploy first. |
+
+Still open (second round of questions, docs/HANDOFF_MERCH.md): the price list and threshold, the launch countries, the test deploy, USD payouts.
 
 ## The parts
 
-**0. Decisions and accounts [O].** The six open questions (docs/HANDOFF_MERCH.md). Then: a Printful account, the separate Stripe account
-(Hong Kong, Stripe Tax on), Workers Paid if the plan is Free, R2 turned on. An accountant's view on UK VAT and US sales tax.
+**0. Decisions and accounts [O].** The second round of questions (docs/HANDOFF_MERCH.md). Then: a Printful account, the separate Stripe
+account (Hong Kong, USD payouts, Adaptive Pricing, Stripe Tax). No paid Cloudflare plan and no R2. An accountant's view on the UK, the EU,
+Canada, Australia and US sales tax (`COUNTRIES.md` "for the accountant").
+
+**0b. The render test deploy [O approves; GM or MERCH deploys as the owner says].** One throwaway Worker on the Free plan, deleted after
+(`RENDER_FREE.md` section 7). It decides part 4: Browser Run, or the GitHub Actions fallback.
 
 **1. Print art ready for real products.** Files: `merch/*`, `tools/merch_*`.
 - Print areas and file sizes per product from Printful's rules (`PRINT_FILES.md`), the tee size settled.
@@ -42,20 +48,26 @@ MERCH session's own work on `merch/shop`, in new files.
 **2. The `/merch` page, test mode.** Files: `site/merch/*` (page, css, js), PawPrint for previews. [GM] for `site/tpl/*`, the header tab
 and the site build (`tools/cf_*`, `tools/pages.js`).
 - The prototype's six steps made real: dogs from the save (`merchFromSave`) or the link (`merchFromHash`), ready-made dogs, live previews.
+- New against the prototype: a basket (several dogs and things in one order), "Ship to" chosen first, the shipping line and the plain
+  "Orders of $N or more ship free" line, USD only, the "tax may be due at the door" line by zone, "Coming soon" for shut countries.
 - The catalog comes from a static file until part 3. The pay button says the shop is not open yet.
 - Suite `merch_page`; `paw-fit` at 360x640, 390x844 and 1280x720.
 
 **3. The merch Worker, money faked.** Files: `cloudflare/merch/*` (its own Worker `doodle-doggo-merch`, its own D1 and R2; never
 `cloudflare/worker.js`). TRANSACTIONS.md sections 2, 3 and 6.
 - Routes: catalog, quote, checkout, order, cancel, address, Stripe webhook, provider webhook, signed file, cron.
+- The basket: `merch_order_items`, zones with a fee and a free-shipping threshold, the margin guard on the whole order, a refund per line,
+  one parcel and one tracking link per product type (`SHIPPING.md` section 6). TRANSACTIONS.md is rewritten for it first.
 - Stripe and the provider are faked in tests (`STRIPE_FETCH`, `PROVIDER_FETCH`). Suite `merch_worker` covers every row of
   TRANSACTIONS.md 2.1 and 2.2 (double taps, events twice or out of order, refund before paid, disputes, rejects).
 - Switches: `MERCH_FROM`, `MERCH_OFF`, `MERCH_COUNTRIES`, `MERCH_PRODUCTS`, `MERCH_DAY_CAP`, `MERCH_PROVIDER_MODE`.
 
 **4. The print render.** Files: `cloudflare/merch/print_*` or `merch/print_worker.mjs`.
-- Workers Paid: PawPrint + resvg-wasm in a Worker, banded above 3000x3000, PNG to R2, a fresh instance after any trap, a time limit.
-- Free plan: the same code as a small render step outside Cloudflare; the Worker keeps the recipe and checks a small proof.
-- Test: the server file equals the reference render; every launch product inside the CPU and memory limits.
+- Free plan, first choice: a static print page (`/merch/print/v1/`) where PawPrint draws the dog from the recipe; the Worker asks
+  Cloudflare's browser (Browser Run) for a screenshot inside the cooling hour and streams the PNG into Workers KV; a signed route serves it.
+- Free plan, fallback: the Worker triggers a GitHub Actions job that renders with resvg and sends the PNGs back.
+- Workers Paid ($5 a month) only if orders pass about 80 a day.
+- Test: the server file equals the reference render, exact pixel size, clear corners; the Worker stays under 10 ms CPU.
 
 **5. The Printful adapter.** File: `cloudflare/merch/provider_printful.js`.
 - `quoteCost`, `createDraft`, `confirm`, `cancel`, `get`, `parseHook`, `catalogCosts`; the nightly margin guard (floor US$4 and 20%).

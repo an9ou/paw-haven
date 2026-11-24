@@ -37,8 +37,24 @@ no payment code exists.
 6. Cloudflare: "It is free plan as i know, but can u try to put it on cloudflare first, otherwise lets see if we can do it in free way".
    So: **no paid plan assumed.** Find a way to make the print files on Cloudflare Free, or another free way.
 
-Work that followed (see the files): `ECONOMICS.md` + `tools/merch_econ.js` (margins with Stripe Hong Kong fees), `PRINT_FILES.md` (print
-areas; the tee is settled), `BUILD_PLAN.md` (parts; to be updated for the cart, worldwide and the free plan).
+Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
+
+| File | What it settles |
+|---|---|
+| `ECONOMICS.md`, `tools/merch_econ.js` (`--cart` for baskets) | Margins with Stripe Hong Kong fees: 3.9% + US$0.30 when settled in USD, 5.9% when converted to HKD. A lost dispute costs 4 to 6 orders of margin. |
+| `PRINT_FILES.md` | The tee: 4500x5400 file, dog + name in a 10 x 10 in block. Stickers: no floating pieces, no border of our own. Dark garments: keep the paper patch. Exact pixel sizes need the owner's Printful key. |
+| `SHIPPING.md` | Proposed list (model C): mug $19.99, tee $26.99, sticker sheet $13.99; shipping USA/Japan $4.99, free from $35; UK/Europe $5.99 and Canada/Australia/NZ $7.99, free from $70; elsewhere $11.99, never free. Tees, mugs and stickers each travel in their own parcel. The basket asks "Ship to" first. |
+| `COUNTRIES.md` | Tier 1 open at launch: USA, Canada, Australia, NZ, Japan, Hong Kong. Tier 2 open with a "tax may be due at the door" line: the rest of the world. Tier 3 wait for a registration: UK, EU, Brazil. Tier 4 never (sanctions, Printful, Stripe). |
+| `RENDER_FREE.md` | Free plan: Cloudflare's own browser (Browser Run, 10 browser-minutes a day free) draws a static print page; the Worker streams the PNG into KV. About 80 orders a day. Unproven until one throwaway test deploy. Fallback: a GitHub Actions render. R2 is out (needs a card). |
+| `BUILD_PLAN.md` | The parts, updated for the basket, the zones and the free render. |
+
+## Waiting for the owner (asked 24 Nov 2026, second round; special update: NO 5-minute default)
+
+1. Prices and the free-shipping line (recommended: model C with free shipping from $35 in the USA; $50 earns about $1 more an order on
+   paper but a mug + tee at $46.98 just misses it; old prices + $3.99 earns most but is the dearest).
+2. Countries at launch (recommended: everywhere except the UK, the EU and Brazil, which wait for the accountant and a registration).
+3. One throwaway test deploy on the Free plan to prove the print render (`RENDER_FREE.md` section 7), then deleted.
+4. Can Stripe pay out in US dollars (a USD bank account)? It saves 2% on every order, and Stripe's own-currency choice at checkout needs it.
 
 Only the owner can: open the Printful account and its payment method, open the separate Stripe account and turn on Stripe Tax, register
 for tax where needed (with an accountant: we give research, not tax advice), set secrets in the dashboards, order real samples.
