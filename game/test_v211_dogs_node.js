@@ -107,7 +107,8 @@ console.log('   ' + nb + ' bandana renders');
 
 // v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): every render moved on purpose, so the old renders below are compared by their ink (same normaliser as v212_dogs and INK=1 in dogs/check_identical.js)
 // the collie draws its white neck tube now (v2.15.2), so its ink changed too and it is left out of the old-base comparison below
-const ink = (x) => x.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
+// 24 Nov 2026: a filled shape's outline closes with one extra stroke written in commas (pawart_dogs.js shape()), and a white tail tip wider than its tail an ink ring; the normaliser leaves it out
+const ink = (x) => x.replace(/M-?[\d.]+,-?[\d.]+L-?[\d.]+,-?[\d.]+/g, '').replace(/(<ellipse [^>]*) stroke="#2E2320" stroke-width="[\d.]+"\/>/g, '$1/>').replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
   .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g, '');
 const PAI = { dog: (k, o) => ink(PA.dog(k, o)), dogHead: (k, o) => ink(PA.dogHead(k, o)) };
 console.log('-- old breeds unchanged (spot check; the full proof is dogs/check_identical.js v211-base)');
