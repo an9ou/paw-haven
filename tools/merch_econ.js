@@ -3,6 +3,7 @@
 // Formula: docs/design/merch/TRANSACTIONS.md section 9, without the fixed cost o:
 //   margin = P - T - W*(1 + t_w) - f - s - r
 // Prints Markdown tables. No dependencies: `node tools/merch_econ.js`.
+// `node tools/merch_econ.js --cart`: carts of several items, shipping fees and free shipping (SHIPPING.md).
 // Research, not tax or accounting advice.
 'use strict';
 
@@ -188,7 +189,7 @@ function cartInputs() {
     names: { mug: 'mug', tee: 'tee', stk: 'stickers' },
     // Tax per region. vat: share added on top of net that sits inside P (VAT-inclusive consumer price, seller registered).
     // tw: provider tax on W we cannot reclaim. US 7% placeholder; Japan 10% consumption tax on JP-fulfilled orders [snippet].
-    // CA, AU, EFTA, rest of world: no tax modelled (see SHIPPING.md "Not verified").
+    // EU 21% is a rough average of member-state rates. CA, AU, EFTA, rest of world: no tax modelled (SHIPPING.md "Not verified").
     tax: {
       us: { vat: 0, tw: 0.07, stax: false }, ca: { vat: 0, tw: 0, stax: false },
       uk: { vat: 0.20, tw: 0, stax: true }, eu: { vat: 0.21, tw: 0, stax: true },
@@ -208,9 +209,9 @@ function cartInputs() {
         fee: { z1: 3.99, z2: 4.99, z3: 6.99, z4: 9.99, z5: 4.99 }, free: { z1: 50, z2: 50, z3: 50, z4: 50, z5: 50 } },
       C: { label: 'C: proposal',
         price: { mug: 19.99, tee: 26.99, stk: 13.99 },
-        // Rest of world: +$4.99 for each mug or tee after the first one; sticker sheets add nothing.
-        fee: { z1: 4.99, z2: 5.99, z3: 7.99, z4: 11.99, z5: 4.99 }, extra: { z4: 4.99 }, extraKinds: ['mug', 'tee'],
-        free: { z1: 35, z2: 90, z3: 60, z4: null, z5: 35 } },
+        // Rest of world: +$5.99 for each mug or tee after the first one; sticker sheets add nothing.
+        fee: { z1: 4.99, z2: 5.99, z3: 7.99, z4: 11.99, z5: 4.99 }, extra: { z4: 5.99 }, extraKinds: ['mug', 'tee'],
+        free: { z1: 35, z2: 70, z3: 70, z4: null, z5: 35 } },
     },
     carts: [['mug'], ['tee'], ['stk'], ['mug', 'tee'], ['tee', 'stk'], ['mug', 'stk'], ['mug', 'tee', 'stk'], ['tee', 'tee'], ['mug', 'mug']],
     // Assumed mix (a guess for planning, not data): share of orders by cart, and of orders by region.
