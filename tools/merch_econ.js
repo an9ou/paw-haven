@@ -158,4 +158,222 @@ const apiTax = S.taxApiHkd / IN.fx.hkdPerUsd / IN.fx.usdPerGbp;
 const drops = sold('uk').map(p => apiTax - S.tax * p.price.uk);
 out.push('', `If Stripe Tax is billed per API transaction (HK$${S.taxApiHkd.toFixed(2)}, about ${m2(apiTax, 'uk')}) instead of 0.5%, UK margins drop by ${m2(Math.min(...drops), 'uk')} to ${m2(Math.max(...drops), 'uk')} an order.`);
 
-console.log(out.join('\n'));
+if (!process.argv.includes('--cart')) {
+  console.log(out.join('\n'));
+} else {
+  console.log(cartReport().join('\n'));
+}
+
+// ================================================================ cart (--cart)
+// docs/design/merch/SHIPPING.md. Several items per order, item prices in USD + a shipping fee per zone,
+// free shipping over a threshold, worldwide. `node tools/merch_econ.js --cart`.
+// Every order is charged in USD and settles in USD (case 2: 3.9% + US$0.30, one fixed fee per ORDER).
+// With Adaptive Pricing a buyer may pay in their own currency; Stripe says the conversion fee is paid by the buyer.
+function cartInputs() {
+  return {
+    // Printful Standard flat rate, USD, first item / each additional item of the same group,
+    // printful.com/shipping read 24 Nov 2026. Mugs and stickers "ship separately", so each group
+    // (tees, mugs, stickers) pays its own first-item rate; extras of the same group pay the extra rate.
+    ship: {
+      us:  { tee: [4.95, 2.20], mug: [6.69, 3.50], stk: [4.49, 0.05] },
+      ca:  { tee: [8.59, 1.95], mug: [8.09, 4.70], stk: [5.19, 0.10] },
+      uk:  { tee: [4.79, 1.50], mug: [5.19, 1.25], stk: [4.29, 0.10] },
+      eu:  { tee: [4.99, 1.45], mug: [5.39, 2.05], stk: [4.29, 0.10] },
+      au:  { tee: [7.99, 1.40], mug: [8.69, 3.65], stk: [5.89, 0.10] },
+      jp:  { tee: [4.95, 2.00], mug: [4.99, 1.60], stk: [2.99, 0.08] },
+      efta: { tee: [10.39, 1.10], mug: [10.79, 1.75], stk: [10.39, 0.05] },
+      row: { tee: [12.49, 6.00], mug: [12.49, 6.50], stk: [8.29, 0.25] },
+    },
+    base: { mug: 6.07, tee: 11.92, stk: 5.15 },
+    names: { mug: 'mug', tee: 'tee', stk: 'stickers' },
+    // Tax per region. vat: share added on top of net that sits inside P (VAT-inclusive consumer price, seller registered).
+    // tw: provider tax on W we cannot reclaim. US 7% placeholder; Japan 10% consumption tax on JP-fulfilled orders [snippet].
+    // CA, AU, EFTA, rest of world: no tax modelled (see SHIPPING.md "Not verified").
+    tax: {
+      us: { vat: 0, tw: 0.07, stax: false }, ca: { vat: 0, tw: 0, stax: false },
+      uk: { vat: 0.20, tw: 0, stax: true }, eu: { vat: 0.21, tw: 0, stax: true },
+      au: { vat: 0, tw: 0, stax: false }, jp: { vat: 0, tw: 0.10, stax: false },
+      efta: { vat: 0, tw: 0, stax: false }, row: { vat: 0, tw: 0, stax: false },
+    },
+    regionName: { us: 'USA', ca: 'Canada', uk: 'UK', eu: 'EU', au: 'Australia/NZ', jp: 'Japan', efta: 'Norway/Switzerland', row: 'Rest of world' },
+    // Buyer-facing zones: the fee and threshold are set per zone.
+    zoneOf: { us: 'z1', uk: 'z2', eu: 'z2', ca: 'z3', au: 'z3', efta: 'z4', row: 'z4', jp: 'z5' },
+    zones: { z1: 'USA', z2: 'UK+EU', z3: 'CA+AU+NZ', z4: 'other', z5: 'Japan' },
+    models: {
+      A: { label: 'A: prices minus old built-in shipping, flat fee, free over $50',
+        price: { mug: 14.99, tee: 22.99, stk: 11.99 },
+        fee: { z1: 5.99, z2: 5.99, z3: 8.99, z4: 12.99, z5: 5.99 }, free: { z1: 50, z2: 50, z3: 50, z4: 50, z5: 50 } },
+      B: { label: 'B: old delivered prices kept, small fee, free over $50',
+        price: { mug: 21.99, tee: 27.99, stk: 15.99 },
+        fee: { z1: 3.99, z2: 4.99, z3: 6.99, z4: 9.99, z5: 4.99 }, free: { z1: 50, z2: 50, z3: 50, z4: 50, z5: 50 } },
+      C: { label: 'C: proposal',
+        price: { mug: 19.99, tee: 26.99, stk: 13.99 },
+        // Rest of world: +$4.99 for each mug or tee after the first one; sticker sheets add nothing.
+        fee: { z1: 4.99, z2: 5.99, z3: 7.99, z4: 11.99, z5: 4.99 }, extra: { z4: 4.99 }, extraKinds: ['mug', 'tee'],
+        free: { z1: 35, z2: 90, z3: 60, z4: null, z5: 35 } },
+    },
+    carts: [['mug'], ['tee'], ['stk'], ['mug', 'tee'], ['tee', 'stk'], ['mug', 'stk'], ['mug', 'tee', 'stk'], ['tee', 'tee'], ['mug', 'mug']],
+    // Assumed mix (a guess for planning, not data): share of orders by cart, and of orders by region.
+    mix: { 'tee': 0.35, 'mug': 0.20, 'stk': 0.10, 'tee+stk': 0.10, 'mug+tee': 0.08, 'mug+stk': 0.05, 'mug+tee+stk': 0.05, 'tee+tee': 0.05, 'mug+mug': 0.02 },
+    regionMix: { us: 0.55, ca: 0.08, uk: 0.10, eu: 0.12, au: 0.05, jp: 0.03, efta: 0.01, row: 0.06 },
+    thresholds: [35, 40, 45, 50],
+  };
+}
+
+function cartShip(C, items, region) {
+  const n = { mug: 0, tee: 0, stk: 0 };
+  for (const k of items) n[k]++;
+  let w = 0;
+  for (const k of Object.keys(n)) if (n[k]) w += C.ship[region][k][0] + (n[k] - 1) * C.ship[region][k][1];
+  return w;
+}
+
+// One order: P = items + fee; margin = P - T - W - hol - provider tax - f - s - r (USD).
+function cartEcon(C, items, region, model, opts = {}) {
+  const m = C.models[model], z = C.zoneOf[region], tx = C.tax[region];
+  const sub = items.reduce((a, k) => a + m.price[k], 0);
+  const thr = opts.free !== undefined ? opts.free : m.free[z];
+  const free = thr != null && sub >= thr - 1e-9;
+  const nx = m.extraKinds ? items.filter(k => m.extraKinds.includes(k)).length : items.length;
+  const fee = free ? 0 : m.fee[z] + Math.max(0, nx - 1) * ((m.extra && m.extra[z]) || 0);
+  const P = sub + fee;
+  const T = P * tx.vat / (1 + tx.vat);
+  const ship = cartShip(C, items, region);
+  const W = items.reduce((a, k) => a + C.base[k], 0) + ship;
+  const hol = region === 'us' && opts.holiday ? IN.usHoliday : 0;
+  const toolTax = (W + hol) * tx.tw;
+  const f = (S.base + S.intl) * P + S.fixedUsdSettled;
+  const s = tx.stax ? S.tax * P : 0;
+  const r = IN.reserve * W;
+  const margin = P - T - W - hol - toolTax - f - s - r;
+  const net = P - T;
+  const pass = margin >= IN.floor.usd - 1e-9 && margin >= IN.floor.share * net - 1e-9;
+  return { sub, fee, free, P, T, ship, W, margin, net, share: margin / net, pass };
+}
+
+// The old model: one delivered price per item, one item per order (each item is its own order). USA only.
+function baselineUs(items) {
+  const byKey = { mug: IN.products[0], tee: IN.products[1], stk: IN.products[2] };
+  let P = 0, margin = 0, net = 0;
+  for (const k of items) { const e = econ(byKey[k], 'us', 2); P += e.P; margin += e.margin; net += e.net; }
+  return { P, margin, share: margin / net, orders: items.length };
+}
+
+// Every cart of 1..4 items.
+function allCarts(maxN) {
+  const keys = ['mug', 'tee', 'stk'], res = [];
+  (function rec(start, cur) {
+    if (cur.length) res.push(cur.slice());
+    if (cur.length === maxN) return;
+    for (let i = start; i < keys.length; i++) { cur.push(keys[i]); rec(i, cur); cur.pop(); }
+  })(0, []);
+  return res;
+}
+
+function cartReport() {
+  const C = cartInputs();
+  const o = [];
+  const $ = v => (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2);
+  const key = items => items.join('+');
+  const label = items => ['mug', 'tee', 'stk'].map(k => [k, items.filter(x => x === k).length]).filter(([, n]) => n)
+    .map(([k, n]) => (n === 1 ? C.names[k] : n + ' ' + (k === 'stk' ? 'sticker sheets' : C.names[k] + 's'))).join(' + ');
+  const regionsShown = ['us', 'ca', 'au', 'uk'];
+
+  o.push('USD. Case 2 (charged and settled in USD, 3.9% + $0.30 per order). Printful Standard first / extra item per group;',
+    'mugs and stickers ship as their own parcels. Margin before fixed costs and income tax. Floor: $4 and 20% of net revenue.',
+    'UK and EU: VAT inside the price (seller registered). Canada, Australia/NZ, rest of world: no tax modelled. No holiday surcharge.', '');
+
+  o.push('### Price lists', '');
+  const zk = Object.keys(C.zones), zl = zk.map(z => C.zones[z]).join(' / ');
+  o.push(row(['Model', 'Mug', 'Tee', 'Stickers', 'Fee ' + zl, 'Free over ' + zl]), row(Array(6).fill('---')));
+  o.push(row(['Old (baseline)', $(IN.products[0].price.us), $(IN.products[1].price.us), $(IN.products[2].price.us), 'shipping inside the price, USA (and UK in GBP) only', 'one item per order']));
+  for (const mk of Object.keys(C.models)) {
+    const m = C.models[mk];
+    o.push(row([m.label, $(m.price.mug), $(m.price.tee), $(m.price.stk),
+      zk.map(z => $(m.fee[z]) + (m.extra && m.extra[z] ? ' +' + $(m.extra[z]) + ' per extra ' + (m.extraKinds ? m.extraKinds.join(' or ') : 'item') : '')).join(' / '),
+      zk.map(z => (m.free[z] == null ? 'never' : '$' + m.free[z])).join(' / ')]));
+  }
+  o.push('');
+
+  for (const r of regionsShown) {
+    o.push(`### ${C.regionName[r]}: buyer pays / our margin (share of net)`, '');
+    const head = ['Cart', 'Printful shipping'];
+    if (r === 'us') head.push('Old (separate orders)');
+    head.push('A', 'B', 'C');
+    o.push(row(head), row(head.map(() => '---')));
+    for (const items of C.carts) {
+      const cells = [label(items), $(cartShip(C, items, r))];
+      if (r === 'us') { const b = baselineUs(items); cells.push(`${$(b.P)} / ${$(b.margin)} (${pc(b.share)})${b.orders > 1 ? ' in ' + b.orders + ' orders' : ''}`); }
+      for (const mk of ['A', 'B', 'C']) {
+        const e = cartEcon(C, items, r, mk);
+        cells.push(`${$(e.P)}${e.free ? ' free ship' : ''} / ${$(e.margin)} (${pc(e.share)})${e.pass ? '' : ' FAIL'}`);
+      }
+      o.push(row(cells));
+    }
+    o.push('');
+  }
+
+  // Floor check over every cart of up to 4 items, every region.
+  const every = allCarts(4);
+  o.push('### Floor check, every cart of 1-4 items (worst margin; FAIL = below $4 or 20%)', '');
+  o.push(row(['Region', 'Model', 'Worst single item', 'Worst paid-shipping cart', 'Worst free-shipping cart']), row(Array(5).fill('---')));
+  for (const r of Object.keys(C.ship)) for (const mk of ['A', 'B', 'C']) {
+    const worst = list => {
+      if (!list.length) return 'none';
+      let w = null;
+      for (const items of list) { const e = cartEcon(C, items, r, mk); if (!w || e.margin - IN.floor.share * e.net < w.e.margin - IN.floor.share * w.e.net) w = { items, e }; }
+      return `${label(w.items)} ${$(w.e.margin)} (${pc(w.e.share)})${w.e.pass ? '' : ' FAIL'}`;
+    };
+    const singles = every.filter(c => c.length === 1);
+    const paid = every.filter(c => c.length > 1 && !cartEcon(C, c, r, mk).free);
+    const free = every.filter(c => cartEcon(C, c, r, mk).free);
+    o.push(row([C.regionName[r], mk, worst(singles), worst(paid), worst(free)]));
+  }
+  o.push('');
+
+  // Lowest free-shipping threshold that keeps every free cart (1-4 items) above the floor, per region, model C prices.
+  o.push('### Model C prices: lowest safe free-shipping threshold, and the fee against our real cost', '');
+  o.push(row(['Region', 'Zone', 'Lowest threshold where every free cart passes (with the US holiday surcharge)', 'C threshold', 'C fee / Printful single-item cost (tee, mug, stickers)']), row(Array(5).fill('---')));
+  for (const r of Object.keys(C.ship)) {
+    let safe = null;
+    for (let t = 35; t <= 150 && safe == null; t += 5) {
+      if (every.every(items => { const e = cartEcon(C, items, r, 'C', { free: t, holiday: true }); return !e.free || e.pass; })) safe = t;
+    }
+    const z = C.zoneOf[r], m = C.models.C;
+    const ratio = ['tee', 'mug', 'stk'].map(k => (m.fee[z] / C.ship[r][k][0]).toFixed(2) + 'x').join(', ');
+    o.push(row([C.regionName[r], C.zones[z], safe == null ? 'none up to $150' : '$' + safe, m.free[z] == null ? 'never free' : '$' + m.free[z], ratio]));
+  }
+  o.push('');
+
+  // Threshold test for model C in the USA.
+  o.push('### Model C prices, USA: free-shipping threshold test', '');
+  o.push(row(['Threshold', 'Carts (of the 9) shipping free', 'Worst free-shipping cart (1-4 items)', 'Expected margin per order (assumed mix)']), row(Array(4).fill('---')));
+  for (const t of C.thresholds) {
+    const freeN = C.carts.filter(c => cartEcon(C, c, 'us', 'C', { free: t }).free).length;
+    let w = null;
+    for (const items of every) { const e = cartEcon(C, items, 'us', 'C', { free: t }); if (e.free && (!w || e.margin - 0.2 * e.net < w.e.margin - 0.2 * w.e.net)) w = { items, e }; }
+    let exp = 0;
+    for (const items of C.carts) exp += C.mix[key(items)] * cartEcon(C, items, 'us', 'C', { free: t }).margin;
+    o.push(row(['$' + t, String(freeN), w ? `${label(w.items)} ${$(w.e.margin)} (${pc(w.e.share)})${w.e.pass ? '' : ' FAIL'}` : 'none', $(exp)]));
+  }
+  o.push('');
+
+  // Expected margin per order under the assumed mix.
+  const mixTxt = Object.entries(C.mix).map(([k, v]) => `${k.replace(/stk/g, 'stickers')} ${Math.round(v * 100)}%`).join(', ');
+  const regTxt = Object.entries(C.regionMix).map(([k, v]) => `${C.regionName[k]} ${Math.round(v * 100)}%`).join(', ');
+  const expUs = mk => C.carts.reduce((a, c) => a + C.mix[key(c)] * cartEcon(C, c, 'us', mk).margin, 0);
+  const expWorld = mk => Object.entries(C.regionMix).reduce((a, [r, w]) => a + w * C.carts.reduce((b, c) => b + C.mix[key(c)] * cartEcon(C, c, r, mk).margin, 0), 0);
+  const basePerCart = C.carts.reduce((a, c) => a + C.mix[key(c)] * baselineUs(c).margin, 0);
+  const basePaid = C.carts.reduce((a, c) => a + C.mix[key(c)] * baselineUs(c).P, 0);
+  const paidUs = mk => C.carts.reduce((a, c) => a + C.mix[key(c)] * cartEcon(C, c, 'us', mk).P, 0);
+  o.push('### Expected margin per order (assumed mix)', '', `Cart mix: ${mixTxt}. Region mix (world): ${regTxt}.`, '');
+  o.push(row(['Model', 'USA: buyer pays on average', 'USA: margin per order', 'World mix: margin per order']), row(Array(4).fill('---')));
+  o.push(row(['Old (baseline, each item its own order)', $(basePaid), $(basePerCart), 'n/a (USA and UK only)']));
+  for (const mk of ['A', 'B', 'C']) o.push(row([mk, $(paidUs(mk)), $(expUs(mk)), $(expWorld(mk))]));
+  o.push('');
+
+  const hol = C.carts.map(c => cartEcon(C, c, 'us', 'C').margin - cartEcon(C, c, 'us', 'C', { holiday: true }).margin);
+  const holFail = every.filter(c => cartEcon(C, c, 'us', 'C').pass && !cartEcon(C, c, 'us', 'C', { holiday: true }).pass).map(label);
+  o.push(`US holiday surcharge ($${IN.usHoliday.toFixed(2)} per order to 17 Jan 2027): model C US margins drop by ${$(Math.min(...hol))}-${$(Math.max(...hol))}; carts that then fail: ${holFail.length ? holFail.join(', ') : 'none'}.`);
+  return o;
+}
