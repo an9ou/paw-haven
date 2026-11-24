@@ -259,7 +259,7 @@ const NEWS_V233 = {
   c: '#E4F3E1', d: 'heart', pic: 'dog',
   title: () => tt('nw.v233.title', 'Helping paws'),
   items: [
-    { ic: () => nwSafe(() => art('prop', 'bowl-empty')), tx: () => tt('nw.v233.help', "Visiting a friend? Fill their dog's bowl, water their garden or make a wish come true") },
+    { ic: () => nwSafe(() => { const b = art('prop', 'bowl-empty'), sc = nwFrArt('scoop'); return b && sc ? `<svg viewBox="0 0 64 64" aria-hidden="true">${place(sc, 18, 0, 34, 34)}${place(b, 0, 24, 64, 38)}</svg>` : b; }), tx: () => tt('nw.v233.help', "Visiting a friend? Fill their dog's bowl, water their garden or make a wish come true") }, // overlap review N2: the bowl with its scoop, as tall as the moon and the letter
     { ic: () => nwFrArt('moon') || nwSafe(() => ICON('zzz')), tx: () => tt('nw.v233.sleep', 'Send a dog for a sleepover: it comes home with a diary page and a picture') },
     { ic: () => nwSafe(() => (typeof hpStArt === 'function' ? hpStArt('thx') : ICON('heart'))), tx: () => tt('nw.v233.thanks', 'Helpers earn Bond and new stickers, and friends can say thanks') }
   ]
