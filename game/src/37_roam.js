@@ -105,20 +105,94 @@ function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when 
 }
 // where a dog is headed (its feet and scale), the leader by its own spot while it runs an errand (the bowl, the bath)
 function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) return [r.hx, r.hy, rmScale(r.hy) * (r.sz || 1)]; if (!w) return [r.x, r.y, rmK(r)]; const e = w.end || [w.x1, w.y1]; return [e[0], e[1], (w.k1 != null ? w.k1 : r.k != null && r.fix ? r.k : rmScale(e[1])) * rmSz(r)]; }
-// may dog d stand with its feet at x, y (scale k)? In the zone, rmHard and rmSoft clear, and the other dogs: no two tap rects overlap by more than
-// 30% (50% when nothing else is free), nobody overlaps the leader over 15% of its tap rect (in front: its #dogHit stays tappable; behind: the leader would hide it), and the dogs in front
-// of a dog never cover more than 45% of it together (no clumps where one dog disappears)
+// may dog d stand with its feet at x, y (scale k)? In the zone, rmHard and rmSoft clear, and the other dogs: their bodies apart (psClash: strict, no
+// more than PS_MAX of the smaller body; the looser levels also a clear stagger, the dog behind showing all but its legs), nobody overlaps the leader
+// over 15% of its tap rect (in front: its #dogHit stays tappable; behind: the leader would hide it), and the dogs in front of a dog never cover more
+// than 45% of its tap rect together (no clumps where one dog disappears). Pack spacing (24 Nov 2026): the bodies replaced the old rule of 30% (50%)
+// of the tap rects, which let a dog lie across another; the leader counts where it is on an errand (a nap at the door, the bowl) too
 function rmOk(d, x, y, k, strict) {
   const z = rmZoneOf(S.place); if (y < z.y0 || y > z.y1 || x < z.x0 || x > z.x1) return false; if (z.poly && !grIn(z.poly, x, y)) return false; // v2.15: the floor polygon
   const T = rmTapBox(x, y, k); if (T[0] < 4 || T[0] + T[2] > (z.W || 1000) - 4) return false;
   const loose = strict === 'loose'; if (rmHard(x, y) || rmSoft(x, y, k, loose)) return false;
-  const lim = strict === false || loose ? 0.5 : 0.3, ll = strict === false || loose ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
+  const most = strict === true ? 0 : 1, ll = strict === false || loose ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
   for (const o of rmDogs()) {
-    if (o === d || !rmSt(o).seeded) continue; const [ox, oy, ok] = rmDest(o), U = rmTapBox(ox, oy, ok), v = rmOver(T, U); if (!v) continue;
-    if (v > A * lim || (o === L && v > U[2] * U[3] * ll) || (d === L && v > A * ll)) return false;
-    if (oy >= y) front += v;
+    if (o === d || !rmSt(o).seeded) continue;
+    for (const [ox, oy, ok] of psHolds(o)) {
+      if (psClash(d, x, y, k, o, ox, oy, ok) > most) return false;
+      const U = rmTapBox(ox, oy, ok), v = rmOver(T, U); if (!v) continue;
+      if ((o === L && v > U[2] * U[3] * ll) || (d === L && v > A * ll)) return false;
+      if (oy >= y) front += v;
+    }
   }
   return loose || front <= A * 0.45;
+}
+/* ---------------- pack spacing (24 Nov 2026, the owner: "no overlapping") ----------------
+   A dog's body is its drawing less its tail and ears: PS_IN of the width off each side and of the height off the top, in every resting pose it
+   takes on a spot (PS_POSES, both ways it may face), measured once per look off screen (psBody, as frMeasure and slReachU do). Two dogs clash
+   (psClash) when their bodies overlap by more than PS_MAX of the smaller one's smallest pose: 0 apart, 1 a clear stagger (the dog behind at least
+   PS_ROW further back, only the bottom PS_LEGS of its body behind the one in front: the yard's depth draws it higher and smaller), 2 on top of
+   each other. Spots (rmOk), the last fallback (rmLeastAt), my leader's own idle moves (psIdleSafe) and a pack dog's nap at the door (psNapAt)
+   keep to it. A walk past another dog is fine. */
+const PS_POSES = ['idle', 'sit', 'down', 'sleep', 'happy', 'scratch', 'bow', 'sniff'], PS_IN = 0.15, PS_MAX = 0.12, PS_ROW = 30, PS_LEGS = 0.3, PS_MEMO = new Map();
+function psBody(d) {
+  let key = d.key; try { key += '|' + JSON.stringify(dogOpts(d, wetOpt(d, { outfit: outfitOf(d) }))); } catch (e) { /* the breed only */ }
+  const m = PS_MEMO.get(key); if (m) return m;
+  const svg = $('#view > svg.world'), fb = { e: [-88, -150, 88, 0], a: 176 * 120, h: 80 }; if (!svg) return fb; // before the scene: about the tap rect
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'g'); t.setAttribute('visibility', 'hidden'); t.setAttribute('aria-hidden', 'true'); svg.appendChild(t);
+  let e = null, a = 1e9, h = 1e9;
+  PS_POSES.forEach((pose) => {
+    let s = ''; try { s = dogSVG(d, wetOpt(d, { pose, outfit: outfitOf(d), facing: 'right' })); } catch (er) { s = ''; } if (!s) return;
+    t.innerHTML = place(s, DX, DY, DW, DH); let b = null; try { b = t.getBBox(); } catch (er) { b = null; } if (!b || b.width < 2) return;
+    const w = b.width * PS_IN, B = [b.x + w - 430, b.y + b.height * PS_IN - 500, b.x + b.width - w - 430, b.y + b.height - 500];
+    e = e ? [Math.min(e[0], B[0], -B[2]), Math.min(e[1], B[1]), Math.max(e[2], B[2], -B[0]), Math.max(e[3], B[3])] : [Math.min(B[0], -B[2]), B[1], Math.max(B[2], -B[0]), B[3]]; // either way it faces (the art flips round its feet)
+    a = Math.min(a, (B[2] - B[0]) * (B[3] - B[1])); h = Math.min(h, B[3] - B[1]);
+  });
+  t.remove(); if (!e) return fb;
+  const r = { e, a, h }; PS_MEMO.set(key, r); if (PS_MEMO.size > 200) PS_MEMO.delete(PS_MEMO.keys().next().value); return r;
+}
+const psBox = (d, x, y, k) => { const e = psBody(d).e; return [x + k * e[0], y + k * e[1], x + k * e[2], y + k * e[3]]; };
+function psClash(a, xa, ya, ka, b, xb, yb, kb) {
+  const A = psBox(a, xa, ya, ka), B = psBox(b, xb, yb, kb), ix = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), iy0 = Math.max(A[1], B[1]), iy = Math.min(A[3], B[3]) - iy0;
+  if (ix <= 1 || iy <= 1 || ix * iy <= PS_MAX * Math.min(psBody(a).a * ka * ka, psBody(b).a * kb * kb)) return 0;
+  if (Math.abs(ya - yb) < PS_ROW) return 2;
+  const [bk, kk, Bb] = ya < yb ? [a, ka, A] : [b, kb, B];
+  return iy0 >= Bb[3] - PS_LEGS * psBody(bk).h * kk ? 1 : 2;
+}
+// where dog o stands or will stand: its destination (rmDest), and my leader on an errand also where it is now and where that errand takes it
+function psHolds(o) {
+  const h = [rmDest(o)], r = rmSt(o);
+  if (o === D() && r.away) { if (r.tw) { const w = r.tw, e = w.end || [w.x1, w.y1]; h.push([e[0], e[1], (w.k1 != null ? w.k1 : rmScale(e[1])) * rmSz(r)]); } else h.push([r.x, r.y, rmK(r)]); }
+  return h;
+}
+// dog d on top of another dog with its feet at x, y (scale k)
+const psOver = (d, x, y, k) => rmDogs().some((o) => o !== d && rmSt(o).seeded && psHolds(o).some((p) => psClash(d, x, y, k, o, p[0], p[1], p[2]) > 1));
+// my leader's idle moves that would end on another dog (the nap at the door, the bowl, a sniff, zoomies, a mutt's lie-down): a nap where it
+// stands (when it fits there), else a sit where it stands. The roam idles pick their spots with rmOk already
+function psIdleSafe(steps) {
+  const d = D(); if (!Array.isArray(steps) || !d || !S || !rmScene() || rmDogs().length < 2) return steps;
+  const r = rmSt(d), sz = rmSz(r); let nap = false;
+  const bad = steps.some((st) => {
+    if (!st || !st.move) return false;
+    const [tx, ty, sc] = st.move; if (!tx && !ty && sc === 1) return false; // back home: its own spot (the pack keeps off it)
+    const X = 430 * sc + tx, Y = 500 * sc + ty;
+    if (!psOver(d, X, Y, (sc === 1 ? rmScale(Y) : rmPropK(sc)) * sz)) return false;
+    nap = steps.some((q) => q && q.zzz); return true;
+  });
+  if (!bad) return steps;
+  if (nap && !psOver(d, r.x, r.y, rmK(r))) return [{ pose: 'down', fb: 'sit', facing: r.face || 'right', ms: 1200 * IDLE.speed }, { pose: 'sleep', facing: r.face || 'right', ms: RINT(15000, 40000) * IDLE.speed, zzz: true }];
+  return [{ pose: 'sit', fb: 'idle', facing: r.face || 'right', ms: 4000 * IDLE.speed }];
+}
+if (typeof idleSteps === 'function') { const psIdle0 = idleSteps; idleSteps = function () { const st = psIdle0.apply(this, arguments); try { return psIdleSafe(st); } catch (e) { return st; } }; } // eslint-disable-line no-func-assign
+// a pack dog's nap at the dog-house door (rmFixed): the door when no dog that stays put lies or stands there (my leader, a dog napping or on its
+// spot), else beside it, as near as there is room. A roaming dog at the door steps off for the napper (rmValidate: the napper's spot is its hold)
+function psNapAt(d, nz, i) {
+  const k = rmPropK(nz[2]) * rmSz(rmSt(d)), base = [nz[0] + [-36, 36, 0][i % 3], nz[1]];
+  if (!rmSt(d).seeded || !$('#view > svg.world')) return base;
+  const still = (o) => o === D() || o.sleeping || rmSt(o).fix;
+  const free = (x, y, door) => (door || !rmHard(x, y)) && !rmDogs().some((o) => o !== d && still(o) && rmSt(o).seeded && psHolds(o).some((p) => psClash(d, x, y, k, o, p[0], p[1], p[2]) > 1));
+  if (free(nz[0], nz[1], true)) return [nz[0], nz[1]]; // the doorway is inside the house's no-go box (it always was): only the dogs count there
+  for (const dx of [-140, 140, -280, 200, -420]) for (const dy of [24, 50]) { const x = nz[0] + dx, y = nz[1] + dy; if (x > 70 && x < 930 && free(x, y)) return [x, y]; }
+  return base;
 }
 // every free spot, each level looser than the last: strict, the dogs a little closer (false), and 'loose': no depth rule, the dogs only 50% apart
 // (four decorations out can leave nothing else), then the least crowded spot. The feet keep out of every box at every level
@@ -126,13 +200,20 @@ function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rm
 // when no level has a free spot (a small yard, four dogs, four decorations out): the spot that covers the least of the props, the small tappable
 // things and the other dogs (the leader counts three times), the feet still out of every box
 // v2.11.1: a spot whose tap rect would cover a hot spot, a place button or the bowl (rmSoft, flat) is only taken when every spot does
-function rmLeast(d, x0, y0) { return rmLeastAt(d, x0, y0, true) || rmLeastAt(d, x0, y0, false); }
-function rmLeastAt(d, x0, y0, clear) {
+// pack spacing (24 Nov 2026): first a spot on top of no other dog (it may stand in front of a decoration or a prop: a dog on a dog is worse),
+// only then the old least-covering spot
+// A yard full of decorations can leave no such ground at all (20 out at 360 px: about 75 spots of the grid, three dogs fill them): then the
+// dog may stand on a decoration's ground, in front of it, before it stands on a dog ('decor': the house, the bowl, the mailbox, the garden
+// and the buttons stay hard)
+function rmLeast(d, x0, y0) { return rmLeastAt(d, x0, y0, true, true) || rmLeastAt(d, x0, y0, false, true) || rmLeastAt(d, x0, y0, false, 'decor') || rmLeastAt(d, x0, y0, true) || rmLeastAt(d, x0, y0, false); }
+const RM_DECOR_FLOOR = ['decor', 'fest', 'prop'];
+function rmHardLite(x, y) { return rmBoxes().some((b) => b[4] !== 'dctag' && !RM_DECOR_FLOOR.includes(b[4]) && x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); }
+function rmLeastAt(d, x0, y0, clear, apart) {
   const z = rmZoneOf(S.place), L = D(), W = rmCropWin(); let best = null, bv = 1e9; // W: phones (v2.12), a spot the crop cuts costs a little (a whole tap rect off screen as much as covering 60% of a pack dog: stacking is worse)
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
-    if (rmHard(x, y) || (z.poly && !grIn(z.poly, x, y))) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > (z.W || 1000) - 4 || (clear && rmSoft(x, y, k, true))) continue; let v = 0;
+    if ((apart === 'decor' ? rmHardLite(x, y) : rmHard(x, y)) || (z.poly && !grIn(z.poly, x, y))) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > (z.W || 1000) - 4 || (clear && rmSoft(x, y, k, true)) || (apart && psOver(d, x, y, k))) continue; let v = 0;
     rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; if (b[4] === 'board') { v += 6 * rmOver(rmBoardBox(x, y, k), b) / Ab; return; } const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog; a stall board by how much of it the dog's body covers (all of it: 6)
-    rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
+    rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); psHolds(o).forEach((p) => { const c = psClash(d, x, y, k, o, p[0], p[1], p[2]); if (c) v += c > 1 ? 4 : 0.3; }); }); // pack spacing: on top of a dog costs more than anything but a seasonal prop
     if (W) v += 0.6 * (Math.max(0, W[0] - T[0]) + Math.max(0, T[0] + T[2] - W[1])) / T[2];
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
   }
@@ -214,7 +295,7 @@ function rmFreeSpot() {
 // the v1.7 / v2.7 fixed spots that still win: napping at the dog-house door or on its own bed, on a piece of furniture, the Proud Mum by the Rocking Chair
 function rmFixed(d, i) {
   let f = null;
-  const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) f = [nz[0] + [-36, 36, 0][i % 3], nz[1], 'right', nz[2]];
+  const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) f = psNapAt(d, nz, i).concat(['right', nz[2]]); // pack spacing: beside the door when a dog lies there
   const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) f = hs.slice();
   if (hmChairDown(d)) { const cp = typeof hoPos === 'function' ? hoPos('Rocking Chair') : [910, 452]; f = [clamp(868 + cp[0] - 910, 40, 960), 530 + cp[1] - 452, 'right', 0.48]; }
   return f;

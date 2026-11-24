@@ -1237,9 +1237,10 @@ function frLayout(list, fit, final) {
       const c = FRV.crop, gap = (p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= c.x0 ? c.x0 - R[2] : R[0] >= c.x1 ? R[0] - c.x1 : 1e4 - Math.abs(p[0] - (c.x0 + c.x1) / 2); };
       sp.sort((p, q) => gap(p) - gap(q)); sp = sp.slice(0, 3);
     }
-    if (!sp.length) { // nowhere clear at all: the spot the others cover least
-      const all = frSpots(v, null, { wide: ph, any: true }), box = (r) => [r[0], r[1], r[2] - r[0], r[3] - r[1]];
-      const cover = (p) => { const R = box(frEnv(v, p[0], p[1], frK(v, p[1]), v.face)); return FRV.dogs.reduce((m, o) => m + (o.res ? frOver(R, box(o.res.r)) : 0), 0); };
+    if (!sp.length) { // nowhere clear at all: the spot the others cover least, in view or (a phone) anywhere above the buttons
+      // pack spacing (24 Nov 2026): what counts is a dog drawn over another; only its legs behind a dog in front (frClash 1) costs little
+      const all = frSpots(v, null, { wide: ph, any: true }).concat(ph ? frSpots(v, null, { any: true }) : []), box = (r) => [r[0], r[1], r[2] - r[0], r[3] - r[1]];
+      const cover = (p) => { const k = frK(v, p[1]), R = frEnv(v, p[0], p[1], k, v.face), me = frRes(v, R, p[1], k); return FRV.dogs.reduce((m, o) => { if (!o.res) return m; const c = frClash(me, o.res); return m + (c ? frOver(box(R), box(o.res.r)) * (c > 1 ? 1 : 0.05) : 0); }, 0); };
       if (all.length) { all.sort((p, q) => cover(p) - cover(q)); sp = [all[0]]; }
     }
     if (sp.length) put(v, PICK(sp));
