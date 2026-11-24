@@ -81,8 +81,28 @@ function rmScan() {
   rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)
   grBackNo(svg, M, out); // v2.19 fix: indoors, the floor behind and beside the placed beds, furniture and decorations (43_ground.js)
-  RM.no = out;
+  RM.no = out; RM.keep = rmKeepScan(svg, M);
 }
+/* keep clear (overlap review S2, 24 Nov 2026): a dog resting in front of the mailbox hid it and its new-letter badge (the deep yard sorts the
+   mailbox with the dogs and keeps only its feet box, so nothing kept the drawn body off it). RM.keep, on the deep yard: the mailbox's drawn box (its
+   tap rect) and the front door and its step (RM_DOOR, as HO_KEEP.yard). No resting spot covers them (rmOk, rmLeastAt, the FLOOR spot acts:
+   43_ground.js grSpotSteps sniffs the mailbox from its side); a dog may walk past; a pack dog that ends up on one anyway walks off (rmPackAct, rmStep) */
+const RM_DOOR = [140, 288, 60, 118], RM_KEEP_MAX = 0.04; // the most of a keep-clear box a resting dog's tap rect and head may cover
+function rmKeepScan(svg, M) { // the deep yard only (the old flat yard of the harness draws the mailbox behind every dog, a soft box in RM.no)
+  if (!S || S.place !== 'yard' || !grOn('yard')) return [];
+  const out = [], mb = svg.querySelector('#mailboxG > rect'), b = mb && rmWorldBox(svg, M, mb);
+  if (b && b[2] > 4 && b[3] > 4) out.push(b.concat('mailbox'));
+  return out.concat([RM_DOOR.concat('door')]);
+}
+// dog d (its whole drawing in every resting pose, either way it faces: psBody less nothing) or any dog (its tap rect and head, as rmSoft) at x, y
+function rmKeepHit(x, y, k, d) {
+  const L = S && S.place === 'yard' && RM.keep || []; if (!L.length) return false;
+  const T = rmTapBox(x, y, k), Th = [T[0], T[1] - T[3] / 6, T[2], T[3] * 7 / 6], A = d ? rmArtBox(d, x, y, k) : null;
+  return L.some((b) => rmOver(Th, b) > b[2] * b[3] * RM_KEEP_MAX || (A && rmOver(A, b) > b[2] * b[3] * RM_KEEP_MAX));
+}
+const rmArtBox = (d, x, y, k) => { const e = psBody(d).e, w = (e[2] - e[0]) * PS_IN / (1 - 2 * PS_IN), h = (e[3] - e[1]) * PS_IN / (1 - PS_IN); return [x + k * (e[0] - w), y + k * (e[1] - h), k * (e[2] - e[0] + 2 * w), k * (e[3] - e[1] + h)]; }; // psBody's box with its tail and ears back on
+// a pack dog that stands, sits or lies over the mailbox or the door now (not while it walks or runs an act)
+function rmKeepOn(d) { const r = rmSt(d); return !!r.seeded && !r.tw && !r.q && !r.fix && rmKeepHit(r.x, r.y, rmK(r), d); }
 // the feet (hard: never) and the tap rect (soft) against the no-go boxes. Soft: the tap rect covers no small tappable thing, no more than 40% of a bigger
 // one and never its middle, a decoration no more than 10%, a seasonal prop (a snow drift, a leaf pile) not at all (only huge scenery like a shop front keeps just the feet out), and a dog standing behind a prop on the floor (its feet
 // above the prop's base) keeps its body off it (at most a fifth of its width), or it would be drawn in front of the prop it stands behind
@@ -113,7 +133,7 @@ function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) retur
 function rmOk(d, x, y, k, strict) {
   const z = rmZoneOf(S.place); if (y < z.y0 || y > z.y1 || x < z.x0 || x > z.x1) return false; if (z.poly && !grIn(z.poly, x, y)) return false; // v2.15: the floor polygon
   const T = rmTapBox(x, y, k); if (T[0] < 4 || T[0] + T[2] > (z.W || 1000) - 4) return false;
-  const loose = strict === 'loose'; if (rmHard(x, y) || rmSoft(x, y, k, loose)) return false;
+  const loose = strict === 'loose'; if (rmHard(x, y) || rmSoft(x, y, k, loose) || rmKeepHit(x, y, k, d)) return false;
   const most = strict === true ? 0 : 1, ll = strict === false || loose ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
   for (const o of rmDogs()) {
     if (o === d || !rmSt(o).seeded) continue;
@@ -215,6 +235,7 @@ function rmLeastAt(d, x0, y0, clear, apart) {
     rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; if (b[4] === 'board') { v += 6 * rmOver(rmBoardBox(x, y, k), b) / Ab; return; } const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog; a stall board by how much of it the dog's body covers (all of it: 6)
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); psHolds(o).forEach((p) => { const c = psClash(d, x, y, k, o, p[0], p[1], p[2]); if (c) v += c > 1 ? 4 : 0.3; }); }); // pack spacing: on top of a dog costs more than anything but a seasonal prop
     if (W) v += 0.6 * (Math.max(0, W[0] - T[0]) + Math.max(0, T[0] + T[2] - W[1])) / T[2];
+    if (rmKeepHit(x, y, k, d)) { if (clear) continue; v += 6; } // keep clear (S2): over the mailbox or the door costs more than standing on a dog
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
   }
   return best;
@@ -479,12 +500,13 @@ function rmPers(d) {
 // one step list per dog: { to: [x, y], run, pose, face, ms, say, bark, fn }
 function rmQueue(d, steps) { const r = rmSt(d); r.q = steps.slice(); r.qAt = 0; rmStep(d); }
 function rmStep(d) {
-  const r = rmSt(d); if (!r.q) return; const s = r.q.shift(); if (!s) { r.q = null; return; }
+  const r = rmSt(d); if (!r.q) return; const s = r.q.shift(); if (!s) { r.q = null; if (d !== D() && rmKeepOn(d)) packNext[d.id] = 0; return; } // keep clear (S2): an act that ended on the mailbox or the door: off it at the next pack tick
   const sp = IDLE.speed, next = () => { r.qAt = performance.now() + (s.ms || 0) * sp; };
   if (s.fn) s.fn();
   if (s.say && !S.sleeping && (bubble.hidden || s.ask)) { const h = rmHead(d); say(s.say, h.x, h.y, s.ask ? 3400 : 2600); }
   if (s.bark) barkDog(d, s.bark, { ambient: true, volume: 0.7 });
   if (s.to) { r.qAt = Infinity; rmTo(d, s.to[0], s.to[1], { run: s.run, pose: s.pose, face: s.face, done: next, gait: s.gait, via: s.via, act: s.act }); return; }
+  if (s.pose && d !== D() && !r.fix && rmKeepHit(r.x, r.y, rmK(r), d)) { r.q = null; packNext[d.id] = 0; return; } // keep clear (S2): no sit, sniff or nap on the mailbox or the door (a follow, a play's end): off it at the next pack tick
   if (s.pose) { if (s.face) r.face = s.face; packPose[d.id] = poseReal(d.key, s.pose) ? s.pose : s.fb || 'sit'; rmPaint(d); }
   next();
 }
@@ -507,6 +529,7 @@ function rmZoomSteps(d, p, slow) {
 // a pack dog's turn (packIdleTick, 16_voices_idle.js): true when it set off on a walk of its own
 function rmPackAct(d) {
   if (!rmFree() || d === D() || d.sleeping || !RM.no || performance.now() - (RM.up || 0) < 1500) return false; const r = rmSt(d); if (r.fix || r.tw || r.q) return false;
+  if (rmKeepOn(d)) { const to = rmPick(d); if (to && !rmKeepHit(to[0], to[1], rmKd(d, to[1]), d)) { rmQueue(d, [{ to }, { pose: 'idle', ms: RINT(1500, 3000) }]); return true; } } // keep clear (S2): off the mailbox and the door first
   if (grOn()) return grAct(d); // v2.15: the behaviours on the deep floor (43_ground.js)
   const p = rmPers(d), now = performance.now();
   if (Math.random() > 0.3 + 0.55 * p.energy) return false; // lazy dogs mostly change pose where they are
@@ -676,6 +699,7 @@ function rmExpose() {
     set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmKd(dogById(id) || D(), y)),
     size: (id) => { const d = dogById(id) || D(); return { cls: sizeOf(d), k: sizeK(d), ck: sizeClassK(d) }; }, sizeK: (key) => sizeK(key), grow: SIZE_GROW, // v2.11.1: k = the scene factor (growth x class), ck = the class
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
+    keep: () => { rmScan(); return (RM.keep || []).map((b) => b.slice()); }, // overlap review S2: the keep-clear boxes (the mailbox, the door)
     hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), softAt: (id, x, y) => rmSoft(x, y, rmKd(dogById(id) || D(), y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id, lv) => rmCands(dogById(id) || D(), lv == null ? true : lv).length,
     least: (id) => rmLeast(dogById(id) || D()),
     gst: (id) => { const r = rmSt(dogById(id) || D()); return { lift: r.lift || 0, grIn: r.grIn == null ? null : r.grIn, grSpot: r.grSpot == null ? null : r.grSpot, grHid: !!r.grHid }; }, // v2.15: the ground act state (lift, in a prop, hidden)

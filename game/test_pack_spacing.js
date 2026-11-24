@@ -1,6 +1,6 @@
 // Pack spacing (24 Nov 2026, the owner: "make sure everything is in correct size, no overlapping"): idle dogs never stand, sit or lie on top
 // of each other.
-//   node game/run_tests.js pack_spacing          (PS_ONLY=home or PS_ONLY=friend: one half; PS_SHOTS=<folder>: a screenshot per scenario)
+//   node game/run_tests.js pack_spacing          (PS_ONLY=home, friend or mailbox: one part; PS_SHOTS=<folder>: a screenshot per scenario)
 // Home yard: packs of 3 and 5 (a Great Dane, a Dachshund, a Pug and a Golden with the starter; a pack of five draws its leader and three, as
 // the yard always has: 13_more_dogs.js packSVG), 0 and 20 decorations out, at 360x640, 390x844 and 1280x720, the dogs roaming (prefs.rmTest)
 // and sampled every 2 s for 40 s. Friend's yard (50_friends.js frLayout): their 2 or 4 dogs and my leader, at the same sizes, every 2 s for 16 s.
@@ -82,6 +82,49 @@ async function home(t, w, h, n, dec) {
   return worst.length;
 }
 
+// overlap review S2 (24 Nov 2026): on the deep yard (the v2.15 ground, as players have it) no resting dog is drawn over the mailbox or the front door.
+// Packs of 3 (Dachshund, Great Dane) and 5 (Samoyed, Dachshund, Great Dane, Mastiff: the yard draws four) with 20 decorations at 360x640,
+// 390x844, 768x1024 and 1280x720, every 2 s for 40 s: a dog that is not walking and is drawn in front of the mailbox covers at most MB_MAX of
+// its tap rect (its drawing, the new-letter badge) with its drawn box, and at most MB_MAX of the door and its step (37_roam.js RM.keep)
+const MB_SIZES = [[360, 640], [390, 844], [768, 1024], [1280, 720]], MB_PACK = { 3: ['dachs', 'dane'], 5: ['samoyed', 'dachs', 'dane', 'mastiff'] }, MB_MAX = 0.08, MB_DOOR = [140, 288, 60, 118];
+function mbLook(door) { // in the page: each drawn dog's box (screen px) against the mailbox's tap rect and the door
+  const P = window.__paw, mb = document.querySelector('#mailboxG'), svg = document.querySelector('#view > svg.world'); if (!mb || !svg) return { none: true };
+  const R = (e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, area = (a) => Math.max(0, a[2] - a[0]) * Math.max(0, a[3] - a[1]);
+  const inter = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+  const ink = (sv) => { let b = null; [...sv.children].forEach((c) => { if (c.tagName === 'defs' || c.tagName === 'title' || (c.tagName === 'rect' && c.getAttribute('fill') === 'transparent')) return; const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; const q = [r.left, r.top, r.right, r.bottom]; b = b ? [Math.min(b[0], q[0]), Math.min(b[1], q[1]), Math.max(b[2], q[2]), Math.max(b[3], q[3])] : q; }); return b; };
+  const M = svg.getScreenCTM(), a = new DOMPoint(door[0], door[1]).matrixTransform(M), b = new DOMPoint(door[0] + door[2], door[1] + door[3]).matrixTransform(M), D = [a.x, a.y, b.x, b.y], MB = R(mb.querySelector('rect'));
+  return { dogs: P.rm.dogs().map((id) => {
+    const g = document.querySelector(`#pack [data-dog="${id}"]`), sv = g && g.querySelector('svg.pa-dog'), bx = sv && ink(sv); if (!bx) return null;
+    const p = P.rm.pos(id), front = !!(mb.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return { k: P.S.dogs.find((x) => x.id === id).key + (id === P.S.activeId ? '*' : ''), pose: p.pose, x: Math.round(p.x), y: Math.round(p.y), mb: front ? +(inter(bx, MB) / area(MB)).toFixed(2) : 0, door: +(inter(bx, D) / area(D)).toFixed(2) };
+  }).filter(Boolean) };
+}
+async function mailbox(t, w, h, n) {
+  const { ok, sec, ev } = t, ph = w < 800, tag = `deep yard ${w}x${h} pack ${n} decor 20: the mailbox and the door`;
+  sec(tag);
+  await t.mk(Object.assign({ prefs: { rmTest: true }, ground: true }, ph ? { device: 'iPhone 15', dsf: 2 } : {}));
+  if (ph) await t.p.setViewportSize({ width: w, height: h });
+  await t.p.goto(URL); await t.p.waitForSelector('#tNew, #tContinue, #tPlay');
+  await t.adopt({});
+  await t.patch({ bond: { level: 8, pts: 2000 }, coins: 2000 });
+  await ev(([ks, dec]) => {
+    const P = window.__paw, S = P.S; ks.forEach((k, i) => P.addDog({ key: k, sex: i % 2 ? 'female' : 'male', months: 30 }, 'P' + k));
+    S.dogs.forEach((d) => { d.stats = { hunger: 80, happy: 80, energy: 40, clean: 90 }; d.sleeping = false; }); dec.forEach((d) => { S.decor[d] = { out: true }; });
+  }, [MB_PACK[n], DECOR20]);
+  await t.calm(); await t.home('house'); await t.home('yard'); await t.sleep(600);
+  ok(await ev(() => !!document.querySelector('#mailboxG') && !!window.__paw.rm.keep && window.__paw.rm.keep().length === 2), tag + ': the mailbox is drawn; RM.keep holds it and the door');
+  const bad = []; let samples = 0, near = 0;
+  for (let s = 0; s < 20; s++) {
+    await t.sleep(2000);
+    const r = await ev(mbLook, MB_DOOR); if (r.none) continue; samples++;
+    r.dogs.forEach((d) => { if (d.mb > 0 || d.door > 0) near++; if (d.pose !== 'walk' && (d.mb > MB_MAX || d.door > MB_MAX)) bad.push(Object.assign({ s: (s + 1) * 2 }, d)); });
+  }
+  await shot(t, `mailbox_${w}x${h}_p${n}`);
+  ok(samples === 20 && !bad.length, `${tag}: no resting dog over the mailbox or the door in ${samples} samples (${near} dog-samples touch one: walking past or under ${MB_MAX * 100}%)` + (bad.length ? ' -> ' + JSON.stringify(bad.slice(0, 4)) : ''));
+  await t.ctx.close();
+  return bad.length;
+}
+
 const ME = { fid: 'ownerxxxxxxxxxxxxxxxxx', code: 'DOG-23456', name: [3, 4] }, SUNNY = 'sunnybiscuitxxxxxxxxxx';
 async function friend(t, w, h, n) {
   const { ok, sec, ev } = t, ph = w < 800, tag = `friend's yard ${w}x${h}: ${n} dogs`;
@@ -118,6 +161,7 @@ async function friend(t, w, h, n) {
 
 run('pack_spacing', async (t) => {
   const want = (k) => !CASE || CASE.includes(k);
-  if (ONLY !== 'friend') for (const [w, h] of SIZES) for (const n of [3, 5]) for (const dec of [0, 20]) if (want(`${w}:${n}:${dec}`)) await home(t, w, h, n, dec);
-  if (ONLY !== 'home') for (const [w, h] of SIZES) for (const n of [3, 5]) if (want(`${w}:${n}`)) await friend(t, w, h, n);
-}, { timeout: 1500000 });
+  if (ONLY !== 'friend' && ONLY !== 'mailbox') for (const [w, h] of SIZES) for (const n of [3, 5]) for (const dec of [0, 20]) if (want(`${w}:${n}:${dec}`)) await home(t, w, h, n, dec);
+  if (ONLY !== 'home' && ONLY !== 'mailbox') for (const [w, h] of SIZES) for (const n of [3, 5]) if (want(`${w}:${n}`)) await friend(t, w, h, n);
+  if (!ONLY || ONLY === 'mailbox') for (const [w, h] of MB_SIZES) for (const n of [3, 5]) if (want(`mb${w}:${n}`)) await mailbox(t, w, h, n);
+}, { timeout: 2000000 });
