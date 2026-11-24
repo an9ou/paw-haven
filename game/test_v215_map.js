@@ -19,6 +19,7 @@ run('v215_map', async (t) => {
   const lift = (k) => ev((k) => getComputedStyle(document.querySelector(`#mapInner .mb[data-area="${k}"] .mb-lift`)).transform, k);
   const settle = (k, want) => t.until(([k, w]) => { const m = getComputedStyle(document.querySelector(`#mapInner .mb[data-area="${k}"] .mb-lift`)).transform; return w === 'none' ? m === 'none' : m === w; }, [k, want], 3000);
 
+  if (process.env.V215_ONLY === 'cover') { await coverPart(t, openMap); return; } // V215_ONLY=cover: the overlap leftovers part alone
   sec('the map: 25 buildings, each a button');
   await t.newGame({}, { bond: { level: 4, pts: 900 } });
   await openMap(); await t.SH('map_summer');
@@ -195,4 +196,44 @@ run('v215_map', async (t) => {
     ok(r.lang === lang && r.n === 25, `${lang}: the game runs in ${r.lang}, 25 names (${r.sample})`);
     ok(!r.bad.length, `${lang}: every caption fits its building (+40): ${r.bad.join(', ')}`);
   }
+  await coverPart(t, openMap);
 }, { map215: true, prefs: PREFS });
+
+/* overlap leftovers (24 Nov 2026, review N3): at 1280 with the Winter Market out, opened from a place near the zoom column (the map centres on it),
+   no place name lies under the zoom column or the X; and hovering each building, its tip covers no other name or ribbon and no control
+   (it lay on the Winter Market's "Festival!" ribbon and on the Shelter's name) */
+async function coverPart(t, openMap) {
+  const { ok, sec, ev } = t;
+  sec('1280: nothing under the zoom column, and the hover tip clear of the other names (review N3)');
+  await t.newGame({ prefs: Object.assign({ fmTest: true, fmDate: '2026-12-05' }, PREFS) }, { bond: { level: 8, pts: 1600 } });
+  for (const from of ['yard', 'fmarket', 'square', 'ground']) {
+    await ev((k) => { const S = window.__paw.S; S.sleeping = false; S.place = k; window.__paw.go('yard'); }, from); await t.until((k) => window.__paw.S.place === k && window.__paw.mode === 'yard', from, 8000); await t.lu();
+    await openMap(); await t.sleep(500);
+    const R = await ev(() => {
+      const box = (e) => e.getBoundingClientRect(), ov = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const ctl = ['#mapZoom', '#mapX'].map((q) => document.querySelector(q)).filter((e) => e && e.offsetParent).map((e) => ({ n: e.id, r: box(e) }));
+      const under = [...document.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1).flatMap((e) => ctl.filter((c) => ov(box(e), c.r) > 4).map((c) => e.textContent.trim() + ' under ' + c.n));
+      return { under, fm: !!document.querySelector('#mapInner [data-area="fmarket"]') };
+    });
+    ok(R.fm && !R.under.length, `from ${from}: the Winter Market is on the map and no name is under the zoom column or the X: ${R.under.join(', ')}`);
+    const areas = await ev(() => [...document.querySelectorAll('#mapInner .mb[data-area]')].map((g) => g.getAttribute('data-area')));
+    const bad = [];
+    for (const k of areas) {
+      const b = await ev((k) => { const h = document.querySelector(`#mapInner .mb[data-area="${k}"] .mb-hit`) || document.querySelector(`#mapInner .mb[data-area="${k}"]`), r = h.getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2; return x > v.left + 10 && x < v.right - 10 && y > v.top + 10 && y < v.bottom - 10 ? { x, y } : null; }, k);
+      if (!b) continue;
+      await t.p.mouse.move(b.x, b.y); await t.sleep(120);
+      const c = await ev((k) => {
+        const tip = document.getElementById('mapTip'); if (!tip || tip.hidden) return null;
+        const g = document.querySelector(`#mapInner [data-area="${k}"]`), tr = tip.getBoundingClientRect(), box = (e) => e.getBoundingClientRect(), ov = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        const hit = [...document.querySelectorAll('#mapInner svg text')].filter((e) => !g.contains(e) && e.textContent.trim().length > 1 && ov(tr, box(e)) > 30).map((e) => e.textContent.trim())
+          .concat(['#mapZoom', '#mapX', '#status'].map((q) => document.querySelector(q)).filter((e) => e && e.offsetParent && ov(tr, box(e)) > 30).map((e) => '#' + e.id));
+        return hit.length ? `${k}: "${tip.textContent}" on ${hit.join(' + ')}` : '';
+      }, k);
+      if (c) bad.push(c);
+    }
+    await t.p.mouse.move(5, 400);
+    ok(bad.length <= 1, `from ${from}: the hover tip of each building covers no other name, ribbon or control (one allowed where nothing is clear): ${bad.slice(0, 4).join(' | ')}`);
+    if (from === 'fmarket') await t.SH('cover_fmarket');
+    await t.p.keyboard.press('Escape'); await t.until(() => window.__paw.mode !== 'map', null, 3000);
+  }
+}

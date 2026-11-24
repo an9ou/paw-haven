@@ -177,6 +177,23 @@ function mapApply() {
 }
 function mapCenter(k, anim) { const M = MAPV; if (!M) return; const c = M.centers[k]; if (!c) return; const s = M.base * M.z; M.tx = M.vw / 2 - c[0] * s; M.ty = M.vh / 2 - c[1] * s; const inner = $('#mapInner'); if (inner) inner.style.transition = anim ? 'transform .35s ease-out' : ''; mapApply(); if (anim) setTimeout(() => { if (inner) inner.style.transition = ''; }, 380); }
 function mapZoomAt(f, px, py) { const M = MAPV; if (!M) return; const z0 = M.z, z1 = clamp(z0 * f, 0.6, 1.6); if (z1 === z0) return; const s0 = M.base * z0, s1 = M.base * z1; const mx = (px - M.tx) / s0, my = (py - M.ty) / s0; M.z = z1; M.tx = px - mx * s1; M.ty = py - my * s1; mapApply(); }
+// overlap leftovers (24 Nov 2026): the desktop hover tip goes above its place, else below, else to a side, where it covers no other place's name or
+// ribbon (map text outside the place it names) and none of the map's controls (at 1280 "Town Square: go hang out" lay on the Winter Market's
+// "Festival!" ribbon, "Winter Market: go hang out" on the Shelter's name); with no clear spot, the one that covers the least
+function mapTipPlace(tip, g, r, vr) {
+  const tw = tip.offsetWidth, th = tip.offsetHeight || 40, cx = r.left - vr.left + r.width / 2, X = (x) => clamp(x, 8, vr.width - tw - 8);
+  const keep = [...view.querySelectorAll('#mapInner svg text')].filter((e) => !g.contains(e) && e.textContent.trim().length > 1).map((e) => e.getBoundingClientRect())
+    .concat(['#mapZoom', '#mapX', '#status', '#mapGo:not([hidden])'].map((q) => $(q)).filter((e) => e && e.offsetParent).map((e) => e.getBoundingClientRect()))
+    .filter((b) => b.width && b.height).map((b) => [b.left - vr.left, b.top - vr.top, b.right - vr.left, b.bottom - vr.top]);
+  const top = r.top - vr.top, bot = r.bottom - vr.top, ys = [top - 46, bot + 8, top - 46 - th, bot + 8 + th].filter((y) => y >= 8 && y + th <= vr.height - 8);
+  const xs = [cx - tw / 2, cx - tw + 24, cx - 24, cx - tw * 1.25, cx + tw * 0.25];
+  let best = null;
+  (ys.length ? ys : [Math.max(8, top - 46)]).forEach((y, i) => xs.forEach((x0, j) => {
+    const x = X(x0), a = keep.reduce((m, b) => m + Math.max(0, Math.min(x + tw, b[2]) - Math.max(x, b[0])) * Math.max(0, Math.min(y + th, b[3]) - Math.max(y, b[1])), 0), sc = a * 10 + i * 40 + j * 15;
+    if (!best || sc < best.sc) best = { sc, x, y };
+  }));
+  tip.style.left = best.x + 'px'; tip.style.top = best.y + 'px';
+}
 // v2.5 FIXES A: on phones the X and the zoom column float over the map, so on opening the map slides sideways by the smallest step that leaves no place name under them
 function mapClearCtl() {
   const M = MAPV, ctl = ['#mapX', '#mapZoom'].map((s) => $(s)).filter(Boolean).map((e) => e.getBoundingClientRect()); if (!M || !ctl.length) return;
@@ -204,7 +221,7 @@ function enterMap() {
   mapApply();
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
-  measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); if (isPhone()) { mapClearCtl(); if (A.v215) mapClearTitle(); } // v2.15: the house is its own building, the leader's dog stands at the pack's place
+  measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); mapClearCtl(); if (isPhone() && A.v215) mapClearTitle(); // overlap leftovers: the desktop's zoom column too (it lay on "Training Ground" at 1280) // v2.15: the house is its own building, the leader's dog stands at the pack's place
   const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? lvGoTo(k, townPlaceName(k)) : k;
   if (A.v215) mpBindMap(svg); // v2.15: the buildings are buttons (lift, squash, shake; phones: tap travels, long-press names it), the travel walk
   else hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
@@ -231,7 +248,7 @@ function mapOverlay() {
   const rel = (g) => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(), r = g.getBoundingClientRect(); return { x: (r.left - ir.left) / s, y: (r.top - ir.top) / s, w: r.width / s, h: r.height / s }; };
   const v215 = !!svg.querySelector('.pa-wf-map'); // v2.15: the buildings glow and lift themselves, so no highlight box and no pin (the leader's dog stands there)
   mapHighlight = (g) => { if (v215) return; const r = rel(g); hi.hidden = false; Object.assign(hi.style, { left: r.x - 8 + 'px', top: r.y - 8 + 'px', width: r.w + 16 + 'px', height: r.h + 16 + 'px' }); };
-  const show = (g) => { if ($('#mapPan').classList.contains('dragging')) return; mapHighlight(g); const k = g.getAttribute('data-area'), vr = view.getBoundingClientRect(), r = g.getBoundingClientRect(); tip.textContent = k === 'station' ? tkTownTip() : mapTipText(k); tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = clamp(r.left - vr.left + r.width / 2 - tw / 2, 8, vr.width - tw - 8) + 'px'; tip.style.top = Math.max(8, r.top - vr.top - 46) + 'px'; };
+  const show = (g) => { if ($('#mapPan').classList.contains('dragging')) return; mapHighlight(g); const k = g.getAttribute('data-area'), vr = view.getBoundingClientRect(), r = g.getBoundingClientRect(); tip.textContent = k === 'station' ? tkTownTip() : mapTipText(k); tip.hidden = false; mapTipPlace(tip, g, r, vr); };
   const hide = () => { hi.hidden = true; tip.hidden = true; };
   svg.querySelectorAll('[data-area]').forEach((g) => { g.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !isPhone()) show(g); }); g.addEventListener('focus', () => { if (!isPhone()) show(g); }); g.addEventListener('pointerleave', hide); g.addEventListener('blur', hide); });
   const k = S.place === 'house' ? 'yard' : S.place, c = MAPV.centers[k];
