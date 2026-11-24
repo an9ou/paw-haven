@@ -21,7 +21,7 @@ const HO_OLD_ZONE = { 'Family Photo Frame': 'wall', 'Paper Bat Bunting': 'wall',
 const HO_PH_SEEN = [140, 912];
 const HO_DOG_REST = [328, 335, 204, 180], HO_STATUS = [0, 147, 262, 42]; // the place and time chip (top left) covers the wall under it
 const HO_KEEP = {
-  yard: [[210, 470, 80, 80], [286, 288, 90, 120], [208, 318, 50, 64], [640, 340, 204, 186], [850, 525, 150, 50], [179, 258, 66, 88]], // v2.16.1: + the mailbox by the front door (07b_mailbox.js MB_BOX_BACK)
+  yard: [[210, 470, 80, 80], [286, 288, 90, 120], [208, 318, 50, 64], [640, 340, 204, 186], [850, 525, 150, 50], [179, 258, 66, 88], [140, 288, 60, 118]], // v2.16.1: + the mailbox by the front door (07b_mailbox.js MB_BOX_BACK); v2.33 fix: + the front door and its step (overlap review S3)
   house: [[210, 470, 80, 80], [850, 525, 150, 50]]
 };
 // a few short lines a dog says on a piece of furniture (by prop and spot)
@@ -72,7 +72,7 @@ function hoClamp(n, x, y) {
 }
 const hoHit = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
 // boxes a new spot keeps clear of: the fixed ones, the nursery basket, the scene hotspots on show, every other item out in the room
-function hoKeepBoxes(room, skip) {
+function hoKeepBoxes(room, skip, noItems) {
   const out = [HO_DOG_REST, HO_STATUS].concat(HO_KEEP[room] || []);
   // where the pack dogs stand (13_more_dogs.js PACK_SPOTS): a tall thing behind a standing dog would look like the dog stands on it
   // and the phone spots (PACK_SPOTS_PH, UI/UX): one save is played on both, so a spot keeps clear of both sets
@@ -81,25 +81,134 @@ function hoKeepBoxes(room, skip) {
   if (room === 'yard' && Array.isArray(S.litters) && S.litters.length && typeof NURSERY_AT !== 'undefined') out.push(NURSERY_AT.art);
   const svg = cur.mode === 'yard' && S.place === room && $('svg.world', view);
   if (svg) svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const a = toWorld(svg, r.left, r.top), b = toWorld(svg, r.right, r.bottom); out.push([a.x, a.y, b.x - a.x, b.y - a.y]); });
-  hoOutIn(room).forEach((m) => { if (m !== skip) out.push(hoFoot(m)); });
+  if (room === 'yard' && hoYvKeep()) out.push(HO_YV_KEEP);
+  if (!noItems) hoOutIn(room).forEach((m) => { if (m !== skip) out.push(hoFoot(m)); });
   if (typeof fsKeepOut === 'function') { try { (fsKeepOut(room) || []).forEach((b) => { if (Array.isArray(b) && b.length === 4) out.push(b); }); } catch (e) { /* festival boxes unavailable */ } } // v2.8: festival props up now (V28.md section 2)
   return out;
+}
+// v2.33 fix (overlap review S3, S4): the yard visitor's own spot (54_visitors.js YV_SPOT: the dog and its name chip under it, a big visitor) is kept
+// free like the dog at rest, while yard visitors are on; a very full yard may still use it, and the visitor then finds another spot (yvPickSpot)
+const HO_YV_KEEP = [484, 330, 132, 156]; // a big visitor at feet (550, 452) with its phone chip under it: left of the dog house, which a phone chip at YV_SPOT touches
+const hoYvKeep = () => typeof yvOn === 'function' && yvOn();
+// how much of each thing out must stay in sight (overlap review S3): its own box, less what is drawn over it (things in front of it, the dog house,
+// the mailbox and the bowl, which the yard draws after every decoration). Nothing out is ever hidden completely.
+const HO_SEEN = 0.6, HO_SEEN_PICK = 0.63, HO_FENCE_Y = 344; // the picker keeps a little margin over the rule (an art's ink differs a little drawn in the yard)
+// what a thing's art really covers: the art may reach past its box (overflow is visible, and a wide art in a narrow box spills sideways), so a thing is
+// kept in sight by its drawn ink, measured once per art in a hidden svg (1 unit = 1 px), as [x, y, w, h] fractions of the box
+const HO_INK = {};
+function hoInkFr(key, svgFn, w, h) {
+  if (HO_INK[key]) return HO_INK[key];
+  try {
+    if (typeof document === 'undefined' || !document.body || (typeof restReady === 'function' && !restReady())) return [0, 0, 1, 1]; // (the split build's rest file holds some art: measure once it is here)
+    let host = HO.inkHost; if (!host || !host.isConnected) { host = HO.inkHost = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); host.setAttribute('width', '1200'); host.setAttribute('height', '800'); host.setAttribute('aria-hidden', 'true'); host.style.cssText = 'position:fixed;left:-4000px;top:0;visibility:hidden;pointer-events:none;overflow:visible'; document.body.appendChild(host); }
+    host.innerHTML = `<g transform="translate(100 100)">${place(svgFn(), 0, 0, w, h)}</g>`;
+    const o = host.getBoundingClientRect(), root = host.querySelector('g > svg'); let b = null;
+    [...(root ? root.children : [])].forEach((c) => { if (c.tagName === 'defs' || c.tagName === 'title') return; const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; b = b ? [Math.min(b[0], r.left), Math.min(b[1], r.top), Math.max(b[2], r.right), Math.max(b[3], r.bottom)] : [r.left, r.top, r.right, r.bottom]; });
+    host.innerHTML = '';
+    if (!b || !o.width) return [0, 0, 1, 1];
+    const sx = o.width / 1200, sy = o.height / 800; // the page may be zoomed
+    return (HO_INK[key] = [(b[0] - o.left) / sx / w - 100 / w, (b[1] - o.top) / sy / h - 100 / h, (b[2] - b[0]) / sx / w, (b[3] - b[1]) / sy / h]);
+  } catch (e) { return [0, 0, 1, 1]; }
+}
+const hoInkAt = (b, f) => [b[0] + f[0] * b[2], b[1] + f[1] * b[3], f[2] * b[2], f[3] * b[3]];
+// a thing's drawn box for keeping it in sight (a bed: its foot box, as before)
+function hoInk(n, lb) {
+  if (hoIsBed(n) || !HM_DECOR[n]) return lb;
+  const k = hoKind(n), [w, h] = hoSize(n);
+  return hoInkAt(lb, hoInkFr('d|' + n, () => (k === 'furniture' ? hoFurnArt(n) : hmDecorArt(n)), w, h));
+}
+// drawn after every yard decoration: the dog house (by its art), the mailbox, the bowl; on desktop the place buttons and chip sit over the scene's corners
+function hoFrontFixed(room) {
+  if (room !== 'yard') return [];
+  const hs = S && S.house, hb = [620, 330, 240, 200], hse = hs && typeof art === 'function' ? hoInkAt(hb, hoInkFr('h|' + hs, () => art('house', hs), 240, 200)) : HO_KEEP.yard[3];
+  const mb = typeof mbBox === 'function' ? mbBox() : null, mbe = mb && typeof mailboxArt === 'function' ? hoInkAt(mb, hoInkFr('mailbox', mailboxArt, mb[2], mb[3])) : HO_KEEP.yard[5];
+  return [hse, mbe, HO_KEEP.yard[0], HO_KEEP.yard[4], HO_STATUS];
+}
+// the part of a box not covered by any of `occ` (0..1): exact, by cutting the box at every edge
+function hoSeenFrac(b, occ) {
+  const o = occ.filter((c) => hoHit(b, c)); if (!o.length) return 1;
+  const cut = (i) => [...new Set([b[i], b[i] + b[i + 2]].concat(...o.map((c) => [c[i], c[i] + c[i + 2]])).map((v) => clamp(v, b[i], b[i] + b[i + 2])))].sort((p, q) => p - q);
+  const xs = cut(0), ys = cut(1); let cov = 0;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) { const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2; if (o.some((c) => cx > c[0] && cx < c[0] + c[2] && cy > c[1] && cy < c[1] + c[3])) cov += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]); }
+  return 1 - cov / Math.max(1, b[2] * b[3]);
+}
+// drawing order as hoOrder: [layer, bottom edge (standing things), catalogue index]; true when a is drawn after (in front of) b
+function hoIdx(n) { const i = Object.keys(HM_DECOR).indexOf(n); return i >= 0 ? i : 1e4 + (S.beds || []).indexOf(n); }
+const hoKeyOf = (n, b) => [hoLayer(n), hoLayer(n) === 2 ? b[1] + b[3] : 0, hoIdx(n)];
+const hoAfter = (ka, kb) => ka[0] - kb[0] || ka[1] - kb[1] || ka[2] - kb[2];
+function hoFootAt(n, x, y) { const [w, h] = hoSize(n); if (!hoIsBed(n)) return [x, y, w, h]; const t = HO_BED_TOP[n] ?? 64; return [x, y + t, w, h - t]; }
+// every thing out in a room (but `skip`) with its box, its drawing key, what covers it and how much of it is seen
+function hoSeenAll(room, skip) {
+  const L = hoOutIn(room).filter((m) => m !== skip).map((m) => { const lb = hoFoot(m); return { n: m, b: hoInk(m, lb), k: hoKeyOf(m, lb) }; }), F = hoFrontFixed(room);
+  L.forEach((a) => { a.occ = L.filter((o) => o !== a && hoAfter(o.k, a.k) > 0).map((o) => o.b).concat(F); a.f = hoSeenFrac(a.b, a.occ); });
+  return L;
+}
+// a top-left p for n among the others out (hoSeenAll): n's own seen part and the least seen part of a thing it would stand in front of
+function hoSeenAt(n, p, L, room) {
+  const lb = hoFootAt(n, p[0], p[1]), k = hoKeyOf(n, lb), b = hoInk(n, lb);
+  const own = hoSeenFrac(b, L.filter((o) => hoAfter(o.k, k) > 0).map((o) => o.b).concat(hoFrontFixed(room)));
+  let low = 1, ok = own >= HO_SEEN_PICK, over = 0;
+  L.forEach((o) => { if (!hoHit(b, o.b)) return; over += hoOverlap(b, o.b); if (hoAfter(k, o.k) < 0) return; const f = hoSeenFrac(o.b, o.occ.concat([b])); low = Math.min(low, f); if (f < Math.min(HO_SEEN_PICK, o.f) - 1e-6) ok = false; });
+  return { ok, own, low: Math.min(own, low), over };
 }
 // the house scene's own wall furniture (bookshelf, picture, window, sign, kitchen): a hung item looks for bare wall first
 const HO_WALL_KEEP = { house: [[25, 147, 190, 252], [233, 147, 82, 88], [340, 147, 236, 114], [578, 160, 68, 56], [676, 147, 154, 58]], yard: [[40, 147, 345, 248]] };
 const hoOverlap = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
 // a free spot: the catalogue spot if clear, else the first clear box scanning the zone (back to front, left to right, step 24).
-// When nothing is clear (a very full room) it takes the scanned box that overlaps the least, so a new bed never lands right on another bed.
+// v2.33 fix (overlap review S3): when nothing is clear (a full room) it takes, on a finer scan, the spot where the new thing and every thing it
+// would stand in front of stay at least HO_SEEN in sight, the least in the way of the dog at rest, the door, the mailbox and the rest of the keep boxes,
+// then the least on other things. When no spot keeps everything that much in sight (dozens of big things out), the spot that leaves the most of
+// everything in sight: never on top of another thing. A new bed never lands right on another bed.
 function hoFreeSpot(n, start) {
   const room = hoRoomOf(n), z = HO_ZONES[room][hoZoneOf(n)], [w, h] = hoSize(n), wall = hoZoneOf(n) === 'wall';
-  const keep = hoKeepBoxes(room, n).concat(wall ? HO_WALL_KEEP[room] || [] : []), cost = (x, y) => keep.reduce((a, b, i) => a + hoOverlap([x, y, w, h], b) * (i === 0 ? 12 : 1), 0); // [0] is the dog at rest: overlap it last of all
-  const at = hoClamp(n, ...(start || hoHome(n))); if (!cost(at[0], at[1])) return at;
-  let best = at, bc = cost(at[0], at[1]);
+  const area = (keep) => (x, y) => keep.reduce((a, b, i) => a + hoOverlap([x, y, w, h], b) * (i === 0 ? 12 : 1), 0); // [0] is the dog at rest: overlap it last of all
+  const yv = room === 'yard' && hoYvKeep(), onYv = (p) => yv && hoHit(hoInk(n, [p[0], p[1], w, h]), HO_YV_KEEP); // the visitor's spot, by the art's ink (it may spill past its box)
+  const cost = area(hoKeepBoxes(room, n).concat(wall ? HO_WALL_KEEP[room] || [] : []));
+  const L = hoSeenAll(room, n), ok = (p) => !cost(p[0], p[1]) && !onYv(p) && hoSeenAt(n, p, L, room).ok; // clear of the keep boxes, and it and what it stands in front of stay in sight
+  const at = hoClamp(n, ...(start || hoHome(n))); if (ok(at)) return at;
   const x0 = room === 'yard' ? Math.max(z.x0, HO_PH_SEEN[0]) : z.x0, x1 = room === 'yard' ? Math.min(z.x1, HO_PH_SEEN[1]) : z.x1; // the yard scan stays where a phone can see it (both halves)
-  for (let v = z.y0; v <= z.y1 - (wall ? h : 0); v += 24) for (let x = x0; x <= x1 - w; x += 24) { const p = hoClamp(n, x, wall ? v : v - h), c = cost(p[0], p[1]); if (!c) return p; if (c < bc) { bc = c; best = p; } }
-  return best;
+  const y1 = wall && room === 'yard' ? Math.min(z.y1, HO_FENCE_Y) : z.y1; // a thing hung up by the picker hangs on the fence, not over the lawn (a player may still hang it lower)
+  const scan = (st, fn) => { for (let v = z.y0; v <= y1 - (wall ? h : 0); v += st) for (let x = x0; x <= x1 - w + st - 1; x += st) { const r = fn(hoClamp(n, Math.min(x, x1 - w), wall ? v : v - h)); if (r) return r; } return null; };
+  const clear = scan(24, (p) => (ok(p) ? p : null)); if (clear) return clear;
+  // tiers: 3 everything in sight, off the visitor's spot; 2 everything in sight (a full yard: the visitor finds another spot or stands at the front);
+  // 1 and 0 the most of everything in sight, off the visitor's spot first
+  const fixed = area(hoKeepBoxes(room, n, true).concat(wall ? HO_WALL_KEEP[room] || [] : [])); let best = null;
+  scan(12, (p) => {
+    const s = hoSeenAt(n, p, L, room), sc = fixed(p[0], p[1]) * 3 + s.over, tier = (s.ok ? 2 : 0) + (onYv(p) ? 0 : 1);
+    if (!best || tier > best.tier || (tier === best.tier && (tier >= 2 ? sc < best.sc : s.low > best.low + 1e-6 || (s.low > best.low - 1e-6 && sc < best.sc)))) best = { p, tier, low: s.low, sc };
+    return null;
+  });
+  return best ? best.p : at;
 }
-
+// v2.33 fix (overlap review S3): things out that are hidden behind others move to hoFreeSpot, the one hidden most first. all: every decoration out
+// (the one-time tidy of a save, S.hoTidy); else only one still on its catalogue spot (a gift put out without a spot of its own). A spot the player
+// chose is kept while the thing is HO_SEEN in sight. A move is kept only when it shows the thing better. Never while arranging. Returns the names moved.
+function hoTidy(room, all) {
+  if (!S || !S.decor || HO.pl) return [];
+  const moved = [], tried = new Set();
+  for (let i = 0; i < 80; i++) {
+    const bad = hoSeenAll(room).filter((o) => !hoIsBed(o.n) && !tried.has(o.n) && o.f < HO_SEEN - 1e-6 && (all || !Array.isArray(S.decor[o.n].at))).sort((a, b) => a.f - b.f)[0];
+    if (!bad) break; tried.add(bad.n);
+    const r = S.decor[bad.n], had = Object.prototype.hasOwnProperty.call(r, 'at'), was = r.at;
+    r.at = hoFreeSpot(bad.n);
+    const now = hoSeenAll(room).find((o) => o.n === bad.n);
+    if (now && now.f > bad.f + 1e-6) moved.push(bad.n); else if (had) r.at = was; else delete r.at;
+  }
+  if (moved.length) markDirty();
+  return moved;
+}
+// once per save (S.hoTidy, an additive flag: absent on every older save): a yard with things piled up is tidied gently, once. After that only a
+// thing still on its catalogue spot (a gift put out without a spot) moves, and only while it is hidden
+function hoTidyOnce(room) {
+  if (!S || !S.decor || HO.pl || (typeof restReady === 'function' && !restReady())) return []; // the art is measured: wait for the rest file (the yard waits too)
+  if (S.hoTidy !== 1) { const m = hoTidy('yard', true); S.hoTidy = 1; markDirty(); if (room !== 'house') return m; }
+  return hoTidy(room || 'yard', false);
+}
+// a decoration given out with no spot (a treasure, a family's thank-you, a vet gift, a Halloween prize, a welcome-back gift): the same picker as a buy
+function hoGiftSpot(n) {
+  const r = n && S && S.decor && S.decor[n]; if (!r || !r.out || !HM_DECOR[n] || Array.isArray(r.at)) return false;
+  r.at = hoFreeSpot(n); markDirty(); return true;
+}
 /* ---------------- beds for every dog ---------------- */
 function hoSync() {
   if (!S || !Array.isArray(S.dogs) || !S.dogs.length || !Array.isArray(S.beds)) return;
@@ -526,10 +635,12 @@ function hoShopItems(kind) {
 }
 
 /* ---------------- events, watchdog, test hook ---------------- */
-on('game:ready', () => { HO.uses = {}; HO.pl = null; hoSync(); });
+on('game:ready', () => { HO.uses = {}; HO.pl = null; hoSync(); hoTidyOnce('yard'); });
+on('decor:new', (o) => { const n = o && o.name; if (hoGiftSpot(n) && cur.mode === 'yard' && S.place === hoRoomOf(n)) hoRoomRedraw(); });
 on('dog:added', () => setTimeout(hoSync, 0));
 on('yard:enter', () => {
   hoSync(); HO.lit = isNight();
+  if ((S.place === 'yard' || S.place === 'house') && hoTidyOnce(S.place).length) hoRoomRedraw(); // v2.33 fix (overlap review S3)
   if (S.place !== 'house') HO.uses = {}; else Object.keys(HO.uses).forEach((id) => { if (id === S.activeId || !dogById(id)) { const n = HO.uses[id].name; delete HO.uses[id]; hoFurnRefresh(n); } }); // (the room is drawn already: put the piece back to empty)
   hoZzzSync(); fbPackNapFit(); if (S.place === 'house') hoFrontSync();
   const pend = HO.pending; HO.pending = null;
@@ -553,7 +664,8 @@ function hoExpose() {
     nap: (id, ms) => hoPackNap(dogById(id), ms), napping: (id) => hoNapping(dogById(id)), rugRest: (id) => hoRugRest(dogById(id)), // v2.19 fix: a pack dog's nap in its own bed
     done: () => hoDone(), select: (n) => hoSelect(n), pos: (n) => hoPos(n).slice(), box: (n) => hoBox(n), free: (id) => hoFree(dogById(id) || id),
     use: (id, name, spot) => { const d = dogById(id); if (!d) return false; if (!spot) spot = Object.keys(hoSpots(name))[0]; if (d.id !== S.activeId) return hoPackUse(d, name, spot); if (IDLE.act) { IDLE.steps = []; idleEnd(); } HO.want = { name, spot }; idleStart('furn'); return true; },
-    uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), keep: (room, skip) => hoKeepBoxes(room || 'yard', skip).map((b) => b.map(Math.round)), rug: HO_RUG_NAPS
+    uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), tidy: (all) => hoTidy('yard', !!all), tidyOnce: () => hoTidyOnce('yard'), giftSpot: (n) => hoGiftSpot(n),
+    seen: (room) => hoSeenAll(room || 'yard').map((o) => ({ n: o.n, box: o.b.map(Math.round), f: +o.f.toFixed(3) })), seenMin: HO_SEEN, yvKeep: HO_YV_KEEP, keep: (room, skip) => hoKeepBoxes(room || 'yard', skip).map((b) => b.map(Math.round)), rug: HO_RUG_NAPS
   };
 }
 on('game:ready', () => setTimeout(hoExpose, 0));
