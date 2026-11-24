@@ -212,3 +212,9 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Stripe: connect the live account (Managed Payments), live keys as Worker secrets, a live check, then the Worker deploy (owner).
 - [ ] Translations: one batch for the new `ks.*`, `nw.v224.*` game keys and the site keys `thanks.*`, `privacy.shop.*` and the reworded `about.description`, `about.og_description`, `about.p5`, `guide.faq.a1` (11 languages; `node tools/i18n_extract.js --en`, `node tools/site_i18n.js`).
 - [ ] Launch date from the owner: set `SHOP_LIVE = true`, change `NEWS_V224.date` in `game/src/49c_news.js` (placeholder 2026-12-01), then deploy the site (`/thanks`, `/privacy`, About, FAQ) with the game.
+
+## Helping paws (v2.33, V233.md; accepted leftovers, 24 Nov 2026)
+- [ ] At 1280 a walking pack dog may pass in front of a Great Dane sleepover guest for a moment. `game/src/60b_sleep.js`
+- [ ] At 390 the watered patch on a friend's yard visit sits partly under the visit buttons. `game/src/60_helps.js`
+- [ ] Pack dogs can overlap each other in crowded yards (older than v2.33).
+- [ ] Fit finding (older than v2.33): en, Pixel 7, "kind shop: paused: supporter": `p.small.ks-ask` has 3 px of room where the audit wants 4. `game/src/52_kindshop.js`

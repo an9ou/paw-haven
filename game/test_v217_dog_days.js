@@ -226,12 +226,17 @@ run('v217_dog_days', async (t) => {
   }
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500); await ev(() => window.__paw.dd.chip());
   await ev(() => window.__paw.toast('A toast to test where it sits.'));
-  ok(await t.until(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), q = [...document.querySelectorAll('#toasts .toast')].pop(); return !!q && q.getBoundingClientRect().top >= c.bottom - 1; }, null, 3000), 'phones: a toast starts under the wish chip, never on it');
+  // phones show one toast at a time: the others wait hidden (class tq, 00_core.js) and have no box yet, so the check reads the toasts on screen
+  ok(await t.until(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), on = [...document.querySelectorAll('#toasts .toast:not(.tq)')].filter((q) => q.getBoundingClientRect().height > 0); return on.length > 0 && on.every((q) => q.getBoundingClientRect().top >= c.bottom - 1); }, null, 3000), 'phones: a toast starts under the wish chip, never on it');
   await t.until(() => !document.querySelector('#toasts .toast'), null, 5000);
   await shot('wish_chip_phone');
   await t.p.locator('#bar [data-act=more]').tap();
-  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act).join(',') === 'wardrobe,journal,stickers'), 'the More tray: Wardrobe, Journal, Stickers');
-  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth && r.height >= 44; })), 'all three fit on screen, 44 px');
+  // v2.31: the phone More tray is the tile sheet (FW_POPS.more in 47_firstweek.js: Photo, Share, Story, Wardrobe, Journal, Stickers, Friends, Calendar,
+  // News, Missions, Kind shop, each shown when its feature is on): Wardrobe, Journal and Stickers are always among its tiles, in that order
+  const moreActs = await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act));
+  const MORE = ['photo', 'share', 'story', 'wardrobe', 'journal', 'stickers', 'friends', 'calendar', 'news', 'missions', 'kindshop'];
+  ok(['wardrobe', 'journal', 'stickers'].every((a) => moreActs.includes(a)) && moreActs.every((a, i) => MORE.includes(a) && (!i || MORE.indexOf(a) > MORE.indexOf(moreActs[i - 1]))), 'the More tray (the tile sheet): Wardrobe, Journal, Stickers among its tiles, in order: ' + moreActs.join(','));
+  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth && r.height >= 44; })), 'every tile fits on screen, 44 px');
   await shot('more_tray_phone');
   await t.p.locator('#bar [data-act=stickers]').tap(); ok(await t.until(() => !!document.querySelector('#modal .dd-bookpop .dd-sgrid'), null, 3000), 'Stickers opens the sticker book');
   const sheetFit = (sel) => ev((sel) => { const p = document.querySelector('#modal .panel'), body = p.querySelector('.panel-body'), pr = p.getBoundingClientRect(); body.scrollTop = body.scrollHeight; const last = [...p.querySelectorAll(sel)].pop().getBoundingClientRect(), br = body.getBoundingClientRect(); return { fits: pr.left >= -1 && pr.right <= window.innerWidth + 1, last: last.bottom <= br.bottom + 1 && last.top >= br.top - 1, btns: [...p.querySelectorAll('.dd-flip .btn')].every((b) => b.getBoundingClientRect().height >= 44), sw: document.documentElement.scrollWidth <= window.innerWidth + 1 }; }, sel);

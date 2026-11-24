@@ -302,6 +302,7 @@ function letterBody(m) {
     const taken = m.adopted || m.picked;
     act = taken ? `<p class="mb-gift got">${tt('mail.picked', 'You picked a puppy from this litter.')}</p>` : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">${tt('mail.adopt_pup', 'Adopt this pup')}</button><span class="small">${typeof slotsFree === 'function' ? tt('mail.free_spots', 'Free dog spots: {n}', { n: slotsFree() }) : ''}</span></div>`;
   }
+  if (!act && typeof hpLetterAct === 'function') act = hpLetterAct(m); // v2.33: Say thanks on a help letter (60_helps.js)
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
   const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   const paw = typeof frLetterArt === 'function' ? frLetterArt(m) : ''; // v2.19: a paw-print note or a friend's wrapped gift (50_friends.js)

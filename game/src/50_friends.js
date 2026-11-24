@@ -13,7 +13,9 @@ function frOn() {
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
-const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
+// hp (v2.33, 60_helps.js): the Worker said hp: 1 in GET /friends (memory only, false on every load until the first answer); hpOld: it refused a
+// snapshot with hp, so the yard goes without it for the rest of the load
+const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, decorOld: false, hp: false, hpOld: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, loadDay: '', sent: {} };
 
 /* append only, never reorder: the Worker validates indices */
 const FR_NOTES = [
@@ -28,8 +30,11 @@ const FR_NOTES = [
   'Have a cosy day!',
   'Your garden is growing!',
   'Best buddies!',
-  'Good dog, good day!'
+  'Good dog, good day!',
+  'Thank you for helping!' // v2.33 Helping paws: note 12, sent only by "Say thanks" on a help letter (60_helps.js), never in the paw-print picker
 ];
+// the notes the paw-print picker offers (and every Worker takes): note 12 on is for Say thanks, once the Helping paws gate is open (V233.md 2)
+const FR_NOTES_OLD = 12;
 /* append only, never reorder: the Worker validates indices. Yard decor only (HM_DECOR, missing room counts as yard). Winter Market included. */
 const FR_DECOR = [
   'Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Pumpkin Lantern', 'Ghost Garland',
@@ -113,7 +118,7 @@ function frGuideHold() {
   if (S.fw && S.fw.fresh && typeof gdAllowed === 'function' && gdAllowed() && S.guide.step >= 0) return true;
   return false;
 }
-function frDay() { if (!S) return; const before = S.fr && S.fr.day; v219Fields(S); if (S.fr && before && before !== S.fr.day) markDirty(); }
+function frDay() { if (!S) return; const before = S.fr && S.fr.day; v219Fields(S); if (S.fr && before && before !== S.fr.day) markDirty(); if (typeof hpDay === 'function') hpDay(); } // v2.33: S.hp's daily counters (60_helps.js)
 
 async function frApi(method, path, body) {
   // the save belongs to an account that is not logged in here (a log out, or a 401): never make a new guest for Friends (code review 1)
@@ -166,6 +171,7 @@ function frYard() {
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
   const out = { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
   if (typeof KS_FR_FF !== 'undefined' && KS_FR_FF && typeof ksSup === 'function' && ksSup()) out.ff = 1; // v2.24: the Founding Friend badge, sent once the Worker takes the field (52_kindshop.js KS_FR_FF)
+  if (!FR.hpOld && typeof hpOn === 'function' && hpOn()) out.hp = hpSnap(); // v2.33: what a visitor can help with today (60_helps.js), only to a Worker that said hp: 1
   return out;
 }
 function frAfterPush() {
@@ -176,11 +182,17 @@ function frAfterPush() {
     FR.yardAt = Date.now();
     const ids = frYardDogs().map((o) => o.d.id);
     const put = (y) => frApi('PUT', '/friends/yard', { yard: y });
+    let noHp = false;
     return put(yard).then((r) => {
+      // v2.33: a Worker that went back (it said hp: 1, then refuses the field) gets the same yard again without hp; only when that is what it takes
+      // is hp left out for the rest of the load (FR.hpOld; code review 6: a refusal for a newer decoration or outfit does not turn the helps off)
+      if (r && !r.ok && frErr(r) === 'bad' && yard.hp && !FR.hpOld) { noHp = true; const y1 = Object.assign({}, yard); delete y1.hp; return put(y1).then((r1) => { if (r1 && r1.ok) FR.hpOld = true; return r1; }); }
+      return r;
+    }).then((r) => {
       // an older Worker (FR_LIM.decor 31) refuses a snapshot with a newer decoration: send it again without the newer items, the rest of the yard still shows
       // v2.30 (code review 8): the same for a card dog in a newer outfit (an older Worker's DC_LIM.outfit 58 refuses the Friendship Bandana): those dogs go in no outfit (DC.outfitOld, 40_dogcards.js)
       const newer = (y) => y.decor.some((d) => d.i >= FR_DECOR_OLD) || y.dogs.some((x) => x && x.o >= DC_OUTFITS_OLD);
-      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); return y2 ? put(y2) : r; }
+      if (r && !r.ok && frErr(r) === 'bad' && !FR.decorOld && newer(yard)) { FR.decorOld = true; if (typeof DC !== 'undefined') DC.outfitOld = true; const y2 = frYard(); if (y2 && noHp) delete y2.hp; return y2 ? put(y2) : r; } // (v2.33: without hp too when that was tried; the next push sends it again)
       return r;
     }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
@@ -301,6 +313,7 @@ async function frLoad() {
     const r = await frApi('GET', '/friends');
     if (!r || !r.ok || !r.data) { FR.offline = true; return null; }
     FR.offline = false; FR.loadDay = frToday(); // the list's sent flags are for today
+    FR.hp = r.data.hp === 1; // v2.33: the Worker has Helping paws (an older one never says so: the game stays v2.32.1 with it)
     if (r.data.me) frApplyMe(r.data.me);
     else if (S.fr.fid || S.fr.code) { S.fr.fid = null; S.fr.code = null; S.fr.name = null; S.fr.on = false; markDirty(); } // this login has no friend id: forget the old one (code review 1)
     frCache(Array.isArray(r.data.friends) ? r.data.friends : []);
@@ -348,7 +361,8 @@ async function frInbox() {
   v219Fields(S);
   if (!S.fr.fid) return;
   let r = null;
-  try { r = await frApi('GET', '/friends/inbox'); } catch (e) { return; }
+  const hp = typeof hpOn === 'function' && hpOn(); // v2.33: ask for the helps and sleepovers (acts) only once the Worker has them
+  try { r = await frApi('GET', '/friends/inbox' + (hp ? '?hp=1' : '')); } catch (e) { return; }
   if (!r || !r.ok || !r.data || !Array.isArray(r.data.events)) return;
   frDay();
   const claim = [], pets = {};
@@ -364,14 +378,22 @@ async function frInbox() {
     const i = ev.data && ev.data.i;
     if (!Number.isInteger(i) || i < 0 || i >= FR_NOTES.length) return;
     const name = frPairName(ev.from && ev.from.name) || tt('fr.a_friend', 'A friend');
+    if (i === FR_NOTES_OLD && typeof hpThx === 'function') hpThx(ev); // v2.33: a thank-you note (note 12) counts in S.hp.thx, once (60_helps.js)
     if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tdata('fr_notes.' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
   const gave = frGiftLetters(r.data.events, claim) + frWalkLetters(r.data.events, claim);
-  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length;
+  // v2.33: the helps and sleepovers (60_helps.js hpActs), applied once (S.hp.ids) and saved before the claim, like the gifts
+  const acts = hp && r.data.hp === 1 && Array.isArray(r.data.acts) ? r.data.acts : [], claimActs = [];
+  const did = acts.length ? hpActs(acts, claimActs) : 0;
+  FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length + acts.filter((a) => a && !claimActs.includes(a.id) && a.kind !== 'sleep').length; // v2.33: a guest waiting for tomorrow (60b_sleep.js) is not on the badge
   frBadgeSync();
-  if (gave) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
-  if (claim.length) { try { await frApi('POST', '/friends/inbox/claim', { ids: claim.slice(0, 30) }); } catch (e) { /* the letter is already here. the next look claims it */ } }
+  if (gave || did) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
+  if (claim.length || claimActs.length) {
+    const body = { ids: claim.slice(0, 30) };
+    if (claimActs.length) { body.acts = claimActs.slice(0, 30); if (typeof HP !== 'undefined') HP.claimed += body.acts.length; } // acts only when there are some: the claim stays the v2.32 one otherwise
+    try { await frApi('POST', '/friends/inbox/claim', body); } catch (e) { /* the letter is already here. the next look claims it */ }
+  }
 }
 function frInboxSoon(force) {
   if (!frOn() || !S || !S.fr || !S.fr.fid) return;
@@ -477,7 +499,7 @@ const frOfficialHTML = (f) => (f && f.official === true ? `<span class="fr-ofc">
 function frRowHTML(f) {
   const name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
   const s = f.sent || {};
-  return `<div class="fr-row${f.official === true ? ' fr-isofc' : ''}" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}${frOfficialHTML(f)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
+  return `<div class="fr-row${f.official === true ? ' fr-isofc' : ''}" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}${frOfficialHTML(f)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop">${typeof slRowHTML === 'function' ? slRowHTML() : ''}<button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
 }
 function frSheetHTML() {
   v219Fields(S);
@@ -762,6 +784,7 @@ function frRowsBind(p) {
       if (act === 'visit') { frVisit(fid); return; }
       if (act === 'gift') { const b = P.querySelector('.panel-body'); FR.listTop = b ? b.scrollTop : 0; frGiftSheet(fid, 'list'); return; }
       if (act === 'more') { const was = FR.menu; FR.menu = FR.menu === fid ? '' : fid; frRowPatch(P, was); frRowPatch(P, fid); frPopShow(P); return; }
+      if (act === 'sleep') { FR.menu = ''; slTap(fid); return; } // v2.33: Sleepover tonight (60b_sleep.js)
       if (act === 'remove') frRemove(fid);
       if (act === 'block') frBlock(fid, P);
     };
@@ -844,7 +867,8 @@ function frYardClean(y) {
     name: Array.isArray(y.name) ? y.name.slice(0, 2) : null,
     house: Number.isInteger(y.house) && FR_HOUSES[y.house] ? FR_HOUSES[y.house] : FR_HOUSES[0],
     season: SEASONS.includes(y.season) ? y.season : seasonNow(),
-    dogs, decor, ff: y.ff === 1 // v2.24: a Founding Friend (the Supporter Pack's badge)
+    dogs, decor, ff: y.ff === 1, // v2.24: a Founding Friend (the Supporter Pack's badge)
+    ...((h) => (h ? { hp: h } : {}))(typeof hpSnapClean === 'function' ? hpSnapClean(y.hp) : null) // v2.33: what a visitor can help with today (a valid hp only)
   };
 }
 // the cache: S.fr.yards[fid] = { day, yard }. Only today's visits stay (a snapshot can be 16 KB)
@@ -907,9 +931,10 @@ function frStampSVG() {
 }
 function frYardSVG(y) {
   const stamp = frSentToday(FRV.fid, 'note') ? frStampSVG() : '';
-  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('yard', { patch: 'empty', season: y.season })}<g id="frDecorG" pointer-events="none">${frDecorSVG(y.decor)}</g>`
+  const hp = typeof hpOn === 'function' && hpOn(); // v2.33 Helping paws (60_helps.js): the veggie patch growing when the snapshot says so, the help bowl and can (#hpG), the help strip
+  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('yard', { patch: hp ? hpPatch(y) : 'empty', season: y.season })}<g id="frDecorG" pointer-events="none">${frDecorSVG(y.decor)}</g>`
     + `<g id="houseG" class="fr-house${isNight() ? ' night' : ''}" pointer-events="none" aria-hidden="true">${place(art('house', y.house), ...FR_HOUSE_AT)}</g><g id="frStampG" pointer-events="none">${stamp}</g>`
-    + `<g id="frDogs"></g><g id="fx"></g></svg><div id="status"></div><div id="placeBtns" class="fr-pbtns"></div>`;
+    + `${hp ? `<g id="hpG">${hpGSVG()}</g>` : ''}<g id="frDogs"></g><g id="fx"></g></svg><div id="status"></div>${hp ? hpStripHTML() : ''}<div id="placeBtns" class="fr-pbtns"></div>`;
 }
 function frNoteBtnHTML() {
   const done = frSentToday(FRV.fid, 'note');
@@ -917,16 +942,17 @@ function frNoteBtnHTML() {
 }
 function frBtns() {
   const pb = $('#placeBtns'); if (!pb) return;
-  pb.innerHTML = (FRV.yard && FRV.yard.ff && typeof ksBadgeHTML === 'function' ? ksBadgeHTML() : '') + frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
+  pb.innerHTML = (FRV.yard && FRV.yard.ff && typeof ksBadgeHTML === 'function' ? ksBadgeHTML() : '') + frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + (typeof slBtnHTML === 'function' ? slBtnHTML() : '') + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
   $('#frNoteBtn', pb).onclick = () => { SFX.click(); if (!frSentToday(FRV.fid, 'note')) frNoteSheet(); };
   $('#frGiftBtn', pb).onclick = () => { SFX.click(); frGiftSheet(FRV.fid, 'yard'); };
+  const sb = $('#hpSleepBtn', pb); if (sb) sb.onclick = () => { if (sb.getAttribute('aria-disabled') === 'true') { SFX.click(); slUsed(); return; } slTap(FRV.fid); }; // v2.33: the Sleepover button (60b_sleep.js), Go home always last
   $('#frHomeBtn', pb).onclick = () => { SFX.click(); frHome(); };
 }
 // the place chip says "<name>'s yard" (the core writes the chip: the name is put back after every rewrite, as the Tokyo map does)
 function frChip() {
   const st = $('#status'); if (!st) return;
   const nm = tt('fr.yard_of', "{name}'s yard", { name: frPairName(FRV.pair) || tt('fr.a_friend', 'A friend') });
-  const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'fryard' && n && n.textContent !== nm) n.textContent = nm; };
+  const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'fryard' && n && n.textContent !== nm) { n.textContent = nm; const sep = n.nextSibling; if (sep && sep.nodeType === 3) sep.data = sep.data.replace(/ /g, '\u00a0'); st.classList.remove('tight'); if (isPhone()) { n.style.whiteSpace = 'nowrap'; if (st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); n.style.whiteSpace = ''; } } }; // v2.33 fit: the longer name gets the core's one-line rule too (the weather word goes, 00_core.js); if it still does not fit, the name wraps inside itself (52_friends.css; the " · " after it does not break), never the time
   fix(); const mo = new MutationObserver(fix); mo.observe(st, { childList: true }); onCleanup(() => mo.disconnect());
 }
 // phones: the camera rests on the house and the middle of the yard; a drag pans the whole yard and the look-left button (#phPeek) shows
@@ -984,12 +1010,12 @@ function frScan() {
   const inv = M.inverse(), toW = (x, y) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv); };
   const vr = view.getBoundingClientRect(), a = toW(vr.left, vr.top), b = toW(vr.right, vr.bottom);
   const boxes = [];
-  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])', '#phPeek'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
+  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])', '#phPeek', '#hpStrip'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
     const p = toW(r.left - 6, r.top - 6), q = toW(r.right + 6, r.bottom + 6); boxes.push([p.x, p.y, q.x - p.x, q.y - p.y]);
   }));
   const feet = []; // the scene's own spots (the veggie patch, the mailbox post): inert here, but the dogs keep their feet off them as at home
-  svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
+  svg.querySelectorAll('#sceneG [data-hot], #hpG [data-hp]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
   FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet };
 }
 // each dog's drawn box per pose and way it faces, in its own units around the feet (430, 500): drawn hidden all at once, then measured. Facing
@@ -1308,14 +1334,14 @@ async function frPet() {
 /* ---------- the paw-print note: one of FR_NOTES, once per friend per day ---------- */
 function frNoteSheet() {
   const name = frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
-  const list = FR_NOTES.map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tdata('fr_notes.' + i, en))}</button>`).join('');
+  const list = FR_NOTES.slice(0, FR_NOTES_OLD).map((en, i) => `<button class="btn fr-note" type="button" data-frnote="${i}">${esc(tdata('fr_notes.' + i, en))}</button>`).join('');
   const p = openModal(esc(tt('fr.paw_leave', 'Leave a paw print')), `<div class="fr-notes"><p>${esc(tt('fr.note_lead', 'Pick a note for {name}.', { name }))}</p><div class="fr-notelist">${list}</div></div>`, { cls: 'frsheet fr-notesheet' });
   p.querySelectorAll('[data-frnote]').forEach((b) => { b.onclick = () => { SFX.click(); frNote(+b.dataset.frnote, p); }; });
   return p;
 }
 async function frNote(i, p) {
   const fid = FRV.fid;
-  if (!fid || !Number.isInteger(i) || i < 0 || i >= FR_NOTES.length || FRV.busy === 'note' || frSentToday(fid, 'note')) return false;
+  if (!fid || !Number.isInteger(i) || i < 0 || i >= FR_NOTES_OLD || FRV.busy === 'note' || frSentToday(fid, 'note')) return false;
   FRV.busy = 'note';
   const btns = p ? [...p.querySelectorAll('[data-frnote]')] : []; btns.forEach((b) => { b.disabled = true; });
   let r = null;
@@ -1630,6 +1656,7 @@ function enterFrYard() {
   const onSize = () => { const pk = $('#phPeek'); frCam(); frScan(); if (pk) pk.classList.remove('back'); };
   window.addEventListener('resize', onSize);
   onCleanup(() => { cur.key = null; cancelAnimationFrame(FRV.raf); FRV.raf = 0; FRV.dogs = []; FRV.gr = null; document.removeEventListener('visibilitychange', onHide); window.removeEventListener('resize', onSize); });
+  emit('fryard:enter'); // v2.33: the help strip, the props and the wish bubble (60_helps.js hpVisit)
 }
 
 /* ---------- boot ---------- */
@@ -1645,7 +1672,7 @@ function frExpose() {
       const seeds = CROPS_FB.map((c) => c.seedItem), crops = CROPS_FB.map((c) => c.item);
       const want = food.concat(['Wild Berries', "Duck's Picnic Sandwich"], seeds, crops);
       const decor = Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard');
-      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
+      return { gifts: FR_GIFTS.join('|') === want.join('|') && !FR_GIFTS.includes('Golden Bone') && !FR_GIFTS.includes('Fresh Water'), decor: FR_DECOR.join('|') === decor.join('|'), houses: FR_HOUSES.join('|') === HOUSES.map((h) => h.n).join('|'), /* v2.24: the Supporter House is in (FR_HOUSES and the Worker's FR_LIM.houses grow together) */ notes: FR_NOTES.length === 13 && FR_NOTES_OLD === 12, n: { notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length } };
     },
     decorLive: (n) => frDecorLive(n), decorOld: (v) => { if (v !== undefined) FR.decorOld = !!v; return FR.decorOld; }, decorOldN: FR_DECOR_OLD, yvTest: (v) => { prefs.yvTest = !!v; return frDecorLive('Tug Post'); }, clean: (y) => frYardClean(y),
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),

@@ -580,6 +580,55 @@ async function worker(job) {
     }, 70000);
     await t.ctx.close();
 
+    // ---------------------------------------------------------------- v2.33 Helping paws (V233.md 9): a fresh device with the Friends mock (game/fr_mock.js, hp: 1) ----------------------------------------------------------------
+    // the visit (the help strip, the four buttons, the wish bubble), the snack sheet, the Sleepover sheet and its confirm, the help letter, two guests
+    // in my yard (long friend names) and a guest card, the diary page with the picture, the sticker page, What's new with a test date (prefs.hpTest)
+    await step('hp', async () => {
+      const { mockInit: frMock } = require('./fr_mock');
+      const SUN = 'sunnybiscuitxxxxxxxxxx', FERN = ('cozyfern' + 'x'.repeat(22)).slice(0, 22), CLOV = ('happyclover' + 'x'.repeat(22)).slice(0, 22);
+      await t.mk({ lang, device: dev, prefs: { frTest: true, ddTest: true, hpTest: true } }); await t.ctx.addInitScript(frMock, { hp: true });
+      await t.p.goto(URL); await t.p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay');
+      if (await t.p.locator('#tGuest').count()) { await t.p.click('#tGuest'); await t.p.waitForSelector('#tNew'); }
+      await t.adopt({}); await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000 }); await t.calm();
+      await t.until(() => !!(window.__paw && window.__paw.hp && window.__paw.fr && window.__frSrv), null, 8000);
+      await ev(([ids]) => { const s = window.__frSrv, [sun, fern, clov] = ids; s.me = { fid: 'ownerxxxxxxxxxxxxxxxxx', code: 'DOG-23456', name: [3, 4] }; s.events = [];
+        s.yardOf[clov] = { v: 1, name: [1, 6], house: 1, season: 'autumn', dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 }], decor: [] };
+        s.friends = [[sun, [0, 0]], [fern, [19, 13]], [clov, [1, 6]]].map(([fid, name]) => ({ fid, name, dogs: s.yardOf[fid].dogs, seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } })); }, [[SUN, FERN, CLOV]]);
+      await ev(() => window.__paw.hp.load());
+      if (!(await ev(() => window.__paw.hp.on()))) throw new Error('hp not on');
+      const today = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+      const clear = () => ev(() => { const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; });
+      // the visit: the strip (bowl, can, wish), the four buttons, the bubble over their leader (a snack wish naming Basic Kibble). A short friend name here: the
+      // place chip's ellipsis for a long one at 360 is the v2.19 visit's own (not this release); the guests and the letter carry the long names
+      await ev(([f, d]) => { window.__frSrv.yardOf[f].hp = { d, g: 2, w: 2, a: 0 }; window.__paw.fr.visit(f); }, [SUN, today]);
+      await t.until(() => window.__paw.mode === 'fryard' && !!document.querySelector('#hpStrip') && !!document.querySelector('#view .hp-bowl:not([style*="none"])'), null, 8000);
+      await sleep(600); await clear(); await measure('hp: visit (help strip, buttons, wish bubble)');
+      await ev(() => { window.__paw.S.inv.food = Object.assign({}, window.__paw.S.inv.food || {}, { 'Basic Kibble': 3 }); window.__paw.hp.snack(); }); await modalUp(); await measure('hp: snack sheet'); await closeAll();
+      await jsClick('#hpSleepBtn'); await modalUp(); await measure('hp: sleepover sheet');
+      if (await has('#modal [data-sldog]')) { await jsClick('#modal [data-sldog]'); await sleep(400); await measure('hp: sleepover confirm'); }
+      await closeAll();
+      await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.calm();
+      // the help letter (a bowl, the garden, the wish) with Say thanks
+      await ev(([f, d]) => { const s = window.__frSrv, from = { fid: f, name: [9, 18] }; s.acts = [{ id: 901, from, kind: 'bowl', data: {}, day: d, claimed: false }, { id: 902, from, kind: 'water', data: {}, day: d, claimed: false }, { id: 903, from, kind: 'wish', data: { w: 0 }, day: d, claimed: false }]; }, [SUN, today]);
+      await ev(() => window.__paw.hp.inbox()); await t.until(() => (window.__paw.S.mail || []).some((m) => m && /^hp_help_/.test(m.id)), null, 5000);
+      await ev(([f, d]) => window.__paw.openMailbox('hp_help_' + d + '_' + f), [SUN, today]); await modalUp(); await sleep(300); await measure('hp: help letter'); await closeAll();
+      // two guests (long friend names), then a guest card
+      await ev(([ids, d]) => { const s = window.__frSrv, names = [[9, 18], [19, 13]], dogs = [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }, { b: 3, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 3 }];
+        s.acts = ids.map((f, i) => ({ id: 910 + i, from: { fid: f, name: names[i] }, kind: 'sleep', data: { dog: dogs[i] }, day: d, claimed: false })); }, [[SUN, FERN], today]);
+      await ev(() => window.__paw.hp.inbox()); await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length >= 1, null, 5000);
+      await sleep(3500); await clear(); await measure('hp: guests in my yard');
+      await ev(() => window.__paw.hp.sl.card(910)); await modalUp(); await measure('hp: guest card'); await closeAll();
+      // the diary page with the picture, then the sticker page
+      await ev((f) => window.__paw.hp.sl.send(f, window.__paw.S.dog.id), CLOV);
+      await ev(() => { window.__paw.S.hp.sl.forEach((r) => { r.day = '2026-01-01'; }); window.__paw.hp.sl.home(); });
+      await ev(() => window.__paw.journal('diary')); await waitSel('#modal .sl-pic svg'); await ev(() => { const b = document.querySelector('#modal .sl-pic'); if (b) b.scrollIntoView({ block: 'center' }); }); await sleep(300); await measure('hp: diary page'); await closeAll();
+      const pi = await ev(() => window.__paw.hp.pgLoad().indexOf('pals'));
+      await ev(() => window.__paw.dd.book()); await modalUp();
+      for (let k = 0; k < 40; k++) { const at = await ev((i) => { const pg = document.querySelector('#modal .dd-spage'); if (!pg || +pg.dataset.pg === i) return true; const bs = [...document.querySelectorAll('#modal [data-ddsp]')].filter((b) => !b.disabled); const nx = bs.sort((a, b) => Math.abs(+a.dataset.ddsp - i) - Math.abs(+b.dataset.ddsp - i))[0]; if (nx) nx.click(); return false; }, pi); if (at) break; await sleep(80); }
+      await measure('hp: sticker page'); await closeAll();
+      await ev((d) => { window.__paw.nw.v233(d); window.__paw.nw.open(); }, today); await modalUp(); await measure('hp: what\'s new'); await closeAll();
+      await t.ctx.close();
+    }, 120000);
     // ---------------------------------------------------------------- account screens (a fresh device with the cloud on but unreachable) ----------------------------------------------------------------
     await step('account', async () => {
       const { mockInit } = require('./cloud_mock');

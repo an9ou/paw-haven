@@ -45,6 +45,9 @@ html[data-layout="phone"] .ks-confirm{max-height:calc(100% - 8px);overflow-y:aut
 .ks-plus:hover::before,.ks-plus:focus-visible::before{background:#FFD978}
 .ks-plus[hidden]{display:none}
 #stage.frvisit .ks-plus{display:none !important}
+/* v2.33 fit: the counter's squash as a coin lands (cfHit, 57_coinfly.css) scales the (+) with it; this inverse squash keeps its tap box at 44 px or more the whole time */
+#hud .coins.cf-hit .ks-plus{animation:cfHitKs .4s ease-out}
+@keyframes cfHitKs{0%{transform:scale(1)}28%{transform:scale(.806,1.25)}55%{transform:scale(1.075,.909)}78%{transform:scale(.962,1.031)}100%{transform:scale(1)}}
 
 /* phones: the four tabs wrap to a second line instead of scrolling sideways (Thai, Korean at 360-412 px) */
 html[data-layout="phone"] #modal .panel.ks .tabs{flex-wrap:wrap;overflow-x:visible;row-gap:8px}

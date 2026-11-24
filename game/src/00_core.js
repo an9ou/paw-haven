@@ -905,6 +905,7 @@ function freshState(key, name, sex, pick) { // v2.23: pick = the chosen colour (
   if (typeof pmFields === 'function') pmFields(st); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): S.promo
   if (typeof fiFields === 'function') fiFields(st); // v2.30 Better together (V230.md 4, 58_invite.js): S.fi
   if (typeof glFields === 'function') glFields(st); // v2.30 Better together (V230.md 7, 58b_goal.js): S.goal
+  if (typeof v233Fields === 'function') v233Fields(st); // v2.33 Helping paws (V233.md 5, 60_helps.js): S.hp
   return linkDogs(st);
 }
 let S = null;
@@ -984,6 +985,7 @@ function migrate(s) {
   if (typeof pmFields === 'function') pmFields(s); // v2.25.5 Gift codes (PROMO.md, 55_promo.js): additive, S.promo = { used: [], wait: [] }
   if (typeof fiFields === 'function') fiFields(s); // v2.30 Better together (V230.md 4, 58_invite.js): additive, S.fi
   if (typeof glFields === 'function') glFields(s); // v2.30 Better together (V230.md 7, 58b_goal.js): additive, S.goal
+  if (typeof v233Fields === 'function') v233Fields(s); // v2.33 Helping paws (V233.md 5, 60_helps.js): additive, S.hp (wrong types get defaults, arrays cut to their caps)
   return s;
 }
 /* v2.19.3 Puppy start (owner, 5 Nov 2026; V2193.md 3). Additive only: S.v stays 1, nothing is dropped; S.pupStart = 1 marks it done (a new save
@@ -1667,7 +1669,7 @@ function updateHUD() {
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
   // v2.30.1 (audit 17 Nov): on the map the chip has no place name (the map has its own title; "Home Yard" there read wrong and covered it)
-  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap; if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span> · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays)
+  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap + (cur.mode === 'fryard'); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span>${cur.mode === 'fryard' ? '' : ' · ' + esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays); v2.33 fit: no "Day N" in a friend's yard (my day count is not theirs, 50_friends.js frChip)
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 

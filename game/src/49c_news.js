@@ -8,7 +8,7 @@
    Again: Settings "What's new" and the phone "..." menu. Under the test harness it needs prefs.nwTest (the older suites never see it).
    Test hook: window.__paw.nw. How to add an entry each release: V218.md section "What's new". */
 function nwOn() { return !navigator.webdriver || !!prefs.nwTest; }
-const NW = { calm: 0, exposed: false };
+const NW = { calm: 0, exposed: false, d233: null }; // d233: a test date for NEWS_V233 (the test hook), null = HP_FROM
 const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)), { day: 'numeric', month: 'long' });
 const nwItemArt = (n) => art('item', n);
 const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win(2026)[i]) : ''; }; // a market's first (0) or last (1) day, 2026
@@ -252,11 +252,24 @@ const NEWS_V2321 = { // v2.32.1 "Where is the Fun Fair?" (a player asked): the F
   ]
 };
 const nwV230Due = () => jstISO() >= NEWS_V230.date;
+/* v2.33 "Helping paws" (V233.md 10; 60_helps.js, 60b_sleep.js): its date is HP_FROM, the game's launch date. '' (no date yet): nwSort leaves the entry
+   out (never sorted, never the auto sheet's lead, never in See all updates). With a date it behaves like NEWS_V232 (nwDue) */
+const NEWS_V233 = {
+  id: '2.33', get date() { if (NW.d233 != null) return NW.d233; try { return typeof HP_FROM === 'string' ? HP_FROM : ''; } catch (e) { return ''; } }, // LAUNCH DATE: HP_FROM (60_helps.js)
+  c: '#E4F3E1', d: 'heart', pic: 'dog',
+  title: () => tt('nw.v233.title', 'Helping paws'),
+  items: [
+    { ic: () => nwSafe(() => art('prop', 'bowl-empty')), tx: () => tt('nw.v233.help', "Visiting a friend? Fill their dog's bowl, water their garden or make a wish come true") },
+    { ic: () => nwFrArt('moon') || nwSafe(() => ICON('zzz')), tx: () => tt('nw.v233.sleep', 'Send a dog for a sleepover: it comes home with a diary page and a picture') },
+    { ic: () => nwSafe(() => (typeof hpStArt === 'function' ? hpStArt('thx') : ICON('heart'))), tx: () => tt('nw.v233.thanks', 'Helpers earn Bond and new stickers, and friends can say thanks') }
+  ]
+};
+const nwV233Due = () => !!NEWS_V233.date && nwDue(NEWS_V233);
 // v2.30: both parts (58_invite.js, 58b_goal.js) open on NEWS_V230.date; tests turn them on with prefs.btTest. Never under webdriver otherwise
 function btOn() { return (!navigator.webdriver && nwV230Due()) || !!(typeof prefs !== 'undefined' && prefs && prefs.btTest); }
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V2291, NEWS_V231, NEWS_V232, NEWS_V2321].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V2291, NEWS_V231, NEWS_V232, NEWS_V2321].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); { const i = NEWS.indexOf(NEWS_V233); if (nwV233Due()) { if (i < 0) NEWS.unshift(NEWS_V233); } else if (i >= 0) NEWS.splice(i, 1); } NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
@@ -317,7 +330,8 @@ function nwExpose() {
     add: (e) => { NEWS.unshift(Object.assign({ date: '2026-12-01', c: '#D3E4F4', title: () => 'Test news', items: [{ ic: () => '', tx: () => 'A test line' }, { ic: () => '', tx: () => 'Another line' }, { ic: () => '', tx: () => 'A third line' }] }, e)); return NEWS[0].id; },
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)
-    drop: () => { nwSort(); if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; } };
+    drop: () => { nwSort(); if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; },
+    v233: (d) => { if (d !== undefined) NW.d233 = d; return nwSort().map((e) => e.id); }, v233Date: () => NEWS_V233.date, v233Raw: () => { NW.d233 = null; return NEWS_V233.date; } }; // v2.33: a test date (null: HP_FROM again), the entry's date
 }
 setInterval(() => { try { nwExpose(); nwTry(); } catch (e) { console.warn('nw tick', e); } }, 500);
 on('game:ready', () => { NW.calm = 0; nwExpose(); });

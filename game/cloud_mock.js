@@ -22,10 +22,13 @@ function fakeMail() {
 }
 
 /* ---------------- the local Worker ---------------- */
-function makeServer() {
+// opts.hp (v2.33 Helping paws): the Worker's HP_FROM gate open ('0'); without it the built-in date decides (shut while it is ''). srv.hp(on) flips it live
+function makeServer(opts) {
+  opts = opts || {};
   const DB = d1(), raw = DB.raw;
   const mail = fakeMail();
   const env = { DB, BT_FROM: '0', RATE_SCALE: 100, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' }; // MAIL_WAIT: the code mail is in mails[] when /forgot answers
+  if (opts.hp) env.HP_FROM = '0';
   let worker = null;
   const ips = new Map();
   const srv = { env, mails: mail.mails, calls: [], pages: new Set(), offline: new Set() };
@@ -63,6 +66,7 @@ function makeServer() {
     return { status: res.status, text: await res.text() };
   };
   srv.json = parse;
+  srv.hp = (on) => { env.HP_FROM = on ? '0' : 'off'; return on; }; // v2.33: a Worker with Helping paws open, or rolled back
   return srv;
 }
 

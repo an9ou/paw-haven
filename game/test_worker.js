@@ -325,7 +325,7 @@ async function checks(label, call, sql, mail) {
     const fs = require('fs');
     const schemaTxt = fs.readFileSync(path.join(ROOT, 'cloudflare', 'schema.sql'), 'utf8');
     const workerSrc = fs.readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8');
-    ok(workerSrc.includes('const FR_LIM = { notes: 12, gifts: 47, decor: 36, houses: 15 }'), 'FR_LIM is notes 12, gifts 47, decor 36, houses 15 (v2.24: + the Golden Paw Cottage; v2.25.5: + the Paw-Print Pennant at 31; v2.26: + the four yard toys at 32-35), next to the other limits');
+    ok(workerSrc.includes('const FR_LIM = { notes: 13, gifts: 47, decor: 36, houses: 15 }'), 'FR_LIM is notes 13, gifts 47, decor 36, houses 15 (v2.33: + note 12, Say thanks; v2.24: + the Golden Paw Cottage; v2.25.5: + the Paw-Print Pennant at 31; v2.26: + the four yard toys at 32-35), next to the other limits');
     ok(workerSrc.includes('crypto.getRandomValues(b)'), 'friend codes are drawn with crypto.getRandomValues');
     for (const t of ['friend_ids', 'friends', 'friend_blocks', 'yards', 'friend_events']) {
       ok(new RegExp('create table if not exists ' + t + '\\b', 'i').test(schemaTxt), `schema creates ${t} if it is missing`);

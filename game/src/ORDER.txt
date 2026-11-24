@@ -85,4 +85,6 @@
 58b_goal.js
 59_a2hs.js
 59b_letters.js
+60_helps.js
+60b_sleep.js
 23_boot.js

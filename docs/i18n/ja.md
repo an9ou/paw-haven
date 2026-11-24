@@ -484,3 +484,8 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - TODO(native): `agility.ob_weave` スラローム and `agility.ob_table` おすわり台: Japanese agility clubs say ウィーブポール and テーブル. Kid-friendly words chosen.
 - TODO(native): `data.treasures.sailor_cap.ab` へっちゃら水兵 and `sea_glass.ab` 海のカン (Steady Sailor, Sea Sense).
 - TODO(native): `map215.sticker_moved` おひっこし (a shop that moved on the map).
+
+## v2.33 "Helping paws"
+
+`hp.*`, `nw.v233.*`, `data.fr_notes.12`. Sleepover おとまり (button おとまり, confirm おとまり！, done おとまり決定); Help out おてつだい; the page and news title お手つだい (お手, the paw trick, inside 手伝い); a sleepover guest おとまりのお客さん. Letter list items are て-forms joined by 、 into 「{who}が来て、{list}くれました。」.
+- TODO(native): the pun お手つだい for "Helping paws": readable for kids, or plain おてつだい?

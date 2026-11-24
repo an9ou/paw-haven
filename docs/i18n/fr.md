@@ -378,3 +378,6 @@ Game strings: 7362 / 7362 keys (v2.14), site strings 865 / 865 (incl. the new /g
 - TODO(native): agility words: "cocarde" for the rosette (as in "Cocarde du défilé"; French agility says "flot"), "Haie" (jump bar), "Slalom", "Pneu", "Hop !" for the Go! button.
 - TODO(native): "barboter" for paddle and "ébrouade" for the wet-dog shake; pool.btn "Plouf !" for "Splash time".
 - TODO(native): the dogs' agility and pool lines avoid gendered participles and adjectives ("n'a rien vu venir", "Petites pattes et poil blanc") because no {sex} arg reaches them, and pool.sprink_done is "{name} a pris une bonne douche !".
+
+- v2.33 "Helping paws" (`hp.*`, `nw.v233.*`, `data.fr_notes.12`): sleepover "soirée pyjama", Help out "Aider", the page and news title "Coups de papatte" (after "coup de main"). The friend is never given a gender: "Petite visite de {who}, qui a {list}.", "{guest} (de chez {name}) a fait une soirée pyjama chez toi.".
+- TODO(native): "Coups de papatte" for "Helping paws" ("coup de patte" can also mean a dig); "Soirée pyjama" on the visit button (13 letters).
