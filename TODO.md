@@ -214,7 +214,5 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Launch date from the owner: set `SHOP_LIVE = true`, change `NEWS_V224.date` in `game/src/49c_news.js` (placeholder 2026-12-01), then deploy the site (`/thanks`, `/privacy`, About, FAQ) with the game.
 
 ## Helping paws (v2.33, V233.md; accepted leftovers, 24 Nov 2026)
-- [ ] At 1280 a walking pack dog may pass in front of a Great Dane sleepover guest for a moment. `game/src/60b_sleep.js`
-- [ ] At 390 the watered patch on a friend's yard visit sits partly under the visit buttons. `game/src/60_helps.js`
-- [ ] Pack dogs can overlap each other in crowded yards (older than v2.33).
+- [ ] At 1280 a walking pack dog may pass in front of a Great Dane sleepover guest for a moment (overlap review, 24 Nov 2026: 1 of 15 samples, a walk past, never a rest). `game/src/60b_sleep.js`
 - [ ] Fit finding (older than v2.33): en, Pixel 7, "kind shop: paused: supporter": `p.small.ks-ask` has 3 px of room where the audit wants 4. `game/src/52_kindshop.js`
