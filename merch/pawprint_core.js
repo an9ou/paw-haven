@@ -53,8 +53,15 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   /* ---------------- names: only what the print font can draw (merch/names.js: the rules and the kind-word list) ---------------- */
   // NFC, no control or format characters, spaces collapsed, cut at NAME_MAX characters, only letters the font draws, no rude word; else null
   function cleanName(s) { const t = NAMES.nameClean(s); return t && Array.from(t).every((c) => FONT.g[c]) ? t : null; }
-  function nameOk(s, o) { const r = NAMES.nameOk(s, o); return r.ok && !Array.from(r.name).every((c) => FONT.g[c]) ? { ok: false, why: 'letters', name: r.name, say: NAMES.SAY } : r; }
+  // o.product ('tee' | 'mug'): also refuse ('long', with max: how many of its letters fit) a name that cannot print at least NAME_MIN_PX tall there
+  function nameOk(s, o) {
+    const r = NAMES.nameOk(s, o); if (!r.ok) return r;
+    if (!Array.from(r.name).every((c) => FONT.g[c] && FONT.g[c][0] > 0)) return { ok: false, why: 'letters', name: r.name, say: NAMES.SAY };
+    if (o && o.product != null) { const P = own(PRODUCTS, o.product); if (!P) throw new Error('product'); const f = nameFit(r.name, P); if (!f.ok) return { ok: false, why: 'long', name: r.name, say: SAY_SHORTER, max: f.max }; }
+    return r;
+  }
   const nameChars = () => NAMES.CHARS;
+  const own = (T, k) => (typeof k === 'string' && Object.prototype.hasOwnProperty.call(T, k) ? T[k] : null);
 
   /* ---------------- genes ---------------- */
   const cnt = (pair, dom) => (pair[0] === dom ? 1 : 0) + (pair[1] === dom ? 1 : 0);
@@ -338,6 +345,10 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
      exactly the product's pixel size. Every px below is a 300 dpi file pixel. */
   const ART_VER = 'pp1-' + (BUILD || 'dev'); // 'pp1': these layouts (change it by hand when a layout changes); then a hash of the art, genes, font, names and this file
   const DPI = 300, MM = DPI / 25.4, MIN_LINE_MM = 0.5, MIN_ART_MM = 80, MIN_PX = MIN_LINE_MM * MM;
+  // the name is filled outlines, so its thinnest line is the font's: Caveat Bold's strokes are at least 0.068 em (the 2nd percentile of the local
+  // stroke thickness over the ink of every allowed letter; test_pawprint.js measures it from the outlines). So letters are never under
+  // 0.5 mm / 0.068 em = 87 px (0.29 in) at 300 dpi: a longer name is refused for that product ('long'), never printed thinner
+  const FONT_THIN_EM = 0.068, NAME_MIN_PX = Math.ceil(MIN_PX / FONT_THIN_EM), SAY_SHORTER = 'A little shorter, please';
   const SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
   const sizes = (a, b) => SIZES.slice(SIZES.indexOf(a), SIZES.indexOf(b) + 1);
   const colour = (id, name, hex, patch, us, uk) => ({ id, name, hex, patch, sizes: { us, uk, both: us.filter((x) => uk.includes(x)) } });
@@ -355,11 +366,17 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   const PRODUCTS = {
     tee: { id: 'tee', name: 'Tee, Bella+Canvas 3001', launch: true, w: 4500, h: 5400, dpi: DPI, inches: [15, 18], transparent: true,
       printful: { product: 71, placement: 'front_large', technique: 'dtg' }, // v1 catalog calls the front 'default'; XS-M are shrunk by Printful to 11.5 x 13.8 in
-      block: [750, 300, 3000, 3000], art: [750, 300, 3000, 2500], strip: [750, 2800, 3000, 500], nameMax: 390, nameMargin: 60, patchPad: 120,
+      // scale by the art box: 12.5 px a unit, so the 240 x 200 art box would print 10 x 8.33 in and a puppy prints puppy-sized; but no dog prints
+      // narrower than minDogIn inches (it is scaled up to it; 0 = off; the owner chooses, see samples/puppy_size_choice.png). The drawing (its real
+      // bounds, never cut at the art box) and the name under it are centred, from 1 in below the top of the print area (top), inside safe.
+      unit: 12.5, minDogIn: 5, top: 300, cx: 2250, safe: [150, 150, 4350, 5250],
+      name: { w: 2880, h: 500, max: 390, gap: 90, rot: -1.5 }, nameMin: NAME_MIN_PX, patchPad: 120,
       scale: 'artbox', poses: POSE3, colours: TEE_COLOURS },
     mug: { id: 'mug', name: 'Mug, 11 oz white', launch: true, w: 2700, h: 1050, dpi: DPI, inches: [9, 3.5], transparent: true,
       printful: { product: 19, placement: 'default', technique: 'sublimation' },
-      safe: { top: 75, bottom: 75, ends: 150 }, sides: [675, 2025], sideW: 1050, face: 900, strip: 300, nameH: [110, 190],
+      // one face per side, centred at sides[]: the dog fills sideW x (height - name), the name a nameW-wide band above it, as tall as the name needs at nameMin and
+      // at most nameH[1] (it takes what the dog leaves at 80 mm, never less than its own line)
+      safe: { top: 75, bottom: 75, ends: 150 }, sides: [675, 2025], sideW: 1050, nameW: 1050, strip: 300, nameH: [100, 190], nameMin: NAME_MIN_PX,
       scale: 'fill', poses: POSE3, colours: WHITE },
     // no stickers at launch (owner, 24 Nov 2026): the sheet is kept and tested, but not offered (launch: false)
     stickers: { id: 'stickers', name: 'Kiss-cut sticker sheet, A5', launch: false, w: 1749, h: 2481, dpi: DPI, inches: [5.83, 8.27], transparent: true,
@@ -371,20 +388,28 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   };
 
   const f2 = (n) => Math.round(n * 100) / 100;
-  const SHADOW = /<ellipse cx="[\d.]+" cy="187.5" rx="[\d.]+" ry="[\d.]+" fill="#5B3D32" opacity="0?\.\d+"\/><path d="[^"]*" stroke="#5B3D32" stroke-width="1.3"[^>]*\/>/;
+  // the ground shadow (dogs/pawart_dogs.js: one faint ellipse at the ground line plus its hatching). Every print drops it, and checks it went:
+  // exactly one shadow found and removed, and no faint ink ellipse left, or print() throws (if the art's shadow ever changes, we hear of it)
+  const SHADOW = /<ellipse cx="[\d.]+" cy="187.5" rx="[\d.]+" ry="[\d.]+" fill="#5B3D32" opacity="0?\.\d+"\/><path d="[^"]*" stroke="#5B3D32" stroke-width="1.3"[^>]*\/>/g;
+  const SHADOW_LEFT = /<ellipse\b[^>]*fill="#5B3D32"[^>]*\sopacity="0?\.\d+"/;
+  function dropShadow(s) { let n = 0; const t = s.replace(SHADOW, () => { n++; return ''; }); if (n !== 1 || SHADOW_LEFT.test(t)) throw new Error('shadow: found ' + n); return t; }
   const SPARK = /<g class="pa-d-tw"[^>]*>(?:<path [^>]*\/>)*<\/g>/g;
   const tidyArt = (s) => s.replace(/\s(?:role|aria-label|class|style)="[^"]*"/g, '');
-  const clampBB = (b, vb) => [Math.max(b[0], vb[0]), Math.max(b[1], vb[1]), Math.min(b[2], vb[0] + vb[2]), Math.min(b[3], vb[1] + vb[3])];
-  // art placed at (x, y), k px per unit, clipped to its own box as the game's <svg viewBox> clips it
+  // art placed with its viewBox vb at (x, y), k px per unit; the nested <svg> clips at vb, so vb is always the art's whole drawing plus a margin
   const nest = (s, vb, x, y, k) => `<svg x="${f2(x)}" y="${f2(y)}" width="${f2(vb[2] * k)}" height="${f2(vb[3] * k)}" viewBox="${vb.map(f2).join(' ')}">${s}</svg>`;
+  const NEST_M = 4; // art units round the drawn box (which already holds half of each stroke): room for a mitred corner, never a cut
 
-  // the dog for a print: the game's own drawing, no ground shadow (on fabric or a sticker it reads as a stain); sparkle stars off on request
+  // the dog for a print: the game's own drawing, no ground shadow (on fabric or a sticker it reads as a stain); sparkle stars off on request.
+  // bb: its real drawn box in art units (strokes included; the game's 240 x 200 art box does not cut it: an Akita's sitting tail, a Witch Hat's tip
+  // and sparkle stars may reach past it); box: the viewBox to nest it with (bb plus NEST_M)
   function printDog(r, pose, facing, noSpark) {
-    let s = inner(dogSVG(r, { pose: POSE_ART[pose], facing })).replace(SHADOW, '');
+    let s = dropShadow(inner(dogSVG(r, { pose: POSE_ART[pose], facing })));
     if (noSpark) s = s.replace(SPARK, '').replace(/<g class="pa-d-spk"><\/g>/g, '');
-    const vb = [0, 0, 240, 200], all = bbox(s, true);
-    return { s: tidyArt(s), vb, bb: noSpark ? all.bb : clampBB(all.bb, vb), els: all.els }; // a sticker (noSpark) shows the whole drawing, a garment the game's clipped box
+    const vb = [0, 0, 240, 200], all = bbox(s, true), bb = all.bb;
+    return { s: tidyArt(s), vb, bb, box: [bb[0] - NEST_M, bb[1] - NEST_M, bb[2] - bb[0] + 2 * NEST_M, bb[3] - bb[1] + 2 * NEST_M], els: all.els };
   }
+  // for the tests: the real drawn box and the nest box of a print dog
+  function printArt(r, pose, facing) { const d = printDog(r, pose || 'stand', facing || 'right', false); return { bb: d.bb, box: d.box }; }
   // the head (PawArt.dogHead, as the game's cards draw it), without sparkle stars
   function printHead(r) {
     const A = artOpts(r, { pose: 'idle' }), sv = PA.dogHead(A.key, A.ex), vb = [0, 0, 100, 100];
@@ -424,17 +449,20 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   }
   // one sticker: the white backing (crisp edged: the kiss-cut follows a hard edge) and the art over it
   function sticker(a, x, y, k, bk) {
-    const m = bk / k + 2, vb2 = [a.vb[0] - m, a.vb[1] - m, a.vb[2] + 2 * m, a.vb[3] + 2 * m];
+    const u = a.bb ? [Math.min(a.vb[0], a.bb[0]), Math.min(a.vb[1], a.bb[1]), Math.max(a.vb[0] + a.vb[2], a.bb[2]), Math.max(a.vb[1] + a.vb[3], a.bb[3])] : [a.vb[0], a.vb[1], a.vb[0] + a.vb[2], a.vb[1] + a.vb[3]]; // never cut the drawing (an Akita's sitting tail)
+    const m = bk / k + 2, vb2 = [u[0] - m, u[1] - m, u[2] - u[0] + 2 * m, u[3] - u[1] + 2 * m];
     const back = backing(a.s, k, bk * 2).replace(/<\/g>$/, (a.els ? bridges(a.els, (bk * 2) / k) : '') + '</g>');
-    return `<g shape-rendering="crispEdges">${nest(back, vb2, x - m * k, y - m * k, k)}</g>` + nest(weight(a.s, k, MIN_PX).s, vb2, x - m * k, y - m * k, k); // not clipped at the art box: a sticker shows the whole drawing
+    return `<g shape-rendering="crispEdges">${nest(back, vb2, x + vb2[0] * k, y + vb2[1] * k, k)}</g>` + nest(weight(a.s, k, MIN_PX).s, vb2, x + vb2[0] * k, y + vb2[1] * k, k); // not clipped at the art box: a sticker shows the whole drawing
   }
 
-  // the name as outlines, as big as fits in box [x, y, w, h] (letters at most maxSize px), centred, on one line; -> { svg, size, bb }
-  function fitName(t, box, maxSize, rot) {
+  // the name as outlines, as big as fits in box [x, y, w, h] (letters at most maxSize px), centred, on one line; -> { svg, size, bb }, or null
+  // when it would be smaller than minSize (never printed thinner). top: its ink starts at the top of the box (else it is centred in it)
+  function fitName(t, box, maxSize, rot, minSize, top) {
     const s0 = 100, b0 = bbox(nameSVG(t, 0, 0, s0, INK, rot)), bw = Math.max(1, b0[2] - b0[0]), bh = Math.max(1, b0[3] - b0[1]);
     const f = Math.min(maxSize / s0, box[2] / bw, box[3] / bh), size = s0 * f;
+    if (minSize && size < minSize - 1e-9) return null;
     const cx = box[0] + box[2] / 2 - (b0[0] + b0[2]) / 2 * f;
-    let base = box[1] + box[3] / 2 + 0.3 * size;
+    let base = top ? box[1] - b0[1] * f : box[1] + box[3] / 2 + 0.3 * size;
     if (base + b0[1] * f < box[1]) base = box[1] - b0[1] * f;
     if (base + b0[3] * f > box[1] + box[3]) base = box[1] + box[3] - b0[3] * f;
     const svgN = nameSVG(t, cx, base, size, INK, rot);
@@ -453,36 +481,71 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     }
     return 'M' + pts.map((p) => f1(p[0]) + ' ' + f1(p[1])).join('L') + 'Z';
   }
-  const nameOf = (r, o) => (o.name === false ? '' : typeof o.name === 'string' ? (nameOk(o.name).ok ? nameOk(o.name).name : '') : r.n || '');
+  // the name to print: name false = none; true (or left out) = the recipe's; a string must pass nameOk (a refused one is a caller's slip: throws)
+  function nameOf(r, o) {
+    if (o.name === false) return '';
+    if (o.name === true || o.name == null) return r.n || '';
+    if (typeof o.name !== 'string') throw new Error('name');
+    const t = nameOk(o.name); if (!t.ok) throw new Error('name: ' + t.why); return t.name;
+  }
+  // the mug tilts each name 2 degrees (a long name less, so it keeps its height)
+  const mugRot = (t, i) => (i ? 2 : -2) * Math.min(1, 10 / Math.max(1, Array.from(t).length));
+  // can this name print at least P.nameMin tall on product P, whatever the dog? -> { ok, size } or { ok: false, max: letters of it that would fit }
+  function nameFit(t, P) {
+    const tryIt = (s) => (P.id === 'tee' ? fitName(s, [0, 0, P.name.w, P.name.h], P.name.max, P.name.rot, P.nameMin) : P.id === 'mug' ? fitName(s, [0, 0, P.nameW, 1e4], P.nameMin, mugRot(s, 0), P.nameMin) : { size: 1 });
+    const N = tryIt(t); if (N) return { ok: true, size: N.size };
+    const cps = Array.from(t); let max = cps.length - 1; while (max > 0 && !tryIt(cps.slice(0, max).join('').trim())) max--;
+    return { ok: false, max };
+  }
 
+  // the tee: the dog at the tee's scale (or scaled up to minDogIn), its name under it, the pair centred from P.top; on colour, a patch that hugs both
   function teeBody(r, P, C, o, st) {
-    const k = P.art[2] / 240, d = printDog(r, o.pose, 'right', false), name = nameOf(r, o), out = [];
+    const d = printDog(r, o.pose, 'right', false), name = nameOf(r, o), out = [], S = P.safe, pad = C.patch ? P.patchPad + 30 : 0; // 30: the patch's wobble and line
+    const bw = d.bb[2] - d.bb[0], bh = d.bb[3] - d.bb[1];
+    let k = P.unit, grown = 1;
+    if (P.minDogIn > 0 && bw * k < P.minDogIn * P.dpi) { grown = P.minDogIn * P.dpi / (bw * k); k *= grown; }
+    const N0 = name ? fitName(name, [0, 0, P.name.w, P.name.h], P.name.max, P.name.rot, P.nameMin, true) : null;
+    if (name && !N0) throw new Error('name: long');
+    const nh = N0 ? N0.bb[3] - N0.bb[1] : 0, gap = N0 ? P.name.gap : 0;
+    // never past the safe area: move it first, and only if that is not enough shrink this dog just enough
+    const sw = S[2] - S[0] - 2 * pad, sh = S[3] - S[1] - 2 * pad; let shrunk = 1;
+    if (bw * k > sw) { shrunk = sw / (bw * k); k *= shrunk; }
+    if (bh * k + gap + nh > sh) { const s2 = (sh - gap - nh) / (bh * k); shrunk *= s2; k *= s2; }
+    const th = bh * k + gap + nh, y0 = Math.min(Math.max(P.top, S[1] + pad), S[3] - pad - th);
+    const X = P.cx - (d.bb[0] + d.bb[2]) / 2 * k, Y = y0 - d.bb[1] * k; // where the art's (0, 0) lands
+    const dogBox = [X + d.bb[0] * k, Y + d.bb[1] * k, X + d.bb[2] * k, Y + d.bb[3] * k].map(f2), nestBox = [X + d.box[0] * k, Y + d.box[1] * k, X + (d.box[0] + d.box[2]) * k, Y + (d.box[1] + d.box[3]) * k].map(f2);
+    const N = name ? fitName(name, [P.cx - P.name.w / 2, dogBox[3] + gap, P.name.w, P.name.h], P.name.max, P.name.rot, P.nameMin, true) : null;
+    const U = N ? [Math.min(dogBox[0], N.bb[0]), dogBox[1], Math.max(dogBox[2], N.bb[2]), Math.max(dogBox[3], N.bb[3])] : dogBox; // what is drawn
     if (C.patch) { // the paper patch: the only edge that touches the fabric, drawn without anti-aliasing so every edge pixel is fully opaque or fully clear
-      const b = name ? P.block : P.art, pad = P.patchPad, card = crayonCard(b[0] - pad, b[1] - pad, b[2] + 2 * pad, b[3] + 2 * pad, (r.p ^ 0x7EE) >>> 0, 24, 140);
+      const p = P.patchPad, w = U[2] - U[0] + 2 * p, h = U[3] - U[1] + 2 * p, card = crayonCard(U[0] - p, U[1] - p, w, h, (r.p ^ 0x7EE) >>> 0, 24, Math.min(140, w / 4, h / 4));
       out.push(`<g shape-rendering="crispEdges"><path d="${card}" fill="${PAPER}"/><path d="${card}" fill="none" stroke="${INK}" stroke-width="24" stroke-linejoin="round"/></g>`);
-      st.patch = [b[0] - pad - 30, b[1] - pad - 30, b[2] + 2 * pad + 60, b[3] + 2 * pad + 60];
+      st.patch = [U[0] - p - 30, U[1] - p - 30, U[2] + p + 30, U[3] + p + 30].map(f2); // [x0, y0, x1, y1], wobble and line included
+      st.patchIn = [U[0] - p + 30, U[1] - p + 30, U[2] + p - 30, U[3] + p - 30].map(f2); // always cream inside this
     }
-    const wt = weight(d.s, k, MIN_PX); out.push(nest(wt.s, d.vb, P.art[0], P.art[1], k));
-    Object.assign(st, { k, artMM: f2(240 * k / MM), dogBox: [P.art[0] + d.bb[0] * k, P.art[1] + d.bb[1] * k, P.art[0] + d.bb[2] * k, P.art[1] + d.bb[3] * k].map(f2), thin: wt.n });
-    if (name) { const m = P.nameMargin, N = fitName(name, [P.strip[0] + m, P.strip[1], P.strip[2] - 2 * m, P.strip[3]], P.nameMax, -1.5); out.push(N.svg); st.name = { text: name, size: N.size, bb: N.bb }; }
+    const wt = weight(d.s, k, MIN_PX); out.push(nest(wt.s, d.box, nestBox[0], nestBox[1], k));
+    Object.assign(st, { k: +k.toFixed(4), artMM: f2(240 * k / MM), dogIn: f2((dogBox[2] - dogBox[0]) / P.dpi), grown: f2(grown), shrunk: f2(shrunk), dogBox, nest: [nestBox], box: U.map(f2), thin: wt.n });
+    if (N) { out.push(N.svg); st.name = { text: name, size: N.size, bb: N.bb }; }
     return out.join('');
   }
 
   function mugBody(r, P, C, o, st) {
     const S = P.safe, name = nameOf(r, o), top = S.top, bot = P.h - S.bottom, avail = bot - top, out = [];
-    const dR = printDog(r, o.pose, 'right', false), dL = printDog(r, o.pose, 'left', false), bw = dR.bb[2] - dR.bb[0], bh = dR.bb[3] - dR.bb[1];
-    const kMin = MIN_ART_MM * MM / 240, ns = name ? Math.max(P.nameH[0], Math.min(P.nameH[1], avail - bh * kMin)) : 0;
-    const k = Math.min(P.sideW / bw, (avail - ns) / bh), keep = [], dogs = [], boxes = [], names = [];
-    [dR, dL].forEach((d, i) => { // the left side's dog faces right (to the back of the mug), the right side's faces left
+    const dR = printDog(r, o.pose, 'right', false), dL = printDog(r, o.pose, 'left', false);
+    const bw = Math.max(dR.bb[2] - dR.bb[0], dL.bb[2] - dL.bb[0]), bh = Math.max(dR.bb[3] - dR.bb[1], dL.bb[3] - dL.bb[1]);
+    const kMin = MIN_ART_MM * MM / 240, need = name ? Math.max(...[0, 1].map((i) => { const N = fitName(name, [0, 0, P.nameW, 1e4], P.nameMin, mugRot(name, i), P.nameMin); if (!N) throw new Error('name: long'); return N.bb[3] - N.bb[1] + 2; })) : 0;
+    const ns = name ? Math.min(P.nameH[1], Math.max(P.nameH[0], need, avail - bh * kMin)) : 0; // the name's band: its line at nameMin at least
+    const k = Math.min(P.sideW / bw, (avail - ns) / bh), keep = [], dogs = [], boxes = [], nests = [], names = [];
+    [dR, dL].forEach((d, i) => { // the left side's dog faces right (to the back of the mug), the right side's faces left; placed by its real drawn box
       const cx = P.sides[i], x = cx - (d.bb[0] + d.bb[2]) / 2 * k, y = bot - d.bb[3] * k, wt = weight(d.s, k, MIN_PX);
-      dogs.push(nest(wt.s, d.vb, x, y, k)); st.thin = (st.thin || 0) + wt.n;
+      dogs.push(nest(wt.s, d.box, x + d.box[0] * k, y + d.box[1] * k, k)); st.thin = (st.thin || 0) + wt.n;
+      nests.push([x + d.box[0] * k, y + d.box[1] * k, x + (d.box[0] + d.box[2]) * k, y + (d.box[1] + d.box[3]) * k].map(f2));
       const box = [x + d.bb[0] * k, y + d.bb[1] * k, x + d.bb[2] * k, y + d.bb[3] * k].map(f2); boxes.push(box); keep.push([box[0] - 40, box[2] + 40]);
     });
     out.push(weight(yardStrip(P.w, P.h - P.strip, P.strip, MIN_PX * 1.6, (r.p ^ 0x5A5A) >>> 0, keep), 1, MIN_PX).s);
     out.push(...dogs);
     let size = 0;
-    if (name) P.sides.forEach((cx, i) => { const N = fitName(name, [cx - P.face / 2, top, P.face, ns], ns * 0.8, i ? 2 : -2); out.push(N.svg); names.push(N.bb); size = N.size; });
-    Object.assign(st, { k: f2(k), artMM: f2(240 * k / MM), dogBox: boxes, name: name ? { text: name, size, bb: names } : null });
+    if (name) P.sides.forEach((cx, i) => { const N = fitName(name, [cx - P.nameW / 2, top, P.nameW, ns], Math.max(ns * 0.8, P.nameMin), mugRot(name, i), P.nameMin); if (!N) throw new Error('name: long'); out.push(N.svg); names.push(N.bb); size = N.size; });
+    Object.assign(st, { k: f2(k), artMM: f2(240 * k / MM), dogBox: boxes, nest: nests, name: name ? { text: name, size, bb: names } : null });
     return out.join('');
   }
 
@@ -536,41 +599,52 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   }
 
   // PawPrint.print(recipe, { product: 'tee' | 'mug' | 'stickers', colour, pose: 'stand' | 'sit' | 'happy', name: true (the recipe's) | false | a string })
-  // -> the complete print SVG. A bad recipe, product, colour or pose throws (a caller's slip); a name that cannot print is left off (check nameOk first)
+  // -> the complete print SVG. A bad recipe, product, colour or pose throws (a caller's slip), and so does a name string that nameOk refuses or that
+  // cannot print NAME_MIN_PX tall ('name: ...'; check nameOk(s, { product }) first), and art whose ground shadow is not where it should be ('shadow')
   function print(r, o) {
     o = Object.assign({ pose: 'stand', name: true }, o || {});
     const c = check(r); if (!c.ok) throw new Error('bad recipe: ' + c.err);
-    const P = Object.prototype.hasOwnProperty.call(PRODUCTS, o.product) ? PRODUCTS[o.product] : null; if (!P) throw new Error('product');
+    const P = own(PRODUCTS, o.product); if (!P) throw new Error('product');
     const C = P.colours.find((x) => x.id === (o.colour || P.colours[0].id)); if (!C) throw new Error('colour');
     if (!P.poses.includes(o.pose)) throw new Error('pose');
-    const st = { product: P.id, colour: C.id, w: P.w, h: P.h, artVer: ART_VER };
+    const st = { product: P.id, colour: C.id, pose: o.pose, w: P.w, h: P.h, artVer: ART_VER };
     const body = P.id === 'tee' ? teeBody(r, P, C, o, st) : P.id === 'mug' ? mugBody(r, P, C, o, st) : sheetBody(r, P, C, o, st);
     print.last = st;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${P.w}" height="${P.h}" viewBox="0 0 ${P.w} ${P.h}" data-pawprint="${ART_VER}" data-product="${P.id}-${C.id}"><!-- PawPrint ${ART_VER} ${P.id} ${C.id} -->${body}</svg>`;
   }
 
-  // the print page's link: #p=<one dog>&prod=tee|mug|stickers&col=<colour id>&pose=stand|sit|happy&n=0|1 -> { ok, svg, w, h, err }. Never throws;
-  // anything unknown, repeated, missing or malformed is refused (the page then draws nothing)
-  const HASH_KEYS = ['p', 'prod', 'col', 'pose', 'n'];
-  function printFromHash(hash) {
+  // the print page's link: #p=<one dog>&prod=tee|mug&col=<colour id>&pose=stand|sit|happy&n=0|1&av=<ART_VER>, every key required, in any order
+  // -> { ok, svg, w, h, product, colour, pose, name, id: 'tee-navy-stand-n1', artVer, err }. Never throws; anything unknown, repeated, missing or
+  // malformed is refused (the page then draws nothing), and so is a link made by another build (av), a product that is not on sale (launch: false;
+  // o.testOnly lets the tests through), n=1 for a dog with no name, and a name that cannot print big enough
+  const HASH_KEYS = ['p', 'prod', 'col', 'pose', 'n', 'av'];
+  function printFromHash(hash, o) {
     const bad = (err) => ({ ok: false, err, svg: '', w: 0, h: 0 });
     try {
-      if (typeof hash !== 'string' || hash.length > HASH_MAX + 80) return bad('size');
+      if (typeof hash !== 'string' || hash.length > HASH_MAX + 120) return bad('size');
       const q = hash.charAt(0) === '#' ? hash.slice(1) : hash; if (!q) return bad('empty');
       const kv = {};
       for (const part of q.split('&')) { const m = /^([a-z]{1,4})=([A-Za-z0-9_-]{1,1024})$/.exec(part); if (!m || !HASH_KEYS.includes(m[1]) || kv[m[1]] !== undefined) return bad('param'); kv[m[1]] = m[2]; }
-      if (!kv.p || !kv.prod) return bad('missing');
-      const P = Object.prototype.hasOwnProperty.call(PRODUCTS, kv.prod) ? PRODUCTS[kv.prod] : null; if (!P) return bad('product');
+      for (const k of HASH_KEYS) if (kv[k] === undefined) return bad('missing ' + k);
+      if (kv.av !== ART_VER) return bad('art version');
+      const P = own(PRODUCTS, kv.prod); if (!P) return bad('product');
+      if (!P.launch && !(o && o.testOnly)) return bad('product off');
       const d = merchDecode(kv.p); if (!d.ok) return bad('dog: ' + d.err); if (d.dogs.length !== 1) return bad('one dog');
-      const col = kv.col || P.colours[0].id; if (!P.colours.some((x) => x.id === col)) return bad('colour');
-      const pose = kv.pose || 'stand'; if (!P.poses.includes(pose)) return bad('pose');
-      const n = kv.n === undefined ? '1' : kv.n; if (n !== '0' && n !== '1') return bad('n');
-      const svg = print(d.dogs[0], { product: P.id, colour: col, pose, name: n === '1' });
-      return { ok: true, svg, w: P.w, h: P.h, product: P.id, colour: col, pose, name: n === '1', err: null };
+      const col = kv.col; if (!P.colours.some((x) => x.id === col)) return bad('colour');
+      const pose = kv.pose; if (!P.poses.includes(pose)) return bad('pose');
+      const n = kv.n; if (n !== '0' && n !== '1') return bad('n');
+      if (n === '1' && !d.dogs[0].n) return bad('name');
+      let svg; try { svg = print(d.dogs[0], { product: P.id, colour: col, pose, name: n === '1' }); } catch (e) { return bad(/^name/.test(String(e && e.message)) ? 'name' : 'render'); }
+      return { ok: true, svg, w: P.w, h: P.h, product: P.id, colour: col, pose, name: n === '1', id: `${P.id}-${col}-${pose}-n${n}`, artVer: ART_VER, err: null };
     } catch (e) { return bad('render'); }
   }
-  // the link for one dog: what the order server hands the print page
-  function printHash(r, o) { o = o || {}; return '#p=' + merchEncode(r) + '&prod=' + o.product + '&col=' + (o.colour || PRODUCTS[o.product].colours[0].id) + '&pose=' + (o.pose || 'stand') + '&n=' + (o.name === false ? 0 : 1); }
+  // the link for one dog: what the order server hands the print page (name on only when the dog has one). Throws on a caller's slip, and for a
+  // product not on sale unless o.testOnly
+  function printHash(r, o) {
+    o = o || {}; const P = own(PRODUCTS, o.product); if (!P) throw new Error('product'); if (!P.launch && !o.testOnly) throw new Error('product off');
+    const col = o.colour || P.colours[0].id, pose = o.pose || 'stand'; if (!P.colours.some((x) => x.id === col)) throw new Error('colour'); if (!P.poses.includes(pose)) throw new Error('pose');
+    return '#p=' + merchEncode(r) + '&prod=' + P.id + '&col=' + col + '&pose=' + pose + '&n=' + (o.name === false || !r.n ? 0 : 1) + '&av=' + ART_VER;
+  }
 
   /* ---------------- the wire: base64url ---------------- */
   const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -642,6 +716,6 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     const r = merchDecode(m[1]); return { ok: r.ok, err: r.err || null, dogs: r.ok ? r.dogs.map((x) => ({ recipe: x, name: x.n || '', key: BREEDS[x.b] })) : [] };
   }
 
-  return { VERSION, ART_VER, PRODUCTS, TEE_COLOURS, MIN_LINE_MM, MIN_ART_MM, BREEDS, EYES, AGES, WEAR, NAME_MAX, MAX_DOGS, merchRecipe, check, artOpts, dogSVG, svg, print, printFromHash, printHash, bbox, nameSVG, textW, cleanName, nameClean: cleanName, nameOk, nameChars, geneCode, genesFrom, merchEncode, merchDecode, merchFromSave, merchFromHash, hashId };
+  return { VERSION, ART_VER, PRODUCTS, TEE_COLOURS, MIN_LINE_MM, MIN_ART_MM, FONT_THIN_EM, NAME_MIN_PX, printArt, nameFit: (t, p) => { const P = own(PRODUCTS, p); if (!P) throw new Error('product'); return nameFit(t, P); }, BREEDS, EYES, AGES, WEAR, NAME_MAX, MAX_DOGS, merchRecipe, check, artOpts, dogSVG, svg, print, printFromHash, printHash, bbox, nameSVG, textW, cleanName, nameClean: cleanName, nameOk, nameChars, geneCode, genesFrom, merchEncode, merchDecode, merchFromSave, merchFromHash, hashId };
 }
 if (typeof module !== 'undefined' && module.exports) module.exports = PawPrintMake;

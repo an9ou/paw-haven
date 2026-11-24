@@ -4,9 +4,10 @@
 //   bench <dir>     time, CPU and peak memory of resvg-wasm and resvg-js at each print size (each in a fresh child process), and
 //                   Chromium (Playwright) canvas drawImage and screenshot, plus the pixel difference of each against the Chromium screenshot
 //   one <w> <h> <engine>   (internal: one render in this process, prints JSON)
-//   part1 [out] [sheets]   Part 1: the 8 sample dogs through the real print page (Chromium, Playwright only): tee white, navy, black and mug
-//                   at full size into [out] (default merch/dist/part1, ignored by git), and three small mock-up sheets into [sheets]
-//                   (default docs/design/merch/samples/)
+//   part1 [out] [sheets]   Part 1: the 8 sample dogs through the real print page of this build (merch/dist/print/<ART_VER>/; Chromium,
+//                   Playwright only): tee white, navy, black and mug at full size into [out] (default merch/dist/part1, ignored by git), each
+//                   saved only when the page's title is READY for exactly that file (else exit 1); then the mock-up sheets for the owner into
+//                   [sheets] (default docs/design/merch/samples/): tee_white, tee_dark, mug and puppy_size_choice (minDogIn 0 against 5 in)
 // Needs merch/dist/pawprint.js (tools/merch_build.js). Nothing here is part of the game build.
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
@@ -175,11 +176,15 @@ async function bench(out) {
   fs.writeFileSync(path.join(out, 'bench.json'), JSON.stringify(res, null, 1));
 }
 
-// ---------- Part 1: the print files through the real print page (merch/dist/print/v1), and contact sheets for the owner ----------
+// ---------- Part 1: the print files through the real print page (merch/dist/print/<ART_VER>/), and contact sheets for the owner ----------
 // part1 <out dir> [sheet dir]: the 8 sample dogs (merch/sample_dogs.js) on the tee (white, navy, black) and mug, full size into <out dir>
-// (keep them out of the repo: 4500x5400 tees), then three small flat mock-ups into [sheet dir] (default docs/design/merch/samples/)
+// (keep them out of the repo: 4500x5400 tees), then small flat mock-ups into [sheet dir] (default docs/design/merch/samples/): tee_white.png,
+// tee_dark.png, mug.png and puppy_size_choice.png. Every file is saved only when the page's title is READY and names exactly what was asked for
+// (product, colour, pose, name on, size, ART_VER) and the PNG has the product's pixels; anything else stops the run with exit code 1.
 async function part1(out, sheetDir) {
-  const http = require('http'), { chromium } = req('playwright'), DOGS8 = require(path.join(ROOT, 'merch', 'sample_dogs.js'))(P), DIR = path.join(ROOT, 'merch', 'dist', 'print', 'v1');
+  const http = require('http'), { chromium } = req('playwright'), DOGS8 = require(path.join(ROOT, 'merch', 'sample_dogs.js'))(P), readPNG = require(path.join(ROOT, 'merch', 'png_lite.js'));
+  const DIR = path.join(ROOT, 'merch', 'dist', 'print', P.ART_VER);
+  if (!fs.existsSync(path.join(DIR, 'pawprint.js'))) throw new Error('no print page for ' + P.ART_VER + ': run tools/merch_build.js');
   fs.mkdirSync(out, { recursive: true }); fs.mkdirSync(sheetDir, { recursive: true });
   const srv = http.createServer((q, s) => { const f = path.join(DIR, path.basename(q.url.split(/[?#]/)[0]) || 'index.html'); fs.readFile(f, (e, b) => { if (e) { s.writeHead(404); return s.end(); } s.writeHead(200, { 'content-type': f.endsWith('.js') ? 'text/javascript' : 'text/html' }); s.end(b); }); });
   await new Promise((res) => srv.listen(0, '127.0.0.1', res)); const base = `http://127.0.0.1:${srv.address().port}/index.html`;
@@ -187,10 +192,13 @@ async function part1(out, sheetDir) {
   try {
     const shoot = async (d, prod, col) => {
       const p = P.PRODUCTS[prod], half = p.w * p.h > 12e6, pg = await br.newPage({ viewport: { width: half ? p.w / 2 : p.w, height: half ? p.h / 2 : p.h }, deviceScaleFactor: half ? 2 : 1 });
+      const n = d.r.n ? 1 : 0, want = `READY ${prod}-${col}-${d.pose}-n${n} ${p.w}x${p.h} ${P.ART_VER}`;
       const t0 = Date.now(); await pg.goto(base + P.printHash(d.r, { product: prod, colour: col, pose: d.pose })); const title = await pg.title();
       const png = await pg.screenshot({ omitBackground: true }); await pg.close();
+      const img = readPNG(png);
+      if (title !== want || img.w !== p.w || img.h !== p.h) throw new Error(`not saved: ${d.id} ${prod} ${col}: the page says "${title}" (${img.w}x${img.h}), expected "${want}"`);
       const f = path.join(out, `${d.id}_${prod}${col && col !== 'white' ? '_' + col : ''}.png`); fs.writeFileSync(f, png);
-      P.print(d.r, { product: prod, colour: col, pose: d.pose }); log.push({ dog: d.id, prod, col, title, ms: Date.now() - t0, KB: Math.round(png.length / 1024), k: P.print.last.k, artMM: P.print.last.artMM, name: P.print.last.name ? P.print.last.name.size : P.print.last.label });
+      P.print(d.r, { product: prod, colour: col, pose: d.pose }); log.push({ dog: d.id, prod, col, title, ms: Date.now() - t0, KB: Math.round(png.length / 1024), k: P.print.last.k, artMM: P.print.last.artMM, dogIn: P.print.last.dogIn, name: P.print.last.name ? P.print.last.name.size : P.print.last.label });
       return f;
     };
     for (const [i, d] of DOGS8.entries()) {
@@ -205,21 +213,24 @@ async function part1(out, sheetDir) {
       await pg.setContent(`<!doctype html><style>html,body{margin:0;background:#FFFBF3;font:600 15px/1.3 system-ui,sans-serif;color:${INK}}</style><svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${body}</svg>`);
       await pg.waitForTimeout(300); const png = await pg.screenshot({ type: 'png' }); await pg.close();
       fs.writeFileSync(path.join(sheetDir, name), png); console.log(name, Math.round(png.length / 1024) + ' KB');
+      if (png.length > 1.5 * 1024 * 1024) throw new Error(name + ' is over 1.5 MB');
     };
     const label = (x, y, t, s) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="${s || 15}" font-family="system-ui,sans-serif" font-weight="600" fill="${INK}">${esc(t)}</text>`;
-    // a tee, L size, flat: 22 in across the body; the 15 x 18 in print area starts 3.5 in under the collar (to be checked with a sample)
-    const ppi = 13, teeTile = (x, y, hex, png, cap) => {
-      const u = (n) => n * ppi, cx = x + u(17), top = y + u(1.5);
+    // a tee, L size, flat: 22 in across the body; the 15 x 18 in print area starts 3.5 in under the collar (to be checked with a sample).
+    // art: a PNG file, or { svg } (a print SVG laid on as vector)
+    const teeTile = (x, y, hex, art, cap, o) => {
+      o = o || {}; const ppi = o.ppi || 13, u = (n) => n * ppi, cx = x + u(17), top = y + u(1.5);
       const d = `M${cx - u(4)} ${top} Q${cx} ${top + u(1.6)} ${cx + u(4)} ${top} L${cx + u(11)} ${top + u(1.5)} L${cx + u(16)} ${top + u(7)} L${cx + u(12.5)} ${top + u(10)} L${cx + u(11)} ${top + u(8.5)} L${cx + u(11)} ${top + u(29)} L${cx - u(11)} ${top + u(29)} L${cx - u(11)} ${top + u(8.5)} L${cx - u(12.5)} ${top + u(10)} L${cx - u(16)} ${top + u(7)} L${cx - u(11)} ${top + u(1.5)} Z`;
-      return `<path d="${d}" fill="${hex}"/><image href="${uri(png)}" x="${cx - u(7.5)}" y="${top + u(3.5)}" width="${u(15)}" height="${u(18)}"/><path d="${d}" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M${cx - u(4)} ${top} Q${cx} ${top + u(2.4)} ${cx + u(4)} ${top}" fill="none" stroke="${INK}" stroke-width="2"/>`
-        + `<rect x="${cx - u(7.5)}" y="${top + u(3.5)}" width="${u(15)}" height="${u(18)}" fill="none" stroke="#E07A93" stroke-width="1" stroke-dasharray="4 4"/>` + label(cx, top + u(31.2), cap);
+      const ax = cx - u(7.5), ay = top + u(3.5), pic = art.svg ? art.svg.replace(/^<svg [^>]*>/, `<svg x="${ax}" y="${ay}" width="${u(15)}" height="${u(18)}" viewBox="0 0 4500 5400">`) : `<image href="${uri(art)}" x="${ax}" y="${ay}" width="${u(15)}" height="${u(18)}"/>`;
+      return `<path d="${d}" fill="${hex}"/>${pic}<path d="${d}" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M${cx - u(4)} ${top} Q${cx} ${top + u(2.4)} ${cx + u(4)} ${top}" fill="none" stroke="${INK}" stroke-width="2"/>`
+        + (o.area === false ? '' : `<rect x="${ax}" y="${ay}" width="${u(15)}" height="${u(18)}" fill="none" stroke="#E07A93" stroke-width="1" stroke-dasharray="4 4"/>`) + (Array.isArray(cap) ? cap : [cap]).map((c, i) => label(cx, top + u(30.6) + i * (o.capGap || 19), c, o.capSize)).join('');
     };
-    const TW = 34 * ppi, TH = 34 * ppi;
+    const TW = 34 * 13, TH = 34 * 13;
     const C = (id) => P.TEE_COLOURS.find((c) => c.id === id).hex;
     let s1 = '', s2 = ''; DOGS8.forEach((d, i) => { const x = (i % 4) * TW, y = 10 + Math.floor(i / 4) * TH; s1 += teeTile(x, y, C('white'), files[d.id].tee, `${d.r.n} · ${d.note}`); s2 += teeTile(x, y, C(i % 2 ? 'black' : 'navy'), files[d.id].dark, `${d.r.n} · ${i % 2 ? 'Black' : 'Navy'}`); });
     const foot = (y, t) => label(TW * 2, y, t, 14);
-    await sheet('tee_white.png', TW * 4, TH * 2 + 40, s1 + foot(TH * 2 + 28, 'White tee, size L (22 in body). Dashed: Printful\'s 15 x 18 in print area. The dog\'s art box prints 10 x 8.33 in, the name 10 x 1.67 in under it.'));
-    await sheet('tee_dark.png', TW * 4, TH * 2 + 40, s2 + foot(TH * 2 + 28, 'Navy and black tees: the cream paper patch behind the dog and the name, hard edged (every edge pixel fully opaque or fully clear).'));
+    await sheet('tee_white.png', TW * 4, TH * 2 + 40, s1 + foot(TH * 2 + 28, `White tee, size L (22 in body). Dashed: Printful's 15 x 18 in print area. Each dog prints at its game size, never narrower than ${P.PRODUCTS.tee.minDogIn} in, nothing cut off; its name under it.`));
+    await sheet('tee_dark.png', TW * 4, TH * 2 + 40, s2 + foot(TH * 2 + 28, 'Navy and black tees: a cream paper patch fits round the dog and its name, hard edged (every edge pixel fully opaque or fully clear).'));
     // the mug: the flat wrap (2700 x 1050, the handle at both ends), then the two faces as seen with the handle right and left
     const MW = 810, MH = 315; let s3 = '';
     DOGS8.forEach((d, i) => {
@@ -229,6 +240,17 @@ async function part1(out, sheetDir) {
         + `<path d="M${x} ${y + 75 * k}H${x + MW}M${x} ${y + MH - 75 * k}H${x + MW}" stroke="#E07A93" stroke-width="1" stroke-dasharray="4 4"/>` + label(x + MW / 2, y + MH + 22, `${d.r.n} · ${d.note}`, 14);
     });
     await sheet('mug.png', 2 * MW + 90, 4 * (MH + 70) + 40, s3 + label(MW + 45, 4 * (MH + 70) + 28, 'Mug wraps, 9 x 3.5 in. Pink: the 0.5 in by the handle (both ends) and the 0.25 in top and bottom keep-clear lines. The same dog on both faces, facing the back of the mug.', 14));
+    // the owner's choice: small dogs as small as in the game, or scaled up to minDogIn. The same Beagle as a newborn and a 3-month puppy on a
+    // navy tee, minDogIn 0 on the left and 5 in on the right, and the grown-up Beagle for scale
+    const T = P.PRODUCTS.tee, keep = T.minDogIn, PPI = 20, CW = 34 * PPI, CH = 34 * PPI, beagle = (a, n) => ({ v: 1, b: P.BREEDS.indexOf('beagle'), g: null, e: 0, p: P.hashId('sample-newborn'), a, s: 'f', n });
+    const tile = (x, y, r, pose, min, cap) => { T.minDogIn = min; const svg = P.print(r, { product: 'tee', colour: 'navy', pose }), w = P.print.last.dogIn; T.minDogIn = keep; return teeTile(x, y, C('navy'), { svg }, [cap, `the dog prints ${w.toFixed(1)} in wide`], { ppi: PPI, area: false, capSize: 22, capGap: 28 }); };
+    let s4 = '', y4 = 70;
+    s4 += label(CW / 2, 44, 'As in the game (small)', 28) + label(CW * 1.5, 44, 'Scaled up to at least 5 in', 28) + label(CW * 2.5 + 30, 44, 'Grown up, for scale', 28);
+    s4 += `<path d="M${CW * 2 + 15} 20V${y4 + 2 * CH + 15}" stroke="${INK}" stroke-width="2" stroke-dasharray="6 8"/>`;
+    s4 += tile(0, y4, beagle(2, 'Bo'), 'sit', 0, 'Newborn') + tile(CW, y4, beagle(2, 'Bo'), 'sit', 5, 'Newborn');
+    s4 += tile(0, y4 + CH, beagle(1, 'Bo'), 'stand', 0, '3-month puppy') + tile(CW, y4 + CH, beagle(1, 'Bo'), 'stand', 5, '3-month puppy');
+    s4 += tile(CW * 2 + 30, y4 + CH / 2, beagle(0, 'Bo'), 'stand', keep, 'Adult');
+    await sheet('puppy_size_choice.png', CW * 3 + 30, y4 + 2 * CH + 70, s4 + label((CW * 3 + 30) / 2, y4 + 2 * CH + 50, 'Navy tee, size L (22 in across). The same Beagle, Bo, at three ages. Which way should small dogs print?', 22));
   } finally { await br.close(); srv.close(); }
 }
 

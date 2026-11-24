@@ -10,7 +10,7 @@ Follows SPIKE.md (resvg-wasm needs 0.4-1.9 s CPU, Workers Free allows 10 ms). Qu
  Stripe paid --webhook--> pawhaven-api (Free): order + recipe in D1 (as TRANSACTIONS.md plans)
                                |  cron every 10 min, inside the 1-hour cooling window
                                v
- env.BROWSER.quickAction('screenshot', { url: 'https://doodledoggo.app/merch/print/v1/#p=<recipe>&prod=tee',
+ env.BROWSER.quickAction('screenshot', { url: 'https://doodledoggo.app/merch/print/<av>/#p=<recipe>&prod=tee&col=navy&pose=stand&n=1&av=<av>',
      viewport: { width: 2250, height: 2700, deviceScaleFactor: 2 }, screenshotOptions: { omitBackground: true },
      waitForSelector: '#o svg' })          <- Cloudflare's Chrome loads the static page; PawPrint draws the SVG there
                                |  PNG response body streamed, never decoded in the Worker
