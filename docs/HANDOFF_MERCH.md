@@ -101,7 +101,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   `docs/design/merch/part2_shots/`. **Its combined review is running** (`docs/reviews/MERCH_PART2_review.md`); then one fix batch.
   Watch out: `tools/cf_site.js` walks all of `site/`, so a site deploy from a branch that holds `site/merch/` would publish `/merch/`
   (noindex, unlinked, pay shut): tell the GM to exclude it until launch when this branch is merged.
-- **Part 3 built, 25 Nov about 00:10 JST** (commit f0997c0, `docs/design/merch/PART3.md`): the Worker `cloudflare/merch/**` with faked
+- **Part 3 built, 24 Nov about 21:55 JST** (commit f0997c0, `docs/design/merch/PART3.md`): the Worker `cloudflare/merch/**` with faked
   Stripe, Printful, render and email; `MerchLedger` + `MerchPrints` SQLite Durable Objects; every route; `tools/merch.sh`. Suite
   `NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs`: 108/108 (one test per T row). 19 contract questions in PART3.md
   (safest reading built). **Its combined review is running** (`docs/reviews/MERCH_PART3_review.md`); then one fix batch.
