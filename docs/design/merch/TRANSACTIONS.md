@@ -526,6 +526,15 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 | `GET /merch/print/<art_ver>/*` | none | - | - | the static print page and its PawPrint (Workers static assets; every released version stays) | 404 |
 | `GET/POST /merch/admin/*` | `Authorization: Bearer MERCH_ADMIN_KEY` | 60/h | `orders?status=&hold=`, `order/:id` (with events, refunds, signed file links), `order/:id/refund {line, qty, reason}`, `order/:id/reprint {lines, provider_order?}`, `order/:id/confirm`, `order/:id/lost {parcel}`, `flag {key, mode, note}`, `export?from=&to=` (JSON lines, no buyer data), `report` | as asked | 401, 404, 409 |
 
+**Note, 24 Nov 2026 (after the part 2 review, M2): the catalog and the quote, settled.**
+- `countries[]` is `{code, zone, soon}`: every country the "Ship to" list shows, the open ones and the ones not open yet (`soon: true`,
+  from `MERCH_COUNTRIES`); never-countries are left out. No names: the page names a country with `Intl.DisplayNames` in the page's
+  language (the code as a fallback).
+- `zones[].notes` and the quote's `notes[]` are short codes, not sentences (`import_tax`, `vat_included`, `separate_parcels`): the page
+  holds the words, so they can be translated. No other free text in the catalog.
+- `POST /merch/quote` answers while the shop is shut by `MERCH_FROM` (prices are public) and says `shut: true`; a `soon` country still
+  gets 403 `country_closed`. `POST /merch/checkout` stays 503 `merch_closed`.
+
 Stripe events on the merch webhook endpoint [O]: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`, and the refund
 failure event (T2.2-43). Every other event: 200, ignored. CORS: `https://doodledoggo.app`, `https://www.doodledoggo.app`, localhost; the test Worker only
