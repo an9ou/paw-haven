@@ -1100,7 +1100,7 @@ function frClash(A, B) {
 // the box the dog holds now, where it stands
 function frHold(v) { v.res = frRes(v, frEnv(v, v.x, v.y, v.k, v.face), v.y, v.k); }
 // o: { legs: allow the row stacking, wide: anywhere in the yard (a phone's crop is full), face: the way it will face (default its own; null either), any: other dogs aside,
-//      decor: on their decorations too (when nothing else is free) }
+//      decor: on their decorations too (when nothing else is free), low: (with wide) below the buttons' top too }
 function frSpotOk(v, x, y, o) {
   o = o || {};
   const c = FRV.crop || { x0: 60, x1: 940, y1: 590, boxes: [], feet: [] }, z = isPhone() ? RM_ZONES_PH.yard || RM_ZONES.yard : RM_ZONES.yard;
@@ -1113,7 +1113,7 @@ function frSpotOk(v, x, y, o) {
   if (!o.decor && !o.any && frDecorHit(R)) return false;
   if (o.wide) {
     if (R[0] < 4 || R[2] > 996) return false;
-    if (c.boxes.some((b) => b[1] > 300 && T[1] + T[3] > b[1])) return false; // clear of the buttons and the bar wherever the camera pans
+    if (!o.low && c.boxes.some((b) => b[1] > 300 && T[1] + T[3] > b[1])) return false; // clear of the buttons and the bar wherever the camera pans (o.low: not, see frLayout)
   } else {
     if (Math.min(T[0], R[0]) < c.x0 + 4 || Math.max(T[0] + T[2], R[2]) > c.x1 - 4) return false; // the whole dog on screen
     if (c.boxes.some((b) => frOver(T, b) > 0)) return false;
@@ -1261,6 +1261,11 @@ function frLayout(list, fit, final) {
     if (ph) { // off to the side of the crop, as near as there is room
       sp = frSpots(v, null, { wide: true }); if (!sp.length) sp = frSpots(v, null, { wide: true, legs: true });
       if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { wide: true, decor: true })); if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { wide: true, legs: true, decor: true }));
+      // v219_friends 3b flake (24 Nov 2026): at 360 with 3 friend dogs the strip above the buttons off to the side held one dog, so the next one went
+      // over it (a corgi on a Pomeranian, 18 of 60 layouts). Off the side of the crop, a dog lower down (behind the buttons only while the camera is
+      // panned to it) is better than a dog drawn over another
+      const away = (L) => L.filter((p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= FRV.crop.x0 || R[0] >= FRV.crop.x1; }); // wholly off the crop's sides
+      if (!sp.length) sp = away(frSpots(v, null, { wide: true, low: true })); if (!sp.length) sp = away(frSpots(v, null, { wide: true, low: true, legs: true }));
       const c = FRV.crop, gap = (p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= c.x0 ? c.x0 - R[2] : R[0] >= c.x1 ? R[0] - c.x1 : 1e4 - Math.abs(p[0] - (c.x0 + c.x1) / 2); };
       sp.sort((p, q) => gap(p) - gap(q)); sp = sp.slice(0, 3);
     }
@@ -1732,6 +1737,8 @@ function frExpose() {
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
     cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home, y: FRC.y }), fit: (root) => frFit(root),
     posterSVG: () => frPosterSVG(), poster: () => frPosterMake(), posterKey: () => frPosterKey(), posterHow: () => FR.posterHow || '', posterErr: () => FR.posterErr || '', posterForce: (f) => { FR.posterForce = f || ''; },
+    redraw: () => { if (cur.mode !== 'fryard') return false; frDrawDogs(); return true; }, // the layout again (v219_friends part 3b's many layouts)
+    clashes: () => { const L = []; FRV.dogs.forEach((a, i) => FRV.dogs.forEach((b, j) => { if (j > i && a.res && b.res && frClash(a.res, b.res) > 1) L.push([a.dog.key, Math.round(a.x), Math.round(a.y), b.dog.key, Math.round(b.x), Math.round(b.y)]); })); return L; }, // two dogs drawn over each other (frClash 2)
     decorAt: (i) => { const v = FRV.dogs[i]; if (!v) return null; const R = frEnv(v, v.x, v.y, v.k, v.face); return { R: R.map(Math.round), cover: +frDecorCover(R).toFixed(2), hit: frDecorHit(R), ok: frSpotOk(v, v.x, v.y, { any: true }) }; }, // overlap leftovers: a dog against their decorations where it stands
     greet: () => frGreet(), greeting: () => (FRV.gr ? { step: FRV.gr.i, pose: [FRV.gr.a.pose, FRV.gr.b.pose] } : null), // the greeting again on this visit (Marketing films it); where it is
     crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)), decor: (FRV.crop.decor || []).map((b) => b.map(Math.round)) },

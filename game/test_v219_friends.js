@@ -1265,6 +1265,10 @@ async function greetPart(t) {
   await all('393 one friend dog (a Pomeranian meets a dachshund)', { w: 393, h: 852, mine: 'pom', theirs: ['dachs'] });
   await t.ctx.close();
   await all('360x640 three friend dogs', { w: 360, h: 640, theirs: ['shiba', 'corgi.pup', 'pom'] });
+  // the flake (24 Nov 2026): the dogs off to the side of the crop had one strip above the buttons, so the second went over the first (a corgi on a
+  // Pomeranian at x 900 and 940, 18 of 60 layouts). 60 layouts of this visit: no two dogs drawn over each other (the layout's own rule, frClash 2)
+  const lay = await ev(() => { const out = []; for (let i = 0; i < 60; i++) { window.__paw.fr.redraw(); const c = window.__paw.fr.clashes(); if (c.length) out.push(c); } return out; });
+  ok(!lay.length, '360x640 three friend dogs: 60 layouts, none with a dog drawn over another, off screen too: ' + lay.length + ' ' + JSON.stringify(lay.slice(0, 2)));
   await t.ctx.close();
   const R5 = await all('1280x800 three friend dogs, big and small (a dachshund meets a Great Dane, a Pomeranian and a corgi)', { w: 1280, h: 800, mine: 'dachs', theirs: ['dane', 'pom', 'corgi'] }, '1280');
   ok(R5.final.every((d) => d.on), '1280: every dog on screen: ' + JSON.stringify(R5.final));
