@@ -1021,7 +1021,10 @@ function frScan() {
   }));
   const feet = []; // the scene's own spots (the veggie patch, the mailbox post): inert here, but the dogs keep their feet off them as at home
   svg.querySelectorAll('#sceneG [data-hot], #hpG [data-hp]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); feet.push([p.x - 8, p.y - 8, q.x - p.x + 16, q.y - p.y + 16]); });
-  FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet };
+  // overlap review S7 (24 Nov 2026): the watering can (its tap box, the drops fall inside it and below) keeps every dog's drawn box off it, not
+  // just the feet: at 1280 my leader's tail lay over the can in 6-9 of 10 samples
+  const props = []; svg.querySelectorAll('#hpG .hp-can > rect').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); props.push([p.x - 4, p.y - 4, q.x + 4, q.y + 4]); });
+  FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet, props };
 }
 // each dog's drawn box per pose and way it faces, in its own units around the feet (430, 500): drawn hidden all at once, then measured. Facing
 // left is the mirror image unless the pose has words (the sniff: words are not mirrored), then it is measured too. Kept for later visits (FR_EXT_MEMO)
@@ -1094,6 +1097,7 @@ function frSpotOk(v, x, y, o) {
   if ((c.feet || []).some((b) => x > b[0] && x < b[0] + b[2] && y > b[1] && y < b[1] + b[3])) return false;
   const k = frK(v, y), T = frTap(x, y, k), R = frEnv(v, x, y, k, 'face' in o ? o.face : v.face);
   if (y < 500 && R[2] > 640 && R[0] < 860) return false; // well behind the house's front: never drawn over the house
+  if ((c.props || []).some((b) => R[0] < b[2] && R[2] > b[0] && R[1] < b[3] && R[3] > b[1])) return false; // S7: never drawn over the watering can
   if (o.wide) {
     if (R[0] < 4 || R[2] > 996) return false;
     if (c.boxes.some((b) => b[1] > 300 && T[1] + T[3] > b[1])) return false; // clear of the buttons and the bar wherever the camera pans

@@ -1102,14 +1102,17 @@ async function sceneLayout(t) {
 /* ---------------- part 3c: on arrival my leader and their leader are both in view (overlap review M2, 24 Nov 2026) ----------------
    At 390x844 a Great Dane leader left no room for the greeting pair in the crop beside the house: my leader went off to the side of the crop, out of
    sight for the whole visit. Now the phone camera starts a little further left when that lets the pair in (50_friends.js frDrawDogs, FRC.pick).
-   Four phone sizes, 1, 3 and 5 friend dogs (a Great Dane leading), en with roaming and de without, the helps on (the strip and the wish bubble):
-   after the walk in, both leaders whole inside the view and clear of the chip, the strip, the wish bubble, the camera arrow and the buttons */
-const ARRIVE_SIZES = [[360, 640], [390, 844], [412, 915], [768, 1024]];
+   Four phone sizes and 1280x720, 1, 3 and 5 friend dogs (a Great Dane leading), en with roaming and de without, the helps on (the strip and the
+   wish bubble): after the walk in, both leaders whole inside the view and clear of the chip, the strip, the wish bubble, the camera arrow and the
+   buttons. Review S7: no dog drawn over the watering can (50_friends.js frSpotOk, FRV.crop.props), on a desktop also while it pours */
+const ARRIVE_SIZES = [[360, 640], [390, 844], [412, 915], [768, 1024], [1280, 720]]; // 1280: the desktop (no camera); with review S7, the watering can
 function arriveLook() { // in the page: my leader's and their leader's drawn boxes (ink, screen px) against the view and the HTML on it
   const R = (e) => e.getBoundingClientRect(), vr = R(document.getElementById('view')), bar = document.getElementById('bar'), bot = bar && !bar.hidden ? Math.min(vr.bottom, R(bar).top) : vr.bottom;
   const ink = (svg) => { let b = null; [...svg.children].forEach((c) => { if (c.tagName === 'defs' || c.tagName === 'title' || (c.tagName === 'rect' && c.getAttribute('fill') === 'transparent')) return; const r = R(c); if (!r.width && !r.height) return; const q = [r.left, r.top, r.right, r.bottom]; b = b ? [Math.min(b[0], q[0]), Math.min(b[1], q[1]), Math.max(b[2], q[2]), Math.max(b[3], q[3])] : q; }); return b; };
   const sc = window.__paw.fr.scene(), lead = sc.dogs.findIndex((d) => !d.mine), me = sc.dogs.findIndex((d) => d.mine), out = { bad: [], cam: window.__paw.fr.cam(), fit: (window.__paw.fr.crop() || {}).fit, play: sc.dogs.filter((d) => d.play).length };
   const keep = [...document.querySelectorAll('#status, #hpStrip, #hpWish, #phPeek, #placeBtns .btn')].filter((e) => !e.hidden && R(e).width > 0).map((e) => ({ n: e.id || e.textContent.trim().slice(0, 12), r: R(e) }));
+  const can = document.querySelector('#view .hp-canart'), cr = can && R(can), drops = [...document.querySelectorAll('#fx .hp-drop, #fx .hp-splash')].map(R); // review S7: no dog drawn over the can or its drops
+  if (cr) [...document.querySelectorAll('#frDogs .frdog')].forEach((g) => { const sv = g.style.display !== 'none' && g.querySelector('svg.pa-dog'), b = sv && ink(sv); if (!b) return; const ov = (q) => Math.max(0, Math.min(b[2], q.right) - Math.max(b[0], q.left)) * Math.max(0, Math.min(b[3], q.bottom) - Math.max(b[1], q.top)); if (ov(cr) > 0.05 * cr.width * cr.height || drops.some((q) => ov(q) > 0)) out.bad.push('dog ' + g.dataset.frd + ' over the can'); });
   [['mine', me], ['lead', lead]].forEach(([n, i]) => {
     const el = document.querySelector(`#frDogs [data-frd="${i}"]`), svg = el && el.style.display !== 'none' && el.querySelector('svg.pa-dog'), b = svg && ink(svg);
     if (!b) { out.bad.push(n + ' not drawn'); return; }
@@ -1117,16 +1120,17 @@ function arriveLook() { // in the page: my leader's and their leader's drawn box
     if (b[0] < vr.left - 1 || b[2] > vr.right + 1 || b[1] < vr.top - 1 || b[3] > bot + 1) out.bad.push(n + ' not whole in view ' + JSON.stringify(out[n]) + ' view ' + [vr.left, vr.top, vr.right, bot].map(Math.round));
     keep.forEach((k) => { const ix = Math.min(b[2], k.r.right) - Math.max(b[0], k.r.left), iy = Math.min(b[3], k.r.bottom) - Math.max(b[1], k.r.top); if (ix > 2 && iy > 2) out.bad.push(n + ' under ' + k.n + ' ' + Math.round(ix) + 'x' + Math.round(iy)); });
   });
+  out.drops = drops.length;
   return out;
 }
 async function arrivePart(t) {
   const { ok, sec, ev } = t, FERN = ('cozyfern' + 'x'.repeat(22)).slice(0, 22), ME = { fid: 'ownerxxxxxxxxxxxxxxxxx', code: 'DOG-23456', name: [3, 4] };
   sec('17c. on arrival my leader and their leader are both in view, clear of the chip, strip, wish bubble, camera arrow and buttons (review M2)');
   for (const [lang, roam] of [['en', true], ['de', false]]) for (const [w, h] of ARRIVE_SIZES) {
-    const tag = `${w}x${h} ${lang}${roam ? ' roaming' : ''}`;
-    await start(t, { vw: w, vh: h, mk: { device: 'iPhone 15', lang }, prefs: { hpTest: true, ddTest: true, rmTest: roam }, mockCfg: { hp: true } });
+    const tag = `${w}x${h} ${lang}${roam ? ' roaming' : ''}`, ph = w < 1000;
+    await start(t, Object.assign({ mk: Object.assign({ lang }, ph ? { device: 'iPhone 15' } : {}), prefs: { hpTest: true, ddTest: true, rmTest: roam }, mockCfg: { hp: true } }, ph ? { vw: w, vh: h } : {}));
     await t.until(() => !!(window.__paw && window.__paw.hp && window.__paw.fr && window.__frSrv), null, 8000);
-    ok(await ev(() => document.documentElement.dataset.layout === 'phone'), tag + ': the phone layout');
+    ok(await ev((p) => (document.documentElement.dataset.layout === 'phone') === p, ph), tag + (ph ? ': the phone layout' : ': the desktop layout'));
     const B = await ev(() => ['dane', 'chihuahua', 'samoyed', 'husky', 'mastiff'].map((k) => window.PawGenes.BREEDS.indexOf(k)));
     const today = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
     for (const n of [1, 3, 5]) {
@@ -1141,6 +1145,12 @@ async function arrivePart(t) {
       const bad = looks.flatMap((l) => l.bad);
       ok(!bad.length && looks.every((l) => l.play === 2), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: my leader and theirs greet in view, clear of the chip, strip, bubble, arrow and buttons (3 samples): ` + JSON.stringify({ bad: [...new Set(bad)].slice(0, 4), mine: looks[0].mine, lead: looks[0].lead, cam: looks[0].cam, fit: looks[0].fit, play: looks[0].play }));
       if (process.env.FR_ARRIVE_SHOTS) { fs.mkdirSync(process.env.FR_ARRIVE_SHOTS, { recursive: true }); await t.p.screenshot({ path: path.join(process.env.FR_ARRIVE_SHOTS, `arrive_${w}_${lang}_f${n}.png`) }); }
+      if (!ph && n === 3) { // review S7 (9 of 10 samples with 3 friend dogs): while the can pours on a desktop, no dog drawn over it or its drops
+        ok(await ev(() => window.__paw.hp.tap('water', 'strip')), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: water the garden`);
+        const pour = []; for (let i = 0; i < 3; i++) { await t.sleep(350); pour.push(await ev(arriveLook)); }
+        const pb = pour.flatMap((l) => l.bad).filter((b) => /can/.test(b));
+        ok(!pb.length && pour.some((l) => l.drops > 0), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: the can pours clear of every dog (3 samples): ` + JSON.stringify({ bad: pb.slice(0, 3), drops: pour.map((l) => l.drops) }));
+      }
       await ev(() => window.__paw.fr.home());
       await t.until(() => window.__paw.mode === 'yard', null, 4000);
     }
