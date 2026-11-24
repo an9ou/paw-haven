@@ -1,0 +1,6 @@
+{
+  "name": "doodle-doggo-merch",
+  "private": true,
+  "type": "module",
+  "description": "The merch order Worker (TRANSACTIONS.md). Tests: NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs"
+}

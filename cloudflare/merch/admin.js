@@ -1,0 +1,97 @@
+// The owner's admin routes (TRANSACTIONS.md 6.3): there is no SQL console for a Durable Object, so tools/merch.sh calls these.
+// Authorization: Bearer MERCH_ADMIN_KEY (unset = always 401). 60 an hour per IP. No buyer data leaves here except what the owner needs for a
+// dispute (the tracking, the delivery date and signed links to the print PNGs); never an address or an email.
+import { json, fail, same, ORDER_ID, DAY, jstDay } from './util.js';
+
+export async function adminRoute(L, req, path, ip) {
+  const ih = await L.hashOf(ip);
+  if (!L.tx(() => L.rate('admin:ip:' + ih, 60))) return fail('slow_down', 429);
+  const auth = req.headers.get('authorization') || '', key = L.env.MERCH_ADMIN_KEY;
+  if (!key || String(key).length < 16 || !same(auth, 'Bearer ' + key)) return fail('unauthorized', 401);
+  const u = new URL(req.url), m = req.method, body = m === 'POST' ? ((await L.body(req)) || {}) : {};
+  const mm = /^order\/([^/]+)(?:\/(refund|reprint|confirm|lost))?$/.exec(path);
+  if (path === 'orders' && m === 'GET') {
+    const st = u.searchParams.get('status'), hold = u.searchParams.get('hold');
+    let q = 'select id, status, hold, why, country, zone, total, refunded, created_at, paid_at, dispute from merch_orders where 1 = 1'; const a = [];
+    if (st) { q += ' and status = ?'; a.push(st); } if (hold) { q += ' and hold = ?'; a.push(hold); }
+    return json({ orders: L.q(q + ' order by created_at desc limit 500', ...a) });
+  }
+  if (mm) {
+    const o = ORDER_ID.test(mm[1]) && L.order(mm[1]); if (!o) return fail('not_found', 404);
+    const act = mm[2];
+    if (!act && m === 'GET') {
+      const lines = L.lines(o.id);
+      for (const l of lines) l.file_url = l.file_key ? await L.fileUrl(l.file_key, 7 * DAY) : null;
+      const ord = Object.assign({}, o); delete ord.email_hash; delete ord.checkout_url;
+      return json({ order: ord, lines, parcels: L.q('select * from merch_parcels where order_id = ?', o.id), refunds: L.q('select * from merch_refunds where order_id = ? order by created_at', o.id),
+        events: L.q('select id, type, at, note from merch_events where order_id = ? order by at', o.id), reprints: L.q('select * from merch_reprints where order_id = ?', o.id) });
+    }
+    if (m !== 'POST') return fail('not_found', 404);
+    if (act === 'refund') { // T2.1-21
+      const line = Number(body.line), reason = typeof body.reason === 'string' ? body.reason.slice(0, 40) : '';
+      if (!reason) return fail('no_reason', 400);
+      const r = L.tx(() => {
+        const x = L.order(o.id); if (!['paid', 'held', 'confirming', 'confirmed', 'part_shipped', 'shipped'].includes(x.status)) return { error: 'not_paid' };
+        if (x.dispute === 'open') return { error: 'disputed' };
+        const l = L.lines(x.id).find((y) => y.line === line); if (!l) return { error: 'bad_line' };
+        const q = body.qty == null ? l.qty - l.refunded_qty : Number(body.qty);
+        return L.lineRefund(x, l, q, reason);
+      });
+      if (r.error) return fail(r.error, r.error === 'bad_line' || r.error === 'bad_qty' ? 400 : 409);
+      L.tx(() => L.event('x:refund:' + r.id, o.id, 'admin_refund', reason));
+      await L.flush();
+      return json({ ok: true, refund: r.id, amount: r.amount, status: L.order(o.id).status });
+    }
+    if (act === 'reprint') { // T2.1-23, T2.2-47 (attach a Printful claim reship by its order id)
+      const lines = Array.isArray(body.lines) ? body.lines.map(Number) : [];
+      const po = typeof body.provider_order === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(body.provider_order) ? body.provider_order : null;
+      const r = await L.reprint(o, lines, po, null, 'owner');
+      return r.ok ? json(r) : fail(r.error, r.status || 409);
+    }
+    if (act === 'confirm') { // the owner's go after a review hold or a won dispute (T2.2-25, T2.2-39)
+      const ok = L.tx(() => L.set(o.id, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: L.now() }, ['held']));
+      if (!ok) return fail('not_held', 409);
+      L.tx(() => L.event('x:confirm:' + o.id + ':' + L.now(), o.id, 'admin_confirm'));
+      await L.tick();
+      return json({ ok: true, status: L.order(o.id).status });
+    }
+    if (act === 'lost') { // T2.2-44: the other parcel is untouched
+      const p = typeof body.parcel === 'string' && L.one('select * from merch_parcels where id = ? and order_id = ?', body.parcel, o.id);
+      if (!p) return fail('bad_parcel', 400);
+      L.tx(() => { L.run('update merch_parcels set lost_at = ? where id = ?', L.now(), p.id); L.event('x:lost:' + p.id, o.id, 'lost', p.id); });
+      const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced').map((l) => l.line);
+      if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409); }
+      if (body.then === 'refund') {
+        const out = L.tx(() => lines.map((n) => { const x = L.order(o.id), l = L.lines(o.id).find((y) => y.line === n); return L.lineRefund(x, l, l.qty - l.refunded_qty, 'lost'); }));
+        await L.flush(); return json({ ok: true, lines, refunds: out.map((r) => r.id), status: L.order(o.id).status });
+      }
+      return json({ ok: true, lines });
+    }
+  }
+  if (path === 'flag' && m === 'POST') { // T2.2-51/52: 'e:<hash>' / 'ip:<hash>', or email:<address> / ipaddr:<ip> hashed here; mode block | allow | clear
+    let k = typeof body.key === 'string' ? body.key.trim() : '';
+    if (/^email:/.test(k)) k = 'e:' + await L.hashOf(k.slice(6).trim().toLowerCase());
+    else if (/^ipaddr:/.test(k)) k = 'ip:' + await L.hashOf(k.slice(7).trim());
+    if (!/^(e|ip):[0-9a-f]{64}$/.test(k) || !['block', 'allow', 'clear'].includes(body.mode)) return fail('bad_flag', 400);
+    L.tx(() => { if (body.mode === 'clear') L.run('delete from merch_flags where key = ?', k); else L.flag(k, body.mode, typeof body.note === 'string' ? body.note.slice(0, 120) : null); });
+    return json({ ok: true, key: k, mode: body.mode });
+  }
+  if (path === 'export' && m === 'GET') { // JSON lines, no buyer data (no email hash, no dog name, no recipe, no links)
+    const from = Date.parse(u.searchParams.get('from') || '1970-01-01') || 0, to = Date.parse(u.searchParams.get('to') || '2999-01-01') || 4e13;
+    const os = L.q('select * from merch_orders where created_at >= ? and created_at < ? order by created_at', from, to);
+    const out = [];
+    for (const o of os) {
+      for (const k of ['email_hash', 'checkout_url', 'nonce']) delete o[k];
+      o.lines = L.q('select line, product, colour, size, pose, name_on, qty, art_ver, unit, line_total, line_tax, cost_est, status, file_sha, refunded_qty, refunded, reprint_of from merch_order_items where order_id = ? order by line', o.id);
+      o.refunds = L.q('select id, line, qty, amount, reason, status, created_at from merch_refunds where order_id = ?', o.id);
+      o.parcels = L.q('select id, product, carrier, shipped_at, delivered_at, lost_at, returned_at from merch_parcels where order_id = ?', o.id);
+      out.push(JSON.stringify(o));
+    }
+    L.tx(() => L.setMeta('last_export', L.now()));
+    return new Response(out.join('\n') + (out.length ? '\n' : ''), { headers: { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store', 'content-disposition': 'attachment; filename="merch-' + jstDay(L.now()) + '.jsonl"' } });
+  }
+  if (path === 'report' && m === 'GET') return json(L.report());
+  if (path === 'tick' && m === 'POST') { await L.tick(); return json({ ok: true }); }
+  if (path === 'nightly' && m === 'POST') return json(await L.nightly(L.now()));
+  return fail('not_found', 404);
+}
