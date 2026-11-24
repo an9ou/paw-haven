@@ -13,8 +13,8 @@
 
     <div class="shopbar" id="shopbar">
       <span class="crumbs" id="crumbs">Merch</span>
-      <label class="shipto" for="shipSel"><span class="shiplbl">Ship to</span> <select id="shipSel" autocomplete="country"></select></label>
-      <a class="bagbtn" id="bagBtn" href="#/basket" aria-label="Basket"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5h14l-1.2 11H6.2z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg><span id="bagN">0</span></a>
+      <label class="shipto" id="shipTo" for="shipSel"><span class="shiplbl">Ship to</span> <select id="shipSel" autocomplete="country"></select></label>
+      <a class="bagbtn" id="bagBtn" href="#/basket" aria-label="Basket, empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5h14l-1.2 11H6.2z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg><span id="bagN" aria-hidden="true">0</span></a>
     </div>
     <ol class="steps" id="steps" hidden aria-label="Steps">
       <li data-s="pick"><button type="button">Your dog</button></li><li data-s="thing"><button type="button">The thing</button></li><li data-s="make"><button type="button">Make it</button></li><li data-s="basket"><button type="button">Basket</button></li>
@@ -43,13 +43,13 @@
         <ul class="ready" id="readyHome"></ul>
       </section>
       <section class="faq" id="faq" aria-labelledby="h-faq">
-        <h2 id="h-faq">Questions</h2>
-        <details><summary>How do I bring my dog from the game?</summary><p>Playing on doodledoggo.app? Your dogs are already here when you open this page in the same browser. Playing somewhere else? The game will get a button that opens this page with your dogs on it: only how they look comes along.</p></details>
+        <h2 id="h-faq" tabindex="-1">Questions</h2>
+        <details><summary>How do I bring my dog from the game?</summary><p>Playing on doodledoggo.app? Your dogs are already here when you open this page in the same browser. Playing somewhere else, like itch.io? We can't see those dogs from here yet, so pick one of the ready-made dogs for now.</p></details>
         <details><summary>Where is it made, and how long does it take?</summary><p>Each order is printed just for you by our print partner, at a print shop near you where it can. Printing takes 2 to 5 working days, then the post. You get a tracking link by email.</p></details>
         <details><summary>How much is shipping?</summary><p>Choose where it's going under <b>Ship to</b> at the top: the shipping, and when shipping is free, show right there and again in your basket before you pay. Prices are in US dollars.</p></details>
         <details><summary>Can I send it back?</summary><p>Because it is made just for you, with your own dog on it, it can't be returned if you change your mind. If it arrives damaged, misprinted or lost, tell us within 30 days and we reprint it or refund you, free. Changed your mind straight away? You can cancel within 1 hour of paying.</p></details>
         <details><summary>Which size should I get?</summary><p>The tees are unisex adult sizes. Lay a tee you like flat, measure from armpit to armpit and compare with the size guide on the tee. Between two sizes? Pick the bigger one.</p></details>
-        <details><summary>Is my dog's picture private?</summary><p>Your dog is drawn here in your browser, from how it looks in the game. When you order, only how it looks goes to us and the print shop, to print your order, and we delete the print file about six months after it ships. Its name is printed only if you leave it on.</p></details>
+        <details><summary>Is my dog's picture private?</summary><p>Your dog is drawn here in your browser, from how it looks in the game. When you order, only how it looks goes to us and the print shop, to print your order, and we delete the picture we print about six months after it ships. Its name is printed only if you leave it on.</p></details>
         <details><summary>Why does my dog look like that?</summary><p>It's meant to. The wobbly crayon lines are the joke, and the printer keeps every one of them.</p></details>
         <details><summary>Does it change anything in my game?</summary><p>No. Your dog and your game stay exactly as they are. Nothing here makes a dog happier or faster: they already love you.</p></details>
       </section>
@@ -78,7 +78,7 @@
           <div class="preview" id="preview"><div id="pvOn"></div><div class="flat" id="pvFlat"></div></div>
           <div class="pvtabs seg" role="group" aria-label="Preview">
             <button type="button" data-pv="on" aria-pressed="true">On the <span class="pn">tee</span></button>
-            <button type="button" data-pv="flat" aria-pressed="false">The print file</button>
+            <button type="button" data-pv="flat" aria-pressed="false">The picture we print</button>
           </div>
           <p class="honest" id="honest">What you see is what is printed: the same lines, the same place, the same size. Printed colours look a little softer than a bright screen.</p>
         </div>
@@ -106,6 +106,7 @@
       <h1 class="mh2" id="h-basket" tabindex="-1">Your basket</h1>
       <div class="sum">
         <div>
+          <p class="dropnote" id="bdrop" role="status" hidden></p>
           <ul class="blines" id="blines"></ul>
           <p class="bnote" id="bfull"></p>
           <div class="navrow"><a class="btn mint" id="another" href="#/pick">＋ Put another dog on something</a></div>
@@ -121,16 +122,17 @@
               <li>Changed your mind? You can cancel within 1 hour of paying, from your order page.</li>
             </ul>
           </div>
-          <div class="grown"><span class="ic" aria-hidden="true">🙋</span><span>You need to be 18 or over to order. A grown-up pays on Stripe's secure page; we never see card details.</span></div>
+          <div class="grown"><span class="ic" aria-hidden="true">🙋</span><span>You need to be 18 or over to order. Younger? Ask a grown-up to order for you.</span></div>
           <button type="button" class="btn go paybtn" id="payBtn">🔒 Pay safely with Stripe</button>
           <p class="small2" id="payNote">Test mode: the shop is not open yet, so nothing can be paid.</p>
+          <div class="qerr" id="payErr" role="alert" tabindex="-1" hidden></div>
           <div class="closed card" id="closed" hidden tabindex="-1">
             <h3>The shop is not open yet</h3>
             <p>Thank you for trying it out! Nothing was paid, and your basket stays right here.</p>
             <p class="note" id="closedWhy"></p>
             <div class="row" id="demoRow" hidden><button type="button" class="btn quiet" id="demoBtn">Test only: see the thank-you page</button></div>
           </div>
-          <p class="small2">Printed and posted by our print partner. Payments by Stripe. By paying you agree to the Terms of sale.</p>
+          <p class="small2">Printed and posted by our print partner. You pay on Stripe's secure page: we never see card details. By paying you agree to the Terms of sale.</p>
         </div>
       </div>
     </section>
@@ -142,7 +144,7 @@
 
   </div>
   <footer class="foot mfoot">
-    <span class="todo" title="A draft is coming in a later part">Terms of sale</span> · <span class="todo" title="A draft is coming in a later part">Shipping and returns</span> · <a href="/privacy">Privacy</a> · <a href="#faq" id="faqlink">Questions</a> · <a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a>
+    <span class="todo">Terms of sale</span> · <span class="todo">Shipping and returns</span> · <a href="/privacy">Privacy</a> · <a href="#/faq" id="faqlink">Questions</a> · <a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a>
     <div class="small">Printed and posted by our print partner. Payments by Stripe. No ads, no tracking, no cookies.</div>
   </footer>
 </main>

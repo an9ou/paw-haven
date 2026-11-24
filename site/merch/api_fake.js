@@ -4,7 +4,8 @@
      unit  = product price + the size's add (US cents)      line total = unit x qty      subtotal = the sum
      shipping = 0 when the zone has free_from and subtotal >= free_from, else fee + extra x (every mug or tee past the first)
      total = subtotal + shipping
-   The shop is shut (catalog.shut): checkout checks everything and then answers 503 merch_closed, so nothing is ever paid. demoPay() (only
+   The shop is shut (catalog.shut): a quote still answers (prices are public) and says shut: true; checkout checks everything and then answers
+   503 merch_closed, so nothing is ever paid. A country not open yet (soon: true) gets 403 country_closed (TRANSACTIONS.md 6.3, note of 24 Nov). demoPay() (only
    with ?demo=1) makes a made-up order, marked test, so the thank-you and order pages can be seen; it is kept in this tab only.
    Browser: <script> -> window.MerchFake(opts); Node (the tests): require('./api_fake.js') -> the same function.
    opts: { PawPrint, catalog (an object) or load() -> Promise of it, demo, now() -> ms, store (a Storage-like object for demo orders) } */
@@ -69,7 +70,7 @@
       }
       var free = Z.free_from != null && sub >= Z.free_from, fee = free ? 0 : Z.fee + (Z.extra || 0) * (items - 1);
       var notes = (Z.notes || []).slice(); if (Object.keys(kinds).length > 1) notes.push('separate_parcels');
-      return { ok: true, q: { cat_ver: c.cat_ver, zone: Z.id, lines: out, subtotal: sub, ship_fee: fee, free_from: Z.free_from, total: sub + fee, eta: Z.eta.slice(), notes: notes } };
+      return { ok: true, q: { cat_ver: c.cat_ver, zone: Z.id, lines: out, subtotal: sub, ship_fee: fee, free_from: Z.free_from, total: sub + fee, eta: Z.eta.slice(), notes: notes, shut: !!c.shut } };
     }
 
     function quote(body) { return load().then(function (c) { var r = price(c, body); if (!r.ok) throw r.e; return r.q; }); }
