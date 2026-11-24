@@ -12,7 +12,7 @@ MERCH session's own work on `merch/shop`, in new files.
   one test suite at a time. One combined review per part; the three big reviews (code, phone, art) run once, in part 9.
 - The shop stays shut in every build: `MERCH_FROM = ''` in the Worker, no link to `/merch` from the site header or the game until launch.
 - No real money anywhere before part 10: Stripe sandbox keys, Printful draft orders only (`MERCH_PROVIDER_MODE=draft`).
-- No secrets in the repo, logs or chat. No buyer data in D1 beyond TRANSACTIONS.md section 5.
+- No secrets in the repo, logs or chat. No buyer data in the merch Worker's storage beyond TRANSACTIONS.md section 5.
 - English first. Translation is one batch at the end (one line in the other 11 languages: "Merch ships to ... in English").
 - Words: "Put your dog on a mug". Never words that sound like selling dogs. Money screens as calm as the Kind shop.
 
@@ -25,7 +25,7 @@ MERCH session's own work on `merch/shop`, in new files.
 | Mug and tee only at launch (the owner dropped the sticker sheet later the same day: its postage is too dear, `STICKERS.md`) | Part 1 finishes the mug and the tee. The sticker layout stays in the code, switched off. Parts 2, 3 and 5 list two products. |
 | No returns; free reprint or refund; 1-hour cancel | Parts 2, 6, 7 as TRANSACTIONS.md 4. |
 | A shipping fee, free over a threshold | **A basket** (up to 6 lines) replaces "one item per order": `SHIPPING.md` section 6. A "Ship to" choice comes first. Parts 2, 3, 5, 6. |
-| Free Cloudflare plan | No resvg in a Worker, no R2. Part 4 is the Browser Run + KV pipeline of `RENDER_FREE.md`, proven by one test deploy first. |
+| Free Cloudflare plan | No resvg in a Worker, no R2, no KV, no D1. Part 4 is the Browser Run pipeline of `RENDER_FREE.md` 8 (proven by the test deploy); print files and orders live in SQLite Durable Objects of the merch Worker (TRANSACTIONS.md 6.1). |
 
 Still open (second round of questions, docs/HANDOFF_MERCH.md): the price list and threshold, the launch countries, the test deploy, USD payouts.
 
@@ -53,8 +53,8 @@ and the site build (`tools/cf_*`, `tools/pages.js`).
 - The catalog comes from a static file until part 3. The pay button says the shop is not open yet.
 - Suite `merch_page`; `paw-fit` at 360x640, 390x844 and 1280x720.
 
-**3. The merch Worker, money faked.** Files: `cloudflare/merch/*` (its own Worker `doodle-doggo-merch`, its own D1 and R2; never
-`cloudflare/worker.js`). TRANSACTIONS.md sections 2, 3 and 6.
+**3. The merch Worker, money faked.** Files: `cloudflare/merch/*` (its own Worker `doodle-doggo-merch` with two SQLite Durable Object
+classes, `MerchLedger` and `MerchPrints`; no D1, no R2, no KV; never `cloudflare/worker.js`). TRANSACTIONS.md sections 2, 3 and 6.
 - Routes: catalog, quote, checkout, order, cancel, address, Stripe webhook, provider webhook, signed file, cron.
 - The basket: `merch_order_items`, zones with a fee and a free-shipping threshold, the margin guard on the whole order, a refund per line,
   one parcel and one tracking link per product type (`SHIPPING.md` section 6). TRANSACTIONS.md is rewritten for it first.
@@ -64,9 +64,12 @@ and the site build (`tools/cf_*`, `tools/pages.js`).
 
 **4. The print render.** Files: `cloudflare/merch/print_*` or `merch/print_worker.mjs`.
 - Free plan, first choice: a static print page (`/merch/print/v1/`) where PawPrint draws the dog from the recipe; the Worker asks
-  Cloudflare's browser (Browser Run) for a screenshot inside the cooling hour and streams the PNG into Workers KV; a signed route serves it.
-- Free plan, fallback: the Worker triggers a GitHub Actions job that renders with resvg and sends the PNGs back.
-- Workers Paid ($5 a month) only if orders pass about 80 a day.
+  Cloudflare's browser (Browser Run) for a screenshot inside the cooling hour and streams the PNG into a SQLite Durable Object of the
+  merch Worker (`MerchPrints`, one per JST day); a signed route serves it.
+- Free plan, fallback 1: resvg-wasm inside that Durable Object (proven on Free). Fallback 2: a GitHub Actions job that renders with resvg
+  and sends the PNGs back.
+- Workers Paid ($5 a month) only if renders pass about 270 orders a day or stored print files pass about 4 GB (about 27 orders a day kept
+  180 days; TRANSACTIONS.md 6.6).
 - Test: the server file equals the reference render, exact pixel size, clear corners; the Worker stays under 10 ms CPU.
 
 **5. The Printful adapter.** File: `cloudflare/merch/provider_printful.js`.
