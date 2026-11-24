@@ -187,6 +187,8 @@ console.log('# names');
   const junk = [null, undefined, 42, {}, [], () => 1, '!'.repeat(100000), '\u0000', ''];
   ok(junk.every((x) => { try { const r = NM.nameOk(x); return r && r.ok === false && NM.nameClean(x) === null; } catch (e) { return false; } }), 'junk (null, numbers, objects, 100k characters, control characters, empty) gives a calm refusal, never a throw');
   ok(Array.from(NM.CHARS).every((c) => P.nameChars().includes(c)) && Array.from(NM.CHARS).every((c) => { try { return P.textW(c, 100) > 0 || c === ' '; } catch (e) { return false; } }), `every allowed character (${Array.from(NM.CHARS).length}) has an outline in the print font`);
+  { const ctx = { self: {} }; vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(__dirname, 'names.js'), 'utf8'), ctx); const W = ctx.self.PawNames;
+    ok(W && W.nameOk('Mochi').ok && !W.nameOk('sh1t').ok && Object.keys(ctx).join() === 'self', 'names.js runs alone as in a Worker or a page (no module, no window): it only sets self.PawNames'); }
   ok(P.check({ v: 1, b: 0, g: null, e: 0, p: 0, a: 0, s: 'm', n: '<b>&' }).ok === false && P.check({ v: 1, b: 0, g: null, e: 0, p: 0, a: 0, s: 'm', n: 'fuck' }).ok === false, 'a recipe (a link) can never carry a refused name');
 }
 

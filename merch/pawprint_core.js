@@ -392,14 +392,16 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   }
 
   // every shape of s in white with a stroke `px` wide in file pixels (whatever its own transforms): the sticker's backing
-  function backing(s, k, px) {
-    const stack = [k];
+  function backing(s, k, px) { // px: the white past each side of the art, x 2 (a line keeps its own width plus that)
+    const stack = [{ sc: k, sw: 1, on: false }];
     return '<g fill="#FFFFFF" stroke="#FFFFFF" stroke-linejoin="round" stroke-linecap="round">' + s.replace(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g, (m, close, tag, attrs, self) => {
       if (close) { if (tag === 'g' || tag === 'svg') stack.pop(); return m; }
-      const tm = /\stransform="([^"]*)"/.exec(attrs), M = tm ? parseTf(tm[1]) : null, sc = stack[stack.length - 1] * (M ? Math.sqrt(Math.abs(M[0] * M[3] - M[1] * M[2])) : 1) * (tag === 'svg' ? svgScale(attrs) : 1);
+      const up = stack[stack.length - 1], tm = /\stransform="([^"]*)"/.exec(attrs), M = tm ? parseTf(tm[1]) : null;
+      const sc = up.sc * (M ? Math.sqrt(Math.abs(M[0] * M[3] - M[1] * M[2])) : 1) * (tag === 'svg' ? svgScale(attrs) : 1);
+      const swm = /\sstroke-width="([\d.]+)"/.exec(attrs), stm = /\sstroke="([^"]*)"/.exec(attrs), sw = swm ? +swm[1] : up.sw, on = stm ? stm[1] !== 'none' : up.on;
       const a = attrs.replace(/\s(?:fill|stroke|stroke-width|opacity|fill-opacity|stroke-opacity|stroke-linejoin|stroke-linecap|stroke-dasharray|class|style)="[^"]*"/g, '');
-      if (tag === 'g' || tag === 'svg') { if (!self) stack.push(sc); return '<' + tag + a + self + '>'; }
-      return '<' + tag + a + (/\sfill="none"/.test(attrs) ? ' fill="none"' : '') + ` stroke-width="${f2(px / sc)}"` + self + '>'; // an open line stays a line
+      if (tag === 'g' || tag === 'svg') { if (!self) stack.push({ sc, sw, on }); return '<' + tag + a + self + '>'; }
+      return '<' + tag + a + (/\sfill="none"/.test(attrs) ? ' fill="none"' : '') + ` stroke-width="${f2((on ? sw : 0) + px / sc)}"` + self + '>'; // an open line stays a line
     }) + '</g>';
   }
   // happy-pose hearts float by the head: a white bridge from each heart to the nearest drawn point of the dog joins them into the one sticker
@@ -522,11 +524,11 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
       const kb = fitIn(badge, cells.head2, bk), [x, y] = centreIn(badge, cells.head2, kb); out.push(sticker(badge, x, y, kb, bk)); st.head2K = f2(kb * 0.74); st.boxes.head2 = box(badge, x, y, kb);
     }
     // the name label (or "good dog!"): the name on a crayon card
-    const L = cells.label, pad = 46, N = fitName(name, [L[0] + bk + 8 + pad, L[1] + bk + 8 + pad, L[2] - 2 * (bk + 8 + pad), L[3] - 2 * (bk + 8 + pad)], 170, -2);
-    const tw = Math.max(620, N.bb[2] - N.bb[0] + 2 * pad), th = Math.max(230, Math.min(L[3] - 2 * bk - 16, N.bb[3] - N.bb[1] + 2 * pad)), tx = L[0] + (L[2] - tw) / 2, ty = L[1] + (L[3] - th) / 2;
+    const L = cells.label, pad = 46, N = fitName(name, [L[0] + bk + 16 + pad, L[1] + bk + 16 + pad, L[2] - 2 * (bk + 16 + pad), L[3] - 2 * (bk + 16 + pad)], 170, -2); // 16: the card's wobble and line
+    const tw = Math.max(620, N.bb[2] - N.bb[0] + 2 * pad), th = Math.max(230, Math.min(L[3] - 2 * bk - 32, N.bb[3] - N.bb[1] + 2 * pad)), tx = L[0] + (L[2] - tw) / 2, ty = L[1] + (L[3] - th) / 2;
     const card = crayonCard(tx, ty, tw, th, (r.p ^ 0x1AB) >>> 0, 10, 46);
     const lab = { s: `<path d="${card}" fill="#FFF3B8"/><path d="${card}" fill="none" stroke="${INK}" stroke-width="10" stroke-linejoin="round"/>` + N.svg, vb: [0, 0, P.w, P.h], els: null };
-    out.push(sticker(lab, 0, 0, 1, bk)); st.label = { text: name, size: N.size }; st.boxes.label = [tx - 5 - bk, ty - 5 - bk, tx + tw + 5 + bk, ty + th + 5 + bk].map(f2);
+    out.push(sticker(lab, 0, 0, 1, bk)); st.label = { text: name, size: N.size }; st.boxes.label = [tx - 10 - bk, ty - 10 - bk, tx + tw + 10 + bk, ty + th + 10 + bk].map(f2);
     // a heart, a paw and a bone
     for (const kind of ['heart', 'paw', 'bone']) { const a = doodle(kind, (r.p ^ kind.length * 977) >>> 0); a.bb = bbox(a.s); a.els = null; const kd = fitIn(a, cells[kind], bk), [x, y] = centreIn(a, cells[kind], kd); out.push(sticker(a, x, y, kd, bk)); st.boxes[kind] = box(a, x, y, kd); }
     return out.join('');
