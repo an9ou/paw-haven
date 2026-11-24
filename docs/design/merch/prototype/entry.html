@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="css/site.css"><link rel="stylesheet" href="css/merch.css">
+<title>Merch entry points · Doodle Doggo</title>
+<style>
+.ent{max-width:1240px;margin:0 auto;padding:18px 16px 30px}
+.ent h1{font-size:46px;text-align:center;margin:0}
+.ent>p{text-align:center;margin:.2em auto 1em;max-width:760px}
+.frames{display:flex;flex-wrap:wrap;justify-content:center;gap:22px}
+.fr{width:300px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.fr>b{font-family:var(--hand);font-size:26px;line-height:1.05;text-align:center}
+.fr>small{font-size:16px;color:var(--muted);text-align:center;line-height:1.3}
+.ph2{position:relative;width:300px;height:600px;border:3px solid var(--ink);border-radius:34px;background:#fff;overflow:hidden;box-shadow:4px 6px 0 rgba(91,61,50,.2)}
+.yardbg{position:absolute;inset:0;background:url(assets/img/yard.webp) 30% 50%/auto 100%}
+.topbar{position:absolute;left:8px;right:8px;top:10px;display:flex;justify-content:space-between;font-family:var(--hand);font-weight:700;font-size:20px}
+.topbar span{background:var(--paper);border:2px solid var(--ink);border-radius:12px;padding:0 10px}
+.ydog{position:absolute;left:90px;top:200px;width:130px}
+.dim{position:absolute;inset:0;background:rgba(60,40,30,.38)}
+.gsheet{position:absolute;left:0;right:0;bottom:62px;background:var(--paper);border-top:2.5px solid var(--ink);border-radius:22px 22px 0 0;padding:10px 10px 12px;
+  background-image:radial-gradient(var(--dot) 1px,transparent 1.4px);background-size:22px 22px}
+.gsheet h2{font-size:30px;text-align:center;margin:0 0 6px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:62px;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;font-size:14px;line-height:1.05;text-align:center;padding:4px 2px}
+.tile i{font-style:normal;font-size:22px;line-height:1}
+.tile.hot{background:var(--w-peach);box-shadow:2px 3px 0 var(--ink);outline:3px solid var(--pink);outline-offset:2px}
+.newt{position:absolute;top:-9px;right:-6px;transform:rotate(8deg);font-family:var(--hand);font-weight:700;font-size:15px;background:var(--w-yellow);border:1.5px solid var(--ink);padding:0 5px;line-height:1.2}
+.gbar{position:absolute;left:0;right:0;bottom:0;height:62px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper);border-top:2.5px solid var(--ink)}
+.gbar span{display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--hand);font-weight:700;font-size:18px;line-height:1}
+.gbar span i{font-style:normal;font-size:20px}
+.gbar .on{background:var(--w-yellow)}
+.conf{position:absolute;left:12px;right:12px;top:120px;background:var(--paper);border:2.5px solid var(--ink);border-radius:18px 13px 20px 12px;padding:14px 14px 14px;text-align:center;box-shadow:3px 4px 0 rgba(91,61,50,.25)}
+.conf h2{font-size:30px;margin:0 0 4px}
+.conf p{font-size:16px;line-height:1.3;margin:.3em 0}
+.heads{display:flex;justify-content:center;gap:2px}
+.heads img{width:46px;height:46px}
+.conf .btn{width:100%;margin-top:8px;font-size:23px;min-height:48px}
+.shp{position:absolute;inset:0;background:var(--paper);padding:12px 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.shp h2{font-size:28px;margin:0}
+.pic{position:relative;width:216px;height:270px;background:#FFFBF3;border:2.5px solid var(--ink);border-radius:8px;overflow:hidden;box-shadow:2px 3px 0 rgba(91,61,50,.14)}
+.pic .win{position:absolute;left:9px;top:9px;right:9px;height:196px;background:url(assets/img/yard.webp) 40% 60%/auto 150%;border:2px solid var(--ink);border-radius:6px}
+.pic .win img{position:absolute;left:24px;bottom:4px;width:150px}
+.pic .nm{position:absolute;left:0;right:0;top:206px;text-align:center;font-family:var(--hand);font-weight:700;font-size:26px;line-height:1}
+.pic .ln{position:absolute;left:0;right:0;top:232px;text-align:center;font-size:11px;color:var(--muted)}
+.pic .chip2{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);font-size:9px;white-space:nowrap;border:1px solid var(--ink);border-radius:6px;padding:0 4px;background:#fff}
+.shrow{display:flex;gap:6px}
+.shrow .chipb{font-size:16px;min-height:44px}
+.shp .btn{font-size:22px;min-height:46px;width:100%}
+.shp .btn.mug{background:var(--w-peach)}
+</style></head><body>
+<main class="ent">
+  <h1>The ways in from the game</h1>
+  <p>Mock frames, not the game itself. The game hands over only the dogs' looks (name, breed, coat, age, outfit) in the link's <b>#fragment</b>, which never reaches a server.</p>
+  <div class="frames">
+    <div class="fr">
+      <div class="ph2" aria-label="Phone: the More tray with a Merch tile">
+        <div class="yardbg"></div><div class="topbar"><span>🪙 1,240</span><span>⭐ 7</span></div><img class="ydog" src="assets/dogs/biscuit-stand.svg" alt="">
+        <div class="dim"></div>
+        <div class="gsheet"><h2>More</h2>
+          <div class="tiles">
+            <span class="tile"><i>📷</i>Photo</span><span class="tile"><i>💌</i>Share</span><span class="tile"><i>📖</i>Story</span><span class="tile"><i>🎀</i>Wardrobe</span>
+            <span class="tile"><i>📔</i>Journal</span><span class="tile"><i>⭐</i>Stickers</span><span class="tile"><i>🐾</i>Friends</span><span class="tile"><i>📅</i>Calendar</span>
+            <span class="tile"><i>📰</i>News</span><span class="tile"><i>📋</i>Missions</span><span class="tile"><i>🎁</i>Kind shop</span><span class="tile hot"><span class="newt">new!</span><i>☕</i>Merch</span>
+          </div></div>
+        <div class="gbar"><span><i>🦴</i>Care</span><span><i>🦮</i>Walk</span><span><i>🗺️</i>Map</span><span class="on"><i>⋯</i>More</span></div>
+      </div>
+      <b>1. A Merch tile in the More tray</b><small>The 12th tile, after Kind shop. Phones: More tray. Desktop: the same tile in the top bar's More menu.</small>
+    </div>
+    <div class="fr">
+      <div class="ph2" aria-label="Phone: the confirm sheet before leaving the game">
+        <div class="yardbg"></div><div class="dim"></div>
+        <div class="conf">
+          <div class="heads"><img src="assets/dogs/biscuit-head.svg" alt=""><img src="assets/dogs/mochi-head.svg" alt=""><img src="assets/dogs/pickle-head.svg" alt=""><img src="assets/dogs/pepper-head.svg" alt=""><img src="assets/dogs/waffles-head.svg" alt=""></div>
+          <h2>Put my dog on merch</h2>
+          <p>Opens doodledoggo.app in a new tab, with how your 5 dogs look: names, breeds, coats and outfits. Nothing else from your game goes with them.</p>
+          <p class="note">It's a shop, so ask a grown-up first.</p>
+          <a class="btn go" href="index.html?src=link#/pick">Open the merch page</a><span class="btn quiet">Not now</span>
+        </div>
+      </div>
+      <b>2. One calm step before leaving</b><small>Says what leaves the game and where it goes. No coins, no timer.</small>
+    </div>
+    <div class="fr">
+      <div class="ph2" aria-label="Phone: the share sheet with a Put this on a mug button">
+        <div class="shp">
+          <h2>Share my dog</h2>
+          <div class="pic"><div class="win"><img src="assets/dogs/biscuit-happy.svg" alt=""></div><div class="nm">Biscuit</div><div class="ln">Corgi</div><span class="chip2">Doodle Doggo · doodledoggo.app</span></div>
+          <div class="shrow"><span class="chipb" aria-pressed="true">Post</span><span class="chipb">Story</span><span class="chipb" aria-pressed="true">Show name</span></div>
+          <span class="btn go">Share</span>
+          <a class="btn mug" href="index.html?from=share&dog=biscuit#/make">☕ Put this on a mug</a>
+        </div>
+      </div>
+      <b>3. "Put this on a mug" under the share picture</b><small>Opens the merch page on step 3 with this dog, this pose and this outfit already picked (the mug chosen, any other thing one tap away).</small>
+    </div>
+  </div>
+</main>
+</body></html>
