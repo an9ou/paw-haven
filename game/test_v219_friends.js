@@ -13,7 +13,7 @@ async function start(t, o) {
   await t.mk(Object.assign({ prefs: Object.assign({}, o.prefs || {}, o.fr === false ? {} : { frTest: true }), storage: o.storage || null }, o.mk || {}));
   if (o.vw) await t.p.setViewportSize({ width: o.vw, height: o.vh });
   if (o.host) await t.ctx.addInitScript((h) => { window.__pawCloudHost = h; }, o.host);
-  if (o.mock !== false) await t.ctx.addInitScript(mockInit);
+  if (o.mock !== false) await t.ctx.addInitScript(mockInit, o.mockCfg || {}); // mockCfg { hp: true }: a Worker with the v2.33 helps (arrivePart)
   await t.p.goto((o.url || URL) + (o.query || ''));
   await t.p.waitForSelector('#tNew, #tContinue, #tGuest, #tPlay'); // cloud on: Play as guest comes first (v2.30.1: a new player's one Play, t.adopt taps it)
   if (o.fresh === false) return;
@@ -100,6 +100,7 @@ run('v219_friends', async (t) => {
   if (process.env.FR_ONLY === 'walk') { await walkPart(t); return; } // FR_ONLY=walk: part 5 alone (a quicker loop while working on it)
   if (process.env.FR_ONLY === 'greet') { await greetPart(t); return; } // FR_ONLY=greet: part 3b alone
   if (process.env.FR_ONLY === 'official') { await officialPart(t); return; } // FR_ONLY=official: the official account alone (v2.22.3)
+  if (process.env.FR_ONLY === 'arrive') { await arrivePart(t); return; } // FR_ONLY=arrive: part 3c alone (overlap review M2)
   const workerLim = limM ? limM[1].replace(/\s/g, '') : '';
 
   sec('1. lists match the Worker, and the gift order is the contract');
@@ -623,6 +624,7 @@ run('v219_friends', async (t) => {
   }
 
   await greetPart(t); // part 3b: the greeting on a visit (owner, 2 Nov 2026)
+  await arrivePart(t); // part 3c: my dog in view on arrival on every phone (overlap review M2, 24 Nov 2026)
 
   /* ---------------- part 4: gifts (V219.md section 5) ---------------- */
   sec('18. FR_GIFTS is dog-safe by the game\'s own tables; the sheet lists only what is in the bag');
@@ -766,7 +768,7 @@ run('v219_friends', async (t) => {
 
   await officialPart(t);
   await walkPart(t);
-}, { timeout: 420000 }); // fix batch: ~250 s now (Remove's undo window, the visit pan); the runner allows 600
+}, { timeout: 840000 }); // fix batch: ~250 s (Remove's undo window, the visit pan), + ~210 s for part 3c (overlap review M2, S7); the runner allows 900
 
 /* ---------------- v2.22.3: the official Friends account (V219.md "Official accounts") ---------------- */
 async function officialPart(t) {
@@ -1095,6 +1097,65 @@ async function sceneLayout(t) {
     hits.forEach((r, i) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (br && y > br.top) bad.push('dog under the bar ' + i); const top = document.elementFromPoint(x, y); if (!top || !top.closest('.frdog')) bad.push('dog covered ' + i); });
     return { side: sw > iw + 1, bad, bar: br ? [...bar.querySelectorAll(':scope > .act')].map((b) => b.dataset.act) : [] };
   });
+}
+
+/* ---------------- part 3c: on arrival my leader and their leader are both in view (overlap review M2, 24 Nov 2026) ----------------
+   At 390x844 a Great Dane leader left no room for the greeting pair in the crop beside the house: my leader went off to the side of the crop, out of
+   sight for the whole visit. Now the phone camera starts a little further left when that lets the pair in (50_friends.js frDrawDogs, FRC.pick).
+   Four phone sizes and 1280x720, 1, 3 and 5 friend dogs (a Great Dane leading), en with roaming and de without, the helps on (the strip and the
+   wish bubble): after the walk in, both leaders whole inside the view and clear of the chip, the strip, the wish bubble, the camera arrow and the
+   buttons. Review S7: no dog drawn over the watering can (50_friends.js frSpotOk, FRV.crop.props), on a desktop also while it pours */
+const ARRIVE_SIZES = [[360, 640], [390, 844], [412, 915], [768, 1024], [1280, 720]]; // 1280: the desktop (no camera); with review S7, the watering can
+function arriveLook() { // in the page: my leader's and their leader's drawn boxes (ink, screen px) against the view and the HTML on it
+  const R = (e) => e.getBoundingClientRect(), vr = R(document.getElementById('view')), bar = document.getElementById('bar'), bot = bar && !bar.hidden ? Math.min(vr.bottom, R(bar).top) : vr.bottom;
+  const ink = (svg) => { let b = null; [...svg.children].forEach((c) => { if (c.tagName === 'defs' || c.tagName === 'title' || (c.tagName === 'rect' && c.getAttribute('fill') === 'transparent')) return; const r = R(c); if (!r.width && !r.height) return; const q = [r.left, r.top, r.right, r.bottom]; b = b ? [Math.min(b[0], q[0]), Math.min(b[1], q[1]), Math.max(b[2], q[2]), Math.max(b[3], q[3])] : q; }); return b; };
+  const sc = window.__paw.fr.scene(), lead = sc.dogs.findIndex((d) => !d.mine), me = sc.dogs.findIndex((d) => d.mine), out = { bad: [], cam: window.__paw.fr.cam(), fit: (window.__paw.fr.crop() || {}).fit, play: sc.dogs.filter((d) => d.play).length };
+  const keep = [...document.querySelectorAll('#status, #hpStrip, #hpWish, #phPeek, #placeBtns .btn')].filter((e) => !e.hidden && R(e).width > 0).map((e) => ({ n: e.id || e.textContent.trim().slice(0, 12), r: R(e) }));
+  const can = document.querySelector('#view .hp-canart'), cr = can && R(can), drops = [...document.querySelectorAll('#fx .hp-drop, #fx .hp-splash')].map(R); // review S7: no dog drawn over the can or its drops
+  if (cr) [...document.querySelectorAll('#frDogs .frdog')].forEach((g) => { const sv = g.style.display !== 'none' && g.querySelector('svg.pa-dog'), b = sv && ink(sv); if (!b) return; const ov = (q) => Math.max(0, Math.min(b[2], q.right) - Math.max(b[0], q.left)) * Math.max(0, Math.min(b[3], q.bottom) - Math.max(b[1], q.top)); if (ov(cr) > 0.05 * cr.width * cr.height || drops.some((q) => ov(q) > 0)) out.bad.push('dog ' + g.dataset.frd + ' over the can'); });
+  [['mine', me], ['lead', lead]].forEach(([n, i]) => {
+    const el = document.querySelector(`#frDogs [data-frd="${i}"]`), svg = el && el.style.display !== 'none' && el.querySelector('svg.pa-dog'), b = svg && ink(svg);
+    if (!b) { out.bad.push(n + ' not drawn'); return; }
+    out[n] = b.map(Math.round);
+    if (b[0] < vr.left - 1 || b[2] > vr.right + 1 || b[1] < vr.top - 1 || b[3] > bot + 1) out.bad.push(n + ' not whole in view ' + JSON.stringify(out[n]) + ' view ' + [vr.left, vr.top, vr.right, bot].map(Math.round));
+    keep.forEach((k) => { const ix = Math.min(b[2], k.r.right) - Math.max(b[0], k.r.left), iy = Math.min(b[3], k.r.bottom) - Math.max(b[1], k.r.top); if (ix > 2 && iy > 2) out.bad.push(n + ' under ' + k.n + ' ' + Math.round(ix) + 'x' + Math.round(iy)); });
+  });
+  out.drops = drops.length;
+  return out;
+}
+async function arrivePart(t) {
+  const { ok, sec, ev } = t, FERN = ('cozyfern' + 'x'.repeat(22)).slice(0, 22), ME = { fid: 'ownerxxxxxxxxxxxxxxxxx', code: 'DOG-23456', name: [3, 4] };
+  sec('17c. on arrival my leader and their leader are both in view, clear of the chip, strip, wish bubble, camera arrow and buttons (review M2)');
+  for (const [lang, roam] of [['en', true], ['de', false]]) for (const [w, h] of ARRIVE_SIZES) {
+    const tag = `${w}x${h} ${lang}${roam ? ' roaming' : ''}`, ph = w < 1000;
+    await start(t, Object.assign({ mk: Object.assign({ lang }, ph ? { device: 'iPhone 15' } : {}), prefs: { hpTest: true, ddTest: true, rmTest: roam }, mockCfg: { hp: true } }, ph ? { vw: w, vh: h } : {}));
+    await t.until(() => !!(window.__paw && window.__paw.hp && window.__paw.fr && window.__frSrv), null, 8000);
+    ok(await ev((p) => (document.documentElement.dataset.layout === 'phone') === p, ph), tag + (ph ? ': the phone layout' : ': the desktop layout'));
+    const B = await ev(() => ['dane', 'chihuahua', 'samoyed', 'husky', 'mastiff'].map((k) => window.PawGenes.BREEDS.indexOf(k)));
+    const today = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+    for (const n of [1, 3, 5]) {
+      const dogs = B.slice(0, n).map((b, i) => ({ b, c: null, o: -1, a: i === 1 ? 'pup' : 'adult', s: i % 2 ? 'm' : 'f', sp: 0, n: i }));
+      await ev(([f, me, d, hp]) => { const s = window.__frSrv; s.me = me; s.events = []; s.yardOf[f] = Object.assign(s.yardOf[f] || {}, { v: 1, name: [2, 11], house: 5, season: 'summer', dogs: d, decor: [], hp }); s.friends = [{ fid: f, name: [2, 11], dogs: d, seen: 'today', sent: { pet: false, note: false, gift: false, walk: false } }]; const S = window.__paw.S; if (S.fr && S.fr.yards) S.fr.yards = {}; }, [FERN, ME, dogs, { d: today, g: 2, w: 1 }]);
+      await ev(() => window.__paw.hp.load());
+      await ev((f) => window.__paw.fr.visit(f), FERN);
+      const open = await t.until((f) => window.__paw.mode === 'fryard' && window.__paw.fr.scene().fid === f && window.__paw.hp.visit().on && !!document.querySelector('#view .hp-bowl:not([style*="none"])'), FERN, 8000);
+      ok(open, `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: the visit opens`);
+      await t.until(() => { const g = window.__paw.fr.greeting(); return !g || g.step >= 0; }, null, 6000); // my leader has walked in
+      const looks = []; for (let i = 0; i < 3; i++) { looks.push(await ev(arriveLook)); await t.sleep(600); }
+      const bad = looks.flatMap((l) => l.bad);
+      ok(!bad.length && looks.every((l) => l.play === 2), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: my leader and theirs greet in view, clear of the chip, strip, bubble, arrow and buttons (3 samples): ` + JSON.stringify({ bad: [...new Set(bad)].slice(0, 4), mine: looks[0].mine, lead: looks[0].lead, cam: looks[0].cam, fit: looks[0].fit, play: looks[0].play }));
+      if (process.env.FR_ARRIVE_SHOTS) { fs.mkdirSync(process.env.FR_ARRIVE_SHOTS, { recursive: true }); await t.p.screenshot({ path: path.join(process.env.FR_ARRIVE_SHOTS, `arrive_${w}_${lang}_f${n}.png`) }); }
+      if (!ph && n === 3) { // review S7 (9 of 10 samples with 3 friend dogs): while the can pours on a desktop, no dog drawn over it or its drops
+        ok(await ev(() => window.__paw.hp.tap('water', 'strip')), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: water the garden`);
+        const pour = []; for (let i = 0; i < 3; i++) { await t.sleep(350); pour.push(await ev(arriveLook)); }
+        const pb = pour.flatMap((l) => l.bad).filter((b) => /can/.test(b));
+        ok(!pb.length && pour.some((l) => l.drops > 0), `${tag}, ${n} friend dog${n > 1 ? 's' : ''}: the can pours clear of every dog (3 samples): ` + JSON.stringify({ bad: pb.slice(0, 3), drops: pour.map((l) => l.drops) }));
+      }
+      await ev(() => window.__paw.fr.home());
+      await t.until(() => window.__paw.mode === 'yard', null, 4000);
+    }
+    await t.ctx.close();
+  }
 }
 
 /* ---------------- part 3b: the greeting on a visit (owner, 2 Nov 2026, as in the launch Reel) ----------------
