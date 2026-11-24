@@ -191,6 +191,7 @@ run('v233_helps', async (t) => {
   await helpsPart(t);
   await claimPart(t);
   for (const [w, h] of [[360, 640], [390, 844]]) await phonePart(t, w, h);
+  await waterPhone(t, 412, 915);
   await chipOffPart(t);
 
   /* ======================= part 3 (V233.md 4): the sleepover ======================= */
@@ -517,6 +518,35 @@ async function claimPart(t) {
   await t.ctx.close();
 }
 
+// fix 24 Nov 2026 (the owner: no overlapping): while the can pours, the watered patch's top row (its top half) and where the drops land stand
+// clear above the visit buttons (#placeBtns), the buttons where they were; a moment later the view is back
+const btnAt = (t) => t.ev(() => [...document.querySelectorAll('#placeBtns .btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.left, r.top].map(Math.round).join(); }).join(' '));
+async function waterRow(t, tag, B0) {
+  const { ok, ev } = t;
+  const W = await ev(() => {
+    const R = (e) => e.getBoundingClientRect(), p = R(document.querySelector('#sceneG [data-hot="garden"]')), btns = [...document.querySelectorAll('#placeBtns .btn')].map(R);
+    const over = (a) => btns.some((b) => a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom);
+    const row = { left: p.left, right: p.right, top: p.top, bottom: p.top + (p.bottom - p.top) / 2 }, sp = [...document.querySelectorAll('#fx .hp-splash')].map(R);
+    return { row: [row.left, row.top, row.right, row.bottom].map(Math.round), rowClear: !over(row) && row.top >= R(document.getElementById('view')).top, splash: sp.map((r) => ({ clear: !over(r), on: r.top + r.height / 2 >= p.top && r.top + r.height / 2 <= row.bottom })), y: window.__paw.fr.cam().y };
+  });
+  ok(W.rowClear && W.splash.length === 2 && W.splash.every((x) => x.clear && x.on), tag + ': the watered patch row and the drops\' landing are clear of the visit buttons: ' + JSON.stringify(W));
+  ok(B0 === (await btnAt(t)), tag + ': the buttons did not move (' + B0 + ')');
+  ok(await t.until(() => window.__paw.fr.cam().y === 0, null, 6000), tag + ': a moment later the view is back (no lift)');
+}
+// 412x915 (Pixel 7 size): the water help only
+async function waterPhone(t, w, h) {
+  const { ok, sec, ev } = t, tag = String(w);
+  sec(`D3. phone ${w}x${h}: watering a friend's garden`);
+  await startHelps(t, { vw: w, vh: h });
+  ok(await visit(t, SUNNY, { d: await jst(t), g: 2, w: 1 }), tag + ': a visit with the garden growing');
+  await t.sleep(400);
+  const B0 = await btnAt(t);
+  ok(await ev(() => window.__paw.hp.tap('water', 'strip')), tag + ': water from the strip: ok');
+  await t.sleep(300);
+  await waterRow(t, tag, B0);
+  await shot(t, 'water_' + tag);
+  await t.ctx.close();
+}
 async function phonePart(t, w, h) {
   const { ok, sec, ev } = t, tag = String(w);
   sec(`D. phone ${w}x${h} (touch): the strip under the chip, the bowl in view, the buttons above the bar, the bubble`);
@@ -551,7 +581,7 @@ async function phonePart(t, w, h) {
   ok(!L.side && !L.bad.length, tag + ': strip, buttons, bowl and bubble fit (44 px, above the bar, Go home last): ' + JSON.stringify(L));
   await shot(t, 'visit_' + tag);
   // the can: the strip's button pans the camera to it, inside the crop
-  const cam0 = await ev(() => window.__paw.fr.cam());
+  const cam0 = await ev(() => window.__paw.fr.cam()), B0 = await btnAt(t);
   ok(await ev(() => window.__paw.hp.tap('water', 'strip')), tag + ': water from the strip: ok');
   ok(await t.until((x) => Math.abs(window.__paw.fr.cam().x - x) > 40, cam0.x, 2000), tag + ': the camera panned to the can');
   ok(await ev(() => { const c = document.querySelector('#view .hp-can').getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(); return c.left >= v.left && c.right <= v.right && c.width >= 43.5; }), tag + ': the can is in view, a 44 px tap');
@@ -561,6 +591,7 @@ async function phonePart(t, w, h) {
     return { can: Math.round(under(can) - can.bottom), splash: sp.map((r) => [Math.round(under(r) - (r.top + r.height / 2)), Math.round(r.top + r.height / 2 - patch.top)]) };
   });
   ok(wl.can >= 4 && wl.splash.length === 2 && wl.splash.every(([a, b]) => a >= 2 && b >= 0), tag + ': the can and the drops\' landing on the patch, above the buttons (px clear, px into the patch): ' + JSON.stringify(wl));
+  await waterRow(t, tag, B0);
   await shot(t, 'water_' + tag);
   // the snack sheet fits
   await ev(() => { const inv = window.__paw.S.inv; inv.food = { 'Basic Kibble': 2, 'Bone-shaped Biscuit': 1, 'Carrot Sticks': 3, Pupcake: 1 }; });
