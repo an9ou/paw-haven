@@ -60,6 +60,18 @@ for (const dir of ['v1', ART_VER]) {
   fs.writeFileSync(path.join(PD, 'pawprint.js'), src);
 }
 console.log('ART_VER ' + ART_VER, '| print page merch/dist/print/v1 and merch/dist/print/' + ART_VER);
+// the /merch page of doodledoggo.app (site/merch/, test mode, docs/design/merch/PART2.md) loads PawPrint from site/merch/print/<ART_VER>/pawprint.js:
+// copy this build's print folder there (older folders stay: an order is redrawn by the build it was previewed on) and point the page's one
+// script tag at it, so a cache never mixes two builds
+const SITE = path.join(ROOT, 'site', 'merch'), PAGE_HTML = path.join(SITE, 'index.html');
+if (fs.existsSync(PAGE_HTML)) {
+  const SD = path.join(SITE, 'print', ART_VER); fs.mkdirSync(SD, { recursive: true });
+  for (const f of fs.readdirSync(path.join(OUT, 'print', ART_VER))) fs.copyFileSync(path.join(OUT, 'print', ART_VER, f), path.join(SD, f));
+  const html = fs.readFileSync(PAGE_HTML, 'utf8'), tag = /\/merch\/print\/pp1-[0-9a-z]+\/pawprint\.js/g;
+  if (!tag.test(html)) throw new Error('site/merch/index.html: no /merch/print/<ART_VER>/pawprint.js script tag');
+  fs.writeFileSync(PAGE_HTML, html.replace(tag, '/merch/print/' + ART_VER + '/pawprint.js'));
+  console.log('site page: site/merch/print/' + ART_VER + '/ and its script tag');
+}
 let min = null;
 try {
   const esbuild = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'esbuild'));
