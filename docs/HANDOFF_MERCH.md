@@ -74,10 +74,18 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   which the owner did not take. **Launch products: mug ($19.99) and tee ($26.99) only**, shipping $4.99, free from $35 (so any two items
   ship free). Keep the sticker layout code that part 1 already wrote, switched off (`MERCH_PRODUCTS=mug,tee`); do not spend more on it.
   Bring stickers back to the owner only if a clearly cheaper way to post them turns up.
-- Part 1: print art ready for mug, tee, sticker sheet (`merch/*`, `tools/merch_*`; `PRINT_FILES.md` constants), samples sheet in
-  `docs/design/merch/samples/`.
-- Then, one at a time (at most 2 agents at once): rewrite TRANSACTIONS.md for the basket and zones; part 2 (the `/merch` page, test mode);
-  part 3 (the merch Worker with faked money). See `BUILD_PLAN.md`.
+- Part 1: **done, 24 Nov** (`docs/design/merch/PART1.md`). `PawPrint.PRODUCTS` (one spec table; stickers `launch: false`),
+  `PawPrint.print()`, the tee (4500x5400, 10 x 10 in block, paper patch on every colour but white, hard edges), the mug wrap (dog on
+  both faces, clear of the handle), `merch/names.js` (name rules and kind-word filter), `ART_VER`, the print page `merch/print/v1/`.
+  Tests: `node merch/test_pawprint.js` 63/63; game round trip 483/483. Samples sent to the owner (`docs/design/merch/samples/`):
+  no feedback yet. **Not yet reviewed:** run ONE combined review (paw-reviewer, Opus: code + art at full size) before part 2 builds on it.
+  Small open points for the owner, to ask with the next real question, not alone: a puppy or newborn prints puppy-sized on a tee
+  (tiny on the patch: keep, or scale up?); the name letters are at most 1.3 in tall.
+- Next, one at a time (at most 2 agents at once): (1) the part 1 review and its fixes; (2) rewrite TRANSACTIONS.md for the basket,
+  zones, mug + tee only, Adaptive Pricing, Durable Object storage (`SHIPPING.md` 6, `RENDER_FREE.md` 8); (3) part 2 (the `/merch`
+  page, test mode); (4) part 3 (the merch Worker with faked money). See `BUILD_PLAN.md`.
+- For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
+  (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
 - Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
 
 Only the owner can: open the Printful account and its payment method, open the separate Stripe account and turn on Stripe Tax, register
