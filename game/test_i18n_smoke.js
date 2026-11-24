@@ -15,6 +15,20 @@ const LANGS = process.env.PAW_LANGS ? process.env.PAW_LANGS.split(',').map((s) =
 const PARTIAL = !!process.env.PAW_I18N_PARTIAL;
 const hasTable = (l) => fs.existsSync(path.join(__dirname, 'i18n', l + '.json'));
 const HTML_LANG = { xx: 'en-XA', 'xx-cjk': 'ja-XA', yue: 'yue-Hant-HK' };
+// The reload sections run the page over http (127.0.0.1), as players get it (https), not from file://. Headless Chromium can hand a file:// page that
+// comes back from location.reload() a stale localStorage: the save written just before the reload (saveNow, read back fine) is missing and the
+// prefs are the context's first ones, so the game boots on the title in the old language (seen 1 in about 20 reloads on file://, 0 in 57 over http;
+// 24 Nov 2026). Nothing in the game changed: the suite read that as a lost language pick.
+function serveGame() {
+  const http = require('http'), root = __dirname, types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
+  const srv = http.createServer((q, r) => {
+    const u = decodeURIComponent((q.url || '/').split('?')[0]), f = path.join(root, path.normalize(u).replace(/^([/\\])+/, ''));
+    if (u === '/favicon.ico') { r.writeHead(204); r.end(); return; }
+    if (!f.startsWith(root + path.sep) || !fs.existsSync(f) || !fs.statSync(f).isFile()) { r.writeHead(404); r.end(); return; }
+    r.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' }); fs.createReadStream(f).pipe(r);
+  });
+  return new Promise((ok) => srv.listen(0, '127.0.0.1', () => { srv.unref(); ok({ url: 'http://127.0.0.1:' + srv.address().port + '/test_merged.html', close: () => srv.close() }); }));
+}
 
 require('./test_lib').run('i18n_smoke', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -113,7 +127,7 @@ require('./test_lib').run('i18n_smoke', async (t) => {
     ok((await S()).langShown === 'th', 'after boot in th, S.langShown === th'); await t.ctx.close(); }
 
   sec('the title chip: a pick before the save exists goes into the new save');
-  const p = await t.boot();
+  const H = await serveGame(); await t.mk(); const p = t.p; await p.goto(H.url); await p.waitForSelector('#tNew, #tContinue, #tPlay'); // over http: see serveGame
   await p.click('#tLang'); await p.waitForSelector('.langsheet [data-lang="de"]'); await p.click('.langsheet [data-lang="de"]');
   ok(await t.until(() => window.PawI18n.tlang() === 'de' && document.documentElement.lang === 'de' && !!document.getElementById('tNew') && document.getElementById('modal').hidden), 'picking Deutsch re-renders the title live in de');
   ok(await ev(() => /Deutsch/.test(document.getElementById('tLang').textContent)), 'the chip now says Deutsch');
@@ -141,4 +155,5 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   ok(await ev(() => window.__paw.i18n.set('fr') === true), 'tsetLang(fr) on that title returns true');
   ok(await t.until(() => window.PawI18n.tlang() === 'fr' && document.documentElement.lang === 'fr' && !!document.getElementById('tContinue'), null, 8000), 'the title re-renders in French');
   ok((await S()).lang === 'fr' && (await S()).langShown === 'fr', 'S.lang and S.langShown are fr');
+  H.close();
 }, { timeout: 1500000 });

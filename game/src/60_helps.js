@@ -317,7 +317,7 @@ function hpBubblePlace() {
 function hpFrame() {
   HPV.raf = 0; if (!hpVisitOn() || !HPV.wish) return;
   const v = hpTheirs(), w = HPV.wish;
-  const key = [FRC.x.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
+  const key = [FRC.x.toFixed(1), FRC.y.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
   if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); }
   HPV.raf = requestAnimationFrame(hpFrame);
 }
@@ -340,7 +340,7 @@ function hpVisit() {
   const st = $('#status', view); if (HPV.ro) HPV.ro.disconnect(); HPV.ro = null;
   if (st && strip && typeof ResizeObserver === 'function') { HPV.ro = new ResizeObserver(() => { hpStripPlace(); HPV.at = ''; }); HPV.ro.observe(st); } // the chip's words change (the clock, the weather)
   if (HPV.wish) HPV.raf = requestAnimationFrame(hpFrame);
-  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
+  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; clearTimeout(HPV.liftT); HPV.liftT = 0; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
 }
 on('fryard:enter', () => hpVisit());
 // the spot each help plays at (world x): the camera pans there on a phone first (0.5 s) when it is not well in view
@@ -361,6 +361,7 @@ async function hpTap(k, from) {
   if (k === 'wish' && w.k === 'snack') { const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms); hpSnackSheet(); return true; }
   const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms);
   if (!hpVisitOn()) return false;
+  if (k === 'water') { const ly = hpLiftView(); if (ly) await hpWait(ly); if (!hpVisitOn()) return false; } // the watered patch above the visit buttons
   if (k === 'wish' && w.k === 'pet') { const v = hpTheirs(); if (v) frPetDog(v); } // the pet first (its own pet event if not sent today), then the wish
   if (k === 'bowl') HPV.pour = true; // the bowl stays empty until the kibble lands (hpBowlFx fills it)
   const r = await hpSend(k, k === 'wish' ? { w: w.i } : {});
@@ -434,6 +435,30 @@ function hpCanFit() {
   out.lift = Math.max(0, Math.round(y + h + 14 - top)); out.land = Math.min(out.land, top - 8);
   if (out.lift) g.setAttribute('transform', `translate(0 ${-out.lift})`);
   return out;
+}
+// phones (fix 24 Nov 2026): the camera's pan to the can left most of the veggie patch under the visit buttons (390x844: the can and the drops
+// showed, the patch they water did not). While the can pours and for a moment after, the view is lifted (FRC.y, never more than HP_LIFT_MAX
+// units) so the patch's top row (HP_ROW of its height) stands HP_ROW_GAP units clear above the buttons over it; the buttons do not move.
+// Then it eases back. Returns how long to wait for the lift
+const HP_ROW = 0.5, HP_ROW_GAP = 8, HP_LIFT_MAX = 160, HP_LIFT_HOLD = 3200;
+function hpLiftView() {
+  clearTimeout(HPV.liftT); if (!isPhone() || FRC.w >= 1000) return 0;
+  const svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(), pt = $('#sceneG [data-hot="garden"]'); if (!M || !pt) return 0;
+  const inv = M.inverse(), W = (px, py) => new DOMPoint(px, py).matrixTransform(inv), pr = pt.getBoundingClientRect(); if (!pr.width) return 0;
+  const a = W(pr.left, pr.top), b = W(pr.right, pr.bottom), row = a.y + (b.y - a.y) * HP_ROW + HP_ROW_GAP; let top = 1e9;
+  document.querySelectorAll('#placeBtns .btn').forEach((e) => { const r = e.getBoundingClientRect(); if (r.width && r.right > pr.left && r.left < pr.right) top = Math.min(top, W(r.left, r.top).y); });
+  const want = top < 1e9 ? clamp(FRC.y + row - top, 0, HP_LIFT_MAX) : 0;
+  const back = () => { HPV.liftT = 0; if (cur.mode === 'fryard' && FRC.y > 0) frCamTo(FRC.x, 0.5, 0); };
+  if (want < 2) { if (FRC.y > 0) HPV.liftT = setTimeout(back, HP_LIFT_HOLD); return 0; }
+  hpGroundExt(svg); frCamTo(FRC.x, 0.4, want); HPV.liftT = setTimeout(back, HP_LIFT_HOLD); return motionOff() ? 0 : 420;
+}
+// the yard's ground carried on under the scene's bottom edge (world y 600) while the view is lifted, in the scene's own ground colour
+function hpGroundExt(svg) {
+  if (svg.querySelector('#hpGroundExt')) return; const sg = svg.querySelector('#sceneG'); if (!sg) return;
+  const gr = [...sg.querySelectorAll('path, rect')].find((e) => { const f = e.getAttribute('fill') || ''; if (!/^#[0-9a-f]{3,8}$/i.test(f)) return false; try { const b = e.getBBox(); return b.width >= 990 && b.y > 300 && b.y + b.height >= 595; } catch (x) { return false; } });
+  if (!gr) return;
+  const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); r.id = 'hpGroundExt'; r.setAttribute('x', '0'); r.setAttribute('y', '598'); r.setAttribute('width', '1000'); r.setAttribute('height', String(HP_LIFT_MAX + 10)); r.setAttribute('fill', gr.getAttribute('fill')); r.setAttribute('pointer-events', 'none'); r.setAttribute('aria-hidden', 'true');
+  sg.after(r);
 }
 function hpWaterFx(fit) {
   const [x, y, w, h] = HP_CAN, F = fit || { lift: 0, land: y + h * 0.62 + 81 }; sfx('water');

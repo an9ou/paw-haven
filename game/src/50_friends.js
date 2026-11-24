@@ -957,20 +957,23 @@ function frChip() {
 }
 // phones: the camera rests on the house and the middle of the yard; a drag pans the whole yard and the look-left button (#phPeek) shows
 // the rest of their decor and back (phone review 3). Desktop shows the whole yard
-const FRC = { x: 0, w: 1000, home: 0, raf: 0 };
-function frCamSet(x) {
+// y: the view lifted that many units for a moment (60_helps.js hpLiftView: the watered patch above the visit buttons on a phone); 0 otherwise
+const FRC = { x: 0, w: 1000, home: 0, raf: 0, y: 0 };
+function frCamSet(x, y) {
   const svg = $('#view > svg.world'); if (!svg) return;
-  FRC.x = clamp(x, 0, 1000 - FRC.w); svg.setAttribute('viewBox', `${FRC.x.toFixed(1)} 0 ${FRC.w.toFixed(1)} 600`);
+  if (y != null) FRC.y = Math.max(0, y);
+  FRC.x = clamp(x, 0, 1000 - FRC.w); svg.setAttribute('viewBox', `${FRC.x.toFixed(1)} ${FRC.y.toFixed(1)} ${FRC.w.toFixed(1)} 600`);
 }
-function frCamTo(x, secs) {
-  cancelAnimationFrame(FRC.raf); const x0 = FRC.x, x1 = clamp(x, 0, 1000 - FRC.w), t0 = performance.now(), ms = (secs || 0) * 1000;
-  if (!ms || motionOff()) { frCamSet(x1); frScan(); return; }
-  const step = (t) => { const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; frCamSet(x0 + (x1 - x0) * e); if (k < 1) FRC.raf = requestAnimationFrame(step); else frScan(); };
+function frCamTo(x, secs, y) {
+  cancelAnimationFrame(FRC.raf); const x0 = FRC.x, x1 = clamp(x, 0, 1000 - FRC.w), y0 = FRC.y, y1 = Math.max(0, y || 0), t0 = performance.now(), ms = (secs || 0) * 1000;
+  if (!ms || motionOff()) { frCamSet(x1, y1); frScan(); return; }
+  const step = (t) => { const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; frCamSet(x0 + (x1 - x0) * e, y0 + (y1 - y0) * e); if (k < 1) FRC.raf = requestAnimationFrame(step); else frScan(); };
   FRC.raf = requestAnimationFrame(step);
 }
 function frCam() {
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight;
+  FRC.y = 0;
   if (!isPhone() || !vw || !vh) { FRC.w = 1000; FRC.home = 0; frCamSet(0); return; }
   FRC.w = Math.min(1000, 600 * vw / vh); FRC.home = clamp(590 - FRC.w / 2, 0, 1000 - FRC.w); // the house's door near the right edge, the open yard to its left
   frCamSet(FRC.home);
@@ -1237,9 +1240,10 @@ function frLayout(list, fit, final) {
       const c = FRV.crop, gap = (p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= c.x0 ? c.x0 - R[2] : R[0] >= c.x1 ? R[0] - c.x1 : 1e4 - Math.abs(p[0] - (c.x0 + c.x1) / 2); };
       sp.sort((p, q) => gap(p) - gap(q)); sp = sp.slice(0, 3);
     }
-    if (!sp.length) { // nowhere clear at all: the spot the others cover least
-      const all = frSpots(v, null, { wide: ph, any: true }), box = (r) => [r[0], r[1], r[2] - r[0], r[3] - r[1]];
-      const cover = (p) => { const R = box(frEnv(v, p[0], p[1], frK(v, p[1]), v.face)); return FRV.dogs.reduce((m, o) => m + (o.res ? frOver(R, box(o.res.r)) : 0), 0); };
+    if (!sp.length) { // nowhere clear at all: the spot the others cover least, in view or (a phone) anywhere above the buttons
+      // pack spacing (24 Nov 2026): what counts is a dog drawn over another; only its legs behind a dog in front (frClash 1) costs little
+      const all = frSpots(v, null, { wide: ph, any: true }).concat(ph ? frSpots(v, null, { any: true }) : []), box = (r) => [r[0], r[1], r[2] - r[0], r[3] - r[1]];
+      const cover = (p) => { const k = frK(v, p[1]), R = frEnv(v, p[0], p[1], k, v.face), me = frRes(v, R, p[1], k); return FRV.dogs.reduce((m, o) => { if (!o.res) return m; const c = frClash(me, o.res); return m + (c ? frOver(box(R), box(o.res.r)) * (c > 1 ? 1 : 0.05) : 0); }, 0); };
       if (all.length) { all.sort((p, q) => cover(p) - cover(q)); sp = [all[0]]; }
     }
     if (sp.length) put(v, PICK(sp));
@@ -1686,7 +1690,7 @@ function frExpose() {
     giftSheet: (fid) => frGiftSheet(fid, 'list'), sendGift: (fid, i) => frGiftSend(fid, i, null, ''),
     walkDogs: () => frWalkDogs().map((o) => ({ fid: o.fid, dog: o.dog, name: o.d.name, key: o.d.key })), guest: () => (S && S.fr ? S.fr.guest : null), walkGuest: () => (FRW.g ? { fid: FRW.g.fid, dog: FRW.g.dog } : null),
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
-    cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home }), fit: (root) => frFit(root),
+    cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home, y: FRC.y }), fit: (root) => frFit(root),
     posterSVG: () => frPosterSVG(), poster: () => frPosterMake(), posterKey: () => frPosterKey(), posterHow: () => FR.posterHow || '', posterErr: () => FR.posterErr || '', posterForce: (f) => { FR.posterForce = f || ''; },
     greet: () => frGreet(), greeting: () => (FRV.gr ? { step: FRV.gr.i, pose: [FRV.gr.a.pose, FRV.gr.b.pose] } : null), // the greeting again on this visit (Marketing films it); where it is
     crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)) },
