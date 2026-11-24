@@ -65,7 +65,12 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
 
 ## Now running / next (update this as parts finish)
 
-- Part 0b: the render test deploy (an agent of this session), result into `RENDER_FREE.md` section 8.
+- Part 0b: **done, 24 Nov.** The test Worker ran and is deleted (checked: 6 Workers as before, 0 Durable Object namespaces). Result in
+  `RENDER_FREE.md` section 8: Cloudflare's free browser makes every print file pixel-exact; about 270 orders a day on Free; Worker CPU
+  under 4 ms. Print files are stored in a SQLite Durable Object of the **merch** Worker (the session's token cannot create KV; no R2).
+  First fallback: resvg-wasm inside that Durable Object (it also worked on Free). Workers Paid is not needed.
+- The owner (24 Nov) finds Printful's $4.49 postage for one sticker sheet expensive: a research job compares cheaper ways
+  (`STICKERS.md`); the sticker price and whether stickers launch are open until the owner has seen it.
 - Part 1: print art ready for mug, tee, sticker sheet (`merch/*`, `tools/merch_*`; `PRINT_FILES.md` constants), samples sheet in
   `docs/design/merch/samples/`.
 - Then, one at a time (at most 2 agents at once): rewrite TRANSACTIONS.md for the basket and zones; part 2 (the `/merch` page, test mode);

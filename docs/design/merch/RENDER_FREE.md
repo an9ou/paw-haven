@@ -1,10 +1,10 @@
 # Print PNGs with no paid plan (24 Nov 2026)
 
-Follows SPIKE.md (resvg-wasm needs 0.4-1.9 s CPU, Workers Free allows 10 ms). Question: can we make, store and serve the print PNGs (tee 4500x5400 transparent, mug 2700x1050, sticker sheet 1749x2481) on the free plan? Nothing was deployed, created or changed in the account. Marks: [doc] read on the page named in section 5; [measured] on this container; [not verified] needs the one test deploy in section 7.
+Follows SPIKE.md (resvg-wasm needs 0.4-1.9 s CPU, Workers Free allows 10 ms). Question: can we make, store and serve the print PNGs (tee 4500x5400 transparent, mug 2700x1050, sticker sheet 1749x2481) on the free plan? Sections 1-7 were written with nothing deployed; the one approved test deploy (section 7) ran on 24 Nov 2026 and was deleted again: results in section 8. Marks: [doc] read on the page named in section 5; [measured] on this container; [cloud] measured on the account in section 8; [not verified] still open.
 
 ## 1. Short answer
 
-**Yes, on Cloudflare, free: let Cloudflare's own browser draw the print.** Browser Run (the new name of Browser Rendering) is on the Free plan with 10 browser-minutes a day [doc]. A Free Worker only asks for the screenshot and pipes the PNG into Workers KV; waiting on the browser is not CPU time [doc], and the Worker never loads PawPrint. The browser opens a static print page that loads PawPrint and draws the dog from the recipe in the URL hash, so the print is still drawn from the recipe alone (no uploads).
+**Yes, on Cloudflare, free: let Cloudflare's own browser draw the print. Proven on the account [cloud].** Browser Run (the new name of Browser Rendering) is on the Free plan with 10 browser-minutes a day [doc]. A Free Worker only asks for the screenshot and pipes the PNG into a SQLite Durable Object (proven) or Workers KV (not provable with this session's token); waiting on the browser is not CPU time (max 3.7 ms CPU per invocation measured), and the Worker never loads PawPrint. The browser opens a static print page that loads PawPrint and draws the dog from the recipe in the URL hash, so the print is still drawn from the recipe alone (no uploads).
 
 ```
  Stripe paid --webhook--> pawhaven-api (Free): order + recipe in D1 (as TRANSACTIONS.md plans)
@@ -15,12 +15,13 @@ Follows SPIKE.md (resvg-wasm needs 0.4-1.9 s CPU, Workers Free allows 10 ms). Qu
      waitForSelector: '#o svg' })          <- Cloudflare's Chrome loads the static page; PawPrint draws the SVG there
                                |  PNG response body streamed, never decoded in the Worker
                                v
- KV put print/<order>/<item>.png --> GET /merch/file/<key>?exp=&sig= (HMAC) --> Printful fetches it
+ store print/<order>/<item>.png (SQLite DO, or KV) --> GET /merch/file/<key>?exp=&sig= (HMAC) --> Printful fetches it
 ```
 
-- **Capacity on Free:** about 120 to 600 print files a day (10 browser-minutes at 1 to 5 s each), so plan on **about 80 orders a day** at 1.5 files per order. Measured locally a tee takes 0.48 s of browser from launch to close.
-- **The owner turns nothing on:** Browser Run, KV and cron are all in the Free plan. No R2, no card. One test deploy must be approved first (section 7).
-- **Fallback (also free):** a GitHub Actions job triggered by the Worker (`repository_dispatch`) renders with resvg-js (0.05-0.6 s per file) and uploads the PNGs back to the Worker, which puts them in KV. It uses about 1 to 2 of the 2,000 free Linux minutes per run.
+- **Capacity on Free [cloud]:** billed browser time is 1.27-1.46 s per tee, 0.37-0.51 s per mug, 0.50-0.76 s per sheet, so 10 browser-minutes make about **410 tees or 1,170 mugs a day: plan on about 270 orders a day** (1.5 tees per order, the worst case).
+- **The owner turns nothing on:** Browser Run, Durable Objects (SQLite), KV and cron are all in the Free plan. No R2, no card.
+- **Fallback 1 (Cloudflare, free) [cloud]:** option G works: a SQLite Durable Object on Free drew 10 banded tees and 2 mugs with resvg-wasm (1.1-1.7 s each, no `exceededCpu`).
+- **Fallback 2 (also free):** a GitHub Actions job triggered by the Worker (`repository_dispatch`) renders with resvg-js (0.05-0.6 s per file) and uploads the PNGs back to the Worker. It uses about 1 to 2 of the 2,000 free Linux minutes per run.
 
 ## 2. The candidates
 
@@ -103,3 +104,27 @@ Deploy one throwaway Worker `doodle-doggo-print-test` (Free plan; workers.dev on
 4. **Printful (needs the owner's Printful key, no order):** add one tee PNG URL and one SVG URL to the file library and read back `status`, size and dpi. That settles B: if the SVG comes back `ok`, ask for a mockup task to see how Printful flattens the crayon opacity.
 
 Also unproven: the billed browser seconds per file, how long `repository_dispatch` takes to start, whether R2's checkout always asks for a card, and how Safari draws PawPrint (only Chromium is used here).
+
+## 8. Test deploy results (24 Nov 2026)
+
+One throwaway Worker `doodle-doggo-print-test` (workers.dev only, compatibility date 2026-11-01, a Browser Run binding, one SQLite Durable Object class, Workers observability on) served the print page and PawPrint itself and called `env.BROWSER.quickAction('screenshot', { url, viewport, screenshotOptions: { omitBackground: true }, waitForSelector: { selector: '#o svg' } })`. 10 renders 11 s apart, then 12 option G renders. Deleted the same day: Workers 6 before, 6 after; Durable Object namespaces 0 before, 0 after; KV never created. Scripts stayed in the session scratchpad, not the repo.
+
+| render (3 dogs each) | HTTP | `X-Browser-Ms-Used` | Worker wait / client total | PNG | size, corners | vs local Chromium |
+|---|---|---|---|---|---|---|
+| tee, viewport 2250x2700 at 2 | 200 x3 | 1,272-1,455 ms | 1.7-2.4 s / 2.3-3.1 s | 646-713 KB | 4500x5400, alpha 0 | **0 (every pixel equal)** |
+| tee, viewport 4500x5400 at 1 (once) | 200 | 1,273 ms | 1.7 / 2.3 s | 713 KB | 4500x5400, alpha 0 | 0; byte-identical to the scale-2 file |
+| mug 2700x1050 | 200 x3 | 373-508 ms | 0.7-0.8 / 1.3-1.4 s | 185-203 KB | exact, opaque strip | 0 |
+| sticker sheet 1749x2481 | 200 x3 | 505-763 ms | 0.8-1.1 / 1.3-1.7 s | 333-420 KB | exact, alpha 0 | 0 |
+| **option G** in the Durable Object, resvg-wasm | 200 x12 | none | tee (12 bands) 1.15-1.70 s, mug 0.44-0.83 s round trip | tee 471-513 KB, mug 165 KB | exact, alpha 0 | 0.025-0.031 (vs resvg-js 0.0008-0.0011) |
+
+- **Browser time used in all:** 8.5 s of the 120 s approved. No 429 at any point. Cloudflare's PNGs are 40% smaller than local Chromium's but decode to the same pixels.
+- **Worker CPU** (GraphQL `workersInvocationsAdaptive`, all 71 invocations, including the browser's own loads of the page and PawPrint): P50 0.83 ms, **max 3.7 ms**, 0 errors, no `exceededCpu`, one `clientDisconnected` (0.5 ms). The Workers Logs query API answered **403 "Forbidden"** to this token, so there is no per-route split.
+- **Storing and serving:** the KV namespace could not be made: `POST /storage/kv/namespaces` and the KV listing both answer **401, code 10000 "Authentication error"**. Instead the Worker split the Browser Run body (`body.tee()`, never decoded) into the response and a SQLite Durable Object. All 10 stored PNGs came back through `GET /merch/file/<key>?sig=` **byte for byte**, in 0.25-0.48 s; a wrong `sig` got 403.
+- **Option G:** the Durable Object ran 10 banded tees and 2 mugs in a row with no `exceededCpu`. The same code takes 0.84-1.4 s CPU locally, so the DO clearly gets far more than 10 ms on Free, which matches the limits page (30 s per request). Its exact CPU could not be read: the Durable Object GraphQL datasets returned no rows and Workers Logs is forbidden to this token.
+
+**Now proven [cloud]:** Browser Run works on this Free account with no token (the binding), at the full tee size in one viewport (4500x5400 at scale 1 works too), transparent, pixel-identical to Chromium on this container; the Worker stays far under 10 ms; a PNG streams into SQLite Durable Object storage and out again unchanged; option G renders on Free.
+**Not proven:** KV (the token cannot create it: make the namespace in the dashboard or with a token that has Workers KV Storage: Edit, or simply use the Durable Object, which needs nothing extra); the DO's exact CPU; viewports above 4500x5400; Printful (item 4, needs the owner's key); the 10-minute daily cap itself (never reached).
+
+**Daily capacity on Free from the billed time:** 600 s / 1.46 s (slowest tee) = **about 410 tees a day**; mugs 600 / 0.51 = about 1,170; sheets about 790. At 1.5 files an order, all tees, that is **about 270 orders a day** (the old estimate was 80). Quick Actions at 1 per 10 s (8,640 a day) and Durable Object Free limits (100,000 requests a day, 5 GB) are far above it. Option G has its own budget on top (13,000 GB-s a day of DO time = about 100,000 s at 128 MB, tens of thousands of tees).
+
+**Decision: the Browser Run pipeline**, storing the PNGs in a SQLite Durable Object of `pawhaven-api` (KV only if the owner makes a namespace), with option G (resvg-wasm in that DO) as the first fallback when Browser Run returns 429, and GitHub Actions only as the last resort. Workers Paid is not needed at launch.
