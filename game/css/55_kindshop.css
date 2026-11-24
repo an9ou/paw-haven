@@ -78,5 +78,6 @@ html[data-layout="phone"] .ks-got-row .art{width:72px;height:62px}
 .ks-refunded{color:#8A5A2E;font-style:italic;text-align:center;max-width:100%;overflow-wrap:anywhere;line-height:1.5;padding:2px 0 8px} /* clear of the card's wobbly bottom line, Thai included (fit R12) */
 .ks-paused,.ks-paused-tag{color:#8A5A2E;max-width:100%;overflow-wrap:anywhere;line-height:1.5} /* refund protection (14 Nov 2026): the kind paused line, clear of the wobbly lines like .ks-refunded */
 .ks-paused-tag{text-align:center;padding:2px 0 8px}
+.ks-ask.ks-paused{padding:0 10px;box-sizing:border-box} /* fit audit 24 Nov 2026 (en, 412x915): the long paused line under the cards kept 3 px off the sheet's wobbly side line (R12 wants 4) */
 .ks-settling{margin:0 0 8px;color:#6B4A2E;overflow-wrap:anywhere}
 .ks-settle{margin:4px 0;text-align:center;color:#6B4A2E}
