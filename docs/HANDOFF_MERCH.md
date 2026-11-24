@@ -21,14 +21,25 @@ no payment code exists.
 | Print spike | `docs/design/merch/SPIKE.md`, code `merch/`, `tools/merch_*` | Done. `PawPrint` redraws a dog from a ~28-character recipe, byte-identical to the game (483/483). Server render with resvg: needs **Workers Paid** (30 s CPU); tee 4500x5400 in 12 bands. Phones make previews only. |
 | Shop page design | `docs/design/merch/DESIGN.md`, `docs/design/merch/prototype/` (open `index.html`; pictures in `shots/`) | Done as a clickable prototype (6 steps, phones first). The owner has seen the pictures; no feedback yet. |
 
-## Waiting for the owner (asked 24 Nov, not answered yet; special update: NO 5-minute default)
+## The owner's answers (24 Nov 2026, about 12:50 JST, in the choice window; the owner's own words in quotes)
 
-1. UK at launch? (recommended: USA first; UK after UK VAT registration, which an overseas seller needs from the first UK sale)
-2. Currencies (recommended: fixed USD and GBP)
-3. First products (recommended: mug, tee, sticker sheet; the designer adds the tote; sweatshirt and hoodie later)
-4. Returns (recommended: none on personalised items, free replacement for any defect)
-5. Delivery included in the price (recommended: yes)
-6. Which Cloudflare plan is the account on, Free or Workers Paid? (could not be read with the session's token)
+1. Countries: "We can ship to everywhere not only mention USA, we can list free shipping with purchase over $50usd". So: **worldwide**, not
+   USA-only. Still open: the UK needs a UK VAT registration before the first UK sale, and the EU has its own rules (PROVIDERS.md 2). The
+   MERCH session must put that to the owner with a country list (`COUNTRIES.md`) before anything is built for those countries.
+2. Currencies: "Showing usd only, and buyers can decide which currency they use when they pay in stripe". So: **one USD price list**, and
+   Stripe's own currency choice at checkout (Adaptive Pricing), not a GBP list.
+3. Products at launch: **mug, tee, sticker sheet.**
+4. Returns: **none for a change of mind; free reprint or refund for damage, misprint or loss; 1-hour cancel window.**
+5. Delivery: "The selling price is included the shipping fee, but i want to make more income, please research for a reasonable shipping
+   fee, we can do free shipping if they purchase over $50/ smaller amount we can do free shipping". So: **a shipping fee on small orders
+   and free shipping over a threshold (US$50 or lower)**; the owner wants more income per order. This needs a **cart** (more than one
+   item per order), which TRANSACTIONS.md had rejected: the order flow changes.
+6. Cloudflare: "It is free plan as i know, but can u try to put it on cloudflare first, otherwise lets see if we can do it in free way".
+   So: **no paid plan assumed.** Find a way to make the print files on Cloudflare Free, or another free way.
+
+Work that followed (see the files): `ECONOMICS.md` + `tools/merch_econ.js` (margins with Stripe Hong Kong fees), `PRINT_FILES.md` (print
+areas; the tee is settled), `BUILD_PLAN.md` (parts; to be updated for the cart, worldwide and the free plan).
+
 Only the owner can: open the Printful account and its payment method, open the separate Stripe account and turn on Stripe Tax, register
 for tax where needed (with an accountant: we give research, not tax advice), set secrets in the dashboards, order real samples.
 
