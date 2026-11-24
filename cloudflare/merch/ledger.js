@@ -287,6 +287,7 @@ export class MerchLedger {
     }
     if (o.status === 'cancelled') return json({ status: 'cancelled', refund: this.refundState(o.id) });
     if (o.status === 'expired') return json({ status: 'expired', refund: null });
+    if (o.hold === 'dispute') return fail('not_allowed', 409, { say: 'Your bank is looking at this payment, so we\u2019ve paused it.' }); // the bank decides the money
     // T2.1-18 / T2.2-40: a cancel handled before cancel_until + 120 s wins; a confirm never starts before then and writes 'confirming' first
     const ok = this.tx(() => {
       const x = this.order(o.id);
@@ -306,7 +307,7 @@ export class MerchLedger {
     if (typeof body.country !== 'string' || !/^[A-Z]{2}$/.test(body.country)) return fail('bad_address', 400, { field: 'country' });
     if (body.country !== o.country) return fail('other_country', 400, { country: o.country, say: 'We can only send this order to its country. To send it somewhere else, we’ll refund you and you can order again.' });
     const rec = { name: a.name, address1: a.line1, address2: a.line2, city: a.city, state_code: a.state, zip: a.postal, country_code: body.country }; // sent on, never stored
-    if (o.hold === 'reship') { const r = await this.reprint(o, this.reshipLines(o), null, rec, 'reship'); return r.ok ? json({ ok: true }) : fail(r.error || 'busy', r.status || 503); }
+    if (o.hold === 'reship') { const r = await this.reprint(o, this.reshipLines(o).map((l) => l.line), null, rec, 'reship'); return r.ok ? json({ ok: true }) : fail(r.error || 'busy', r.status || 503); }
     const r = o.provider_order ? await provider.update(this.env, o.provider_order, rec) : await this.makeDraft(o, rec);
     if (r && r.kind === 'address') return fail('bad_address', 400, { field: 'address' });
     if (!r || (!r.ok && r.kind !== undefined)) return fail('busy', 503);
@@ -357,6 +358,10 @@ export class MerchLedger {
       for (const x of L) if (!DEAD.includes(x.status) && (LINE_RANK[x.status] || 0) < LINE_RANK.shipped) this.setLine(o.id, x.line, { status: 'cancelled', keep_until: now + 2 * DAY });
     }
     this.set(o.id, cols);
+    if (after > 0 && ['confirmed', 'part_shipped'].includes(o.status)) { // what is left may all be shipped already (a late part refunded)
+      const live = this.lines(o.id).filter((x) => !DEAD.includes(x.status) && x.refunded_qty < x.qty);
+      if (live.length && live.every((x) => (LINE_RANK[x.status] || 0) >= LINE_RANK.shipped)) this.set(o.id, { status: 'shipped', next_try_at: null });
+    }
     if (reason !== 'render' && reason !== 'provider') this.buyerMail(o.id, 'refunded', 'me_' + o.id + '_refund_' + rid);
     return { id: rid, amount, last: after === 0 };
   }
@@ -729,8 +734,11 @@ export class MerchLedger {
     }
     if (r.kind === 'daily' || r.kind === 'not_set_up') { // T2.2-29: wait for 09:00 JST; past the hour, held render
       return this.tx(() => {
-        const x = this.order(o.id), cols = { next_try_at: r.kind === 'daily' ? nextUtcMidnight(now) : now + HOUR };
+        const x = this.order(o.id), reset = r.kind === 'daily' ? nextUtcMidnight(now) : now + HOUR;
+        const cols = { next_try_at: x.status === 'paid' && now < x.cancel_until ? Math.min(reset, x.cancel_until) : reset }; // look again when the hour ends, to hold it
         if (x.status === 'paid' && now >= x.cancel_until) Object.assign(cols, { status: 'held', hold: 'render', hold_at: now });
+        const held = cols.hold === 'render' || (x.status === 'held' && x.hold === 'render'), since = cols.hold_at || x.hold_at || now;
+        if (held) cols.next_try_at = Math.min(reset, now + 2 * HOUR, since + 72 * HOUR); // held: the 2-hour owner email and the 72-hour refund need a wake
         this.set(o.id, cols); this.setLine(o.id, l.line, { last_error: r.kind });
       });
     }

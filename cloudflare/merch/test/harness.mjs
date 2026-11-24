@@ -38,7 +38,7 @@ export async function world(o) {
   env.LEDGER = namespace(MerchLedger, env); env.PRINTS = namespace(MerchPrints, env);
   env.ASSETS = { fetch: async (r) => new Response('<!doctype html>print page ' + new URL(r.url).pathname, { headers: { 'content-type': 'text/html' } }) };
   const stub = () => env.LEDGER.get('ledger');
-  const w = { env, clock, stripe, pf, rd, mail };
+  const w = { env, clock, stripe, pf, rd, mail }; stripe.now = () => clock.t;
   w.L = () => stub().obj;
   w.state = () => stub().state;
   w.init = async () => { await w.L().init(); return w.L(); };

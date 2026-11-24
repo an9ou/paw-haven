@@ -79,7 +79,7 @@ export async function t21() {
   });
   await T('T2.1-10', 'alarm: a queued line, renderer free: renders, stores the PNG, checks its size, writes sha, bytes, art_ver; lines at least 11 s apart', async () => {
     const w = await world(); const id = await w.paidOrder([mug(0), tee(1)]);
-    await w.advance(0); let L = w.lines(id); eq(L.map((l) => l.status), ['ready', 'queued'], 'one line per wake');
+    await w.advance(1); let L = w.lines(id); eq(L.map((l) => l.status), ['ready', 'queued'], 'one line per wake');
     ok(/^[0-9a-f]{64}$/.test(L[0].file_sha) && L[0].file_bytes > 2 * (1 << 20) && L[0].renderer === 'browser' && L[0].art_ver === PP.ART_VER, 'sha, bytes (over 2 MB: stored in parts), renderer');
     ok(w.rd.calls[0].url === 'https://merch-api.doodledoggo.app/merch/print/' + PP.ART_VER + '/' + L[0].print_link && w.rd.calls[0].viewport.width === 2700, 'the print page of the line’s art_ver: ' + w.rd.calls[0].url);
     await w.advance(5e3); ok(w.lines(id)[1].status === 'queued', 'not before 11 s');
@@ -114,7 +114,7 @@ export async function t21() {
   await T('T2.1-15', 'a Printful shipment for some lines: parcel row, lines shipped, one On its way email me_<order>_ship_<parcel>, part_shipped', async () => {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(1)]); const s = w.pf.ship(w.order(id).provider_order, [id + '_1']);
     await shipHint(w, id); const p = w.one('select * from merch_parcels where id = ?', s.id);
-    ok(p && p.product === 'mug' && p.tracking_url === s.tracking_url, 'parcel row'); eq(w.lines(id).map((l) => l.status), ['shipped', 'confirmed'], 'lines');
+    ok(p && p.product === 'mug' && p.tracking_url === s.tracking_url, 'parcel row'); eq(w.lines(id).map((l) => l.status), ['shipped', 'in_production'], 'lines (Printful: partial = in production)');
     eq(w.order(id).status, 'part_shipped', 'part shipped'); ok(w.mails(new RegExp('^me_' + id + '_ship_' + s.id + '$')).length === 1, 'one email per parcel');
     const page = (await w.call('GET', '/merch/order/' + id)).json; ok(page.parcels.length === 1 && page.parcels[0].tracking_url === s.tracking_url, 'tracking link on the page');
   });
@@ -223,8 +223,8 @@ export async function t21() {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(1)]); w.pf.ship(w.order(id).provider_order, [id + '_1']); await shipHint(w, id);
     let r = await w.call('POST', '/merch/order/' + id + '/cancel', { scope: 'late' }); ok(r.status === 409 && r.json.error === 'not_late', 'not before the delay email');
     await w.advance(w.order(id).ship_by - w.clock.t + 1e3); w.pfOrder(id).status = 'inprocess';
-    r = await w.call('POST', '/merch/order/' + id + '/cancel', { scope: 'late' }); ok(r.status === 200 && r.json.status === 'refunded', r.text);
-    ok(w.stripe.refunds.reduce((a, x) => a + x.amount, 0) === 2699 + 0 + 0 + (w.order(id).total - 1999 - 2699), 'the tee and the shipping left: ' + w.stripe.refunds.map((x) => x.amount));
+    r = await w.call('POST', '/merch/order/' + id + '/cancel', { scope: 'late' }); ok(r.status === 200 && r.json.status === 'shipped', 'what is left has all shipped: ' + r.text);
+    ok(w.stripe.refunds.map((x) => x.amount).join() === '2699' && w.lines(id)[1].refunded_qty === 1, 'the tee refunded; shipping stays as charged: ' + w.stripe.refunds.map((x) => x.amount));
     ok(w.pf.calls.some((c) => c.m === 'DELETE'), 'asked Printful to cancel'); ok(w.owner(/cancel_late/).length === 1, 'owner email: Printful could not');
   });
   await T('T2.1-32', 'nightly: a variant that fails the floor alone: on_flag = 0, owner email; quote and checkout 409 variant_off', async () => {

@@ -48,7 +48,7 @@ const J = (o, status) => new Response(JSON.stringify(o), { status: status || 200
 
 // ---------------- Stripe ----------------
 export function fakeStripe() {
-  const S = { sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch' };
+  const S = { now: () => Date.now(), sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch' };
   const lineItems = (f) => { const out = []; for (let i = 0; f['line_items[' + i + '][quantity]'] !== undefined; i++) { const q = Number(f['line_items[' + i + '][quantity]']), u = Number(f['line_items[' + i + '][price_data][unit_amount]']); out.push({ quantity: q, amount_subtotal: u * q, amount_tax: 0, amount_total: u * q, description: f['line_items[' + i + '][price_data][product_data][name]'] }); } return out; };
   S.fetch = async (url, init) => {
     const u = new URL(url), m = (init && init.method) || 'GET', h = (init && init.headers) || {}, key = h['Idempotency-Key'] || null, body = formParse(init && init.body);
@@ -67,7 +67,8 @@ export function fakeStripe() {
     }
     let mm = /^\/v1\/checkout\/sessions\/([^/]+)(\/expire)?$/.exec(p);
     if (mm && mm[2] && m === 'POST') { const cs = S.sessions.get(mm[1]); if (take('expire')) return J({ error: {} }, 500); if (!cs || cs.status !== 'open') return J({ error: { message: 'not open' } }, 400); cs.status = 'expired'; return J(cs); }
-    if (mm && m === 'GET') { if (take('get')) return J({ error: { message: 'rate' } }, 429); const cs = S.sessions.get(mm[1]); return cs ? J(cs) : J({ error: {} }, 404); }
+    if (mm && m === 'GET') { if (take('get')) return J({ error: { message: 'rate' } }, 429); const cs = S.sessions.get(mm[1]); if (cs && cs.status === 'open' && S.now() / 1000 > cs.expires_at) cs.status = 'expired'; // Stripe expires it at expires_at
+      return cs ? J(cs) : J({ error: {} }, 404); }
     if (p === '/v1/checkout/sessions' && m === 'GET') { if (take('list')) return J({ error: {} }, 500); const pi = u.searchParams.get('payment_intent'); return J({ data: Array.from(S.sessions.values()).filter((c) => c.payment_intent === pi) }); }
     if (p === '/v1/refunds' && m === 'POST') {
       if (take('refund')) return J({ error: { message: 'no' } }, 500);
@@ -84,7 +85,7 @@ export function fakeStripe() {
     cs.status = 'complete'; cs.payment_status = o.unpaid ? 'unpaid' : 'paid'; cs.payment_intent = cs.payment_intent || 'pi_test_' + (++S.n);
     cs.customer_details = { email: o.email || 'buyer@example.test' };
     const country = o.country || cs.country;
-    cs.collected_information = { shipping_details: { name: 'Pat Example', address: { line1: '1 Example Street', city: 'Exampleton', postal_code: '00001', state: 'CA', country } } };
+    cs.collected_information = { shipping_details: { name: 'Pat Example', address: { line1: '1 Example Street', city: 'Exampleton', postal_code: 'PC-4242', state: 'CA', country } } };
     if (o.tax) { cs.total_details.amount_tax = o.tax; cs.amount_total += o.tax; cs.line_items.data[0].amount_tax = o.tax; }
     if (o.amount) cs.amount_total = o.amount;
     if (o.currency) cs.currency = o.currency;

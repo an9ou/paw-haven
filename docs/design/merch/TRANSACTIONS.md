@@ -505,6 +505,10 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 
 `MerchPrints` holds `prints (key text primary key /* <order>/<line> */, png blob /* <= 7.5 MB */, sha text, bytes integer, created_at integer, keep_until integer)`.
 
+> Note (part 3 build, 24 Nov 2026): a SQLite Durable Object row (string or BLOB) is at most **2 MB**, not 8 MB as 6.1 says (Miniflare refuses a 7 MB
+> blob with `SQLITE_TOOBIG`; 2.1 MB passes locally). So `MerchPrints` keeps each PNG in 1 MB parts (`prints` + `print_parts (key, n, data)`); the
+> 7.5 MB file limit stands. PART3.md, contract question 1.
+
 ### 6.3 Routes (Worker `doodle-doggo-merch`; JSON unless said; errors as `{error, ...}`)
 
 | Method, path | Auth | Limit | Input | Output | Errors |
