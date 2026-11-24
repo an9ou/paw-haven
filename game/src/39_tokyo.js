@@ -340,7 +340,7 @@ function enterJapan() {
 // drag pan, pinch and wheel zoom (pointer events), the same as the town map
 // the status chip says Tokyo on the Japan map (the core writes the place name: it is put back after every rewrite while the map is up)
 function tkStatusTokyo() {
-  const st = $('#status'); if (!st) return; const fix = () => { const n = st.querySelector('.pname'), tk = tt('tokyo.name', 'Tokyo'); if (cur.mode === 'japan' && n && n.textContent !== tk) n.textContent = tk; };
+  const st = $('#status'); if (!st) return; const fix = () => { const n = st.querySelector('.pname'), tk = tt('tokyo.name', 'Tokyo'); if (cur.mode === 'japan' && n && n.textContent !== tk) { n.textContent = tk; st.classList.remove('tight', 'wrapn'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } }; // overlap leftovers: measured again with "Tokyo" in it (the weather word goes on a narrow phone, 00_core.js)
   fix(); if (typeof MutationObserver === 'function') { const mo = new MutationObserver(fix); mo.observe(st, { childList: true }); onCleanup(() => mo.disconnect()); }
 }
 function tkMapDrag(pan) {

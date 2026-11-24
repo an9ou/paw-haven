@@ -131,7 +131,8 @@ else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cw
   // v2.12 owner: the old poodle is shown as "Miniature Poodle" (key unchanged). Only its aria-label text changes, so the old renders are compared with that label renamed
   // v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): every render's fills moved on purpose, so the old renders are compared by
   // their ink (the same normaliser as INK=1 in dogs/check_identical.js); the collie draws its white neck tube now, so its ink changed too and it is left out
-  const ink = (x) => x.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
+  // 24 Nov 2026: a filled shape's outline closes with one extra stroke written in commas (pawart_dogs.js shape()), and a white tail tip wider than its tail an ink ring; the normaliser leaves it out
+  const ink = (x) => x.replace(/M-?[\d.]+,-?[\d.]+L-?[\d.]+,-?[\d.]+/g, '').replace(/(<ellipse [^>]*) stroke="#2E2320" stroke-width="[\d.]+"\/>/g, '$1/>').replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
     .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g, '');
   const ren = (x) => ink(x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1')), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
   // v2.18.3 "All in one piece" redrew the dogs whose parts did not stick together (dogs/connect_check.js): a render it changed is compared as it was just

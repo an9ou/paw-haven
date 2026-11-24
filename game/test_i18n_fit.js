@@ -553,7 +553,7 @@ async function worker(job) {
       await ev(() => { document.documentElement.dataset.motion = 'on'; window.__paw.tk.ride('out'); }); await waitSel('.tk-ride', 4000); await sleep(1200); await measure('tokyo: the ride');
       await ev(() => { const r = document.querySelector('.tk-ride'); if (r) r.click(); }); await t.untilMode('japan', 6000); await sleep(500); await measure('tokyo: Japan map');
       if (await ev(() => window.__paw.tk.book())) { await modalUp(); await measure('tokyo: stamp book'); await closeAll(); }
-      for (const k of ['shibuya', 'yoyogi', 'asakusa']) {
+      for (const k of ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba']) {
         await ev((k) => { const S = window.__paw.S; S.sleeping = false; S.place = k; window.__paw.go('yard'); }, k);
         await t.until((k) => window.__paw.S.place === k && window.__paw.mode === 'yard', k, 8000); await t.lu(); await sleep(400); await measure('tokyo: ' + k);
         if (k === 'yoyogi') {

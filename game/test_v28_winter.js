@@ -145,7 +145,8 @@ require('./test_lib').run('v28_winter', async (t) => {
   ok(await t.until(() => (window.__paw.S.inv.food['Warm Carob Cup'] || 0) === 5, null, 4000), 'bought 2 Warm Carob Cups (3 from the parcel)');
   s = await S(); const wpaid = await msDone('wstall');
   ok(wpaid, 'buy shop:"stall" fires the "Buy a warm treat from Baker Bea" mission');
-  ok(s.coins === s0.coins - 16 + (wpaid ? 15 : 0), `16 coins (${s0.coins} -> ${s.coins}, mission +15)`);
+  const msPay = await ev(() => window.__paw.ms.pay); // the day's mission pays MS_PAY raw coins (24_missions.js; 40 since v2.19.2, it was 15)
+  ok(s.coins === s0.coins - 16 + (wpaid ? msPay : 0), `16 coins (${s0.coins} -> ${s.coins}, mission +${wpaid ? msPay : 0})`);
   await p().waitForSelector('[data-fsbuy="Very Ugly Sweater"]'); await p().click('[data-fsbuy="Very Ugly Sweater"]'); await t.win();
   ok(await t.until(() => window.__paw.S.inv.clothes.includes('Very Ugly Sweater'), null, 4000), 'bought the Very Ugly Sweater');
   ok(await t.until(() => !!document.querySelector('#modal .confirm .yes'), null, 4000) && /Wear it/.test(await ev(() => document.querySelector('#modal .confirm .yes').textContent)), 'the "Wear it / Later" prompt');
@@ -207,7 +208,8 @@ require('./test_lib').run('v28_winter', async (t) => {
   ok(s.inv.clothes.includes('Ugly Sweater Rosette') && s.wn.contest.year === 2026 && s.wn.contest.date === '2026-12-10', 'the Rosette is owned, S.wn.contest holds the date and the winter year');
   const sPaid = s.missions.list.find((x) => x.id === 'sweater').done, bPaid = s.missions.list.find((x) => x.id === 'bath').done;
   ok(sPaid, 'act:sweater fires (the contest mission is done)');
-  ok(s.coins === s0.coins + 10 + (sPaid ? 15 : 0) + (bPaid ? 15 : 0), `10 raw coins (${s0.coins} -> ${s.coins}, missions +15 each)`);
+  const msPay2 = await ev(() => window.__paw.ms.pay); // MS_PAY (24_missions.js) a mission
+  ok(s.coins === s0.coins + 10 + (sPaid ? msPay2 : 0) + (bPaid ? msPay2 : 0), `10 raw coins (${s0.coins} -> ${s.coins}, missions +${msPay2} each)`);
   ok(s.stats.happy >= s0.stats.happy + 9 && s.stats.happy <= s0.stats.happy + 10.01, `happy +10 (${s0.stats.happy} -> ${s.stats.happy})`);
   await SH('07_rosette');
   await p().click('#wnWear');

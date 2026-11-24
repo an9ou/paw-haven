@@ -130,8 +130,9 @@ const HP_INK = [2, 20, 66, 60], HP_PAW = 0.14, HP_HEAD = 0.38, HP_SCALES = [1, 0
 // (a dog's drawn half-width is about 88 x its scale: about 1 on a desktop, 0.6 on a phone)
 const HP_KEEP = { can: [0, 0, 96, 120] }, HP_KEEP_PH = { can: [0, 0, 60, 120] };
 const HP_HUNGER = 20, HP_NOTE = 12; // a bowl top-up's Hunger; the thank-you note (FR_NOTES[12])
-const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null, pour: false, at: '', ro: null }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot,
-// pour: the bowl stays empty until the kibble lands (hpBowlFx fills it), at: what the bubble was last placed for (hpFrame), ro: the chip's ResizeObserver
+const HPV = { busy: '', raf: 0, wish: null, bub: '', bowl: null, pour: false, at: '', ro: null, panX: null, backT: 0 }; // the visit: a send in flight, the bubble's frame loop, the wish shown { i, k, a, do }, the bubble's drawn key, the bowl's spot,
+// pour: the bowl stays empty until the kibble lands (hpBowlFx fills it), at: what the bubble was last placed for (hpFrame), ro: the chip's ResizeObserver,
+// panX / backT: where a help panned the phone camera to, and the timer that brings it back home (hpPanBack)
 const hpSnd = (n, alt) => { try { if (typeof SFX[n] === 'function') SFX[n](); else if (alt) alt(); } catch (e) { /* audio off */ } }; // SFX.chime and SFX.page fall back
 const hpFriendName = () => frPairName(FRV.pair) || tt('fr.a_friend', 'A friend');
 // their leader on this visit (the snapshot's first dog) and its name
@@ -317,8 +318,8 @@ function hpBubblePlace() {
 function hpFrame() {
   HPV.raf = 0; if (!hpVisitOn() || !HPV.wish) return;
   const v = hpTheirs(), w = HPV.wish;
-  const key = [FRC.x.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
-  if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); }
+  const key = [FRC.x.toFixed(1), FRC.y.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
+  if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); if (isPhone() && toastLive().length) toastPlace(); } // overlap review S5: a toast showing stays clear of the bubble as it moves
   HPV.raf = requestAnimationFrame(hpFrame);
 }
 /* ---------- the visit (emit('fryard:enter') at the end of enterFrYard) ---------- */
@@ -337,10 +338,11 @@ function hpVisit() {
     g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
   });
   hpBubblePlace(); frScan(); hpBowlPut(); frScan(); // the bowl goes down where no dog stands; then the dogs keep their feet off it
+  if (toasts.children.length) toastPlace(); // overlap review S5: a toast already showing moves under the strip and the bubble (phChipClear, 00_core.js)
   const st = $('#status', view); if (HPV.ro) HPV.ro.disconnect(); HPV.ro = null;
   if (st && strip && typeof ResizeObserver === 'function') { HPV.ro = new ResizeObserver(() => { hpStripPlace(); HPV.at = ''; }); HPV.ro.observe(st); } // the chip's words change (the clock, the weather)
   if (HPV.wish) HPV.raf = requestAnimationFrame(hpFrame);
-  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
+  onCleanup(() => { cancelAnimationFrame(HPV.raf); HPV.raf = 0; clearTimeout(HPV.liftT); HPV.liftT = 0; clearTimeout(HPV.backT); HPV.backT = 0; HPV.panX = null; HPV.wish = null; HPV.busy = ''; HPV.pour = false; if (HPV.ro) { HPV.ro.disconnect(); HPV.ro = null; } });
 }
 on('fryard:enter', () => hpVisit());
 // the spot each help plays at (world x): the camera pans there on a phone first (0.5 s) when it is not well in view
@@ -348,7 +350,18 @@ function hpSpotX(k) { if (k === 'bowl') return (HPV.bowl || HP_BOWL)[0] + HP_BOW
 function hpPan(k) {
   const x = hpSpotX(k); if (x == null || FRC.w >= 1000) return 0;
   const m = Math.min(110, FRC.w / 4); if (x > FRC.x + m && x < FRC.x + FRC.w - m) return 0;
-  frCamTo(x - FRC.w / 2, 0.5); return motionOff() ? 0 : 520;
+  frCamTo(x - FRC.w / 2, 0.5); HPV.panX = clamp(x - FRC.w / 2, 0, 1000 - FRC.w); return motionOff() ? 0 : 520;
+}
+// overlap leftovers: once a help that panned the phone camera has played (HP_BACK_MS; the water's lift holds HP_LIFT_HOLD), the view goes back to the
+// visit's home crop, where my leader and theirs are both in view (FRC.home, 50_friends.js frLayout). A drag or the look-around button in between keeps the player's view
+const HP_BACK_MS = 2400;
+function hpPanBack(ms) {
+  clearTimeout(HPV.backT); HPV.backT = 0; if (HPV.panX == null) return;
+  HPV.backT = setTimeout(() => {
+    HPV.backT = 0; const px = HPV.panX; HPV.panX = null;
+    if (cur.mode !== 'fryard' || FRC.w >= 1000 || Math.abs(FRC.x - px) > 8) return;
+    clearTimeout(HPV.liftT); HPV.liftT = 0; frCamTo(FRC.home, 0.6, 0); setTimeout(() => { const b = $('#phPeek'); if (b && typeof b.frSync === 'function') b.frSync(); }, 650);
+  }, ms);
 }
 const hpWait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function hpTap(k, from) {
@@ -361,11 +374,13 @@ async function hpTap(k, from) {
   if (k === 'wish' && w.k === 'snack') { const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms); hpSnackSheet(); return true; }
   const ms = from === 'strip' ? hpPan(k) : 0; if (ms) await hpWait(ms);
   if (!hpVisitOn()) return false;
+  if (k === 'water') { const ly = hpLiftView(); if (ly) await hpWait(ly); if (!hpVisitOn()) return false; } // the watered patch above the visit buttons
   if (k === 'wish' && w.k === 'pet') { const v = hpTheirs(); if (v) frPetDog(v); } // the pet first (its own pet event if not sent today), then the wish
   if (k === 'bowl') HPV.pour = true; // the bowl stays empty until the kibble lands (hpBowlFx fills it)
   const r = await hpSend(k, k === 'wish' ? { w: w.i } : {});
   if (r !== 'ok' || !hpVisitOn()) { if (k === 'bowl') { HPV.pour = false; hpBowlFill(); } return r === 'ok'; }
   if (k === 'bowl') hpBowlFx(); else if (k === 'water') hpWaterFx(hpCanFit()); else if (w.k === 'ball') hpBallFx(); else hpWishFx();
+  hpPanBack(k === 'water' && HPV.liftT ? HP_LIFT_HOLD : HP_BACK_MS);
   return true;
 }
 // one send. ok: marked done, a help counted, +1 Bond to my leader up to HP_BOND_MAX a day. limit: done, quietly. bad from a Worker that said hp: 1:
@@ -435,6 +450,30 @@ function hpCanFit() {
   if (out.lift) g.setAttribute('transform', `translate(0 ${-out.lift})`);
   return out;
 }
+// phones (fix 24 Nov 2026): the camera's pan to the can left most of the veggie patch under the visit buttons (390x844: the can and the drops
+// showed, the patch they water did not). While the can pours and for a moment after, the view is lifted (FRC.y, never more than HP_LIFT_MAX
+// units) so the patch's top row (HP_ROW of its height) stands HP_ROW_GAP units clear above the buttons over it; the buttons do not move.
+// Then it eases back. Returns how long to wait for the lift
+const HP_ROW = 0.5, HP_ROW_GAP = 8, HP_LIFT_MAX = 160, HP_LIFT_HOLD = 3200;
+function hpLiftView() {
+  clearTimeout(HPV.liftT); if (!isPhone() || FRC.w >= 1000) return 0;
+  const svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(), pt = $('#sceneG [data-hot="garden"]'); if (!M || !pt) return 0;
+  const inv = M.inverse(), W = (px, py) => new DOMPoint(px, py).matrixTransform(inv), pr = pt.getBoundingClientRect(); if (!pr.width) return 0;
+  const a = W(pr.left, pr.top), b = W(pr.right, pr.bottom), row = a.y + (b.y - a.y) * HP_ROW + HP_ROW_GAP; let top = 1e9;
+  document.querySelectorAll('#placeBtns .btn').forEach((e) => { const r = e.getBoundingClientRect(); if (r.width && r.right > pr.left && r.left < pr.right) top = Math.min(top, W(r.left, r.top).y); });
+  const want = top < 1e9 ? clamp(FRC.y + row - top, 0, HP_LIFT_MAX) : 0;
+  const back = () => { HPV.liftT = 0; if (cur.mode === 'fryard' && FRC.y > 0) frCamTo(FRC.x, 0.5, 0); };
+  if (want < 2) { if (FRC.y > 0) HPV.liftT = setTimeout(back, HP_LIFT_HOLD); return 0; }
+  hpGroundExt(svg); frCamTo(FRC.x, 0.4, want); HPV.liftT = setTimeout(back, HP_LIFT_HOLD); return motionOff() ? 0 : 420;
+}
+// the yard's ground carried on under the scene's bottom edge (world y 600) while the view is lifted, in the scene's own ground colour
+function hpGroundExt(svg) {
+  if (svg.querySelector('#hpGroundExt')) return; const sg = svg.querySelector('#sceneG'); if (!sg) return;
+  const gr = [...sg.querySelectorAll('path, rect')].find((e) => { const f = e.getAttribute('fill') || ''; if (!/^#[0-9a-f]{3,8}$/i.test(f)) return false; try { const b = e.getBBox(); return b.width >= 990 && b.y > 300 && b.y + b.height >= 595; } catch (x) { return false; } });
+  if (!gr) return;
+  const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); r.id = 'hpGroundExt'; r.setAttribute('x', '0'); r.setAttribute('y', '598'); r.setAttribute('width', '1000'); r.setAttribute('height', String(HP_LIFT_MAX + 10)); r.setAttribute('fill', gr.getAttribute('fill')); r.setAttribute('pointer-events', 'none'); r.setAttribute('aria-hidden', 'true');
+  sg.after(r);
+}
 function hpWaterFx(fit) {
   const [x, y, w, h] = HP_CAN, F = fit || { lift: 0, land: y + h * 0.62 + 81 }; sfx('water');
   if (motionOff()) return;
@@ -489,7 +528,7 @@ async function hpSnackGive(fid, g, p) {
   btns.forEach((b) => { b.disabled = false; });
   if (r === 'ok') { frGiftTake(g); markDirty(); } // only now does the treat leave the bag (not the day's gift: S.fr.gift stays)
   if (r === 'ok' || r === 'limit' || r === 'bad') { if (!modal.hidden && modal.querySelector('.hp-snacksheet')) closeModal(); }
-  if (r === 'ok' && cur.mode === 'fryard') { hpEatFx(g); hpWishFx(); }
+  if (r === 'ok' && cur.mode === 'fryard') { hpEatFx(g); hpWishFx(); hpPanBack(HP_BACK_MS); }
   return r === 'ok';
 }
 

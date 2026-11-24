@@ -173,10 +173,13 @@ if (NEW.includes('jrt')) { const J = (light, dark) => PA.dog('jrt', { pose: 'idl
   const tri = J('#D08A44', '#2B2430'), wb = J('#FFFFFF', '#2B2430'); ok(has(tri, '#2B2430') && has(tri, '#D08A44'), 'jrt Tricolour: black patches, tan points'); ok(has(wb, '#2B2430') && !has(wb, '#D08A44'), 'jrt White and black: black patches, no tan');
   ok(J('#E0A050', '#C97A32') === jt, 'jrt: the White and tan coat draws as the plain starter'); }
 console.log('-- older breeds unchanged (spot check; the full proof is dogs/check_identical.js origin/v2184-base)');
+const PA0 = PA; // the module as loaded (the block below compares it without the closing strokes)
 // the old eat pose changed on purpose in v2.19 (the head lowered to the bowl), after v2184-base, so the fifth pose here is walk
 let ref = null; for (const r of ['v2184-base', 'origin/v2184-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v2184-base ref here, skipped');
 else { const OLD = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
+  // 24 Nov 2026: a filled shape's outline closes with one extra stroke written in commas (pawart_dogs.js shape()), and a white tail tip wider than its tail an ink ring; un() leaves it out, so the rest is compared byte for byte
+  const un = (x) => x.replace(/M-?[\d.]+,-?[\d.]+L-?[\d.]+,-?[\d.]+/g, '').replace(/(<ellipse [^>]*) stroke="#2E2320" stroke-width="[\d.]+"\/>/g, '$1/>'), PA = { dog: (k, o) => un(PA0.dog(k, o)), dogHead: (k, o) => un(PA0.dogHead(k, o)) };
   OLD35.forEach((k, i) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover', 'walk'].forEach((p, j) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }, null][j], age: [undefined, 'puppy', undefined, 'newborn', undefined][j], sparkle: j === 2, wet: j === 4, expr: j === 0 ? 'hearts' : undefined };
       ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
