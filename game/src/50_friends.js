@@ -986,7 +986,7 @@ function frPan(svg) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn ph-peek fr-peek'; b.id = 'phPeek'; view.appendChild(b);
   b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
   const sync = () => { const a = frCamAway(); b.classList.toggle('back', a); const l = a ? tt('fr.look_back', 'Look back at the house') : tt('fr.look_left', 'Look around the yard'); if (b.getAttribute('aria-label') !== l) b.setAttribute('aria-label', l); };
-  b.onclick = () => { SFX.click(); frCamTo(frCamAway() ? FRC.home : 0, 0.7); setTimeout(sync, 750); };
+  b.onclick = () => { SFX.click(); frCamTo(frCamAway() ? FRC.home : 0, 0.7); setTimeout(sync, 750); }; b.frSync = sync; // 60_helps.js hpPanBack syncs it after its pan home
   let x0 = null, c0 = 0, id = null, on = false, swallow = false;
   svg.addEventListener('click', (e) => { if (swallow) { swallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
   svg.addEventListener('pointerdown', (e) => { swallow = false; if (x0 != null) return; x0 = e.clientX; c0 = FRC.x; id = e.pointerId; on = false; });

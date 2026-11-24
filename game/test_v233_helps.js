@@ -40,6 +40,7 @@ run('v233_helps', async (t) => {
   const { ok, sec, ev } = t;
   if (process.env.HP_ONLY === '4') { await stickerPart(t); await newsPart(t); await keepPart(t, 1280, 720, null); await keepPart(t, 390, 844, 'dachs'); return; } // a quick run of part 4 only
   if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b); for (const l of SL_TAG_LANGS) await sleepTags(t, l); return; }
+  if (process.env.HP_ONLY === 'pb') { for (const [w, h] of [[360, 640], [390, 844], [412, 915]]) await panBackPhone(t, w, h); return; } // the pan back only (overlap leftovers)
   if (process.env.HP_ONLY === '3t') { for (const l of SL_TAG_LANGS) await sleepTags(t, l); return; } // the tags only (review M1, S1, S8) // a quick run of part 3 only
 
   sec('A0. under webdriver the gate stays shut without prefs.hpTest, whatever the date (the mock Worker has hp)');
@@ -193,6 +194,7 @@ run('v233_helps', async (t) => {
   await claimPart(t);
   for (const [w, h] of [[360, 640], [390, 844]]) await phonePart(t, w, h);
   await waterPhone(t, 412, 915);
+  for (const [w, h] of [[360, 640], [390, 844], [412, 915]]) await panBackPhone(t, w, h);
   await chipOffPart(t);
 
   /* ======================= part 3 (V233.md 4): the sleepover ======================= */
@@ -547,6 +549,29 @@ async function waterPhone(t, w, h) {
   await t.sleep(300);
   await waterRow(t, tag, B0);
   await shot(t, 'water_' + tag);
+  await t.ctx.close();
+}
+// overlap leftovers (24 Nov 2026): water, then the ball wish, both from the strip (each pans the camera); once the wish has played the view goes back
+// to the visit's home crop, my leader and theirs both whole in view (it stayed centred on their leader, my dog cut at the left edge)
+async function panBackPhone(t, w, h) {
+  const { ok, sec, ev } = t, tag = String(w);
+  sec(`D4. phone ${w}x${h}: after water and the wish the camera comes back to both leaders`);
+  await startHelps(t, { vw: w, vh: h });
+  ok(await visit(t, SUNNY, { d: await jst(t), g: 2, w: 1 }), tag + ': a visit with the garden growing and the ball wish');
+  await t.sleep(2600); // the greeting plays
+  const home = (await ev(() => window.__paw.fr.cam())).home;
+  ok(await ev(() => window.__paw.hp.tap('water', 'strip')), tag + ': water from the strip: ok');
+  await t.until(() => window.__paw.fr.cam().y === 0 && !window.__paw.hp.visit().busy, null, 8000); await t.sleep(400);
+  ok(await ev(() => window.__paw.hp.tap('wish', 'strip')), tag + ': the ball wish from the strip: ok');
+  const back = await t.until((x) => Math.abs(window.__paw.fr.cam().x - x) < 2 && window.__paw.fr.cam().y === 0, home, 8000);
+  await t.sleep(900);
+  const V = await ev(() => {
+    const sc = window.__paw.fr.scene().dogs, vr = document.getElementById('view').getBoundingClientRect(), out = {};
+    [['mine', sc.findIndex((d) => d.mine)], ['theirs', sc.findIndex((d) => !d.mine)]].forEach(([k, i]) => { const e = document.querySelector(`#frDogs [data-frd="${i}"] .fr-art`); const r = e && e.getBoundingClientRect(); out[k] = r ? [Math.round(r.left - vr.left), Math.round(vr.right - r.right)] : null; });
+    return Object.assign(out, { cam: window.__paw.fr.cam() });
+  });
+  ok(back && V.mine && V.theirs && V.mine[0] >= 0 && V.mine[1] >= 0 && V.theirs[0] >= 0 && V.theirs[1] >= 0, tag + ': back home (x ' + home + '), both leaders whole in view (px clear left, right): ' + JSON.stringify(V));
+  await shot(t, 'panback_' + tag);
   await t.ctx.close();
 }
 async function phonePart(t, w, h) {
