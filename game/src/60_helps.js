@@ -318,7 +318,7 @@ function hpFrame() {
   HPV.raf = 0; if (!hpVisitOn() || !HPV.wish) return;
   const v = hpTheirs(), w = HPV.wish;
   const key = [FRC.x.toFixed(1), FRC.y.toFixed(1), FRC.w.toFixed(1), innerWidth, innerHeight, document.fonts ? document.fonts.status : '', hpDone('wish'), w.k, w.a, I18N.lang].concat(v ? [v.x.toFixed(1), v.y.toFixed(1), v.k.toFixed(3), frPose(v), v.face, v.hidden ? 1 : 0] : []).join('|');
-  if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); }
+  if (key !== HPV.at) { HPV.at = key; hpStripPlace(); hpBubblePlace(); if (isPhone() && toastLive().length) toastPlace(); } // overlap review S5: a toast showing stays clear of the bubble as it moves
   HPV.raf = requestAnimationFrame(hpFrame);
 }
 /* ---------- the visit (emit('fryard:enter') at the end of enterFrYard) ---------- */
@@ -337,6 +337,7 @@ function hpVisit() {
     g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
   });
   hpBubblePlace(); frScan(); hpBowlPut(); frScan(); // the bowl goes down where no dog stands; then the dogs keep their feet off it
+  if (toasts.children.length) toastPlace(); // overlap review S5: a toast already showing moves under the strip and the bubble (phChipClear, 00_core.js)
   const st = $('#status', view); if (HPV.ro) HPV.ro.disconnect(); HPV.ro = null;
   if (st && strip && typeof ResizeObserver === 'function') { HPV.ro = new ResizeObserver(() => { hpStripPlace(); HPV.at = ''; }); HPV.ro.observe(st); } // the chip's words change (the clock, the weather)
   if (HPV.wish) HPV.raf = requestAnimationFrame(hpFrame);
