@@ -95,11 +95,21 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   switch it on; goes to the sandbox run, part 9). No manual capture with Adaptive Pricing, so each cancel costs us the Stripe fee.
   **Its section 10 has 12 open points for the owner** (recommendation first): ask them together with the next real question or the
   launch go-ahead, not one by one. The build goes ahead on the recommendations; each is a switch or a table value.
-- **Running now (started 24 Nov about 22:30 JST), one Opus agent each:** **part 2** (the `/merch` page in test mode: `site/merch/**`,
-  `merch/test_page.js`, `PART2.md`; a fake api with the shapes of TRANSACTIONS.md 6.3; no shared site files) and **part 3** (the merch
-  Worker, money faked: `cloudflare/merch/**`, `tools/merch.sh`, `PART3.md`; one test per T row; it may come back partial with a list
-  of rows left). When each is back: run its suite yourself, commit, then ONE combined review per part (paw-reviewer, Opus; part 2 also
-  phone fit at 360x640), fixes, and a message to the GM that the part is ready. Then parts 4 (render) and 5 (Printful adapter).
+- **Part 2 built, 24 Nov night** (commit 0d97708, `docs/design/merch/PART2.md`): the `/merch` page in test mode in `site/merch/`
+  (six steps, a basket, "Ship to" first, PawPrint previews, `api_fake.js` + `catalog.json` with the shapes of TRANSACTIONS.md 6.3,
+  `?demo=1` for the thank-you and order page). Suite `NODE_PATH=$(npm root -g) node merch/test_page.js`: 276/276. Six screenshots in
+  `docs/design/merch/part2_shots/`. **Its combined review is running** (`docs/reviews/MERCH_PART2_review.md`); then one fix batch.
+  Watch out: `tools/cf_site.js` walks all of `site/`, so a site deploy from a branch that holds `site/merch/` would publish `/merch/`
+  (noindex, unlinked, pay shut): tell the GM to exclude it until launch when this branch is merged.
+- **Part 3 built, 25 Nov about 00:10 JST** (commit f0997c0, `docs/design/merch/PART3.md`): the Worker `cloudflare/merch/**` with faked
+  Stripe, Printful, render and email; `MerchLedger` + `MerchPrints` SQLite Durable Objects; every route; `tools/merch.sh`. Suite
+  `NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs`: 108/108 (one test per T row). 19 contract questions in PART3.md
+  (safest reading built). **Its combined review is running** (`docs/reviews/MERCH_PART3_review.md`); then one fix batch.
+- After both fix batches: message the GM (parts 1-3 ready on `merch/shop`; nothing to merge to main before the owner's go-ahead),
+  report to the owner with the screenshots, and ask the collected questions in ONE choice window (recommendation first): small dogs on
+  a tee (scaled up to 5 in, built); the points of TRANSACTIONS.md 10 that matter before launch; tee sizes (only those made in both the
+  US and the UK; no 5XL); whether cancelled orders count toward the day cap. Then parts 4 (the Browser Run render into `MerchPrints`),
+  5 (the Printful adapter; a real draft needs the owner's Printful key), 6 (emails, order page), 7 (legal drafts).
 - For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
   (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
 - Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
