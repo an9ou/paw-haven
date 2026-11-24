@@ -1024,8 +1024,19 @@ function frScan() {
   // overlap review S7 (24 Nov 2026): the watering can (its tap box, the drops fall inside it and below) keeps every dog's drawn box off it, not
   // just the feet: at 1280 my leader's tail lay over the can in 6-9 of 10 samples
   const props = []; svg.querySelectorAll('#hpG .hp-can > rect').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); props.push([p.x - 4, p.y - 4, q.x + 4, q.y + 4]); });
-  FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet, props };
+  // overlap leftovers (24 Nov 2026): their decorations standing on the ground (not the flat ones, not the wall ones): a dog's drawn box covers at
+  // most FR_DECOR_OVER of its drawn box with them, and hides at most FR_DECOR_HIDE of any one, where there is room (frSpotOk o.decor), the yard's own rule (37_roam.js rmSoft); at 1280 my leader sat on the Cauldron Planter
+  const decor = []; svg.querySelectorAll('#frDecorG .fr-decor').forEach((el) => { if (typeof hoLayer === 'function' && hoLayer(el.dataset.frdecor) !== 2) return; const r = el.getBoundingClientRect(); if (!r.width) return; const p = toW(r.left, r.top), q = toW(r.right, r.bottom); decor.push([p.x - 3, p.y - 3, q.x - p.x + 6, q.y - p.y + 6]); });
+  FRV.crop = { x0: Math.max(0, a.x), x1: Math.min(1000, b.x), y1: Math.min(590, b.y - 6), boxes, feet, props, decor };
 }
+const FR_DECOR_OVER = 0.1, FR_DECOR_HIDE = 0.3, FR_DECOR_COST = 1200; // FR_DECOR_COST: a pair spot fully over decorations scores as one 1200 units (y + x / 2) further from the best place
+// the share of a drawn box R ([x0, y0, x1, y1], every pose there) over standing decorations, and whether that is too much: more than FR_DECOR_OVER
+// of the dog, or more than FR_DECOR_HIDE of one decoration (a small one hidden behind a big dog)
+const frDecorCover = (R) => { const c = FRV.crop, T = [R[0], R[1], R[2] - R[0], R[3] - R[1]]; return c && c.decor ? c.decor.reduce((m, b) => m + frOver(T, b), 0) / (T[2] * T[3] || 1) : 0; };
+const frDecorHit = (R) => { const c = FRV.crop, T = [R[0], R[1], R[2] - R[0], R[3] - R[1]]; return !!c && !!c.decor && (frDecorCover(R) > FR_DECOR_OVER || c.decor.some((b) => frOver(T, b) > FR_DECOR_HIDE * b[2] * b[3])); };
+const frDecorAt = (v, p) => frDecorCover(frEnv(v, p[0], p[1], frK(v, p[1]), v.face)); // the share at a spot [x, y]
+// of the spots allowed on decorations: the ones that cover them least (within 5% of the least)
+const frDecorLeast = (v, sp) => { if (sp.length < 2) return sp; const c = sp.map((p) => frDecorAt(v, p)), m = Math.min(...c); return sp.filter((p, i) => c[i] <= m + 0.05); };
 // each dog's drawn box per pose and way it faces, in its own units around the feet (430, 500): drawn hidden all at once, then measured. Facing
 // left is the mirror image unless the pose has words (the sniff: words are not mirrored), then it is measured too. Kept for later visits (FR_EXT_MEMO)
 const FR_EXT_MEMO = new Map(), FR_WORDS = 10;
@@ -1088,7 +1099,8 @@ function frClash(A, B) {
 }
 // the box the dog holds now, where it stands
 function frHold(v) { v.res = frRes(v, frEnv(v, v.x, v.y, v.k, v.face), v.y, v.k); }
-// o: { legs: allow the row stacking, wide: anywhere in the yard (a phone's crop is full), face: the way it will face (default its own; null either), any: other dogs aside }
+// o: { legs: allow the row stacking, wide: anywhere in the yard (a phone's crop is full), face: the way it will face (default its own; null either), any: other dogs aside,
+//      decor: on their decorations too (when nothing else is free) }
 function frSpotOk(v, x, y, o) {
   o = o || {};
   const c = FRV.crop || { x0: 60, x1: 940, y1: 590, boxes: [], feet: [] }, z = isPhone() ? RM_ZONES_PH.yard || RM_ZONES.yard : RM_ZONES.yard;
@@ -1098,6 +1110,7 @@ function frSpotOk(v, x, y, o) {
   const k = frK(v, y), T = frTap(x, y, k), R = frEnv(v, x, y, k, 'face' in o ? o.face : v.face);
   if (y < 500 && R[2] > 640 && R[0] < 860) return false; // well behind the house's front: never drawn over the house
   if ((c.props || []).some((b) => R[0] < b[2] && R[2] > b[0] && R[1] < b[3] && R[3] > b[1])) return false; // S7: never drawn over the watering can
+  if (!o.decor && !o.any && frDecorHit(R)) return false;
   if (o.wide) {
     if (R[0] < 4 || R[2] > 996) return false;
     if (c.boxes.some((b) => b[1] > 300 && T[1] + T[3] > b[1])) return false; // clear of the buttons and the bar wherever the camera pans
@@ -1145,18 +1158,21 @@ const FR_GREET = [{ a: 'sniff', b: 'sniff', ms: 1900, fx: [250, 1000], s: 'sniff
 const FR_GREET_CALM = [{ a: 'sniff', b: 'sniff', ms: 2000, fx: [300], s: 'sniff' }, { a: 'bow', b: 'bow', ms: 1600, fx: [200], s: 'boop' }];
 const FR_WALK_IN = [200, 140, 80]; // how far my leader walks in from, if the way is clear
 // the pair's spots: the two facing each other at one depth, their boxes as close as the poses allow, as far forward as fits, near the middle of the view
-function frPairAt(a, b) {
+function frPairAt(a, b, decor) {
   const c = FRV.crop || { x0: 60, x1: 940 }, pref = FRC.w < 1000 ? (c.x0 + c.x1) / 2 : 430, z = isPhone() ? RM_ZONES_PH.yard || RM_ZONES.yard : RM_ZONES.yard;
   const fa = frEnvL(a, 'right'), fb = frEnvL(b, 'left'), yp = FRC.w < 1000 ? 594 : 552;
   let best = null;
   for (let y = 594; y >= z[0]; y -= 2) {
     const ka = frK(a, y), kb = frK(b, y), d = ka * fa[2] - kb * fb[0] + 4; // the feet apart so that the two boxes just do not meet
     for (let cx = 60; cx <= 940; cx += 4) {
-      const s = -Math.abs(y - yp) - Math.abs(cx - pref) * 0.5; if (best && s <= best.s) continue;
-      if (frSpotOk(a, cx - d / 2, y, { face: 'right' }) && frSpotOk(b, cx + d / 2, y, { face: 'left' })) best = { s, a: [cx - d / 2, y], b: [cx + d / 2, y] };
+      let s = -Math.abs(y - yp) - Math.abs(cx - pref) * 0.5; if (best && s <= best.s) continue;
+      if (frSpotOk(a, cx - d / 2, y, { face: 'right', decor }) && frSpotOk(b, cx + d / 2, y, { face: 'left', decor })) {
+        if (decor) { s -= FR_DECOR_COST * (frDecorAt(a, [cx - d / 2, y]) + frDecorAt(b, [cx + d / 2, y])); if (best && s <= best.s) continue; } // no room clear of them: as little over them as it takes
+        best = { s, a: [cx - d / 2, y], b: [cx + d / 2, y] };
+      }
     }
   }
-  return best;
+  return best || (decor ? null : frPairAt(a, b, true)); // overlap leftovers: off their decorations where there is room, else as before
 }
 const frAt = (v, p) => { v.x = p[0]; v.y = p[1]; v.home = p.slice(); v.k = frK(v, v.y); frHold(v); };
 // where my leader starts its walk in (left of its spot, the way clear of the others), or its spot itself
@@ -1233,6 +1249,7 @@ function frLayout(list, fit, final) {
   const rest = [];
   list.filter((v) => !FRV.dogs.includes(v)).forEach((v) => { // where the camera shows them: all clear, else only the legs behind a dog in front; off my leader's walk in when there is room
     let sp = frSpots(v); if (!sp.length) sp = frSpots(v, null, { legs: true });
+    if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { decor: true })); if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { legs: true, decor: true })); // overlap leftovers: on a decoration (as little as there is) before on a dog
     if (!sp.length) { rest.push(v); return; }
     const off = path ? sp.filter((p) => frClash(frRes(v, frEnv(v, p[0], p[1], frK(v, p[1]), v.face), p[1], frK(v, p[1])), path) <= 1) : sp;
     put(v, PICK(off.length ? off : sp)); n++;
@@ -1243,6 +1260,7 @@ function frLayout(list, fit, final) {
     let sp = [];
     if (ph) { // off to the side of the crop, as near as there is room
       sp = frSpots(v, null, { wide: true }); if (!sp.length) sp = frSpots(v, null, { wide: true, legs: true });
+      if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { wide: true, decor: true })); if (!sp.length) sp = frDecorLeast(v, frSpots(v, null, { wide: true, legs: true, decor: true }));
       const c = FRV.crop, gap = (p) => { const R = frEnv(v, p[0], p[1], frK(v, p[1]), v.face); return R[2] <= c.x0 ? c.x0 - R[2] : R[0] >= c.x1 ? R[0] - c.x1 : 1e4 - Math.abs(p[0] - (c.x0 + c.x1) / 2); };
       sp.sort((p, q) => gap(p) - gap(q)); sp = sp.slice(0, 3);
     }
@@ -1714,8 +1732,9 @@ function frExpose() {
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
     cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home, y: FRC.y }), fit: (root) => frFit(root),
     posterSVG: () => frPosterSVG(), poster: () => frPosterMake(), posterKey: () => frPosterKey(), posterHow: () => FR.posterHow || '', posterErr: () => FR.posterErr || '', posterForce: (f) => { FR.posterForce = f || ''; },
+    decorAt: (i) => { const v = FRV.dogs[i]; if (!v) return null; const R = frEnv(v, v.x, v.y, v.k, v.face); return { R: R.map(Math.round), cover: +frDecorCover(R).toFixed(2), hit: frDecorHit(R), ok: frSpotOk(v, v.x, v.y, { any: true }) }; }, // overlap leftovers: a dog against their decorations where it stands
     greet: () => frGreet(), greeting: () => (FRV.gr ? { step: FRV.gr.i, pose: [FRV.gr.a.pose, FRV.gr.b.pose] } : null), // the greeting again on this visit (Marketing films it); where it is
-    crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)) },
+    crop: () => FRV.crop && { x0: FRV.crop.x0, x1: FRV.crop.x1, y1: FRV.crop.y1, fit: FRV.fit, boxes: FRV.crop.boxes.map((b) => b.map(Math.round)), decor: (FRV.crop.decor || []).map((b) => b.map(Math.round)) },
     scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), face: v.face, x: Math.round(v.x), y: Math.round(v.y), k: +v.k.toFixed(3), play: v.play, walking: !!v.tw })) })
   };
 }
