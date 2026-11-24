@@ -22,7 +22,7 @@ MERCH session's own work on `merch/shop`, in new files.
 |---|---|
 | Ship everywhere | Zones, not one country: `COUNTRIES.md` tiers. The UK, the EU and Brazil stay shut until a registration (owner + accountant). Parts 2, 3, 7. |
 | USD prices only; buyers may pay in their own currency on Stripe | One USD list, Adaptive Pricing on, no GBP list. Needs USD payouts on the Stripe account. Parts 2, 3. |
-| Mug, tee, sticker sheet | Part 1 finishes those three layouts only. |
+| Mug and tee only at launch (the owner dropped the sticker sheet later the same day: its postage is too dear, `STICKERS.md`) | Part 1 finishes the mug and the tee. The sticker layout stays in the code, switched off. Parts 2, 3 and 5 list two products. |
 | No returns; free reprint or refund; 1-hour cancel | Parts 2, 6, 7 as TRANSACTIONS.md 4. |
 | A shipping fee, free over a threshold | **A basket** (up to 6 lines) replaces "one item per order": `SHIPPING.md` section 6. A "Ship to" choice comes first. Parts 2, 3, 5, 6. |
 | Free Cloudflare plan | No resvg in a Worker, no R2. Part 4 is the Browser Run + KV pipeline of `RENDER_FREE.md`, proven by one test deploy first. |

@@ -69,8 +69,11 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   `RENDER_FREE.md` section 8: Cloudflare's free browser makes every print file pixel-exact; about 270 orders a day on Free; Worker CPU
   under 4 ms. Print files are stored in a SQLite Durable Object of the **merch** Worker (the session's token cannot create KV; no R2).
   First fallback: resvg-wasm inside that Durable Object (it also worked on Free). Workers Paid is not needed.
-- The owner (24 Nov) finds Printful's $4.49 postage for one sticker sheet expensive: a research job compares cheaper ways
-  (`STICKERS.md`); the sticker price and whether stickers launch are open until the owner has seen it.
+- **Stickers are OUT of the launch (owner, 24 Nov 2026, about 20:10 JST: "No stickers at launch").** The owner found Printful's $4.49
+  postage for one sheet too dear; `STICKERS.md` found no cheaper printer (US rates $4.29-4.89 everywhere) and proposed a 2-sheet pack,
+  which the owner did not take. **Launch products: mug ($19.99) and tee ($26.99) only**, shipping $4.99, free from $35 (so any two items
+  ship free). Keep the sticker layout code that part 1 already wrote, switched off (`MERCH_PRODUCTS=mug,tee`); do not spend more on it.
+  Bring stickers back to the owner only if a clearly cheaper way to post them turns up.
 - Part 1: print art ready for mug, tee, sticker sheet (`merch/*`, `tools/merch_*`; `PRINT_FILES.md` constants), samples sheet in
   `docs/design/merch/samples/`.
 - Then, one at a time (at most 2 agents at once): rewrite TRANSACTIONS.md for the basket and zones; part 2 (the `/merch` page, test mode);
