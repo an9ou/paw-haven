@@ -768,7 +768,7 @@ run('v219_friends', async (t) => {
 
   await officialPart(t);
   await walkPart(t);
-}, { timeout: 420000 }); // fix batch: ~250 s now (Remove's undo window, the visit pan); the runner allows 600
+}, { timeout: 840000 }); // fix batch: ~250 s (Remove's undo window, the visit pan), + ~210 s for part 3c (overlap review M2, S7); the runner allows 900
 
 /* ---------------- v2.22.3: the official Friends account (V219.md "Official accounts") ---------------- */
 async function officialPart(t) {
