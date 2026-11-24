@@ -39,7 +39,8 @@ run('v233_helps', async (t) => {
   PT = t;
   const { ok, sec, ev } = t;
   if (process.env.HP_ONLY === '4') { await stickerPart(t); await newsPart(t); await keepPart(t, 1280, 720, null); await keepPart(t, 390, 844, 'dachs'); return; } // a quick run of part 4 only
-  if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b); return; } // a quick run of part 3 only
+  if (process.env.HP_ONLY === '3') { await sleepPart(t); for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l); for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b); for (const l of SL_TAG_LANGS) await sleepTags(t, l); return; }
+  if (process.env.HP_ONLY === '3t') { for (const l of SL_TAG_LANGS) await sleepTags(t, l); return; } // the tags only (review M1, S1, S8) // a quick run of part 3 only
 
   sec('A0. under webdriver the gate stays shut without prefs.hpTest, whatever the date (the mock Worker has hp)');
   await start(t, { hp: true });
@@ -197,6 +198,7 @@ run('v233_helps', async (t) => {
   await sleepPart(t);
   for (const [w, h, l] of [[360, 640], [390, 844], [360, 640, 'de'], [390, 844, 'th']]) await sleepPhone(t, w, h, l);
   for (const [w, h, l, b] of SL_CROWDS) await sleepCrowd(t, w, h, l, b);
+  for (const l of SL_TAG_LANGS) await sleepTags(t, l);
 
   /* ======================= part 4 (V233.md 7, 10): stickers, news, the picture and the guests' keep-out ======================= */
   await stickerPart(t);
@@ -639,12 +641,13 @@ const today9 = () => new Date((PT ? PT.pageNow() : Date.now()) + 9 * 3600e3).toI
 // two dog boxes [x0, y0, x1, y1] apart by at least m units
 const apart = (a, b, m) => a[2] + m <= b[0] || b[2] + m <= a[0] || a[3] + m <= b[1] || b[3] + m <= a[1];
 // n sleep acts from Sunny, Fern and Clover for today (ids 500...)
-async function sleepActs(t, n, base, long) { // long: friends with long names (Bouncy Marigold, Plucky Lantern)
-  await t.ev(([n, ids, base, long]) => {
+async function sleepActs(t, n, base, long, keys) { // long: friends with long names (Bouncy Marigold, Plucky Lantern); keys: the guests' breeds (the review's Great Dane and Chihuahua)
+  await t.ev(([n, ids, base, long, keys]) => {
     const s = window.__frSrv, day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), names = long ? [[9, 18], [19, 13], [1, 6]] : [[0, 0], [2, 11], [1, 6]];
     const dogs = [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }, { b: 3, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 3 }, { b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 2 }];
+    (keys || []).forEach((k, i) => { if (dogs[i]) dogs[i].b = window.PawGenes.BREEDS.indexOf(k); });
     s.acts = []; for (let i = 0; i < n; i++) s.acts.push({ id: base + i, from: { fid: ids[i], name: names[i] }, kind: 'sleep', data: { dog: dogs[i] }, day, claimed: false });
-  }, [n, [SUNNY, FERN, CLOVER], base || 500, !!long]);
+  }, [n, [SUNNY, FERN, CLOVER], base || 500, !!long, keys || null]);
   const c0 = await t.ev(() => window.__frSrv.claimBodies.length);
   await t.ev(() => window.__paw.hp.inbox());
   return t.until((c0) => window.__frSrv.claimBodies.length > c0, c0, 5000);
@@ -878,7 +881,7 @@ async function sleepPhone(t, w, h, lang) {
     const svg = document.querySelector('#view > svg.world'), vb = svg.viewBox.baseVal, P = window.__paw.hp.sl, d = P.drawn(), geo = P.geo();
     const inV = (o) => o.box[0] >= vb.x - 1 && o.box[2] <= vb.x + vb.width + 1 && o.tag[0] >= vb.x - 1 && o.tag[2] <= vb.x + vb.width + 1;
     const ob = geo.ob.map((s) => s.split(' ')[0].split(',').map(Number)).filter((b) => b.length === 4);
-    const tags = [...document.querySelectorAll('#hpGuests .sl-tag')].filter((g, i) => inV(d[i])).map((g) => { const r = g.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }); // the guests in view
+    const tags = d.filter(inV).map((o) => document.querySelector(`#hpTags [data-slt="${o.id}"]`)).filter((g) => g && g.getAttribute('visibility') !== 'hidden').map((g) => { const r = g.querySelector('.sl-tag').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }); // the guests in view, their tags as drawn (#hpTags)
     const bar = document.getElementById('bar'), bt = bar && !bar.hidden ? bar.getBoundingClientRect().top : innerHeight;
     return { d, vb: [vb.x, vb.width], lead: geo.lead, inView: d.map(inV), look: P.look(), tagsIn: tags.every((r) => r[0] >= -1 && r[2] <= innerWidth + 1 && r[3] <= bt + 1), mail: ob.find((b) => b[1] === 288) || null };
   });
@@ -894,6 +897,72 @@ async function sleepPhone(t, w, h, lang) {
   await t.sleep(300);
   const C = await ev(() => ['slPet', 'slOk'].map((id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.width >= 43.5 && r.height >= 43.5 && r.right <= innerWidth + 1; }));
   ok(C.every(Boolean), tag + ': Pet and OK are 44 px taps');
+  await t.ctx.close();
+}
+
+// fix batch (review M1, S1, S8): a pack of 3 and two guests (a Great Dane and a Chihuahua, long friend names) at 360x640, 390x844, 412x915,
+// 768x1024 (phone layout) and 1280x720 (desktop): a tag is drawn only whole inside the visible view (the scene above the phone bar) with its whole
+// dog, never over the place chip, the wish chip, the camera arrow, a look chip, the place buttons or the bar, at the home camera and wherever the
+// camera pans; its text 13-16 px on phones (13-17 on desktop), just over the head (or just under the feet); at 360 and 390 the first guest (and its
+// greeting) is in the home view, a second one in view or named by the look chip
+const SL_TAG_LANGS = ['en', 'ja', 'de', 'th'];
+const SL_TAG_SIZES = [[360, 640], [390, 844], [412, 915], [768, 1024], [1280, 720]];
+function slTagLook() { // in the page: every tag drawn now, against the view and the HTML on it (screen px)
+  const P = window.__paw.hp.sl, R = (e) => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }, hit = (a, b) => Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > 0.5 && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > 0.5;
+  const view = document.getElementById('view'), svg = view.querySelector('svg.world'), vr = R(view), sr = R(svg), bar = document.getElementById('bar'), bt = bar && !bar.hidden && bar.getClientRects().length ? bar.getBoundingClientRect().top : innerHeight;
+  const V = [Math.max(vr[0], sr[0], 0), Math.max(vr[1], sr[1], 0), Math.min(vr[2], sr[2], innerWidth), Math.min(vr[3], sr[3], bt, innerHeight)], inV = (b, m) => b[0] >= V[0] - m && b[1] >= V[1] - m && b[2] <= V[2] + m && b[3] <= V[3] + m;
+  const ui = [...document.querySelectorAll('#status, #ddWish, #placeBtns .btn, #phPeek, .rm-look, #bar, #msBtn, #shMoment')].filter((e) => !e.hidden && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).display !== 'none').map((e) => [e.id || e.className, R(e)]);
+  const d = P.drawn(), vb = svg.viewBox.baseVal, tags = [];
+  d.forEach((o) => {
+    const at = document.querySelector(`#hpTags [data-slt="${o.id}"]`); if (!at || at.getAttribute('visibility') === 'hidden') return; // not drawn
+    const tg = R(at.querySelector('.sl-tag')), dg = R(document.querySelector(`#hpGuests [data-slg="${o.id}"] .sl-gart`)), tx = at.querySelector('text'), M = tx.getScreenCTM();
+    tags.push({ n: o.name, up: o.up, px: Math.round(+tx.getAttribute('font-size') * Math.hypot(M.a, M.b) * 10) / 10, tagIn: inV(tg, 1), dogIn: inV(dg, 1), under: ui.filter(([, b]) => hit(tg, b)).map(([n]) => n), gap: Math.round(o.up ? dg[1] - tg[3] : tg[1] - dg[3]), tg: tg.map(Math.round) });
+  });
+  const pack = [...document.querySelectorAll('#rmLookL, #rmLookR')].some((e) => !e.hidden && e.getClientRects().length);
+  return { tags, inView: d.map((o) => o.box[0] >= vb.x - 1 && o.box[2] <= vb.x + vb.width + 1), names: d.map((o) => o.name), notag: d.map((o) => o.notag), look: P.look(), pack, half: vb.width / 2, ph: document.documentElement.dataset.layout === 'phone' };
+}
+async function sleepTags(t, lang) {
+  const { ok, sec, ev } = t;
+  sec(`B8. ${lang}: a pack of 3, two guests: the tags at five sizes, wherever the camera goes (review M1, S1, S8)`);
+  await startHelps(t, { vw: 360, vh: 640, lang });
+  await ev(() => { const P = window.__paw; P.addDog({ key: 'pug', sex: 'female', months: 24 }, 'Pip'); P.addDog({ key: 'beagle', sex: 'male', months: 24 }, 'Bo'); });
+  await ev(() => window.__paw.go('town')).catch(() => {}); await t.sleep(300);
+  await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.sleep(600);
+  await sleepActs(t, 2, 500, true, ['dane', 'chihuahua']);
+  ok(await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 5000), lang + ': two guests drawn');
+  await t.sleep(900); // the camera settles (a pan home may still be on); the meeting lasts about 3 s
+  const meet = await ev(() => ({ d: window.__paw.hp.sl.drawn(), vb: document.querySelector('#view > svg.world').getAttribute('viewBox') }));
+  const g0 = meet.d[0], vb0 = meet.vb.split(' ').map(Number);
+  ok(!!g0 && g0.box[0] >= vb0[0] - 1 && g0.box[2] <= vb0[0] + vb0[2] + 1 && meet.d.every((o) => !o.hush || !o.shown), lang + ' 360x640: the first guest meets my leader in the home view (review S8), a tag waits while the meeting plays: ' + JSON.stringify({ d: meet.d.map((o) => [o.name, o.tier, o.box.map(Math.round), o.hush, o.shown]), vb: meet.vb }));
+  if (lang === 'en') { await t.sleep(3600); ok(await ev(() => window.__paw.hp.sl.drawn().every((o) => !o.hush)), lang + ': the tags come back after the meeting'); } // the next sizes draw again (no second meeting)
+  for (const [w, h] of SL_TAG_SIZES) {
+    const tag = lang + ' ' + w + 'x' + h;
+    await t.p.setViewportSize({ width: w, height: h }); await t.sleep(400);
+    await ev(() => window.__paw.go('town')).catch(() => {}); await t.sleep(300);
+    await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+    await t.until(() => document.querySelectorAll('#hpGuests .hp-guest').length === 2, null, 4000); await t.sleep(700);
+    await t.until(() => window.__paw.hp.sl.drawn().every((o) => !o.hush), null, 4000); // a first meeting still on (the yard drawn again) ends
+    const H = await ev(slTagLook), bad = [], px = [];
+    const look = (L, at) => { L.tags.forEach((x) => { px.push(x.px); if (!x.tagIn || !x.dogIn || x.under.length) bad.push(at + ' ' + JSON.stringify(x)); }); };
+    look(H, 'home');
+    if (w <= 390) ok(H.inView[0], tag + ': the first guest is in the home view (review S8): ' + JSON.stringify(H));
+    ok(!H.ph || H.inView.every((v, i) => v || H.look.includes(H.names[i]) || (i && H.pack)), tag + ': each guest is in view or the look chip names it (a second one: or the pack\'s own chip on that side, which wins, 4.3): ' + JSON.stringify({ inView: H.inView, look: H.look, pack: H.pack }));
+    ok(H.tags.length >= 1 || H.notag.every(Boolean), tag + ': a tag shows at the home view: ' + JSON.stringify(H));
+    ok(H.tags.every((x) => x.gap >= -1 && x.gap <= 14), tag + ': each tag sits just over its guest\'s head (or just under its feet): ' + JSON.stringify(H.tags.map((x) => [x.n, x.up, x.gap])));
+    if (H.ph) { // the camera anywhere it can go, a look right and the look chip, then home again
+      const cxs = []; for (let cx = H.half; cx <= 1000 - H.half + 0.5; cx += Math.max(40, (1000 - 2 * H.half) / 5)) cxs.push(cx);
+      for (const cx of cxs) { await ev((c) => window.__paw.hp.sl.pan(c), cx); await t.sleep(260); look(await ev(slTagLook), 'cx ' + Math.round(cx)); }
+      await ev(() => window.__paw.hp.sl.pan(null)); await t.sleep(300);
+      const pk = await ev(() => { const b = document.getElementById('phPeek'); if (!b || b.hidden || !b.getClientRects().length) return false; b.click(); return true; });
+      if (pk) { await t.sleep(1100); look(await ev(slTagLook), 'look right'); await ev(() => document.getElementById('phPeek').click()); await t.sleep(900); }
+      const sl = await ev(() => { const b = document.getElementById('slLook'); if (!b || b.hidden) return false; b.click(); return true; });
+      if (sl) { await t.sleep(900); look(await ev(slTagLook), 'look chip'); }
+    }
+    ok(!bad.length, tag + ': every tag drawn is whole inside the view with its whole dog, clear of the chips, the arrows, the buttons and the bar (review M1): ' + bad.slice(0, 3).join(' | '));
+    const lo = 13, hi = H.ph ? 16 : 17;
+    ok(px.length > 0 && px.every((v) => v >= lo && v <= hi), tag + `: the tag text is ${lo}-${hi} px on screen (review S1): ` + JSON.stringify([...new Set(px)]));
+    await shot(t, 'sl_tags_' + tag.replace(/ /g, '_'));
+  }
   await t.ctx.close();
 }
 
