@@ -66,6 +66,7 @@ function rmWorldBox(svg, M, el) {
 }
 // a seasonal decoration (a festival item: fest in HM_DECOR, the Halloween 2026 ones; tag 'fest') keeps every dog's tap rect off it, as the seasonal props do
 const rmFestDecor = (el) => { const n = el.closest('[data-decor]').dataset.decor; return !!(HM_DECOR[n] && HM_DECOR[n].fest); };
+const RM_TUB_SUDS = 40; // the suds and the dog in the tub stand this far above the tub's rim (world units)
 function rmScan() {
   RM.noAt = performance.now() + 3000; const svg = $('#view > svg.world'); if (!svg || !svg.getScreenCTM()) { RM.no = null; return; }
   const M = svg.getScreenCTM().inverse(), out = [];
@@ -81,6 +82,9 @@ function rmScan() {
   rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)
   grBackNo(svg, M, out); // v2.19 fix: indoors, the floor behind and beside the placed beds, furniture and decorations (43_ground.js)
+  // overlap review N5 (24 Nov 2026): in the bath a pack dog lay pressed against the tub (a Great Dane's nose in the suds at 360): the tub's drawing
+  // and the suds over it are a prop (no tap rect on it, 37_roam.js rmSoft), so the others wait a step away
+  if (cur.mode === 'bath') { const tub = svg.querySelector('#tubG svg'); let tb = null; [...(tub ? tub.children : [])].forEach((c) => { const b = rmWorldBox(svg, M, c); if (b) tb = tb ? [Math.min(tb[0], b[0]), Math.min(tb[1], b[1]), Math.max(tb[0] + tb[2], b[0] + b[2]) - Math.min(tb[0], b[0]), Math.max(tb[1] + tb[3], b[1] + b[3]) - Math.min(tb[1], b[1])] : b; }); if (tb) out.push([tb[0], tb[1] - RM_TUB_SUDS, tb[2], tb[3] + RM_TUB_SUDS, 'prop']); }
   RM.no = out; RM.keep = rmKeepScan(svg, M);
 }
 /* keep clear (overlap review S2, 24 Nov 2026): a dog resting in front of the mailbox hid it and its new-letter badge (the deep yard sorts the
