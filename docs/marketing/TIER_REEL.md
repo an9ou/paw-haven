@@ -88,3 +88,68 @@ ART_ROOT=<main> CAPS=<caps dir> NODE_PATH=$(npm root -g) node brand/instagram/la
 ```
 
 A change to the tag or a card: `FRAMES=a-b` on the build (the take is kept). A change to the timing, a camera or Noodle: capture again (the build refuses a capture made for another timeline or other cameras). `ONLY=layout` on the capture writes one still per camera with Noodle's boxes in each pose.
+
+## RedNote cut and both covers (owner approved the English cut on 24 Nov 2026: "I approve it")
+
+The English MP4 above is unchanged. The captions are the coordinator's job.
+
+| File | What |
+|---|---|
+| `tier_reel/doodle-doggo-winter-tiers-rednote.mp4` | The RedNote cut: 1080 x 1920, 30 fps, **30.07 s (902 frames)**. That is 27.55 s of Reel, then the RedNote end card for 2.5 s (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App", centred at (540, 960)). Mix at -16.0 LUFS. It runs 0.07 s over 30 because the Mandarin lines are longer (the ask has no extra 0.6 s here). |
+| `tier_reel/tier-cover.jpg` | The English cover, 1080 x 1920. |
+| `brand/rednote/rednote-24-winter-tiers.jpg` | The RedNote cover, 1080 x 1440 (3:4: y 240..1680 of the same design). |
+| `tier_reel/vo_tier_zh.json` | Noodle in Mandarin (Kokoro v1.1-zh, zf_073 at 1.0x, `../friends_reel/vo_friends_zh.py`). |
+
+**RedNote cut** (`REDNOTE=1`, the pattern of town_goal_reel and visitor_reel):
+- The captures were made with `PAW_LANG=zh-Hans`, so the game's own signs read 冬日市集 · 开到12月31日, 衣服, 零食, 玩具 and 小窝.
+- The whole picture and the block sit 85 px further right, centred on x 540, with a 50 px margin and no safe zone. Noodle's place in the world, and so every prop clearance, is the same as in the English cut.
+- The floor things in front sit 140 px lower, so the subtitle pill (LXGW WenKai, at most 14 characters, centred at (540, 1530)) has open snow or grass of its own.
+- The beats, places, Noodle's poses and faces, the tags' pops (with the coin chime) and the music are the same as the English cut. The hook tags pop at 0, 1.1 and 1.85 s, with the Mandarin voice.
+
+| Beat | Noodle says (zf_073) | On screen |
+|---|---|---|
+| hook | 九、四十五，还是九百金币？你的狗狗先要哪个？ | Tag 第1档 / 9 金币 from frame 1, then 第2档 / 45 and 第3档 / 900. The card reads "9、45还是900金币？" + "你的狗狗先要哪个？" |
+| tier 1 | 第一档，九金币：酸奶雪球。只用无糖原味酸奶，两三颗小雪球就够了！ | 第1档, 9 金币. **酸奶雪球** · 冬日市集 · 零食. "只用无糖原味酸奶。/ 两三颗小雪球就够了。" |
+| tier 2 | 第二档，四十五金币：雪球球。一颗永远不会化的雪球！ | 第2档, 45 金币. **雪球球** · 冬日市集 · 玩具. "一颗永远不会化的雪球。" |
+| tier 3 | 第三档，九百金币：姜饼狗屋。只是好看，不能吃，里里外外都是木头。 | 第3档, 900 金币. **姜饼狗屋** · 冬日市集 · 小窝. "只是好看，不能吃：/ 里里外外都是木头。" |
+| ask | 你是哪一档？评论区告诉我！ | "你是哪一档？" + "评论区告诉我" with the red crayon arrow. |
+
+The subtitles are each line in parts of at most 14 characters: 9、45 / 还是900金币 / 你的狗狗先要哪个？ … The build stops if they differ from the voice (the numbers are read out as 九, 四十五, 九百).
+
+**The game's zh-Hans words** (`game/i18n/zh-Hans.json` on main; the build stops if any changes):
+- `data.food.frozen_yoghurt_snowballs.n` 酸奶雪球, and its `.tip` "只用无糖原味酸奶，… 两三颗小雪球就够了。"
+- `data.toys.snowball_ball.n` 雪球球, and its `.note` "…一颗永远不会化的雪球。…"
+- `data.houses.gingerbread_kennel.n` 姜饼狗屋, and its `.note` "…只是好看，不能吃：里里外外都是木头。"
+- `fm.m_winter` 冬日市集; `fm.s_treats` 零食, `fm.s_toys` 玩具, `fm.s_homes` 小窝; `pm.coins_n` {n}金币.
+
+Each card line must be a part of the game's own line.
+
+The hook 「9、45还是900金币？你的狗狗先要哪个？」 is the English hook word for word: the three real prices up front, "your dog" and "first" (先). `hookscore.py` scores English only, so no number is given. The ask has no hookscore either.
+
+**Anti-ban:** the build stops on any link, domain, `.app`, `@`, handle, QR, other app or platform name, or any of 链接 网址 官网 二维码 扫码 下载 私信我 加我 主页链接 戳 发帖 快拍 帖子 (README / REDNOTE.md). It checks the words, the subtitles, the voice lines and every word the captured game shows (its signs and labels). The faces' own little words (the game's expression art, e.g. "yum!") are drawn by the game in English in every language.
+
+**Checks:**
+- Every frame (902) passes `centreCheck()` and `apartCheck()` at 28 px (tag, card, subtitle pill, Noodle).
+- Everything stays inside the 50 px margin (x 50..1030, y 40..1880).
+- Noodle and the block (the subtitle's room included) are 28 px clear of every prop in the frame.
+- The end card is centred at (540, 960).
+- **checkFrames, one run per beat: doubled [] in all five.** The smallest changes were 0.25 / 0.24 / 0.23 / 0.07 / 0.13 and the medians 0.40 / 0.39 / 0.37 / 0.49 / 0.43. The jumps are the tags' pops, the card fade-ins at the beat cuts, a face coming on, and the game's crayon pose steps.
+- The RedNote contact sheet and stills were looked at 1x.
+
+**Covers** (`ONLY=cover`). The capture's `ONLY=cover` makes the background: the whole Winter Market at 1 px a unit under an open sky (`COVER` in `capture_tier.js`, with `PAW_LANG=zh-Hans` for RedNote). The build then lays the cover on it:
+- The question is big on a cream card: "9, 45 or 900 coins?" with a smaller "What would your dog pick?" (RedNote: 「9、45还是900金币？」 with 「你的狗狗会选哪个？」).
+- The three big crayon price tags sit in a row under it, each with the game's own item drawing (`PawArt.item`), its tier, crayon coins and price (Tier 1/2/3 · coins, 第1/2/3档 · 金币).
+- Noodle stands big on the snow in front with star eyes (the game's `wow` face), with the logo on its own card beside him.
+- Below him are the game's own winter set, different from the Reel's presents, sled and snowman: two Felt Fir Trees and the Star Lantern (`PawArt.prop`).
+
+The checks: text centred in its box; 28 px apart; 28 px clear of every market prop and of the bunting, roofs and lanterns; everything inside x 40..1040, y 250..1670; and the RedNote words pass the ban list.
+
+Remake:
+
+```
+VO_LINES=brand/instagram/launch/tier_reel/vo_tier_zh.json python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo zh dir> zf_073 1.0
+PAW_LANG=zh-Hans NODE_PATH=$(npm root -g) node brand/instagram/launch/tier_reel/capture_tier.js <main> <caps zh dir> <vo zh dir>
+REDNOTE=1 ART_ROOT=<main> CAPS=<caps zh dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/tier_reel/build_tier.js <workdir zh> <vo zh dir>
+ONLY=cover [PAW_LANG=zh-Hans] NODE_PATH=$(npm root -g) node brand/instagram/launch/tier_reel/capture_tier.js <main> <cover caps dir> <vo dir>
+ONLY=cover [REDNOTE=1] ART_ROOT=<main> CAPS=<cover caps dir> NODE_PATH=$(npm root -g) node brand/instagram/launch/tier_reel/build_tier.js <workdir> <vo dir>
+```

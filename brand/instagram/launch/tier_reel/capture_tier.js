@@ -49,18 +49,29 @@ const DASH_MARKET = [[250, 1800], [620, 1860], [940, 1880], [80, 1890], [700, 14
 // the yard's own floor things, copied onto the grass in front (frame px of the middle of their foot line at the camera's rest; k: x their size in the yard)
 const FG_YARD = [{ prop: 'bushL', at: [150, 1600], k: 2.0 }, { prop: 'planter', at: [520, 1640], k: 2.0 }, { prop: 'bush', at: [900, 1590], k: 2.2 }];
 const sm = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+// The RedNote cut (PAW_LANG=zh-Hans; owner's go-ahead for it 24 Nov 2026): the game in Simplified Chinese, and the whole picture 85 px to the right
+// (RedNote has no Instagram buttons on the right: everything centred on x 540, a 50 px margin); the floor things in front go RNFG px lower, so
+// the subtitles fit between the block and them.
+const RNX = 85, RNFG = 140;
+const camsFor = (rn) => (rn ? Object.fromEntries(Object.entries(CAM).map(([k, c]) => [k, Object.assign({}, c, { x0: +(c.x0 - RNX / c.S).toFixed(4), nx: c.nx + RNX })])) : CAM);
+const fgFor = (list, rn) => (rn ? list.map((f) => Object.assign({}, f, { at: [f.at[0] + RNX, f.at[1] + RNFG] })) : list);
+// the covers (ONLY=cover): the whole Winter Market at 1 px a unit under an open sky for the headline and the three tags, Noodle big on the snow in
+// front, the game's own winter set (Felt Fir Tree, Star Lantern) on the snow below him. Frame px of the top left corner, size in px.
+const COVER = { S: 1.0, x0: -40, OY: 775, nx: 690, feet: 1650, pose: 'idle', face: 'left', expr: 'wow',
+  fg: [{ prop: 'wmfirtree', n: 'Felt Fir Tree', at: [70, 1696], px: [140, 200] }, { prop: 'wmstarlantern', n: 'Star Lantern', at: [495, 1712], px: [96, 160] }, { prop: 'wmfirtree', n: 'Felt Fir Tree', at: [870, 1696], px: [140, 200] }] };
 
-function plan(VOD) {
-  const KEYS = ['hook', 't1', 't2', 't3', 'ask'], PAUSE = 0.15, EXTRA = { ask: 0.6 };
+function plan(VOD, rn) {
+  const KEYS = ['hook', 't1', 't2', 't3', 'ask'], PAUSE = 0.15, EXTRA = rn ? {} : { ask: 0.6 };   // the Mandarin ask is long already
   const beats = []; let at = 0.1; const B = {};
   for (const k of KEYS) { const hold = VOD[k] + 0.4 + (EXTRA[k] || 0); beats.push({ k, at, hold, cam: { hook: 'C1', t1: 'C1', t2: 'C2', t3: 'C3', ask: 'C3' }[k] }); B[k] = at; at += hold + PAUSE; }
   const LOOP = at - PAUSE + 0.2, T = LOOP + 2.5, NF = Math.round(T * FPS), NCAP = Math.min(NF, Math.ceil((LOOP + 0.5) * FPS));
   // the beat of a moment: the next beat takes over 0.06 s before its start (its card's first frame), the camera cuts on the same frame
   const beatAt = (t) => { let i = 0; for (let j = 0; j < beats.length; j++) if (t >= beats[j].at - 0.06) i = j; return beats[i]; };
-  const camAt = (t) => { const b = beatAt(t), c = CAM[b.cam], a = 2 * Math.PI * t / SWAY.period;
+  const CAMS = camsFor(rn), camAt = (t) => { const b = beatAt(t), c = CAMS[b.cam], a = 2 * Math.PI * t / SWAY.period;
     return { name: b.cam, S: c.S, x0: c.x0 + SWAY.r * Math.cos(a) / c.S, y0: -c.OY / c.S + SWAY.r * Math.sin(a) / c.S, OY: c.OY }; };
   // the hook's three tags pop with the voice: "Nine," (0), "forty-five," (0.6 s), "or nine hundred coins." (1.6 s); its question from 2.8 s
-  const HOOKPOP = [0, 0.6, 1.6], HOOKQ = 2.8;
+  // (Mandarin: "九、" (0), "四十五，" (1.1 s), "还是九百金币？" (1.85 s); its question from 2.7 s)
+  const HOOKPOP = rn ? [0, 1.1, 1.85] : [0, 0.6, 1.6], HOOKQ = rn ? 2.7 : 2.8;
   // Noodle's cues: { t, cam, pose, face, expr } sets him at once (cam: put him at that camera's spot, at that camera's foreground size)
   const cues = [
     { t: 0, cam: 'C1', pose: 'dance', face: 'right', expr: null },
@@ -72,22 +83,24 @@ function plan(VOD) {
     { t: B.t3 + 1.7, pose: 'idle', face: 'right', expr: 'hearts' },
     { t: B.ask - 0.06, pose: 'idle', face: 'right', expr: 'curious' },
   ];
-  return { FPS, W, H, beats, B, LOOP, T, NF, NCAP, cues, camAt, beatAt, HOOKPOP, HOOKQ, PAUSE };
+  return { FPS, W, H, beats, B, LOOP, T, NF, NCAP, cues, camAt, beatAt, HOOKPOP, HOOKQ, PAUSE, CAMS };
 }
-module.exports = { plan, CAM, ITEMS, FG_MARKET, FG_YARD, Q, FEET, PROPK, SWAY, FPS, W, H };
+module.exports = { plan, CAM, camsFor, fgFor, RNX, RNFG, COVER, ITEMS, FG_MARKET, FG_YARD, Q, FEET, PROPK, SWAY, FPS, W, H };
 
 if (require.main === module) {
   const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || 'tier_caps'), VO = path.resolve(process.argv[4] || path.join(OUT, '..', 'vo'));
   for (const d of ['seq', 'items']) fs.mkdirSync(path.join(OUT, d), { recursive: true });
   const { run } = require(path.join(DEV, 'game', 'test_lib'));
   const { freezeClock, stepClock, releaseClock } = require('../frozen_clock.js');
-  const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), P = plan(VOJ.dur);
+  const LANG = process.env.PAW_LANG || '', RN = !!LANG, COVERS = process.env.ONLY === 'cover';
+  const VOJ = COVERS ? { dur: {} } : JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), P = COVERS ? null : plan(VOJ.dur, RN);
+  const CAMS = camsFor(RN), FGM = fgFor(FG_MARKET, RN), FGY = fgFor(FG_YARD, RN);
   const DATE = process.env.CAP_DATE || '2026-11-24', LAYOUT = process.env.ONLY === 'layout';
   const VIEW = '#view svg.world{position:fixed!important;left:0!important;top:0!important;width:540px!important;height:960px!important;max-width:none!important;max-height:none!important;'
     + 'z-index:2147483000!important;transform:none!important;margin:0!important}[class$="-hl"],#bowlG,#messG,#zzz,#ballLayer{display:none!important}#toasts,#devBtn{display:none!important}'
     + '#view,#view *{overflow:visible!important}';
   run('tier_capture', async (t) => {
-    const { ev } = t, p = () => t.p, facts = { date: DATE, Q, FEET, CAM, frames: [], props: {} };
+    const { ev } = t, p = () => t.p, facts = { date: DATE, Q, FEET, CAM: CAMS, frames: [], props: {}, words: {} };
     const closeAll = () => ev(() => { for (let i = 0; i < 5; i++) { const m = document.getElementById('modal'); if (!m || m.hidden) break; const x = m.querySelector('.panel .x'); if (x) x.click(); else break; } });
     const settle = async () => { await ev(() => { const S = window.__paw.S; S.newsSeen = '9.99'; S.wbPend = null; S.awayGiftISO = ''; S.backISO = ''; window.__paw.saveNow(); }); await p().waitForTimeout(900); await closeAll(); };
     // prefs.fmTest: the festival markets under the harness (49_market.js fmOn); prefs.exTest: the faces (41_expressions.js exOn)
@@ -95,6 +108,13 @@ if (require.main === module) {
     const cdp = await t.ctx.newCDPSession(p());
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 980, deviceScaleFactor: 2, mobile: false }); await p().waitForTimeout(600);
     await t.calm(); await t.lu(); await settle();
+    // PAW_LANG=zh-Hans (the RedNote cut): the game switched to Simplified Chinese and reloaded with the save (as visitor_reel/capture_visitor.js)
+    if (LANG) {
+      await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+      await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu(); await settle();
+    }
+    facts.lang = await ev(() => document.documentElement.lang); console.log('language', facts.lang);
+    if ((facts.lang || 'en') !== (LANG || 'en')) throw new Error('the game is in ' + facts.lang);
     // ---- the facts, from the running game on that date ----
     facts.jst = await ev(() => window.__paw.rh.jst());
     facts.open = await ev(() => window.__paw.fm.open()); facts.main = await ev(() => window.__paw.fm.main());
@@ -118,8 +138,10 @@ if (require.main === module) {
       console.log('place', JSON.stringify(info).slice(0, 500));
       if (info.place !== place || info.vb !== '0 0 1000 600') throw new Error('not at ' + place + ': ' + JSON.stringify(info));
       facts.place = facts.place || {}; facts.place[place] = info;
-      const cams = Object.entries(CAM).filter(([, c]) => c.place === place).map(([k, c]) => Object.assign({ k }, c));
-      await ev(([place, id, cams, FG_MARKET, FG_YARD, DASH_MARKET, PROPK, Q, FEET]) => {
+      // every word the place shows (its drawn text and its labels), for the RedNote ban-word check
+      facts.words[place] = await ev(() => { const s = document.querySelector('#view svg.world'); return [...new Set([...s.querySelectorAll('text')].map((e) => e.textContent.trim()).concat([...s.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('aria-label'))).filter(Boolean))]; });
+      const cams = COVERS ? (place === 'fmarket' ? [Object.assign({ k: 'CV', place }, COVER)] : []) : Object.entries(CAMS).filter(([, c]) => c.place === place).map(([k, c]) => Object.assign({ k }, c));
+      await ev(([place, id, cams, FG_MARKET, FG_YARD, DASH_MARKET, PROPK, Q, FEET, COVER]) => {
         window.__trST = window.__trST || window.setTimeout; window.__trSI = window.__trSI || window.setInterval;
         const top = window.__trST(() => {}, 0); for (let i = 1; i <= top + 50; i++) { clearTimeout(i); clearInterval(i); }
         window.setTimeout = () => 0; window.setInterval = () => 0;   // none start again during the take (a face would end on the real clock, the idle tick would redraw the scene)
@@ -147,9 +169,9 @@ if (require.main === module) {
           const dashes = kids.filter((e) => { const b = bb(e); return e.tagName === 'path' && b.y > 440 && b.width > 20 && b.width < 32 && b.height < 6; });
           if (dashes.length < 5) throw new Error('the market\'s dashes changed: ' + dashes.length);
           for (const c of cams) {
-            for (const f of FG_MARKET) { const svg = PA.prop(f.prop, {}); if (!svg || />\?<\/text>/.test(svg)) throw new Error('no prop ' + f.prop);
-              const [x, y] = wpt(c, f.at[0], f.at[1]), w = f.size[0] * PROPK / c.S, h = f.size[1] * PROPK / c.S;
-              g(svg.replace(/^<svg/, '<svg x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid meet"'), 'fg', c.k).setAttribute('data-fg', c.k + ':' + f.prop); }
+            for (const [fi, f] of (c.k === 'CV' ? COVER.fg : FG_MARKET).entries()) { const svg = PA.prop(f.prop, {}); if (!svg || />\?<\/text>/.test(svg)) throw new Error('no prop ' + f.prop);
+              const [x, y] = wpt(c, f.at[0], f.at[1]), w = (f.px ? f.px[0] : f.size[0] * PROPK) / c.S, h = (f.px ? f.px[1] : f.size[1] * PROPK) / c.S;
+              g(svg.replace(/^<svg/, '<svg x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid meet"'), 'fg', c.k).setAttribute('data-fg', c.k + ':' + f.prop + (c.k === 'CV' ? ':' + fi : '')); }
             DASH_MARKET.forEach(([px, py], i) => { const src = dashes[i % dashes.length], b = bb(src), e = g('', 'dash', c.k), [x, y] = wpt(c, px, py), k = PROPK / c.S * 0.9;
               e.appendChild(src.cloneNode(true)); e.setAttribute('transform', 'translate(' + x + ' ' + y + ') scale(' + k + ') translate(' + (-b.x - b.width / 2) + ' ' + (-b.y - b.height / 2) + ')'); });
           }
@@ -190,13 +212,13 @@ if (require.main === module) {
         const sz = window.__paw.rm.size(id).k;
         window.__tr = { id, sz, cams: Object.fromEntries(cams.map((c) => [c.k, c])), cam: null,
           show(cam) { document.querySelectorAll('[data-cam]').forEach((e) => { e.style.display = e.getAttribute('data-cam') === cam ? '' : 'none'; }); },
-          set(o) { const P = window.__paw; if (o.cam) { const c = this.cams[o.cam]; this.cam = o.cam; this.show(o.cam); P.rm.to(this.id, c.x0 + c.nx / c.S, (FEET - c.OY) / c.S, { direct: true, secs: 0, k: Q / (c.S * this.sz) }); }
+          set(o) { const P = window.__paw; if (o.cam) { const c = this.cams[o.cam]; this.cam = o.cam; this.show(o.cam); P.rm.to(this.id, c.x0 + c.nx / c.S, ((c.feet || FEET) - c.OY) / c.S, { direct: true, secs: 0, k: Q / (c.S * this.sz) }); }
             if (o.pose) P.idle.pin(o.pose); if (o.face) P.rm.set(this.id, { face: o.face }); if ('expr' in o) { if (o.expr) P.ex.show(this.id, o.expr, 1e8); else P.ex.clear(this.id); } },
           frame(vb) { const P = window.__paw, s = document.querySelector('#view svg.world'); s.setAttribute('viewBox', vb);
             const e = document.querySelector('#dogArt'), r = e.getBoundingClientRect(), pos = P.rm.pos(this.id), inf = P.rm.info(this.id), a = document.querySelector('#dogArt [class*="pa-pose-"]'), c = P.ex.cur(this.id);
             return { box: [r.left * 2, r.top * 2, r.right * 2, r.bottom * 2].map((v) => Math.round(v * 10) / 10), feet: [Math.round(pos.x * 10) / 10, Math.round(pos.y * 10) / 10], face: pos.face, walk: !!inf.walk,
               pose: a ? (/pa-pose-([a-z]+)/.exec(a.getAttribute('class')) || [])[1] : '', expr: c ? c.name : '', cam: this.cam, draws: document.querySelectorAll('#sceneG > svg').length + ':' + (s.querySelectorAll('[data-ext]').length), tapes: window.__trTapes.length }; } };
-      }, [place, id, cams, FG_MARKET, FG_YARD, DASH_MARKET, PROPK, Q, FEET]);
+      }, [place, id, cams, FGM, FGY, DASH_MARKET, PROPK, Q, FEET, COVER]);
       // the props of each camera of this place, with its own foreground things showing
       for (const c of cams) { await ev((k) => window.__tr.show(k), c.k); facts.props[c.k] = await ev(() => window.__trProps()); }
       console.log('props', JSON.stringify(facts.props).slice(0, 900));
@@ -204,9 +226,15 @@ if (require.main === module) {
     const vbOf = (c) => `${c.x0.toFixed(4)} ${c.y0.toFixed(4)} ${(W / c.S).toFixed(4)} ${(H / c.S).toFixed(4)}`;
     const shot = async (file) => { const s = await cdp.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 540, height: 960, scale: 1 } }); fs.writeFileSync(file, Buffer.from(s.data, 'base64')); };
 
+    if (COVERS) {   // the covers' background: the market, Noodle big in front (no take, no clock: one still)
+      await enter('fmarket'); await ev((o) => window.__tr.set(o), { cam: 'CV', pose: COVER.pose, face: COVER.face, expr: COVER.expr }); await p().waitForTimeout(600);
+      const m = await ev((vb) => window.__tr.frame(vb), vbOf({ x0: COVER.x0, y0: -COVER.OY / COVER.S, S: COVER.S }));
+      await shot(path.join(OUT, 'cover_bg.png'));
+      fs.writeFileSync(path.join(OUT, 'cover.json'), JSON.stringify({ date: DATE, lang: facts.lang, jst: facts.jst, main: facts.main, place: facts.place, words: facts.words, noodle: m, props: facts.props.CV, COVER }));
+      console.log('cover', JSON.stringify(m)); return; }
     if (LAYOUT) {   // one still per camera and pose, to place things
       for (const place of ['fmarket', 'yard']) { await enter(place);
-        for (const [k, c] of Object.entries(CAM).filter(([, c]) => c.place === place)) {
+        for (const [k, c] of Object.entries(CAMS).filter(([, c]) => c.place === place)) {
           for (const [pose, expr] of [['idle', null], ['beg', 'hearts'], ['happy', 'zoomies'], ['dance', null], ['idle', 'curious'], ['beg', 'yum']]) {
             await ev((o) => window.__tr.set(o), { cam: k, pose, face: c.face, expr }); await p().waitForTimeout(250);
             const m = await ev((vb) => window.__tr.frame(vb), vbOf({ x0: c.x0, y0: -c.OY / c.S, S: c.S }));
@@ -220,7 +248,7 @@ if (require.main === module) {
     let n = 0, ci = 0;
     for (const place of ['fmarket', 'yard']) {
       await enter(place);
-      const camsHere = Object.keys(CAM).filter((k) => CAM[k].place === place);
+      const camsHere = Object.keys(CAMS).filter((k) => CAMS[k].place === place);
       // the first cue of this take sets Noodle at its camera
       while (ci < cues.length && cues[ci].t <= n / FPS + 1e-4) ci++;
       const last = [...cues.slice(0, ci)].reverse(), st = {}; for (const c of last) for (const k of ['pose', 'face', 'expr', 'cam']) if (!(k in st) && k in c) st[k] = c[k];
