@@ -6,7 +6,8 @@
   var o = document.getElementById('o'), d = document.documentElement;
   var r = window.PawPrint ? window.PawPrint.printFromHash(location.hash) : { ok: false, err: 'no PawPrint' };
   if (!r.ok) { o.textContent = ''; d.setAttribute('data-state', 'err'); document.title = 'ERR ' + r.err; return; }
-  o.innerHTML = r.svg; o.style.width = r.w + 'px'; o.style.height = r.h + 'px';
+  var dpr = window.devicePixelRatio || 1; // the SVG fills exactly w x h device pixels: at deviceScaleFactor 2 that is w/2 x h/2 CSS px
+  o.innerHTML = r.svg; o.style.width = (r.w / dpr) + 'px'; o.style.height = (r.h / dpr) + 'px';
   d.setAttribute('data-w', r.w); d.setAttribute('data-h', r.h); d.setAttribute('data-art', window.PawPrint.ART_VER); d.setAttribute('data-state', 'ready');
   document.title = 'READY ' + r.w + 'x' + r.h;
 })();
