@@ -62,7 +62,7 @@ classes, `MerchLedger` and `MerchPrints`; no D1, no R2, no KV; never `cloudflare
   TRANSACTIONS.md 2.1 and 2.2 (double taps, events twice or out of order, refund before paid, disputes, rejects).
 - Switches: `MERCH_FROM`, `MERCH_OFF`, `MERCH_COUNTRIES`, `MERCH_PRODUCTS`, `MERCH_DAY_CAP`, `MERCH_PROVIDER_MODE`.
 
-**4. The print render.** Files: `cloudflare/merch/print_*` or `cloudflare/merch/print_*`.
+**4. The print render.** Files: `cloudflare/merch/print_*`.
 - Free plan, first choice: a static print page (`/merch/print/v1/`) where PawPrint draws the dog from the recipe; the Worker asks
   Cloudflare's browser (Browser Run) for a screenshot inside the cooling hour and streams the PNG into a SQLite Durable Object of the
   merch Worker (`MerchPrints`, one per JST day); a signed route serves it.

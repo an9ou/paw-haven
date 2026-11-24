@@ -81,24 +81,25 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   no feedback yet. **Not yet reviewed:** run ONE combined review (paw-reviewer, Opus: code + art at full size) before part 2 builds on it.
   Small open points for the owner, to ask with the next real question, not alone: a puppy or newborn prints puppy-sized on a tee
   (tiny on the patch: keep, or scale up?); the name letters are at most 1.3 in tall.
-- **Part 1 review: done, 24 Nov evening** (`docs/reviews/MERCH_PART1_review.md`, crops in `docs/reviews/merch_part1/`): 3 must-fix
-  (art cut flat at the art box: Akita sitting tail, tall hats; the print page said READY for a wrong file; easy name-filter bypasses),
-  9 should-fix, 5 nice. **Fix batch running** (one Opus agent, owns `merch/*`, `tools/merch_build.js`, `tools/merch_render.js`,
-  PART1.md): no clipping, every hash key required + `av=<ART_VER>` + a title that names what was drawn, name filter fixed both ways,
-  the patch hugs the dog, `PRODUCTS.tee.minDogIn = 5` (a small dog is scaled up to 5 in wide: **the owner chooses**, picture
-  `docs/design/merch/samples/puppy_size_choice.png`), name strokes never under 0.5 mm, the stale spike Worker deleted. When it is back:
-  run the two test suites yourself, look at the crops, commit, send the owner the new samples with the next report.
-  Sent to the GM: the tricolour Corgi happy-pose outline gap (game art, review item 12). Not done on purpose: item 16 (the order
-  server builds or checks the recipe: part 3), item 13.
+- **Part 1 review and fixes: done, 24 Nov late evening** (`docs/reviews/MERCH_PART1_review.md`; fixes in commit d915b8f; PART1.md is
+  current). `test_pawprint` 84/84, game round trip 483/483. Print links now need every key plus `av=<ART_VER>`; the title names what
+  was drawn; no art is clipped; the name filter is fixed both ways; the patch hugs the dog; `PRODUCTS.tee.minDogIn = 5` (small dogs
+  scaled up to 5 in wide). New samples sent to the owner (`docs/design/merch/samples/`, committed). **Open for the owner, to ask with
+  the next real question:** small dogs "as in the game" or "scaled up to 5 in" (picture `samples/puppy_size_choice.png`; built: scaled
+  up, recommended). Good to tell the owner then: a mug name carries at most 16 wide letters ("A little shorter, please"); XS-M tees
+  print the file at 77%. Sent to the GM: the tricolour Corgi happy-pose outline gap (game art, review item 12). Left for part 3:
+  review item 16 (the server checks the recipe).
 - **TRANSACTIONS.md rewrite: done, 24 Nov evening** (644 lines; test rows `T2.1-01..33`, `T2.2-01..56`). Storage: **everything in
   SQLite Durable Objects, no D1** (`MerchLedger` orders, `MerchPrints` PNGs per JST day; admin routes + `tools/merch.sh` instead of a
   SQL console). Adaptive Pricing: verified and not-verified lists in its section 3.1 (not verified: whether a Hong Kong account can
   switch it on; goes to the sandbox run, part 9). No manual capture with Adaptive Pricing, so each cancel costs us the Stripe fee.
   **Its section 10 has 12 open points for the owner** (recommendation first): ask them together with the next real question or the
   launch go-ahead, not one by one. The build goes ahead on the recommendations; each is a switch or a table value.
-- Next: after the fix batch is green, **part 2** (the `/merch` page, test mode; files `site/merch/*`, its own test file, no shared
-  site files: the GM adds the header tab and the site build later) and **part 3** (the merch Worker with faked money,
-  `cloudflare/merch/*`, suite from the T rows) side by side, one Opus agent each, then one combined review per part. See `BUILD_PLAN.md`.
+- **Running now (started 24 Nov about 22:30 JST), one Opus agent each:** **part 2** (the `/merch` page in test mode: `site/merch/**`,
+  `merch/test_page.js`, `PART2.md`; a fake api with the shapes of TRANSACTIONS.md 6.3; no shared site files) and **part 3** (the merch
+  Worker, money faked: `cloudflare/merch/**`, `tools/merch.sh`, `PART3.md`; one test per T row; it may come back partial with a list
+  of rows left). When each is back: run its suite yourself, commit, then ONE combined review per part (paw-reviewer, Opus; part 2 also
+  phone fit at 360x640), fixes, and a message to the GM that the part is ready. Then parts 4 (render) and 5 (Printful adapter).
 - For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
   (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
 - Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
