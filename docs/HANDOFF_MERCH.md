@@ -105,6 +105,13 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   Stripe, Printful, render and email; `MerchLedger` + `MerchPrints` SQLite Durable Objects; every route; `tools/merch.sh`. Suite
   `NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs`: 108/108 (one test per T row). 19 contract questions in PART3.md
   (safest reading built). **Its combined review is running** (`docs/reviews/MERCH_PART3_review.md`); then one fix batch.
+- **Reviews of parts 2 and 3: done, 24 Nov about 22:40 JST** (`docs/reviews/MERCH_PART2_review.md`: 2 must-fix, 10 should-fix;
+  `docs/reviews/MERCH_PART3_review.md`: 5 must-fix, 16 should-fix, "not ready for real money until fixed"). The catalog and quote
+  shapes are settled in a dated note under TRANSACTIONS.md 6.3. **Both fix batches are running** (one Opus agent each: part 2 owns
+  `site/merch/**` + `merch/test_page.js` + PART2.md; part 3 owns `cloudflare/merch/**` + `tools/merch.sh` + PART3.md). When each is
+  back: run its suite yourself (`node merch/test_page.js`; `node cloudflare/merch/test/run.mjs`, both with
+  `NODE_PATH=$(npm root -g)`), look at the refreshed screenshots in `docs/design/merch/part2_shots/`, commit, push.
+  (The paw-reviewer agent no longer writes its own report file: write the review file yourself from its report.)
 - After both fix batches: message the GM (parts 1-3 ready on `merch/shop`; nothing to merge to main before the owner's go-ahead),
   report to the owner with the screenshots, and ask the collected questions in ONE choice window (recommendation first): small dogs on
   a tee (scaled up to 5 in, built); the points of TRANSACTIONS.md 10 that matter before launch; tee sizes (only those made in both the
