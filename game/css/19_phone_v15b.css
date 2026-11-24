@@ -115,3 +115,4 @@ html[data-layout="phone"] .adopt-card{flex-wrap:wrap}
 html[data-layout="phone"] .onway-card{width:calc(100% - 32px)}/* v2.30.1 first impressions: the place chip is one line on phones (00_core.js drops the weather word, .tight, when it would not fit; its icon stays) */
 html[data-layout="phone"] #status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-layout="phone"] #status.tight .wxl{display:none}
+html[data-layout="phone"] #status.wrapn .pname{white-space:normal;overflow-wrap:anywhere} /* overlap leftovers: a Tokyo place name too long even in its short form wraps inside itself, never the time (00_core.js) */

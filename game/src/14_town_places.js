@@ -23,7 +23,7 @@ function townPlaceName(k) {
     case 'hilltop': return tt('town.place_hilltop', 'Hilltop Meadow');
     case 'pier': return tt('town.place_pier', 'Lighthouse Pier');
     case 'fujihill': return tt('town.place_fujihill', 'Mt. Fuji Lookout');
-    default: return tdata('places.' + k + '.n', p.n);
+    default: return typeof TK_PLACES !== 'undefined' && TK_PLACES[k] ? tkPlaceName(k) : tdata('places.' + k + '.n', p.n); // overlap leftovers: the six Tokyo places have their names in data.tk_places (39_tokyo.js), PLACES[k].n is only the English copy
   }
 }
 function townRouteName(k) {

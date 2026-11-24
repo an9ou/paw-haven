@@ -185,7 +185,7 @@ const SUITES = {
   phone_v215_ground: { file: 'test_phone_v215_ground.js', group: 'phone', est: 70 }, // v2.15 GROUND (V215.md 11, 16): the wide-place camera on phones, look chips, drag vs tap, the crop, 44 px, no sideways scroll
   phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
   phone_v213_expr: { file: 'test_phone_v213_expr.js', group: 'phone', est: 50 }, // v2.13 EX: expressions and the photo face picker on phones (V213.md 4)
-  phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
+  phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 280 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
   // v2.14 (V214.md 13): every language and the pseudo-locales. i18n_smoke is on its own (not in `all`): node game/run_tests.js i18n_smoke
