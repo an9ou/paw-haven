@@ -2,9 +2,8 @@
 
 24 Nov 2026. Research, not tax or accounting advice.
 
-The owner's decision (24 Nov 2026): item prices in USD only, a shipping fee on small orders, free shipping over a threshold (US$50 or lower),
-a cart with several items, shipping worldwide, and more income per order than the old "one delivered price, one item" model.
-Numbers: `node tools/merch_econ.js --cart` (inputs in `cartInputs()`). Same formula as ECONOMICS.md, per order, Stripe case 2.
+The owner's decision (24 Nov 2026): item prices in USD only, a shipping fee on small orders, free shipping over a threshold (US$50 or lower), a cart with several items,
+shipping worldwide, and more income per order than the old "one delivered price, one item" model. Numbers: `node tools/merch_econ.js --cart` (inputs in `cartInputs()`). Same formula as ECONOMICS.md, per order, Stripe case 2.
 
 ## 1. Facts
 
@@ -20,16 +19,14 @@ Numbers: `node tools/merch_econ.js --cart` (inputs in `cartInputs()`). Same form
   first rate + the other's extra rate. Mugs and stickers "ship separately ... due to packaging differences" and pay their own first-item rate even
   when they ship together. So **tees, mugs and stickers each pay their own first-item rate**: mug + tee + stickers to the USA = 4.95 + 6.69 + 4.49
   = $16.13. Items from different facilities ship separately, and "multiple shipment orders will have higher shipping costs".
-- **US holiday surcharge**: "From Oct 15, 2026, to Jan 17, 2027, a $0.40 surcharge will be added to all orders with a US destination address". [fetched]
-- Making 2-5 business days; USA and Canada 3-4 business days after that; international 5-20. Buyers "might have to pay customs fees". [fetched]
+- **US holiday surcharge**: "From Oct 15, 2026, to Jan 17, 2027, a $0.40 surcharge will be added to all orders with a US destination address". Making 2-5 business days; USA and Canada 3-4 business days after that; international 5-20. Buyers "might have to pay customs fees". [fetched]
 
 **What comparable US-facing shops charge** (shop types in our own text; names only as sources here) [snippet]
 - Gaming merch shop (Game Theory Merch): $7.99, free over $49 worldwide. Board-game studio (Fowers Games): free over $50 to US, UK, Germany.
 - Game publisher (Japanime Games): free over $75, continental US. Big-game merch shop (Dead by Daylight): free over $99. POD merch shop (Indie-Merch): over $100.
 - POD marketplaces: TeePublic free over $80 (US); Society6 about $5 a tee, free only in promos; Etsy's guarantee: US orders of **$35** or more (help.etsy.com).
 - POD tee shops: Threadless from $7.70 US / $17.64 abroad, $5 flat over $99; Cotton Bureau free over $99 with a code; a small reseller $4.99, free for 2 items or $64.99.
-- Game merch shop (Fangamer): free US shipping in its holiday sale; base rate not found.
-- Pattern: **US fees $4.99-$7.99; free from $35 to $100, often US only; abroad usually reduced, not free.**
+- Game merch shop (Fangamer): free US shipping in its holiday sale; base rate not found. Pattern: **US fees $4.99-$7.99; free from $35 to $100, often US only; abroad usually reduced, not free.**
 
 **Published data** [snippet; vendor blogs kedra.io, easyappsecom.com, redstagfulfillment.com; original sources unclear]
 - 228 Shopify stores: median threshold about **80% of average order value**, half between 61% and 102%. US averages quoted at $59-$64.
@@ -63,18 +60,16 @@ free over $50. B = old prices, fee $3.99, free over $50. C = proposal (section 3
 | 2 tees | 7.15 | 55.98 / 15.41 (2 orders) | 51.97 / 14.93 | 55.98 free / 18.79 | 53.98 free / 16.87 (31%) |
 | 2 mugs | 10.19 | 43.98 / 13.08 (2 orders) | 35.97 / 9.26 | 47.97 / 20.79 | 39.98 free / 13.11 (33%) |
 
-C abroad (tee; mug + tee + stickers): Canada 34.98 / 11.78 and 68.96 / 18.71; Australia 34.98 / 12.41 and 68.96 / 17.98; UK 32.98 / 8.19 and 66.96 / 13.27.
-
+- C abroad (tee; mug + tee + stickers): Canada 34.98 / 11.78 and 68.96 / 18.71; Australia 34.98 / 12.41 and 68.96 / 17.98; UK 32.98 / 8.19 and 66.96 / 13.27.
 - **A fails**: taking the shipping out of the prices and then shipping mixed carts free loses on the separate parcels (USA; worse abroad).
-- **B earns most** ($13.06 an order in the USA) but is a $4 rise on every single item, and its "free over $50" fails outside the USA, UK, EU and Japan (a 3-item cart to the rest of the world keeps 6%).
+- **B earns most** ($13.06 an order in the USA) but is a $4 rise on every single item, and its "free over $50" fails to Norway/Switzerland and the rest of the world (a 3-item cart there keeps 6-9%).
 - **Every C cart of 1-4 items passes the floor** in every region, with the holiday surcharge too (worst: EU mug + 2 tees + stickers 20%, USA tee + stickers 23%).
 - At C prices, free shipping passes the floor from: USA and Japan $35; Canada, UK, Australia $65; EU $70; Norway/Switzerland $90; elsewhere $110.
 - US threshold test: $35, $40, $45 and $50 all pass; expected margin per order $10.93 / $11.03 / $11.51 / $11.89.
 
 **Expected margin per order.** Assumed mix (a guess, not data): tee 35%, mug 20%, stickers 10%, tee + stickers 10%, mug + tee 8%, mug + stickers 5%,
 all three 5%, 2 tees 5%, 2 mugs 2%; world: USA 55%, EU 12%, UK 10%, Canada 8%, rest 6%, Australia/NZ 5%, Japan 3%, EFTA 1%.
-**Old $9.27 (USA; buyer pays $33.07 on average) → C $10.93 (USA; buyer pays $34.44), +18%; C world mix $10.99.** A $8.12, B $13.06.
-Each $1 more on the tee adds about $0.65 an order. The old model needed a second checkout for a second item, so it would see fewer pairs.
+**Old $9.27 (USA; buyer pays $33.07 on average) → C $10.93 (USA; buyer pays $34.44), +18%; C world mix $10.99.** A $8.12, B $13.06. Each $1 more on the tee adds about $0.65 an order. The old model needed a second checkout for a second item, so it would see fewer pairs.
 
 ## 3. Recommended price list (model C)
 
@@ -86,13 +81,10 @@ Each $1 more on the tee adds about $0.65 an order. The old model needed a second
 | Tee 2XL and up | + Printful's extra, rounded up to a dollar | | Everywhere else (incl. Norway, Switzerland, Hong Kong, Korea) | $11.99, + $5.99 per extra mug or tee | not offered |
 
 - **$35 in the USA**: just above the most common single item (tee $26.99), so any tee plus anything ships free; one item alone never does.
-  It is about 100% of the expected US order ($34.44), inside the published 61-102% band. $40 would put tee + stickers ($40.98) only 98 cents over
-  the line; never pick a threshold that a common cart misses or makes by a few cents.
-- **Not "free over $50" everywhere**: VAT inside UK/EU prices and separate parcels push three-item carts under the floor below $65-$70, and
-  Printful's $12.49 per parcel elsewhere does so below $110. So: free from $35 in the USA and Japan, free from $70 in the UK, Europe, Canada,
-  Australia and NZ, reduced (not free) elsewhere. The owner's "$50 or lower" holds where most buyers are.
-- **Fees against our real cost**: USA 0.75-1.11x; UK/EU up to 1.40x; Canadian stickers 1.54x; Japanese stickers 1.67x (Japan shipping is cheap:
-  keep $4.99 for one simple rule, or $3.99 there). No fee is above what the comparable shops charge.
+  About 100% of the expected US order ($34.44), inside the published 61-102% band. Never pick a threshold a common cart misses or makes by cents ($40: tee + stickers $40.98).
+- **Not "free over $50" everywhere**: VAT inside UK/EU prices and separate parcels push three-item carts under the floor below $65-$70, and Printful's
+  $12.49 per parcel elsewhere below $110. So free from $35 (USA, Japan), from $70 (UK, Europe, Canada, Australia, NZ), reduced elsewhere.
+- **Fees against our real cost**: USA 0.75-1.11x; UK/EU up to 1.40x; Canadian stickers 1.54x; Japanese stickers 1.67x (keep $4.99 for one rule, or $3.99 there). None is above comparable shops.
 
 ## 4. What the buyer sees (honest, calm)
 
@@ -110,10 +102,8 @@ Each $1 more on the tee adds about $0.65 an order. The old model needed a second
 4. `shipping_options[0][shipping_rate_data]`: `fixed_amount` = the fee or 0, `display_name` "Standard shipping" or "Free shipping",
    `delivery_estimate`, tax code `txcd_92010001`. One option only, so the buyer cannot pick a wrong one.
 5. `shipping_address_collection[allowed_countries] = [the quoted country]`: the hosted page cannot re-price for another address.
-6. Adaptive Pricing on in the Dashboard; prices stay USD; USD must be a settlement currency of the HK account (ECONOMICS.md case 2).
-7. Stripe takes 3.9% + US$0.30 once per order, so a cart saves us $0.30 per extra item against separate orders.
-8. Webhook: re-read the session; check `amount_subtotal`, `shipping_cost.amount_total` and `amount_total` (USD) against the quote.
-9. A sandbox test per zone (`+location_XX` emails) before launch, to see the converted fee and total.
+6. Adaptive Pricing on in the Dashboard; prices stay USD; USD must be a settlement currency of the HK account (ECONOMICS.md case 2). Stripe takes 3.9% + US$0.30 once per order, so a cart saves us $0.30 per extra item against separate orders.
+7. Webhook: re-read the session; check `amount_subtotal`, `shipping_cost.amount_total` and `amount_total` (USD) against the quote. A sandbox test per zone (`+location_XX` emails) before launch, to see the converted fee and total.
 
 ## 6. Changes this forces on TRANSACTIONS.md
 
@@ -126,8 +116,7 @@ Each $1 more on the tee adds about $0.65 an order. The old model needed a second
   refund all, shipping included. Status per line; the order is `part_shipped`, then `shipped` when every parcel is.
 - **Refunds per item**: partial Stripe refunds keyed `mr_<order>_<line>_<n>`; a defect or a lost parcel is reprinted or refunded per line;
   shipping is refunded only with the whole order. Refunds are in USD; Stripe pays back the buyer's currency at the original rate.
-- **The one-hour cancel covers the whole order** (full refund with shipping, Printful draft deleted); single lines cannot be cancelled.
-- Several tracking links on the order page; one "On its way" email per parcel (`me_<order>_ship_<n>`); the FTC delay check per parcel.
+- **The one-hour cancel covers the whole order** (full refund with shipping, Printful draft deleted); single lines cannot be cancelled. Several tracking links on the order page; one "On its way" email per parcel (`me_<order>_ship_<n>`); the FTC delay check per parcel.
 - One gift code per order. `MERCH_DAY_CAP` counts orders; `MERCH_COUNTRIES` becomes a zone list. Section 3: USD only with **Adaptive Pricing on**
   (the fixed GBP list goes); fee + threshold per zone replaces delivered prices. Section 9: P gains the fee, W uses per-group shipping, one Stripe fixed fee per order.
 
@@ -137,5 +126,4 @@ Each $1 more on the tee adds about $0.65 an order. The old model needed a second
 - Printful's "Worldwide" country list and restricted countries; whether Canada and Australia orders are made locally for each product.
 - Tax outside the USA: UK/EU VAT registration (IOSS/OSS) for a HK seller and Printful's EU VAT on our orders; Canada GST/HST; Australia GST;
   Japan consumption tax (modelled as 10% on Printful's charge [snippet]); EU modelled at 21%. Whether a USD-only list is allowed for UK/EU consumers.
-- All comparable-shop numbers (banners, policy pages and holiday promotions disagree) and the 228-store study.
-- The US 7% tax on Printful's charge (placeholder); 2XL+ costs; carts above 4 items (the script checks 1-4).
+- All comparable-shop numbers (banners, policy pages and holiday promotions disagree) and the 228-store study. The US 7% tax on Printful's charge (placeholder); 2XL+ costs; carts above 4 items (the script checks 1-4).
