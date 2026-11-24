@@ -958,7 +958,9 @@ function frChip() {
 // phones: the camera rests on the house and the middle of the yard; a drag pans the whole yard and the look-left button (#phPeek) shows
 // the rest of their decor and back (phone review 3). Desktop shows the whole yard
 // y: the view lifted that many units for a moment (60_helps.js hpLiftView: the watered patch above the visit buttons on a phone); 0 otherwise
-const FRC = { x: 0, w: 1000, home: 0, raf: 0, y: 0 };
+// pick: how far left of the house spot this visit's phone camera rests (frDrawDogs: the greeting pair needed the room), kept on a resize
+const FRC = { x: 0, w: 1000, home: 0, raf: 0, y: 0, pick: 0 };
+const FR_CAM_STEP = 20, FR_CAM_SHIFT = 240; // frDrawDogs: the phone camera's home tried that much further left at a time, at most
 function frCamSet(x, y) {
   const svg = $('#view > svg.world'); if (!svg) return;
   if (y != null) FRC.y = Math.max(0, y);
@@ -975,7 +977,7 @@ function frCam() {
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight;
   FRC.y = 0;
   if (!isPhone() || !vw || !vh) { FRC.w = 1000; FRC.home = 0; frCamSet(0); return; }
-  FRC.w = Math.min(1000, 600 * vw / vh); FRC.home = clamp(590 - FRC.w / 2, 0, 1000 - FRC.w); // the house's door near the right edge, the open yard to its left
+  FRC.w = Math.min(1000, 600 * vw / vh); FRC.home = clamp(590 - FRC.w / 2 + FRC.pick, 0, 1000 - FRC.w); // the house's door near the right edge, the open yard to its left
   frCamSet(FRC.home);
 }
 const frCamAway = () => Math.abs(FRC.x - FRC.home) > 40;
@@ -1263,11 +1265,27 @@ function frDrawDogs() {
   frMeasure(list, [list.find((v) => v.mine), list.find((v) => !v.mine)].filter(Boolean)); // the two who greet also play: their play poses are measured too
   // the whole pack a little smaller when that lets the greeting pair and (a phone) a third dog or (a desktop) all of them fit the view clear of each other (owner, 2 Nov 2026)
   const ph = FRC.w < 1000, both = list.some((v) => v.mine) && list.some((v) => !v.mine), want = ph ? Math.min(list.length, 3) : list.length;
-  let best = null;
-  for (const f of [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7]) {
-    const r = frLayout(list, f, false), s = (r.pair || !both ? 100 : 0) + Math.min(r.n, want);
-    if (!best || s > best.s) best = { s, f };
-    if (s >= 100 + want) break;
+  const fits = () => {
+    let best = null;
+    for (const f of [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7]) {
+      const r = frLayout(list, f, false), s = (r.pair || !both ? 100 : 0) + Math.min(r.n, want);
+      if (!best || s > best.s) best = { s, f };
+      if (s >= 100 + want) break;
+    }
+    return best;
+  };
+  let best = fits();
+  // overlap review M2 (24 Nov 2026): a phone whose crop beside the house has no room for the greeting pair (390x844 with a Great Dane: the
+  // buttons over the front of the yard, the house on the right) starts a little further left instead, by as little as lets the pair in, so my
+  // leader arrives in view beside theirs; the look-around button still goes to the far left and back to this spot (FRC.home)
+  if (ph && both && best && best.s < 100 && FRC.home > 0) {
+    const h0 = FRC.home;
+    for (let d = FR_CAM_STEP; d <= FR_CAM_SHIFT; d += FR_CAM_STEP) {
+      const h = Math.max(0, h0 - d); frCamSet(h); frScan(); const b = fits();
+      if (b && b.s >= 100) { FRC.home = h; FRC.pick = h - h0; best = b; break; }
+      if (!h) break;
+    }
+    if (FRC.home === h0) { frCamSet(h0); frScan(); }
   }
   const L = frLayout(list, best ? best.f : 1, true);
   FRV.dogs = list.filter((v) => FRV.dogs.includes(v)); // the list's order: their leader, mine, then theirs
@@ -1652,7 +1670,7 @@ function enterFrYard() {
   view.style.background = ''; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH');
   clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; phZoom = 1;
   view.innerHTML = frYardSVG(FRV.yard);
-  frCam(); frBtns(); updateHUD(); frChip();
+  FRC.pick = 0; frCam(); frBtns(); updateHUD(); frChip();
   frPan($('#view > svg.world')); frDrawDogs(); // the look-around button first, so the dogs keep clear of it
   cur.key = (e) => { if (e.key === 'Escape') { e.preventDefault(); SFX.click(); frHome(); } };
   const onHide = () => { if (document.visibilityState === 'hidden') frHome(); }; // the app went to the background: home again
