@@ -48,13 +48,29 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
 | `RENDER_FREE.md` | Free plan: Cloudflare's own browser (Browser Run, 10 browser-minutes a day free) draws a static print page; the Worker streams the PNG into KV. About 80 orders a day. Unproven until one throwaway test deploy. Fallback: a GitHub Actions render. R2 is out (needs a card). |
 | `BUILD_PLAN.md` | The parts, updated for the basket, the zones and the free render. |
 
-## Waiting for the owner (asked 24 Nov 2026, second round; special update: NO 5-minute default)
+## The owner's second answers (24 Nov 2026, about 13:05 JST, in the choice window)
 
-1. Prices and the free-shipping line (recommended: model C with free shipping from $35 in the USA; $50 earns about $1 more an order on
-   paper but a mug + tee at $46.98 just misses it; old prices + $3.99 earns most but is the dearest).
-2. Countries at launch (recommended: everywhere except the UK, the EU and Brazil, which wait for the accountant and a registration).
-3. One throwaway test deploy on the Free plan to prove the print render (`RENDER_FREE.md` section 7), then deleted.
-4. Can Stripe pay out in US dollars (a USD bank account)? It saves 2% on every order, and Stripe's own-currency choice at checkout needs it.
+1. Prices: **"Free from $35 (Recommended)"** = `SHIPPING.md` model C: mug $19.99, tee $26.99, sticker sheet $13.99; USA shipping $4.99,
+   free from $35; the other zones as in `SHIPPING.md` section 3.
+2. Countries: the owner's own words: **"Open for all, no need mention countries"**. So the shop is built to open everywhere the printer and
+   Stripe allow (tier 4 of `COUNTRIES.md` is refused by them, not by us), and the page does not list or single out countries beyond the
+   "Ship to" choice the fee needs. The MERCH session told the owner twice that the UK and the EU need a tax registration before the first
+   order (research, not advice). Countries are a switch (`MERCH_COUNTRIES` / zones), set at launch: **put the exact list, with the UK/EU
+   registration note, in front of the owner again with the launch go-ahead**, and suggest the accountant before that day. Do not re-ask
+   before then. Without a UK/EU registration the "prices include VAT" lines of model C do not apply as written: re-run
+   `tools/merch_econ.js --cart` for those zones when the catalog is made.
+3. Test deploy: **yes.** One throwaway Worker `doodle-doggo-print-test` (+ a KV namespace `print-test`) on the Free plan, deleted after
+   (`RENDER_FREE.md` section 7). Approved for this one test only; every other deploy still needs its own go-ahead.
+4. USD payouts: **"Yes, I have a USD account".** So Stripe case 2 (3.9% + US$0.30) and Adaptive Pricing are the plan.
+
+## Now running / next (update this as parts finish)
+
+- Part 0b: the render test deploy (an agent of this session), result into `RENDER_FREE.md` section 8.
+- Part 1: print art ready for mug, tee, sticker sheet (`merch/*`, `tools/merch_*`; `PRINT_FILES.md` constants), samples sheet in
+  `docs/design/merch/samples/`.
+- Then, one at a time (at most 2 agents at once): rewrite TRANSACTIONS.md for the basket and zones; part 2 (the `/merch` page, test mode);
+  part 3 (the merch Worker with faked money). See `BUILD_PLAN.md`.
+- Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
 
 Only the owner can: open the Printful account and its payment method, open the separate Stripe account and turn on Stripe Tax, register
 for tax where needed (with an accountant: we give research, not tax advice), set secrets in the dashboards, order real samples.
