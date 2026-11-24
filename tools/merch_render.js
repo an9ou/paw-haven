@@ -4,8 +4,8 @@
 //   bench <dir>     time, CPU and peak memory of resvg-wasm and resvg-js at each print size (each in a fresh child process), and
 //                   Chromium (Playwright) canvas drawImage and screenshot, plus the pixel difference of each against the Chromium screenshot
 //   one <w> <h> <engine>   (internal: one render in this process, prints JSON)
-//   part1 [out] [sheets]   Part 1: the 8 sample dogs through the real print page (Chromium, Playwright only): tee white, navy, black, mug and sticker
-//                   sheet at full size into [out] (default merch/dist/part1, ignored by git), and four small mock-up sheets into [sheets]
+//   part1 [out] [sheets]   Part 1: the 8 sample dogs through the real print page (Chromium, Playwright only): tee white, navy, black and mug
+//                   at full size into [out] (default merch/dist/part1, ignored by git), and three small mock-up sheets into [sheets]
 //                   (default docs/design/merch/samples/)
 // Needs merch/dist/pawprint.js (tools/merch_build.js). Nothing here is part of the game build.
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
@@ -176,8 +176,8 @@ async function bench(out) {
 }
 
 // ---------- Part 1: the print files through the real print page (merch/dist/print/v1), and contact sheets for the owner ----------
-// part1 <out dir> [sheet dir]: the 8 sample dogs (merch/sample_dogs.js) on the tee (white, navy, black), mug and sticker sheet, full size into <out dir>
-// (keep them out of the repo: 4500x5400 tees), then four small flat mock-ups into [sheet dir] (default docs/design/merch/samples/)
+// part1 <out dir> [sheet dir]: the 8 sample dogs (merch/sample_dogs.js) on the tee (white, navy, black) and mug, full size into <out dir>
+// (keep them out of the repo: 4500x5400 tees), then three small flat mock-ups into [sheet dir] (default docs/design/merch/samples/)
 async function part1(out, sheetDir) {
   const http = require('http'), { chromium } = req('playwright'), DOGS8 = require(path.join(ROOT, 'merch', 'sample_dogs.js'))(P), DIR = path.join(ROOT, 'merch', 'dist', 'print', 'v1');
   fs.mkdirSync(out, { recursive: true }); fs.mkdirSync(sheetDir, { recursive: true });
@@ -194,7 +194,7 @@ async function part1(out, sheetDir) {
       return f;
     };
     for (const [i, d] of DOGS8.entries()) {
-      files[d.id] = { tee: await shoot(d, 'tee', 'white'), dark: await shoot(d, 'tee', i % 2 ? 'black' : 'navy'), mug: await shoot(d, 'mug', 'white'), sheet: await shoot(d, 'stickers', 'white') };
+      files[d.id] = { tee: await shoot(d, 'tee', 'white'), dark: await shoot(d, 'tee', i % 2 ? 'black' : 'navy'), mug: await shoot(d, 'mug', 'white') }; // no stickers at launch: no sheet samples
     }
     log.forEach((l) => console.log(JSON.stringify(l)));
     // the contact sheets: flat sketchbook mock-ups (no photos), each print laid on at its real size
@@ -229,10 +229,6 @@ async function part1(out, sheetDir) {
         + `<path d="M${x} ${y + 75 * k}H${x + MW}M${x} ${y + MH - 75 * k}H${x + MW}" stroke="#E07A93" stroke-width="1" stroke-dasharray="4 4"/>` + label(x + MW / 2, y + MH + 22, `${d.r.n} · ${d.note}`, 14);
     });
     await sheet('mug.png', 2 * MW + 90, 4 * (MH + 70) + 40, s3 + label(MW + 45, 4 * (MH + 70) + 28, 'Mug wraps, 9 x 3.5 in. Pink: the 0.5 in by the handle (both ends) and the 0.25 in top and bottom keep-clear lines. The same dog on both faces, facing the back of the mug.', 14));
-    // the sticker sheets: as cut (Printful adds its own 3 mm white border round each shape)
-    const SW = 350, SH = Math.round(SW * 2481 / 1749); let s4 = '';
-    DOGS8.forEach((d, i) => { const x = 20 + (i % 4) * (SW + 30), y = 20 + Math.floor(i / 4) * (SH + 50); s4 += `<rect x="${x - 6}" y="${y - 6}" width="${SW + 12}" height="${SH + 12}" rx="10" fill="#CFE3F1" stroke="${INK}" stroke-width="2"/><image href="${uri(files[d.id].sheet)}" x="${x}" y="${y}" width="${SW}" height="${SH}"/>` + label(x + SW / 2, y + SH + 30, `${d.r.n}`, 14); });
-    await sheet('stickers.png', 4 * (SW + 30) + 10, 2 * (SH + 50) + 50, s4 + label(2 * (SW + 30), 2 * (SH + 50) + 36, 'A5 sticker sheets (shown on blue so the white backing shows): nine stickers, each one piece, 0.5 in apart, 0.4 in from the edge. No cut lines in the file.', 14));
   } finally { await br.close(); srv.close(); }
 }
 

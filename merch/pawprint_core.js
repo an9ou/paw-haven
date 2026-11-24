@@ -353,15 +353,16 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
   const WHITE = [{ id: 'white', name: 'White', hex: '#FFFFFF', patch: false }];
   const POSE3 = ['stand', 'sit', 'happy'], POSE_ART = { stand: 'idle', sit: 'sit', happy: 'happy' };
   const PRODUCTS = {
-    tee: { id: 'tee', name: 'Tee, Bella+Canvas 3001', w: 4500, h: 5400, dpi: DPI, inches: [15, 18], transparent: true,
+    tee: { id: 'tee', name: 'Tee, Bella+Canvas 3001', launch: true, w: 4500, h: 5400, dpi: DPI, inches: [15, 18], transparent: true,
       printful: { product: 71, placement: 'front_large', technique: 'dtg' }, // v1 catalog calls the front 'default'; XS-M are shrunk by Printful to 11.5 x 13.8 in
       block: [750, 300, 3000, 3000], art: [750, 300, 3000, 2500], strip: [750, 2800, 3000, 500], nameMax: 390, nameMargin: 60, patchPad: 120,
       scale: 'artbox', poses: POSE3, colours: TEE_COLOURS },
-    mug: { id: 'mug', name: 'Mug, 11 oz white', w: 2700, h: 1050, dpi: DPI, inches: [9, 3.5], transparent: true,
+    mug: { id: 'mug', name: 'Mug, 11 oz white', launch: true, w: 2700, h: 1050, dpi: DPI, inches: [9, 3.5], transparent: true,
       printful: { product: 19, placement: 'default', technique: 'sublimation' },
       safe: { top: 75, bottom: 75, ends: 150 }, sides: [675, 2025], sideW: 1050, face: 900, strip: 300, nameH: [110, 190],
       scale: 'fill', poses: POSE3, colours: WHITE },
-    stickers: { id: 'stickers', name: 'Kiss-cut sticker sheet, A5', w: 1749, h: 2481, dpi: DPI, inches: [5.83, 8.27], transparent: true,
+    // no stickers at launch (owner, 24 Nov 2026): the sheet is kept and tested, but not offered (launch: false)
+    stickers: { id: 'stickers', name: 'Kiss-cut sticker sheet, A5', launch: false, w: 1749, h: 2481, dpi: DPI, inches: [5.83, 8.27], transparent: true,
       printful: { product: 505, placement: 'default', technique: 'digital' },
       edge: 120, gap: 150, across: 225, backing: 18,
       cells: { stand: [120, 120, 679, 560], sit: [950, 120, 679, 560], happy: [120, 830, 679, 560], head: [950, 830, 679, 560],

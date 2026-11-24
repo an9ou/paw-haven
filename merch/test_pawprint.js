@@ -79,6 +79,7 @@ console.log('# the product table');
   const T = P.PRODUCTS;
   ok(Object.keys(T).join() === 'tee,mug,stickers' && T.tee.w === 4500 && T.tee.h === 5400 && T.mug.w === 2700 && T.mug.h === 1050 && T.stickers.w === 1749 && T.stickers.h === 2481 && Object.values(T).every((p) => p.dpi === 300 && Math.abs(p.inches[0] * 300 - p.w) < 1 && Math.abs(p.inches[1] * 300 - p.h) < 1),
     'sizes at 300 dpi: tee 4500x5400 (15 x 18 in), mug 2700x1050 (9 x 3.5 in), sticker sheet 1749x2481 (5.83 x 8.27 in)');
+  ok(T.tee.launch === true && T.mug.launch === true && T.stickers.launch === false, 'launch products: the tee and the mug; the sticker sheet is switched off (launch: false, no stickers at launch)');
   ok(T.tee.printful.placement === 'front_large' && T.tee.printful.technique === 'dtg' && T.tee.printful.product === 71 && T.mug.printful.technique === 'sublimation' && T.mug.printful.product === 19 && T.stickers.printful.technique === 'digital' && T.stickers.printful.product === 505,
     'Printful placement and technique: tee 71 front_large dtg, mug 19 default sublimation, sheet 505 default digital');
   ok(T.tee.block.join() === '750,300,3000,3000' && T.tee.art.join() === '750,300,3000,2500' && T.tee.strip.join() === '750,2800,3000,500', 'tee block: 10 x 10 in at (750, 300): the art box 10 x 8.33 in, the name strip 10 x 1.67 in under it');
@@ -245,6 +246,9 @@ async function browser() {
     ok(sizeOk === n, `the tee file is 4500 x 5400 px (half viewport at deviceScaleFactor 2), one SVG on the page: ${sizeOk}/${n}`);
     ok(whiteIn === n, `on white every inked pixel is inside the 10 x 10 in block (750-3750, 300-3300): ${whiteIn}/${n}`);
     ok(navyHard === n && navyOne === n, `on navy the file is one opaque patch with no soft pixel at all (alpha only 0 or 255): ${navyHard}/${n} hard, ${navyOne}/${n} one shape`);
+    let allCol = 0; const pc = P.TEE_COLOURS.filter((c) => c.patch);
+    for (const c of pc) { const v = await shoot(P.printHash(DOGS[3].r, { product: 'tee', colour: c.id, pose: 'stand', name: c.id !== 'pink' }), 'tee'), b = alphaStats(v.img); if (b.semi === 0 && components(v.img).length === 1) allCol++; }
+    ok(allCol === pc.length, `every patched colour (${pc.map((c) => c.name).join(', ')}) renders as one hard-edged patch (one with the name off): ${allCol}/${pc.length}`);
     let mOk = 0, sheetOk = 0; const sheetInfo = [];
     for (const d of DOGS) {
       const m = await shoot(P.printHash(d.r, { product: 'mug', pose: d.pose }), 'mug'); let stray = 0;
