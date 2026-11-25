@@ -14,14 +14,14 @@ bundle in local workerd (Miniflare) with a dummy value for every key: the catalo
 
 | # | What is missing | Who | Needed for |
 |---|---|---|---|
-| C1 | **Stripe and Resend have no real network path.** `stripe.js` only calls `env.STRIPE_FETCH` and `mail.js` only `env.MAIL_FETCH` (test seams, "never set in production"). On Cloudflare neither is set, so `stripeReady()` is false and no email is ever sent. The printer already does it right (`provider_printful.js` `net()`: the seam, else the global `fetch` on Cloudflare's runtime with a key). | [M] | every run, and the launch |
-| P1 | **The page never talks to a Worker.** `site/merch/api.js` has `MERCH_API = ''` (the page's own fake). | [M] | every run |
-| P2 | **Pay never opens Stripe.** `site/merch/merch.js` `pay()` shows the "shop is not open" card even on a good checkout answer. | [M] | every run, and the launch |
+| C1 | **Done** (c7a0b63; `merch_worker` rows C1-node, C1-live-key, C1-throw, C1-timeout, C1-mf-global, C1-mf-refused). Was: **Stripe and Resend have no real network path.** `stripe.js` only calls `env.STRIPE_FETCH` and `mail.js` only `env.MAIL_FETCH` (test seams, "never set in production"). On Cloudflare neither is set, so `stripeReady()` is false and no email is ever sent. The printer already does it right (`provider_printful.js` `net()`: the seam, else the global `fetch` on Cloudflare's runtime with a key). | [M] | every run, and the launch |
+| P1 | **Done** (c7a0b63; `merch_page` rows "P1: ...", "P1 test copy: ..."). Was: **The page never talks to a Worker.** `site/merch/api.js` has `MERCH_API = ''` (the page's own fake). | [M] | every run |
+| P2 | **Done** (c7a0b63; `merch_page` rows "P2 ...", "live client: ...", "late pending: ...", "fake: late cancel ..."). Was: **Pay never opens Stripe.** `site/merch/merch.js` `pay()` shows the "shop is not open" card even on a good checkout answer. | [M] | every run, and the launch |
 | G1-G2 | **The test copy does not serve `/merch/`** and its CSP blocks the merch API (part F). | [GM] | every run |
 | C2 | **No printer without a Printful key**: the gate wants one, so no order is taken (part C). | [M] | run 1 (the owner said "not yet" to the key) |
 
-C1, P1 and P2 are described in part C ("Code changes"); each needs one review before the run (the part 9 lesson: every fix batch so far hid new
-holes). The deploy script itself is ready: `tools/merch_test_deploy.sh` (part B).
+C1, P1 and P2 are built (part C, "Code changes", says what each does); they need one review before the run (the part 9 lesson: every fix batch so
+far hid new holes). C2 waits for the owner's answer. The deploy script itself is ready: `tools/merch_test_deploy.sh` (part B).
 
 ---
 
@@ -152,7 +152,7 @@ prompt for the secrets: the owner types them in the dashboard.
 | 3. Wait for the key and do one run | As 1 + 2, minus the stand-in's refusals (the real printer refuses only what it really refuses). | Same as 2. | C1, P1, P2 |
 | 4. A stand-in that also "posts" parcels (run 1b) | Production, parcels, "On its way", delivered, a returned parcel and its address form, a reprint, a refund after shipping, a dispute after shipping, a Dashboard refund after confirm (T2.2-21). | The late steps (they need 7 working days). | C2 plus C3 (below). **Not recommended now**: it needs a door in the printer's "never confirm on the test Worker" rule. The suite covers these rows (298 checks); part 10 runs one real order through them. |
 
-### Code changes (described only; none is built here, and none touches `ledger.js` money logic)
+### Code changes (C1, P1 and P2 built on 25 Nov 2026, c7a0b63; C2 and C3 described only; none touches `ledger.js` money logic)
 
 **C1. A real network for Stripe and Resend (needed for the run and for the launch).**
 - Files: `cloudflare/merch/util.js` (move `onWorkers()` there from `provider_printful.js`, and add `netOf(seam, key)`: the injected fetch when set,
@@ -163,6 +163,10 @@ prompt for the secrets: the owner types them in the dashboard.
 - Tests: the existing suite unchanged; new Miniflare rows: with a key and no seam, a Stripe call and a Resend call reach the global fetch
   (Miniflare's `outboundService` answers them, nothing leaves the machine); an `sk_live` key on `MERCH_TEST=1` is still refused; with no key,
   nothing is called.
+- Built (c7a0b63). What the seam had hidden, checked against the real calls: the Stripe base URL, the Bearer key, the pinned `Stripe-Version`,
+  form encoding and the `Idempotency-Key` header were already right (the same shape as the game Worker's live shop calls); Resend's URL, Bearer key,
+  JSON body and `Idempotency-Key` too. New: a call that never answers is now aborted at its time limit (`util.js` `call`), and a thrown fetch is
+  the same not-ok answer as a 5xx (retried; never "refused for good"). `req()` itself also refuses a live key on the test Worker, not only the gate.
 
 **P1. The page's address of the order server.** `site/merch/api.js`: `MERCH_API` = `https://merch-api-test.doodledoggo.app` when
 `location.origin` is `https://test.doodledoggo.app`, else `''` (the fake), until launch sets the live address. Suite `merch_page`: the test origin
@@ -171,6 +175,9 @@ uses the live client, every other origin the fake.
 **P2. Pay opens Stripe.** `site/merch/merch.js` `pay()`: on `{order, url}` go to `url` (`location.assign`) **only** if it starts with
 `https://checkout.stripe.com/`; anything else is the "We couldn't reach the payment page" error. The "shop is not open" card stays for
 `merch_closed`; the made-up thank-you page stays fake-only. Suite `merch_page`: a live-mode fake that answers a Stripe url, a bad url, and each error.
+Built (c7a0b63): only with the live client (the page's fake never pays); the url must also have no spaces, quotes, `<>` or `\` and be at most
+2048 characters. The page's whole live path was checked against the Worker's routes: two checkout errors had no words (`bad_nonce`, and
+`nonce_used`, which now links to that order and starts a new payment on the next tap); the late cancel's `refund: 'pending'` now has a fake case.
 
 **C2. A stand-in printer for the test Worker only (run 1).**
 - A new file `cloudflare/merch/test_printer.js`: a small Worker `doodle-doggo-merch-test-printer` with one SQLite Durable Object that answers the

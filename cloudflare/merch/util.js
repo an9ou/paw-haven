@@ -1,4 +1,5 @@
-// Small shared helpers for the merch Worker (docs/design/merch/TRANSACTIONS.md). No outside calls here.
+// Small shared helpers for the merch Worker (docs/design/merch/TRANSACTIONS.md). No outside calls here (netOf only hands a network to
+// stripe.js, mail.js and provider_printful.js).
 export const enc = new TextEncoder();
 export const MIN = 60e3, HOUR = 36e5, DAY = 864e5;
 export const GRACE = 120e3; // the 2 minutes after the cooling hour that keep a tap at minute 59 safe (fixed in code, TRANSACTIONS 2 step 9)
@@ -58,12 +59,24 @@ export function fetcher(f) {
   if (typeof f.fetch === 'function') return (u, i) => f.fetch(u, i);
   return null;
 }
-// a fetch with a time limit: 'timeout' is its own answer (result unknown), never a throw
+// The network of an outside service (Stripe, Resend, Printful): its injected seam when set (tests: a function or a Miniflare service binding),
+// else the global fetch, but ONLY on Cloudflare's runtime and ONLY with the service's key. Node never gets the global fetch (onWorkers() is
+// false there), so a test without the seam has no service at all and nothing reaches the network. null = not set up.
+export const onWorkers = () => typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
+export function netOf(seam, key) {
+  const f = fetcher(seam); if (f) return f;
+  return key && onWorkers() && typeof fetch === 'function' ? (u, i) => fetch(u, i) : null;
+}
+// a fetch with a time limit: 'timeout' is its own answer (result unknown), never a throw. A thrown fetch (a network error) is an answer with
+// status 0, which every caller treats like a 5xx (not ok: tried again; never "refused for good"). On a timeout the request is also aborted, so a
+// hung subrequest is not left open (the result stays unknown either way: the retry carries the same idempotency key).
 export async function call(f, url, init, ms) {
-  let timer; const t = new Promise((r) => { timer = setTimeout(() => r('timeout'), ms || 20000); });
+  let timer; const ac = typeof AbortController === 'function' && !(init && init.signal) ? new AbortController() : null;
+  const t = new Promise((r) => { timer = setTimeout(() => { r('timeout'); if (ac) try { ac.abort(); } catch (e) { /* fine */ } }, ms || 20000); });
   try {
-    const r = await Promise.race([Promise.resolve().then(() => f(url, init)), t]);
+    const r = await Promise.race([Promise.resolve().then(() => f(url, ac ? Object.assign({}, init, { signal: ac.signal }) : init)), t]);
     if (r === 'timeout') return { ok: false, status: 0, timeout: true, data: null };
+    clearTimeout(timer); // an answer came: its body is read as before (the abort is only for a call that never answered)
     let text = ''; try { text = await r.text(); } catch (e) { text = ''; }
     let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
     return { ok: r.ok, status: r.status, data, text, headers: r.headers };

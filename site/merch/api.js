@@ -8,11 +8,15 @@
      api.address(id, body)    POST /merch/order/:id/address  { name, line1, line2, city, state, postal, country } (sent on to the print partner, never kept)
      api.refundHeld(id)       POST /merch/order/:id/refund   {} (only while the order waits for an address: "refund me instead")
    Each returns a Promise of the answer's JSON, or rejects with { status, error, ... } (the server's own error body).
-   MERCH_API is empty: TEST MODE. Every call goes to the local fake (api_fake.js), nothing leaves the page and nothing can be paid.
-   Part 3 sets MERCH_API (https://merch-api.doodledoggo.app) when the merch Worker exists; the page never opens a payment page in this build. */
+   MERCH_API (part 9, P1) comes from the page's own origin, exactly: on the test copy (https://test.doodledoggo.app) it is the test order
+   server, https://merch-api-test.doodledoggo.app (the test Worker: Stripe sandbox keys only, nobody is charged). Everywhere else it is empty:
+   TEST MODE, every call goes to the local fake (api_fake.js), nothing leaves the page and nothing can be paid. The launch adds the live
+   address (https://merch-api.doodledoggo.app) for https://doodledoggo.app here, and nowhere else. */
 (function (G) {
   'use strict';
-  var MERCH_API = '';
+  var API_FOR = { 'https://test.doodledoggo.app': 'https://merch-api-test.doodledoggo.app' };
+  function apiFor(origin) { return typeof origin === 'string' && Object.prototype.hasOwnProperty.call(API_FOR, origin) ? API_FOR[origin] : ''; }
+  var MERCH_API = apiFor(G.location && G.location.origin);
   function fetchJSON(method, path, body) {
     return fetch(MERCH_API + path, { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, credentials: 'omit', cache: 'no-store' })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw Object.assign({ status: r.status, error: j.error || 'busy' }, j); return j; }); },
@@ -35,5 +39,5 @@
       address: function (id, b) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/address', b); },
       refundHeld: function (id) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/refund', {}); } };
   }
-  G.MerchApi = { make: make, MERCH_API: MERCH_API };
+  G.MerchApi = { make: make, MERCH_API: MERCH_API, apiFor: apiFor };
 })(typeof self !== 'undefined' ? self : this);

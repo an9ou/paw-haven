@@ -38,13 +38,22 @@ never faked in the part 4 rows: it draws real PNGs with the vendored wasm.
 ## Safe by default
 
 - `MERCH_FROM` is empty: the shop is shut (catalog `shut: true`; a quote still answers with `shut: true`, prices are public; checkout 503 `merch_closed`).
-- Part 3 never calls the global `fetch`. Without the injected fetches, or without `MERCH_STRIPE_KEY`, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_HASH_KEY`,
-  `MERCH_FILE_KEY`, a printer (`PROVIDER_FETCH`, `MERCH_PROVIDER_KEY`) and a renderer, it refuses every order, so it can never charge anyone, nor take a
-  payment it then cannot make. In live mode it also needs `MERCH_PROVIDER_WEBHOOK_SECRET` (printer hints must be signed: Printful's webhook v2 `secret_key`, in hex as Printful shows it). Wiring the real Stripe, Printful, Browser Run and Resend calls is parts 4, 5,
-  6 and 9, each with the owner's approval.
+- What reaches the network, and when (part 9, C1: `util.js` `netOf`). Stripe (`https://api.stripe.com`), Printful (`https://api.printful.com`) and
+  Resend (`https://api.resend.com`) are called with Cloudflare's own `fetch` **only** on Cloudflare's runtime **and only** with that service's key
+  (`MERCH_STRIPE_KEY`, `MERCH_PROVIDER_KEY`, `RESEND_API_KEY`). No key: that service is not set up, and nothing is sent to it. In Node (every test)
+  there is never such a path: only an injected test seam (`STRIPE_FETCH`, `PROVIDER_FETCH`, `MAIL_FETCH`) is ever called, so no test reaches the
+  network. A call that never answers is aborted at its time limit; a network error counts like a 5xx (tried again, never "refused for good").
+- It refuses every order without a network and key for Stripe, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_HASH_KEY`, `MERCH_FILE_KEY`, a printer and a
+  renderer, so it can never charge anyone, nor take a payment it then cannot make. In live mode it also needs `MERCH_PROVIDER_WEBHOOK_SECRET` (printer
+  hints must be signed: Printful's webhook v2 `secret_key`, in hex as Printful shows it). Without `RESEND_API_KEY` orders go on and each email is an
+  outbox row marked `not_set_up`.
 - `MERCH_PROVIDER_MODE` defaults to `draft`: Printful is never asked to confirm (no wholesale charge), and reprints are held. The adapter itself also
   refuses a confirm unless the mode is `live`, and always on the test Worker (`MERCH_TEST=1`, which never opens in live mode).
-- The test Worker (`MERCH_TEST=1`) refuses `sk_live` / `rk_live` keys and every origin but `https://test.doodledoggo.app`; the live Worker refuses that origin.
+- The test Worker (`MERCH_TEST=1`) refuses `sk_live` / `rk_live` keys (Stripe is not set up, and no request is ever sent with one) and every origin
+  but `https://test.doodledoggo.app`; the live Worker refuses that origin.
+- The shop page (`site/merch/`) talks to this Worker only from the test copy (`https://test.doodledoggo.app` -> `https://merch-api-test.doodledoggo.app`,
+  P1); everywhere else it uses its own fake until the launch adds the live address. It opens a payment page only when checkout answers a url that
+  starts with `https://checkout.stripe.com/` (P2).
 
 ## What the owner must approve and set before any deploy
 

@@ -285,6 +285,9 @@
       not_available: 'We can\'t take this order here. Write to us at ' + CONTACT + ' and we\'ll help.',
       no_agree: 'Something went wrong on our side. Reload the page and try again.',
       merch_closed: 'The shop is not open yet, so nothing can be paid.',
+      no_pay_page: 'We couldn\'t reach the payment page. Nothing was paid. Try again in a moment.',
+      bad_nonce: 'Something went wrong on our side. Reload the page and try again.',
+      nonce_used: 'This basket was already sent to the payment page once.' + (typeof e.order === 'string' && /^mo_[A-Za-z0-9_-]{22}$/.test(e.order) ? ' <a class="lnk" href="#/order/' + e.order + '">See that order</a>, or tap' : ' Tap') + ' Pay again to start a new payment.',
       offline: 'We couldn\'t reach the shop. Check your connection, then try again.'
     };
     if (c === 'price_changed') return { t: 'The total changed a moment ago: it\'s now <b>' + money(st.quote ? st.quote.total : 0) + '</b>. Check it above, then tap Pay again if it\'s right.', line: 0, code: c };
@@ -634,18 +637,27 @@
   function pay() {
     if (!st.quote || !basket.length) return;
     var btn = $('#payBtn'); btn.disabled = true; st.payErr = null; $('#payErr').hidden = true;
-    api.checkout(payBody()).then(function () {
-      // only a live build gets here; this build never opens a payment page
-      closedCard('');
+    api.checkout(payBody()).then(function (r) {
+      // part 9 (P2): only a live order server answers { order, url }. The page goes to Stripe's own payment page, and only there: any other
+      // answer (no url, another host, http, odd characters) is the kind "couldn't reach the payment page" error, and the page stays.
+      // The page's own fake (test mode) never pays: whatever it answered, it is the "not open yet" card.
+      if (api.mode !== 'live') { closedCard(''); return; }
+      var url = r && typeof r === 'object' && typeof r.url === 'string' ? r.url : '';
+      if (url.indexOf(STRIPE_PAY) === 0 && url.length <= 2048 && !/[\s"'<>\\]/.test(url)) { location.assign(url); return; }
+      st.payErr = { error: 'no_pay_page' }; rBasket();
+      var pb = $('#payErr'); try { pb.focus({ preventScroll: false }); } catch (x) { pb.focus(); }
     }, function (e) {
       e = e && typeof e === 'object' ? e : { error: 'busy' };
       if (e.error === 'merch_closed') { closedCard(''); return; }
+      // the nonce went with an order that is past paying (paid, or its payment page ran out): the next tap starts a new one
+      if (e.error === 'nonce_used') st.nonce = null;
       // a new price is shown and asked about again: never paid without the buyer seeing it
       if (e.error === 'price_changed') { if (okQuote(e.quote)) st.quote = e.quote; else { requote(); return; } }
       st.payErr = e; rBasket();
       var pb = $('#payErr'); try { pb.focus({ preventScroll: false }); } catch (x) { pb.focus(); }
     }).then(function () { btn.disabled = !(basket.length && st.quote && !cat.sold_out_today); });
   }
+  var STRIPE_PAY = 'https://checkout.stripe.com/'; // Stripe Checkout's own pages (the order server's session url)
   function closedCard(why) {
     var c = $('#closed'); c.hidden = false; $('#closedWhy').textContent = why || 'When the shop opens, this button takes you to Stripe\'s secure page to pay.';
     $('#demoRow').hidden = !DEMO; try { c.focus({ preventScroll: false }); } catch (e) { c.focus(); }
