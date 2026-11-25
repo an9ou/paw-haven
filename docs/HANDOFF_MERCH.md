@@ -159,7 +159,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     timing above; the automatic late refund; the second notice's subject "Still taking longer than we said"; a line refused by the printer
     for several items is one email; sizes listed smallest first; pictures of every email and order state exist for the owner to look at.
   - Pictures: only a few part 6 PNGs are in git (`*.png` is ignored: `git add -f`); remake all with `SHOTS6=1 node merch/test_page.js`.
-- **Parts 4, 5 and 8: built, 25 Nov about 15:00-17:30 JST (the third MERCH session, session_01D6KLY3fNKUKGLDeZrraF9a).** Each of 4 and 5 had
+- **Parts 4, 5 and 8: built, 25 Nov (head 6748c60 + this handoff; every suite below green on it) (the third MERCH session, session_01D6KLY3fNKUKGLDeZrraF9a).** Each of 4 and 5 had
   one review and one fix batch. On a fresh checkout run `NODE_PATH=$(npm root -g) node tools/merch_build.js` FIRST, then the suites one at a
   time, each with `NODE_PATH=$(npm root -g)`: `node merch/test_pawprint.js` 84; the game round trip (`node game/build.js && node
   game/harness.js merged && PAW_ARGS=--ignore-certificate-errors node merch/test_merch_game.js`) 11 checks (483 renders, 161 dogs through the
@@ -172,7 +172,10 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     `MerchRender` (`resvg.js`, migration tag `v2`), tees in 12 bands; our own browser budget (540 000 ms a UTC day), the 429 rules, one
     `browser_off` owner email a day; the admin self-test `tools/merch.sh render-test <tee|mug> [browser|resvg] [direct|worker]`; the cloud
     test kit `tools/merch_rtest.mjs` (dry by default; a real run needs `DRY_RUN=0 RTEST_GO=yes-the-owner-approved`, deploys ONE throwaway
-    Worker `doodle-doggo-merch-rtest`, about 10 browser renders, then deletes it and re-counts). Bundle 1,247 KiB gzip (Free limit 3 MB).
+    Worker `doodle-doggo-merch-rtest` uploaded twice (the second adds `SELF`), 14 self-tests 12 s apart (6 browser direct, 2 browser through the Worker, 6 resvg) and one 2-call rate probe, compares each file with local Chromium, then ALWAYS deletes the Worker and re-counts; exit 3 and one hand clean-up line if the delete fails; without `CLOUDFLARE_ACCOUNT_ID` it stops when more than one account is visible). Bundle 1,247 KiB gzip (Free limit 3 MB).
+    After the review fixes: `render.pngCheck` (exact size, 8-bit RGBA, least sizes tee 128 KiB / mug 64 KiB, whole to IEND, the tee's first row
+    clear) guards every file; 3 browser errors in a row put the browser off for an hour (the fallback draws); a line neither renderer can draw
+    (band layer or another `art_ver`) waits for the browser, is held, and is refunded at 72 h; `splitBands` refuses art it cannot band safely.
     **Unverified until the cloud test** (PART4.md has the list): whether the object may call the browser binding, the real rate-limit 429
     text, what a 429 or an error looks like, the fallback's CPU on Free, the upload format for the migration and the bindings.
   - **Part 5** (`docs/design/merch/PART5.md`, review `docs/reviews/MERCH_PART5_review.md`): the Printful adapter on **API v2** (signed
@@ -200,8 +203,8 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     count includes more than the conversation, so check it early.
 - **Next, in this order:**
   1. **Ask the owner two things together in the choice window** (recommendation first; neither is covered by the 5-minute rule):
-     (a) the one-off cloud test of the render: `tools/merch_rtest.mjs`, one throwaway Worker on the Free plan, about 10 browser renders
-     (about 10 s of the day's 10 free browser-minutes), deleted after, the account re-counted; recommended: yes. Run it only after a yes,
+     (a) the one-off cloud test of the render: `tools/merch_rtest.mjs`, one throwaway Worker on the Free plan, 8 browser renders and a rate probe
+     (about 10-15 s of the day's 10 free browser-minutes; the kit's own cap is 60 s), deleted after, the account re-counted; recommended: yes. Run it only after a yes,
      then write the results into PART4.md and RENDER_FREE.md, fix what it shows (`MERCH_RENDER_VIA`, the 429 text) and tick the list.
      (b) the Printful key: only through the secure form (`request_credential`, host `api.printful.com`), never in chat; then
      `tools/merch_pf_check.mjs` (read-mostly; one draft made and deleted, never confirmed), re-record the fixtures, fix what differs.
