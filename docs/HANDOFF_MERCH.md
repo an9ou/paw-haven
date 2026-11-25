@@ -311,8 +311,10 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      pawprint 89, merch_legal 383, render_chromium, test_enc 36, the game round trip, both `--check`s, the deploy script's
      `BUILD_ONLY=1` with and without the stand-in. The deploy for run 1 is `MERCH_TEST_PRINTER=1 ... bash tools/merch_test_deploy.sh`.
      Before run 2 (the real Printful key) every run-1 order still open must be ended (SANDBOX.md D6).
-  3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring and
-     C2; then one fix batch.
+  3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring
+     (`git diff 99a110d..3376171`) and C2 (`git diff 4e42257..927a019`); then one fix batch. None of the three has been reviewed.
+     **This is the next thing to start** (the sixth MERCH session; the fifth handed over at 19:05 JST at about 215k context, weekly
+     figure 83%, slow pace until Thu 26 Nov 13:00 JST: one agent at a time, stop starting things at 90%).
   4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
      `get_environment` first; a blocked host is a need to propose, see the tool's rules) and try ONE test order only after the deploy.
   5. The test deploy: the GM's G1/G2 first, then `tools/merch_test_deploy.sh` for real (the owner's yes is given; the prompts are the
