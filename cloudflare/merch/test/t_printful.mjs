@@ -43,12 +43,16 @@ export async function printful() {
 
   await T('P5-fixtures', 'every recorded reply names its source (the doc page or the public route, the date, docs / built / public) and holds no personal data', async () => {
     const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.json')); ok(files.length >= 40, 'fixtures: ' + files.length);
-    for (const f of files) {
-      const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')), s = j._source || {};
-      ok(/^https:\/\/(developers|api)\.printful\.com\//.test(s.url) && /^\d{4}-\d{2}-\d{2}$/.test(s.read) && ['docs', 'built', 'public'].includes(s.recorded) && s.note, f + ': _source');
+    // the key-day kit (tools/merch_pf_check.mjs) records real replies in printful/recorded/ ('key'): the same rules hold there
+    const rec = path.join(DIR, 'recorded'), all = files.map((f) => path.join(DIR, f)).concat(fs.existsSync(rec) ? fs.readdirSync(rec).filter((f) => f.endsWith('.json')).map((f) => path.join(rec, f)) : []);
+    for (const file of all) {
+      const f = path.basename(file), j = JSON.parse(fs.readFileSync(file, 'utf8')), s = j._source || {};
+      ok(/^https:\/\/(developers|api)\.printful\.com\//.test(s.url) && /^\d{4}-\d{2}-\d{2}$/.test(s.read) && ['docs', 'built', 'public', 'key'].includes(s.recorded) && s.note, f + ': _source');
       const text = JSON.stringify(j);
-      ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(text.replace(/"\/v2\/orders\/@[^"]*"/g, '')), f + ': no email address');
-      for (const m of text.matchAll(/"name":"([^"]*)"/g)) ok(/^(Test Buyer|Mug with your dog|Tee with your dog|White Glossy Mug 11 oz|.*Bella \+ Canvas.*|Item name|)$/.test(m[1]), f + ': only invented names: ' + m[1]);
+      ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(text.replace(/"\/v2\/orders\/@[^"]*"/g, '').replace(/someone@example\.test/g, '')), f + ': no email address');
+      if (s.recorded !== 'key') for (const m of text.matchAll(/"name":"([^"]*)"/g)) ok(/^(Test Buyer|Mug with your dog|Tee with your dog|White Glossy Mug 11 oz|.*Bella \+ Canvas.*|Item name|)$/.test(m[1]), f + ': only invented names: ' + m[1]);
+      const walk = (x) => { if (x && typeof x === 'object') { if (x.address1 !== undefined) ok(x.name === 'Test Buyer' && x.address1 === '1 Example Street', f + ': every address is the invented one'); Object.values(x).forEach(walk); } };
+      walk(j);
     }
   });
 
