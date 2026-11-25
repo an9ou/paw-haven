@@ -20,7 +20,10 @@ const PP_SRC = (/src="\/merch\/(print\/pp1-[0-9a-z]+\/pawprint\.js)"/.exec(HTML)
 if (!PP_SRC || !fs.existsSync(path.join(SITE, 'merch', PP_SRC))) { console.error('site/merch has no PawPrint build: run NODE_PATH=$(npm root -g) node tools/merch_build.js'); process.exit(1); }
 const P = require(path.join(SITE, 'merch', PP_SRC)), MerchFake = require(path.join(SITE, 'merch', 'api_fake.js'));
 const CAT = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json'), 'utf8'));
-const API_JS = fs.readFileSync(path.join(SITE, 'merch', 'api.js'), 'utf8');
+const API_JS = fs.readFileSync(path.join(SITE, 'merch', 'api.js'), 'utf8'), MERCH_JS = fs.readFileSync(path.join(SITE, 'merch', 'merch.js'), 'utf8');
+let CATJS = null; // cloudflare/merch/catalog.js (an ES module), loaded in main
+// a fixed clock for the order page (the cancel time, "same day", the posting date): local noon, far from midnight (review row T)
+const FIX = new Date(2026, 11, 1, 12, 0).getTime();
 const SHOTS6 = process.env.SHOTS6 === '1'; // only the part 6 pictures (docs/design/merch/part6_shots/), no checks
 const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part2_shots'), LOOK = process.env.LOOK || '';
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('Playwright is needed (NODE_PATH=$(npm root -g))'); process.exit(1); }
@@ -130,7 +133,8 @@ const HAND = [
 const F_CAT = ['art_vers', 'cat_ver', 'countries', 'max_lines', 'max_qty', 'products', 'shut', 'sold_out_today', 'zones'];
 const F_PROD = ['colours', 'id', 'on', 'poses', 'price', 'sizes'], F_ZONE = ['eta', 'extra', 'fee', 'free_from', 'id', 'notes'], F_CTRY = ['code', 'soon', 'zone'];
 // GET /merch/order/:id (6.3 with the part 6 note of 25 Nov 2026: pay_pending, gift_name, dispute; lines carry reprint_of; resting only when set)
-const F_ORDER = ['can_cancel', 'cancel_until', 'country', 'dispute', 'gift_code', 'gift_name', 'hold', 'id', 'late', 'lines', 'paid_at', 'parcels', 'pay_pending', 'pres', 'status', 'totals'];
+// (and the part 6 review note of 25 Nov 2026: ship_by, late_eta, late_ok, gift)
+const F_ORDER = ['can_cancel', 'cancel_until', 'country', 'dispute', 'gift', 'gift_code', 'gift_name', 'hold', 'id', 'late', 'late_eta', 'late_ok', 'lines', 'paid_at', 'parcels', 'pay_pending', 'pres', 'ship_by', 'status', 'totals'];
 const F_OLINE = ['colour', 'line', 'name', 'name_on', 'parcel', 'pose', 'product', 'qty', 'recipe', 'refunded_qty', 'reprint_of', 'size', 'status', 'unit'], F_OPARCEL = ['carrier', 'delivered_at', 'id', 'product', 'shipped_at', 'tracking_url'];
 const F_QUOTE = ['cat_ver', 'eta', 'free_from', 'lines', 'notes', 'ship_fee', 'shut', 'subtotal', 'total', 'zone'], F_QLINE = ['line', 'qty', 'total', 'unit'];
 const keys = (o) => Object.keys(o).sort().join();
@@ -142,6 +146,7 @@ async function open(o) {
   o = o || {};
   const vp = o.vp || [390, 844];
   const ctx = await browser.newContext({ viewport: { width: vp[0], height: vp[1] }, deviceScaleFactor: o.dpr || 1, locale: o.lang || 'en-US' });
+  if (o.clock) await ctx.clock.setFixedTime(o.clock);
   if (o.catalog) await ctx.route('**/merch/catalog.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o.catalog) }));
   if (o.live) await ctx.route('**/merch/api.js', (r) => r.fulfill({ contentType: 'text/javascript', body: API_JS.replace("var MERCH_API = '';", "var MERCH_API = '" + BASE + "/live';") }));
   await ctx.addInitScript((seed) => {
@@ -179,6 +184,7 @@ const setShip = async (page, code) => { await page.selectOption('#shipSel', code
 const view = (page) => page.evaluate(() => (document.querySelector('.mview.on') || {}).dataset.view);
 const hash = (page) => page.evaluate(() => location.hash);
 const text = (page, sel) => page.$eval(sel, (e) => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+const itext = (page, sel) => page.$eval(sel, (e) => e.innerText.replace(/\s+/g, ' ').trim()).catch(() => ''); // as read: blocks apart
 const settle = (page) => page.waitForTimeout(120);
 // the page's preview against PawPrint.print() from Node, both parsed by the same browser (so only the drawing can differ)
 async function previewIs(page, sel, recipe, o) {
@@ -206,7 +212,11 @@ async function fakeChecks() {
     { cat: keys(c), country: keys(c.countries[0]) });
   ok('catalog.json has exactly the 6.3 fields', keys(CAT) === F_CAT.join() && CAT.countries.every((x) => keys(x) === F_CTRY.join() && typeof x.soon === 'boolean'));
   ok('catalog: no names, no sentences (codes only)', !CAT.countries.some((x) => 'name' in x) && CAT.zones.every((z) => z.notes.every((n) => NOTE_CODES.includes(n))) && !/[a-z] [a-z]+ [a-z]/i.test(JSON.stringify(CAT)));
-  ok('catalog: the UK and EU zone says vat_included, everywhere else import_tax', CAT.zones.find((z) => z.id === 'uk_eu').notes.join() === 'vat_included' && CAT.zones.find((z) => z.id === 'world').notes.join() === 'import_tax');
+  // catalog.json is written from cloudflare/merch/catalog.js (tools/merch_catalog_json.js; the merch_worker suite checks they are equal): the
+  // Worker's zoneNotes(), so no vat_included while no UK or EU registration is live (catalog.js REGISTERED is empty at launch)
+  ok('catalog: no vat_included while not registered, everywhere else import_tax', CAT.zones.find((z) => z.id === 'uk_eu').notes.join() === (Object.keys(CATJS.REGISTERED).length ? 'vat_included' : '') && CAT.zones.find((z) => z.id === 'world').notes.join() === 'import_tax');
+  ok('catalog: delivery times are catalog.js ZONES eta', CAT.zones.every((z) => JSON.stringify(z.eta) === JSON.stringify(CATJS.ZONES[z.id].eta)), CAT.zones.map((z) => z.eta));
+  ok('the page\'s posting promise is catalog.js SHIP_BY_DAYS (' + CATJS.SHIP_BY_DAYS + ')', new RegExp("var SHIP_BY_DAYS = " + CATJS.SHIP_BY_DAYS + ",").test(MERCH_JS) && HTML.includes('we post every order within ' + CATJS.SHIP_BY_DAYS + ' working days of payment'));
   ok('fake: catalog shape', c.max_lines === 6 && c.max_qty === 3 && c.shut === true && c.art_vers[0] === P.ART_VER);
   ok('fake: prices from SHIPPING.md model C', c.products[0].price === 1999 && c.products[1].price === 2699 && c.zones.find((z) => z.id === 'us_jp').fee === 499 && c.zones.find((z) => z.id === 'us_jp').free_from === 3500 && c.zones.find((z) => z.id === 'world').free_from === null);
   ok('fake: tee colours and sizes are PawPrint\'s', c.products[1].colours.every((x) => { const T2 = P.TEE_COLOURS.find((y) => y.id === x.id); return T2 && x.sizes.join() === T2.sizes.both.join(); }) && c.products[1].colours.length === P.TEE_COLOURS.length);
@@ -462,7 +472,7 @@ async function handChecks() {
       const s = await pg.evaluate(() => ({ sub: document.querySelector('[data-q=subtotal]').textContent, ship: document.querySelector('[data-q=ship]').textContent, total: document.querySelector('[data-q=total]').textContent, n: document.querySelectorAll('.bl').length, notes: document.querySelector('#totals').textContent }));
       const want = { sub: money(sub), ship: ship ? money(ship) : 'Free', total: money(total), n: lines.length };
       ok('hand ' + (i + 1) + ' (' + cc + ', ' + cv + ', ' + lines.length + ' lines): the page = the hand table', s.sub === want.sub && s.ship === want.ship && s.total === want.total && s.n === want.n, { s, want });
-      if (cc === 'GB') ok('hand ' + (i + 1) + ': UK prices include VAT, said', /Prices include VAT\./.test(s.notes));
+      if (cc === 'GB') ok('hand ' + (i + 1) + ': "Prices include VAT." only while a registration is live (catalog.js REGISTERED; the Worker\'s zoneNotes)', /Prices include VAT\./.test(s.notes) === !!Object.keys(CATJS.REGISTERED).length, s.notes);
       if (cc === 'VC') ok('hand ' + (i + 1) + ': everywhere else, the import tax line', /import tax/.test(s.notes) && !/ship free/.test(s.notes));
     }
     await finish('hand table ' + cv, t);
@@ -598,14 +608,16 @@ async function errorChecks() {
 
 // ---- S4, S5: the order page needs no recipe, follows can_cancel and cancel_until, and shows the order's own dates
 async function orderChecks() {
-  const t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?demo=1#/basket' }), pg = t.page;
+  const t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?demo=1#/basket', clock: FIX }), pg = t.page;
   await pg.waitForSelector('#qtable'); await tap(pg, '#payBtn'); await tap(pg, '#demoBtn'); await pg.waitForSelector('.testtag');
+  const POST = 'We\'ll post it by ' + postDay(addBD(FIX, CATJS.SHIP_BY_DAYS)) + '.';
+  ok('order: the demo order says when it will be posted (payment + ' + CATJS.SHIP_BY_DAYS + ' working days, the UTC date)', (await itext(pg, '.cancelbox')).includes(POST) && /^Thursday 10 December$/.test(postDay(addBD(FIX, 7))), await text(pg, '.cancelbox'));
   const id = (await hash(pg)).replace('#/order/', '');
   const edit = async (f) => { await pg.evaluate(([id, f]) => { const k = 'dd_merch_test_orders_v1', all = JSON.parse(sessionStorage.getItem(k)); new Function('o', f)(all[id]); sessionStorage.setItem(k, JSON.stringify(all)); }, [id, f]); await pg.reload(); await pg.waitForSelector('.testtag'); await settle(pg); };
   const paid = new Date(2026, 10, 20, 10, 5).getTime();
   // after the hour: no cancel line, "Printing has started."
-  await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + ';');
-  ok('order after the hour: "Printing has started.", no cancel', (await text(pg, '.cancelbox')) === 'Printing has started.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')));
+  await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + '; o.ship_by = ' + addBD(paid, 7) + ';');
+  ok('order after the hour: "Printing has started.", the posting date, no cancel', (await itext(pg, '.cancelbox')) === 'Printing has started. We\'ll post it by Tuesday 1 December.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')), await text(pg, '.cancelbox'));
   ok('order: the date it was received', /Order received\s*20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
   ok('order after the hour: being printed is now', (await pg.$eval('.track li:nth-child(2)', (l) => l.className)) === 'now' && (await pg.$eval('.track li:nth-child(1)', (l) => l.className)) === 'done');
   // the server cleared the recipes (after 24 months): the page uses the names, draws no dog, and does not break
@@ -613,15 +625,17 @@ async function orderChecks() {
   ok('order without recipes: the lines and names still show', (await pg.$$eval('#orderBody .bl', (l) => l.length)) === 2 && /Mochi/.test(await text(pg, '#orderBody .bl:nth-child(1)')) && (await text(pg, '#orderBody .bl:nth-child(2) .facts li')).startsWith('<img'));
   ok('order without recipes: no dog drawn, nothing ran', !(await pg.$('#orderBody .thanks svg')) && (await pg.evaluate(() => window.__pwned)) === undefined && !(await pg.$('#orderBody img')));
   // shipped and arrived: the parcel's dates and its tracking link
-  await edit('o.status = "shipped"; o.parcels = [{ id: "p1", product: "mug", carrier: "USPS", tracking_url: "https://tracking.example/1", shipped_at: ' + new Date(2026, 10, 22).getTime() + ', delivered_at: null }];');
+  await edit('o.status = "shipped"; o.lines.forEach(function (l) { l.status = "shipped"; l.parcel = "p1"; }); o.parcels = [{ id: "p1", product: "mug", carrier: "USPS", tracking_url: "https://tracking.example/1", shipped_at: ' + new Date(2026, 10, 22).getTime() + ', delivered_at: null }];');
   ok('order shipped: "Sent 22 Nov 2026", a tracking link, no cancel box', /On its way\s*Sent 22 Nov 2026\. Track it/.test(await text(pg, '.track li:nth-child(3)')) && (await pg.$eval('.track li:nth-child(3)', (l) => l.className)) === 'now' && !(await pg.$('.cancelbox')));
   await edit('o.parcels[0].delivered_at = ' + new Date(2026, 10, 25).getTime() + ';');
-  ok('order arrived: its date', /Arrived 25 Nov 2026/.test(await text(pg, '.track li:nth-child(4)')) && (await pg.$eval('.track li:nth-child(4)', (l) => l.className)) === 'now');
+  ok('order delivered: its date', /Delivered 25 Nov 2026/.test(await text(pg, '.track li:nth-child(4)')) && (await pg.$eval('.track li:nth-child(4)', (l) => l.className)) === 'now');
   // inside the hour, from the server: a time and the button
-  await edit('o.status = "paid"; o.parcels = []; o.cancel_until = Date.now() + 600000;');
+  await edit('o.status = "paid"; o.parcels = []; o.cancel_until = ' + (FIX + 600000) + ';');
   ok('order in the hour: the time and the button', /We'll start printing at \d\d:\d\d\. If you change your mind before then, you can cancel here\./.test(await text(pg, '.cancelbox')) && !!(await pg.$('#cancelBtn')));
-  await edit('o.can_cancel_override = 1; o.cancel_until = Date.now() - 1000;');
-  ok('order: the button follows can_cancel from the server', !(await pg.$('#cancelBtn')) && (await text(pg, '.cancelbox')) === 'Printing has started.');
+  await edit('o.can_cancel_override = 1; o.cancel_until = ' + (FIX - 121000) + ';');
+  ok('order: the button follows can_cancel from the server (the 120 s grace over)', !(await pg.$('#cancelBtn')) && /^Printing has started\./.test(await text(pg, '.cancelbox')));
+  await edit('o.cancel_until = ' + (FIX - 60000) + ';');
+  ok('order: the fake keeps the Worker\'s 120 s grace (review finding 15)', !!(await pg.$('#cancelBtn')));
   await finish('order page', t);
 }
 
@@ -783,49 +797,66 @@ async function fitChecks() {
 
 // ================= part 6: the order page in every state the Worker answers (docs/design/merch/PART6.md) =================
 const HR = 3600000, MINUTE = 60000;
+// the Worker's own rules for the posting date: paid + n working days (Mon-Fri, UTC), said as its UTC date
+function addBD(t, n) { let d = t; while (n > 0) { d += 864e5; const w = new Date(d).getUTCDay(); if (w !== 0 && w !== 6) n--; } return d; }
+const postDay = (t) => { const d = new Date(t); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getUTCMonth()]; };
 const ORDER_LINES = () => NORMAL3.map((l, i) => { const r = P.merchDecode(l.recipe).dogs[0]; return { line: i + 1, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, name: l.name_on ? r.n : null, qty: l.qty, unit: l.product === 'tee' ? 2699 : 1999, status: 'queued', refunded_qty: 0, parcel: null, recipe: l.recipe, reprint_of: null }; });
 const D22 = new Date(2026, 10, 22, 9).getTime(), D24 = new Date(2026, 10, 24, 15).getTime();
+const SHIPBY = addBD(FIX, 7), PB = "We'll post it by Thursday 10 December\\.";
 function mkOrder(key, f) {
-  const now = Date.now(), o = { id: 'mo_P6' + key, status: 'paid', hold: null, pay_pending: false, paid_at: now - 10 * MINUTE, cancel_until: now + 50 * MINUTE, country: 'US', lines: ORDER_LINES(), parcels: [],
-    totals: { subtotal: 7397, ship_fee: 0, tax: 0, total: 7397, refunded: 0 }, pres: null, gift_code: null, gift_name: null, late: false, dispute: null };
+  const now = FIX, o = { id: 'mo_P6' + key, status: 'paid', hold: null, pay_pending: false, paid_at: now - 10 * MINUTE, cancel_until: now + 50 * MINUTE, ship_by: SHIPBY, country: 'US', lines: ORDER_LINES(), parcels: [],
+    totals: { subtotal: 7397, ship_fee: 0, tax: 0, total: 7397, refunded: 0 }, pres: null, gift: null, gift_code: null, gift_name: null, late: false, late_eta: null, late_ok: false, dispute: null };
   if (f) f(o); return o;
 }
-const past = (o) => { o.paid_at = Date.now() - 3 * HR; o.cancel_until = Date.now() - 2 * HR; };
+const past = (o) => { o.paid_at = FIX - 3 * HR; o.cancel_until = FIX - 2 * HR; };
 const allShip = (o, delivered) => { past(o); o.status = 'shipped'; o.lines.forEach((l) => { l.status = delivered ? 'delivered' : 'shipped'; l.parcel = l.product === 'tee' ? 'pt' : 'pm'; });
   o.parcels = [{ id: 'pt', product: 'tee', carrier: 'USPS', tracking_url: 'https://tracking.example/t', shipped_at: D22, delivered_at: delivered ? D24 : null }, { id: 'pm', product: 'mug', carrier: 'USPS', tracking_url: 'https://tracking.example/m', shipped_at: D22, delivered_at: delivered ? D24 : null }]; };
+const late = (o) => { past(o); o.status = 'confirmed'; o.lines.forEach((l) => { l.status = 'confirmed'; }); o.late = true; o.late_eta = addBD(SHIPBY, 7); };
+const partShip = (o) => { past(o); o.status = 'part_shipped'; o.lines.forEach((l) => { l.status = l.product === 'tee' ? 'shipped' : 'in_production'; l.parcel = l.product === 'tee' ? 'pt' : null; }); o.parcels = [{ id: 'pt', product: 'tee', carrier: 'USPS', tracking_url: 'https://tracking.example/t', shipped_at: D22, delivered_at: null }]; };
+// six lines with long names (review row T: the order states were drawn with three lines only)
+const SIX_LINES = () => ORDER_LINES().concat([line(R('Bo'), 'tee', { colour: 'black', size: 'XS', pose: 'sit' }), line(R('Pepper'), 'mug', { pose: 'happy' }), line(R('Sir Wigglesworth III'), 'tee', { colour: 'ice-blue', size: '2XL', qty: 3 })].map((l, i) => {
+  const r = P.merchDecode(l.recipe).dogs[0]; return { line: 4 + i, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, name: l.name_on ? r.n : null, qty: l.qty, unit: l.product === 'tee' ? (l.size === '2XL' ? 2899 : 2699) : 1999, status: 'queued', refunded_qty: 0, parcel: null, recipe: l.recipe, reprint_of: null }; }));
 const STATES = [
-  ['open', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; }, { title: /^Waiting for payment$/, box: /^Waiting for payment\.$/ }],
-  ['bank', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.pay_pending = true; }, { title: /^Waiting for your bank$/, box: /^Waiting for your bank\.$/ }],
-  ['paid', null, { title: /^Thank you! Your order is in\.$/, box: /^We'll start printing at \d\d:\d\d\. If you change your mind before then, you can cancel here\.\s*Cancel my order$/, cancel: true }],
-  ['after', past, { box: /^Printing has started\.$/ }],
+  ['open', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; }, { title: /^Waiting for payment$/, box: /^Waiting for payment\.$/ }],
+  ['bank', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; o.pay_pending = true; }, { title: /^Waiting for your bank$/, box: /^Waiting for your bank\.$/ }],
+  ['paid', null, { title: /^Thank you! Your order is in\.$/, box: new RegExp("^We'll start printing at \\d\\d:\\d\\d\\. If you change your mind before then, you can cancel here\\.\\s*" + PB + '\\s*Cancel my order$'), cancel: true }],
+  ['after', past, { box: new RegExp('^Printing has started\\.\\s*' + PB + '$') }],
   ['review', (o) => { o.status = 'held'; o.hold = 'review'; }, { box: /^Getting ready to print\. It's taking a little longer than usual\.\s*We'll start printing at \d\d:\d\d/, cancel: true }],
-  ['render', (o) => { past(o); o.status = 'held'; o.hold = 'render'; }, { box: /^Getting ready to print\. It's taking a little longer than usual\.$/ }],
-  ['provider', (o) => { past(o); o.status = 'held'; o.hold = 'provider'; }, { box: /^Getting ready to print\. It's taking a little longer than usual\.$/ }],
-  ['wallet', (o) => { past(o); o.status = 'held'; o.hold = 'wallet'; }, { box: /^Getting ready to print\. It's taking a little longer than usual\.$/ }],
-  ['draft', (o) => { past(o); o.status = 'held'; o.hold = 'draft_mode'; }, { box: /^Getting ready to print\.$/ }],
+  ['render', (o) => { past(o); o.status = 'held'; o.hold = 'render'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
+  ['provider', (o) => { past(o); o.status = 'held'; o.hold = 'provider'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
+  ['wallet', (o) => { past(o); o.status = 'held'; o.hold = 'wallet'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
+  ['draft', (o) => { past(o); o.status = 'held'; o.hold = 'draft_mode'; }, { box: new RegExp('^Getting ready to print\\.\\s*' + PB + '$') }],
   ['address', (o) => { past(o); o.status = 'held'; o.hold = 'address'; }, { form: true, refund: true, box: null }],
   ['dispute', (o) => { o.status = 'held'; o.hold = 'dispute'; o.dispute = 'open'; }, { title: /^Your order is paused$/, box: /^Your bank is looking at this payment, so we've paused it\./ }],
+  ['disputesent', (o) => { allShip(o); o.dispute = 'open'; }, { title: /^Your order is on its way$/, box: /^Your bank is looking at this payment\. What we posted is yours either way, and the bank decides about the money\./, stage: 3 }],
   ['reship', (o) => { allShip(o); o.hold = 'reship'; }, { form: true, refund: false, box: null }],
-  ['confirmed', (o) => { past(o); o.status = 'confirmed'; o.lines.forEach((l) => { l.status = 'confirmed'; }); }, { title: /^Your order is being printed$/, box: /^Printing has started\.$/, stage: 2 }],
-  ['part', (o) => { past(o); o.status = 'part_shipped'; o.lines.forEach((l) => { l.status = l.product === 'tee' ? 'shipped' : 'in_production'; l.parcel = l.product === 'tee' ? 'pt' : null; }); o.parcels = [{ id: 'pt', product: 'tee', carrier: 'USPS', tracking_url: 'https://tracking.example/t', shipped_at: D22, delivered_at: null }]; },
-    { title: /^Part of your order is on its way$/, track: /On its way\s*Sent 22 Nov 2026 \(1 of 2 parcels\)\. Track it$/, box: null, stage: 3 }],
+  ['confirming', (o) => { past(o); o.status = 'confirming'; o.lines.forEach((l) => { l.status = 'drafted'; }); }, { title: /^Your order is being printed$/, box: new RegExp('^Printing has started\\.\\s*' + PB + '$'), stage: 2 }],
+  ['confirmed', (o) => { past(o); o.status = 'confirmed'; o.lines.forEach((l) => { l.status = 'confirmed'; }); }, { title: /^Your order is being printed$/, box: new RegExp('^Printing has started\\.\\s*' + PB + '$'), stage: 2 }],
+  ['part', partShip, { title: /^Part of your order is on its way$/, track: /On its way\s*Sent 22 Nov 2026 \(1 of 2 parcels\)\. Track it$/, box: null, stage: 3 }],
   ['shipped', (o) => allShip(o), { title: /^Your order is on its way$/, track: /Sent 22 Nov 2026 \(2 parcels\)\. Track it \(tee\)\s*Track it \(mug\)/, box: null, stage: 3 }],
-  ['arrived', (o) => allShip(o, true), { title: /^Your order has arrived$/, arrived: /Arrived 24 Nov 2026/, box: null, stage: 4 }],
+  ['arrived', (o) => allShip(o, true), { title: /^Your order has been delivered$/, arrived: /Delivered 24 Nov 2026/, box: null, stage: 4 }],
+  ['refundedafter', (o) => { allShip(o, true); o.status = 'refunded'; o.totals.refunded = 7397; o.lines.forEach((l) => { l.refunded_qty = l.qty; }); }, { title: /^Your order is refunded$/, arrived: /Delivered 24 Nov 2026/, stage: 4, box: null, refunded: '$73.97' }],
   ['cancelled', (o) => { o.status = 'cancelled'; o.totals.refunded = 7397; o.lines.forEach((l) => { l.status = 'cancelled'; l.refunded_qty = l.qty; }); }, { title: /^Your order is cancelled$/, box: null, putBack: true, refunded: '$73.97' }],
   ['refunded', (o) => { past(o); o.status = 'refunded'; o.totals.refunded = 7397; o.lines.forEach((l) => { l.status = 'cancelled'; l.refunded_qty = l.qty; }); }, { title: /^Your order is refunded$/, box: null, refunded: '$73.97' }],
-  ['partly', (o) => { past(o); o.status = 'confirmed'; o.lines[1].qty = 2; o.lines[1].refunded_qty = 1; o.totals.subtotal += 1999; o.totals.total += 1999; o.totals.refunded = 1999; }, { tag: /Refunded: 1 of 2\./, refunded: '$19.99', box: /^Printing has started\.$/ }],
+  ['partly', (o) => { past(o); o.status = 'confirmed'; o.lines[1].qty = 2; o.lines[1].refunded_qty = 1; o.totals.subtotal += 1999; o.totals.total += 1999; o.totals.refunded = 1999; }, { tag: /Refunded: 1 of 2\./, refunded: '$19.99', box: new RegExp('^Printing has started\\.\\s*' + PB + '$') }],
   ['rejected', (o) => { o.lines[1].status = 'rejected'; o.lines[1].refunded_qty = 1; o.totals.refunded = 1999; }, { tag: /We couldn't print this one, so we refunded it\./, refunded: '$19.99', cancel: true }],
   ['reprint', (o) => { allShip(o); o.status = 'part_shipped'; o.lines[1].status = 'replaced'; o.lines.push(Object.assign({}, o.lines[1], { line: 101, status: 'confirmed', parcel: null, reprint_of: 2 })); }, { tag: /A new one, free: on its way to you\./, free: true, box: null }],
-  ['late', (o) => { past(o); o.status = 'confirmed'; o.late = true; }, { late: true, box: /^Printing has started\.$/ }],
+  ['late', late, { late: true, box: /^Printing has started\.$/, lateText: /^Taking longer than we said We're sorry: we said we'd post your order by Thursday 10 December, and it hasn't gone out yet\. Tee with Mochi, navy, M Mug with Biscuit Tee with Sir Wigglesworth III, white, L We now expect to post it by Monday 21 December\. You don't need to do anything to keep waiting\. Or cancel the late part for a full refund, any time until it's posted\. Keep waiting Cancel the late part$/, tag: /Running late: we now expect to post it by Monday 21 December\./ }],
+  ['latepart', (o) => { partShip(o); o.late = true; o.late_eta = addBD(SHIPBY, 7); }, { late: true, box: null, lateText: /part of it hasn't gone out yet\. Mug with Biscuit We now expect to post the late part by Monday 21 December\./ }],
+  ['lateok', (o) => { late(o); o.late_ok = true; }, { late: true, box: /^Printing has started\.$/, lateText: /^Taking longer than we said Thank you for waiting\. We're still on it, and we'll email you as soon as it's posted\..*Or cancel the late part for a full refund, any time until it's posted\. Cancel the late part$/, noWait: true }],
   ['resting', (o) => { past(o); o.status = 'confirmed'; o.resting = true; }, { rest: true }],
-  ['expired', (o) => { o.status = 'expired'; o.paid_at = null; o.cancel_until = null; }, { title: /^This order wasn't paid$/, box: null }],
-  ['gift', (o) => { o.gift_code = 'TEST-GIFT-0001'; }, { gift: /a little gift for your dog in the game\./, cancel: true }],
-  ['giftname', (o) => { past(o); o.status = 'confirmed'; o.gift_code = 'TEST-GIFT-0002'; o.gift_name = 'Test Bandana'; }, { gift: /the Test Bandana, a little gift for your dog in the game\./ }],
+  ['expired', (o) => { o.status = 'expired'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; }, { title: /^This order wasn't paid$/, box: null }],
+  ['giftsoon', (o) => { o.gift = 'soon'; }, { giftSoon: /A little gift for your dog in the game will be waiting here once printing starts\./, cancel: true }],
+  ['gift', (o) => { past(o); o.status = 'confirmed'; o.gift = 'ready'; o.gift_code = 'TEST-GIFT-0001'; }, { gift: /a little gift for your dog in the game\./ }],
+  ['giftname', (o) => { past(o); o.status = 'confirmed'; o.gift = 'ready'; o.gift_code = 'TEST-GIFT-0002'; o.gift_name = 'Test Bandana'; }, { gift: /the Test Bandana, a little gift for your dog in the game\./ }],
+  ['giftnotyet', (o) => { o.gift = 'soon'; o.gift_code = 'TEST-GIFT-0003'; }, { giftSoon: /will be waiting here/, cancel: true, noCode: 'TEST-GIFT-0003' }],
+  ['tax', (o) => { o.totals.tax = 592; o.totals.total += 592; }, { taxRow: '$5.92', cancel: true }],
+  ['six', (o) => { past(o); o.status = 'confirmed'; o.lines = SIX_LINES(); o.lines.forEach((l) => { l.status = 'confirmed'; }); o.totals.subtotal = 7397 + 2699 + 1999 + 3 * 2899; o.totals.total = o.totals.subtotal; }, { lines: 6, box: new RegExp('^Printing has started\\.\\s*' + PB + '$') }],
   ['pres', (o) => { o.pres = { currency: 'jpy', amount: 11500 }; }, { pres: /You paid ¥11,500 at checkout\./, cancel: true }]];
 const putOrder = (pg, o) => pg.evaluate((x) => window.__merch.api.put(x), o);
 async function showOrder(pg, o) { await putOrder(pg, o); await toHash(pg, '#/order/' + o.id); await pg.waitForSelector('#h-order-t'); await settle(pg); }
 async function orderStateChecks() {
-  let t = await open({ save: SAVE, path: '/merch/#/' }), pg = t.page;
+  let t = await open({ save: SAVE, path: '/merch/#/', clock: FIX }), pg = t.page;
   for (const [key, f, want] of STATES) {
     const o = mkOrder(key, f); await showOrder(pg, o);
     const tag = 'order ' + key, body = await text(pg, '#orderBody');
@@ -837,7 +868,13 @@ async function orderStateChecks() {
     ok(tag + ': the cancel button only in the hour', !!(await pg.$('#cancelBtn')) === !!want.cancel);
     ok(tag + ': the address form only when asked', !!(await pg.$('#addrForm')) === !!want.form && !!(await pg.$('#addrRefund')) === !!want.refund);
     ok(tag + ': the delay choice only when late', !!(await pg.$('#lateBox')) === !!want.late);
-    ok(tag + ': the gift only with a code', !!(await pg.$('#giftBox')) === !!want.gift);
+    if (want.lateText) ok(tag + ': the delay words (the late things by name, the date we said, the new date, cancel any time until posted)', want.lateText.test(await itext(pg, '#lateBox')), await itext(pg, '#lateBox'));
+    if (want.late) ok(tag + ': "Keep waiting" only until the buyer said so', !!(await pg.$('#lateWait')) === !want.noWait && !!(await pg.$('#lateCancel')));
+    ok(tag + ': the gift only once shown (gift ready, with a code)', !!(await pg.$('#giftBox')) === !!want.gift && !!(await pg.$('#giftSoon')) === !!want.giftSoon);
+    if (want.giftSoon) ok(tag + ': the gift promised, no code yet', want.giftSoon.test(await text(pg, '#giftSoon')) && !/TEST-GIFT/.test(body));
+    if (want.taxRow) ok(tag + ': the Tax row', (await pg.$$eval('#orderBody table.lines tr', (r) => r.map((x) => x.textContent.trim()))).includes('Tax' + want.taxRow));
+    if (want.lines) ok(tag + ': every line drawn', (await pg.$$eval('#orderBody .blines > .bl', (l) => l.length)) === want.lines);
+    ok(tag + ': no emoji in the steps; a drawn tick on the steps done', !/\p{Extended_Pictographic}/u.test(await text(pg, '.track')) && (await pg.$$eval('.track li.done', (l) => l.every((x) => !!x.querySelector('.dot .tick')))), await text(pg, '.track'));
     if (want.gift) ok(tag + ': the gift words and the code', want.gift.test(await text(pg, '#giftBox')) && (await text(pg, '#giftCode')) === o.gift_code && /Have a code\?/.test(await text(pg, '#giftBox')) && /free account/.test(await text(pg, '#giftBox')) && (await pg.$eval('#giftBox a', (a) => a.href)) === 'https://doodledoggo.app/');
     if (want.track) ok(tag + ': the parcels', want.track.test(await text(pg, '.track li:nth-child(3)')), await text(pg, '.track li:nth-child(3)'));
     if (want.arrived) ok(tag + ': the delivery date', want.arrived.test(await text(pg, '.track li:nth-child(4)')));
@@ -850,7 +887,7 @@ async function orderStateChecks() {
     ok(tag + ': put back only for a cancelled order', !!(await pg.$('#putBack')) === !!want.putBack);
   }
   // the gift's Copy: works without clipboard permission (the code is selected and copied by hand, or the clipboard takes it)
-  await showOrder(pg, mkOrder('gift', (o) => { o.gift_code = 'TEST-GIFT-0001'; }));
+  await showOrder(pg, mkOrder('gift', STATES.find((x) => x[0] === 'gift')[1]));
   await tap(pg, '#giftCopy'); await settle(pg);
   const said = await text(pg, '#giftSaid'), sel = await pg.evaluate(() => String(window.getSelection()));
   ok('gift copy: feedback, and the code is selected', /^(Copied|The code is selected)/.test(said) && sel === 'TEST-GIFT-0001', [said, sel]);
@@ -858,12 +895,31 @@ async function orderStateChecks() {
   await showOrder(pg, mkOrder('cancelled', STATES.find((x) => x[0] === 'cancelled')[1])); await tap(pg, '#putBack'); await settle(pg);
   ok('put back: the three things are in the basket', (await view(pg)) === 'basket' && (await pg.$$eval('#blines .bl', (l) => l.length)) === 3, await view(pg));
   await pg.evaluate(() => { localStorage.removeItem('dd_merch_basket_v1'); });
-  // the delay choice: keep waiting (nothing is sent), then cancel the late part (one request, refunded)
+  // the delay choice: keep waiting tells the server (late_ok), then cancel the late part (one request, refunded)
   await showOrder(pg, mkOrder('late', STATES.find((x) => x[0] === 'late')[1]));
-  await tap(pg, '#lateWait'); ok('late: keep waiting says thank you, and the cancel stays', /Thank you for waiting/.test(await text(pg, '#lateBox')) && !!(await pg.$('#lateCancel')) && !(await pg.$('#lateWait')));
-  await tap(pg, '#lateCancel'); ok('late: a question first', await pg.$eval('#askDlg', (d) => d.open) && /Cancel the late part\?/.test(await text(pg, '#h-ask')));
-  await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+  await tap(pg, '#lateWait'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('late: keep waiting is recorded by the server and said kindly; the cancel stays', /Thank you for waiting/.test(await text(pg, '.oknote')) && /Thank you for waiting/.test(await text(pg, '#lateBox')) && !!(await pg.$('#lateCancel')) && !(await pg.$('#lateWait')) && (await pg.evaluate(() => window.__merch.api.order('mo_P6late'))).late_ok === true);
+  ok('late: after an answer the order title has the focus', (await pg.evaluate(() => document.activeElement && document.activeElement.id)) === 'h-order-t');
+  await tap(pg, '#lateCancel'); ok('late: a question first, the focus on the safe answer', await pg.$eval('#askDlg', (d) => d.open) && /Cancel the late part\?/.test(await text(pg, '#h-ask')) && (await pg.evaluate(() => document.activeElement.id)) === 'askNo');
+  await tap(pg, '#askNo'); ok('late: No: nothing done, the focus back on the button', !(await pg.$eval('#askDlg', (d) => d.open)) && (await pg.evaluate(() => document.activeElement.id)) === 'lateCancel' && !!(await pg.$('#lateBox')));
+  await tap(pg, '#lateCancel'); await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
   ok('late: refunded, the choice is gone', /we've refunded the late part/.test(await text(pg, '.oknote')) && (await text(pg, '#h-order-t')) === 'Your order is refunded' && !(await pg.$('#lateBox')), await text(pg, '#orderBody'));
+  // the late cancel while the order is being sent to print: kind, true words (review finding 9)
+  await showOrder(pg, mkOrder('latebusy', (o) => { late(o); o.status = 'confirming'; }));
+  await tap(pg, '#lateCancel'); await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('late while confirming: "try again in a minute or two"', /sending your order to print right this minute\. Please try again in a minute or two\./.test(await text(pg, '.oknote')) && !!(await pg.$('#lateBox')), await text(pg, '.oknote'));
+  // cancel in the hour: the dialog opens on "Keep my order"; each error in its own words, on the page (review findings 4, 11)
+  await showOrder(pg, mkOrder('cancel1'));
+  await tap(pg, '#cancelBtn'); ok('cancel: the dialog opens on the safe answer', (await pg.evaluate(() => document.activeElement.id)) === 'cancelNo');
+  await tap(pg, '#cancelNo'); ok('cancel: No gives the focus back to the button', (await pg.evaluate(() => document.activeElement.id)) === 'cancelBtn');
+  for (const [code, re] of [['too_late', /^It's too late to cancel now: printing has started\./], ['not_allowed', /^Your bank is looking at this payment/], ['offline', /^We couldn't reach the shop\. Check your connection/], ['slow_down', /^That was a lot of tries/], ['busy', /^We're a little busy just now/]]) {
+    await pg.evaluate((c) => { const a = window.__merch.api; a.__cancel = a.__cancel || a.cancel; a.cancel = () => Promise.reject({ status: 409, error: c }); }, code);
+    await tap(pg, '#cancelBtn'); await tap(pg, '#cancelYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+    ok('cancel error ' + code + ': its own words, on the page', re.test(await text(pg, '.oknote')) && (await pg.$eval('.oknote', (e) => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 20)), await text(pg, '.oknote'));
+  }
+  await pg.evaluate(() => { const a = window.__merch.api; a.cancel = a.__cancel; });
+  await tap(pg, '#cancelBtn'); await tap(pg, '#cancelYes'); await settle(pg); await settle(pg);
+  ok('cancel: done, the title has the focus', (await text(pg, '#h-order-t')) === 'Your order is cancelled' && (await pg.evaluate(() => document.activeElement.id)) === 'h-order-t');
   // not found, and a network error (kind, with a retry)
   await toHash(pg, '#/order/mo_P6nothing'); await pg.waitForSelector('#h-order-t'); await settle(pg);
   ok('not found: kind words', /^We couldn't find this order$/.test(await text(pg, '#h-order-t')) && /Check the link in your email/.test(await text(pg, '#orderBody')) && !(await pg.$('#orderRetry')));
@@ -910,18 +966,39 @@ async function orderStateChecks() {
   ok('reship: sent, the form gone, still shipped', !(await pg.$('#addrForm')) && (await text(pg, '#h-order-t')) === 'Your order is on its way');
   await finish('address form', t);
 
-  // ?new=1: a calm thank-you at the top; the paid basket is emptied; an open order says the payment is on its way
-  t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?new=1#/' }); pg = t.page;
-  await showOrder(pg, mkOrder('new', past));
+  // ?new=1: a calm thank-you at the top; the paid basket is emptied once; the address loses new=1 (review finding 3)
+  t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?new=1#/', clock: FIX }); pg = t.page;
+  await showOrder(pg, mkOrder('new'));
   ok('?new=1: thank you, and the paid basket emptied', (await text(pg, '#h-order-t')) === 'Thank you! Your order is in.' && (await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1'))) === null && (await text(pg, '#bagN')) === '0');
+  ok('?new=1: dropped from the address after the first read', (await pg.evaluate(() => location.search)) === '' && (await hash(pg)) === '#/order/mo_P6new');
   await showOrder(pg, mkOrder('newopen', STATES[0][1]));
   ok('?new=1 and not paid yet: the payment is on its way', /^Thank you! Your payment is on its way to us$/.test(await text(pg, '#h-order-t')) && /Waiting for payment\./.test(await text(pg, '.cancelbox')));
+  await showOrder(pg, mkOrder('newshipped', (o) => allShip(o)));
+  ok('?new=1 never titles a posted order "Thank you"', (await text(pg, '#h-order-t')) === 'Your order is on its way');
+  // the same address reopened later (a bookmark, Back): a new basket is never emptied
+  const B2 = JSON.stringify(NORMAL3.slice(0, 1).map((l) => ({ recipe: l.recipe, product: l.product, colour: l.colour, size: l.size, pose: l.pose, name_on: l.name_on, qty: 1 })));
+  for (const [what, key, f] of [['the same order with new=1 again', 'new', null], ['an order paid hours ago with new=1', 'newold', past]]) {
+    const o = mkOrder(key, f); await putOrder(pg, o); await pg.evaluate((b) => localStorage.setItem('dd_merch_basket_v1', b), B2);
+    await pg.goto(BASE + '/merch/?new=1#/order/' + o.id); await pg.waitForSelector('#h-order-t'); await settle(pg);
+    ok('?new=1: ' + what + ': the basket stays', (await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1'))) !== null && (await text(pg, '#bagN')) === '1');
+  }
   await finish('new=1', t);
+  // an open order: re-read every 5 s, then every 30 s, then after 10 minutes "reload in a minute" (review finding 10; the intervals shortened here)
+  t = await open({ save: SAVE, path: '/merch/?new=1#/' }); pg = t.page;
+  await pg.evaluate(() => { const O = window.__merch.ORD; O.POLL_FAST = 40; O.POLL_SLOW = 40; O.POLL_FOR = 500; });
+  const op = mkOrder('poll', STATES[0][1]); await putOrder(pg, op);
+  await pg.evaluate(() => { const a = window.__merch.api; a.__n = 0; const f = a.order; a.order = (id) => { a.__n++; return f(id); }; });
+  await toHash(pg, '#/order/mo_P6poll'); await pg.waitForSelector('#h-order-t'); await pg.waitForTimeout(250);
+  ok('polls: the open order is read again and again', (await pg.evaluate(() => window.__merch.api.__n)) >= 3 && /This page shows it as soon as it arrives/.test(await text(pg, '#orderBody')));
+  await pg.waitForTimeout(700); const n1 = await pg.evaluate(() => window.__merch.api.__n); await pg.waitForTimeout(300);
+  ok('polls: they stop after the time is up, and the page says to reload in a minute', (await pg.evaluate(() => window.__merch.api.__n)) === n1 && /Reload this page in a minute/.test(await text(pg, '#orderBody')) && !/as soon as it arrives/.test(await text(pg, '#orderBody')), await text(pg, '.thanks'));
+  ok('polls: the real intervals are 5 s, 30 s, 10 minutes', /POLL_FAST: 5000, POLL_SLOW: 30000, POLL_FOR: 600000/.test(MERCH_JS));
+  await finish('polls', t);
 }
 // every order state fits at the three sizes (one page per size, the states one after another)
 async function orderFitChecks() {
   for (const vp of [[360, 640], [390, 844], [1280, 720]]) {
-    const t = await open({ save: SAVE, path: '/merch/#/', vp }), pg = t.page;
+    const t = await open({ save: SAVE, path: '/merch/#/', vp, clock: FIX }), pg = t.page;
     for (const [key, f] of STATES) {
       await showOrder(pg, mkOrder(key, f)); await pg.evaluate(() => window.scrollTo(0, 0));
       const r = await pg.evaluate(measure), tag = 'order ' + key + ' ' + vp.join('x');
@@ -942,24 +1019,35 @@ async function orderFitChecks() {
 // SHOTS=1: the owner's pictures of part 6: order states at 390x844 (dpr 2) and every email for one sample order (its HTML and a 390 px picture)
 async function part6Shots() {
   const dir = path.join(ROOT, 'docs', 'design', 'merch', 'part6_shots'), edir = path.join(dir, 'emails'); fs.mkdirSync(edir, { recursive: true });
-  const t = await open({ save: SAVE, path: '/merch/#/', vp: [390, 844], dpr: 2 }), pg = t.page;
+  for (const f of fs.readdirSync(dir)) if (/_390\.png$/.test(f)) fs.unlinkSync(path.join(dir, f)); // the set below replaces the old pictures
+  const t = await open({ save: SAVE, path: '/merch/#/', vp: [390, 844], dpr: 2, clock: FIX }), pg = t.page;
   await t.page.addStyleTag({ content: '.sheet>.sitehead.stuck{position:relative!important}' });
-  for (const [key, file] of [['paid', '1_paid_in_the_hour'], ['address', '2_held_address_form'], ['part', '3_part_shipped'], ['late', '4_late_choice'], ['gift', '5_gift'], ['cancelled', '6_cancelled']]) {
+  for (const [key, file] of [['paid', '1_paid_in_the_hour'], ['address', '2_held_address_form'], ['part', '3_part_shipped'], ['latepart', '4_late_choice'], ['lateok', '4b_late_keep_waiting'],
+    ['giftsoon', '5_gift_soon'], ['gift', '5b_gift_shown'], ['cancelled', '6_cancelled'], ['arrived', '7_delivered'], ['refundedafter', '8_refunded_after_delivery'], ['disputesent', '9_dispute_after_posting'], ['six', '10_six_lines']]) {
     await showOrder(pg, mkOrder(key, STATES.find((x) => x[0] === key)[1])); await pg.evaluate(() => window.scrollTo(0, 0));
     await pg.screenshot({ path: path.join(dir, file + '_390.png'), fullPage: true });
   }
   await t.ctx.close();
   const mail = await import(path.join(ROOT, 'cloudflare', 'merch', 'mail.js'));
-  const id = 'mo_SampleOrder0000000000', ship_by = Date.parse('2026-12-10T00:00:00Z');
+  // one sample order (paid Tue 1 Dec 2026 01:00 UTC: post by Thu 10 Dec, the new date Mon 21 Dec), each email as the ledger builds its view
+  const id = 'mo_SampleOrder0000000000', ship_by = Date.parse('2026-12-10T01:00:00Z'), late_eta = Date.parse('2026-12-21T01:00:00Z');
   const L = [{ line: 1, product: 'mug', colour: 'white', name: 'Biscuit', qty: 1, unit: 1999, status: 'shipped', refunded_qty: 0, parcel: 'p1' },
     { line: 2, product: 'tee', colour: 'navy', colour_name: 'Navy', size: 'L', name: null, qty: 2, unit: 2699, status: 'confirmed', refunded_qty: 0, parcel: null },
     { line: 101, product: 'mug', colour: 'white', name: 'Biscuit', qty: 1, unit: 1999, status: 'confirmed', refunded_qty: 0, parcel: null, reprint_of: 1, rp: 1 }];
-  const v = { id, status: 'paid', can_cancel: true, ship_by, eta: [5, 9], lines: L, parcels: [{ id: 'p1', carrier: 'USPS', tracking_url: 'https://tracking.example/p1' }],
-    totals: { subtotal: 7397, ship_fee: 0, tax: 0, total: 7397, refunded: 1999 }, pres: { currency: 'jpy', amount: 11500 }, gift_code: 'TEST-GIFT-0001', gift_name: null,
-    about: { parcel: 'p1', line: 1, refund: { amount: 1999, reason: 'lost', lines: [{ line: 1, qty: 1 }] }, reprint: { n: 1, why: 'lost' } } };
+  const v = { id, status: 'part_shipped', can_cancel: false, ship_by, late_eta: null, eta: [5, 11], lines: L, parcels: [{ id: 'p1', carrier: 'USPS', tracking_url: 'https://tracking.example/p1' }],
+    totals: { subtotal: 7397, ship_fee: 0, tax: 0, total: 7397, refunded: 0 }, pres: { currency: 'jpy', amount: 11500 }, gift: 'ready', gift_code: 'TEST-GIFT-0001', gift_name: null, about: {} };
+  const V = {
+    thanks: { status: 'paid', can_cancel: true, gift: 'soon', gift_code: null, lines: L.slice(0, 2).map((l) => Object.assign({}, l, { status: 'queued', parcel: null })) },
+    ship: { about: { parcel: 'p1', gift: true } }, address: { about: { reship: true, reship_lines: [1] } },
+    cancelled: { status: 'cancelled', totals: Object.assign({}, v.totals, { refunded: 7397 }) },
+    refunded: { totals: Object.assign({}, v.totals, { refunded: 5398 }), about: { refund: { amount: 5398, reason: 'late_auto', lines: [{ line: 2, qty: 2 }] } } },
+    refunded_all: { status: 'refunded', totals: Object.assign({}, v.totals, { refunded: 7397 }), about: { refund: { amount: 7397, reason: 'render_72h', lines: [] } } },
+    reject: { about: { line: 2, refund: { amount: 5398, reason: 'provider', lines: [{ line: 2, qty: 2 }] } } },
+    late: { late: true, late_eta, lines: L.slice(0, 2) }, late_again: { late: true, late_eta, lines: L.slice(0, 2) },
+    reprint: { about: { reprint: { n: 1, why: 'lost' } } } };
   const b = await browser.newContext({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 2 }), ep = await b.newPage();
   for (const k of mail.KINDS) {
-    const m = mail.build(k, k === 'refunded_all' ? Object.assign({}, v, { totals: Object.assign({}, v.totals, { refunded: 7397 }), about: { refund: { amount: 7397, reason: 'render_72h', lines: [] } } }) : v, {});
+    const m = mail.build(k, Object.assign({}, v, V[k] || {}), {});
     fs.writeFileSync(path.join(edir, k + '.html'), m.html); fs.writeFileSync(path.join(edir, k + '.txt'), 'Subject: ' + m.subject + '\n\n' + m.text);
     await ep.setContent(m.html); await ep.screenshot({ path: path.join(edir, k + '_390.png'), fullPage: true });
   }
@@ -996,6 +1084,7 @@ async function lookShots() {
   BASE = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch();
   const t0 = Date.now();
+  CATJS = await import(require('url').pathToFileURL(path.join(ROOT, 'cloudflare', 'merch', 'catalog.js')).href);
   try { if (SHOTS6) await part6Shots(); else { await fakeChecks(); await pageChecks(); await orderStateChecks(); await fitChecks(); await orderFitChecks(); if (LOOK) await lookShots(); } } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
   await browser.close(); server.close();
   console.log(`merch_page: ${pass} passed, ${fail} failed (${((Date.now() - t0) / 1000).toFixed(0)} s, ART_VER ${P.ART_VER})`);

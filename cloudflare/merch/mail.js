@@ -221,7 +221,7 @@ export function build(kind, view, env) {
       if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
       if (num(v.late_eta) > 0) B.push(['p', 'We now expect to post ' + (whole ? 'it' : 'the late part') + ' by ' + postDay(v.late_eta) + '.']);
       B.push(['p', 'You don’t need to do anything to keep waiting: we’ll email you when it’s on its way.'],
-        ['p', 'Or, if you’d rather not wait, you can cancel ' + (whole ? 'it' : 'the late part') + ' for a full refund from your order page, any time until it’s posted.']);
+        ['p', 'Or, if you’d rather not wait, you can cancel the late part for a full refund from your order page, any time until it’s posted.']);
       if (gift) B.push(gift);
       B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
       return page('Taking longer than we said', 'Your order is taking longer than we said', B, env, site);
@@ -231,7 +231,7 @@ export function build(kind, view, env) {
       B.push(['p', 'We’re sorry: ' + (whole ? 'your order' : 'the late part of your order') + ' still hasn’t gone out' + (num(v.late_eta) > 0 ? ', and we said ' + postDay(v.late_eta) + '.' : '.')]);
       if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
       B.push(['p', 'Thank you for waiting. We’re still on it, and we’ll email you as soon as it’s posted.'],
-        ['p', 'You can still cancel ' + (whole ? 'it' : 'the late part') + ' for a full refund from your order page, any time until it’s posted.']);
+        ['p', 'You can still cancel the late part for a full refund from your order page, any time until it’s posted.']);
       if (gift) B.push(gift);
       B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
       return page('Still on its way to the post', 'Still working on your order', B, env, site);

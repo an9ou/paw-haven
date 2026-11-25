@@ -235,7 +235,9 @@
     else if (z.extra) s += ' Each extra mug or tee adds ' + money(z.extra) + '.';
     return s;
   }
-  function etaLine(eta) { return Array.isArray(eta) && eta.length === 2 ? 'About ' + num(eta[0]) + ' to ' + num(eta[1]) + ' working days to your door: 2 to 5 to print, then the post.' : ''; }
+  // the one posting promise (cloudflare/merch/catalog.js SHIP_BY_DAYS; the legal pages say it word for word; merch/test_page.js checks the number)
+  var SHIP_BY_DAYS = 7, PROMISE = 'Printing usually takes 2 to 5 working days, and we post every order within ' + SHIP_BY_DAYS + ' working days of payment.';
+  function etaLine(eta) { return Array.isArray(eta) && eta.length === 2 ? 'About ' + num(eta[0]) + ' to ' + num(eta[1]) + ' working days to your door. ' + PROMISE : ''; }
 
   // ---- what an error from the order server means, in plain words (TRANSACTIONS.md 6.3). -> { t (html), line (1-based, or 0), reload }
   function errInfo(e) {
@@ -562,21 +564,44 @@
   //      untrusted text: everything is escaped or set as text. The page never needs a line's recipe (the server clears recipes after 24 months):
   //      the dog is drawn only when one is there. No address or email is ever shown or kept: the address form's values go to the server and
   //      are then dropped (nothing in localStorage or sessionStorage, nothing left in the page after it is sent).
-  var IS_NEW = Q.get('new') === '1', TEST_ORDERS = api.mode === 'test';
-  var ORD = { id: null, note: '', wait: false, polls: 0, timer: null, cleared: false };
+  var IS_NEW = Q.get('new') === '1', TEST_ORDERS = api.mode === 'test', DONE_KEY = 'dd_merch_done_v1', HOUR_MS = 3600000;
+  // polls: every 5 s for the first minute, then every 30 s up to 10 minutes, then "reload in a minute" (review finding 10)
+  var ORD = { id: null, note: '', polls: 0, pollFrom: 0, stale: false, timer: null, cleared: false, focus: false, POLL_FAST: 5000, POLL_SLOW: 30000, POLL_FOR: 600000 };
+  // review finding 3: ?new=1 (Stripe's way back) is dropped from the address after the first read, so a bookmark or a reload later never
+  // empties a new basket; the paid basket is emptied once per order, and only within the hour after paying
+  function dropNew() {
+    if (!/[?&]new=1/.test(location.search)) return;
+    var q = new URLSearchParams(location.search); q.delete('new'); var qs = q.toString();
+    try { history.replaceState(history.state, '', location.pathname + (qs ? '?' + qs : '') + location.hash); } catch (e) { /* the old address stays */ }
+  }
   function rOrder(id) {
     var b = $('#orderBody');
     if (ORD.timer) { clearTimeout(ORD.timer); ORD.timer = null; }
-    if (id !== ORD.id) { ORD.id = id; ORD.note = ''; ORD.wait = false; ORD.polls = 0; }
+    if (id !== ORD.id) { ORD.id = id; ORD.note = ''; ORD.polls = 0; ORD.pollFrom = 0; ORD.stale = false; }
     if (!id) { b.innerHTML = '<p class="lead">No order to show.</p>'; return; }
     if (!st.order || st.order.id !== id) b.innerHTML = '<p class="lead">Finding your order…</p>';
     api.order(id).then(function (o) {
+      dropNew();
       if (!o || typeof o !== 'object' || !Array.isArray(o.lines)) return orderGone(b, 'not_found');
+      var paid = num(o.paid_at), waiting = o.status === 'open' && (IS_NEW || o.pay_pending === true) && st.view === 'order';
+      if (waiting && !ORD.pollFrom) ORD.pollFrom = Date.now();
+      ORD.stale = waiting && Date.now() - ORD.pollFrom >= ORD.POLL_FOR;
       st.order = o; try { drawOrder(o); } catch (e) { orderGone(b, 'busy'); return; }
-      if (IS_NEW && !ORD.cleared && o.status !== 'expired' && o.status !== 'open') { ORD.cleared = true; basket = []; basketChanged(); saveBasket(); } // paid: the basket is done
-      if (IS_NEW && o.status === 'open' && ORD.polls < 12 && st.view === 'order') { ORD.polls++; ORD.timer = setTimeout(function () { if (st.view === 'order' && ORD.id === id) rOrder(id); }, 5000); } // the payment is on its way to us
-    }, function (e) { orderGone(b, e && e.error === 'not_found' ? 'not_found' : e && e.error === 'slow_down' ? 'slow_down' : 'offline'); });
+      if (ORD.focus) { ORD.focus = false; var ht = $('#h-order-t'); if (ht) try { ht.focus({ preventScroll: true }); } catch (e) { ht.focus(); } } // review finding 11
+      if (IS_NEW && !ORD.cleared && paid && Date.now() - paid < HOUR_MS && o.status !== 'expired' && o.status !== 'open' && lsGet(DONE_KEY) !== o.id) { ORD.cleared = true; lsSet(DONE_KEY, o.id); basket = []; basketChanged(); saveBasket(); } // paid: the basket is done
+      if (waiting && !ORD.stale) { ORD.polls++; ORD.timer = setTimeout(function () { if (st.view === 'order' && ORD.id === id) rOrder(id); }, Date.now() - ORD.pollFrom < 60000 ? ORD.POLL_FAST : ORD.POLL_SLOW); } // the payment is on its way to us
+    }, function (e) { dropNew(); orderGone(b, e && e.error === 'not_found' ? 'not_found' : e && e.error === 'slow_down' ? 'slow_down' : 'offline'); });
   }
+  // what a failed button says, in its own words, shown on the page (review finding 4: before, every error said "too late" in a hidden region)
+  var ACT_ERR = { too_late: 'It\'s too late to cancel now: printing has started. If something arrives damaged, we\'ll make it right.',
+    not_allowed: 'Your bank is looking at this payment, so we\'ve paused it. Nothing can be changed until the bank has decided.',
+    not_late: 'Nothing is late any more, so there was nothing to cancel.', slow_down: 'That was a lot of tries in a short time. Wait a minute, then try again.',
+    offline: 'We couldn\'t reach the shop. Check your connection, then try again.', busy: 'We\'re a little busy just now. Please try again in a moment.',
+    busy_late: 'We\'re sending your order to print right this minute. Please try again in a minute or two.' };
+  function actErr(e, late) { var c = e && typeof e.error === 'string' ? e.error : 'busy'; if (late && c === 'busy') c = 'busy_late'; return ACT_ERR[c] || ACT_ERR.busy; }
+  // the posting date in words, as the emails say it: the UTC date of the moment, with "by" (never earlier than the moment we keep to)
+  var WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function postDay(ms) { var d = new Date(num(ms)); return WD[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MN[d.getUTCMonth()]; }
   function orderGone(b, why) {
     if (why === 'not_found') { b.innerHTML = '<div class="thanks"><h1 class="mh2" id="h-order-t" tabindex="-1">We couldn\'t find this order</h1><p class="lead">Check the link in your email. If it still doesn\'t open, write to us at ' + CONTACT + ' and we\'ll find it for you.</p><div class="navrow"><a class="btn mint" href="#/">Back to the shop</a></div></div>'; return; }
     b.innerHTML = '<div class="thanks"><h1 class="mh2" id="h-order-t" tabindex="-1">We couldn\'t reach the shop just now</h1><p class="lead">' + (why === 'slow_down' ? 'That was a lot of tries in a short time. Wait a minute, then try again.' : 'Your order is safe. Check your connection, then try again.') +
@@ -597,6 +622,8 @@
   var HOLD_SAY = { review: 'Getting ready to print. It\'s taking a little longer than usual.', render: 'Getting ready to print. It\'s taking a little longer than usual.',
     provider: 'Getting ready to print. It\'s taking a little longer than usual.', wallet: 'Getting ready to print. It\'s taking a little longer than usual.', draft_mode: 'Getting ready to print.' };
   var DISPUTE_SAY = 'Your bank is looking at this payment, so we\'ve paused it. Nothing more happens until the bank has decided. Questions? Write to us at ' + CONTACT + '.';
+  // review finding 8: a dispute after something was posted pauses nothing that is on its way
+  var DISPUTE_SENT_SAY = 'Your bank is looking at this payment. What we posted is yours either way, and the bank decides about the money. Questions? Write to us at ' + CONTACT + '.';
   function giftHTML(o) {
     var name = typeof o.gift_name === 'string' && o.gift_name ? cleanWho(o.gift_name) : '';
     return '<div class="gift card tape t2" id="giftBox"><h2 class="h2s">A little thank-you for your dog</h2>' +
@@ -634,32 +661,40 @@
     if (r > 0 && r < q) return '<p class="ltag">Refunded: ' + r + ' of ' + q + '.</p>';
     return '';
   }
+  // a line in words, as the emails say it: "Tee with Mochi, navy, M"
+  function lineWords(l) {
+    var pid = l.product === 'tee' ? 'tee' : 'mug', r = recipeOf(l), nm = typeof l.name === 'string' && l.name ? cleanWho(l.name) : '', C = pid === 'tee' ? P.TEE_COLOURS.filter(function (x) { return x.id === l.colour; })[0] : null;
+    return (pid === 'tee' ? 'Tee' : 'Mug') + ' with ' + (nm || (r ? 'your ' + breedOf(r) : 'your dog')) + (C ? ', ' + C.name.toLowerCase() + ', ' + String(l.size || '') : '');
+  }
   function drawOrder(o) {
     var b = $('#orderBody'), s = String(o.status || ''), hold = typeof o.hold === 'string' ? o.hold : '', parcels = (Array.isArray(o.parcels) ? o.parcels : []).filter(function (p) { return p && typeof p === 'object'; });
     var tot = o.totals && typeof o.totals === 'object' ? o.totals : {}, L = o.lines.filter(function (l) { return l && typeof l === 'object'; });
     var disputed = hold === 'dispute' || o.dispute === 'open', ended = { cancelled: 1, refunded: 1, expired: 1 }[s] ? s : '';
-    var sent = parcels.filter(function (p) { return p.shipped_at; }), came = parcels.filter(function (p) { return p.delivered_at; });
+    var sent = parcels.filter(function (p) { return p.shipped_at; }), came = sent.filter(function (p) { return p.delivered_at; });
     var live = L.filter(function (l) { return LDEAD.indexOf(l.status) < 0 && num(l.refunded_qty) < num(l.qty); });
+    var unsent = live.filter(function (l) { return LSHIP.indexOf(l.status) < 0; }), lateL = o.late === true ? unsent.filter(function (l) { return l.reprint_of == null; }) : [];
     var groups = {}; live.forEach(function (l) { groups[l.product === 'tee' ? 'tee' : 'mug'] = 1; }); sent.forEach(function (p) { groups[p.product === 'tee' ? 'tee' : 'mug'] = 1; });
-    var nParcels = Math.max(sent.length, Object.keys(groups).length), allCame = !!sent.length && came.length === parcels.length && s === 'shipped';
-    // where it is now: 0 received, 1 being printed, 2 on its way, 3 arrived
-    var stage = s === 'part_shipped' || s === 'shipped' || (s === 'refunded' && sent.length) ? (allCame ? 3 : 2) : s === 'confirming' || s === 'confirmed' ? 1 : s === 'paid' && !o.can_cancel ? 1 : 0;
+    // review finding 8: delivered from the parcels alone (every parcel sent has arrived and nothing is left to send; a refund after delivery too)
+    var nParcels = Math.max(sent.length, Object.keys(groups).length), allCame = !!sent.length && came.length === sent.length && !unsent.length;
+    // where it is now: 0 received, 1 being printed, 2 on its way, 3 delivered
+    var stage = sent.length ? (allCame ? 3 : 2) : s === 'confirming' || s === 'confirmed' ? 1 : s === 'paid' && !o.can_cancel ? 1 : 0;
     var first = null; L.some(function (l) { var r = l && recipeOf(l); if (r) first = r; return !!r; });
     var pic = ''; try { pic = first ? dogPic(first, 'happy') : ''; } catch (e) { pic = ''; }
     var track = function (p) { return typeof p.tracking_url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(p.tracking_url) ? ' <a class="lnk" href="' + esc(p.tracking_url) + '" target="_blank" rel="noopener noreferrer">Track it' + (sent.length > 1 ? ' (' + (p.product === 'tee' ? 'tee' : 'mug') + ')' : '') + '</a>' : ''; };
-    // the top: a calm thank-you, or what happened
+    var postBy = num(o.ship_by) > 0 ? postDay(o.ship_by) : '', lateBy = num(o.late_eta) > 0 ? postDay(o.late_eta) : '';
+    // the top: a calm thank-you, or what happened (?new=1 only changes an order still waiting for its payment)
     var title = ended === 'cancelled' ? 'Your order is cancelled' : ended === 'refunded' ? 'Your order is refunded' : ended === 'expired' ? 'This order wasn\'t paid' :
       s === 'open' ? (IS_NEW ? 'Thank you! Your payment is on its way to us' : o.pay_pending ? 'Waiting for your bank' : 'Waiting for payment') :
-      disputed ? 'Your order is paused' : IS_NEW || s === 'paid' || s === 'held' ? 'Thank you! Your order is in.' :
-      s === 'confirming' || s === 'confirmed' ? 'Your order is being printed' : s === 'part_shipped' ? 'Part of your order is on its way' : allCame ? 'Your order has arrived' : s === 'shipped' ? 'Your order is on its way' : 'Your order';
+      disputed && !sent.length ? 'Your order is paused' : s === 'paid' || (s === 'held' && !sent.length) ? 'Thank you! Your order is in.' :
+      s === 'confirming' || s === 'confirmed' ? 'Your order is being printed' : allCame ? 'Your order has been delivered' : sent.length && unsent.length ? 'Part of your order is on its way' : sent.length ? 'Your order is on its way' : 'Your order';
     var lead = ended === 'cancelled' ? 'Nothing will be printed. Your refund is on its way: it can take a few days to show on your card.' :
       ended === 'refunded' ? 'Your money is on its way back: it can take a few days to show on your card.' : ended === 'expired' ? 'Nothing was paid, so nothing will be made.' :
-      s === 'open' ? (o.pay_pending ? 'Your bank is still sending the payment. This page shows it as soon as it arrives.' : IS_NEW ? 'It usually takes a moment. This page shows it as soon as it arrives.' : 'This order isn\'t paid yet.') :
+      s === 'open' ? (ORD.stale ? 'It\'s taking a little longer than usual. Reload this page in a minute to see it.' : o.pay_pending ? 'Your bank is still sending the payment. This page shows it as soon as it arrives.' : IS_NEW ? 'It usually takes a moment. This page shows it as soon as it arrives.' : 'This order isn\'t paid yet.') :
       'A receipt is on its way to your email.';
     var h = (TEST_ORDERS ? '<p class="testtag">Test order: made up to show this page. Nothing was paid and nothing will be printed.</p>' : '') +
       '<div class="thanks">' + pic + '<h1 class="mh2" id="h-order-t" tabindex="-1">' + esc(title) + '</h1>' +
       '<p class="lead"><span class="ordnum">Order ' + esc(String(o.id || '').replace(/^mo_/, '')) + '</span><br>' + esc(lead) + '</p></div>';
-    if (ORD.note) h += '<p class="oknote card" role="status">' + esc(ORD.note) + '</p>';
+    if (ORD.note) h += '<p class="oknote card" role="status" id="ordNote">' + esc(ORD.note) + '</p>';
     if (o.resting === true && !ended) h += '<p class="restnote card">The shop is resting for now. Your order is safe, and we\'re still making it.</p>';
     // what happens now, and the cancel hour: only what the server says (can_cancel, cancel_until); after the hour there is no cancel line at all
     var cu = num(o.cancel_until), sameDay = new Date(cu).toDateString() === new Date().toDateString(), canCancel = o.can_cancel === true && !!cu && !disputed && !ended;
@@ -667,50 +702,64 @@
     var box = [];
     if (!ended) {
       if (s === 'open') box.push(o.pay_pending ? 'Waiting for your bank.' : 'Waiting for payment.');
-      else if (disputed) box.push(esc(DISPUTE_SAY));
+      else if (disputed) box.push(esc(sent.length ? DISPUTE_SENT_SAY : DISPUTE_SAY));
       else if (s === 'held' && hold !== 'address') box.push(esc(HOLD_SAY[hold] || HOLD_SAY.review));
       if (!disputed && (s === 'paid' || s === 'held') && canCancel) box.push(cancelLine);
       else if (!disputed && (s === 'paid' || s === 'confirming' || s === 'confirmed')) box.push('Printing has started.');
+      // the posting promise of this order (the delay plan a), until something is posted or it runs late
+      if (!disputed && postBy && !sent.length && !lateL.length && s !== 'open' && hold !== 'address') box.push('We\'ll post it by <b>' + esc(postBy) + '</b>.');
     }
     if (box.length) h += '<div class="cancelbox card">' + box.map(function (x) { return '<p>' + x + '</p>'; }).join('') + (canCancel ? '<button type="button" class="btn quiet" id="cancelBtn">Cancel my order</button>' : '') + '</div>';
     var formOn = !ended && !disputed && ((s === 'held' && hold === 'address') || (hold === 'reship' && /^(part_shipped|shipped|confirmed)$/.test(s)));
     if (formOn) h += addressHTML(o, hold === 'reship');
-    // the delay notice's choice (US mail-order rule): wait, or cancel the late part for a full refund
-    if (o.late === true && !ended && !disputed) {
-      h += '<div class="latebox card" id="lateBox"><h2 class="h2s">Taking longer than we said</h2>' + (ORD.wait ? '<p>Thank you for waiting. We\'ll email you as soon as it\'s on its way.</p><p class="small2 left">Changed your mind? You can still cancel the late part.</p>' :
-        (sent.length ? '<p>We\'re sorry: part of your order is taking longer than we said. You can wait for it, or cancel the late part for a full refund of those things.</p>' : '<p>We\'re sorry: your order is taking longer than we said. You can wait for it, or cancel it for a full refund.</p>')) +
-        '<div class="row arow">' + (ORD.wait ? '' : '<button type="button" class="btn mint" id="lateWait">Keep waiting</button>') + '<button type="button" class="btn quiet" id="lateCancel">Cancel the late part</button></div></div>';
+    // the delay notice's choice (US mail-order rule; the delay plan): the late things by name, the date we said and the new one; waiting needs
+    // no answer, "Keep waiting" tells the server; cancel the late part any time until it's posted. One label, as in the email.
+    if (lateL.length && !ended && !disputed) {
+      var whole = !sent.length;
+      h += '<div class="latebox card" id="lateBox"><h2 class="h2s">Taking longer than we said</h2>' +
+        (o.late_ok === true ? '<p>Thank you for waiting. We\'re still on it, and we\'ll email you as soon as it\'s posted.</p>' :
+          '<p>We\'re sorry: we said we\'d post your order by <b>' + esc(postBy) + '</b>, and ' + (whole ? 'it hasn\'t gone out yet.' : 'part of it hasn\'t gone out yet.') + '</p>') +
+        '<ul class="latelist">' + lateL.map(function (l) { return '<li>' + esc((num(l.qty) - num(l.refunded_qty) > 1 ? (num(l.qty) - num(l.refunded_qty)) + ' × ' : '') + lineWords(l)) + '</li>'; }).join('') + '</ul>' +
+        (o.late_ok !== true && lateBy ? '<p>We now expect to post ' + (whole ? 'it' : 'the late part') + ' by <b>' + esc(lateBy) + '</b>. You don\'t need to do anything to keep waiting.</p>' : '') +
+        '<p>Or cancel the late part for a full refund, any time until it\'s posted.</p>' +
+        '<div class="row arow">' + (o.late_ok === true ? '' : '<button type="button" class="btn mint" id="lateWait">Keep waiting</button>') + '<button type="button" class="btn quiet" id="lateCancel">Cancel the late part</button></div></div>';
     }
-    // where it is now (not for an order that ended before anything was sent)
-    var S = [['✓', 'Order received', (o.paid_at ? fmtDate(o.paid_at) + '. ' : '') + 'Your receipt is in your email.'],
-      ['🖨', 'Being printed', stage >= 1 ? 'At our print partner: printing takes 2 to 5 working days.' : 'At our print partner, in 2 to 5 working days.'],
-      ['🚚', 'On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (s === 'part_shipped' && nParcels > 1 ? ' (' + sent.length + ' of ' + nParcels + ' parcels)' : sent.length > 1 ? ' (' + sent.length + ' parcels)' : '') + '.' : 'You get an email with a tracking link.'],
-      ['🏠', 'Arrived', allCame ? 'Arrived ' + fmtDate(came[came.length - 1].delivered_at) + '. Say hello to your dog, in real life.' : 'Say hello to your dog, in real life.']];
-    var showTrack = !ended || sent.length;
+    // where it is now (not for an order that ended before anything was sent). Numbered dots, a drawn tick when done (review finding 15: no emoji)
+    var S = [['Order received', (o.paid_at ? fmtDate(o.paid_at) + '. ' : '') + 'Your receipt is in your email.'],
+      ['Being printed', 'At our print partner: printing usually takes 2 to 5 working days.'],
+      ['On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (unsent.length && nParcels > 1 ? ' (' + sent.length + ' of ' + nParcels + ' parcels)' : sent.length > 1 ? ' (' + sent.length + ' parcels)' : '') + '.' : 'You get an email with a tracking link.'],
+      ['Delivered', allCame ? 'Delivered ' + fmtDate(came[came.length - 1].delivered_at) + '. Say hello to your dog, in real life.' : 'Say hello to your dog, in real life.']];
+    var showTrack = !ended || sent.length, STATE = { done: 'Done: ', now: 'Now: ', later: '' };
     h += '<div class="order">';
     if (showTrack) h += '<div class="card"><h2 class="h2s">Where is it now?</h2><ol class="track">' + S.map(function (x, i) {
-      var c = i < stage ? 'done' : i === stage ? 'now' : 'later'; return '<li class="' + c + '"><span class="dot" aria-hidden="true">' + x[0] + '</span><span><b>' + x[1] + '</b><span>' + esc(x[2]) + (i === 2 ? sent.map(track).join('') : '') + '</span></span></li>';
+      var c = i < stage ? 'done' : i === stage ? 'now' : 'later';
+      return '<li class="' + c + '"><span class="dot" aria-hidden="true">' + (c === 'done' ? '<i class="tick"></i>' : String(i + 1)) + '</span><span><b>' + (STATE[c] ? '<span class="vh">' + STATE[c] + '</span>' : '') + x[0] + '</b><span>' + esc(x[1]) + (i === 2 ? sent.map(track).join('') : '') + '</span></span></li>';
     }).join('') + '</ol><p class="note">This page is your order page: bookmark it, or use the link in your email.</p></div>';
     h += '<div>';
-    if (o.gift_code && typeof o.gift_code === 'string') h += giftHTML(o);
+    if (o.gift === 'ready' && o.gift_code && typeof o.gift_code === 'string') h += giftHTML(o);
+    else if (o.gift === 'soon' && !ended) h += '<div class="gift card tape t2" id="giftSoon"><h2 class="h2s">A little thank-you for your dog</h2><p>A little gift for your dog in the game will be waiting here once printing starts.</p></div>';
     h += '<ul class="blines">' + L.map(function (l) {
       var pid = l.product === 'tee' ? 'tee' : 'mug', r = null, C = pid === 'tee' ? P.TEE_COLOURS.filter(function (x) { return x.id === l.colour; })[0] : null, pic2 = '';
       try { r = recipeOf(l); pic2 = mockOf(r, { product: pid, colour: C ? C.id : 'white', pose: POSE_NAME[l.pose] ? l.pose : 'stand', name_on: l.name_on === true }, PROD[pid].title); } catch (e) { pic2 = ''; }
       var nm = typeof l.name === 'string' && l.name ? cleanWho(l.name) : r && r.n ? r.n : '', free = l.reprint_of != null;
       return '<li class="bl card' + (l.status === 'replaced' || l.status === 'rejected' ? ' gone' : '') + '">' + pic2 + '<div class="bt"><h3>' + PROD[pid].title + '</h3><ul class="facts"><li>' + esc(nm || (r ? 'Your ' + breedOf(r) : 'Your dog')) + '</li>' + (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + '<li>How many: ' + esc(num(l.qty)) + '</li></ul>' +
-        lineTag(l) + '<span class="lp">' + (free ? 'Free' : money(num(l.unit) * num(l.qty))) + '</span></div></li>';
+        (lateL.indexOf(l) >= 0 ? '<p class="ltag late">Running late' + (lateBy && o.late_ok !== true ? ': we now expect to post it by ' + esc(lateBy) : '') + '.</p>' : lineTag(l)) + '<span class="lp">' + (free ? 'Free' : money(num(l.unit) * num(l.qty))) + '</span></div></li>';
     }).join('') + '</ul><table class="lines"><tr><td>Things</td><td>' + money(tot.subtotal) + '</td></tr><tr><td>Shipping</td><td>' + (num(tot.ship_fee) ? money(tot.ship_fee) : 'Free') + '</td></tr>' +
-      (num(tot.tax) ? '<tr><td>Tax</td><td>' + money(tot.tax) + '</td></tr>' : '') + '<tr class="tot"><td>Total</td><td>' + money(tot.total) + '</td></tr>' + (num(tot.refunded) ? '<tr><td>Refunded</td><td data-q="refunded">' + money(tot.refunded) + '</td></tr>' : '') + '</table>';
+      (num(tot.tax) ? '<tr><td>' + (num(tot.subtotal) + num(tot.ship_fee) + num(tot.tax) === num(tot.total) ? 'Tax' : 'Tax (included in the prices)') + '</td><td>' + money(tot.tax) + '</td></tr>' : '') + '<tr class="tot"><td>Total</td><td>' + money(tot.total) + '</td></tr>' + (num(tot.refunded) ? '<tr><td>Refunded</td><td data-q="refunded">' + money(tot.refunded) + '</td></tr>' : '') + '</table>';
     var pm = presMoney(o.pres); if (pm) h += '<p class="small2 left" id="presLine">Prices are in US dollars. You paid ' + esc(pm) + ' at checkout' + (num(tot.refunded) ? '; refunds come back in that currency at the same rate.' : '.') + '</p>';
     if (ended === 'cancelled' && L.some(function (l) { return l.reprint_of == null && recipeOf(l); })) h += '<div class="navrow"><button type="button" class="btn mint" id="putBack">Put these back in my basket</button></div>';
     h += '<p class="small2 left">Something wrong when it arrives? Reply to the order email with a photo and we\'ll make it right.</p><div class="navrow"><a class="btn mint" href="#/pick">Put another dog on something</a></div></div></div>';
     b.innerHTML = h;
-    var cb = $('#cancelBtn'); if (cb) cb.onclick = function () { $('#cancelDlg').showModal(); };
+    var cb = $('#cancelBtn'); if (cb) cb.onclick = function () { openDlg($('#cancelDlg'), $('#cancelNo'), cb); };
     var gc = $('#giftCopy'); if (gc) gc.onclick = copyGift;
-    var lw = $('#lateWait'); if (lw) lw.onclick = function () { ORD.wait = true; drawOrder(st.order); say('Thank you for waiting.'); };
-    var lc = $('#lateCancel'); if (lc) lc.onclick = function () { ask('Cancel the late part?', 'The things that haven\'t been sent yet are refunded in full. Anything already on its way still comes to you.', 'Yes, cancel the late part', 'Keep waiting', function () {
-      api.cancel(o.id, { scope: 'late' }).then(function () { ORD.note = 'Done: we\'ve refunded the late part. It can take a few days to show on your card.'; rOrder(o.id); }, function (e) { ORD.note = e && e.error === 'not_late' ? 'Nothing is late any more, so there was nothing to cancel.' : 'We couldn\'t do that just now. Please try again in a moment.'; rOrder(o.id); });
-    }); };
+    var lw = $('#lateWait'); if (lw) lw.onclick = function () {
+      lw.disabled = true;
+      api.wait(o.id).then(function () { ORD.note = 'Thank you for waiting. We\'ll email you as soon as it\'s posted.'; ORD.focus = true; rOrder(o.id); say('Thank you for waiting.'); },
+        function (e) { ORD.note = actErr(e, true); ORD.focus = true; rOrder(o.id); });
+    };
+    var lc = $('#lateCancel'); if (lc) lc.onclick = function () { ask('Cancel the late part?', 'The things that haven\'t been posted yet are refunded in full. Anything already on its way still comes to you.', 'Yes, cancel the late part', 'Keep waiting', function () {
+      api.cancel(o.id, { scope: 'late' }).then(function () { ORD.note = 'Done: we\'ve refunded the late part. It can take a few days to show on your card.'; ORD.focus = true; rOrder(o.id); }, function (e) { ORD.note = actErr(e, true); ORD.focus = true; rOrder(o.id); });
+    }, lc); };
     var pb = $('#putBack'); if (pb) pb.onclick = function () { putBack(o); };
     if (formOn) bindAddress(o);
   }
@@ -750,8 +799,8 @@
       });
     };
     var rf = $('#addrRefund'); if (rf) rf.onclick = function () { ask('Refund the whole order?', 'We won\'t send anything, and all of your money comes back, shipping too.', 'Yes, refund me', 'Keep my order', function () {
-      api.refundHeld(o.id).then(function () { ORD.note = 'Done: we\'ve refunded all of it. It can take a few days to show on your card.'; rOrder(o.id); }, function () { ORD.note = 'We couldn\'t do that just now. Please try again in a moment.'; rOrder(o.id); });
-    }); };
+      api.refundHeld(o.id).then(function () { ORD.note = 'Done: we\'ve refunded all of it. It can take a few days to show on your card.'; rOrder(o.id); }, function (e) { ORD.note = e && e.error === 'not_allowed' ? 'Your address is sorted already, so there was nothing to refund.' : actErr(e); rOrder(o.id); });
+    }, rf); };
   }
   // "Put these back in my basket" (a cancelled order, TRANSACTIONS 4): the dogs and choices come back from the order's own lines, checked again
   function putBack(o) {
@@ -767,11 +816,17 @@
     });
     basketChanged(); saveBasket(); requote(); say(n ? 'They\'re back in your basket.' : 'We couldn\'t put these back, sorry.'); if (n) go('#/basket');
   }
+  // a yes/no dialog (review finding 11): it opens on the safe answer ("No"); closed without an answer, the focus goes back to the button that
+  // opened it; after an answer the order is drawn again and its title takes the focus (ORD.focus)
+  function openDlg(d, safe, opener) {
+    d.showModal(); try { safe.focus(); } catch (e) { /* fine */ }
+    d.onclose = function () { if (!ORD.focus && opener && document.body.contains(opener)) try { opener.focus(); } catch (e) { /* fine */ } };
+  }
   // a small yes/no question (the late cancel, "refund me instead")
-  function ask(title, text, yes, no, fn) {
+  function ask(title, text, yes, no, fn, opener) {
     var d = $('#askDlg'); $('#h-ask').textContent = title; $('#askText').textContent = text; $('#askYes').textContent = yes; $('#askNo').textContent = no;
-    $('#askYes').onclick = function () { d.close(); fn(); }; $('#askNo').onclick = function () { d.close(); };
-    d.showModal();
+    $('#askYes').onclick = function () { ORD.focus = true; d.close(); fn(); }; $('#askNo').onclick = function () { d.close(); };
+    openDlg(d, $('#askNo'), opener);
   }
 
   // ---- "Ship to": a guess from the browser's language, then the buyer's own choice (kept). Named here, sorted by the shown name
@@ -796,9 +851,9 @@
   $('#demoBtn').onclick = demoPay;
   $('#cancelNo').onclick = function () { $('#cancelDlg').close(); };
   $('#cancelYes').onclick = function () {
-    $('#cancelDlg').close(); var o = st.order; if (!o) return;
-    var again = function () { return api.order(o.id).then(function (x) { st.order = x; drawOrder(x); }, function () { rOrder(o.id); }); };
-    api.cancel(o.id, { scope: 'order' }).then(function () { return again().then(function () { say('Your order is cancelled.'); }); }, function (e) { say(e && e.error === 'not_allowed' ? 'Your bank is looking at this payment, so we\'ve paused it.' : 'It\'s too late to cancel: printing has started.'); return again(); }).catch(function () { /* the page stays */ });
+    ORD.focus = true; $('#cancelDlg').close(); var o = st.order; if (!o) return;
+    // each error in its own words, on the page (review finding 4)
+    api.cancel(o.id, { scope: 'order' }).then(function () { ORD.note = ''; rOrder(o.id); say('Your order is cancelled.'); }, function (e) { ORD.note = actErr(e); rOrder(o.id); say(ORD.note); });
   };
   $('#sgBtn').onclick = function () {
     var cs = colourCat('tee', st.draft.colour).sizes;
