@@ -276,11 +276,30 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     retry policy (do repeated 502s switch a webhook off?) and the order in which it lists shipments.
   - **This third fix batch (482 lines) has had no review of its own.** Each batch so far hid new holes (9 found in batch 1's, 6 in
     batch 2's), each round smaller and further from the main path.
+- **The sandbox kit: done 25 Nov about 18:00 JST** (`merch/part9-sandbox-kit`, merge 99a110d): `docs/design/merch/SANDBOX.md` (part 0
+  the code the run still needs; A the owner's steps, about 40 minutes, all free; B what gets deployed; C the printer and the emails; D the
+  run, about 75 rows; E afterwards; F the GM's shared-file brief and the owner's questions), `tools/merch_test_deploy.sh` (dry run by
+  default; a real send needs `DRY_RUN=0` and `MERCH_TEST_DEPLOY_OK=1`; never run for real so far) and `tools/merch_test_build.mjs`.
+  **It found that the test Worker would refuse every order**: C1 Stripe and Resend have no real network path (only the test seams), P1 the
+  page never talks to a Worker, P2 Pay never opens Stripe, C2 no printer without a Printful key. The GM has the brief for G1/G2 (the
+  test copy serves `/merch/`; sent 18:05 JST).
+- **The owner's answers (25 Nov, 18:08 JST, choice window; the owner's own picks):** the private test deploy behind the test password:
+  **"Yes (Recommended)"** (once the last wiring is checked; Cloudflare's approval prompts still come at the send); the printer in the
+  first run: **"Pretend printer first (Recommended)"** (so C2 is to be built; a short second run later with the real Printful key, still
+  through `request_credential`, host `api.printful.com`, when the owner is ready); emails: **"Yes, with a Resend key (Recommended)"**;
+  who taps Pay on the about 45 test orders: **"Claude tries all of them"** (the owner was told this is the least sure way: it needs
+  network access to Stripe's pay page from the cloud session and Stripe may stop robots; if it fails, go back to the owner with the
+  mix or the by-hand option). The owner still has to do SANDBOX.md part A (the new Stripe account in test mode, the keys into the
+  Cloudflare dashboard after our first deploy, the admin key through the secure form for `merch-api-test.doodledoggo.app`).
 - **Next, in this order:**
-  1. (done) the combined second review. 2. (done) the fix batches.
-  3. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox keys in a NEW, separate Stripe account;
-     ask the owner in the choice window when you get there; no 5-minute rule], and the Printful key through the secure form when the owner
-     says they are ready (`tools/merch_pf_check.mjs`, then re-record the fixtures).
+  1. (running at 18:10 JST) C1, P1, P2 on `merch/part9-wiring` (one agent). Merge when green.
+  2. C2, the stand-in printer for the test Worker only (SANDBOX.md C; the owner said yes to it). NOT C3.
+  3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring and
+     C2; then one fix batch.
+  4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
+     `get_environment` first; a blocked host is a need to propose, see the tool's rules) and try ONE test order only after the deploy.
+  5. The test deploy: the GM's G1/G2 first, then `tools/merch_test_deploy.sh` for real (the owner's yes is given; the prompts are the
+     owner's to approve), then the owner's part A steps 10-12, then the run (SANDBOX.md D), filling in the results.
   4. Part 10 (samples and launch [O]).
   - **For the launch go-ahead, not before** (the list kept above still stands): TRANSACTIONS.md 10 (13 points), PART5.md Q20-Q30, PART8.md’s
     two open points, the seller facts only the owner can fill in (PART7.md (d)), a professional for the legal drafts, the country list with

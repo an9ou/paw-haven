@@ -424,3 +424,11 @@ test Worker deploy -> the owner sets the secrets -> GM deploys the test copy -> 
 - **You, on your phone or computer, with Stripe's test card numbers: about 45 short test orders over two or three sittings of about an hour; no real
   money (recommended).**
 - Claude tries to fill in Stripe's test page from the cloud session (needs more network access, and Stripe may stop robots).
+
+### The owner's answers (25 Nov 2026, 18:08 JST, in the choice window)
+
+- Q1: **Yes** (once the last wiring is checked).
+- Q2: **A pretend printer first**; the Printful key later for a short second run.
+- Q3: **Yes, with a Resend key.**
+- Q4: **Claude tries all of them** (the least sure way: if Stripe's pay page stops the cloud session, ask the owner again with the
+  mix or the by-hand option). Step 14 in part A is then ours, not the owner's.
