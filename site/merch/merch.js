@@ -242,11 +242,13 @@
   }
 
   // ---- shipping words for the chosen country
-  function shipLine() {
+  // q: the basket's quote (second review R2-m3: over the threshold the box says the shipping is free, as the Shipping row does)
+  function shipLine(q) {
     var c = country(), z = zoneOf(c);
     if (!c) return 'Choose where it\'s going under <b>Ship to</b>, and the shipping shows here.';
     if (c.soon) return '<b>Coming soon to ' + esc(placeName(c)) + '.</b> We\'re sorting out the tax paperwork first, so we can\'t take orders there yet.';
     if (!z) return '';
+    if (q && z.free_from != null && num(q.ship_fee) === 0 && num(q.subtotal) >= num(z.free_from)) return 'Your shipping to ' + esc(placeName(c)) + ' is <b>free</b>: your things come to ' + money(z.free_from).replace('.00', '') + ' or more.';
     var s = 'Shipping to ' + esc(placeName(c)) + ': <b>' + money(z.fee) + '</b>.';
     if (z.free_from != null) s += ' ' + freeRule(z.free_from);
     else if (z.extra) s += ' Each extra mug or tee adds ' + money(z.extra) + '.';
@@ -586,7 +588,7 @@
     $$('[data-rm]').forEach(function (b) { b.onclick = function () { remove(b.dataset.rm); }; });
     $$('[data-chg]').forEach(function (b) { b.onclick = function () { change(b.dataset.chg); }; });
     // ship to and the totals
-    var sb = '<div class="lg">Shipping</div><p class="shipline">' + shipLine() + '</p>';
+    var sb = '<div class="lg">Shipping</div><p class="shipline">' + shipLine(basket.length && okQuote(q) ? q : null) + '</p>';
     if (c && !c.soon && q && etaLine(q.eta)) sb += '<p class="eta"><span aria-hidden="true">📦</span><span>' + esc(etaLine(q.eta)) + '</span></p>';
     $('#shipBox').innerHTML = sb;
     var t = '';

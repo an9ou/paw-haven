@@ -155,8 +155,11 @@ export function build(kind, view, env) {
       B.push(['p', 'Thank you for putting your dog on something. Here is your order:'], ['list', priced(ls)], totals());
       if (pres) B.push(['p', 'You paid ' + pres + ' at checkout.']);
       if (v.can_cancel) B.push(['p', 'Changed your mind? You can cancel the whole order for a full refund within 1 hour of paying, from your order page.']);
-      B.push(['p', 'What happens next: our print partner makes each one just for you (' + PRINT_WORDS + '), then it goes in the post.' + (post ? ' We’ll post it by ' + post + '.' : '') +
-        ' We’ll email you a tracking link when it’s on its way.' + (Array.isArray(v.eta) && v.eta.length === 2 ? ' It usually takes about ' + num(v.eta[0]) + ' to ' + num(v.eta[1]) + ' working days to reach you.' : '')]);
+      // second review (R2-m5): the page's words (part 9 M4): the delivery days are from payment to the door, printing included, then the
+      // printing days and the posting date, so nobody adds the two up
+      B.push(['p', 'What happens next: our print partner makes each one just for you, then it goes in the post.' +
+        (Array.isArray(v.eta) && v.eta.length === 2 ? ' It usually takes about ' + num(v.eta[0]) + ' to ' + num(v.eta[1]) + ' working days from payment to your door, printing included.' : '') +
+        ' ' + PRINT_WORDS.charAt(0).toUpperCase() + PRINT_WORDS.slice(1) + (post ? ', and we’ll post it by ' + post + '.' : '.') + ' We’ll email you a tracking link when it’s on its way.']);
       // the gift is shown only once the cancel hour is over (review finding 2): here only a word about it, and only when a code is reserved
       if (v.gift === 'soon') B.push(['p', 'A little thank-you for your dog in the game will be waiting on your order page once printing starts.']);
       else if (v.gift === 'ready') B.push(['p', 'A little thank-you for your dog in the game is waiting on your order page.']);

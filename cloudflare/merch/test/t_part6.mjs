@@ -40,7 +40,8 @@ export async function part6() {
     ok(/Mug with your dog: \$19\.99/.test(th.text) && /Total: \$24\.98 \(US dollars\)/.test(th.text) && /You paid ¥3,800 at checkout\./.test(th.text), 'thanks: the line, the USD total, what was paid: ' + th.text.slice(0, 300));
     ok(/within 1 hour of paying, from your order page/.test(th.text) && !/\d\d:\d\d/.test(th.text), 'thanks: the cancel hour in words, no clock time');
     ok(!th.text.includes('TEST-GIFT') && !th.html.includes('TEST-GIFT') && /A little thank-you for your dog in the game will be waiting on your order page once printing starts\./.test(th.text), 'thanks: the gift is only promised (review finding 2: shown after the hour)');
-    ok(/We’ll post it by Thursday 10 December\./.test(th.text) && /printing usually takes 2 to 5 working days/.test(th.text) && /about 5 to 11 working days to reach you/.test(th.text), 'thanks: the posting date in words, the door-to-door days');
+    // second review (R2-m5): the page's words, so the days never read as adding up
+    ok(/It usually takes about 5 to 11 working days from payment to your door, printing included\. Printing usually takes 2 to 5 working days, and we’ll post it by Thursday 10 December\./.test(th.text) && !/to reach you/.test(th.text), 'thanks: the door-to-door days (printing included), the printing days, the posting date in words: ' + th.text);
     await w.call('POST', '/merch/order/' + a + '/cancel', { scope: 'order' }); const ca = one(w, new RegExp('^me_' + a + '_cancelled$')); checkMail(ca, a, 'cancelled');
     ok(/refunded all of it, \$24\.98, shipping too/.test(ca.text) && /few days to show on your card/.test(ca.text) && !ca.text.includes('TEST-GIFT'), 'cancelled: the amount');
     ok(w.one('select order_id from merch_gift_pool where code = ?', 'TEST-GIFT-0001').order_id === null && w.order(a).gift_code === null, 'cancelled in the hour: the unseen code is back in the pool');
