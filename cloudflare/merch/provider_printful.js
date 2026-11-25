@@ -8,6 +8,7 @@
 // ('down' may carry retry_ms: Printful's Retry-After) and never throws. Nothing here logs the key, a recipient or a reply body.
 import { fetcher, call, same, hex, enc } from './util.js';
 import { PRODUCTS as CATP, PF_PRODUCTS, PF_VARIANT_IDS, SHIP_COSTS } from './catalog.js';
+import { taxBehavior } from './lines.js';
 
 const BASE = 'https://api.printful.com';
 // what each product prints with (v2 placements; mug: the catalog's only print file 'default', sublimation; tee: front_large, DTG, PRINT_FILES.md)
@@ -30,7 +31,9 @@ export const providerReady = (env) => !!(net(env) && env.MERCH_PROVIDER_KEY) && 
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const money = (c) => (Number(c || 0) / 100).toFixed(2);
-const cents = (x) => (x == null || x === '' ? 0 : Math.round(Number(x) * 100));
+// a money string -> cents; empty is 0; anything that is not a number is NaN (review finding 5: callers check Number.isFinite, never trust it)
+const cents = (x) => { if (x == null || x === '') return 0; const n = Number(x); return Number.isFinite(n) ? Math.round(n * 100) : NaN; };
+const fin = (...a) => a.every((x) => Number.isFinite(x));
 const ts = (x) => { if (x == null || x === '') return null; const t = typeof x === 'number' ? (x < 1e11 ? x * 1000 : x) : Date.parse(x); return Number.isFinite(t) ? t : null; };
 
 // Retry-After (seconds) -> ms, at most 10 minutes; else X-RateLimit-Reset; else a minute (Rate Limiting, v1 and v2 docs)
@@ -56,9 +59,13 @@ export function errKind(r, sent) {
   if (/external[_ ]?id/i.test(msg) && /(in use|already|exist|duplicate|unique)/i.test(msg)) return { ok: false, kind: 'duplicate', status: st }; // OR-13 EXTERNAL_ID_IN_USE
   if (st === 402 || /\b(billing|payment|charg(e|ed|ing)|credit card|insufficient|funds|wallet)\b/i.test(msg)) return { ok: false, kind: 'billing', status: st };
   if (/^\s*recipient\b|\/recipient\b/i.test(msg)) return { ok: false, kind: 'address', status: st };
+  // review finding 4: a problem with a print file, its URL, a placement or a layer is ours (a file Printful could not fetch, a wrong placement),
+  // never the variant's or the buyer's: down (tried again; after a day the owner hears), never a refused line or a "fix your address" email
+  if (/\b(print ?files?|files?|urls?|placements?|layers?)\b|\/(placements|layers)\/\d|\/url\b/i.test(msg)) return { ok: false, kind: 'down', status: st, why: 'file' };
   const idx = new Set(); for (const m of msg.matchAll(/(?:\bItem (\d+)\s*:|\/order_items\/(\d+))/gi)) idx.add(Number(m[1] != null ? m[1] : m[2]));
   if (idx.size && sent && sent.length) { const items = Array.from(idx).map((i) => sent[i]).filter(Boolean); if (items.length) return { ok: false, kind: 'refused', items, status: st }; }
-  if (/\b(address|state code|zip|postal|country code|city)\b|shipping to this (country|region)/i.test(msg)) return { ok: false, kind: 'address', status: st };
+  // the recipient's own fields only (address1/2, city, state, country, zip): a bare "address" elsewhere is not the buyer's to fix (finding 4)
+  if (/\brecipient\b|\b(address ?[12]|address line|state[ _]code|country[ _]code|zip(?:[ _]?code)?|postal[ _]code|city)\b|shipping to this (country|region)/i.test(msg)) return { ok: false, kind: 'address', status: st };
   if (/no longer editable|can ?not be (deleted|canceled|cancelled|confirmed|updated)|can't be|not cancell?able|not allowed|OR-1\b/i.test(msg)) return { ok: false, kind: 'cannot', status: st };
   return { ok: false, kind: 'refused', items: [], status: st };
 }
@@ -98,7 +105,9 @@ export async function createDraft(env, o, lines, recipient, fileUrls, extId) {
   if (unknown.length) return { ok: false, kind: 'refused', items: unknown }; // never a placeholder variant at Printful
   const items = lines.map((l) => itemOut(l, ext, fileUrls[l.line]));
   const body = { external_id: ext, shipping: 'STANDARD', recipient: recipientOut(recipient), order_items: items,
-    retail_costs: { currency: 'USD', discount: '0.00', shipping: money(o.ship_fee), tax: money(o.tax) } };
+    // review finding 6: where the tax is inside the price (everywhere but the US and Canada) the retail prices and shipping already hold it, so
+    // no tax is added on top (the declared retail total is the customs value and the packing slip); US / CA: the tax charged, on top
+    retail_costs: { currency: 'USD', discount: '0.00', shipping: money(o.ship_fee), tax: taxBehavior(o.country || (recipient && recipient.country_code)) === 'inclusive' ? '0.00' : money(o.tax) } };
   const r = await pf(env, 'POST', '/v2/orders', body, items.map((i) => i.external_id));
   if (!r.ok) {
     if (r.kind !== 'duplicate') return r;
@@ -176,12 +185,14 @@ export async function quoteCost(env, o, lines, recipient, fileUrls) {
   const r = await pf(env, 'POST', '/v2/order-estimation-tasks', { recipient: recipientOut(recipient), order_items: items });
   if (!r.ok) return r;
   let t = r.json && r.json.data;
-  for (let i = 0; t && t.status === 'pending' && i <= polls(env); i++) { await sleep(pollMs(env)); const g = await pf(env, 'GET', '/v2/order-estimation-tasks?id=' + encodeURIComponent(t.id)); if (!g.ok) return g; t = g.json && g.json.data; }
+  for (let i = 0; t && t.status === 'pending' && i < polls(env); i++) { await sleep(pollMs(env)); const g = await pf(env, 'GET', '/v2/order-estimation-tasks?id=' + encodeURIComponent(t.id)); if (!g.ok) return g; t = g.json && g.json.data; }
   if (!t || t.status === 'pending') return { ok: false, kind: 'down', why: 'estimating' };
   if (t.status === 'failed') { const why = (t.failure_reasons || []).join(' '); return /recipient/i.test(why) ? { ok: false, kind: 'address' } : { ok: false, kind: 'refused', items: [] }; }
   const c = t.costs || {};
   if (c.currency && c.currency !== 'USD') return { ok: false, kind: 'cannot', why: 'currency' };
-  return { ok: true, data: { items: cents(c.subtotal) - cents(c.discount) + cents(c.digitization) + cents(c.additional_fee) + cents(c.fulfillment_fee), shipping: cents(c.shipping), tax: cents(c.tax) + cents(c.vat) + cents(c.retail_delivery_fee), total: cents(c.total) } };
+  const q = { items: cents(c.subtotal) - cents(c.discount) + cents(c.digitization) + cents(c.additional_fee) + cents(c.fulfillment_fee), shipping: cents(c.shipping), tax: cents(c.tax) + cents(c.vat) + cents(c.retail_delivery_fee), total: cents(c.total) };
+  if (!fin(q.items, q.shipping, q.tax, q.total)) return { ok: false, kind: 'down', why: 'costs' };
+  return { ok: true, data: q };
 }
 
 // One sample address per cost region (catalog.js regionOf; invented, not a person): the nightly shipping-rate read
@@ -199,7 +210,8 @@ async function rate(env, region, variant, qty) {
   if (!r.ok) return null;
   const list = (r.json && Array.isArray(r.json.data) && r.json.data) || [];
   const s = list.find((x) => x.shipping === 'STANDARD') || list[0];
-  return s && (!s.currency || s.currency === 'USD') && s.rate != null ? cents(s.rate) : null;
+  const c = s && (!s.currency || s.currency === 'USD') && s.rate != null && s.rate !== '' ? cents(s.rate) : null;
+  return Number.isFinite(c) ? c : null;
 }
 // The nightly cost read (TRANSACTIONS 3.3): Printful's catalog prices (v2 /catalog-products/{id}/prices in USD; with no production currency
 // Printful answers the highest price, the safe side for the margin guard) and its Standard rates for one and two items in each region.
@@ -221,7 +233,7 @@ export async function catalogCosts(env, opt) {
         const ours = REV[String(v.id)]; if (!ours) continue;
         const t = (v.techniques || []).find((x) => x.technique_key === tech) || (v.techniques || [])[0]; if (!t) continue;
         const p = t.discounted_price != null && t.discounted_price !== '' ? t.discounted_price : t.price; if (p == null) continue;
-        variants[ours] = cents(p);
+        const v1 = cents(p); if (Number.isFinite(v1)) variants[ours] = v1;
       }
       const pg = (r.json && r.json.paging) || {}; offset = Number(pg.offset || 0) + Number(pg.limit || 100);
       if (!(Number(pg.total) > offset)) break;
@@ -243,13 +255,15 @@ export function mapOrder(d, ships) {
   if (!d || typeof d !== 'object') return null;
   const c = d.costs || {};
   // costs count only when worked out ('done'; v1 answers have no calculation_status) and in US dollars: else null, and the ledger holds it
-  const known = (!c.calculation_status || c.calculation_status === 'done') && (!c.currency || c.currency === 'USD') && c.subtotal != null && c.subtotal !== '';
+  // review finding 5: and every number readable, with a shipping cost given (a missing one is unknown, never 0); else null (the cost_unknown hold)
+  let known = (!c.calculation_status || c.calculation_status === 'done') && (!c.currency || c.currency === 'USD') && c.subtotal != null && c.subtotal !== '' && c.shipping != null && c.shipping !== '';
+  const cost = known ? { items: cents(c.subtotal) - cents(c.discount) + cents(c.digitization) + cents(c.additional_fee) + cents(c.fulfillment_fee), shipping: cents(c.shipping), tax: cents(c.tax) + cents(c.vat) + cents(c.retail_delivery_fee) } : null;
+  if (cost && !fin(cost.items, cost.shipping, cost.tax)) known = false;
   const items = (d.order_items || d.items || []).filter((i) => !i.type || i.type === 'order_item');
   const byId = new Map(items.map((i) => [String(i.id), String(i.external_id || '')]));
   return { id: String(d.id), external_id: d.external_id || null,
     status: d.status === 'inreview' ? 'pending' : String(d.status || ''), // inreview: confirmed and "still cancellable": the same as pending for us
-    costs: known ? { items: cents(c.subtotal) - cents(c.discount) + cents(c.digitization) + cents(c.additional_fee) + cents(c.fulfillment_fee), shipping: cents(c.shipping), tax: cents(c.tax) + cents(c.vat) + cents(c.retail_delivery_fee) }
-      : { items: null, shipping: null, tax: null },
+    costs: known ? cost : { items: null, shipping: null, tax: null },
     items: items.map((i) => ({ external_id: String(i.external_id || ''), id: i.id != null ? String(i.id) : null, status: null })),
     shipments: (ships || []).filter((s) => s && SHIPPED.includes(s.shipment_status)).map((s) => ({
       id: String(s.id), carrier: s.carrier || null, tracking_url: s.tracking_url || null,

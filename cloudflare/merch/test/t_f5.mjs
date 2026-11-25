@@ -135,4 +135,57 @@ export async function f5() {
     eq([y.order(k).status, y.order(k).hold, confirms(y)], ['confirmed', null, 1], 'fixed and sent again in the Printful dashboard: the hint confirms it, no confirm from us');
     await y.advance(2 * DAY); eq([y.order(k).status, y.stripe.refunds.length], ['confirmed', 0], 'never refunded');
   });
+
+  /* ---------------- finding 4: errKind, a print-file problem is ours; the address only from the recipient's fields ---------------- */
+  await T('F5-errkind', 'errKind: the built error texts keep their kinds; a file, URL, placement or layer problem is down (never a refused line or an address); a bare "address" elsewhere is not the buyer\'s', async () => {
+    const sent = [EXT + '_1', EXT + '_2'], k = (name) => pf.errKind({ status: fx(name).status, data: fx(name).body }, sent);
+    eq(k('order_recipient_invalid'), { ok: false, kind: 'address', status: 400 }, 'Recipient: ...');
+    eq(k('order_item_refused'), { ok: false, kind: 'refused', items: [EXT + '_2'], status: 400 }, 'Item 1: out of stock');
+    eq([k('order_confirm_billing').kind, k('order_external_id_in_use').kind, k('order_not_editable').kind, k('order_delete_refused').kind, k('order_cancel_v1_refused').kind, k('shipping_rates_disabled').kind, k('order_delete_conflict').kind],
+      ['billing', 'duplicate', 'cannot', 'cannot', 'cannot', 'address', 'down'], 'billing, OR-13, not editable, not deleted, not cancelled, shipping disabled, 409');
+    const m = (message) => pf.errKind({ status: 400, data: { code: 400, result: message, error: { reason: 'BadRequest', message } } }, sent);
+    for (const t of ['Item 0: Could not download the print file', 'Property `/order_items/0/placements/0/layers/0/url` is invalid', 'Item 1: Invalid placement `front_large` for this product',
+      'Item 0: Layer 0: the file is too small for the placement', 'Item 0: Could not fetch file: the server address did not answer', 'Invalid URL given for item 1', 'Print file could not be processed (city skyline.png)'])
+      eq([m(t).kind, m(t).why, m(t).items], ['down', 'file', undefined], 'a file problem: ' + t);
+    eq(m('Invalid address').kind, 'refused', 'a bare "address" with no recipient field: not an address email (the owner looks)');
+    for (const t of ['Recipient: Invalid zip', 'Invalid value for `/recipient/zip`', 'The city is required', 'Invalid state code', 'Invalid country code ZZ', 'ZIP code does not match', 'address1 is required']) eq(m(t).kind, 'address', 'the recipient: ' + t);
+  });
+  await T('F5-errkind-ledger', 'the ledger: Printful could not fetch our print file: no line refunded, no variant turned off, no address email; tried again, and the draft is made once the file is fetched', async () => {
+    const w = await world(); w.pf.refuse.file = 2; const id = await w.paidOrder([mug(0), tee(1)]); await w.advance(5 * MIN);
+    ok(!w.order(id).provider_order && w.order(id).last_error === 'down' && w.lines(id).every((l) => l.status === 'ready'), 'backed off, lines kept: ' + w.lines(id).map((l) => l.status));
+    ok(!w.one('select id from merch_variants where on_flag = 0') && w.mails(/_address/).length === 0 && w.stripe.refunds.length === 0, 'no variant off, no address email, no refund');
+    await w.advance(30 * MIN); ok(w.order(id).provider_order && w.lines(id).every((l) => l.status === 'drafted'), 'then drafted: ' + w.order(id).status + ' ' + w.lines(id).map((l) => l.status));
+  });
+
+  /* ---------------- finding 5: costs that are not numbers ---------------- */
+  await T('F5-costs-nan', 'mapOrder: a cost that is not a number, or no shipping cost, gives costs null; the ledger holds such a draft (cost_unknown) and never confirms it', async () => {
+    const draft = (patch) => { const f = fx('order_create_draft'); Object.assign(f.body.data.costs, patch); return f.body.data; };
+    eq(pf.mapOrder(draft({}), []).costs, { items: 1799, shipping: 1164, tax: 0 }, 'the built draft: read');
+    for (const p of [{ subtotal: '12,34' }, { subtotal: 'abc' }, { shipping: null }, { shipping: '' }, { discount: 'n/a' }, { vat: 'NaN' }, { additional_fee: {} }])
+      eq(pf.mapOrder(draft(p), []).costs, { items: null, shipping: null, tax: null }, 'unknown: ' + JSON.stringify(p));
+    const w = await world(); w.pf.after.create = async (o) => { w.pf.after.create = null; o.c.subtotal = '12,34'; };
+    const id = await w.paidOrder([mug(0)]); await w.advance(5 * MIN);
+    eq([w.order(id).status, w.order(id).hold, w.order(id).why, w.order(id).provider_cost], ['held', 'review', 'cost_unknown', null], 'held, no NaN stored');
+    await w.advance(2 * HOUR); eq(confirms(w), 0, 'never confirmed'); await w.advance(DAY); eq(w.order(id).status, 'refunded', 'a day later: refunded');
+  });
+
+  /* ---------------- finding 6: retail_costs.tax ---------------- */
+  await T('F5-retail-tax', 'createDraft: retail_costs.tax is 0.00 where the tax is inside the price (JP, GB, AU ...), the tax charged on top in the US and Canada', async () => {
+    const L1 = [{ line: 1, product: 'mug', provider_variant: 'pf:mug:white', qty: 1, refunded_qty: 0, unit: 1999 }], U = { 1: 'https://merch-api.test/merch/file/k/1/a.png' };
+    const sent = async (country, tax) => { const R = replay(['order_create_draft']); await pf.createDraft(envOf(R), { id: EXT, ship_fee: 499, tax, country }, L1, { name: 'Test Buyer', address1: '1 Example Street', city: 'X', zip: '1', country_code: country }, U); return R.calls[0].body.retail_costs.tax; };
+    eq([await sent('US', 165), await sent('CA', 325)], ['1.65', '3.25'], 'exclusive: on top');
+    eq([await sent('JP', 227), await sent('GB', 416), await sent('AU', 227), await sent('DE', 399)], ['0.00', '0.00', '0.00', '0.00'], 'inclusive: inside, so none on top');
+    const w = await world({ env: { MERCH_COUNTRIES: 'all' } }); const id = await w.newOrder([mug(0)], 'JP'); await w.pay(id, { tax: 227, amount: w.order(id).total }); await w.advance(5 * MIN);
+    const c = w.pf.calls.find((x) => x.m === 'POST' && x.path === '/orders'); eq([w.order(id).tax, c.body.retail_costs.tax], [227, '0.00'], 'the ledger\'s draft for Japan: tax stored, none declared on top');
+  });
+
+  /* ---------------- finding 10: quoteCost reads at most MERCH_PF_POLLS times ---------------- */
+  await T('F5-quote-polls', 'quoteCost: a task still pending is re-read exactly MERCH_PF_POLLS times (not one more), then down; a completed task whose costs are not numbers is down', async () => {
+    const pend = 'estimation_task_created';
+    let R = replay([pend, pend, pend, pend]); let r = await pf.quoteCost(envOf(R, { MERCH_PF_POLLS: '2' }), { id: EXT }, [{ line: 1, product: 'mug', provider_variant: 'pf:mug:white', qty: 1, unit: 1999 }], { country_code: 'US' });
+    eq([r.kind, r.why, R.calls.length], ['down', 'estimating', 3], 'the create and two reads');
+    R = replay([pend]); r = await pf.quoteCost(envOf(R, { MERCH_PF_POLLS: '0' }), { id: EXT }, [{ line: 1, product: 'mug', provider_variant: 'pf:mug:white', qty: 1, unit: 1999 }], { country_code: 'US' }); eq([r.why, R.calls.length], ['estimating', 1], 'no reads at 0');
+    R = replay([pend, () => { const f = fx('estimation_task_completed'); f.body.data.costs.subtotal = 'x'; return f; }]);
+    r = await pf.quoteCost(envOf(R), { id: EXT }, [{ line: 1, product: 'mug', provider_variant: 'pf:mug:white', qty: 1, unit: 1999 }], { country_code: 'US' }); eq([r.ok, r.kind], [false, 'down'], 'unreadable costs');
+  });
 }

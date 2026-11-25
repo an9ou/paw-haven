@@ -175,6 +175,7 @@ export function fakePrintful() {
     if (v === 2 && p === '/orders' && m === 'POST') {
       if (take('create')) return pfProblem(503, 'Service Unavailable');
       if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + body.recipient.country_code + '`');
+      if (P.refuse.file > 0) { P.refuse.file--; return pfErr(400, 'Item 0: Could not download the print file from the address given in `/order_items/0/placements/0/layers/0/url`'); } // part 5 fixes, finding 4 (an invented text)
       const bad = body.order_items.map((i, n) => ((P.refuse.variants || []).includes('pf:' + ourOf(i.catalog_variant_id)) ? 'Item ' + n + ': This product variant is not available' : null)).filter(Boolean);
       if (bad.length) return pfErr(400, bad.join('; '));
       const was = P.byExt.get(body.external_id); if (was && !P.orders.get(was).gone) return pfErr(400, 'The external_id provided already exists and cannot be used');

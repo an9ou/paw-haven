@@ -1343,8 +1343,9 @@ export class MerchLedger {
       const cost = (d.costs.items || 0) + (d.costs.shipping || 0);
       const est = marginOf(this.cat, x.country, drafted, x.subtotal, x.ship_fee, now, this.costs()).W;
       const cols = { provider: 'printful', provider_order: d.id, provider_cost: cost, tries: 0, last_error: null };
-      // part 5: Printful v2 may give a draft no costs (calculation failed, or not in USD): never confirmed blind; the owner looks (a day, then refunded)
-      if (d.costs.items == null || d.costs.shipping == null) { Object.assign(cols, { provider_cost: null, status: 'held', hold: 'review', why: 'cost_unknown', hold_at: now, next_try_at: now + DAY }); this.ownerMail(id, 'cost', 'Printful’s draft has no costs we can read: confirm (merch.sh confirm) or refund.'); }
+      // part 5: Printful v2 may give a draft no costs (calculation failed, or not in USD; review finding 5: or a number we cannot read): never
+      // confirmed blind; the owner looks (a day, then refunded)
+      if (!Number.isFinite(d.costs.items) || !Number.isFinite(d.costs.shipping)) { Object.assign(cols, { provider_cost: null, status: 'held', hold: 'review', why: 'cost_unknown', hold_at: now, next_try_at: now + DAY }); this.ownerMail(id, 'cost', 'Printful’s draft has no costs we can read: confirm (merch.sh confirm) or refund.'); }
       else if (cost > est * 1.1) { Object.assign(cols, { status: 'held', hold: 'review', why: 'cost', hold_at: now, next_try_at: now + 48 * HOUR }); this.ownerMail(id, 'cost', 'Printful’s draft costs ' + cost + ' against our ' + est + ': confirm (merch.sh confirm) or refund.'); }
       else if (x.status === 'held') Object.assign(cols, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: now });
       else cols.next_try_at = Math.max(now, (x.cancel_until || now) + GRACE);
