@@ -10,6 +10,7 @@
 //               the bed, the bowl
 //   draw.json   every drawing of Noodle the Reel uses (PawArt.dog('dachs', { pose, facing, expr, outfit }) as the game's page draws it), one per
 //               look x move of the plan in build_dougie.js; each with its three crayon drawings (pa-d-f0..f2)
+//   items.json  the item art of every piece of clothing in the looks (PawArt.item, as the wardrobe draws it), for the covers
 //   facts.json  the date, the festivals on that date (none), the place name, the clothes checked against CLOTHES and en.json, the game's spark doodle colours,
 //               the Felt Fir Tree prop (the crayon tree by the first line), the dog art's CSS, the main commit, and every CSS animation running in the
 //               room (none is used: the room is still; the motion is Noodle's)
@@ -103,6 +104,10 @@ run('dougie_capture', async (t) => {
   if (!C) throw new Error('no C colours in world A');
   const yellow = /yellow:'(#[0-9A-Fa-f]{6})'/.exec(wa.slice(wa.indexOf('const C={')))[1], ink = /ink:'(#[0-9A-Fa-f]{6})'/.exec(wa.slice(wa.indexOf('const C={')))[1], pink = /pink:'(#[0-9A-Fa-f]{6})'/.exec(wa.slice(wa.indexOf('const C={')))[1];
   facts.spark = { yellow, ink, pink, shape: 'O.sparkle: a four-point crayon star, q = s x .16, stroke 1.5' };
+  // the clothes' own item art, as the game's wardrobe and shops draw it (art('item', name)), for the covers' outfit tiles
+  const items = {};
+  for (const n of Object.keys(facts.clothes)) { const sv = await ev((n) => window.PawArt.item(n), n); if (!/<svg/.test(sv || '')) throw new Error('no item art for ' + n); items[n] = sv; }
+  fs.writeFileSync(path.join(OUT, 'items.json'), JSON.stringify(items));
   fs.writeFileSync(path.join(OUT, 'draw.json'), JSON.stringify(draw));
   fs.writeFileSync(path.join(OUT, 'props.json'), JSON.stringify({ parts: r.parts, decor: r.decor }, null, 1));
   fs.writeFileSync(path.join(OUT, 'facts.json'), JSON.stringify(facts, null, 1));
