@@ -6,6 +6,11 @@ import * as stripe from './stripe.js';
 
 // a game gift code as tools/promo.sh makes them: letters, digits and dashes, 4-40 characters (PROMO.md 1)
 export const GIFT_CODE = /^[A-Z0-9][A-Z0-9-]{3,39}$/;
+// part 9, C2: which printer this Worker uses now, first in `merch.sh show` and `report`, so the sandbox's stand-in (test_printer.js, the key
+// 'test-printer' the test entry passes) is never taken for Printful: its drafts are not at Printful and its costs are catalog.js estimates
+export const printerNow = (env) => (env.MERCH_PROVIDER_KEY !== 'test-printer' ? (env.MERCH_PROVIDER_KEY ? 'printful' : 'none')
+  : env.MERCH_TEST === '1' && env.PROVIDER_FETCH ? 'STAND-IN (test_printer.js): not Printful; these drafts and costs are made up from catalog.js'
+  : 'none (the key test-printer is only the stand-in on the test Worker with its binding)');
 
 export async function adminRoute(L, req, path, ip) {
   const ih = await L.hashOf(ip, 'ip');
@@ -32,7 +37,7 @@ export async function adminRoute(L, req, path, ip) {
       const lines = L.lines(o.id);
       for (const l of lines) l.file_url = l.file_key ? await L.fileUrl(l.file_key, 7 * DAY) : null;
       const ord = Object.assign({}, o); delete ord.email_hash; delete ord.checkout_url; ord.gift_code = !!o.gift_code; // part 6: never the code itself
-      return json({ order: ord, lines, parcels: L.q('select * from merch_parcels where order_id = ?', o.id), refunds: L.q('select * from merch_refunds where order_id = ? order by created_at', o.id),
+      return json({ printer: printerNow(L.env), order: ord, lines, parcels: L.q('select * from merch_parcels where order_id = ?', o.id), refunds: L.q('select * from merch_refunds where order_id = ? order by created_at', o.id),
         events: L.q('select id, type, at, note from merch_events where order_id = ? order by at', o.id), reprints: L.q('select * from merch_reprints where order_id = ?', o.id),
         mail: L.q('select id, who, kind, status, tries, last_error, sent_at from merch_outbox where order_id = ? order by created_at', o.id) });
     }
@@ -147,7 +152,7 @@ export async function adminRoute(L, req, path, ip) {
     return json(Object.assign({ added, skipped }, { left: L.giftCounts().left }));
   }
   if (path === 'render-test' && m === 'POST') { const r = await L.renderTest(body); return json(r.body, r.status); } // part 4: the render self-test
-  if (path === 'report' && m === 'GET') return json(L.report());
+  if (path === 'report' && m === 'GET') return json(Object.assign({ printer: printerNow(L.env) }, L.report()));
   if (path === 'tick' && m === 'POST') { await L.tick(); return json({ ok: true }); }
   if (path === 'nightly' && m === 'POST') return json(await L.nightly(L.now()));
   return fail('not_found', 404);

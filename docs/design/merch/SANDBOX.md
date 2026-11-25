@@ -18,10 +18,10 @@ bundle in local workerd (Miniflare) with a dummy value for every key: the catalo
 | P1 | **Done** (c7a0b63; `merch_page` rows "P1: ...", "P1 test copy: ..."). Was: **The page never talks to a Worker.** `site/merch/api.js` has `MERCH_API = ''` (the page's own fake). | [M] | every run |
 | P2 | **Done** (c7a0b63; `merch_page` rows "P2 ...", "live client: ...", "late pending: ...", "fake: late cancel ..."). Was: **Pay never opens Stripe.** `site/merch/merch.js` `pay()` shows the "shop is not open" card even on a good checkout answer. | [M] | every run, and the launch |
 | G1-G2 | **The test copy does not serve `/merch/`** and its CSP blocks the merch API (part F). | [GM] | every run |
-| C2 | **No printer without a Printful key**: the gate wants one, so no order is taken (part C). | [M] | run 1 (the owner said "not yet" to the key) |
+| C2 | **Done** (25 Nov, branch `merch/part9-test-printer`; `merch_worker` rows C2-shape, C2-flow, C2-address, C2-tee, C2-all, C2-down, C2-file, C2-realkey, C2-live, C2-build, C2-mf, C2-mf-keys). Was: **no printer without a Printful key**: the gate wants one, so no order is taken. Now a stand-in printer Worker for the test Worker only (part C). | [M] | run 1 (the owner said "not yet" to the key) |
 
-C1, P1 and P2 are built (part C, "Code changes", says what each does); they need one review before the run (the part 9 lesson: every fix batch so
-far hid new holes). C2 waits for the owner's answer. The deploy script itself is ready: `tools/merch_test_deploy.sh` (part B).
+C1, P1, P2 and C2 are built (part C, "Code changes", says what each does); they need one review before the run (the part 9 lesson: every fix
+batch so far hid new holes). The deploy script itself is ready: `tools/merch_test_deploy.sh` (part B), with `MERCH_TEST_PRINTER=1` for run 1.
 
 ---
 
@@ -54,7 +54,9 @@ Also the four go-aheads in part F ("Questions for the owner"). The game's test c
 ## B. What gets deployed
 
 One new Worker, **`doodle-doggo-merch-test`**, on the Free plan, at **https://merch-api-test.doodledoggo.app** (a Workers Custom Domain; its
-workers.dev address off). The game's test copy `doodle-doggo-test` is redeployed by the GM with the merch page in it (part F). Nothing live changes.
+workers.dev address off). For run 1 (no Printful key yet) a second one, **`doodle-doggo-merch-test-printer`**, the stand-in printer (C2): no
+address at all (no route, no domain, workers.dev off), reached only through the test Worker's service binding `PROVIDER_FETCH`. The game's
+test copy `doodle-doggo-test` is redeployed by the GM with the merch page in it (part F). Nothing live changes.
 
 **What it runs**: the real `cloudflare/merch/worker.js`, unchanged, inside a small test entry that `tools/merch_test_build.mjs` writes (outside the
 repo): it serves the released print folders from Text modules, because a Claude session cannot upload Workers static assets (the cloud proxy
@@ -68,8 +70,9 @@ everything (and skips the cron) unless `MERCH_TEST = "1"`. Bundle built here on 
 | Browser Run | binding `BROWSER` (no token). Free plan: 10 browser-minutes a day for the whole account. Our test budget `MERCH_BROWSER_BUDGET_MS = 60000` (one minute a day): billed 1.07-1.45 s a tee and 0.47-0.70 s a mug (cloud test), so about 40 tees or 100 mugs a day, then the resvg fallback draws (a test row). **Cost: $0.** |
 | Self binding | `SELF` -> `doodle-doggo-merch-test`, entrypoint `RenderGate` (a second upload: a binding can only name a Worker that exists) |
 | Print pages | `ASSETS`, stood in by the test entry: every folder in `site/merch/print/` (today `pp1-6df20bb6`) |
+| Stand-in printer (run 1, `MERCH_TEST_PRINTER=1`) | binding `PROVIDER_FETCH` -> `doodle-doggo-merch-test-printer` (in both uploads). That Worker: `cloudflare/merch/test_printer.js` behind a two-line entry, one SQLite Durable Object `PRINTER` -> `TestPrinter` (its own migration `v1` on its first deploy), no variables, no secrets, no cron, no route, workers.dev off. It is uploaded **first** (a binding can only name a Worker that exists). The test entry makes it the printer only while `MERCH_TEST = "1"`, the binding is there and no real `MERCH_PROVIDER_KEY` is set (it then passes the key `test-printer`); with a real key the binding is taken away, so that key goes to Printful, never to the stand-in. A later send without `MERCH_TEST_PRINTER=1` drops the binding. |
 | Cron | `*/10 * * * *`: the backstop wake and the nightly job after 04:00 JST. **The account may have 5 cron triggers**; `pawhaven-api` has 2. Count: Cloudflare dashboard, each Worker, Settings, Triggers, Cron Triggers; the script also counts them through the API and refuses to add a 6th. |
-| Account counts | Workers 6 today (25 Nov) -> 7 (8 with the stand-in printer of C2); Durable Object namespaces 0 -> 3 (4). Well inside the Free plan (the deploy script counts the Workers and the cron triggers before it sends). |
+| Account counts | Workers 6 today (25 Nov) -> 7 (8 with the stand-in printer of C2); Durable Object namespaces 0 -> 3 (4: the stand-in's `TestPrinter`). Cron triggers: +1 (the stand-in has none). Well inside the Free plan (the deploy script counts the Workers and the cron triggers before it sends). |
 | Logs | `observability.enabled` (Workers Logs; the code logs only short error texts, never a key, an address or an email) |
 | Secrets | set by the owner (A10), names only: `MERCH_STRIPE_KEY`, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_FILE_KEY`, `MERCH_HASH_KEY`, `MERCH_ADMIN_KEY`, `MERCH_OWNER_TO`, later `RESEND_API_KEY`, `MERCH_PROVIDER_KEY`, `MERCH_PROVIDER_WEBHOOK_SECRET`. Every upload sends `keep_bindings: ["secret_text"]`, so a redeploy keeps them. |
 
@@ -92,7 +95,8 @@ everything (and skips the cron) unless `MERCH_TEST = "1"`. Bundle built here on 
 | left out (empty) | `MERCH_OFF`, `MERCH_ART_VERS`, `MERCH_OWNER_TO`, `MERCH_SELLER_NAME`, `MERCH_SELLER_ADDR`, `MERCH_GIFT_NAME`, `MERCH_PROVIDER_STORE` | so the owner can add them as Secrets and a redeploy keeps them |
 
 The build refuses to send a test seam (`STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT`, `RESVG_WASM`,
-`MERCH_RENDER_PROBE`) or a secret's name as a variable.
+`MERCH_RENDER_PROBE`) or a secret's name as a variable. The stand-in's `PROVIDER_FETCH` (C2) is a service binding the build adds itself with
+`MERCH_TEST_PRINTER=1`, never a variable; the build refuses a toml that binds `PROVIDER_FETCH`.
 
 **The script**: `tools/merch_test_deploy.sh` (new; `tools/cf_test_deploy.sh` is untouched). Dry by default; `BUILD_ONLY=1` builds only; a real send
 needs `DRY_RUN=0` **and** `MERCH_TEST_DEPLOY_OK=1`; it refuses any name but `doodle-doggo-merch-test`; it never reads, prints or sets a secret (in a
@@ -104,14 +108,22 @@ cloud session the proxy adds the Cloudflare token; elsewhere only curl reads `CL
 - the default dry run: the same build, then every request it would send: the zone, the Worker list, the cron count per Worker, two uploads
   (`meta_new.json` with the migration, then `meta.json` with `SELF`), the cron `PUT .../schedules`, workers.dev off, the Custom Domain (with the
   DNS check), the secret names, the public checks; "nothing was sent". `DRY_RUN=0` without `MERCH_TEST_DEPLOY_OK=1`: refused (exit 2).
+- With `MERCH_TEST_PRINTER=1` (C2, 25 Nov): the build adds the stand-in (`printer/`: `entry.js`, upload 16.99 KiB, gzip 6.19 KiB; the test
+  Worker 4,459 KiB, gzip 1,534 KiB) and `PROVIDER_FETCH -> doodle-doggo-merch-test-printer` in both uploads. The dry run then prints, before the
+  test Worker's two uploads: `PUT .../scripts/doodle-doggo-merch-test-printer` with `printer_meta_new.json` (bindings `PRINTER:durable_object_namespace`;
+  migration `v1` `TestPrinter`) + `entry.js`, and `POST .../doodle-doggo-merch-test-printer/subdomain {"enabled":false}`; no cron, no domain for it;
+  at the end the workers.dev check for it and how to delete both (the test Worker first). Without it, the output is as before (one line says the
+  stand-in was not built). The build refuses the stand-in for any Worker name but `doodle-doggo-merch-test`.
 
 **The first deploy, in order**
 1. C1, P1, P2 (and C2 for run 1) merged into `merch/shop` and reviewed; `merch_worker` and `merch_page` green; G1-G2 merged by the GM.
 2. The owner's go-ahead (Q1). Stripe steps A1-A8 may come before or after.
-3. `DRY_RUN=0 MERCH_TEST_DEPLOY_OK=1 bash tools/merch_test_deploy.sh`: makes the Worker (two uploads), the cron, workers.dev off, the Custom
-   Domain; lists the missing secrets; checks the public answers (the webhook check says 503 until its secret is set: expected). The Worker is
-   safe with no secret at all: it refuses every order (README "Safe by default").
-4. The owner adds the secrets (A10, A11). Run the script again: no missing secrets; the catalog `shut: false`.
+3. `DRY_RUN=0 MERCH_TEST_DEPLOY_OK=1 MERCH_TEST_PRINTER=1 bash tools/merch_test_deploy.sh` (run 1): makes the stand-in printer Worker
+   (workers.dev off), then the Worker (two uploads), the cron, workers.dev off, the Custom Domain; lists the missing secrets; checks the public
+   answers (the webhook check says 503 until its secret is set: expected). The Worker is safe with no secret at all: it refuses every order
+   (README "Safe by default").
+4. The owner adds the secrets (A10, A11), but **not** `MERCH_PROVIDER_KEY` for run 1 (a real key turns the stand-in off). Run the script again
+   (with `MERCH_TEST_PRINTER=1`): no missing secrets but the printer's; it says "printer: the stand-in"; the catalog `shut: false`.
 5. The GM deploys the test copy with the merch page (`bash tools/cf_test_deploy.sh`, its own go-ahead).
 6. Smoke: one mug to the US with the card 4242 (row S-6).
 
@@ -139,7 +151,7 @@ prompt for the secrets: the owner types them in the dashboard.
 
 | Missing | What happens | So |
 |---|---|---|
-| Printful key (`MERCH_PROVIDER_KEY`) | `providerReady()` is false, the gate says `not_set_up`: the catalog is `shut`, **every checkout is refused**. No draft, no cost read, no hint. | Run 1 needs a stand-in printer (C2), or waits for the key. |
+| Printful key (`MERCH_PROVIDER_KEY`) | `providerReady()` is false, the gate says `not_set_up`: the catalog is `shut`, **every checkout is refused**. No draft, no cost read, no hint. | Run 1 uses the stand-in printer (C2, built): deployed with `MERCH_TEST_PRINTER=1`, it is the printer while no key is set. |
 | Resend key (`RESEND_API_KEY`) | Orders go on. Each email is still an outbox row, marked `failed` / `not_set_up` at once, with no retries and no "mail failed" owner email. `tools/merch.sh show <order>` lists every row (kind, status). | Run 1 proves **which** emails are queued **when**; not their delivery or looks. |
 | Both | As above: nothing at all can be ordered. | - |
 
@@ -152,7 +164,7 @@ prompt for the secrets: the owner types them in the dashboard.
 | 3. Wait for the key and do one run | As 1 + 2, minus the stand-in's refusals (the real printer refuses only what it really refuses). | Same as 2. | C1, P1, P2 |
 | 4. A stand-in that also "posts" parcels (run 1b) | Production, parcels, "On its way", delivered, a returned parcel and its address form, a reprint, a refund after shipping, a dispute after shipping, a Dashboard refund after confirm (T2.2-21). | The late steps (they need 7 working days). | C2 plus C3 (below). **Not recommended now**: it needs a door in the printer's "never confirm on the test Worker" rule. The suite covers these rows (298 checks); part 10 runs one real order through them. |
 
-### Code changes (C1, P1 and P2 built on 25 Nov 2026, c7a0b63; C2 and C3 described only; none touches `ledger.js` money logic)
+### Code changes (C1, P1 and P2 built on 25 Nov 2026, c7a0b63; C2 built on 25 Nov 2026; C3 described only; none touches `ledger.js`)
 
 **C1. A real network for Stripe and Resend (needed for the run and for the launch).**
 - Files: `cloudflare/merch/util.js` (move `onWorkers()` there from `provider_printful.js`, and add `netOf(seam, key)`: the injected fetch when set,
@@ -194,6 +206,27 @@ Built (c7a0b63): only with the live client (the page's fake never pays); the url
   bundle takes a basket from a faked Stripe payment to `held draft_mode`; each magic name gives T2.2-36, T2.2-32, T2.2-33, T2.2-34 and the file
   case; with a real key set the stand-in is not used; the live build has no `PROVIDER_FETCH`.
 - Cost: one more Worker and one Durable Object namespace on the Free plan; delete it with the test Worker.
+- **Built (25 Nov).** Files: `cloudflare/merch/test_printer.js` (the stand-in, `printerEnv`, the magic names), `tools/merch_test_build.mjs`
+  and `tools/merch_test_deploy.sh` (`MERCH_TEST_PRINTER=1`), two small guards outside the stand-in, and `test/t_testprinter.mjs` (12 rows, all
+  in `merch_worker`). What it does, and where it differs from the plan above:
+  - **The ledger is wrapped in the test entry** (`class MerchLedgerT extends MerchLedger`, exported under the same class name, so no new
+    migration): its env goes through `printerEnv`. With a real `MERCH_PROVIDER_KEY` the binding is **taken away**, so the real key is never sent
+    to the stand-in; it goes to Printful through the global fetch, as without C2. `ledger.js` is unchanged.
+  - **The word `test-printer` is never a key anywhere else** (`provider_printful.js` `net()`): only on the test Worker with the binding. On the
+    live Worker it means "no printer" (shut, nothing sent), so it can never reach `api.printful.com` or open the live shop.
+  - **The stand-in refuses every key but its own** (401, as Printful refuses a bad key) and keeps no address: only the country, for the costs.
+    A missing name, first line, city or country is refused like a bad address.
+  - **Its own two-line entry** (`printer/entry.js`): a Worker's main module may export only handlers and classes.
+  - **"Test Printer Down" takes the whole stand-in down** (every call, every order) for 30 minutes from that order's first try, once per order:
+    that is what lets F-5's second order (cancelled while down) show the draft delete being retried. With the backoff (1, 5, 15, 60 min) the
+    order is drafted on its try about 81 minutes in, after the cancel hour, and goes straight to `held draft_mode`: **`held provider` is not
+    reached in F-5** (it needs an outage past the hour; the suite covers it, T2.2-34). F-6 shows `held provider` instead.
+  - **"Test Refuse File" refuses on every try** (a broken file does not mend itself): retried as down, `held provider` after the hour, the
+    owner's "could not use a print file" email at 24 h. End it with a cancel in the hour or `merch.sh refund`.
+  - **Marked in the owner's tools**: `merch.sh show` and `merch.sh report` start with `"printer": "STAND-IN (test_printer.js): not Printful;
+    these drafts and costs are made up from catalog.js"` (admin.js `printerNow`). The stand-in's costs are catalog.js's own estimates, so a
+    cost hold (T2.2-39) never happens with it. Not marked: the nightly report email (it says what the JSON says, without the printer line).
+  - It never confirms: the adapter refuses on `MERCH_TEST=1` as before, and the stand-in refuses a confirmation too. No parcels, no hints (C3).
 
 **C3 (only for option 4; not recommended now).** `provider_printful.js` `providerReady()` and `confirm()` would allow `live` on the test Worker only
 when the printer is the stand-in (`MERCH_PROVIDER_KEY === 'test-printer'` and `PROVIDER_FETCH` set), plus a random `MERCH_PROVIDER_WEBHOOK_SECRET`
@@ -234,7 +267,7 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 | P-3 | Dark tees and big sizes | navy 2XL, black 5XL, happy pose, name on | +$2 and +$8 on the price; the PNGs at 100%: the patch behind the dog, a light name | |
 | P-4 | Limits | 6 lines, one with qty 3; then try a 7th line and qty 4 | 6 x 3 taken; "Up to 6 things, and up to 3 of each" | |
 | P-5 | Every line made | `merch.sh show <order>` for P-1 to P-3 | each line: renderer, sha, bytes, `art_ver pp1-6df20bb6`; the signed links open the PNG; a link with one letter changed: 403 | |
-| P-6 | After the hour (62 min) | `merch.sh show` | held `draft_mode` (never confirmed); the stand-in (run 2: Printful's dashboard) has the draft | |
+| P-6 | After the hour (62 min) | `merch.sh show` | held `draft_mode` (never confirmed); a `provider_order` (run 1: the stand-in's, `"printer": "STAND-IN ..."`; run 2: the draft in Printful's dashboard) | |
 
 ### D3. Zones, tax and currency (one mug + one tee each, card 4242, the email named)
 
@@ -249,7 +282,7 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 | Z-7 | Another world country | `+location_MX` (or SG) | as Z-6 in its money | |
 | Z-8 | Shut countries | the page; then `curl -X POST .../merch/quote` for GB | GB, DE "coming soon"; the quote 403 `country_closed` | |
 | Z-9 | Only the quoted country | on Stripe's page try another country | Stripe offers only the one country | |
-| Z-10 | The address path | a paid Z-1 order | not held `other_country` (PART3 box: `collected_information.shipping_details`); the stand-in got the address | |
+| Z-10 | The address path | a paid Z-1 order | not held `other_country` (PART3 box: `collected_information.shipping_details`); drafted, so the address came whole (the stand-in refuses one without a name, first line, city or country, and keeps only the country) | |
 | Z-11 | A taxed order (can wait) | add one US state registration in the sandbox's Stripe Tax, order to that state, then remove it | tax on top on Stripe's page; `amount_total` = subtotal + fee + tax; the order paid (T2.2-56) | |
 
 ### D4. Paying: edges and repeats
@@ -288,14 +321,18 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 
 ### D6. The printer (run 1: the stand-in, by the shipping name on Stripe's page; run 2: the real one)
 
+The names work in any case and spacing, but only as the whole name. Run 1: `merch.sh show` starts with `"printer": "STAND-IN ..."`.
+Before run 2 (a real key on the test Worker), end every run-1 order that is still open (`merch.sh orders`; refund what is held), so nothing
+drafted by the stand-in is tried again at the real Printful.
+
 | # | What | How | Expected | Result |
 |---|---|---|---|---|
-| F-1 | Address refused | name "Test Refuse Address" | `held address`; "We need your address"; the form on the order page; a good fix: back on track (T2.2-36, T2.1-29) | |
+| F-1 | Address refused | name "Test Refuse Address" | `held address`; "We need your address"; the form on the order page (type another name there: the same name is refused again); a good fix: back on track, then `held draft_mode` (T2.2-36, T2.1-29) | |
 | F-2 | Address in another country | in the F-1 form, another country; then "Refund me instead" | 400 `other_country`; refunded in full (T2.2-37) | |
 | F-3 | One line refused | name "Test Refuse Tee", a mug + a tee | the tee rejected and refunded, the mug drafted; "Sorry, we couldn't make the ..." (T2.2-32) | |
 | F-4 | Every line refused | name "Test Refuse All" | all refunded with shipping (T2.2-33) | |
-| F-5 | Printer down | name "Test Printer Down"; one more order cancelled while down | retries; past the hour `held provider`; the cancel refunds at once and the draft delete is retried (T2.2-34, T2.2-41) | |
-| F-6 | A file problem | name "Test Refuse File" | retried as "down", never a buyer email | |
+| F-5 | Printer down | first one order with any name (drafted); then name "Test Printer Down"; within 30 minutes cancel the first one. Run it alone: while down, every order waits | the stand-in is down for 30 minutes: retries at 1, 5, 15 and 60 minutes; drafted on the try about 81 minutes in, then `held draft_mode` (not `held provider`: the outage ends inside the hour, C2); the cancel refunds at once and the draft delete is retried, done after the 30 minutes (T2.2-34, T2.2-41) | |
+| F-6 | A file problem | name "Test Refuse File" | retried as "down", never a buyer email; past the hour `held provider`; at 24 h the owner email about the print file; end it with `merch.sh refund` | |
 | F-7 | (run 2) the key-day kit | `node tools/merch_pf_check.mjs` dry, then `--run --file-url <a P-5 link>` | 10 steps recorded under `test/printful/recorded/`; fixtures replaced where they differ; suites green | |
 | F-8 | (run 2) a real draft | one mug + one tee, the real key | a draft in the Printful test store, not charged; costs within 10% of `cost_est` (else `held review`, T2.2-39); Printful fetched our file | |
 | F-9 | (run 2) a real address refusal | an address Printful cannot use (to choose with the kit's address probe) | record Printful's text; `held address` | |
@@ -366,9 +403,12 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
   `merch-api-test.doodledoggo.app` (nothing answers; Stripe retries its events for a while (3 days in live mode, fewer in a sandbox: to confirm), then stops); or Stripe, the webhook, Disable, and the
   restricted key, Roll or Delete (no new sessions).
 - **Stays up until part 10's live dry run passes, shut**: the test Worker with `MERCH_OFF` = 1, for a second run after any fix. Its cron keeps
-  using 1 of the 5. The Stripe account stays: it becomes the real merch account when the owner activates it (sandbox data stays apart).
+  using 1 of the 5. **The stand-in off** (run 2): set the real `MERCH_PROVIDER_KEY` (the stand-in is then never used), or redeploy without
+  `MERCH_TEST_PRINTER=1` (the binding goes; the printer Worker stays, idle, until it is deleted). The Stripe account stays: it becomes the real merch account when the owner activates it (sandbox data stays apart).
 - **Deleted after the live dry run**: first `merch.sh export` (kept outside the repo); then the test Worker (Settings, Delete: its Durable Objects
-  and their data go with it, the cron slot frees; check that the Custom Domain went too), the stand-in printer Worker, the sandbox's webhook
+  and their data go with it, the cron slot frees; check that the Custom Domain went too), then the stand-in printer Worker
+  `doodle-doggo-merch-test-printer` (Settings, Delete; after the test Worker, which binds to it; its Durable Object `TestPrinter` and its made-up
+  drafts go with it), the sandbox's webhook
   endpoint and restricted key, the test Resend key, the Claude secure-form secret for `merch-api-test.doodledoggo.app` (environment settings), and
   the merch page from the test copy if the GM wants it out (or it stays for the next round).
 - **Kept in the repo**: this file with the results filled in, the re-recorded Printful fixtures (run 2), and any fix the run asks for.

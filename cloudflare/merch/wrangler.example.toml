@@ -129,3 +129,6 @@ MERCH_PF_PRICE_REGION = "worldwide"
 MERCH_RENDER_VIA = "direct"
 MERCH_BROWSER_BUDGET_MS = "60000"          # the test Worker shares the account's 10 browser-minutes: keep it to one minute a day
 # The test Worker's secrets are its own (sandbox keys), set with `wrangler secret put --env test`: the same names as above.
+# Part 9, C2: the stand-in printer (cloudflare/merch/test_printer.js, the Worker doodle-doggo-merch-test-printer) is NOT in this file, not even
+# here: tools/merch_test_build.mjs adds its service binding (PROVIDER_FETCH) itself, only with MERCH_TEST_PRINTER=1 and only for
+# doodle-doggo-merch-test, and refuses a toml that binds PROVIDER_FETCH. Leave MERCH_PROVIDER_KEY unset on the test Worker while it is used.
