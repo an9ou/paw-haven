@@ -229,7 +229,7 @@ export async function printful() {
     const a = marginOf(cat, 'US', L, pr.subtotal, pr.ship_fee, now, costs), b = marginOf(cat, 'US', L, pr.subtotal, pr.ship_fee, now);
     ok(a.pass && Math.abs(a.margin - b.margin) < 1e-9, 'the same margin as the catalog estimate (same numbers): ' + a.margin);
     const T4 = [{ qty: 1, group: 'tee', variant: 'tee:black:4XL', unit_cost: PRODUCTS.tee.cost + PRODUCTS.tee.size_cost['4XL'] }];
-    ok(Math.abs(marginOf(cat, 'US', T4, 2699 + 600, 499, now, costs).margin - (marginOf(cat, 'US', T4, 2699 + 600, 499, now).margin - 50 * 1.07 - 50 * 0.05)) < 1e-6, 'Printful\'s 4XL costs 50 cents more than catalog.js guesses (PART5.md)');
+    ok(Math.abs(marginOf(cat, 'US', T4, 2699 + 600, 499, now, costs).margin - marginOf(cat, 'US', T4, 2699 + 600, 499, now).margin) < 1e-6 && PRODUCTS.tee.size_cost['4XL'] === 600, 'Printful\'s 4XL cost and catalog.js now agree (Q25: TEE_SIZE_COST set to Printful\'s +$6.00, review fixes)');
   });
 
   await T('P5-costs-partial', 'catalogCosts: pages followed; a rate not in USD or not read is left out (the old value stays); nothing read: the error', async () => {

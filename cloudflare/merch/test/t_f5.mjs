@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { T, ok, eq, world, mug, tee, MIN, HOUR, DAY } from './harness.mjs';
 import * as pf from '../provider_printful.js';
+import { PRODUCTS, PF_VARIANT_IDS, buildCatalog } from '../catalog.js';
+import { marginOf, priceBasket } from '../lines.js';
+import { PP } from './harness.mjs';
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'printful');
 const fx = (n) => JSON.parse(fs.readFileSync(path.join(DIR, n + '.json'), 'utf8'));
@@ -223,5 +226,18 @@ export async function f5() {
     ok(out.includes('Mug with your dog') && out.includes('Doodle Doggo Merch') && out.includes('19.99') && out.includes('pfcheck-1'), 'product and store names, prices and ids are kept');
     const dry = spawnSync(process.execPath, [fileURLToPath(new URL('../../../tools/merch_pf_check.mjs', import.meta.url))], { encoding: 'utf8' });
     ok(dry.status === 0 && /DRY RUN, nothing is sent/.test(dry.stdout) && /draft_get_v1: GET/.test(dry.stdout), 'run with no flags: the dry plan, nothing sent');
+  });
+
+  /* ---------------- Q25: the big tee sizes cost what Printful charges ---------------- */
+  await T('F5-size-cost', 'TEE_SIZE_COST is Printful\'s extra for every big size we sell (the recorded prices: 2XL +2.00, 3XL +4.00, 4XL +6.00); each tee size alone still passes the floor in every zone', async () => {
+    const tee = fx('catalog_prices_tee').body.data.variants, price = (id) => Math.round(Number(tee.find((v) => v.id === id).techniques[0].price) * 100);
+    const sold = Object.keys(PF_VARIANT_IDS).filter((v) => v.startsWith('tee:'));
+    for (const v of sold) { const size = v.split(':')[2]; eq(price(PF_VARIANT_IDS[v]) - PRODUCTS.tee.cost, (PRODUCTS.tee.size_cost[size] || 0), v + ': the extra over the base'); }
+    eq([PRODUCTS.tee.size_cost['2XL'], PRODUCTS.tee.size_cost['3XL'], PRODUCTS.tee.size_cost['4XL']], [200, 400, 600], 'the table');
+    const cat = buildCatalog(PP), T0 = PRODUCTS.tee;
+    for (const now of [Date.parse('2026-12-01T00:00:00Z'), Date.parse('2027-02-01T00:00:00Z')]) for (const [c, z] of Object.entries({ US: 'us_jp', JP: 'us_jp', CA: 'ca_au_nz', AU: 'ca_au_nz', GB: 'uk_eu', DE: 'uk_eu', NO: 'world', HK: 'world' })) for (const s of ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL']) {
+      const ls = [{ qty: 1, group: 'tee', variant: 'tee:black:' + s, unit_cost: T0.cost + (T0.size_cost[s] || 0), line_total: T0.price + (T0.size_price[s] || 0) }], pr = priceBasket(z, ls);
+      ok(marginOf(cat, c, ls, pr.subtotal, pr.ship_fee, now).pass, c + ' tee ' + s + ': under the floor');
+    }
   });
 }

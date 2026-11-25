@@ -4,8 +4,10 @@
 import { fnv } from './util.js';
 
 // Printful wholesale costs (USD cents, S-XL, front print) are estimates until the nightly job writes merch_variants (ECONOMICS.md inputs, 24 Nov 2026).
-// 2XL and up: Printful's extra [not verified: re-read in part 5]; the price adds it rounded up to a dollar (TRANSACTIONS 3).
-const TEE_SIZE_COST = { '2XL': 150, '3XL': 350, '4XL': 550, '5XL': 750 };
+// 2XL and up: Printful's extra; the price adds it rounded up to a dollar (TRANSACTIONS 3). 2XL / 3XL / 4XL: +$2.00 / +$4.00 / +$6.00, Printful's
+// own catalog prices (13.92 / 15.92 / 17.92 against 11.92, test/printful/catalog_prices_tee.json; PART5.md Q25, review fixes). 5XL is not sold and
+// not in Printful's table we read: left as it was.
+const TEE_SIZE_COST = { '2XL': 200, '3XL': 400, '4XL': 600, '5XL': 750 };
 const TEE_SIZE_PRICE = { '2XL': 200, '3XL': 400, '4XL': 600, '5XL': 800 };
 
 export const PRODUCTS = {
