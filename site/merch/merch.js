@@ -68,7 +68,7 @@
   }).filter(function (d) { return d.recipe.b >= 0 && P.check(d.recipe).ok; });
 
   // ---- state
-  var cat = null, st = { src: 'none', dogs: [], linkErr: null, dog: null, draft: null, edit: null, pv: 'on', country: '', quote: null, qerr: null, qn: 0, order: null, view: '',
+  var cat = null, st = { src: 'none', dogs: [], linkErr: null, share: null, dog: null, draft: null, edit: null, pv: 'on', country: '', quote: null, qerr: null, qn: 0, order: null, view: '',
     dropped: 0, payErr: null, nonce: '', nonceKey: '' };
   var basket = [], idN = 0;
   function newId() { idN++; return 'l' + idN.toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -78,7 +78,7 @@
     var h = location.hash, list = null;
     if (/(^#|&)p=/.test(h)) {
       var r = P.merchFromHash(h);
-      if (r.ok) { list = r.dogs.map(function (d) { return P.merchEncode([d.recipe]); }); ssSet(LINK_KEY, JSON.stringify(list)); }
+      if (r.ok) { list = r.dogs.map(function (d) { return P.merchEncode([d.recipe]); }); ssSet(LINK_KEY, JSON.stringify(list)); st.share = shareAsk(h, r.dogs.length); }
       else st.linkErr = r.err || 'bad';
       try { history.replaceState(null, '', location.pathname + location.search + '#/pick'); } catch (e) { location.hash = '#/pick'; }
     }
@@ -116,6 +116,23 @@
     return out;
   }
   function dogById(id) { return st.dogs.concat(READY).filter(function (d) { return d.id === id; })[0] || null; }
+  // the game's share sheet: #p=<one dog>&prod=mug&pose=happy&from=share (docs/design/merch/PART8.md). Each value is checked against the page's
+  // own fixed lists (PROD, POSE_NAME) and never put in the page; anything else, or more than one dog: null, and the page shows its dog list
+  function shareAsk(h, n) {
+    var kv = {}, own = function (T, k) { return typeof k === 'string' && Object.prototype.hasOwnProperty.call(T, k); };
+    String(h).replace(/^#/, '').split('&').forEach(function (x) { var i = x.indexOf('='), k = i > 0 ? x.slice(0, i) : ''; if (/^(prod|pose|from)$/.test(k) && !own(kv, k)) kv[k] = x.slice(i + 1); });
+    return kv.from === 'share' && n === 1 && own(PROD, kv.prod) && own(POSE_NAME, kv.pose) ? { prod: kv.prod, pose: kv.pose } : null;
+  }
+  // once the catalog is in: open "make it" with that dog, that product and that pose, when the catalog has the product on and offers the pose.
+  // The address goes #/pick -> #/thing -> #/make, so Back walks the steps (the address always names the step on show)
+  function openShare() {
+    var a = st.share; st.share = null;
+    if (!a || st.src !== 'link' || st.dogs.length !== 1) return;
+    var p = prodCat(a.prod); if (!p || !colourCat(a.prod, 'white') || p.poses.indexOf(a.pose) < 0) return;
+    pickDog(st.dogs[0].id); startDraft(a.prod); st.draft.pose = a.pose;
+    var at = location.pathname + location.search;
+    try { history.pushState(null, '', at + '#/thing'); history.pushState(null, '', at + '#/make'); } catch (e) { setHash('#/make'); }
+  }
 
   // ---- catalog helpers (the page offers a product only when the catalog has it on AND PawPrint has it on sale: no stickers)
   function prodCat(id) { return cat && typeof id === 'string' ? cat.products.filter(function (p) { return p.id === id; })[0] || null : null; }
@@ -335,7 +352,8 @@
       b.innerHTML = h; readyList($('#readyPick'));
       var n = $('#pickNext'); n.setAttribute('aria-disabled', 'true'); n.removeAttribute('href'); return;
     }
-    if (st.src === 'link') h += '<div class="from link"><span class="ic" aria-hidden="true">🔗</span><p><b>' + (L.length === 1 ? 'One dog' : L.length + ' dogs') + ' came with your link from the game.</b> Only how ' + (L.length === 1 ? 'it looks' : 'they look') + ' came along (name, breed, coat, outfit), and only for this tab.</p></div>';
+    if (st.src === 'link') h += '<div class="from link"><span class="ic" aria-hidden="true">🔗</span><p><b>' + (L.length === 1 ? 'One dog' : L.length + ' dogs') + ' came with your link from the game.</b> Only how ' + (L.length === 1 ? 'it looks' : 'they look') + ' came along (name, breed, coat, outfit), and only for this tab.</p></div>' +
+      '<p class="fromq">' + (L.length === 1 ? 'This is your dog from the game, just as it looks today.' : 'These are your dogs from the game, just as they look today.') + '</p>';
     else h += '<div class="from"><span class="ic" aria-hidden="true">🏡</span><p><b>Here are your dogs from the game in this browser.</b> Each one prints just as it looks today. Want a different outfit? Change it in the game first.</p></div>';
     if (!st.dog || st.dog.src === 'ready' || !dogById(st.dog.id)) st.dog = L[0];
     h += '<ul class="dogs5">' + L.map(function (d) {
@@ -885,7 +903,7 @@
     if (res.dropped || lsGet(BASKET_KEY) !== (basket.length ? JSON.stringify(basket.map(storeLine)) : null)) saveBasket(); else updateBag();
     if (res.dropped) say(st.dropped === 1 ? 'One thing in your basket can\'t be made any more, so we took it out.' : st.dropped + ' things in your basket can\'t be made any more, so we took them out.');
     $('#loading').hidden = true; document.documentElement.classList.add('merch-ready');
-    fillShip(); requote(); route();
+    fillShip(); requote(); openShare(); route();
   }, function () { $('#loading').textContent = 'The shop couldn\'t load just now. Try again in a moment.'; });
 
   // hooks for the tests (merch/test_page.js) and the screenshots

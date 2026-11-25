@@ -40,9 +40,18 @@ Stripe; on itch.io the game is in a frame, so never navigate the frame itself). 
 
 | Piece | Where | State |
 |---|---|---|
-| The small encoder for the game: `WEAR`, `merchRecipe`, `merchEncode` only (a few KB, no art, no decode), made from the one source `merch/pawprint_core.js` by `tools/merch_build.js`, with a test that it equals PawPrint's own encode for every test dog | `merch/game/merch_encode.js` (to copy to `game/src/61_merch_enc.js`, one shared scope: it declares only `MERCH_WEAR`, `merchRecipe`, `merchEncode`) | **to build (MERCH, "part 8b")** |
-| The page side of the share link: `&prod=`, `&pose=`, `&from=share`; a "from the game" line on the dog list | `site/merch/merch.js`, suite `merch_page` | **to build (MERCH, "part 8b")** |
-| The round trip test against the real game build (483 of 483 equal today) | `merch/test_merch_game.js` | done; run it on every release that changes dog art, genes or wearables |
+| The small encoder for the game: `MERCH_WEAR`, `merchRecipe(dog)`, `merchEncode(recipes)`, `merchLink(dogs, opts)` (20 KB, 8.5 KB gz: no art, no decode, no network, no storage). **Generated**: `merch/game/gen.js` copies the WEAR table, the recipe, the name rules and the wire format word for word from `merch/pawprint_core.js` and `merch/names.js` (`--check` fails when the copy is stale); not an ART_VER input. It relies on two game names only, both read lazily: `window.PawGenes` (`BREEDS`, `phenotype`, `STARTER_GENES`) and `window.PawArt` (`DOGS`). Top-level names: `MERCH_WEAR`, `MERCH_SHARE`, `merchKitC`, `merchKit`, `merchMake`, `merchRecipe`, `merchEncode`, `merchLink` (none is used in `game/src/` today) | `merch/game/61_merch_enc.js`: copy it **unchanged** to `game/src/61_merch_enc.js` and list it in `game/src/ORDER.txt` before `23_boot.js` (after `60b_sleep.js`) | **done (part 8b, 25 Nov 2026)**. Test: `node merch/game/test_enc.js` (36 checks: equal to PawPrint for 6098 recipes, 1500 packs, 326 save dogs; the link rules; the game's scope) |
+| The page side of the share link: `&prod=`, `&pose=`, `&from=share` open "make it" with that dog, product and pose (Back walks make → thing → dog list); a quiet line on the dog list from a link: "These are your dogs from the game, just as they look today." | `site/merch/merch.js` (`shareAsk`, `openShare`), `merch.css` (`.fromq`), suite `merch_page` | **done (part 8b)**: 1756 checks (132 new) |
+| The round trip test against the real game build (483 of 483 equal; part 8b: the game's encoder equals PawPrint's for 161 of 161 dogs, and `merchLink` on the live save) | `merch/test_merch_game.js` | done. **On every release that changes dog art, genes, wearables or the core:** `node merch/game/gen.js --check`, `node merch/game/test_enc.js`, then `node game/build.js && node game/harness.js merged && NODE_PATH=$(npm root -g) PAW_ARGS=--ignore-certificate-errors node merch/test_merch_game.js`; if the core changed, run `node merch/game/gen.js` and copy the file again |
+
+### How to wire it (GM)
+
+1. `cp merch/game/61_merch_enc.js game/src/61_merch_enc.js`; add `61_merch_enc.js` to `game/src/ORDER.txt` before `23_boot.js`. Never edit the copy.
+2. The tile and the confirm sheet: `const url = merchLink(S.dogs, { active: S.activeId })`; `url === null` → the "couldn't get your dog ready" line.
+3. The share sheet: `merchLink([dog], { share: { prod: 'mug', pose: 'happy' } })` (one dog only, whatever is passed).
+4. The test copy: `merchLink(dogs, { base: 'https://test.doodledoggo.app/merch/' })`. Open with `window.open(url, '_blank', 'noopener')`.
+5. The count for the sheet ("your {n} dogs") is the number of dogs in the link: `PawPrint` is not in the game, so count with
+   `S.dogs.filter((d) => merchRecipe(d)).slice(0, 8).length` (or one, from the share sheet).
 
 Rule that follows from the first row: **`WEAR` is append only.** A new wearable in the game (`dogs/pawart_dogs.js` `OUT`) must be appended to
 `WEAR` in `merch/pawprint_core.js` in the same release, or the test fails. An item the list lacks is simply not drawn on the print.

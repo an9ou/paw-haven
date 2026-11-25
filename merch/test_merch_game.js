@@ -2,8 +2,12 @@
 // (the starter, two seeded random genotypes, a Bl/bl or merle one) x ages (adult, 3-month puppy, newborn) x outfits (none, two pieces, all six slots)
 // x sparkle / mix head / art seed, the dog the game draws on its share picture (58_share.js shSVG -> dogSVG) is compared, string for string, with
 // PawPrint.dogSVG(merchDecode(merchEncode(merchRecipe(dog)))). Poses: happy (the share picture), sit, idle (stand).
+// Part 8b: the game's own encoder (merch/game/61_merch_enc.js, which the GM copies to game/src/) runs beside it, for the same dogs: its
+// merchEncode([merchRecipe(dog)]) must equal PawPrint's, and PawPrint.merchFromHash must take it. The game's src is one closed IIFE, so the
+// file runs in a wrapper of its own ('use strict', a function scope) that sees only what it would see there: window.PawGenes, window.PawArt.
 //   node game/build.js && node game/harness.js merged && NODE_PATH=$(npm root -g) node tools/merch_build.js && NODE_PATH=$(npm root -g) node merch/test_merch_game.js
-const path = require('path');
+const path = require('path'), fsx = require('fs');
+const ENC = fsx.readFileSync(path.join(__dirname, 'game', '61_merch_enc.js'), 'utf8');
 const { run } = require('../game/test_lib');
 
 run('merch_game', async (t) => {
@@ -11,6 +15,9 @@ run('merch_game', async (t) => {
   await t.boot(); await t.adopt({ sex: 'girl' }); await t.until(() => !!(window.__paw && window.__paw.sh), null, 8000); await t.calm();
   await t.p.addScriptTag({ path: path.join(__dirname, 'dist', 'pawprint.js') });
   ok(await ev(() => !!window.PawPrint && !window.PawPrint.PawArt && window.PawArt && window.PawArt.dog !== undefined), 'PawPrint loads beside the game and keeps its own copy of the art');
+  const winBefore = await ev(() => Object.keys(window).length);
+  await t.p.addScriptTag({ content: "(function () {\n'use strict';\n" + ENC + "\nwindow.__merchEnc = { MERCH_WEAR, merchRecipe, merchEncode, merchLink };\n})();" });
+  ok(await ev((n) => !!window.__merchEnc && Object.keys(window).length === n + 1, winBefore), 'the game\'s encoder (merch/game/61_merch_enc.js) runs in the game page in a scope of its own and adds nothing to window (but the test hook)');
 
   sec('1. the recipe redraws the game dog byte for byte');
   const res = await ev(() => {
@@ -31,13 +38,17 @@ run('merch_game', async (t) => {
         dogs.push(d); n++;
       });
     }
-    const out = { nb: 0, neg: 0, eyeDiff: 0, seedDiff: 0, n: 0, same: 0, bad: [], bytes1: 0, bytes5: 0, lens: [], stages: {}, worn: 0, mix: 0, spk: 0 };
+    const out = { nb: 0, neg: 0, eyeDiff: 0, seedDiff: 0, n: 0, same: 0, bad: [], bytes1: 0, bytes5: 0, lens: [], stages: {}, worn: 0, mix: 0, spk: 0, enc: 0, encSame: 0, encHash: 0, encBad: [] };
+    const E = window.__merchEnc;
     const stripRoot = (s) => { const m = /^<svg\b[^>]*\bclass="([^"]*)"[^>]*>([\s\S]*)<\/svg>$/.exec(s.replace(/\s(?:role|aria-label)="[^"]*"/g, '')); return m ? m[1] + '|' + m[2] : null; };
     for (const d of dogs) {
       const own = S.dogs.some((x) => x.id === d.id); if (!own) S.dogs.push(d);
       try {
         const r0 = P.merchRecipe(d, { today: new Date() }), enc = P.merchEncode(r0), dec = P.merchDecode(enc), r = dec.ok ? dec.dogs[0] : null;
         out.lens.push(enc.length); out.stages[r0.a] = (out.stages[r0.a] || 0) + 1; if (r0.o) out.worn++; if (r0.h !== undefined) out.mix++; if (r0.sp) out.spk++;
+        out.enc++; let ge = null; try { ge = E.merchEncode([E.merchRecipe(d)]); } catch (x) { ge = 'throws: ' + x.message; } // part 8b: the game's encoder
+        if (ge === enc) out.encSame++; else if (out.encBad.length < 3) out.encBad.push({ id: d.id, game: ge, pawprint: enc });
+        const fh = P.merchFromHash('#p=' + ge); if (fh.ok && fh.dogs.length === 1 && JSON.stringify(fh.dogs[0].recipe) === JSON.stringify(r)) out.encHash++;
         for (const pose of ['happy', 'sit', 'idle']) {
           out.n++;
           const sh = window.__paw.sh.svg({ id: d.id, pose, outfit: d.outfit, wet: false, size: 'feed' });
@@ -55,6 +66,9 @@ run('merch_game', async (t) => {
   ok(res.n > 400 && res.same === res.n, `recipe -> SVG equals the game's share-picture dog: ${res.same}/${res.n} renders of ${res.dogs} dogs (${JSON.stringify(res.stages)} adult/puppy/newborn, ${res.worn} dressed, ${res.mix} mixes, ${res.spk} sparkly)`);
   ok(res.eyeDiff === res.neg - res.nb, `the comparison is sharp: other eyes change the drawing for ${res.eyeDiff}/${res.neg} dogs (all but the ${res.nb} newborns, whose eyes are shut); another art seed for ${res.seedDiff}/${res.neg} (only dogs with patches, merle, spots or sparkle depend on it)`);
   if (res.bad.length) console.log(JSON.stringify(res.bad, null, 1));
+  ok(res.enc === res.dogs && res.encSame === res.enc, `the game's encoder: merchEncode([merchRecipe(dog)]) equals PawPrint's for ${res.encSame}/${res.enc} dogs`);
+  if (res.encBad.length) console.log(JSON.stringify(res.encBad, null, 1));
+  ok(res.encHash === res.enc, `PawPrint.merchFromHash('#p=' + that) takes it and reads back the same recipe: ${res.encHash}/${res.enc}`);
   const L = res.lens.slice().sort((a, b) => a - b);
   console.log('  one-dog link payload (base64url chars): min', L[0], 'median', L[L.length >> 1], 'max', L[L.length - 1]);
 
@@ -62,4 +76,18 @@ run('merch_game', async (t) => {
   const fs = await ev(() => { const raw = localStorage.getItem('pawhaven_proto_v1'), r = window.PawPrint.merchFromSave(raw, { today: new Date() }); return { bytes: raw.length, ok: r.ok, dogs: r.dogs.map((x) => ({ key: x.key, name: x.name, active: x.active })), same: r.ok && window.PawPrint.dogSVG(r.dogs[0].recipe, { pose: 'happy' }).replace(/\s(?:role|aria-label)="[^"]*"/g, '').replace(/^<svg[^>]*>/, '') === /<svg x="268" y="246"[^>]*>([\s\S]*?<\/svg>)/.exec(window.__paw.sh.svg({ pose: 'happy', wet: false }))[1] };
   });
   ok(fs.ok && fs.dogs.length === 1 && fs.dogs[0].active && fs.same, 'merchFromSave reads the live save (' + fs.bytes + ' chars) and draws its dog as the share picture does: ' + JSON.stringify(fs.dogs));
+
+  sec('3. the game\'s encoder on the live save, and the game\'s own tables (part 8b)');
+  const g3 = await ev(() => {
+    const E = window.__merchEnc, P = window.PawPrint, S = window.__paw.S, lists = window.__paw.dc && window.__paw.dc.lists;
+    const link = E.merchLink(S.dogs, { active: S.activeId }), share = E.merchLink(S.dogs, { active: S.activeId, share: { prod: 'mug', pose: 'happy' } });
+    const fh = P.merchFromHash(link.slice(link.indexOf('#'))), fs2 = P.merchFromSave(localStorage.getItem('pawhaven_proto_v1'), { today: new Date() });
+    return { link, share, ok: fh.ok, same: fh.ok && JSON.stringify(fh.dogs.map((x) => x.recipe)) === JSON.stringify(fs2.dogs.map((x) => x.recipe)),
+      shareOk: /&prod=mug&pose=happy&from=share$/.test(share) && P.merchFromHash(share.slice(share.indexOf('#'))).dogs.length === 1,
+      wear: E.MERCH_WEAR.length === P.WEAR.length && E.MERCH_WEAR.every((w, i) => w.slot === P.WEAR[i].slot && w.n === P.WEAR[i].n),
+      dc: !!lists && lists.outfits.every((n, i) => E.MERCH_WEAR[i].n === n), dcN: lists ? lists.outfits.length : 0, breeds: window.PawGenes.BREEDS.join() === P.BREEDS.join() };
+  });
+  ok(g3.ok && g3.same && /^https:\/\/doodledoggo\.app\/merch\/#p=/.test(g3.link), 'merchLink(S.dogs, { active }) on the live save: the page reads the same dogs as merchFromSave: ' + g3.link);
+  ok(g3.shareOk, 'the share link: one dog and &prod=mug&pose=happy&from=share: ' + g3.share);
+  ok(g3.wear && g3.dc && g3.breeds, 'MERCH_WEAR = PawPrint.WEAR, it starts with the game\'s DC_OUTFITS (' + g3.dcN + '), and the game\'s PawGenes.BREEDS = PawPrint.BREEDS');
 }, { timeout: 600000 });
