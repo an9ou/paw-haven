@@ -1097,7 +1097,7 @@ export class MerchLedger {
       }
       case 'provider': // T2.2-34 (why 'down'); 'onhold' waits for Printful's hint (T2.2-46)
         if (why === 'onhold') return this.tx(() => this.next(id, null));
-        if (since >= DAY) this.tx(() => this.ownerMail(id, 'provider_down', 'Printful has not answered for 24 hours.'));
+        if (since >= DAY) this.tx(() => this.ownerMail(id, 'provider_down', o.last_error === 'file' ? 'For 24 hours Printful could not use a print file of this order (the file, its URL or its placement): look at the print file (merch.sh show) and the print storage.' : 'Printful has not answered for 24 hours.'));
         return o.provider_order ? this.confirmOrder(o) : this.makeDraft(o);
       case 'address': if (since >= 7 * DAY) return refund('address_7d'); return this.tx(() => this.next(id, o.hold_at + 7 * DAY)); // T2.2-36
       case 'wallet': if (since >= 5 * DAY) return refund('wallet_5d'); return this.confirmOrder(o); // T2.2-38
@@ -1325,7 +1325,7 @@ export class MerchLedger {
       }
       if (r.kind === 'timeout') { guard((x) => this.set(id, { tries: (x.tries || 0) + 1, last_error: 'timeout', next_try_at: this.now() + MIN })); return r; }
       if (r.kind === 'refused') { guard(() => { const t = this.now(); this.set(id, { status: 'held', hold: 'review', why: 'provider', hold_at: t, next_try_at: t + DAY }); this.ownerMail(id, 'review', 'Printful refused the draft without naming a line.'); }); return r; }
-      guard((x) => this.backoff(x)); return r; // down, not set up (T2.2-34)
+      guard((x) => { this.backoff(x); if (r.why === 'file') this.run("update merch_orders set last_error = 'file' where id = ?", id); }); return r; // down, not set up (T2.2-34); a print file Printful could not use (finding 4)
     }
     return { ok: false, kind: 'refused' };
   }

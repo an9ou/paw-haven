@@ -156,9 +156,12 @@ export async function f5() {
   });
   await T('F5-errkind-ledger', 'the ledger: Printful could not fetch our print file: no line refunded, no variant turned off, no address email; tried again, and the draft is made once the file is fetched', async () => {
     const w = await world(); w.pf.refuse.file = 2; const id = await w.paidOrder([mug(0), tee(1)]); await w.advance(5 * MIN);
-    ok(!w.order(id).provider_order && w.order(id).last_error === 'down' && w.lines(id).every((l) => l.status === 'ready'), 'backed off, lines kept: ' + w.lines(id).map((l) => l.status));
+    ok(!w.order(id).provider_order && w.order(id).last_error === 'file' && w.lines(id).every((l) => l.status === 'ready'), 'backed off (the order says why: file), lines kept: ' + w.lines(id).map((l) => l.status));
     ok(!w.one('select id from merch_variants where on_flag = 0') && w.mails(/_address/).length === 0 && w.stripe.refunds.length === 0, 'no variant off, no address email, no refund');
     await w.advance(30 * MIN); ok(w.order(id).provider_order && w.lines(id).every((l) => l.status === 'drafted'), 'then drafted: ' + w.order(id).status + ' ' + w.lines(id).map((l) => l.status));
+    const x = await world(); x.pf.refuse.file = 999; const j = await x.paidOrder([mug(0)]); await x.advance(DAY + 2 * HOUR);
+    ok(x.order(j).status === 'held' && x.order(j).hold === 'provider' && x.lines(j)[0].status === 'ready', 'a file Printful never takes: held provider, the line kept: ' + x.order(j).status + ' ' + x.order(j).hold);
+    const m = x.owner(/provider_down/); ok(m.length === 1 && /could not use a print file/.test(m[0].text), 'after a day the owner hears it is the print file: ' + (m[0] && m[0].text));
   });
 
   /* ---------------- finding 5: costs that are not numbers ---------------- */
