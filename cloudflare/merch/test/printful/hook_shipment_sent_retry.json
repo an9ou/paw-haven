@@ -1,0 +1,41 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Webhook-v2",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "The same event delivered again (only retries changes: \"retried in increasing intervals (after 1, 4, 16, 64, 256 and 1024 minutes)\")."
+ },
+ "headers": {
+  "content-type": "application/json",
+  "x-pf-webhook-public-key": "SbF/9d/uWguI"
+ },
+ "event": {
+  "type": "shipment_sent",
+  "occurred_at": "2026-12-03T16:35:40Z",
+  "retries": 0,
+  "store_id": 10,
+  "data": {
+   "shipment": {
+    "id": 70001,
+    "status": "shipped",
+    "store_id": 10,
+    "tracking_number": "9400100000000000000001",
+    "tracking_url": "https://tracking.example.test/9400100000000000000001",
+    "created_at": "2026-12-03T16:30:00Z",
+    "ship_date": "2026-12-03",
+    "shipped_at": "2026-12-03T16:35:35Z",
+    "delivered_at": null,
+    "reshipment": false
+   },
+   "order": {
+    "id": 93000001,
+    "external_id": "mo_TestOrder0000000000001",
+    "status": "partial",
+    "store_id": 10,
+    "dashboard_url": "https://www.printful.com/dashboard?order_id=93000001",
+    "created_at": "2026-12-01T01:05:00Z",
+    "updated_at": "2026-12-03T16:35:40Z"
+   }
+  }
+ }
+}

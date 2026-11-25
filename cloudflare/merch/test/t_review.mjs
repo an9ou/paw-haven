@@ -6,7 +6,7 @@ import { T, ok, eq, world, mug, tee, PP, ROOT, MIN, HOUR, DAY } from './harness.
 
 const GRACE = 120e3;
 const shipHint = async (w, id) => w.phook(w.pf.hook(w.pfOrder(id), 'package_shipped', 'evt_' + Math.random()));
-const confirms = (w) => w.pf.calls.filter((c) => /\/confirm$/.test(c.path)).length;
+const confirms = (w) => w.pf.calls.filter((c) => /\/confirm(ation)?$/.test(c.path)).length;
 const refunded = (w) => w.stripe.refunds.reduce((a, x) => a + x.amount, 0);
 const shipped = async (w, lines) => { const id = await w.confirmedOrder(lines || [mug(0)]); w.pf.ship(w.order(id).provider_order, w.lines(id).map((l) => id + '_' + l.line), { status: 'fulfilled' }); await shipHint(w, id); return id; };
 const dash = async (w, id, amount) => { const o = w.order(id); w.stripe.dashRefund(o.payment_intent, amount == null ? o.total : amount); return w.hook('charge.refunded', { id: 'ch_' + Math.random(), payment_intent: o.payment_intent, amount: o.total, refunded: amount == null }); };

@@ -1,0 +1,39 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#section/Use-Cases/Order-Management",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "The docs example (\"How to estimate the shipment cost and type\"): in EUR, so the cost read skips it (we read USD only)."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/shipping-rates"
+ },
+ "status": 200,
+ "body": {
+  "data": [
+   {
+    "shipping": "STANDARD",
+    "shipping_method_name": "Flat Rate (Estimated delivery: May 19–24) ",
+    "rate": "13.60",
+    "currency": "EUR",
+    "min_delivery_days": 4,
+    "max_delivery_days": 7,
+    "min_delivery_date": "2022-10-17",
+    "max_delivery_date": "2022-10-20",
+    "shipments": [
+     {
+      "departure_country": "US",
+      "shipment_items": [
+       {
+        "catalog_variant_id": 4011,
+        "quantity": 3
+       }
+      ],
+      "customs_fees_possible": true
+     }
+    ]
+   }
+  ]
+ }
+}

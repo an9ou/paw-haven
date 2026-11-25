@@ -1,0 +1,21 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Orders-v2/operation/confirmOrder",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "No documented example: an invented message about the charge (the adapter matches billing, payment, charge, card, funds, wallet). To record with the key (an empty wallet in a test store)."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/orders/93000001/confirmation"
+ },
+ "status": 400,
+ "body": {
+  "code": 400,
+  "result": "Order could not be charged: no valid billing method",
+  "error": {
+   "reason": "BadRequest",
+   "message": "Order could not be charged: no valid billing method"
+  }
+ }
+}

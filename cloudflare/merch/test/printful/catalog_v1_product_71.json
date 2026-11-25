@@ -1,0 +1,1466 @@
+{
+ "_source": {
+  "url": "https://api.printful.com/products/71",
+  "read": "2026-11-25",
+  "recorded": "public",
+  "note": "A real reply of the public catalog route (no key), trimmed: the product's id, title, type, techniques and files, and only the variants we offer (42 of 628)."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/products/71"
+ },
+ "status": 200,
+ "body": {
+  "code": 200,
+  "result": {
+   "product": {
+    "id": 71,
+    "title": "Unisex Staple T-Shirt | Bella + Canvas 3001",
+    "type": "T-SHIRT",
+    "techniques": [
+     {
+      "key": "DTG",
+      "display_name": "DTG printing",
+      "is_default": true
+     },
+     {
+      "key": "EMBROIDERY",
+      "display_name": "Embroidery",
+      "is_default": false
+     },
+     {
+      "key": "DTFILM",
+      "display_name": "DTF printing",
+      "is_default": false
+     }
+    ],
+    "files": [
+     {
+      "id": "embroidery_chest_left",
+      "type": "embroidery_chest_left",
+      "title": "Left chest",
+      "additional_price": "2.95"
+     },
+     {
+      "id": "embroidery_chest_center",
+      "type": "embroidery_chest_center",
+      "title": "Center chest",
+      "additional_price": "2.95"
+     },
+     {
+      "id": "embroidery_sleeve_left_top",
+      "type": "embroidery_sleeve_left_top",
+      "title": "Left sleeve top",
+      "additional_price": "2.95"
+     },
+     {
+      "id": "embroidery_sleeve_right_top",
+      "type": "embroidery_sleeve_right_top",
+      "title": "Right sleeve top",
+      "additional_price": "2.95"
+     },
+     {
+      "id": "default",
+      "type": "front",
+      "title": "Front print",
+      "additional_price": null
+     },
+     {
+      "id": "front_dtf",
+      "type": "front_dtf",
+      "title": "Front print",
+      "additional_price": "5.95"
+     },
+     {
+      "id": "front_large",
+      "type": "front_large",
+      "title": "Large front print",
+      "additional_price": "5.95"
+     },
+     {
+      "id": "back",
+      "type": "back",
+      "title": "Back print",
+      "additional_price": "5.95"
+     },
+     {
+      "id": "back_dtf",
+      "type": "back_dtf",
+      "title": "Back print",
+      "additional_price": "5.95"
+     },
+     {
+      "id": "sleeve_left",
+      "type": "sleeve_left",
+      "title": "Left sleeve",
+      "additional_price": "2.49"
+     },
+     {
+      "id": "sleeve_right",
+      "type": "sleeve_right",
+      "title": "Right sleeve",
+      "additional_price": "2.49"
+     },
+     {
+      "id": "short_sleeve_left_dtf",
+      "type": "short_sleeve_left_dtf",
+      "title": "Short left sleeve",
+      "additional_price": "2.49"
+     },
+     {
+      "id": "short_sleeve_right_dtf",
+      "type": "short_sleeve_right_dtf",
+      "title": "Short right sleeve",
+      "additional_price": "2.49"
+     },
+     {
+      "id": "label_inside",
+      "type": "label_inside",
+      "title": "Inside label",
+      "additional_price": "0.99"
+     },
+     {
+      "id": "label_outside",
+      "type": "label_outside",
+      "title": "Outside label",
+      "additional_price": "2.49"
+     },
+     {
+      "id": "label_inside_dtf",
+      "type": "label_inside_dtf",
+      "title": "Inside label",
+      "additional_price": "0.99"
+     },
+     {
+      "id": "preview",
+      "type": "mockup",
+      "title": "Mockup",
+      "additional_price": null
+     }
+    ]
+   },
+   "variants": [
+    {
+     "id": 6952,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Athletic Heather / 2XL)",
+     "size": "2XL",
+     "color": "Athletic Heather",
+     "color_code": "#cececc",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 6950,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Athletic Heather / L)",
+     "size": "L",
+     "color": "Athletic Heather",
+     "color_code": "#cececc",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 6949,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Athletic Heather / M)",
+     "size": "M",
+     "color": "Athletic Heather",
+     "color_code": "#cececc",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 6948,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Athletic Heather / S)",
+     "size": "S",
+     "color": "Athletic Heather",
+     "color_code": "#cececc",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 6951,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Athletic Heather / XL)",
+     "size": "XL",
+     "color": "Athletic Heather",
+     "color_code": "#cececc",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4020,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / 2XL)",
+     "size": "2XL",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 5295,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / 3XL)",
+     "size": "3XL",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "15.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 5310,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / 4XL)",
+     "size": "4XL",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "17.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4018,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / L)",
+     "size": "L",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4017,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / M)",
+     "size": "M",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4016,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / S)",
+     "size": "S",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4019,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / XL)",
+     "size": "XL",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9527,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Black / XS)",
+     "size": "XS",
+     "color": "Black",
+     "color_code": "#0c0c0c",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9364,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / 2XL)",
+     "size": "2XL",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9362,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / L)",
+     "size": "L",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9361,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / M)",
+     "size": "M",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9360,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / S)",
+     "size": "S",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9363,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / XL)",
+     "size": "XL",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9576,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Heather Prism Ice Blue / XS)",
+     "size": "XS",
+     "color": "Heather Prism Ice Blue",
+     "color_code": "#c3e2e3",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4115,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / 2XL)",
+     "size": "2XL",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4113,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / L)",
+     "size": "L",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4112,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / M)",
+     "size": "M",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4111,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / S)",
+     "size": "S",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4114,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / XL)",
+     "size": "XL",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 9546,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Navy / XS)",
+     "size": "XS",
+     "color": "Navy",
+     "color_code": "#212642",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4140,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Pink / 2XL)",
+     "size": "2XL",
+     "color": "Pink",
+     "color_code": "#fdbfc7",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4138,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Pink / L)",
+     "size": "L",
+     "color": "Pink",
+     "color_code": "#fdbfc7",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4137,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Pink / M)",
+     "size": "M",
+     "color": "Pink",
+     "color_code": "#fdbfc7",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4136,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Pink / S)",
+     "size": "S",
+     "color": "Pink",
+     "color_code": "#fdbfc7",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4139,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Pink / XL)",
+     "size": "XL",
+     "color": "Pink",
+     "color_code": "#fdbfc7",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4155,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Soft Cream / 2XL)",
+     "size": "2XL",
+     "color": "Soft Cream",
+     "color_code": "#e7d4c0",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4153,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Soft Cream / L)",
+     "size": "L",
+     "color": "Soft Cream",
+     "color_code": "#e7d4c0",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4152,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Soft Cream / M)",
+     "size": "M",
+     "color": "Soft Cream",
+     "color_code": "#e7d4c0",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4151,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Soft Cream / S)",
+     "size": "S",
+     "color": "Soft Cream",
+     "color_code": "#e7d4c0",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4154,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (Soft Cream / XL)",
+     "size": "XL",
+     "color": "Soft Cream",
+     "color_code": "#e7d4c0",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4015,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / 2XL)",
+     "size": "2XL",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "13.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 5294,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / 3XL)",
+     "size": "3XL",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "15.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 5309,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / 4XL)",
+     "size": "4XL",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "17.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4013,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / L)",
+     "size": "L",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4012,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / M)",
+     "size": "M",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4011,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / S)",
+     "size": "S",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    },
+    {
+     "id": 4014,
+     "product_id": 71,
+     "name": "Bella + Canvas 3001 Unisex Short Sleeve Jersey T-Shirt with Tear Away Label (White / XL)",
+     "size": "XL",
+     "color": "White",
+     "color_code": "#ffffff",
+     "price": "11.92",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

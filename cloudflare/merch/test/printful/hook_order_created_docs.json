@@ -1,0 +1,27 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Webhook-v2",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "The docs' \"Event example\" of order_created, as printed (its order has created/updated numbers, a trailing comma removed so it is JSON, and external_id null)."
+ },
+ "headers": {
+  "content-type": "application/json"
+ },
+ "event": {
+  "type": "order_created",
+  "occurred_at": "2023-04-04T12:36:42Z",
+  "retries": 0,
+  "store_id": 123456,
+  "data": {
+   "order": {
+    "id": 11111,
+    "external_id": null,
+    "status": "pending",
+    "created": 1680611801,
+    "updated": 1680611802,
+    "dashboard_url": "https://www.printful.test/dashboard?order_id=90630659"
+   }
+  }
+ }
+}

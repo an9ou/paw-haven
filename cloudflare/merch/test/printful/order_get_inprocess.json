@@ -1,0 +1,122 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Orders-v2/operation/getOrder",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "inprocess: \"order is being fulfilled and is no longer cancellable\"."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/orders/93000001"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "id": 93000001,
+   "external_id": "mo_TestOrder0000000000001",
+   "store_id": 10,
+   "shipping": "STANDARD",
+   "status": "inprocess",
+   "created_at": "2026-12-01T01:05:00Z",
+   "updated_at": "2026-12-01T01:05:02Z",
+   "recipient": {
+    "name": "Test Buyer",
+    "company": "",
+    "address1": "1 Example Street",
+    "address2": "",
+    "city": "Exampleton",
+    "state_code": "CA",
+    "state_name": "California",
+    "country_code": "US",
+    "country_name": "United States",
+    "zip": "90001",
+    "phone": "",
+    "email": "",
+    "tax_number": ""
+   },
+   "costs": {
+    "calculation_status": "done",
+    "currency": "USD",
+    "subtotal": "17.99",
+    "discount": "0.00",
+    "shipping": "11.64",
+    "digitization": "0.00",
+    "additional_fee": "0.00",
+    "fulfillment_fee": "0.00",
+    "retail_delivery_fee": "0.00",
+    "vat": "0.00",
+    "tax": "0.00",
+    "total": "29.63"
+   },
+   "retail_costs": {
+    "calculation_status": "done",
+    "currency": "USD",
+    "subtotal": "46.98",
+    "discount": "0.00",
+    "shipping": "4.99",
+    "vat": "0.00",
+    "tax": "0.00",
+    "total": "51.97"
+   },
+   "order_items": [
+    {
+     "id": 510001,
+     "type": "order_item",
+     "source": "catalog",
+     "catalog_variant_id": 1320,
+     "external_id": "mo_TestOrder0000000000001_1",
+     "quantity": 1,
+     "name": "Mug with your dog",
+     "price": "6.07",
+     "retail_price": "19.99",
+     "currency": "USD",
+     "retail_currency": "USD",
+     "_links": {
+      "self": {
+       "href": "https://api.printful.com/v2/orders/93000001/order-items/510001"
+      }
+     }
+    },
+    {
+     "id": 510002,
+     "type": "order_item",
+     "source": "catalog",
+     "catalog_variant_id": 4112,
+     "external_id": "mo_TestOrder0000000000001_2",
+     "quantity": 1,
+     "name": "Tee with your dog",
+     "price": "11.92",
+     "retail_price": "26.99",
+     "currency": "USD",
+     "retail_currency": "USD",
+     "_links": {
+      "self": {
+       "href": "https://api.printful.com/v2/orders/93000001/order-items/510002"
+      }
+     }
+    }
+   ],
+   "customization": {
+    "gift": null,
+    "packing_slip": null
+   },
+   "_links": {
+    "self": {
+     "href": "https://api.printful.com/v2/orders/93000001"
+    },
+    "order_confirmation": {
+     "href": "https://api.printful.com/v2/orders/93000001/confirmation"
+    },
+    "order_invoices": {
+     "href": "https://api.printful.com/v2/orders/93000001/invoices"
+    },
+    "order_items": {
+     "href": "https://api.printful.com/v2/orders/93000001/order-items"
+    },
+    "shipments": {
+     "href": "https://api.printful.com/v2/orders/93000001/shipments"
+    }
+   }
+  }
+ }
+}

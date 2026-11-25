@@ -46,17 +46,21 @@ MERCH_OWNER_TO = ""                        # the owner's address for owner email
 MERCH_SELLER_NAME = ""                     # part 6: the seller's legal name for the email footer; empty = the line is left out (never invented)
 MERCH_SELLER_ADDR = ""                     # part 6: the seller's business address for the same line; set by the owner with the name
 MERCH_GIFT_NAME = ""                       # part 6: the thank-you gift's item name; empty = "a little gift for your dog in the game"
+MERCH_PROVIDER_STORE = ""                  # part 5: Printful's store id, only with an account-level token (sent as X-PF-Store-Id); empty for a store token
+MERCH_PF_V1_CANCEL = "1"                   # part 5: "0" never uses v1's cancel of a confirmed order (v2 has none): the owner cancels it in the dashboard
+MERCH_PF_PRICE_REGION = "worldwide"        # part 5: the nightly price read (v2 selling region; no production currency = Printful's highest price)
 
 # Secrets (wrangler secret put, by the owner; never in the repo or chat):
 #   MERCH_STRIPE_KEY              restricted: Checkout Sessions write, Refunds write, Charges / PaymentIntents / Disputes read
 #   MERCH_STRIPE_WEBHOOK_SECRET   the merch account's webhook endpoint (events: TRANSACTIONS.md 6.3)
-#   MERCH_PROVIDER_KEY            Printful (part 5)
-#   MERCH_PROVIDER_WEBHOOK_SECRET Printful's signing secret, if Printful signs (part 5)
+#   MERCH_PROVIDER_KEY            Printful private token (part 5): scopes orders, file_library, webhooks
+#   MERCH_PROVIDER_WEBHOOK_SECRET Printful webhook v2 secret_key (hex, shown once when the webhook is set up; part 5)
 #   MERCH_FILE_KEY                signs the print file links (random, 32+ bytes)
 #   MERCH_HASH_KEY                HMAC for email and IP hashes (random, 32+ bytes; never rotate without a plan: flags use it)
 #   MERCH_ADMIN_KEY               tools/merch.sh (random, 32+ bytes)
 #   RESEND_API_KEY                send-only, this Worker
 # Never set in production: STRIPE_FETCH, PROVIDER_FETCH, RENDER_FETCH, MAIL_FETCH, NOW, PAWPRINT (test seams). Without them part 3 refuses every order.
+# (Part 5: without PROVIDER_FETCH the printer adapter uses the global fetch on Cloudflare once MERCH_PROVIDER_KEY is set.)
 
 # [env.test]: wrangler does NOT inherit vars, Durable Object bindings or the browser binding into an environment (S12), so every one is repeated
 # here. Top-level keys that are inherited (main, compatibility_date, migrations, triggers, assets): checked again at the first test deploy (part 9).
@@ -93,4 +97,7 @@ MERCH_OWNER_TO = ""
 MERCH_SELLER_NAME = ""
 MERCH_SELLER_ADDR = ""
 MERCH_GIFT_NAME = ""
+MERCH_PROVIDER_STORE = ""                  # part 5: a separate Printful test store (v2 docs: "Create a separate store to test scenarios")
+MERCH_PF_V1_CANCEL = "1"
+MERCH_PF_PRICE_REGION = "worldwide"
 # The test Worker's secrets are its own (sandbox keys), set with `wrangler secret put --env test`: the same names as above.

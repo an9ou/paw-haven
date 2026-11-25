@@ -1,0 +1,82 @@
+{
+ "_source": {
+  "url": "https://api.printful.com/products/19",
+  "read": "2026-11-25",
+  "recorded": "public",
+  "note": "A real reply of the public catalog route (no key), trimmed: the product's id, title, type, techniques and files, and only the variants we offer (1 of 3)."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/products/19"
+ },
+ "status": 200,
+ "body": {
+  "code": 200,
+  "result": {
+   "product": {
+    "id": 19,
+    "title": "White Glossy Mug",
+    "type": "MUG",
+    "techniques": [
+     {
+      "key": "SUBLIMATION",
+      "display_name": "Sublimation",
+      "is_default": true
+     }
+    ],
+    "files": [
+     {
+      "id": "default",
+      "type": "default",
+      "title": "Print file",
+      "additional_price": null
+     },
+     {
+      "id": "preview",
+      "type": "mockup",
+      "title": "Mockup",
+      "additional_price": null
+     }
+    ]
+   },
+   "variants": [
+    {
+     "id": 1320,
+     "product_id": 19,
+     "name": "White Glossy Mug 11 oz",
+     "size": "11 oz",
+     "color": "White",
+     "color_code": null,
+     "price": "6.07",
+     "in_stock": true,
+     "availability_status": [
+      {
+       "region": "US",
+       "status": "in_stock"
+      },
+      {
+       "region": "EU",
+       "status": "in_stock"
+      },
+      {
+       "region": "CA",
+       "status": "in_stock"
+      },
+      {
+       "region": "UK",
+       "status": "in_stock"
+      },
+      {
+       "region": "JP",
+       "status": "in_stock"
+      },
+      {
+       "region": "AU",
+       "status": "in_stock"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

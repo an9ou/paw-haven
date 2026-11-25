@@ -1,0 +1,22 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#section/Use-Cases/Order-Management",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "The docs example of a new estimation task (\"Estimating orders\")."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/order-estimation-tasks"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "id": "fc959efb-b3a0-4c12-9cc6-f54d3158291d",
+   "status": "pending",
+   "costs": null,
+   "retail_costs": null,
+   "failure_reasons": []
+  }
+ }
+}

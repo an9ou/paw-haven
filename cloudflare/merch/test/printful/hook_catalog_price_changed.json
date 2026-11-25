@@ -1,0 +1,25 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Webhook-v2",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "A store event with no order (catalog_price_changed): logged as unknown."
+ },
+ "headers": {
+  "content-type": "application/json",
+  "x-pf-webhook-public-key": "SbF/9d/uWguI"
+ },
+ "event": {
+  "type": "catalog_price_changed",
+  "occurred_at": "2026-12-03T16:35:40Z",
+  "retries": 0,
+  "store_id": 10,
+  "data": {
+   "products": [
+    {
+     "id": 71
+    }
+   ]
+  }
+ }
+}

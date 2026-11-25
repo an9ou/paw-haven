@@ -1,0 +1,20 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#section/Errors",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "The InternalServerError example (RFC 9457 problem details), used by every v2 route for 5XX."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/orders"
+ },
+ "status": 500,
+ "body": {
+  "type": "https://developers.printful.com/docs/v2-beta/#errors/internal-server-error",
+  "status": 500,
+  "title": "Internal Server Error",
+  "details": "An error occurred and we have been notified. You can contact us for more information.",
+  "instance": "tag:api.printful.com,2023-10-04:errors/86657"
+ }
+}

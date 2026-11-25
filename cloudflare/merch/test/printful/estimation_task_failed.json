@@ -1,0 +1,24 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Orders-v2/operation/getOrderEstimationTask",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "failure_reasons example: \"Recipient: Country cannot be blank.\""
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/order-estimation-tasks?id=fc959efb-b3a0-4c12-9cc6-f54d3158291d"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "id": "fc959efb-b3a0-4c12-9cc6-f54d3158291d",
+   "status": "failed",
+   "costs": null,
+   "retail_costs": null,
+   "failure_reasons": [
+    "Recipient: Country cannot be blank."
+   ]
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/#tag/Orders-API/operation/cancelOrderById",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "After fulfilment started (\"inprocess - order is being fulfilled and is no longer cancellable\"): no documented example; invented text."
+ },
+ "request": {
+  "method": "DELETE",
+  "path": "/orders/93000001"
+ },
+ "status": 400,
+ "body": {
+  "code": 400,
+  "result": "This order can not be cancelled",
+  "error": {
+   "reason": "BadRequest",
+   "message": "This order can not be cancelled"
+  }
+ }
+}

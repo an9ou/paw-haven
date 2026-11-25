@@ -1,0 +1,21 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/#tag/Examples",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "Item errors name the item by its place in the request: \"Item 0: ...\" (the v1 Orders example error); the text after it is invented. Item 1 = the second order item (the tee). To record with the key."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/orders"
+ },
+ "status": 400,
+ "body": {
+  "code": 400,
+  "result": "Item 1: This product variant is out of stock",
+  "error": {
+   "reason": "BadRequest",
+   "message": "Item 1: This product variant is out of stock"
+  }
+ }
+}
