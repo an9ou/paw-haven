@@ -77,11 +77,12 @@ run('v230_together', async (t) => {
       const P = window.__paw, S = P.S, was = S.newsSeen, out = {};
       P.nw.v230(); // v2.30 in the list, as from 25 Nov
       P.nw.v233(''); // v2.33 (from 26 Nov, a newer date) out of the list for this check: it is about v2.30 and v2.32 (test_v233_helps C5 has v2.33)
+      P.nw.v2332(false); // v2.33.2 (minor, 25 Nov) too: it would be the newest id (test_v2182_news 7 has v2.33.2)
       const lead = (seen) => { S.newsSeen = seen; P.nw.auto(); const h = document.querySelector('#modal .nw-sheet h3'); const r = h ? h.textContent : null; out.all = out.all || [...document.querySelectorAll('#modal .nw-sheet h3')].map((x) => x.textContent).join('|'); const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return r; };
       out.a = lead('2.31'); out.seenA = S.newsSeen; out.b = lead('2.29');
       P.nw.add({ id: '2.31.99', date: '2099-01-01', minor: true, title: () => 'Small things' }); // a later small entry (this page is thrown away after this section)
       out.c = lead('2.30'); out.d = lead('2.31'); out.e = lead('2.18.2'); out.f = lead('9.9');
-      S.newsSeen = was; P.nw.v233(null); return out;
+      S.newsSeen = was; P.nw.v233(null); P.nw.v2332(true); return out;
     });
     // owner, 20 Nov 2026: v2.32 "A letter from your dog" opens the same day as v2.30, so it leads (same date, higher id) and v2.30 is on the same sheet
     ok(n.a === 'A letter from your dog' && n.seenA === '2.32.1' && /Better together/.test(n.all), 'v2.31 seen: the automatic sheet leads with v2.32, shows v2.30 with it, and marks the newest id (2.32.1, the minor Fun Fair note) seen: ' + n.a + ' / ' + n.seenA + ' / ' + n.all);

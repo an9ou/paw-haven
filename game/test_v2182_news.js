@@ -21,8 +21,8 @@ run('v2182_news', async (t) => {
   const jst = await ev(() => window.__paw.rh.jst()); // the page's Japan date (the harness pins the page clock to 10:00 local today, so near midnight in Japan it can differ from node's) // v2.23.2 Cantonese news from 9 Nov 2026 (JST)
   const ks = await ev(() => { const K = window.__paw.ks; return K ? { live: !!K.live, date: K.newsDate } : { live: false, date: '' }; }); // v2.24 Kind shop: its news leads once SHOP_LIVE is on and its date has come (JST)
   const d233 = await ev(() => window.__paw.nw.v233Date()); // v2.33 Helping paws: its date is HP_FROM (60_helps.js), '2026-11-26'
-  const want = d233 && jst >= d233 ? '2.33' : jst >= '2026-11-20' ? '2.32.1' : jst >= '2026-11-18' ? '2.31' : jst >= '2026-11-12' ? '2.25' : ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
-  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.33 Helping paws from 26 Nov (HP_FROM), 2.32.1 Where is the Fun Fair? (minor), 2.32 A letter from your dog and 2.30 Better together from 20 Nov, 2.31 Share my dog from 18 Nov, 2.25 Glad you\'re back from 12 Nov, 2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
+  const want = d233 && jst >= d233 ? '2.33' : jst >= '2026-11-25' ? '2.33.2' : jst >= '2026-11-20' ? '2.32.1' : jst >= '2026-11-18' ? '2.31' : jst >= '2026-11-12' ? '2.25' : ks.live && jst >= '2026-11-10' ? '2.24.1' : ks.live && jst >= ks.date ? '2.24' : (await ev(() => window.__paw.v221.on())) ? (jst >= '2026-11-09' ? '2.23.2' : '2.23') : '2.19.3';
+  ok(latest === want && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id (2.33 Helping paws from 26 Nov (HP_FROM), 2.33.2 A Christmas tune at the Winter Market (minor) from 25 Nov, 2.32.1 Where is the Fun Fair? (minor), 2.32 A letter from your dog and 2.30 Better together from 20 Nov, 2.31 Share my dog from 18 Nov, 2.25 Glad you\'re back from 12 Nov, 2.24.1 Delivered! from 10 Nov, 2.24 Kind shop once SHOP_LIVE is on and its date has come, else 2.23.2 Cantonese once the v2.20-v2.23 launch is live and it is 9 Nov, else Daily rhythm 2.19.3): ' + latest);
   await t.home('yard'); ok(await noNews(5000), 'no news sheet on a new save');
 
   sec('2. an old save: S.newsSeen added by migrate(), the sheet shows once, not again after a reload');
@@ -87,4 +87,33 @@ run('v2182_news', async (t) => {
     }
     await t.ctx.close();
   }
+
+  sec('7. v2.33.2 (minor, 25 Nov) and v2.33 Helping paws (26 Nov, HP_FROM): the page clock on each day (JST)');
+  const realOff = t.clockOffset, XMAS = 'A Christmas tune at the Winter Market';
+  for (const day of ['2026-11-25', '2026-11-26']) {
+    t.clockOffset = new Date(day + 'T10:00:00').getTime() - Date.now(); // 10:00 local that day, as opts.date does; newGame hands it to the page
+    await t.newGame({ prefs: { nwTest: true } });
+    await t.until(() => !!(window.__paw && window.__paw.nw), null, 5000);
+    const r = await ev(() => {
+      const P = window.__paw, S = P.S, out = { jst: P.rh.jst(), list: P.nw.list(), latest: P.nw.latest(), fresh: S.newsSeen };
+      const lead = (seen) => { S.newsSeen = seen; P.nw.auto(); const h = [...document.querySelectorAll('#modal .nw-sheet h3')].map((x) => x.textContent); const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return { h, seen: S.newsSeen }; };
+      out.a = lead('2.32.1'); out.b = lead('2.31'); out.c = lead('2.33.2'); S.newsSeen = out.latest; return out;
+    });
+    const H = (x) => x.h.join(' | ') + ' (seen ' + x.seen + ')';
+    ok(r.jst === day, 'the page is on ' + day + ' in Japan: ' + r.jst);
+    if (day === '2026-11-25') {
+      ok(r.list[0] === '2.33.2' && !r.list.includes('2.33') && r.latest === '2.33.2' && r.fresh === '2.33.2', '25 Nov: the Christmas tune note is the newest entry, Helping paws not in the list yet, a new save starts on 2.33.2: ' + r.list.slice(0, 4).join(','));
+      ok(r.a.h[0] === XMAS && r.a.h.length === 1 && r.a.seen === '2.33.2', '25 Nov, everything else seen (2.32.1): the small Christmas tune page opens once: ' + H(r.a));
+      ok(r.b.h[0] === 'A letter from your dog' && !r.b.h.includes(XMAS) && r.b.seen === '2.33.2', '25 Nov, a bigger update not seen (2.31 seen): that update leads, never the minor note: ' + H(r.b));
+    } else {
+      ok(r.list[0] === '2.33' && r.list[1] === '2.33.2' && r.latest === '2.33' && r.fresh === '2.33', '26 Nov: Helping paws is the newest entry, the Christmas tune note right after it, a new save starts on 2.33: ' + r.list.slice(0, 4).join(','));
+      ok([r.a, r.b, r.c].every((x) => x.h[0] === 'Helping paws' && !x.h.includes(XMAS) && x.seen === '2.33'), '26 Nov: the automatic sheet leads with Helping paws (alone on its page) whether 2.32.1, 2.31 or 2.33.2 was seen last: ' + [r.a, r.b, r.c].map(H).join(' / '));
+    }
+    await ev((seen) => { const P = window.__paw; P.S.newsSeen = seen; P.saveNow(); }, day === '2026-11-25' ? '2.32.1' : '2.33.2');
+    ok(await waitNews(9000), day + ': on a calm yard the sheet opens by itself');
+    const h = await ev(() => document.querySelector('#modal .nw-page.big h3').textContent);
+    ok(h === (day === '2026-11-25' ? XMAS : 'Helping paws'), day + ': it leads with ' + h);
+    await closeNews(); await t.ctx.close();
+  }
+  t.clockOffset = realOff;
 }, { timeout: 400000 });
