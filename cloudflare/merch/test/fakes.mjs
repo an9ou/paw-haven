@@ -140,7 +140,7 @@ export async function pfSign(secret, raw) {
   return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(raw))), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 export function fakePrintful() {
-  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0, after: {}, calc: 0 };
+  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, lostConfirm: [], timeoutCreate: 0, after: {}, calc: 0 };
   const take = (k) => { if (P.fail[k] > 0) { P.fail[k]--; return true; } return false; };
   const ourOf = (vid) => PF_REV[vid] || null; // 'tee:navy:M'
   const costsOf = (o) => ({ calculation_status: o.calc > 0 ? 'calculating' : 'done', currency: 'USD', subtotal: o.calc > 0 ? null : o.c.subtotal, discount: '0.00', shipping: o.calc > 0 ? null : o.c.shipping,
@@ -206,8 +206,13 @@ export function fakePrintful() {
       if (mm[3] === '/confirmation') {
         if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return pfProblem(503, 'Service Unavailable');
         if (P.refuse.billing) return pfErr(400, 'Order could not be charged: no valid billing method');
+        // part 5 fixes: Printful confirms a draft (or a failed order sent again), never an order it took already: a second confirm is refused
+        if (P.refuse.confirm || !['draft', 'failed'].includes(o.status)) return pfErr(400, 'Order cannot be confirmed');
         if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); }
-        o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o); return out(o);
+        o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o);
+        // review finding 2: Printful took the confirm, then the answer was lost: 'drop' (the connection fails) or '5xx' (a gateway error)
+        const lost = P.lostConfirm && P.lostConfirm.shift(); if (lost === 'drop') throw new Error('connection reset'); if (lost === '5xx') return pfProblem(502, 'Bad Gateway');
+        return out(o);
       }
       if (m === 'PATCH') {
         if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + ((body.recipient && body.recipient.country_code) || 'US') + '`');

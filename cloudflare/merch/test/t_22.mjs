@@ -393,8 +393,8 @@ export async function t22() {
     const exp = Math.floor(w.clock.t / 1000) + 600, missing = '/merch/file/p-2026-12-01~nope~1/' + exp + '/' + await hmacHex(w.env.MERCH_FILE_KEY, 'p-2026-12-01~nope~1/' + exp) + '.png'; ok((await w.call('GET', missing)).status === 404, 'signed but missing: 404');
   });
   await T('T2.2-55', 'the Worker or object stops mid-step (timeouts and real kills after the confirm and the refund): the confirming claim is re-read (GET first); a sending refund is retried', async () => {
-    const w = await world(); const id = await w.drafted([tee(0)]); w.pf.timeoutConfirm = 1; await w.advance(w.order(id).cancel_until + GRACE - w.clock.t);
-    eq(w.order(id).status, 'confirming', 'stuck in confirming (result unknown)'); await w.advance(2 * MIN + 1);
+    const w = await world(); const id = await w.drafted([tee(0)]); w.pf.timeoutConfirm = 1; w.pf.fail.get = 1; await w.advance(w.order(id).cancel_until + GRACE - w.clock.t);
+    eq(w.order(id).status, 'confirming', 'stuck in confirming (result unknown; the adapter\'s own re-read failed too: part 5 fixes, finding 2)'); await w.advance(2 * MIN + 1);
     eq(w.order(id).status, 'confirmed', 'the alarm re-read Printful (already pending) and finished'); ok(w.pf.calls.filter((c) => /confirm/.test(c.path)).length === 1, 'no second confirm');
     const x = await world(); const j = await x.paidOrder([mug(0)]); x.stripe.fail.refund = 1; await x.call('POST', '/merch/order/' + j + '/cancel', {});
     await x.advance(6 * MIN); ok(x.one('select status from merch_refunds where order_id = ?', j).status === 'done', 'the sending refund was retried');

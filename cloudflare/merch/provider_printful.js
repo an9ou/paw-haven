@@ -14,6 +14,7 @@ const BASE = 'https://api.printful.com';
 const PLACE = { mug: ['default', 'sublimation'], tee: ['front_large', 'dtg'], stickers: ['default', 'digital'] };
 const SHIPPED = ['shipped', 'returned']; // shipment_status of a parcel that left (others: pending, onhold, canceled, packaged, outstock)
 const NO_SHIPMENTS = ['draft', 'failed']; // order statuses that cannot have shipments: no second read
+const TAKEN = ['pending', 'inprocess', 'onhold', 'partial', 'fulfilled']; // a confirm was taken (mapOrder already turned inreview into pending)
 const REV = Object.fromEntries(Object.entries(PF_VARIANT_IDS).map(([k, v]) => [String(v), k]));
 export const pfVariant = (pv) => PF_VARIANT_IDS[String(pv || '').replace(/^pf:/, '')] || null;
 
@@ -130,7 +131,16 @@ export const update = (env, id, recipient) => pf(env, 'PATCH', '/v2/orders/' + i
 export async function confirm(env, id) {
   if (env.MERCH_PROVIDER_MODE !== 'live') return { ok: false, kind: 'cannot', why: 'draft_mode' };
   if (env.MERCH_TEST === '1') return { ok: false, kind: 'cannot', why: 'test' };
-  const r = await pf(env, 'POST', '/v2/orders/' + id + '/confirmation'); if (!r.ok) return r;
+  const r = await pf(env, 'POST', '/v2/orders/' + id + '/confirmation');
+  if (!r.ok) {
+    // review finding 2: Printful may have taken the confirm and the answer was lost (a dropped connection, a 5xx, a timeout), or this is a
+    // second confirm of an order it already took (it refuses that). Its order says which: past the draft, the confirm was taken. A billing
+    // refusal is never re-read (it is the wallet hold's answer: nothing is charged), and only a confirmed status turns a refusal into ok.
+    if (r.kind === 'billing') return r;
+    const g = await get(env, id);
+    if (g.ok && g.data && TAKEN.includes(g.data.status)) return { ok: true, data: g.data, reread: r.kind };
+    return r;
+  }
   const d = mapOrder(r.json && r.json.data, []); if (!d) return { ok: false, kind: 'down', why: 'empty' };
   // "failed: submitted for fulfillment but not accepted (address, print files, charging...)": not confirmed; the owner looks (held review)
   if (d.status === 'failed') return { ok: false, kind: 'refused', items: [], why: 'failed' };

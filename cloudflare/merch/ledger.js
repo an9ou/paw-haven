@@ -932,6 +932,29 @@ export class MerchLedger {
     const lineOf = (ext) => byExt.get(ext) || L.find((l) => ext.endsWith('_' + l.line) && ext.startsWith(id));
     const up = (l, st, extra) => { if (DEAD.includes(l.status) || (LINE_RANK[l.status] || 0) >= LINE_RANK[st]) return false; this.setLine(id, l.line, Object.assign({ status: st }, extra || {})); l.status = st; return true; };
     const refunded = o.status === 'refunded';
+    // review finding 3 (PART5 Q23): Printful failed or cancelled an order it had taken ("a problem with address, printfiles, charging": a wallet
+    // problem most likely shows up here, not as a 402). Only our own confirmed main order counts: never a reprint order (another Printful id),
+    // a draft we deleted (never confirmed), or a cancel we asked for (pcancel, or the order already refunded or cancelled). The order is held
+    // review with one owner email; the hold ends as every review hold does (the owner confirms, or a day later it is refunded in full). Fires
+    // once: the next hint finds the order held, not confirmed. Told only, never held: in a dispute (the bank decides the money), and when part of
+    // the order has shipped (a full refund would pay back parcels that arrived; the delay plan refunds the unshipped part at its date).
+    const end = { failed: 'pf_failed', canceled: 'pf_canceled' }[d.status];
+    if (end && d.id != null && String(d.id) === String(o.provider_order) && o.confirmed_at && !o.pcancel && !o.draft_del
+      && (['confirmed', 'part_shipped'].includes(o.status) || (o.status === 'held' && o.hold === 'provider' && o.why === 'onhold'))) {
+      const reason = end === 'pf_failed' ? 'provider_failed' : 'provider_canceled', what = end === 'pf_failed' ? 'failed' : 'cancelled';
+      const sent = L.some((l) => l.parcel_id || (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped);
+      if (o.dispute === 'open' || o.dispute === 'lost' || sent) {
+        if (this.event('x:' + end + ':' + d.id, id, end + '_told', o.status)) this.ownerMail(id, reason, 'Printful ' + what + ' this order after it was confirmed, ' + (sent ? 'with part of it shipped: the unshipped part is refunded by the delay plan at its date unless Printful goes on.' : 'during a dispute: nothing changes here.') + ' Check the Printful wallet and dashboard.');
+      } else if (this.set(id, { status: 'held', hold: 'review', why: end, hold_at: now, next_try_at: now + DAY }, [o.status])) {
+        this.event('x:' + end + ':' + d.id + ':' + now, id, end, o.status);
+        this.ownerMail(id, reason, 'Printful ' + what + ' this order after it was confirmed. Check the Printful wallet and dashboard.');
+        o = this.order(id);
+      }
+    }
+    // the hold above ends by itself when Printful goes on with the order (fixed in its dashboard and sent again): confirmed, as after a confirm
+    if (o.status === 'held' && o.hold === 'review' && ['pf_failed', 'pf_canceled'].includes(o.why) && String(d.id) === String(o.provider_order) && PF_CONFIRMED.includes(d.status)) {
+      this.set(id, { status: 'confirmed', hold: null, why: null, hold_at: null, next_try_at: null }, ['held']); o = this.order(id);
+    }
     if (d.status === 'onhold' && ['confirmed', 'part_shipped'].includes(o.status)) { this.set(id, { status: 'held', hold: 'provider', why: 'onhold', hold_at: now }); this.ownerMail(id, 'provider_hold', 'Printful put this order on hold.'); o = this.order(id); } // T2.2-46
     else if (d.status !== 'onhold' && o.status === 'held' && o.hold === 'provider' && o.why === 'onhold') { this.set(id, { status: 'confirmed', hold: null, why: null, hold_at: null }); o = this.order(id); }
     if (!refunded && ['inprocess', 'partial', 'fulfilled'].includes(d.status)) for (const it of d.items.length ? d.items : L.map((l) => ({ external_id: l.provider_item || '' }))) { const l = lineOf(String(it.external_id)); if (l && l.status === 'confirmed') up(l, 'in_production'); } // T2.1-14
@@ -1344,14 +1367,14 @@ export class MerchLedger {
       const g = await provider.get(this.env, po);
       if (!g.ok || !g.data) return; // stays confirming; the wake tries again
       if (PF_CONFIRMED.includes(g.data.status)) return this.confirmed(id);
-      if (g.data.status !== 'draft') return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + g.data.status, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful says the order is ' + g.data.status + ' after a confirm we did not hear back from.'); });
+      if (g.data.status !== 'draft') return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + g.data.status, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful says the order is ' + g.data.status + ' after a confirm we did not hear back from. Check the Printful wallet and dashboard.'); });
     }
     const r = await provider.confirm(this.env, po);
     if (r.ok) return this.confirmed(id);
     if (r.kind === 'timeout') return; // stays 'confirming': the alarm re-reads it after 2 minutes
     if (r.kind === 'billing') return this.tx(() => { const x = this.order(id); if (this.set(id, { status: 'held', hold: 'wallet', hold_at: x.hold_at || now, next_try_at: now + 30 * MIN }, ['confirming'])) this.ownerMail(id, 'wallet', 'Printful could not charge the wallet. Please top it up.'); });
     if (r.kind === 'down' || r.kind === 'not_set_up') return this.tx(() => { const x = this.order(id); if (x.status === 'confirming') this.backoff(x); });
-    return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + r.kind, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful refused the confirm.'); });
+    return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + r.kind, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', r.why === 'failed' ? 'Printful took the confirm but the order came back failed (a problem with the address, the print files or the charge). Check the Printful wallet and dashboard, fix it there, then confirm (merch.sh confirm) to send it again; otherwise it is refunded in full after 24 hours.' : 'Printful refused the confirm (' + r.kind + '). Check the Printful wallet and dashboard.'); });
   }
   confirmed(id) {
     this.tx(() => {
