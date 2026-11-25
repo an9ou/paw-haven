@@ -69,6 +69,13 @@ const OUT = __dirname;
 const CAPS = path.resolve(process.env.CAPS || 'dougie_caps');
 const WORK = path.resolve(process.argv[2] || 'dougie_work');
 for (const d of ['f', 'stills', 'sheet']) fs.mkdirSync(path.join(WORK, d), { recursive: true });
+// REDNOTE=1 (owner via the coordinator, 25 Nov 2026): the RedNote cut. The same picture timing, the same loop, the lines in Simplified Chinese
+// (LXGW WenKai), the full frame with a 50 px margin instead of the safe zone (the centring, spacing and sparkle checks stay), bigger cards, and the
+// Christmas lo-fi of the lo-fi cut as its soundtrack (MUSIC=<lofi_dougie.js workdir>/music.wav, used as it is). No QR, link, domain, @, handles,
+// app or platform names: the build refuses RedNote's off-platform words on screen. Output doodle-doggo-holiday-dance-rednote.mp4.
+const RN = !!process.env.REDNOTE;
+const { RN_FONT_CSS } = require('../../../kids/endcard.js');
+const RN_BAN = /[A-Za-z@]|\.(app|com|io|cn|net)|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|快拍|帖子|微信|朋友圈|QQ|微博|抖音|小红书|Instagram|YouTube|TikTok|itch/i;
 const W = 1080, H = 1920, PEN = '#5B3D32', CREAM = '#FFFDF7', MUTED = '#8A7468', RED = '#D2473C';
 const rj = (f) => JSON.parse(fs.readFileSync(path.join(CAPS, f), 'utf8'));
 const facts = rj('facts.json'), draw = rj('draw.json');
@@ -90,11 +97,15 @@ const S = 4, X0 = 640, Y0 = 600 - H / S;
 const K = 3.95, FOOT = 1430, CX = 420;
 const DOGX = CX - 120 * K, DOGY = FOOT - 193 * K;
 // ---- the lines ----
-const LINE1 = ['Get ready', 'for the holidays'], LINE2 = ["Noodle's ready.", 'Is your dog?'];
+const LINE1 = RN ? ['准备过节啦'] : ['Get ready', 'for the holidays'], LINE2 = RN ? ['面条准备好了，', '你的狗狗呢？'] : ["Noodle's ready.", 'Is your dog?'];
+if (RN) { if (LINE1.concat(LINE2).some((l) => [...l].length > 14)) throw new Error('a RedNote line over 14 characters');
+  for (const l of LINE1.concat(LINE2)) if (RN_BAN.test(l)) throw new Error('a RedNote no-go word on screen: ' + l); }
+const F_ = RN ? "'LXGW WenKai'" : 'Caveat', SZ1 = RN ? 100 : 76, SZ2 = RN ? 84 : 76, PITCH = RN ? 100 : 78;
 for (const s of LINE1.concat(LINE2)) if (/itch|—|–|breed/i.test(s)) throw new Error('a no-go word on screen: ' + s);
 // card 1 (bar 1) with the crayon tree beside it, card 2 (bar 4); centred as a group on the safe zone's middle (x 455)
 // (the cards sit low enough to stay off the floor lamp's glow rays, which reach y 320 at the top left)
-const C1 = { cx: 400, cy: 424, w: 520, h: 196 }, TREE = { x: 708, y: 322, w: 140, h: 200 }, C2 = { cx: 455, cy: 424, w: 560, h: 196 };
+const C1 = RN ? { cx: 398, cy: 430, w: 600, h: 180 } : { cx: 400, cy: 424, w: 520, h: 196 }, TREE = RN ? { x: 758, y: 330, w: 140, h: 200 } : { x: 708, y: 322, w: 140, h: 200 },
+  C2 = RN ? { cx: 520, cy: 440, w: 690, h: 236 } : { cx: 455, cy: 424, w: 560, h: 196 };
 const sm = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 // opacity by time (s): card 1 in over 0.5 s from 0, out 2.3..2.75 s (bar 1 ends 2.82 s); card 2 in 8.47..8.97 s (bar 4 starts 8.47 s), out 10.7..11.15 s.
 // (A fade much faster than half a second changes the frame as much as a beat cut does, and checkFrames would call it a jump.)
@@ -103,7 +114,7 @@ const ON = (t, q) => (t < q[0] || t > q[3] ? 0 : t < q[1] ? sm((t - q[0]) / (q[1
 // pops: a look lands (and beat 1 at 0.0 s): sparkle stars round Noodle for 12 frames
 const POPS = [...Array(BEATS).keys()].filter((b) => b === 0 || LOOK_AT[b] !== LOOK_AT[b - 1]);
 
-const page = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+const page = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff;overflow:hidden}svg{display:block}${facts.dogCss}
 .pa-dog .pa-d-f0,.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{animation:none!important;display:none}
 .k0 .pa-d-f0,.k1 .pa-d-f1,.k2 .pa-d-f2{display:inline;opacity:1!important}.pa-d-tw{animation:none!important;opacity:1}
@@ -112,7 +123,7 @@ const page = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
-const $=(i)=>document.getElementById(i), F='Caveat', f2=(x)=>(+x).toFixed(2), DEBUG=${!!process.env.DEBUG};
+const $=(i)=>document.getElementById(i), F=${JSON.stringify(F_)}, RN=${RN}, RN_BAN=${RN_BAN.toString()}, f2=(x)=>(+x).toFixed(2), DEBUG=${!!process.env.DEBUG};
 const FPS=${FPS}, NF=${NF}, CUT=${JSON.stringify(CUT)}, SPB=${SPB}, BEATS=${BEATS}, K=${K}, DOGX=${DOGX}, DOGY=${DOGY}, FOOT=${FOOT}, CX=${CX};
 const LOOK_AT=${JSON.stringify(LOOK_AT)}, MOVE_AT=${MOVE_AT.toString()}, BAR=${BAR}, drawKey=${drawKey.toString()}, POPS=${JSON.stringify(POPS)};
 const T1=${JSON.stringify(T1)}, T2=${JSON.stringify(T2)}, C1=${JSON.stringify(C1)}, C2=${JSON.stringify(C2)}, TREE=${JSON.stringify(TREE)};
@@ -136,7 +147,7 @@ function setup(d){
   h.remove();
   $('bg').innerHTML='<image href="'+d.bg+'" x="0" y="0" width="${W}" height="${H}"/>';
   const card=(c,lines,id)=>'<g id="'+id+'" data-apart="'+id+'"><g data-box><rect x="'+(c.cx-c.w/2)+'" y="'+(c.cy-c.h/2)+'" width="'+c.w+'" height="'+c.h+'" rx="44" fill="${CREAM}" fill-opacity=".95" stroke="${PEN}" stroke-width="5"/>'
-    +centred([{s:lines[0],size:${76},pitch:${78}},{s:lines[1],size:${76},fill:id==='card1'?'${RED}':'${PEN}'}],c.cx,c.cy,F).svg+'</g></g>';
+    +centred(lines.map((l,i)=>({s:l,size:id==='card1'?${SZ1}:${SZ2},pitch:${PITCH},fill:id==='card1'&&i===lines.length-1?'${RED}':'${PEN}'})),c.cx,c.cy,F).svg+'</g></g>';
   CARD1=card(C1,${JSON.stringify(LINE1)},'card1')+'<g data-apart="tree" data-safe><svg x="'+TREE.x+'" y="'+TREE.y+'" width="'+TREE.w+'" height="'+TREE.h+'" viewBox="0 0 140 200" overflow="visible">'+d.tree+'</svg></g>';
   CARD2=card(C2,${JSON.stringify(LINE2)},'card2');
   $('chk').innerHTML=Object.entries(PROPS).map(([k,b])=>'<rect data-apart="'+k+'" x="'+f2(b[0])+'" y="'+f2(b[1])+'" width="'+f2(b[2]-b[0])+'" height="'+f2(b[3]-b[1])+'" fill="none" stroke="'+(DEBUG?'red':'none')+'" stroke-width="3"/>').join('');
@@ -180,19 +191,23 @@ function noodleBox(){ let l=1e9,t=1e9,r=-1e9,bt=-1e9; const add=(e)=>{ const q=e
   $('shadow').querySelectorAll('svg.pa-dog>g>ellipse,svg.pa-dog>g>path,svg.pa-dog>g>g:not([class^="pa-d-f"])>*').forEach(add); return r>l?[l,t,r,bt]:null; }
 // every frame's checks
 window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
-  bad.push(...centreCheck(st), ...safeCheck(st));
+  if(RN){ // the full frame with a 50 px margin; and none of RedNote's off-platform words in our words
+    st.querySelectorAll('#ov text,#ov [data-box],#ov [data-safe]').forEach((e)=>{ const q=e.getBoundingClientRect(); if(q.left<50||q.right>1030||q.top<50||q.bottom>1870) bad.push('outside the 50 px margin: '+(e.textContent||'box').slice(0,20)); });
+    st.querySelectorAll('#ov text').forEach((e)=>{ if(RN_BAN.test(e.textContent)) bad.push('a RedNote no-go word on screen: '+e.textContent); });
+    bad.push(...centreCheck(st)); }
+  else bad.push(...centreCheck(st), ...safeCheck(st));
   const nb=noodleBox(); if(!nb) return 'no Noodle drawn'; NB=nb; window.NBR=nb.map(Math.round);
   $('chk').querySelectorAll('[data-apart="noodle"]').forEach((e)=>e.remove());
   $('chk').insertAdjacentHTML('beforeend','<rect data-apart="noodle" x="'+f2(nb[0])+'" y="'+f2(nb[1])+'" width="'+f2(nb[2]-nb[0])+'" height="'+f2(nb[3]-nb[1])+'" fill="none" stroke="'+(DEBUG?'blue':'none')+'" stroke-width="3"/>');
   bad.push(...apartCheck(st,28));
   const dw=drawW(); window.DW=Math.round(dw); if(dw<520||dw>700) bad.push('Noodle (the drawing, no shadow) is '+Math.round(dw)+' px wide');
-  if(nb[0]<60||nb[2]>850||nb[1]<270||nb[3]>1440) bad.push('Noodle outside the safe zone '+nb.map(Math.round));
+  if(RN?(nb[0]<50||nb[2]>1030||nb[1]<50||nb[3]>1870):(nb[0]<60||nb[2]>850||nb[1]<270||nb[3]>1440)) bad.push('Noodle outside '+(RN?'the 50 px margin ':'the safe zone ')+nb.map(Math.round));
   // sparkles: inside the safe zone, clear of Noodle (6 px), the cards, the tree and the props (12 px)
   const near=(a,b,g)=>a.right>b.left-g&&a.left<b.right+g&&a.bottom>b.top-g&&a.top<b.bottom+g;
   const others=[...st.querySelectorAll('#chk [data-apart]:not([data-apart="noodle"]),#ov [data-apart]')].map((e)=>e.getBoundingClientRect());
   const nr={left:nb[0],top:nb[1],right:nb[2],bottom:nb[3]};
   st.querySelectorAll('#pop [data-spark]').forEach((e)=>{ const q=e.getBoundingClientRect(); if(!q.width) return;
-    if(q.left<60||q.right>850||q.top<270||q.bottom>1440) bad.push('a sparkle outside the safe zone at '+[q.left,q.top].map(Math.round));
+    if(RN?(q.left<50||q.right>1030||q.top<50||q.bottom>1870):(q.left<60||q.right>850||q.top<270||q.bottom>1440)) bad.push('a sparkle outside the frame margin or safe zone at '+[q.left,q.top].map(Math.round));
     if(near(q,nr,6)) bad.push('a sparkle over Noodle at '+[q.left,q.top].map(Math.round));
     if(others.some((o)=>near(q,o,12))) bad.push('a sparkle over a card or a prop at '+[q.left,q.top].map(Math.round)); });
   return bad.length?bad.join(' | '):null; };
@@ -215,6 +230,71 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   const bg = 'data:image/png;base64,' + fs.readFileSync(bgPng).toString('base64');
   const tree = facts.firTree.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 
+  // ---- the covers (ONLY=cover; owner via the coordinator, 25 Nov 2026): their own design, not a frame of the Reel. The same Cozy House window by the
+  // fireplace (the mug lamp and the snow globe taken off the floor to make room for the tiles), filled to the bottom; a big headline card with the
+  // game's crayon Felt Fir Tree beside it; a small pill (true: the Reel has 7 looks); Noodle mid-dance in the Father Christmas Suit (the Reel's
+  // beat 3.3 drawing, heart eyes); three of the game's sparkle doodles; a row of four of the looks' clothes in the game's own item art (the
+  // wardrobe's art('item')), each in its own white bubble (RedNote: the game's zh-Hans names under them). Everything 28 px apart (apartCheck,
+  // the fireplace too), text centred by its ink, every piece inside x 40..1040, y 250..1670 (the RedNote 3:4 crop keeps y 240..1680).
+  // English: holiday-dance-cover.jpg (1080 x 1920). REDNOTE=1: brand/rednote/rednote-25-holiday-dance.jpg (that crop, 1080 x 1440).
+  if (process.env.ONLY === 'cover') {
+    const items = rj('items.json'), zh = JSON.parse(fs.readFileSync(path.join(path.resolve(process.env.ART_ROOT || path.join(__dirname, '..', '..', '..', '..')), 'game', 'i18n', 'zh-Hans.json'), 'utf8'));
+    const TILES = ['Pom-pom Beanie', 'Reindeer Antlers', 'Knit Winter Sweater', 'Father Christmas Suit'].map((n) => { const k = facts.clothes[n] && facts.clothes[n].i18n; if (!k || !items[n] || !zh[k]) throw new Error('no art or zh-Hans name for ' + n); return { n, zh: zh[k], svg: items[n] }; });
+    if (!LOOKS.some((L) => L.o.head === 'Pom-pom Beanie') || LOOKS.length !== 7) throw new Error('the pill says 7 looks');
+    const CV = RN ? { head: [{ s: '准备过节啦', size: 120, fill: RED }], pill: '面条的圣诞换装', pillSize: 52 } : { head: [{ s: 'Ready for', size: 120, pitch: 112 }, { s: 'the holidays?', size: 120, fill: RED }], pill: "Noodle's 7 holiday looks", pillSize: 56 };
+    const allText = CV.head.map((l) => l.s).concat(CV.pill, RN ? TILES.map((t) => t.zh) : []).join(' ');
+    if (RN && RN_BAN.test(allText)) throw new Error('a RedNote no-go word on the cover: ' + allText);
+    if (/itch|—|–/.test(allText)) throw new Error('no itch.io and no dashes on the cover');
+    await p.evaluate(() => document.querySelectorAll('.hm-decor[data-decor="Doggy Snow Globe"],.hm-decor[data-decor="Cocoa Mug Lamp"]').forEach((e) => e.remove()));
+    const cbg = path.join(WORK, 'cover_bg.png'); await p.screenshot({ path: cbg });
+    const cbgUrl = 'data:image/png;base64,' + fs.readFileSync(cbg).toString('base64');
+    const CK = 3.95, CFOOT = 1335, CCX = 415, DK = drawKey(5, MOVE_AT(10)), DKK = MOVE_AT(10).k;
+    if (DK !== '5|dance|right|hearts') throw new Error('the cover drawing moved: ' + DK);
+    const cpage = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
+<style>html,body{margin:0;background:#fff;overflow:hidden}svg{display:block}${facts.dogCss}.pa-dog .pa-d-f0,.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{animation:none!important;display:none}.k${DKK} .pa-d-f${DKK}{display:inline!important;opacity:1!important}.pa-d-tw{animation:none!important;opacity:1}</style>
+<svg id="st" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image href="${cbgUrl}" x="0" y="0" width="${W}" height="${H}"/><g id="art"></g><g id="ov"></g><g id="chk"></g></svg>
+<script>${CENTRE_JS}
+${SAFE_JS}
+const $=(i)=>document.getElementById(i), F=${JSON.stringify(F_)}, f2=(x)=>(+x).toFixed(2), SPARK=${JSON.stringify(facts.spark)};
+const spark=(x,y,s,col)=>{const q=s*.16;return '<path d="M'+x+' '+(y-s)+'Q'+(x+q)+' '+(y-q)+' '+(x+s*.9)+' '+y+'Q'+(x+q)+' '+(y+q)+' '+x+' '+(y+s)+'Q'+(x-q)+' '+(y+q)+' '+(x-s*.9)+' '+y+'Q'+(x-q)+' '+(y-q)+' '+x+' '+(y-s)+'Z" fill="'+col+'" stroke="'+SPARK.ink+'" stroke-width="1.5" stroke-linejoin="round"/>';};
+window.cover=function(d){
+  // the headline card, sized to its ink, with the tree beside it; the group centred on x 540
+  const L=d.head; let top=1e9,bot=-1e9,b=0,wid=0; L.forEach((l)=>{ const k=inkOf(l.s,l.size,F); top=Math.min(top,b-k.A); bot=Math.max(bot,b+k.D); wid=Math.max(wid,k.L+k.R); b+=l.pitch||0; });
+  const ch=bot-top+70, cw=wid+110, tw=150, th=214, gap=56, gx=540-(cw+gap+tw)/2, y0=262;
+  let o='<g data-box data-apart="title"><rect x="'+f2(gx)+'" y="'+y0+'" width="'+f2(cw)+'" height="'+f2(ch)+'" rx="46" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'+centred(L,gx+cw/2,y0+ch/2,F).svg+'</g>';
+  o+='<g data-apart="tree"><svg x="'+f2(gx+cw+gap)+'" y="'+f2(y0+ch/2-th/2)+'" width="'+tw+'" height="'+th+'" viewBox="0 0 140 200" overflow="visible">'+d.tree+'</svg></g>';
+  const py=y0+ch+74; o+='<g data-apart="pill">'+pill(d.pill,540,py,d.pillSize,F,{fill:'${CREAM}',padX:34,color:'${PEN}'})+'</g>';
+  // the tiles: four white bubbles with the clothes' item art; RedNote: the game's zh-Hans name on a small pill under each
+  const BS=${RN ? 180 : 190}, BG=${RN ? 64 : 48}, bx0=540-(4*BS+3*BG)/2, by=${RN ? 1392 : 1430};
+  let t=''; d.tiles.forEach((it,i)=>{ const x=bx0+i*(BS+BG);
+    // (the art is clipped to its square inside the bubble, so the bubble's own box is the tile's box)
+    t+='<g><rect data-apart="tile'+i+'" x="'+f2(x)+'" y="'+by+'" width="'+BS+'" height="'+BS+'" rx="44" fill="#FFFFFF" stroke="${PEN}" stroke-width="6"/><svg x="'+f2(x+25)+'" y="'+(by+25)+'" width="140" height="140" viewBox="0 0 64 64" overflow="hidden">'+it.svg.replace(/^<svg[^>]*>/,'').replace(/<\\/svg>\\s*$/,'')+'</svg></g>';
+    if(${RN}) t+='<g data-apart="label'+i+'">'+pill(it.zh,x+BS/2,by+BS+56,30,F,{fill:'${CREAM}',padX:14,color:'${PEN}'})+'</g>'; });
+  // three sparkles in the pocket over the fireplace, right of Noodle
+  const sp=[[858,706,26,SPARK.yellow],[948,652,18,SPARK.pink],[1004,724,15,SPARK.yellow]].map(([x,y,s,c],i)=>'<g data-apart="spark'+i+'" transform="translate('+x+' '+y+') rotate('+(i*18)+')">'+spark(0,0,s,c)+'</g>').join('');
+  $('art').innerHTML='<g id="cdog" class="k${DKK}">'+d.dog+'</g>'+t+sp; $('ov').innerHTML=o;
+  const s=$('cdog').querySelector('svg'); s.setAttribute('width',${240 * CK}); s.setAttribute('height',${200 * CK}); s.setAttribute('overflow','visible');
+  // Noodle: the drawing (shown frame) and its shadow, his box centred on x ${CCX}, the shadow's foot on y ${CFOOT}
+  s.setAttribute('x',0); s.setAttribute('y',f2(${CFOOT}-193*${CK}));
+  const box=()=>{ let l=1e9,tp=1e9,r=-1e9,bt=-1e9; s.querySelectorAll('.pa-d-f${DKK} path,.pa-d-f${DKK} ellipse,.pa-d-f${DKK} circle,.pa-d-f${DKK} text,svg.pa-dog>g>ellipse,svg.pa-dog>g>path').forEach((e)=>{ const q=e.getBoundingClientRect(); if(!q.width&&!q.height) return; l=Math.min(l,q.left);tp=Math.min(tp,q.top);r=Math.max(r,q.right);bt=Math.max(bt,q.bottom); }); return [l,tp,r,bt]; };
+  let nb=box(); s.setAttribute('x',f2(${CCX}-(nb[0]+nb[2])/2)); nb=box();
+  let dl=1e9,dr=-1e9; s.querySelectorAll('.pa-d-f${DKK} path,.pa-d-f${DKK} ellipse,.pa-d-f${DKK} circle,.pa-d-f${DKK} text').forEach((e)=>{ const q=e.getBoundingClientRect(); if(!q.width&&!q.height) return; dl=Math.min(dl,q.left); dr=Math.max(dr,q.right); });
+  $('chk').innerHTML='<rect data-apart="noodle" x="'+f2(nb[0])+'" y="'+f2(nb[1])+'" width="'+f2(nb[2]-nb[0])+'" height="'+f2(nb[3]-nb[1])+'" fill="none"/>'+Object.entries(d.props).filter(([k])=>k==='Cardboard_Fireplace').map(([k,b])=>'<rect data-apart="'+k+'" x="'+f2(b[0])+'" y="'+f2(b[1])+'" width="'+f2(b[2]-b[0])+'" height="'+f2(b[3]-b[1])+'" fill="none"/>').join('');
+  const bad=[...centreCheck($('st')), ...apartCheck($('st'),28)];
+  for(const e of $('st').querySelectorAll('#ov [data-apart],#art [data-apart],#chk [data-apart="noodle"]')){ const q=e.getBoundingClientRect(); if(q.left<40||q.right>1040||q.top<250||q.bottom>1670) bad.push('outside x 40..1040, y 250..1670: '+e.getAttribute('data-apart')+' '+[q.left,q.top,q.right,q.bottom].map(Math.round)); }
+  return {bad, noodle:nb.map(Math.round), drawW:Math.round(dr-dl), title:[gx,y0,gx+cw,y0+ch].map(Math.round), pill:py}; };
+</script>`;
+    await p.setContent(cpage, { waitUntil: 'networkidle' });
+    await p.evaluate(async () => { await document.fonts.load('700 120px Caveat'); await document.fonts.ready; });
+    if (RN) { await p.evaluate((t) => document.fonts.load('700 60px "LXGW WenKai"', t), allText); if (!(await p.evaluate((t) => document.fonts.check('700 60px "LXGW WenKai"', t), allText))) throw new Error('LXGW WenKai did not load'); }
+    const res = await p.evaluate((d) => window.cover(d), { head: CV.head, pill: CV.pill, pillSize: CV.pillSize, tiles: TILES, dog: draw[DK].svg, tree, props: PROPS });
+    console.log('cover', JSON.stringify(res));
+    if (res.bad.length) throw new Error('cover: ' + res.bad.join(' | '));
+    const png = path.join(WORK, RN ? 'cover_rn.png' : 'cover.png'); await p.screenshot({ path: png });
+    const f = RN ? path.join(__dirname, '..', '..', '..', 'rednote', 'rednote-25-holiday-dance.jpg') : path.join(OUT, 'holiday-dance-cover.jpg');
+    cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', png, ...(RN ? ['-vf', 'crop=1080:1440:0:240'] : []), '-q:v', '2', f]);
+    console.log('wrote', f, TILES.map((t) => t.n + ' = ' + t.zh).join(', ')); await b.close(); return; }
+
   if (process.env.ONLY === 'sprites') { // a sheet of every drawing used, at the Reel's drawing (k), on the room's floor colour
     const keys = [...new Set([...Array(BEATS).keys()].map((bb) => drawKey(LOOK_AT[bb], MOVE_AT(bb)) + '#' + MOVE_AT(bb).k))];
     await p.setContent(`<!doctype html><style>body{margin:0;background:#fff;display:grid;grid-template-columns:repeat(4,360px);font:14px sans-serif}${facts.dogCss}.pa-dog .pa-d-f0,.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{animation:none!important;opacity:0!important}.k0 .pa-d-f0,.k1 .pa-d-f1,.k2 .pa-d-f2{opacity:1!important}.pa-dog{width:360px;height:300px}</style>`
@@ -223,6 +303,8 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
 
   await p.setContent(page, { waitUntil: 'networkidle' });
   await p.evaluate(async () => { await document.fonts.load('700 76px Caveat'); await document.fonts.ready; });
+  if (RN) { const txt = LINE1.concat(LINE2).join(''); await p.evaluate((t) => document.fonts.load('700 80px "LXGW WenKai"', t), txt);
+    if (!(await p.evaluate((t) => document.fonts.check('700 80px "LXGW WenKai"', t), txt))) throw new Error('LXGW WenKai did not load'); }
   const drawSvg = {}; for (const [k, v] of Object.entries(draw)) drawSvg[k] = v.svg;
   await p.evaluate((d) => window.setup(d), { bg, draw: drawSvg, props: PROPS, tree });
 
@@ -266,16 +348,23 @@ window.checks=()=>{ if(ERR) return ERR; const st=$('st'), bad=[];
   for (let bb = 0; bb < BEATS; bb++) { const s0 = Math.round(bb * SPB * SR), down = bb % BAR === 0, f = down ? 1320 : 990, a = down ? 0.32 : 0.18;
     for (let i = 0; i < 0.06 * SR && s0 + i < NS; i++) { const tt = i / SR; cl[s0 + i] += a * Math.sin(2 * Math.PI * f * tt) * Math.exp(-tt / 0.012) * Math.min(1, i / 24); } }
   wav(clicks, cl);
-  const enc = (audio, mp4) => cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', audio, '-map', '0:v', '-map', '1:a',
+  const enc = (audio, mp4, br) => cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', audio, '-map', '0:v', '-map', '1:a',
     // keyframes on the first AND the last frame (one GOP between), as momiji: the seam is coded like any other frame step
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '16', '-x264-params', `keyint=${NF}:min-keyint=1`, '-force_key_frames', `0,${((NF - 1) / FPS).toFixed(4)}`, '-pix_fmt', 'yuv420p', '-r', String(FPS),
-    '-c:a', 'aac', '-b:a', '128k', '-ar', String(SR), '-ac', '2', '-movflags', '+faststart', '-t', Ts, mp4], { stdio: 'inherit' });
-  const mp4 = path.join(OUT, 'doodle-doggo-holiday-dance.mp4'), mp4b = path.join(OUT, 'doodle-doggo-holiday-dance-beatcheck.mp4');
-  enc(silent, mp4); enc(clicks, mp4b);
-  for (const f of [mp4, mp4b]) { const d = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString(); console.log('wrote', f, d.toFixed(3) + ' s', (fs.statSync(f).size / 1e6).toFixed(2) + ' MB'); }
+    '-c:a', 'aac', '-b:a', br || '128k', '-ar', String(SR), '-ac', '2', '-movflags', '+faststart', '-t', Ts, mp4], { stdio: 'inherit' });
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-holiday-dance-rednote.mp4' : 'doodle-doggo-holiday-dance.mp4'), mp4b = path.join(OUT, 'doodle-doggo-holiday-dance-beatcheck.mp4');
+  if (RN) { // the lo-fi cut's music, as it is (lofi_dougie.js: 4 bars at 85 BPM, beat 1 on frame 0, seamless, -16 LUFS)
+    const MUSIC = path.resolve(process.env.MUSIC || ''); if (!process.env.MUSIC || !fs.existsSync(MUSIC)) throw new Error('MUSIC=<lofi_dougie.js workdir>/music.wav is needed for the RedNote cut');
+    const ns = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=duration_ts,sample_rate', '-of', 'csv=p=0', MUSIC]).toString().split(',')[1];
+    if (ns !== Math.round(T * SR)) throw new Error('the music is ' + ns + ' samples, not the loop\'s ' + Math.round(T * SR));
+    enc(MUSIC, mp4, '192k');
+    const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', mp4, '-vn', '-af', 'loudnorm=I=-16:TP=-1:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
+    console.log('RedNote cut audio: I', ln.input_i, 'LUFS, TP', ln.input_tp, 'dBTP'); if (Math.abs(+ln.input_i + 16) > 0.5 || +ln.input_tp > -1) throw new Error('loudness off');
+  } else { enc(silent, mp4); enc(clicks, mp4b); }
+  for (const f of RN ? [mp4] : [mp4, mp4b]) { const d = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString(); console.log('wrote', f, d.toFixed(3) + ' s', (fs.statSync(f).size / 1e6).toFixed(2) + ' MB'); }
   // the posting file's audio must be silent: its peak
-  const vd = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', mp4, '-af', 'volumedetect', '-vn', '-f', 'null', '-'], { encoding: 'utf8' }).stderr; const mx = /max_volume: (-?[\d.]+|-inf) dB/.exec(vd);
-  console.log('posting file audio max_volume', mx ? mx[1] : '?', 'dB'); if (!mx || (mx[1] !== '-inf' && +mx[1] > -90)) throw new Error('the posting file is not silent');
+  if (!RN) { const vd = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', mp4, '-af', 'volumedetect', '-vn', '-f', 'null', '-'], { encoding: 'utf8' }).stderr; const mx = /max_volume: (-?[\d.]+|-inf) dB/.exec(vd);
+  console.log('posting file audio max_volume', mx ? mx[1] : '?', 'dB'); if (!mx || (mx[1] !== '-inf' && +mx[1] > -90)) throw new Error('the posting file is not silent'); }
 
   // ---- checkFrames on the whole loop and the seam ----
   const cf = checkFrames(mp4, 0, NF - 1);
