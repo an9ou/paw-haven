@@ -1203,7 +1203,10 @@ export class MerchLedger {
     const S = await loadSamples(this.PP), dog = S.find((d) => d.id === (b.dog || 'golden'));
     if (!dog) return { status: 400, body: { error: 'bad_dog', dogs: S.map((d) => d.id) } };
     const now = this.now(), last = Number(this.meta('render_at') || 0);
-    if (now < last + 11e3) return { status: 429, body: { error: 'wait', wait_ms: last + 11e3 - now } };
+    // probe: the one-off cloud test (tools/merch_rtest.mjs) asks twice 1 s apart on purpose, to record Browser Run's own rate-limit answer. Only
+    // with MERCH_RENDER_PROBE = "1", which is never set on the real Worker
+    const probe = !!b.probe && this.env.MERCH_RENDER_PROBE === '1';
+    if (now < last + 11e3 && !probe) return { status: 429, body: { error: 'wait', wait_ms: last + 11e3 - now } };
     this.tx(() => this.setMeta('render_at', now));
     const P = this.PP, colour = product === 'tee' ? (P.PRODUCTS.tee.colours.some((c) => c.id === b.colour) ? b.colour : 'navy') : 'white';
     const link = P.printHash(dog.r, { product, colour, pose: dog.pose }), url = (this.env.MERCH_PUBLIC_URL || 'https://merch-api.doodledoggo.app') + '/merch/print/' + P.ART_VER + '/' + link;

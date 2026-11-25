@@ -141,6 +141,10 @@ export async function t_render() {
     const f = await w.raw('GET', j.file_url.replace(BASE, '')); const buf = new Uint8Array(await f.arrayBuffer()); ok(f.status === 200 && buf.length === j.bytes && (await sha256hex(buf)) === j.sha256, 'the signed link gives the file');
     ok(!w.q("select 1 from merch_orders").length, 'no order');
     const b = await w.admin('POST', 'render-test', { product: 'mug', renderer: 'resvg' }); ok(b.status === 429 && b.json.error === 'wait' && b.json.wait_ms > 0, '11 s apart');
+    eq((await w.admin('POST', 'render-test', { product: 'mug', renderer: 'resvg', probe: true })).status, 429, 'probe is ignored without MERCH_RENDER_PROBE (never set on the real Worker)');
+    w.env.MERCH_RENDER_PROBE = '1'; const pb = await w.admin('POST', 'render-test', { product: 'mug', probe: true }); ok(pb.status === 200 && pb.json.ok, 'the cloud test’s one rate probe may ask 1 s apart'); delete w.env.MERCH_RENDER_PROBE;
+    const sh = (await import('node:child_process')).execFileSync('bash', [path.join(ROOT, 'tools', 'merch.sh'), 'render-test', 'tee', 'resvg'], { env: { PATH: process.env.PATH }, encoding: 'utf8' });
+    ok(/DRY RUN.*POST .*\/merch\/admin\/render-test/.test(sh) && /"product": "tee", "renderer": "resvg"/.test(sh), 'tools/merch.sh render-test: ' + sh.split('\n')[1]);
     w.clock.t += 11e3; const c = await w.admin('POST', 'render-test', { product: 'tee', renderer: 'resvg', dog: 'akita' }); ok(c.json.ok && c.json.renderer === 'resvg' && c.json.width === 4500 && c.json.height === 5400 && c.json.ms_used === null, JSON.stringify(c.json).slice(0, 200));
     const tf = new Uint8Array(await (await w.raw('GET', c.json.file_url.replace(BASE, ''))).arrayBuffer()); eq(corners(tf), [0, 0, 0, 0], 'tee corners clear');
     w.clock.t += 11e3; w.br.queue.push('daily'); const d = await w.admin('POST', 'render-test', { product: 'mug', renderer: 'browser', via: 'direct' }); ok(d.json.ok === false && d.json.error.kind === 'daily' && /daily/.test(d.json.error.why), 'the classified error: ' + JSON.stringify(d.json.error));
