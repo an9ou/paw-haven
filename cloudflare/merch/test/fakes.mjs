@@ -140,7 +140,7 @@ export async function pfSign(secret, raw) {
   return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(raw))), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 export function fakePrintful() {
-  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0, after: {}, calc: 0 };
+  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, lostConfirm: [], timeoutCreate: 0, after: {}, calc: 0 };
   const take = (k) => { if (P.fail[k] > 0) { P.fail[k]--; return true; } return false; };
   const ourOf = (vid) => PF_REV[vid] || null; // 'tee:navy:M'
   const costsOf = (o) => ({ calculation_status: o.calc > 0 ? 'calculating' : 'done', currency: 'USD', subtotal: o.calc > 0 ? null : o.c.subtotal, discount: '0.00', shipping: o.calc > 0 ? null : o.c.shipping,
@@ -160,7 +160,7 @@ export function fakePrintful() {
     let mm;
     if (v === 2 && (mm = /^\/catalog-products\/(\d+)\/prices$/.exec(p))) {
       if (!P.costs) return pfErr(404, 'Not found');
-      const variants = Object.entries(PF_VARIANT_IDS).filter(([k]) => PF_PRODUCTS[k.split(':')[0]] === Number(mm[1])).map(([k, id]) => {
+      const variants = Object.entries(PF_VARIANT_IDS).filter(([k]) => PF_PRODUCTS[k.split(':')[0]] === Number(mm[1]) && !(P.costs.unpriced || []).includes(k)).map(([k, id]) => { // unpriced: left out of the reply (part 5 fixes, finding 9)
         const [prod, , size] = k.split(':'), c = P.costs.variants && P.costs.variants[k] != null ? P.costs.variants[k] : unitCost(PRODUCTS[prod], size);
         return { id, techniques: [{ technique_key: prod === 'mug' ? 'sublimation' : 'dtg', technique_display_name: prod === 'mug' ? 'Sublimation' : 'DTG printing', price: (c / 100).toFixed(2), discounted_price: (c / 100).toFixed(2) }] };
       });
@@ -175,6 +175,7 @@ export function fakePrintful() {
     if (v === 2 && p === '/orders' && m === 'POST') {
       if (take('create')) return pfProblem(503, 'Service Unavailable');
       if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + body.recipient.country_code + '`');
+      if (P.refuse.file > 0) { P.refuse.file--; return pfErr(400, 'Item 0: Could not download the print file from the address given in `/order_items/0/placements/0/layers/0/url`'); } // part 5 fixes, finding 4 (an invented text)
       const bad = body.order_items.map((i, n) => ((P.refuse.variants || []).includes('pf:' + ourOf(i.catalog_variant_id)) ? 'Item ' + n + ': This product variant is not available' : null)).filter(Boolean);
       if (bad.length) return pfErr(400, bad.join('; '));
       const was = P.byExt.get(body.external_id); if (was && !P.orders.get(was).gone) return pfErr(400, 'The external_id provided already exists and cannot be used');
@@ -206,8 +207,13 @@ export function fakePrintful() {
       if (mm[3] === '/confirmation') {
         if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return pfProblem(503, 'Service Unavailable');
         if (P.refuse.billing) return pfErr(400, 'Order could not be charged: no valid billing method');
+        // part 5 fixes: Printful confirms a draft (or a failed order sent again), never an order it took already: a second confirm is refused
+        if (P.refuse.confirm || !['draft', 'failed'].includes(o.status)) return pfErr(400, 'Order cannot be confirmed');
         if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); }
-        o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o); return out(o);
+        o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o);
+        // review finding 2: Printful took the confirm, then the answer was lost: 'drop' (the connection fails) or '5xx' (a gateway error)
+        const lost = P.lostConfirm && P.lostConfirm.shift(); if (lost === 'drop') throw new Error('connection reset'); if (lost === '5xx') return pfProblem(502, 'Bad Gateway');
+        return out(o);
       }
       if (m === 'PATCH') {
         if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + ((body.recipient && body.recipient.country_code) || 'US') + '`');

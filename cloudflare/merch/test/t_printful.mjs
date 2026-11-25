@@ -209,7 +209,8 @@ export async function printful() {
     eq(await pf.parseHook({}, raw('hook_order_created_docs'), H({})), { id: 'order_created:11111::2023-04-04T12:36:42Z', order: '11111', type: 'order_created' }, 'the docs example: no external id, so the Printful id');
     eq(await pf.parseHook({}, raw('hook_catalog_price_changed'), H({})), { id: null, order: null, type: 'catalog_price_changed' }, 'no order: not ours');
     ok((await pf.parseHook({}, 'not json', H({}))) === null, 'not JSON');
-    ok(!(await pf.parseHook({ MERCH_PROVIDER_WEBHOOK_SECRET: 'not-hex-secret' }, b, H({ 'x-pf-signature': createHmac('sha256', 'not-hex-secret').update(b).digest('hex') }))).bad, 'a secret that is not hex is its text; the header name worker.js forwards today is taken too');
+    ok(!(await pf.parseHook({ MERCH_PROVIDER_WEBHOOK_SECRET: 'not-hex-secret' }, b, H({ 'x-pf-webhook-signature': createHmac('sha256', 'not-hex-secret').update(b).digest('hex') }))).bad, 'a secret that is not hex is its text');
+    ok((await pf.parseHook(env, b, H({ 'x-pf-signature': signed(b) }))).bad, 'F5-header: the old name x-pf-signature is no longer read (review finding 1)');
   });
 
   await T('P5-costs', 'catalogCosts: v2 prices (USD, our variants only) and Standard rates for one and two items per region -> { variants, ship }; these feed the margin guard', async () => {
@@ -228,7 +229,7 @@ export async function printful() {
     const a = marginOf(cat, 'US', L, pr.subtotal, pr.ship_fee, now, costs), b = marginOf(cat, 'US', L, pr.subtotal, pr.ship_fee, now);
     ok(a.pass && Math.abs(a.margin - b.margin) < 1e-9, 'the same margin as the catalog estimate (same numbers): ' + a.margin);
     const T4 = [{ qty: 1, group: 'tee', variant: 'tee:black:4XL', unit_cost: PRODUCTS.tee.cost + PRODUCTS.tee.size_cost['4XL'] }];
-    ok(Math.abs(marginOf(cat, 'US', T4, 2699 + 600, 499, now, costs).margin - (marginOf(cat, 'US', T4, 2699 + 600, 499, now).margin - 50 * 1.07 - 50 * 0.05)) < 1e-6, 'Printful\'s 4XL costs 50 cents more than catalog.js guesses (PART5.md)');
+    ok(Math.abs(marginOf(cat, 'US', T4, 2699 + 600, 499, now, costs).margin - marginOf(cat, 'US', T4, 2699 + 600, 499, now).margin) < 1e-6 && PRODUCTS.tee.size_cost['4XL'] === 600, 'Printful\'s 4XL cost and catalog.js now agree (Q25: TEE_SIZE_COST set to Printful\'s +$6.00, review fixes)');
   });
 
   await T('P5-costs-partial', 'catalogCosts: pages followed; a rate not in USD or not read is left out (the old value stays); nothing read: the error', async () => {

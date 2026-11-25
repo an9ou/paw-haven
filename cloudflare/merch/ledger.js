@@ -932,6 +932,29 @@ export class MerchLedger {
     const lineOf = (ext) => byExt.get(ext) || L.find((l) => ext.endsWith('_' + l.line) && ext.startsWith(id));
     const up = (l, st, extra) => { if (DEAD.includes(l.status) || (LINE_RANK[l.status] || 0) >= LINE_RANK[st]) return false; this.setLine(id, l.line, Object.assign({ status: st }, extra || {})); l.status = st; return true; };
     const refunded = o.status === 'refunded';
+    // review finding 3 (PART5 Q23): Printful failed or cancelled an order it had taken ("a problem with address, printfiles, charging": a wallet
+    // problem most likely shows up here, not as a 402). Only our own confirmed main order counts: never a reprint order (another Printful id),
+    // a draft we deleted (never confirmed), or a cancel we asked for (pcancel, or the order already refunded or cancelled). The order is held
+    // review with one owner email; the hold ends as every review hold does (the owner confirms, or a day later it is refunded in full). Fires
+    // once: the next hint finds the order held, not confirmed. Told only, never held: in a dispute (the bank decides the money), and when part of
+    // the order has shipped (a full refund would pay back parcels that arrived; the delay plan refunds the unshipped part at its date).
+    const end = { failed: 'pf_failed', canceled: 'pf_canceled' }[d.status];
+    if (end && d.id != null && String(d.id) === String(o.provider_order) && o.confirmed_at && !o.pcancel && !o.draft_del
+      && (['confirmed', 'part_shipped'].includes(o.status) || (o.status === 'held' && o.hold === 'provider' && o.why === 'onhold'))) {
+      const reason = end === 'pf_failed' ? 'provider_failed' : 'provider_canceled', what = end === 'pf_failed' ? 'failed' : 'cancelled';
+      const sent = L.some((l) => l.parcel_id || (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped);
+      if (o.dispute === 'open' || o.dispute === 'lost' || sent) {
+        if (this.event('x:' + end + ':' + d.id, id, end + '_told', o.status)) this.ownerMail(id, reason, 'Printful ' + what + ' this order after it was confirmed, ' + (sent ? 'with part of it shipped: the unshipped part is refunded by the delay plan at its date unless Printful goes on.' : 'during a dispute: nothing changes here.') + ' Check the Printful wallet and dashboard.');
+      } else if (this.set(id, { status: 'held', hold: 'review', why: end, hold_at: now, next_try_at: now + DAY }, [o.status])) {
+        this.event('x:' + end + ':' + d.id + ':' + now, id, end, o.status);
+        this.ownerMail(id, reason, 'Printful ' + what + ' this order after it was confirmed. Check the Printful wallet and dashboard.');
+        o = this.order(id);
+      }
+    }
+    // the hold above ends by itself when Printful goes on with the order (fixed in its dashboard and sent again): confirmed, as after a confirm
+    if (o.status === 'held' && o.hold === 'review' && ['pf_failed', 'pf_canceled'].includes(o.why) && String(d.id) === String(o.provider_order) && PF_CONFIRMED.includes(d.status)) {
+      this.set(id, { status: 'confirmed', hold: null, why: null, hold_at: null, next_try_at: null }, ['held']); o = this.order(id);
+    }
     if (d.status === 'onhold' && ['confirmed', 'part_shipped'].includes(o.status)) { this.set(id, { status: 'held', hold: 'provider', why: 'onhold', hold_at: now }); this.ownerMail(id, 'provider_hold', 'Printful put this order on hold.'); o = this.order(id); } // T2.2-46
     else if (d.status !== 'onhold' && o.status === 'held' && o.hold === 'provider' && o.why === 'onhold') { this.set(id, { status: 'confirmed', hold: null, why: null, hold_at: null }); o = this.order(id); }
     if (!refunded && ['inprocess', 'partial', 'fulfilled'].includes(d.status)) for (const it of d.items.length ? d.items : L.map((l) => ({ external_id: l.provider_item || '' }))) { const l = lineOf(String(it.external_id)); if (l && l.status === 'confirmed') up(l, 'in_production'); } // T2.1-14
@@ -1074,7 +1097,7 @@ export class MerchLedger {
       }
       case 'provider': // T2.2-34 (why 'down'); 'onhold' waits for Printful's hint (T2.2-46)
         if (why === 'onhold') return this.tx(() => this.next(id, null));
-        if (since >= DAY) this.tx(() => this.ownerMail(id, 'provider_down', 'Printful has not answered for 24 hours.'));
+        if (since >= DAY) this.tx(() => this.ownerMail(id, 'provider_down', o.last_error === 'file' ? 'For 24 hours Printful could not use a print file of this order (the file, its URL or its placement): look at the print file (merch.sh show) and the print storage.' : 'Printful has not answered for 24 hours.'));
         return o.provider_order ? this.confirmOrder(o) : this.makeDraft(o);
       case 'address': if (since >= 7 * DAY) return refund('address_7d'); return this.tx(() => this.next(id, o.hold_at + 7 * DAY)); // T2.2-36
       case 'wallet': if (since >= 5 * DAY) return refund('wallet_5d'); return this.confirmOrder(o); // T2.2-38
@@ -1302,7 +1325,7 @@ export class MerchLedger {
       }
       if (r.kind === 'timeout') { guard((x) => this.set(id, { tries: (x.tries || 0) + 1, last_error: 'timeout', next_try_at: this.now() + MIN })); return r; }
       if (r.kind === 'refused') { guard(() => { const t = this.now(); this.set(id, { status: 'held', hold: 'review', why: 'provider', hold_at: t, next_try_at: t + DAY }); this.ownerMail(id, 'review', 'Printful refused the draft without naming a line.'); }); return r; }
-      guard((x) => this.backoff(x)); return r; // down, not set up (T2.2-34)
+      guard((x) => { this.backoff(x); if (r.why === 'file') this.run("update merch_orders set last_error = 'file' where id = ?", id); }); return r; // down, not set up (T2.2-34); a print file Printful could not use (finding 4)
     }
     return { ok: false, kind: 'refused' };
   }
@@ -1320,8 +1343,9 @@ export class MerchLedger {
       const cost = (d.costs.items || 0) + (d.costs.shipping || 0);
       const est = marginOf(this.cat, x.country, drafted, x.subtotal, x.ship_fee, now, this.costs()).W;
       const cols = { provider: 'printful', provider_order: d.id, provider_cost: cost, tries: 0, last_error: null };
-      // part 5: Printful v2 may give a draft no costs (calculation failed, or not in USD): never confirmed blind; the owner looks (a day, then refunded)
-      if (d.costs.items == null || d.costs.shipping == null) { Object.assign(cols, { provider_cost: null, status: 'held', hold: 'review', why: 'cost_unknown', hold_at: now, next_try_at: now + DAY }); this.ownerMail(id, 'cost', 'Printful’s draft has no costs we can read: confirm (merch.sh confirm) or refund.'); }
+      // part 5: Printful v2 may give a draft no costs (calculation failed, or not in USD; review finding 5: or a number we cannot read): never
+      // confirmed blind; the owner looks (a day, then refunded)
+      if (!Number.isFinite(d.costs.items) || !Number.isFinite(d.costs.shipping)) { Object.assign(cols, { provider_cost: null, status: 'held', hold: 'review', why: 'cost_unknown', hold_at: now, next_try_at: now + DAY }); this.ownerMail(id, 'cost', 'Printful’s draft has no costs we can read: confirm (merch.sh confirm) or refund.'); }
       else if (cost > est * 1.1) { Object.assign(cols, { status: 'held', hold: 'review', why: 'cost', hold_at: now, next_try_at: now + 48 * HOUR }); this.ownerMail(id, 'cost', 'Printful’s draft costs ' + cost + ' against our ' + est + ': confirm (merch.sh confirm) or refund.'); }
       else if (x.status === 'held') Object.assign(cols, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: now });
       else cols.next_try_at = Math.max(now, (x.cancel_until || now) + GRACE);
@@ -1344,14 +1368,14 @@ export class MerchLedger {
       const g = await provider.get(this.env, po);
       if (!g.ok || !g.data) return; // stays confirming; the wake tries again
       if (PF_CONFIRMED.includes(g.data.status)) return this.confirmed(id);
-      if (g.data.status !== 'draft') return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + g.data.status, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful says the order is ' + g.data.status + ' after a confirm we did not hear back from.'); });
+      if (g.data.status !== 'draft') return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + g.data.status, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful says the order is ' + g.data.status + ' after a confirm we did not hear back from. Check the Printful wallet and dashboard.'); });
     }
     const r = await provider.confirm(this.env, po);
     if (r.ok) return this.confirmed(id);
     if (r.kind === 'timeout') return; // stays 'confirming': the alarm re-reads it after 2 minutes
     if (r.kind === 'billing') return this.tx(() => { const x = this.order(id); if (this.set(id, { status: 'held', hold: 'wallet', hold_at: x.hold_at || now, next_try_at: now + 30 * MIN }, ['confirming'])) this.ownerMail(id, 'wallet', 'Printful could not charge the wallet. Please top it up.'); });
     if (r.kind === 'down' || r.kind === 'not_set_up') return this.tx(() => { const x = this.order(id); if (x.status === 'confirming') this.backoff(x); });
-    return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + r.kind, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', 'Printful refused the confirm.'); });
+    return this.tx(() => { if (this.set(id, { status: 'held', hold: 'review', why: 'confirm_' + r.kind, hold_at: now, next_try_at: now + DAY }, ['confirming'])) this.ownerMail(id, 'review', r.why === 'failed' ? 'Printful took the confirm but the order came back failed (a problem with the address, the print files or the charge). Check the Printful wallet and dashboard, fix it there, then confirm (merch.sh confirm) to send it again; otherwise it is refunded in full after 24 hours.' : 'Printful refused the confirm (' + r.kind + '). Check the Printful wallet and dashboard.'); });
   }
   confirmed(id) {
     this.tx(() => {
@@ -1515,6 +1539,10 @@ export class MerchLedger {
     if (c.ok && c.data) this.tx(() => {
       for (const [id, cents] of Object.entries(c.data.variants || {})) { const [p, col, size] = id.split(':'); this.run('insert into merch_variants (id, product, colour, size, cost_base, on_flag, cost_at) values (?, ?, ?, ?, ?, 1, ?) on conflict(id) do update set cost_base = excluded.cost_base, cost_at = excluded.cost_at', id, p, col, size || null, Number(cents), now); }
       for (const [id, fe] of Object.entries(c.data.ship || {})) this.run('insert or replace into merch_ship_costs (id, first, extra, cost_at) values (?, ?, ?, ?)', id, fe[0], fe[1], now);
+      // review finding 9: our variants Printful's read gave no price (their last cost stays, as above: only prices read are written). The owner
+      // hears once per change of that list, not every night; an empty list clears it.
+      const miss = (c.data.missing || []).slice().sort().join(', ');
+      if (miss !== (this.meta('cost_missing') || '')) { this.setMeta('cost_missing', miss); if (miss) this.ownerMail(null, 'cost_missing', 'No price from Printful for: ' + miss + '. The last known cost is kept for each.'); }
     });
     // T2.1-32: a variant that fails the floor alone in any open zone is turned off (and back on when it passes again)
     const regions = new Map(); for (const ct of openCountries(this.env)) { const r = regionOf(ct); if (!regions.has(r)) regions.set(r, ct); }

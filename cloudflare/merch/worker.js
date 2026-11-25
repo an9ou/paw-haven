@@ -33,7 +33,7 @@ export default {
       else if (p.startsWith('/merch/file/')) res = await fileRoute(p, env);
       else if (p.startsWith('/merch/') && !p.startsWith('/merch/internal')) {
         const h = new Headers();
-        for (const k of ['content-type', 'stripe-signature', 'x-pf-signature', 'authorization']) { const v = req.headers.get(k); if (v) h.set(k, v); }
+        for (const k of ['content-type', 'stripe-signature', 'x-pf-webhook-signature', 'x-pf-signature', 'authorization']) { const v = req.headers.get(k); if (v) h.set(k, v); }
         h.set('x-merch-ip', req.headers.get('CF-Connecting-IP') || 'local'); // the client cannot set these: only the ones above are copied
         if (origin) h.set('x-merch-origin', origin);
         const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer();

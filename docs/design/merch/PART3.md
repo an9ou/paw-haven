@@ -159,7 +159,7 @@ Part 5 (25 Nov 2026) answered what Printful's published docs settle; each line s
 - [ ] When Printful fetches the print files, against the 30-day signed link.
   *Part 5: still needs the key (not in the docs; the kit adds one file by URL and reads its status).*
 - [ ] Webhook signing (header name, HMAC over what) and the event names (returned, on hold, hold removed); see question 20.
-  *Part 5: answered from the docs. v1 cannot sign; v2 signs: HMAC-SHA256 of the raw body with the hex-decoded `secret_key`, hex in `x-pf-webhook-signature`. Events: shipment_sent, shipment_delivered, shipment_returned, order_failed, order_canceled, order_put_hold, order_remove_hold and others. Merge step: worker.js must forward `x-pf-webhook-signature` (PART5.md).*
+  *Part 5: answered from the docs. v1 cannot sign; v2 signs: HMAC-SHA256 of the raw body with the hex-decoded `secret_key`, hex in `x-pf-webhook-signature`. Events: shipment_sent, shipment_delivered, shipment_returned, order_failed, order_canceled, order_put_hold, order_remove_hold and others. worker.js forwards `x-pf-webhook-signature` and the adapter reads only that name (PART5.md, review fixes 1).*
 - [ ] Whether a recipient can be deleted on request (section 5, `merch.sh forget`).
   *Part 5: still open (not in the API docs; ask Printful support, who are our processor under their Data Processing Terms).*
 - [ ] `/merch/catalog-costs` is not a Printful route: the nightly cost read is written for real; the variant ids (`pf:<variant>`) are placeholders.
