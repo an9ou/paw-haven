@@ -30,9 +30,12 @@ const MAIL_BACKOFF = [1, 5, 15, 60, 180].map((m) => m * MIN), MAIL_TRIES = 6;
 const LEASE = 3 * MIN, WAKE = 5 * MIN; // a step's lease, and the wake it leaves behind in case it never finishes
 // Browser Run (part 4, PART4.md): our own budget of billed browser time a UTC day (Free: 600 000 ms; MERCH_BROWSER_BUDGET_MS overrides), and the
 // number of unknown 429s in a row (each 11 s or more apart, so never the 1-per-10-s rate) after which the day is called out for an hour
-const BROWSER_BUDGET_MS = 540e3, RATE_RUN = 3;
+// ERROR_RUN (review finding 4): browser errors in a row (timeouts, throws, unknown answers, bad files) after which the browser is off for an hour
+// and the fallback draws at once, instead of two browser calls and a minute for every line. Any good answer resets the run.
+const BROWSER_BUDGET_MS = 540e3, RATE_RUN = 3, ERROR_RUN = 3;
 const utcDay = (t) => new Date(t).toISOString().slice(0, 10);
-const browserLine = (b) => !b ? '' : 'Browser Run (UTC day): ' + Math.round(b.ms_today / 1000) + ' s used of our ' + Math.round(b.budget_ms / 1000) + ' s budget (Free: 600 s), yesterday ' + Math.round(b.ms_yesterday / 1000) + ' s' + (b.off ? '; out now (' + b.off + '): the resvg fallback draws the prints' : '');
+const browserLine = (b) => !b ? '' : 'Browser Run (UTC day): ' + Math.round(b.ms_today / 1000) + ' s used of our ' + Math.round(b.budget_ms / 1000) + ' s budget (Free: 600 s), yesterday ' + Math.round(b.ms_yesterday / 1000) + ' s' + (b.off ? '; out now (' + b.off + '): the resvg fallback draws the prints' : '')
+  + (b.parts ? '; set up: browser ' + (b.parts.via === 'worker' ? 'via the Worker (SELF ' + (b.parts.self ? 'yes' : 'MISSING') + ')' : b.parts.browser ? 'yes' : 'MISSING') + ', fallback RENDER ' + (b.parts.fallback ? 'yes' : 'MISSING') : ''); // review finding 7
 // the buyer emails that may carry the thank-you gift once it is shown (the first one sent after the cancel hour; once only: gift_mailed)
 const GIFT_KINDS = ['ship', 'reprint', 'late', 'late_again'];
 // the order statuses in which a reserved gift is shown once the cancel hour is over (a held order only once it is released; draft_mode stands
@@ -1095,19 +1098,25 @@ export class MerchLedger {
   // one line through the renderer (T2.1-10, T2.2-28..31, T2.2-49): at least 11 s between renders
   async renderLine(o, l) {
     const now = this.now(), id = o.id, last = Number(this.meta('render_at') || 0), ck = id + '/' + l.line;
+    const live = () => { const x = this.order(id), y = this.lineRow(id, l.line); return x && y && y.status === 'queued' && !ENDED.includes(x.status) ? { x, y } : null; };
     let r = this.pngs.get(ck) || null; // S11: a PNG whose store failed is stored again without a new render
     if (!r) {
       if (now < last + 11e3) return this.tx(() => this.next(id, last + 11e3));
       this.tx(() => this.setMeta('render_at', now));
       const url = (this.env.MERCH_PUBLIC_URL || 'https://merch-api.doodledoggo.app') + '/merch/print/' + l.art_ver + '/' + l.print_link; // the line's own art_ver folder
-      const good = (x) => x.ok && this.pngOk(l.product, x.png);
-      r = await this.shot(l.product, url); let renderer = 'browser'; // part 4: our own daily budget and the 429 run (browserBook)
-      if (r.ok && !good(r)) r = { ok: false, kind: 'error', why: 'png' };
+      r = await this.shot(l.product, url); let renderer = 'browser'; // part 4: the file check, our own daily budget, the 429 and error runs (shot, browserBook)
       if (!r.ok && r.kind === 'rate') return this.tx(() => this.next(id, now + 11e3)); // T2.2-30
-      if (!r.ok && (r.kind === 'daily' || (r.kind === 'error' && l.tries >= 1))) { const f = await render.resvg(this.env, l.product, url); if (good(f)) { r = f; renderer = 'resvg'; } }
+      // the fallback: the day is out, the browser is not set up (review finding 7), a second error, or the browser is off for its errors (finding 4). A fallback that cannot draw this line at all
+      // (another art_ver, or a layer across a band edge: review finding 5) never makes the line rejected and refunded while the browser could
+      // still draw it: it waits for the browser (kind 'wait': an hour, held after the cancel hour, the owner told at 2 h, refunded at 72 h)
+      if (!r.ok && (r.kind === 'daily' || r.kind === 'not_set_up' || (r.kind === 'error' && (l.tries >= 1 || r.off)))) {
+        if (!live()) return this.tx(() => this.next(id, this.now())); // review finding 11: cancelled or refunded during the browser call: no fallback render
+        const f = await render.resvg(this.env, l.product, url);
+        if (f.ok && await this.pngOk(l.product, f.png)) { r = f; renderer = 'resvg'; }
+        else if (r.kind === 'error' && !f.ok && (f.why === 'art_ver' || f.why === 'layer')) r = { ok: false, kind: 'wait', why: 'wait: ' + f.why };
+      }
       if (r.ok) r = { ok: true, png: r.png, renderer };
     }
-    const live = () => { const x = this.order(id), y = this.lineRow(id, l.line); return x && y && y.status === 'queued' && !ENDED.includes(x.status) ? { x, y } : null; };
     if (r.ok) {
       if (!live()) { this.pngs.delete(ck); return this.tx(() => this.next(id, this.now())); } // S1: cancelled or refunded during the render: nothing is stored
       const s = await this.storePng(o, l, r.png);
@@ -1135,13 +1144,13 @@ export class MerchLedger {
     return this.tx(() => { // a failure changes only a line still queued in an order that goes on (S1: no "couldn't print" after a cancel)
       const t = this.now(), ok = live(); if (!ok) return this.next(id, t);
       const { x, y } = ok;
-      if (r.kind === 'daily' || r.kind === 'not_set_up') { // T2.2-29: wait for 09:00 JST; past the hour, held render
+      if (r.kind === 'daily' || r.kind === 'not_set_up' || r.kind === 'wait') { // T2.2-29: wait for 09:00 JST; past the hour, held render ('wait': an hour)
         const reset = r.kind === 'daily' ? (r.until || nextUtcMidnight(t)) : t + HOUR, cols = {}; // part 4: a day called out after a 429 run comes back sooner (until)
         let nt = x.status === 'paid' && t < x.cancel_until ? Math.min(reset, x.cancel_until) : reset; // look again when the hour ends, to hold it
         if (x.status === 'paid' && t >= x.cancel_until) Object.assign(cols, { status: 'held', hold: 'render', hold_at: t });
         const held = cols.hold === 'render' || (x.status === 'held' && x.hold === 'render'), since = cols.hold_at || x.hold_at || t;
         if (held) nt = Math.min(reset, t + 2 * HOUR, since + 72 * HOUR); // held: the 2-hour owner email and the 72-hour refund need a wake
-        cols.next_try_at = nt; this.set(id, cols); this.setLine(id, l.line, { last_error: r.kind });
+        cols.next_try_at = nt; this.set(id, cols); this.setLine(id, l.line, { last_error: r.kind === 'wait' ? r.why : r.kind });
         return;
       }
       if (y.tries < 1) { this.setLine(id, l.line, { tries: 1, last_error: r.why || 'render' }); return this.next(id, t + MIN); } // T2.2-28: once more after 1 min
@@ -1152,10 +1161,14 @@ export class MerchLedger {
       this.next(id, t);
     });
   }
-  pngOk(product, png) { const P = this.PP.PRODUCTS[product], d = pngSize(png); return !!(P && d && d.w === P.w && d.h === P.h && png.length <= PNG_MAX); }
+  // the print file check (review finding 1, render.js pngCheck): exact size, 8-bit RGBA, a least and a most byte size, whole to IEND, and the
+  // tee's first row clear. Async (the tee's first row is inflated with DecompressionStream): every caller re-reads the order after it, as after
+  // any await (renderLine: live() before the fallback and before the store)
+  async pngWhy(product, png) { const P = this.PP.PRODUCTS[product]; return P ? render.pngCheck(product, png, P) : 'product'; }
+  async pngOk(product, png) { return !(await this.pngWhy(product, png)) && png.length <= PNG_MAX; }
   /* ---------------- Browser Run: the budget and the 429s (part 4) ---------------- */
   // meta: 'br_ms:<UTC day>' billed ms added up from X-Browser-Ms-Used; 'br_off' '<until ms> <why>' (the browser is not asked until then);
-  // 'br_rate_run' unknown 429s in a row
+  // 'br_rate_run' unknown 429s in a row; 'br_err_run' browser errors in a row (review finding 4)
   budget() { return Number(this.env.MERCH_BROWSER_BUDGET_MS) > 0 ? Number(this.env.MERCH_BROWSER_BUDGET_MS) : BROWSER_BUDGET_MS; }
   browserOff(now) {
     const off = String(this.meta('br_off') || '').split(' ');
@@ -1163,18 +1176,28 @@ export class MerchLedger {
     if (Number(this.meta('br_ms:' + utcDay(now)) || 0) >= this.budget()) return { why: 'budget', until: nextUtcMidnight(now) };
     return null;
   }
-  // one screenshot through render.js, booked: never called while the day is out (the fallback takes over at once)
+  // one screenshot through render.js, its file checked, booked: never called while the day is out (the fallback takes over at once). A file that
+  // fails the check is a browser error (it counts toward the error run); the bytes stay on the answer for the self-test's report
   async shot(product, url, via) {
     const off = this.browserOff(this.now());
-    if (off) return { ok: false, kind: 'daily', why: off.why, until: off.until, skipped: true };
-    const r = await render.screenshot(this.env, product, url, via);
+    // off for its own errors (review finding 4): an error for the line, so the fallback draws at once and a line the fallback cannot draw either
+    // follows T2.2-28 (once more after a minute, then rejected), never a quota day's wait
+    if (off) return off.why === 'errors' ? { ok: false, kind: 'error', why: 'errors', until: off.until, skipped: true, off: 'errors' } : { ok: false, kind: 'daily', why: off.why, until: off.until, skipped: true };
+    let r = await render.screenshot(this.env, product, url, via);
+    if (r.ok) { const why = await this.pngWhy(product, r.png); if (why) r = { ok: false, kind: 'error', why: 'png', png_why: why, png: r.png, ms: r.ms, wall: r.wall }; }
     return this.tx(() => this.browserBook(r));
   }
-  // sync, in a transaction: the ms, the 429 run and the day out. -> the answer as the render step should treat it
+  // sync, in a transaction: the ms, the 429 and error runs and the day out. -> the answer as the render step should treat it (booked: the ms added)
+  // Review finding 4: X-Browser-Ms-Used when Browser Run sends it, else the wall time of the call (an answer without the header, our own timeout,
+  // a throw): an unknown cost is counted as the time it took, never as 0
   browserBook(r) {
-    const now = this.now(), k = 'br_ms:' + utcDay(now), before = Number(this.meta(k) || 0), ms = Number(r.ms) > 0 ? Number(r.ms) : 0, after = before + ms;
+    const now = this.now(), k = 'br_ms:' + utcDay(now), before = Number(this.meta(k) || 0);
+    const ms = r.ms != null && Number(r.ms) >= 0 ? Number(r.ms) : Number(r.wall) > 0 ? Number(r.wall) : 0, after = before + ms;
+    r.booked = ms;
     if (ms) this.setMeta(k, after);
     if (before < this.budget() && after >= this.budget()) this.browserDown(now, 'budget', nextUtcMidnight(now), after + ' ms used');
+    const errs = Number(this.meta('br_err_run') || 0);
+    if (r.ok) { if (Number(this.meta('br_rate_run') || 0)) this.setMeta('br_rate_run', 0); if (errs) this.setMeta('br_err_run', 0); return r; }
     if (!r.ok && r.kind === 'rate') {
       const run = Number(this.meta('br_rate_run') || 0) + 1;
       if (run < RATE_RUN) { this.setMeta('br_rate_run', run); return r; }
@@ -1183,7 +1206,13 @@ export class MerchLedger {
       return Object.assign({}, r, { kind: 'daily', why: 'rate_run ' + run + ': ' + (r.why || ''), until });
     }
     if (Number(this.meta('br_rate_run') || 0)) this.setMeta('br_rate_run', 0);
-    if (!r.ok && r.kind === 'daily') { const until = nextUtcMidnight(now); this.browserDown(now, 'daily', until, r.why); return Object.assign({}, r, { until }); }
+    if (!r.ok && r.kind === 'daily') { if (errs) this.setMeta('br_err_run', 0); const until = nextUtcMidnight(now); this.browserDown(now, 'daily', until, r.why); return Object.assign({}, r, { until }); }
+    if (!r.ok && r.kind === 'error') { // review finding 4: ERROR_RUN in a row put the browser off for an hour; the owner is told (once a JST day)
+      const run = errs + 1;
+      if (run < ERROR_RUN) { this.setMeta('br_err_run', run); return r; }
+      const until = now + HOUR; this.setMeta('br_err_run', 0); this.browserDown(now, 'errors', until, r.why);
+      return Object.assign({}, r, { why: 'errors ' + run + ': ' + (r.why || ''), until, off: 'errors' }); // still an error for the line (T2.2-28), with the fallback at once
+    }
     return r;
   }
   browserDown(now, why, until, note) { // sync. The owner hears once a JST day (the outbox key carries the day)
@@ -1193,7 +1222,8 @@ export class MerchLedger {
   browserStatus(now) {
     const off = this.browserOff(now);
     return { ms_today: Number(this.meta('br_ms:' + utcDay(now)) || 0), ms_yesterday: Number(this.meta('br_ms:' + utcDay(now - DAY)) || 0), budget_ms: this.budget(), free_ms: 600e3,
-      off: off ? off.why : null, off_until: off ? off.until : null, rate_run: Number(this.meta('br_rate_run') || 0), via: this.env.MERCH_RENDER_VIA === 'worker' ? 'worker' : 'direct' };
+      off: off ? off.why : null, off_until: off ? off.until : null, rate_run: Number(this.meta('br_rate_run') || 0), error_run: Number(this.meta('br_err_run') || 0),
+      via: this.env.MERCH_RENDER_VIA === 'worker' ? 'worker' : 'direct', parts: render.renderParts(this.env) }; // parts: what is set up, RENDER included (review finding 7)
   }
   // the admin render self-test (part 4): one built-in sample dog of the CURRENT art through the real path (render.js, pngOk, MerchPrints with a
   // 15-minute keep), no order. It keeps the 11 s spacing and its browser time counts toward the budget. -> { status, body }
@@ -1212,9 +1242,11 @@ export class MerchLedger {
     const link = P.printHash(dog.r, { product, colour, pose: dog.pose }), url = (this.env.MERCH_PUBLIC_URL || 'https://merch-api.doodledoggo.app') + '/merch/print/' + P.ART_VER + '/' + link;
     const out = { ok: false, product, colour, dog: dog.id, art_ver: P.ART_VER, renderer, via: renderer === 'browser' ? (via || (this.env.MERCH_RENDER_VIA === 'worker' ? 'worker' : 'direct')) : null };
     const t0 = Date.now(), r = renderer === 'browser' ? await this.shot(product, url, via) : await render.resvg(this.env, product, url);
-    Object.assign(out, { wall_ms: Date.now() - t0, ms_used: r.ms == null ? null : r.ms });
+    // ms_used: X-Browser-Ms-Used as sent (null without it: the cloud test records whether errors carry it); ms_booked: what the budget counted
+    Object.assign(out, { wall_ms: Date.now() - t0, ms_used: r.ms == null ? null : r.ms, ms_booked: r.booked == null ? null : r.booked });
+    const png = r.png || null, why = r.ok ? await this.pngWhy(product, png) : r.png_why || null;
+    if (png) { const d = pngSize(png); Object.assign(out, { bytes: png.length, width: d ? d.w : null, height: d ? d.h : null, colour_type: d ? png[25] : null, png_ok: !!r.ok && !why && png.length <= PNG_MAX, png_why: why }); }
     if (!r.ok) return { status: 200, body: Object.assign(out, { error: { kind: r.kind, why: r.why || null, skipped: !!r.skipped }, browser: this.browserStatus(this.now()) }) };
-    const d = pngSize(r.png); Object.assign(out, { bytes: r.png.length, width: d ? d.w : null, height: d ? d.h : null, png_ok: this.pngOk(product, r.png) });
     if (!out.png_ok) return { status: 200, body: Object.assign(out, { error: { kind: 'error', why: 'png' }, browser: this.browserStatus(this.now()) }) };
     const s = await this.storePng({ id: 'rt_' + now.toString(36), paid_at: now }, { line: product + '-' + renderer }, r.png);
     if (!s.ok) return { status: 200, body: Object.assign(out, { error: { kind: 'error', why: 'store' }, browser: this.browserStatus(this.now()) }) };
@@ -1546,8 +1578,9 @@ export class MerchLedger {
   async tidy(now) {
     // a file goes when no line that uses it (a reprint copies the key) needs it any more
     const keys = this.q('select file_key as k from merch_order_items where file_key is not null group by file_key having max(coalesce(keep_until, 9e15)) <= ?', now).map((r) => r.k);
-    // part 4: render self-test files once their 15-minute link is over, and the Browser Run day totals after 40 days
-    for (const r of this.q("select k from merch_meta where k glob 'rt:*' and cast(v as integer) <= ?", now)) { keys.push(r.k.slice(3)); this.tx(() => this.run('delete from merch_meta where k = ?', r.k)); }
+    // part 4: render self-test files once their 15-minute link is over (their rows go in the same transaction as the trash rows below: review
+    // finding 6, a crash between can never leave a file stored for good), and the Browser Run day totals after 40 days
+    const rt = this.q("select k from merch_meta where k glob 'rt:*' and cast(v as integer) <= ?", now).map((r) => r.k); for (const k of rt) keys.push(k.slice(3));
     this.tx(() => this.run("delete from merch_meta where k glob 'br_ms:*' and k < ?", 'br_ms:' + utcDay(now - 40 * DAY)));
     // storage over 4 GB: also the oldest files of orders shipped more than 60 days ago with no open dispute (6.6)
     const total = Number(this.one('select coalesce(sum(bytes), 0) as b from merch_shards').b);
@@ -1555,7 +1588,7 @@ export class MerchLedger {
       keys.push(...this.q("select i.file_key as k from merch_order_items i join merch_orders o on o.id = i.order_id join merch_parcels p on p.id = i.parcel_id where i.file_key is not null and p.shipped_at < ? and coalesce(o.dispute, '') != 'open' order by p.shipped_at limit 200", now - 60 * DAY).map((r) => r.k));
       this.tx(() => this.ownerMail(null, 'storage', 'Print storage is over 4 GB' + (total > 4.5 * 2 ** 30 ? ': time for Workers Paid' : '')));
     }
-    this.tx(() => { for (const k of new Set(keys)) { this.run('update merch_order_items set file_key = null where file_key = ?', k); this.run('insert or ignore into merch_trash (key, at) values (?, ?)', k, now); } });
+    this.tx(() => { for (const k of new Set(keys)) { this.run('update merch_order_items set file_key = null where file_key = ?', k); this.run('insert or ignore into merch_trash (key, at) values (?, ?)', k, now); } for (const k of rt) this.run('delete from merch_meta where k = ?', k); });
     await this.emptyTrash();
     this.tx(() => {
       const old = now - 730 * DAY; // buyer data and the dog: 24 months after close

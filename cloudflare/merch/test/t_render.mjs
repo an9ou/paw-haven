@@ -38,7 +38,7 @@ export async function t_render() {
   await T('P4-shot', 'Browser Run binding: exactly the measured call (viewport, omitBackground, waitForSelector), a real PNG stored whole, X-Browser-Ms-Used booked per UTC day', async () => {
     const w = await rworld(); w.br.queue.push(realShot(1272)); const id = await w.paidOrder([mug(0)]); await w.advance(5 * MIN);
     const c = w.br.calls[0]; eq(c.kind, 'screenshot', 'quickAction kind');
-    eq([c.opts.viewport, c.opts.screenshotOptions, c.opts.waitForSelector], [{ width: 2700, height: 1050, deviceScaleFactor: 1 }, { omitBackground: true }, { selector: '#o svg' }], 'the options as measured (RENDER_FREE 8)');
+    eq([c.opts.viewport, c.opts.screenshotOptions, c.opts.waitForSelector], [{ width: 2700, height: 1050, deviceScaleFactor: 1 }, { omitBackground: true }, { selector: '#o svg', timeout: 15000 }], 'the options as measured (RENDER_FREE 8), plus the 15 s wait limit (review finding 10)');
     ok(c.opts.url.startsWith(BASE + '/merch/print/' + PP.ART_VER + '/#p=') && c.opts.url.endsWith('&av=' + PP.ART_VER), 'the line’s own art folder: ' + c.opts.url.slice(0, 90));
     const l = w.l0(id); eq([l.status, l.renderer], ['drafted', 'browser'], 'rendered by the browser and drafted');
     eq(Number(w.meta('br_ms:' + utcDay(w.clock.t))), 1272, 'billed ms booked for the UTC day');
@@ -55,7 +55,7 @@ export async function t_render() {
     await w.advance(MIN); const l = w.l0(id); ok(['ready', 'drafted'].includes(l.status) && l.renderer === 'resvg', 'resvg made it: ' + l.status + ' ' + l.renderer);
     eq(w.br.calls.length, 2, 'the browser was asked twice');
     const f = await w.raw('GET', (await w.admin('GET', 'order/' + id)).json.lines[0].file_url.replace(BASE, '')); const buf = new Uint8Array(await f.arrayBuffer());
-    ok(w.L().pngOk('mug', buf) && corners(buf)[2] === 255, 'a real resvg mug, exact size');
+    ok((await w.L().pngOk('mug', buf)) && corners(buf)[2] === 255, 'a real resvg mug, exact size');
   });
 
   await T('P4-daily', '429 with the daily text: the resvg fallback at once; the browser is not asked again until 00:00 UTC; the owner told once', async () => {
@@ -109,7 +109,7 @@ export async function t_render() {
     const w = await rworld({ env: { MERCH_RENDER_VIA: 'worker' } }); w.env.SELF = { fetch: (u, i) => RenderGate.fetch(new Request(u, i), w.env) };
     w.br.queue.push(realShot(900)); const id = await w.paidOrder([mug(0)]); await w.advance(1);
     eq([w.l0(id).renderer, w.br.calls.length, Number(w.meta('br_ms:' + utcDay(w.clock.t)))], ['browser', 1, 900], 'rendered through the gate, the ms passed on');
-    eq(w.br.calls[0].opts.waitForSelector, { selector: '#o svg' }, 'the same options');
+    eq(w.br.calls[0].opts.waitForSelector, { selector: '#o svg', timeout: 15000 }, 'the same options');
     const g = (b, m) => RenderGate.fetch(new Request('https://merch-gate/shot', { method: m || 'POST', body: m === 'GET' ? undefined : JSON.stringify(b) }), w.env);
     eq((await g({ product: 'mug', url: 'https://evil.example/merch/print/' + PP.ART_VER + '/#p=x' })).status, 400, 'another origin: refused');
     eq((await g({ product: 'mug', url: BASE + '/merch/admin/report#p=x' })).status, 400, 'not a print page: refused');
@@ -126,7 +126,7 @@ export async function t_render() {
     const r = await render.resvg(w.env, 'mug', BASE + '/merch/print/pp1-0ldbuild/' + linkOf(0, 'mug').replace(PP.ART_VER, 'pp1-0ldbuild'));
     eq([r.ok, r.kind, r.why], [false, 'error', 'art_ver'], 'resvg refuses another art_ver');
     eq((await render.resvg(w.env, 'mug', BASE + '/merch/print/pp1-0ldbuild/' + linkOf(0, 'mug'))).why, 'art_ver', 'a folder that is not the link’s av too');
-    const ok2 = await render.resvg(w.env, 'mug', urlOf(0, 'mug')); ok(ok2.ok && w.L().pngOk('mug', ok2.png), 'the current art_ver is drawn');
+    const ok2 = await render.resvg(w.env, 'mug', urlOf(0, 'mug')); ok(ok2.ok && (await w.L().pngOk('mug', ok2.png)), 'the current art_ver is drawn');
     const bad = await w.env.RENDER.get('resvg').fetch('https://merch-render/resvg', { method: 'POST', body: JSON.stringify({ hash: linkOf(0, 'mug').replace(/&av=[^&]+$/, '&av=pp1-other1'), product: 'mug' }) });
     eq([bad.status, (await bad.json()).error], [409, 'art_ver'], 'the object itself refuses it');
   });
@@ -157,7 +157,7 @@ export async function t_render() {
     const w = await rworld(); await w.init(); const times = [];
     for (const i of [0, 1, 2]) for (const product of ['tee', 'mug']) {
       const t0 = Date.now(), r = await render.resvg(w.env, product, urlOf(i, product)); times.push(product + ' ' + (Date.now() - t0) + ' ms');
-      ok(r.ok && w.L().pngOk(product, r.png), SAMPLES[i].id + ' ' + product + ': ' + (r.why || 'pngOk'));
+      ok(r.ok && (await w.L().pngOk(product, r.png)), SAMPLES[i].id + ' ' + product + ': ' + (r.why || 'pngOk'));
       const c = corners(r.png); if (product === 'tee') eq(c, [0, 0, 0, 0], 'tee corners'); else eq([c[2], c[3]], [255, 255], 'mug bottom corners: the strip');
     }
     console.log('       resvg in Node: ' + times.join(', '));

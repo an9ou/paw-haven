@@ -237,7 +237,18 @@ export function fakePrintful() {
 }
 
 // ---------------- the renderer and Resend ----------------
-export function png(w, h, extra) { const b = new Uint8Array(33 + (extra || 64)); b.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]); const dv = new DataView(b.buffer); dv.setUint32(16, w); dv.setUint32(20, h); for (let i = 33; i < b.length; i++) b[i] = (i * 7) & 255; return b; }
+// a stand-in print file the size of a real one (part 4 review finding 1: the file check reads the header, the chunks to IEND and the tee's first
+// scanline): 8-bit RGBA, an IDAT whose first row inflates to a clear row (only that row is in it), `extra` bytes of a private padding chunk, IEND.
+// o: { type } another colour type (2 = RGB), { top } the first row's alpha, { cut } bytes cut off the end
+const zlib = require('zlib');
+export function png(w, h, extra, o) {
+  o = o || {};
+  const chunk = (t, d) => { const b = Buffer.alloc(12 + d.length); b.writeUInt32BE(d.length, 0); b.write(t, 4, 'latin1'); Buffer.from(d).copy(b, 8); b.writeUInt32BE(zlib.crc32(b.subarray(4, 8 + d.length)), 8 + d.length); return b; };
+  const ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(h, 4); ih[8] = 8; ih[9] = o.type == null ? 6 : o.type;
+  const bpp = ih[9] === 6 ? 4 : 3, row = Buffer.alloc(w * bpp + 1); if (o.top) for (let i = 4; i < row.length; i += 4) row[i] = o.top;
+  const b = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ih), chunk('IDAT', zlib.deflateSync(row)), chunk('fkPd', Buffer.alloc(extra || 64, 7)), chunk('IEND', Buffer.alloc(0))]);
+  return new Uint8Array(b.subarray(0, b.length - (o.cut || 0)));
+}
 export function fakeRender() {
   const R = { calls: [], queue: [], after: {} };
   R.fetch = async (url, init) => {
@@ -272,7 +283,7 @@ export function fakeBrowser() {
     if (next === 'err') return new Response('Navigation timeout of 30000 ms exceeded\nwaiting for selector #o svg', { status: 500, headers: h });
     if (next === 'wrongsize') return new Response(png(100, 100), { headers: Object.assign({ 'content-type': 'image/png' }, h) });
     if (B.after.shot) await B.after.shot(opts);
-    return new Response(png(size[0], size[1], 4096), { headers: Object.assign({ 'content-type': 'image/png' }, h) });
+    return new Response(png(size[0], size[1], 300 * 1024), { headers: Object.assign({ 'content-type': 'image/png' }, h) }); // over the least sizes (render.js PNG_MIN)
   };
   return B;
 }
