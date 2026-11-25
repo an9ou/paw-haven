@@ -476,6 +476,7 @@
     E.topQ = {}; E.topBusy = 0; E.lastTheme = -9999; E.themes = 0;
     E.v = null; E.sig = ''; E.pending = null; E.voices = []; E.dropped = 0; E.birdRate = 0.35; E.applied = 0;
     E.form0 = 0;   // the bar an ANCHOR progression came in on
+    E.phase0 = 0;   // phrase offset of an 8-bar progression: 0 (bar % 8, as always) except the old Winter Market tune after a turn
     E.mk = { tune: null, played: 0, inVisit: false, leftAt: -1e9, turns: 0 }; E.mkTurn = MK_TURN;   // Winter Market turns (in memory only)
   }
 
@@ -941,6 +942,7 @@
       if (E.mk.played >= E.mkTurn && !E.nextProg && E.formPos(bar) === 0) {
         var nv = resolve(E.mkCtx(E.v, E.v.tune === 'xmas' ? 'old' : 'xmas'));
         E.mk.turns++; E.apply(nv, t, false);
+        if (E.nextProg) { E.setProg(E.nextProg, bar, step, true); E.nextProg = null; }   // the other tune starts here, at its own bar 1
       }
     }
     if (E.nextProg && bar % 2 === 0) { E.setProg(E.nextProg, bar, step); E.nextProg = null; }
@@ -951,13 +953,16 @@
     E.chord = CH[pr[E.pi]]; E.nextChord = CH[pr[(E.pi + 1) % pr.length]];
     if (bar % 2 === 0 && step >= E.topBusy) E.planTop(step);
   };
-  // the bar's place in the current progression: bar % 8 for the 8-bar ones (as always), from the bar it came in on for an ANCHOR one
+  // the bar's place in the current progression: bar % 8 for the 8-bar ones (as always; from phase0 after a Winter Market turn),
+  // from the bar it came in on for an ANCHOR one
   EP.formPos = function (bar) {
-    var pr = PROGS[this.progName] || PROGS.bright, rel = ANCHOR[this.progName] ? bar - this.form0 : bar;
+    var pr = PROGS[this.progName] || PROGS.bright, rel = bar - (ANCHOR[this.progName] ? this.form0 : this.phase0);
     return ((rel % pr.length) + pr.length) % pr.length;
   };
-  EP.setProg = function (name, bar, step) {
-    this.progName = name;
+  // turn: the Winter Market turn brings this progression in, so an 8-bar one starts its phrase on this bar too (phase0); any other
+  // change puts it back on bar % 8
+  EP.setProg = function (name, bar, step, turn) {
+    this.progName = name; this.phase0 = turn && !ANCHOR[name] ? bar : 0;
     if (ANCHOR[name]) {   // a written-out form starts at its own bar 1: clear any motif still queued so the tune starts clean
       this.form0 = bar;
       for (var qs in this.topQ) if (+qs >= step) delete this.topQ[qs];
@@ -1686,7 +1691,7 @@
       }
       var before = e.applied;
       e.tick(t + 0.12);
-      if (e.applied !== before) log.push({ at: Math.round(e.nextTime * 100) / 100, variant: e.v.label, bpm: e.v.bpm, base: e.v.base, bar: e.bar });
+      if (e.applied !== before) log.push({ at: Math.round(e.nextTime * 100) / 100, variant: e.v.label, bpm: e.v.bpm, base: e.v.base, bar: e.bar, pi: e.pi, prog: e.progName });
     }
     return off.startRendering().then(function (buf) {
       var r = analyse(buf);
