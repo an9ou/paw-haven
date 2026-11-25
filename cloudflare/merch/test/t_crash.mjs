@@ -10,7 +10,7 @@ const GRACE = 120e3;
 const withCron = async (w, ms) => { const end = w.clock.t + ms; while (w.clock.t < end) { await w.advance(Math.min(10 * MIN, end - w.clock.t)); await w.cron(); } };
 const crash = (w, fake, k) => { fake.after[k] = async () => { fake.after[k] = null; w.evict(); }; };
 const shipHint = async (w, id) => w.phook(w.pf.hook(w.pfOrder(id), 'package_shipped', 'evt_' + Math.random()));
-const confirms = (w) => w.pf.calls.filter((c) => /\/confirm$/.test(c.path)).length;
+const confirms = (w) => w.pf.calls.filter((c) => /\/confirm(ation)?$/.test(c.path)).length;
 const live = (w) => Array.from(w.pf.orders.values()).filter((o) => !o.deleted);
 const refundKeys = (w) => w.stripe.refunds.map((r) => r.metadata.merch_refund);
 // the checks every crash ends with

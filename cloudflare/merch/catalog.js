@@ -104,5 +104,20 @@ export function buildCatalog(PP) {
 export const variantId = (p, colour, size) => p + ':' + colour + (size ? ':' + size : '');
 export function unitPrice(P, size) { return P.price + ((P.size_price && P.size_price[size]) || 0); }
 export function unitCost(P, size) { return P.cost + ((P.size_cost && P.size_cost[size]) || 0); }
-// the Printful variant (part 5 maps it to Printful's catalog variant id; null until then)
+// the Printful variant as a line stores it ('pf:<our variant id>'); provider_printful.js turns it into Printful's catalog variant id below
 export const providerVariant = (p, colour, size) => 'pf:' + variantId(p, colour, size);
+// Printful's catalog variant ids for what we offer (part 5): read from the public catalog without a key, api.printful.com/products/19 and
+// /products/71 (25 Nov 2026; recorded in test/printful/catalog_v1_product_*.json, colour codes equal ours). The v2 API takes the same ids as
+// catalog_variant_id (its docs' tee example uses 4011, which is 3001 White / S here). Mug: White Glossy Mug 11 oz; tee: Bella+Canvas 3001.
+// Only the sizes made in both the US and the UK (buildCatalog). A variant missing here is never sent to Printful (the adapter refuses the line).
+export const PF_PRODUCTS = { mug: 19, tee: 71 };
+export const PF_VARIANT_IDS = {
+  'mug:white': 1320,
+  'tee:white:S': 4011, 'tee:white:M': 4012, 'tee:white:L': 4013, 'tee:white:XL': 4014, 'tee:white:2XL': 4015, 'tee:white:3XL': 5294, 'tee:white:4XL': 5309,
+  'tee:soft-cream:S': 4151, 'tee:soft-cream:M': 4152, 'tee:soft-cream:L': 4153, 'tee:soft-cream:XL': 4154, 'tee:soft-cream:2XL': 4155,
+  'tee:athletic-heather:S': 6948, 'tee:athletic-heather:M': 6949, 'tee:athletic-heather:L': 6950, 'tee:athletic-heather:XL': 6951, 'tee:athletic-heather:2XL': 6952,
+  'tee:pink:S': 4136, 'tee:pink:M': 4137, 'tee:pink:L': 4138, 'tee:pink:XL': 4139, 'tee:pink:2XL': 4140,
+  'tee:ice-blue:XS': 9576, 'tee:ice-blue:S': 9360, 'tee:ice-blue:M': 9361, 'tee:ice-blue:L': 9362, 'tee:ice-blue:XL': 9363, 'tee:ice-blue:2XL': 9364,
+  'tee:navy:XS': 9546, 'tee:navy:S': 4111, 'tee:navy:M': 4112, 'tee:navy:L': 4113, 'tee:navy:XL': 4114, 'tee:navy:2XL': 4115,
+  'tee:black:XS': 9527, 'tee:black:S': 4016, 'tee:black:M': 4017, 'tee:black:L': 4018, 'tee:black:XL': 4019, 'tee:black:2XL': 4020, 'tee:black:3XL': 5295, 'tee:black:4XL': 5310
+};

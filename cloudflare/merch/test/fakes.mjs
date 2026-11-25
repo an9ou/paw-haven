@@ -2,7 +2,7 @@
 // stand-ins for Stripe, Printful, the renderer and Resend. Nothing here reaches the network.
 import { DatabaseSync } from 'node:sqlite';
 import { createRequire } from 'node:module';
-import { SHIP_COSTS, regionOf, PRODUCTS, unitCost } from '../catalog.js';
+import { SHIP_COSTS, regionOf, PRODUCTS, unitCost, PF_PRODUCTS, PF_VARIANT_IDS } from '../catalog.js';
 import { signFor } from '../stripe.js';
 
 const require = createRequire(import.meta.url);
@@ -123,44 +123,116 @@ export function fakeStripe() {
   return S;
 }
 
-// ---------------- Printful ----------------
+// ---------------- Printful (API v2, as documented: PART5.md; the shapes match test/printful/*.json) ----------------
+// The fake keeps its own simple model of each order (tests read and change it: status, items, recipient, shipments; deleted = cancelled or deleted at Printful, gone = deleted through v2, so GET answers 404) and answers in
+// Printful's v2 shapes: { data: Order }, shipments on their own route, old-style errors { code, result, error: { reason, message } } on the
+// order routes. `calls[].path` is the path inside the API version (no '/v2' prefix; `v` says which): '/orders', '/orders/@<ext>', ...
+// One v1 route is kept, the cancel of a confirmed order (DELETE /orders/{id}, v: 1). The catalog and rate routes answer only when `costs` is
+// set (else 404, so the nightly job writes nothing, as before part 5).
+const PF_REV = Object.fromEntries(Object.entries(PF_VARIANT_IDS).map(([k, v]) => [v, k]));
+const pfErr = (status, message, reason) => J({ code: status, result: message, error: { reason: reason || (status === 404 ? 'NotFound' : 'BadRequest'), message } }, status);
+const pfProblem = (status, title) => J({ type: 'https://developers.printful.com/docs/v2-beta/#errors/internal-server-error', status, title, details: title }, status);
+const iso = (t) => (t == null ? null : new Date(typeof t === 'number' ? t : Date.parse(t)).toISOString());
+// Printful's webhook v2 signature: HMAC-SHA256 of the raw body, keyed with the hex-decoded secret (a secret that is not hex: its text)
+export async function pfSign(secret, raw) {
+  const s = String(secret), key = /^(?:[0-9a-f]{2})+$/i.test(s) ? Uint8Array.from(s.match(/../g), (b) => parseInt(b, 16)) : new TextEncoder().encode(s);
+  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(raw))), (b) => b.toString(16).padStart(2, '0')).join('');
+}
 export function fakePrintful() {
-  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0, after: {} };
+  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0, after: {}, calc: 0 };
   const take = (k) => { if (P.fail[k] > 0) { P.fail[k]--; return true; } return false; };
-  const out = (o) => J({ code: 200, result: o });
+  const ourOf = (vid) => PF_REV[vid] || null; // 'tee:navy:M'
+  const costsOf = (o) => ({ calculation_status: o.calc > 0 ? 'calculating' : 'done', currency: 'USD', subtotal: o.calc > 0 ? null : o.c.subtotal, discount: '0.00', shipping: o.calc > 0 ? null : o.c.shipping,
+    digitization: '0.00', additional_fee: '0.00', fulfillment_fee: '0.00', retail_delivery_fee: '0.00', vat: '0.00', tax: '0.00', total: o.calc > 0 ? null : (Number(o.c.subtotal) + Number(o.c.shipping)).toFixed(2) });
+  const v2Order = (o) => ({ id: Number(o.id), external_id: o.external_id, store_id: 1, shipping: 'STANDARD', status: o.status, created_at: o.created_at, updated_at: o.created_at,
+    recipient: o.recipient, costs: costsOf(o), retail_costs: o.retail_costs,
+    order_items: o.items.map((i) => ({ id: i.id, type: 'order_item', source: 'catalog', catalog_variant_id: i.catalog_variant_id, external_id: i.external_id, quantity: i.quantity, name: i.name, price: i.price, retail_price: i.retail_price, currency: 'USD', retail_currency: 'USD' })),
+    _links: { self: { href: 'https://api.printful.com/v2/orders/' + o.id } } });
+  const out = (o) => { if (o.calc > 0) o.calc--; return J({ data: v2Order(o) }); };
+  const v2Ship = (o, s) => ({ id: Number(s.id), order_id: Number(o.id), order_external_id: o.external_id, carrier: s.carrier, service: 'Standard', shipment_status: s.returned ? 'returned' : 'shipped',
+    shipped_at: iso(s.ship_date), delivery_status: s.delivered_at ? 'delivered' : 'in_transit', delivered_at: s.delivered_at ? iso(s.delivered_at) : null, is_reshipment: false,
+    tracking_number: String(s.id), tracking_url: s.tracking_url, shipment_items: s.items.map((x, n) => { const it = o.items.find((i) => i.external_id === x.order_item_external_id); return { id: n + 1, order_item_id: it ? it.id : null, order_item_external_id: x.order_item_external_id, quantity: it ? it.quantity : 1 }; }) });
   P.fetch = async (url, init) => {
-    const u = new URL(url), m = (init && init.method) || 'GET', body = init && init.body ? JSON.parse(init.body) : null; P.calls.push({ m, path: u.pathname, body });
-    const p = u.pathname;
-    if (p === '/merch/catalog-costs') return P.costs ? out(P.costs) : J({ error: {} }, 404);
-    if (p === '/orders' && m === 'POST') {
-      if (take('create')) return J({ code: 503, error: { reason: 'down' } }, 503);
-      if (P.refuse.recipient) return J({ code: 400, error: { reason: 'recipient', message: 'cannot ship there' } }, 400);
-      const bad = body.items.filter((i) => (P.refuse.variants || []).includes(i.variant_id)).map((i) => i.external_id);
-      if (bad.length) return J({ code: 400, error: { reason: 'items', items: bad } }, 400);
+    const u = new URL(url), m = (init && init.method) || 'GET', body = init && init.body ? JSON.parse(init.body) : null;
+    const v = u.pathname.startsWith('/v2/') ? 2 : 1, p = v === 2 ? u.pathname.slice(3) : u.pathname;
+    P.calls.push({ m, path: p, v, query: u.search, body, headers: (init && init.headers) || {} });
+    let mm;
+    if (v === 2 && (mm = /^\/catalog-products\/(\d+)\/prices$/.exec(p))) {
+      if (!P.costs) return pfErr(404, 'Not found');
+      const variants = Object.entries(PF_VARIANT_IDS).filter(([k]) => PF_PRODUCTS[k.split(':')[0]] === Number(mm[1])).map(([k, id]) => {
+        const [prod, , size] = k.split(':'), c = P.costs.variants && P.costs.variants[k] != null ? P.costs.variants[k] : unitCost(PRODUCTS[prod], size);
+        return { id, techniques: [{ technique_key: prod === 'mug' ? 'sublimation' : 'dtg', technique_display_name: prod === 'mug' ? 'Sublimation' : 'DTG printing', price: (c / 100).toFixed(2), discounted_price: (c / 100).toFixed(2) }] };
+      });
+      return J({ data: { currency: 'USD', product: { id: Number(mm[1]), placements: [] }, variants }, paging: { total: variants.length, offset: 0, limit: 100 }, _links: {} });
+    }
+    if (v === 2 && p === '/shipping-rates' && m === 'POST') {
+      if (!P.costs) return pfErr(404, 'Not found');
+      const region = regionOf(body.recipient.country_code), it = body.order_items[0], our = ourOf(it.catalog_variant_id), g = PRODUCTS[our.split(':')[0]].group;
+      const fe = (P.costs.ship && P.costs.ship[region + ':' + g]) || SHIP_COSTS[region][g];
+      return J({ data: [{ shipping: 'STANDARD', shipping_method_name: 'Flat Rate', rate: ((fe[0] + (it.quantity - 1) * fe[1]) / 100).toFixed(2), currency: 'USD', shipments: [] }], extra: [] });
+    }
+    if (v === 2 && p === '/orders' && m === 'POST') {
+      if (take('create')) return pfProblem(503, 'Service Unavailable');
+      if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + body.recipient.country_code + '`');
+      const bad = body.order_items.map((i, n) => ((P.refuse.variants || []).includes('pf:' + ourOf(i.catalog_variant_id)) ? 'Item ' + n + ': This product variant is not available' : null)).filter(Boolean);
+      if (bad.length) return pfErr(400, bad.join('; '));
+      const was = P.byExt.get(body.external_id); if (was && !P.orders.get(was).gone) return pfErr(400, 'The external_id provided already exists and cannot be used');
       const id = String(++P.n), region = regionOf(body.recipient.country_code);
       const groups = {}; let items = 0;
-      for (const i of body.items) { const [, prod, , size] = i.variant_id.split(':'); items += unitCost(PRODUCTS[prod], size) * i.quantity; groups[PRODUCTS[prod].group] = (groups[PRODUCTS[prod].group] || 0) + i.quantity; }
+      for (const i of body.order_items) { const [prod, , size] = ourOf(i.catalog_variant_id).split(':'); items += unitCost(PRODUCTS[prod], size) * i.quantity; groups[PRODUCTS[prod].group] = (groups[PRODUCTS[prod].group] || 0) + i.quantity; }
       let ship = 0; for (const g of Object.keys(groups)) ship += SHIP_COSTS[region][g][0] + (groups[g] - 1) * SHIP_COSTS[region][g][1];
-      const o = { id, external_id: body.external_id, status: 'draft', recipient: body.recipient, costs: { subtotal: (items * P.costMul / 100).toFixed(2), shipping: (ship / 100).toFixed(2), tax: '0.00' }, items: body.items.map((i) => ({ external_id: i.external_id, status: 'draft' })), files: body.items.map((i) => i.files[0].url), shipments: [] };
+      const o = { id, external_id: body.external_id, status: 'draft', recipient: body.recipient, created_at: new Date().toISOString(), retail_costs: body.retail_costs, calc: P.calc || 0,
+        c: { subtotal: (items * P.costMul / 100).toFixed(2), shipping: (ship / 100).toFixed(2) },
+        items: body.order_items.map((i) => ({ id: ++P.n, external_id: i.external_id, status: 'draft', catalog_variant_id: i.catalog_variant_id, quantity: i.quantity, name: i.name, retail_price: i.retail_price, price: null, placements: i.placements })),
+        files: body.order_items.map((i) => i.placements[0].layers[0].url), shipments: [] };
       P.orders.set(id, o); P.byExt.set(body.external_id, id);
       if (P.after.create) await P.after.create(o);
       if (P.timeoutCreate > 0) { P.timeoutCreate--; await new Promise((r) => setTimeout(r, 400)); }
       return out(o);
     }
-    const mm = /^\/orders\/(@?)([^/]+)(\/confirm)?$/.exec(p);
-    if (mm) {
-      const id = mm[1] ? P.byExt.get(decodeURIComponent(mm[2])) : mm[2], o = id && P.orders.get(id);
-      if (m === 'GET') { if (take('get')) return J({ error: {} }, 503); return o ? out(o) : J({ code: 404, error: { reason: 'not_found' } }, 404); }
-      if (!o) return J({ code: 404, error: {} }, 404);
-      if (mm[3]) { if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return J({ code: 503, error: {} }, 503); if (P.refuse.billing) return J({ code: 402, error: { reason: 'billing' } }, 402); if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); } o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o); return out(o); }
-      if (m === 'PUT') { if (P.refuse.recipient) return J({ code: 400, error: { reason: 'recipient' } }, 400); o.recipient = body.recipient; if (P.after.update) await P.after.update(o); return out(o); }
-      if (m === 'DELETE') { if (take('delete')) return J({ code: 503, error: {} }, 503); if (o.status !== 'draft' && o.status !== 'pending') return J({ code: 400, error: { reason: 'cannot_cancel' } }, 400); o.status = 'canceled'; o.deleted = true; if (P.after.delete) await P.after.delete(o); return out(o); }
+    if (v === 1 && (mm = /^\/orders\/(\d+)$/.exec(p)) && m === 'DELETE') { // v1 cancel: "Cancels pending order or draft"
+      const o = P.orders.get(mm[1]); if (!o || o.gone) return pfErr(404, 'Not found');
+      if (take('delete')) return pfErr(500, 'Internal error', 'InternalServerError');
+      if (o.status !== 'draft' && o.status !== 'pending') return pfErr(400, 'This order can not be cancelled');
+      o.status = 'canceled'; o.deleted = true; if (P.after.delete) await P.after.delete(o);
+      return J({ code: 200, result: { id: Number(o.id), external_id: o.external_id, status: 'canceled' } });
     }
-    return J({ error: { message: 'unknown' } }, 404);
+    if (v === 2 && (mm = /^\/orders\/(@?)([^/]+)(\/confirmation|\/shipments)?$/.exec(p))) {
+      const id = mm[1] ? P.byExt.get(decodeURIComponent(mm[2])) : mm[2], o0 = id && P.orders.get(id), o = o0 && !o0.gone ? o0 : null; // a deleted draft is gone
+      if (mm[3] === '/shipments') return o ? J({ data: o.shipments.map((s) => v2Ship(o, s)), paging: { total: o.shipments.length, offset: 0, limit: 100 } }) : pfErr(404, 'Not found');
+      if (m === 'GET') { if (take('get')) return pfProblem(503, 'Service Unavailable'); return o ? out(o) : pfErr(404, 'Not found'); }
+      if (!o) return pfErr(404, 'Not found');
+      if (mm[3] === '/confirmation') {
+        if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return pfProblem(503, 'Service Unavailable');
+        if (P.refuse.billing) return pfErr(400, 'Order could not be charged: no valid billing method');
+        if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); }
+        o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o); return out(o);
+      }
+      if (m === 'PATCH') {
+        if (P.refuse.recipient) return pfErr(400, 'Recipient: Invalid state `ZZ` select a valid state for country `' + ((body.recipient && body.recipient.country_code) || 'US') + '`');
+        o.recipient = Object.assign({}, o.recipient, body.recipient); if (P.after.update) await P.after.update(o); return out(o);
+      }
+      if (m === 'DELETE') { // v2: deletes a draft, failed or canceled order (not charged); 204, no body
+        if (take('delete')) return pfProblem(503, 'Service Unavailable');
+        if (!['draft', 'failed', 'canceled'].includes(o.status)) return pfErr(400, 'Order cannot be deleted');
+        o.status = 'canceled'; o.deleted = true; o.gone = true; if (P.after.delete) await P.after.delete(o); return new Response(null, { status: 204 });
+      }
+    }
+    return pfErr(404, 'Not found');
   };
-  P.ship = (id, exts, o) => { o = o || {}; const ord = P.orders.get(id); const s = { id: 'sh_' + (++P.n), carrier: 'USPS', tracking_url: 'https://track.test/' + P.n, ship_date: new Date(o.at || Date.now()).toISOString(), items: exts.map((e) => ({ order_item_external_id: e })) }; ord.shipments.push(s); ord.status = o.status || 'partial'; return s; };
-  P.secret = 'pf-hook-secret-test';
-  P.hook = (ord, type, id) => JSON.stringify({ id: id || null, type: type || 'package_shipped', data: { order: { id: Number(ord.id), external_id: ord.external_id } } });
+  // a parcel leaves: items by our item external ids (v2 shipment_items carry order_item_external_id)
+  P.ship = (id, exts, o) => { o = o || {}; const ord = P.orders.get(id); const s = { id: String(++P.n), carrier: 'USPS', tracking_url: 'https://track.test/' + P.n, ship_date: new Date(o.at || Date.now()).toISOString(), items: exts.map((e) => ({ order_item_external_id: e })) }; ord.shipments.push(s); ord.status = o.status || 'partial'; return s; };
+  P.secret = '5e6b1c0a9d8f7e6d5c4b3a29180716253443526170819a0b1c2d3e4f5a6b7c8d'; // hex, as Printful hands it out (invented)
+  // a v2 webhook body (no event id in v2: occurred_at, made from the test's id, keeps two hints apart; the same id gives the same body)
+  const H = { package_shipped: 'shipment_sent', package_returned: 'shipment_returned' };
+  const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  P.hook = (ord, type, id) => {
+    const t = H[type] || type || 'shipment_sent', last = ord.shipments && ord.shipments[ord.shipments.length - 1];
+    const data = { order: { id: Number(ord.id), external_id: ord.external_id, status: ord.status, store_id: 1, dashboard_url: 'https://www.printful.com/dashboard?order_id=' + ord.id, created_at: ord.created_at || null, updated_at: ord.created_at || null } };
+    if (/^shipment_/.test(t) && last) data.shipment = { id: Number(last.id), status: last.returned ? 'returned' : 'shipped', store_id: 1, tracking_number: String(last.id), tracking_url: last.tracking_url, created_at: last.ship_date, ship_date: last.ship_date.slice(0, 10), shipped_at: last.ship_date, delivered_at: null, reshipment: false };
+    return JSON.stringify({ type: t, occurred_at: new Date(Date.UTC(2026, 11, 1) + (id ? (hash(String(id)) % 1e8) * 1000 : 0)).toISOString().replace('.000', ''), retries: 0, store_id: 1, data });
+  };
   return P;
 }
 

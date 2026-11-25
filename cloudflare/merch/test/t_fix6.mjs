@@ -107,7 +107,7 @@ export async function fix6() {
     let w = await world({ env: { MERCH_PROVIDER_MODE: 'draft' } }); let id = await w.drafted([mug(0)]); await w.advance(2 * HOUR);
     eq([w.order(id).status, w.order(id).hold, w.order(id).next_try_at], ['held', 'draft_mode', SHIP_BY], 'held, with a wake at ship_by');
     await w.advance(SHIP_BY - w.clock.t); ok(w.mails(/_late$/).length === 1 && w.order(id).next_try_at === LATE_ETA, 'the delay email, and a wake at late_eta');
-    await w.advance(LATE_ETA - w.clock.t + MIN); ok(w.order(id).status === 'refunded' && w.pf.orders.size === 1 && Array.from(w.pf.orders.values()).every((p) => p.deleted) && !w.order(id).draft_del && !w.pf.calls.some((c) => /\/confirm$/.test(c.path)), 'refunded, the draft deleted, never confirmed');
+    await w.advance(LATE_ETA - w.clock.t + MIN); ok(w.order(id).status === 'refunded' && w.pf.orders.size === 1 && Array.from(w.pf.orders.values()).every((p) => p.deleted) && !w.order(id).draft_del && !w.pf.calls.some((c) => /\/confirm(ation)?$/.test(c.path)), 'refunded, the draft deleted, never confirmed');
     // a dispute opened after the delay email: no second step while it is open; report clean
     w = await world(); id = await partLate(w); await w.advance(SHIP_BY - w.clock.t);
     await w.hook('charge.dispute.created', { id: 'dp_late', payment_intent: w.order(id).payment_intent });
