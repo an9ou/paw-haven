@@ -26,7 +26,12 @@ and no other page links to `/merch`.
 2. **Which dog?** From a link (`#p=...` → `PawPrint.merchFromHash`; kept in `sessionStorage` for this tab only, the hash becomes `#/pick`), else
    the save in this browser (`localStorage['pawhaven_proto_v1']`, **read only**, `merchFromSave`), else "We can't see any of your dogs from here yet" (playing on itch.io: "pick a ready-made dog for now"; no promise of a game button)
    with Next off and the ready-made dogs. Cards: the dog drawn by PawPrint, its own game name (escaped text, even when the print font can't draw it), breed, "playing now", Puppy / Newborn, what it wears. A bad link
-   is said kindly.
+   is said kindly. From a link, one quiet line under the card: "These are your dogs from the game, just as they look today." ("This is your dog ...
+   just as it looks today." for one).
+   **The share link (part 8b, PART8.md):** `#p=<one dog>&prod=<mug|tee>&pose=<stand|sit|happy>&from=share` (any order) opens step 4 with that dog,
+   product and pose; the address becomes `#/pick` → `#/thing` → `#/make`, so Back walks the steps. "Ship to" stays in the shop bar as on every step
+   (shipping in the basket). Each value must be in the page's own fixed lists and the catalog (product `on` and launch, the pose offered); otherwise,
+   or with two or more dogs, the dog list as for any link; a bad `#p=` is a bad link. Only the dogs are kept for the tab, never sent.
 3. **The thing**: mug and tee only. Products are the catalog's `on` **and** `PawPrint.PRODUCTS[id].launch`: stickers appear nowhere.
 4. **Make it yours**: the preview (on the thing, or "The picture we print" alone with its size: "Your dog prints about 5.0 in wide"), pose (stand, sit,
    happy), name on/off and typed, colour (7 swatches; the patch note on colour), size (per colour) with a size guide, how many (1-3), "Add to basket"

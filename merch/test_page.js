@@ -426,6 +426,7 @@ async function pageChecks() {
   t = await open({ path: '/merch/#p=AQEAJSCQqVT8sQIBAAVNb2NoaRjX' }); pg = t.page;
   ok('bad link: said kindly, no dogs', /didn't come through whole/.test(await text(pg, '#pickBody')) && (await pg.$$eval('[data-pick]', (b) => b.length)) === 0);
   await finish('bad link', t);
+  await shareChecks();
 
   // ---- no dogs: the ready-made ones, Next stays off
   t = await open({}); pg = t.page;
@@ -663,6 +664,77 @@ async function tabChecks() {
 }
 
 // ---- S7: the address always says the step on show
+// ---- part 8b: the game's share sheet link, #p=<one dog>&prod=mug&pose=happy&from=share (docs/design/merch/PART8.md): "make it" opens with that
+//      dog, product and pose; anything else falls back to the dog list (or the bad-link words); nothing of the link leaves the page
+const SHARE = (r, tail) => '/merch/#p=' + (Array.isArray(r) ? P.merchEncode(r) : enc(r)) + (tail === undefined ? '&prod=mug&pose=happy&from=share' : tail);
+const QUIET1 = 'This is your dog from the game, just as it looks today.', QUIETN = 'These are your dogs from the game, just as they look today.';
+async function noLeak(pg, bits) { // no request the page made (scripts, the catalog, anything) carries the link's recipe or its other parameters
+  return pg.evaluate((bits) => performance.getEntriesByType('resource').concat(performance.getEntriesByType('navigation')).every((e) => bits.every((b) => !e.name.split('#')[0].includes(b))), bits);
+}
+async function shareChecks() {
+  const mochi = R('Mochi'), M1 = SHARE(mochi);
+  let t = await open({ path: M1 }), pg = t.page;
+  ok('share link: opens "make it"', (await view(pg)) === 'make' && (await hash(pg)) === '#/make' && /step 3 of 4/.test(await text(pg, '#crumbs')));
+  ok('share link: the mug and the happy pose chosen', (await pg.evaluate(() => { const d = window.__merch.st.draft; return d && d.product + '/' + d.pose + '/' + d.colour; })) === 'mug/happy/white' &&
+    (await pg.$eval('[data-pose=happy]', (b) => b.getAttribute('aria-pressed'))) === 'true' && (await pg.$$eval('[data-pose][aria-pressed=true]', (b) => b.length)) === 1);
+  ok('share link: the preview is that dog on the mug, happy, with its name', await previewIs(pg, '#pvOn svg[data-pawprint]', mochi, { product: 'mug', colour: 'white', pose: 'happy', name: true }));
+  ok('share link: the dog from the link, its name on', (await pg.evaluate(() => window.__merch.st.dog.src + '/' + window.__merch.st.draft.name_on)) === 'link/true' && (await text(pg, '.dn')) === 'Mochi');
+  ok('share link: "Ship to" is in the shop bar as on every step, and the price says shipping comes in the basket', !(await pg.$eval('#shipTo', (e) => e.classList.contains('off'))) && (await pg.$eval('#shipSel', (s) => s.value)) === 'US' &&
+    /^\$19\.99\s*shipping in the basket$/.test(await text(pg, '#amt')));
+  ok('share link: the link is kept for this tab like any link, without its product or pose', await pg.evaluate(() => { const s = sessionStorage.getItem('dd_merch_link_v1'); return !!s && JSON.parse(s).length === 1 && !/prod|pose|share/.test(s); }));
+  ok('share link: nothing of the link went out in any request', await noLeak(pg, [enc(mochi), 'prod=', 'pose=', 'from=share']));
+  await pg.goBack(); await settle(pg);
+  ok('share link: Back goes to the thing, and the address says so', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing');
+  await pg.goBack(); await settle(pg);
+  ok('share link: Back again goes to the dog list, with the quiet line', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick' && (await text(pg, '.fromq')) === QUIET1 && (await pg.$$eval('[data-pick]', (b) => b.length)) === 1);
+  await pg.goForward(); await settle(pg); await pg.goForward(); await settle(pg);
+  ok('share link: Forward twice is "make it" again, as it was', (await view(pg)) === 'make' && (await hash(pg)) === '#/make' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'happy');
+  await tap(pg, '#makeBack');
+  ok('share link: the page\'s own Back is the thing', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing');
+  await finish('share link', t);
+  t = await open({ path: M1 }); pg = t.page;
+  await tap(pg, '#addBtn');
+  ok('share link: Add puts the happy mug in the basket', (await view(pg)) === 'basket' && JSON.stringify((await pg.evaluate(() => window.__merch.basket())).map((l) => [l.product, l.pose, l.colour, l.name_on, l.recipe])) === JSON.stringify([['mug', 'happy', 'white', true, enc(mochi)]]));
+  await pg.reload(); await pg.waitForSelector('html.merch-ready'); await toHash(pg, '#/make');
+  ok('share link: after a reload, #/make with nothing being made is the first step that can show', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');
+  await finish('share add', t);
+  t = await open({ path: SHARE(R('Biscuit'), '&from=share&pose=sit&prod=tee') }); pg = t.page;
+  ok('share link: the tee and the sit pose, the parameters in any order', (await view(pg)) === 'make' && (await pg.evaluate(() => { const d = window.__merch.st.draft; return d.product + '/' + d.pose + '/' + d.size; })) === 'tee/sit/M');
+  await finish('share tee', t);
+  // every other case: today's behaviour (the dog list, or the bad-link words), never a crash
+  const CAT_MUGOFF = clone(CAT); CAT_MUGOFF.products.find((p) => p.id === 'mug').on = false;
+  const CAT_NOHAPPY = clone(CAT); CAT_NOHAPPY.products.find((p) => p.id === 'mug').poses = ['stand', 'sit'];
+  const BAD = [['an unknown product', SHARE(mochi, '&prod=hat&pose=happy&from=share')], ['stickers (not on sale)', SHARE(mochi, '&prod=stickers&pose=happy&from=share')],
+    ['the mug switched off in the catalog', SHARE(mochi), CAT_MUGOFF], ['a pose the mug does not offer here', SHARE(mochi), CAT_NOHAPPY], ['a pose nobody offers', SHARE(mochi, '&prod=mug&pose=jump&from=share')],
+    ['markup in the parameters', SHARE(mochi, '&prod=mug<img src=x onerror=alert(1)>&pose="><b>x</b>&from=share')], ['a product of the object prototype', SHARE(mochi, '&prod=constructor&pose=toString&from=share')],
+    ['no from=share', SHARE(mochi, '&prod=mug&pose=happy')], ['from=share and nothing else', SHARE(mochi, '&from=share')], ['from=other', SHARE(mochi, '&prod=mug&pose=happy&from=game')],
+    ['two dogs', SHARE([mochi, R('Bo')]), null, 2]];
+  for (const [what, p, catalog, n] of BAD) {
+    t = await open({ path: p, catalog: catalog || undefined }); pg = t.page;
+    const nd = n || 1;
+    ok('share link, ' + what + ': the dog list', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick' && (await pg.$$eval('[data-pick]', (b) => b.length)) === nd && (await text(pg, '.fromq')) === (nd === 1 ? QUIET1 : QUIETN) &&
+      !(await pg.evaluate(() => window.__merch.st.draft)) && !(await pg.$('#pickBody img, #pickBody b b')));
+    await finish('share ' + what, t);
+  }
+  for (const [what, p] of [['a broken recipe', '/merch/#p=AQEAJSCQqVT8sQIBAAVNb2NoaRjX&prod=mug&pose=happy&from=share'], ['no recipe', '/merch/#p=&prod=mug&pose=happy&from=share'], ['an empty hash', '/merch/#&prod=mug&from=share']]) {
+    t = await open({ path: p }); pg = t.page;
+    const v = await view(pg), body = await text(pg, '#pickBody');
+    ok('share link, ' + what + ': as any bad link today, never a crash', what === 'an empty hash' ? v === 'home' : v === 'pick' && (/didn't come through whole/.test(body) || what === 'no recipe') && (await pg.$$eval('[data-pick]', (b) => b.length)) === 0, { v, body: body.slice(0, 80) });
+    await finish('share ' + what, t);
+  }
+  // the changed screens fit: "make it" from the share link, and the dog list with the quiet line
+  for (const vp of [[360, 640], [390, 844], [1280, 720]]) {
+    for (const [name, p] of [['share-make', M1], ['share-pick', SHARE([mochi, R('Sir Wigglesworth III'), R('Bo')], '&prod=mug&pose=happy&from=share')]]) {
+      t = await open({ path: p, vp }); pg = t.page; await pg.evaluate(() => window.scrollTo(0, 0));
+      const r = await pg.evaluate(measure), tag = name + ' ' + vp.join('x');
+      const q = name === 'share-pick' ? await pg.$eval('.fromq', (e) => { const b = e.getBoundingClientRect(), m = e.closest('#pickBody').getBoundingClientRect(); return b.left >= m.left - 1 && b.right <= m.right + 1 && e.scrollWidth <= e.clientWidth + 1; }) : true;
+      ok('fit ' + tag + ': no sideways scroll, taps at least 44 px, text inside its card, the quiet line inside the step', r.wide <= 0 && !r.small.length && !r.spill.length && q, r);
+      ok('contrast ' + tag + ': every text at least 4.5:1', r.low.length === 0, r.low);
+      await finish('fit ' + tag, t);
+    }
+  }
+}
+
 async function routeChecks() {
   let t = await open({ save: SAVE, path: '/merch/#/make' }), pg = t.page;
   ok('deep link #/make with nothing chosen: the first step that can show, and the address says so', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');

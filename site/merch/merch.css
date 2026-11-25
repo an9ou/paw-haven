@@ -114,6 +114,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 /* ---- 2. which dog ---- */
 .from{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px;padding:10px 12px;background:var(--w-mint);border:2px solid var(--ink);border-radius:12px 9px 13px 8px;font-size:18px;line-height:1.35}
 .from.link{background:var(--w-blue)} .from.warn{background:var(--w-peach)}
+.fromq{margin:-4px 2px 12px;font-size:17px;line-height:1.35;color:var(--muted)}
 .from .ic{flex:none;font-size:24px;line-height:1.2}
 .from p{margin:0}
 .dogs5{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;list-style:none;padding:0;margin:0}
