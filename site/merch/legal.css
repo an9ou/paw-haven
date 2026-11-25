@@ -77,3 +77,6 @@ html[lang="ja"] .legal .decide>.dlabel{font-family:var(--jp);font-size:20px}
 .enline{font-size:18px}
 html[lang="ja"] .legal .draft [lang="en"],html[lang="ja"] .legal .updated [lang="en"]{display:block;font-family:var(--read)}
 @media (max-width:700px){ .legal h1{font-size:40px} .legal h2{font-size:31px} html[lang="ja"] .legal h1{font-size:26px} html[lang="ja"] .legal h2{font-size:22px} .legal p,.legal li,.legal dd,.legal td{font-size:18px} }
+
+/* the posting promise (one sentence on every page): a soft card where it stands as its own paragraph */
+.legal p.shipby{margin:10px 0 12px;padding:10px 14px;background:var(--w-mint);border:2px solid rgba(91,61,50,.35);border-radius:12px 9px 13px 8px}

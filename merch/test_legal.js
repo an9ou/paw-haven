@@ -5,16 +5,21 @@
 // Covers, on every page: loads with no console errors, no failed request and no request off the origin; noindex; no inline script; the draft banner
 // right under the only h1; the "Last updated" line; the site header and footer; in-page links and every same-origin link work; the links between the
 // four pages and back to /merch/; at 360x640, 390x844 and 1280x720 no sideways scroll, no text past its box, body text at least 15 px, standalone
-// taps at least 44 px tall, every text at least 4.5:1; every money figure equals site/merch/catalog.json (fees, thresholds, the extra-item fee,
-// product prices, delivery times); every placeholder marked; none of the banned words; the Japanese page has every heading the notice needs.
+// taps at least 44 px tall, every text at least 4.5:1; every money figure and delivery time equals cloudflare/merch/catalog.js (the Worker's own
+// price list: fees, thresholds, the extra-item fee, product prices, eta), each zone figure inside its own [data-zone] (the fee table's row); the fee
+// table has exactly one row per open zone; the order limits from catalog.js LIMITS; the cancel hour, the address window, the 30 days and the posting
+// promise against the EXPECT table below (each value also checked in its source); every placeholder marked; none of the banned words; the Japanese
+// page has every heading the notice needs.
+// Open zones: catalog.js has no default open set (lines.js openCountries: MERCH_COUNTRIES '' = none), so the open set is read from the `soon`
+// flags of site/merch/catalog.json (the page's stand-in catalog), mapped to zones with catalog.js zoneOf. Nothing else is read from catalog.json.
 'use strict';
-const http = require('http'), fs = require('fs'), path = require('path');
+const http = require('http'), fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), BRAND = path.join(ROOT, 'brand');
-const CAT = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json'), 'utf8'));
+const CATJ = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json'), 'utf8'));
 const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part7_shots');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('Playwright is needed (NODE_PATH=$(npm root -g))'); process.exit(1); }
 
-let pass = 0, fail = 0; const fails = [];
+let pass = 0, fail = 0; const fails = [], notes = [];
 function ok(name, cond, detail) { if (cond) { pass++; } else { fail++; fails.push(name + (detail !== undefined ? ': ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : '')); console.log('FAIL ' + name, detail !== undefined ? detail : ''); } }
 
 const PAGES = ['terms', 'shipping', 'seller', 'tokushoho'];
@@ -22,12 +27,49 @@ const PATH = (id) => '/merch/' + id + '/';
 const DRAFT_EN = 'Draft: to be checked by a professional before the shop opens.';
 const JP_HEADINGS = ['販売業者', '運営統括責任者', '所在地', '電話番号', 'メールアドレス', '販売価格', '商品代金以外の必要料金', '支払方法', '支払時期', '商品の引渡時期', '返品・交換・キャンセル'];
 
-// ---- the catalog's money, in cents, by key ("product.mug.price", "zone.us_jp.fee", ...); every figure a page may show
-const MONEY = {};
-for (const p of CAT.products) MONEY['product.' + p.id + '.price'] = p.price;
-for (const z of CAT.zones) { MONEY['zone.' + z.id + '.fee'] = z.fee; if (z.free_from != null) MONEY['zone.' + z.id + '.free_from'] = z.free_from; if (z.extra) MONEY['zone.' + z.id + '.extra'] = z.extra; }
-const ALLOWED = new Set(Object.values(MONEY));
+// ---- times and windows the pages state that catalog.js does not export. Each one is also checked in its source (SOURCE below), so a change there
+// fails here until this table and the pages follow.
+const EXPECT = {
+  cool_min: 60,     // the cancel hour: cloudflare/merch/ledger.js 168 coolMs(), default `: 60) * MIN` (MERCH_COOL_MIN unset)
+  address_days: 7,  // the address and reship windows: cloudflare/merch/ledger.js 849 and 892 (`7 * DAY`, T2.2-36, T2.2-45)
+  fault_days: 30,   // the fault window (our own promise, no code): docs/design/merch/TRANSACTIONS.md 4 policy text "within **30 days**"
+  ship_by_days: 7   // the posting promise (MERCH decision, 25 Nov 2026): cloudflare/merch/catalog.js SHIP_BY_DAYS once it is exported
+};
+// the policy text of TRANSACTIONS.md 4, with review finding 13 ("the last day of the delivery time shown for your order" for "the latest delivery
+// date we gave you"; TRANSACTIONS.md 4 takes the same words in the Worker batch)
+const POLICY = "Everything is printed just for you with your own dog, so we can't take it back if you change your mind. You can cancel the whole order for a full refund within " + EXPECT.cool_min / 60 + ' hour of paying, from your order page. If something arrives damaged or misprinted, or never arrives, email us within ' + EXPECT.fault_days + " days of delivery (or of the last day of the delivery time shown for your order) with a photo, and we'll reprint it or refund it, whichever you prefer. This doesn't affect your legal rights.";
+const READ = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const SOURCE = [
+  ['cool_min', 'cloudflare/merch/ledger.js', new RegExp(': ' + EXPECT.cool_min + '\\) \\* MIN')],
+  ['address_days', 'cloudflare/merch/ledger.js', new RegExp("case 'address': if \\(since >= " + EXPECT.address_days + ' \\* DAY\\)')],
+  ['address_days (reship)', 'cloudflare/merch/ledger.js', new RegExp("o\\.hold === 'reship' && now >= o\\.hold_at \\+ " + EXPECT.address_days + ' \\* DAY')],
+  ['fault_days', 'docs/design/merch/TRANSACTIONS.md', new RegExp('within \\*\\*' + EXPECT.fault_days + ' days\\*\\*')]
+];
+
+// ---- the Worker's catalog (an ES module), loaded in main()
+let C, MONEY, ALLOWED, OPEN_ZONES, CLOSED_ZONES, SHIP_BY, POST_EN, POST_JA;
+const ZONE_WORDS = { // words that name a zone's places; a closed zone's words never appear on the shipping or the Japanese page
+  us_jp: [/\bUSA\b|United States|アメリカ|米国/], ca_au_nz: [/Canada|Australia|New Zealand|カナダ|オーストラリア|ニュージーランド/],
+  uk_eu: [/\bVAT\b/, /European Union/, /\bUK\b|United Kingdom/, /付加価値税|英国|イギリス|欧州|\bEU\b/]
+};
+async function loadCatalog() {
+  C = await import(pathToFileURL(path.join(ROOT, 'cloudflare', 'merch', 'catalog.js')).href);
+  // the open set: catalog.json's soon flags, zones from catalog.js (see the head of this file)
+  const open = new Set(CATJ.countries.filter((c) => !c.soon && C.ALL_COUNTRIES.includes(c.code)).map((c) => C.zoneOf(c.code)));
+  OPEN_ZONES = Object.keys(C.ZONES).filter((z) => open.has(z)); CLOSED_ZONES = Object.keys(C.ZONES).filter((z) => !open.has(z));
+  MONEY = {};
+  for (const p of Object.values(C.PRODUCTS)) if (p.launch) MONEY['product.' + p.id + '.price'] = p.price;
+  for (const id of OPEN_ZONES) { const z = C.ZONES[id]; MONEY['zone.' + id + '.fee'] = z.fee; if (z.free_from != null) MONEY['zone.' + id + '.free_from'] = z.free_from; if (z.extra) MONEY['zone.' + id + '.extra'] = z.extra; }
+  ALLOWED = new Set(Object.values(MONEY));
+  if (Number.isInteger(C.SHIP_BY_DAYS)) SHIP_BY = C.SHIP_BY_DAYS;
+  else { SHIP_BY = EXPECT.ship_by_days; notes.push('pending: cloudflare/merch/catalog.js does not export SHIP_BY_DAYS yet; the posting promise is checked against EXPECT.ship_by_days = ' + SHIP_BY + ' (the Worker batch adds the constant)'); }
+  POST_EN = 'Printing usually takes 2 to 5 working days, and we post every order within ' + SHIP_BY + " working days of payment. If we can't, we email you before that day with a new date, and you can wait or cancel the late part for a full refund. You can cancel the late part any time until it's posted.";
+  POST_JA = ['印刷には通常2〜5営業日かかり、どのご注文もお支払いから' + SHIP_BY + '営業日以内に発送します。', '発送できない場合は、その日より前に新しい発送予定日をメールでお知らせします。', '遅れている分は、発送されるまでいつでもキャンセルできます。'];
+  // the stand-in catalog may lag behind (its generator is a Worker-batch item): said, not failed
+  for (const z of CATJ.zones) { const w = C.ZONES[z.id]; if (w && (z.eta[0] !== w.eta[0] || z.eta[1] !== w.eta[1])) notes.push('note: site/merch/catalog.json ' + z.id + ' eta ' + z.eta.join('-') + ' differs from catalog.js ' + w.eta.join('-') + ' (the pages follow catalog.js)'); }
+}
 const cents = (s) => { const m = /(\d+(?:\.\d{1,2})?)/.exec(String(s).replace(/,/g, '')); return m ? Math.round(parseFloat(m[1]) * 100) : NaN; };
+const zoneOfKey = (k) => (/^zone\.([a-z_]+)\./.exec(k) || [])[1] || null;
 
 // ---- the site, served as the web root (the brand icons at the root, as tools/cf_site.js serves them)
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.webp': 'image/webp', '.webmanifest': 'application/manifest+json' };
@@ -123,12 +165,17 @@ function facts() {
     links: [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')),
     ownText: txt(own), ownNoPh: txt(ownNoPh), allText: txt(main) + ' ' + txt(foot),
     ph: [...sheet.querySelectorAll('.ph')].map(txt),
-    money: [...sheet.querySelectorAll('[data-money]')].map((e) => [e.dataset.money, txt(e)]),
-    eta: [...sheet.querySelectorAll('[data-eta]')].map((e) => [e.dataset.eta, txt(e)]),
+    // each figure with the zone of its nearest [data-zone] and whether that is a fee-table row
+    money: [...sheet.querySelectorAll('[data-money]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.money, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
+    eta: [...sheet.querySelectorAll('[data-eta]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.eta, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
+    promise: [...sheet.querySelectorAll('.shipby')].map(txt),
+    rowNames: [...sheet.querySelectorAll('.fees tbody tr')].map((r) => [r.dataset.zone, txt(r.querySelector('th'))]),
+    limits: txt(sheet.querySelector('.limits')),
     short: (() => { const s = sheet.querySelector('.short'); return s ? { h: txt(s.querySelector('h2')), n: s.querySelectorAll('li').length } : null; })(),
     decide: [...sheet.querySelectorAll('.decide .dlabel')].map(txt),
     dts: [...sheet.querySelectorAll('.facts dt')].map(txt),
     feeZones: [...sheet.querySelectorAll('.fees tbody tr')].map((r) => r.dataset.zone),
+    langLabel: (document.querySelector('#langs summary') || { getAttribute: () => '' }).getAttribute('aria-label'), langNow: txt(document.querySelector('#langs summary [lang]')),
     phStyle: (() => { const p = sheet.querySelector('.ph'); if (!p) return null; const s = getComputedStyle(p); return { bg: s.backgroundColor, border: s.borderTopStyle }; })(),
   };
 }
@@ -136,7 +183,9 @@ function facts() {
 const BANNED = [/nintendo/i, /pok[eé]mon/i, /animal crossing/i, /printful/i, /\bAI\b/, /artificial intelligence/i, /chatgpt|\bclaude\b|\bgpt\b/i,
   /\bbreed(s|ing|er|ers)?\b/i, /\bstud\b/i, /litter price/i, /\b(sell|sells|selling|sold|buy|buys|buying|bought)\b/i,
   /hurry|only \d+ left|limited time|act now|don'?t miss|last chance|while stocks last/i, /lorem|\bTODO\b|\bTBD\b|\bXXX\b/i];
-const BANNED_JA = [/(犬|子犬|ワンちゃん)を(売|買|販売)/, /生体販売|繁殖|交配|ブリーダー/, /任天堂|ポケモン|どうぶつの森/];
+const BANNED_JA = [/(犬|子犬|ワンちゃん)を(売|買|販売)/, /生体販売|繁殖|交配|ブリーダー/, /任天堂|ポケモン|どうぶつの森/, /プリントフル|ﾌﾟﾘﾝﾄﾌﾙ/];
+// every page's text is NFKC-folded first, so full-width Latin (ｐｒｉｎｔｆｕｌ) meets the Latin rules
+const fold = (s) => s.normalize('NFKC');
 const EMOJI = /\p{Extended_Pictographic}/u;
 
 async function pageChecks() {
@@ -144,6 +193,7 @@ async function pageChecks() {
   for (const id of PAGES) {
     const t = await open(id, [390, 844]);
     const f = await t.page.evaluate(facts);
+    f.ownText = fold(f.ownText); f.allText = fold(f.allText);
     const tag = id;
     ok(tag + ': no console errors or failed requests', t.errors.length === 0, t.errors.slice(0, 3));
     ok(tag + ': no request left the origin', t.outside.length === 0, t.outside.slice(0, 3));
@@ -162,8 +212,15 @@ async function pageChecks() {
       for (const h of JP_HEADINGS) ok(tag + ': has the heading ' + h, f.dts.includes(h), f.dts);
       ok(tag + ': the phone option is marked for the professional', f.decide.some((d) => /専門家/.test(d)) && /遅滞なく/.test(f.ownText), f.decide);
       ok(tag + ': no 動作環境 (not software)', !f.dts.includes('動作環境'));
-      ok(tag + ': returns: made to order, faults, the 1-hour cancel', /受注生産/.test(f.ownText) && /30日以内/.test(f.ownText) && /1時間以内/.test(f.ownText), '');
-      for (const re of BANNED_JA) ok(tag + ': no banned Japanese words ' + re, !re.test(f.allText), (f.allText.match(re) || [])[0]);
+      ok(tag + ': returns: made to order, faults, the cancel hour', /受注生産/.test(f.ownText) && f.ownText.includes(EXPECT.fault_days + '日以内') && f.ownText.includes(EXPECT.cool_min / 60 + '時間以内'), '');
+      ok(tag + ': the order limit is LIMITS (' + C.LIMITS.max_lines + '種類, ' + C.LIMITS.max_qty + '個)', f.limits === '1回のご注文で' + C.LIMITS.max_lines + '種類まで、それぞれ' + C.LIMITS.max_qty + '個までです。', f.limits);
+      const tens = (f.ownText.match(/(\d+)点/g) || []).filter((x) => parseInt(x, 10) !== C.LIMITS.max_lines * C.LIMITS.max_qty);
+      ok(tag + ': any total of items is ' + C.LIMITS.max_lines * C.LIMITS.max_qty + ' (no "6点")', tens.length === 0, tens);
+      ok(tag + ': the posting promise in Japanese (' + SHIP_BY + '営業日以内, a new date before that day, cancel until posted)', POST_JA.every((s) => f.promise.some((p) => p.includes(s))) && /お支払いから(\d+)営業日以内に発送できない/.test(f.ownText) && RegExp.$1 === String(SHIP_BY), f.promise);
+      ok(tag + ': the 30 days is our own promise; the law may give longer', /当店独自のお約束/.test(f.ownText) && /より長い期間が認められる/.test(f.ownText), '');
+      ok(tag + ': no "latest delivery date" and no old delay timing', !/最も遅いお届け予定日|さらに2日|5営業日（/.test(f.ownText), (f.ownText.match(/最も遅いお届け予定日|さらに2日|5営業日（/) || [])[0]);
+      ok(tag + ': the language menu says Japanese on the Japanese page', f.langLabel === '言語：日本語' && f.langNow === '日本語', [f.langLabel, f.langNow]);
+      ok(tag + ': "日本国内で作れない" is marked not verified', f.ph.some((p) => /^\[未確認/.test(p)), f.ph);
     } else ok(tag + ': the page is in English', f.lang === 'en', f.lang);
     ok(tag + ': the site header', f.header);
     ok(tag + ': the site footer', f.footer);
@@ -182,33 +239,55 @@ async function pageChecks() {
     if (id === 'seller' || id === 'tokushoho') ok(tag + ': the unknown seller facts are placeholders', f.ph.length >= 4, f.ph.length);
     // words
     for (const re of BANNED) ok(tag + ': no banned words ' + re, !re.test(f.ownText) && !re.test(f.allText.replace(/Seller details/g, '')), (f.allText.match(re) || [])[0]);
+    for (const re of BANNED_JA) ok(tag + ': no banned Japanese words ' + re, !re.test(f.allText), (f.allText.match(re) || [])[0]);
+    ok(tag + ': no "latest delivery date we gave you" (we give a range of days)', !/latest delivery date/.test(f.ownText));
+    ok(tag + ': no liability cap', !/total responsibility|no more than what you paid/i.test(f.ownText), (f.ownText.match(/.{0,40}(total responsibility|no more than what you paid).{0,20}/i) || [])[0]);
+    ok(tag + ': no double negative "un-refunded"', !/un-refunded/.test(f.ownText));
+    if (id === 'shipping' || id === 'tokushoho') for (const z of CLOSED_ZONES) for (const re of ZONE_WORDS[z] || []) ok(tag + ': names nothing of the closed zone ' + z + ' ' + re, !re.test(f.ownText), (f.ownText.match(new RegExp('.{0,30}' + re.source + '.{0,20}')) || [])[0]);
     ok(tag + ': no emoji in the page\'s own words', !EMOJI.test(f.ownText), (f.ownText.match(EMOJI) || [])[0]);
-    // money: every marked figure equals the catalog, and every figure in the text is a catalog figure
+    // money: every marked figure equals catalog.js, a zone figure sits in its own zone; every figure in the text is a catalog figure
     const badMoney = f.money.filter(([k, v]) => !(k in MONEY) || cents(v) !== MONEY[k]);
-    ok(tag + ': every marked money figure equals catalog.json', badMoney.length === 0, badMoney);
+    ok(tag + ': every marked money figure equals catalog.js (open zones only)', badMoney.length === 0, badMoney);
+    const strayMoney = f.money.filter(([k, , z]) => zoneOfKey(k) && zoneOfKey(k) !== z);
+    ok(tag + ': every zone money figure is inside its own [data-zone]', strayMoney.length === 0, strayMoney);
+    const strayEta = f.eta.filter(([k, , z]) => k !== z);
+    ok(tag + ': every delivery time is inside its own [data-zone]', strayEta.length === 0, strayEta);
     const figs = (f.ownText.match(/(?:US)?\$\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?米ドル/g) || []);
     const odd = figs.filter((x) => !ALLOWED.has(cents(x)));
     if (id !== 'seller') ok(tag + ': the money figures were found', figs.length >= 2, figs);
     ok(tag + ': every money figure in the text is a catalog figure', odd.length === 0, odd);
-    const badEta = f.eta.filter(([z, v]) => { const zz = CAT.zones.find((q) => q.id === z); const n = (v.match(/\d+/g) || []).map(Number); return !zz || n.length !== 2 || n[0] !== zz.eta[0] || n[1] !== zz.eta[1]; });
-    ok(tag + ': every delivery time equals catalog.json', badEta.length === 0, badEta);
+    const badEta = f.eta.filter(([z, v]) => { const zz = OPEN_ZONES.includes(z) && C.ZONES[z]; const n = (v.match(/\d+/g) || []).map(Number); return !zz || n.length !== 2 || n[0] !== zz.eta[0] || n[1] !== zz.eta[1]; });
+    ok(tag + ': every delivery time equals catalog.js ZONES[zone].eta', badEta.length === 0, badEta);
+    if (id === 'terms' || id === 'shipping') {
+      ok(tag + ': the posting promise, word for word, ' + SHIP_BY + ' working days', f.promise.length === 1 && f.promise[0] === POST_EN, f.promise);
+      ok(tag + ': no old delay timing', !/5 working days of paying|2 days' leeway|Printing takes 2 to 5/.test(f.ownText), (f.ownText.match(/.{0,30}(5 working days of paying|2 days' leeway|Printing takes 2 to 5).{0,10}/) || [])[0]);
+      ok(tag + ': the 30 days is our own promise; the law may give longer', f.ownText.includes('The law where you live may give you longer, so write to us anyway.'), '');
+      ok(tag + ': a line refund includes its share of tax', /share of any tax you paid on it/.test(f.ownText), '');
+      ok(tag + ': the cancel hour is ' + EXPECT.cool_min / 60 + ' hour', f.ownText.includes('within ' + EXPECT.cool_min / 60 + ' hour of paying'), '');
+      const tot = (f.ownText.match(/(\d+) (?:items|things) in all/g) || []).filter((x) => parseInt(x, 10) !== C.LIMITS.max_lines * C.LIMITS.max_qty);
+      ok(tag + ': any total of items is ' + C.LIMITS.max_lines * C.LIMITS.max_qty, tot.length === 0, tot);
+    }
     if (id === 'terms' || id === 'shipping') {
       ok(tag + ': "The short version" with 5 lines', !!f.short && f.short.h === 'The short version' && f.short.n === 5, f.short);
+      ok(tag + ': the policy text, word for word', f.ownText.includes(POLICY));
       ok(tag + ': the product prices are shown', f.money.some(([k]) => k === 'product.mug.price') && f.money.some(([k]) => k === 'product.tee.price'), f.money);
     }
     if (id === 'shipping') {
       const want = Object.keys(MONEY).filter((k) => k.startsWith('zone.'));
-      ok(tag + ': every zone fee, threshold and extra-item fee is in the table', want.every((k) => f.money.some(([m]) => m === k)), want.filter((k) => !f.money.some(([m]) => m === k)));
-      ok(tag + ': one table row per catalog zone, in no other order of facts', f.feeZones.slice().sort().join() === CAT.zones.map((z) => z.id).sort().join(), f.feeZones);
-      ok(tag + ': every zone with a threshold says "Orders of $N or more ship free."', CAT.zones.filter((z) => z.free_from != null).every((z) => f.ownText.includes('Orders of $' + (z.free_from % 100 ? (z.free_from / 100).toFixed(2) : z.free_from / 100) + ' or more ship free.')), '');
-      ok(tag + ': a zone with no threshold never says free', CAT.zones.filter((z) => z.free_from == null).length === 0 || /Not offered/.test(f.ownText));
-      ok(tag + ': every delivery time is in the table', CAT.zones.every((z) => f.eta.some(([e]) => e === z.id)), f.eta);
+      ok(tag + ': every open zone\'s fee, threshold and extra-item fee is in its own table row', want.every((k) => f.money.some(([m, , z, row]) => m === k && row && z === zoneOfKey(k))), want.filter((k) => !f.money.some(([m, , z, row]) => m === k && row && z === zoneOfKey(k))));
+      ok(tag + ': the table rows are exactly the open zones, in catalog order (' + OPEN_ZONES.join(', ') + ')', f.feeZones.join() === OPEN_ZONES.join(), f.feeZones);
+      ok(tag + ': the last row is "Everywhere else we deliver"', f.rowNames.length > 0 && f.rowNames[f.rowNames.length - 1][1] === 'Everywhere else we deliver' && f.rowNames[f.rowNames.length - 1][0] === 'world', f.rowNames);
+      ok(tag + ': every open zone with a threshold says "Orders of $N or more ship free."', OPEN_ZONES.map((id) => C.ZONES[id]).filter((z) => z.free_from != null).every((z) => f.ownText.includes('Orders of $' + (z.free_from % 100 ? (z.free_from / 100).toFixed(2) : z.free_from / 100) + ' or more ship free.')), '');
+      ok(tag + ': a zone with no threshold never says free', OPEN_ZONES.every((id) => C.ZONES[id].free_from != null) || /Not offered/.test(f.ownText));
+      ok(tag + ': every open zone\'s delivery time is in its own table row', OPEN_ZONES.every((z) => f.eta.some(([e, , zz, row]) => e === z && zz === z && row)), f.eta);
       ok(tag + ': "We can\'t deliver to some places yet."', f.ownText.includes("We can't deliver to some places yet."));
-      ok(tag + ': separate parcels, tracking, the 7 days, the cancel hour, 30 days', /their own parcels/.test(f.ownText) && /tracking link/.test(f.ownText) && /7 days/.test(f.ownText) && /1 hour/.test(f.ownText) && /30 days/.test(f.ownText));
+      ok(tag + ': separate parcels, tracking, the address window, the cancel hour, the 30 days', /their own parcels/.test(f.ownText) && /tracking link/.test(f.ownText) && f.ownText.includes('within ' + EXPECT.address_days + ' days') && f.ownText.includes(EXPECT.cool_min / 60 + ' hour') && f.ownText.includes(EXPECT.fault_days + ' days'));
+      ok(tag + ': "usual times", not "estimates, not promises"', /usual times/.test(f.ownText) && !/not promises/.test(f.ownText));
     }
     if (id === 'terms') {
       ok(tag + ': the governing law choice is in a box to be decided with a professional', f.decide.includes('To be decided with a professional'), f.decide);
-      ok(tag + ': the policy text of TRANSACTIONS.md 4, word for word', f.ownText.includes("Everything is printed just for you with your own dog, so we can't take it back if you change your mind. You can cancel the whole order for a full refund within 1 hour of paying, from your order page. If something arrives damaged or misprinted, or never arrives, email us within 30 days of delivery (or of the latest delivery date we gave you) with a photo, and we'll reprint it or refund it, whichever you prefer. This doesn't affect your legal rights."));
+      ok(tag + ': the policy text of TRANSACTIONS.md 4 (with review finding 13), word for word', f.ownText.includes(POLICY));
+      ok(tag + ': the order limit is LIMITS', f.ownText.includes('up to ' + C.LIMITS.max_lines + ' different things, and up to ' + C.LIMITS.max_qty + ' of each'), '');
       ok(tag + ': 18 or over', /18 or over/.test(f.ownText));
       ok(tag + ': says "no returns", never "no refunds"', !/no refunds/i.test(f.ownText));
       ok(tag + ': the gift code has no cash value and may be absent', /no cash value/.test(f.ownText) && /not every order/.test(f.ownText));
@@ -255,8 +334,15 @@ async function fitChecks() {
   BASE = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch();
   const t0 = Date.now();
-  try { await pageChecks(); await fitChecks(); } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
+  try {
+    await loadCatalog();
+    for (const [what, file, re] of SOURCE) ok('source: ' + what + ' still says ' + re.source + ' in ' + file, re.test(READ(file)));
+    ok('catalog.js: LIMITS are whole numbers', Number.isInteger(C.LIMITS.max_lines) && Number.isInteger(C.LIMITS.max_qty), C.LIMITS);
+    ok('catalog.js: the world zone is open and last', OPEN_ZONES[OPEN_ZONES.length - 1] === 'world', OPEN_ZONES);
+    await pageChecks(); await fitChecks();
+  } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
   await browser.close(); server.close();
+  for (const n of notes) console.log(n);
   console.log(`merch_legal: ${pass} passed, ${fail} failed (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
   if (fail) { console.log(fails.join('\n')); process.exit(1); }
 })();
