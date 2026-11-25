@@ -813,12 +813,12 @@ function siteFile(p) {
 }
 // the test Worker as the page meets it: its routes, its CORS for the test copy only, the fake's answers. W.pay: what checkout answers instead
 // ({ status, body }, a function of the body, or 'abort': the network fails)
-const W = { log: [], pay: null };
+const W = { log: [], pay: null, tok: [] };
 async function workerRoute(route) {
   const q = route.request(), p = new URL(q.url()).pathname, m = q.method(), origin = q.headers().origin || '';
-  const cors = origin === TEST_ORIGIN ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'Content-Type' } : {};
+  const cors = origin === TEST_ORIGIN ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'Content-Type, X-Merch-Test-Token' } : {}; // worker.js on MERCH_TEST=1
   if (m === 'OPTIONS') return route.fulfill({ status: cors['access-control-allow-origin'] ? 204 : 403, headers: cors, body: '' });
-  W.log.push(m + ' ' + p + (origin === TEST_ORIGIN ? '' : ' (origin ' + origin + ')'));
+  W.log.push(m + ' ' + p + (origin === TEST_ORIGIN ? '' : ' (origin ' + origin + ')')); W.tok.push(m + ' ' + p + ' ' + (q.headers()['x-merch-test-token'] || '-'));
   const send = (st, j) => route.fulfill({ status: st, headers: Object.assign({ 'content-type': 'application/json' }, cors), body: JSON.stringify(j) });
   const bad = (e) => send(e.status || 503, Object.assign({}, e, { status: undefined }));
   let b = null; try { b = q.postData() ? JSON.parse(q.postData()) : null; } catch (e) { return send(400, { error: 'bad_json' }); }
@@ -979,6 +979,24 @@ async function wiringChecks() {
   const calls = W.log.slice(n1);
   ok('live client: every call was a route of the order server', calls.length > 0 && calls.every((c) => /^(GET \/merch\/order\/[^/]+|POST \/merch\/order\/[^/]+\/(cancel|wait|address|refund)|GET \/merch\/catalog|POST \/merch\/quote)$/.test(c)), calls);
   await finishAt('live client', t);
+  // ---- fourth review (R4-m4): the shared test token, from the test copy's /merch/test_cfg.json (served behind the test password, G3), on every POST
+  const TOK = 'tok_page_check_0123456789abcdefghijklmnop';
+  for (const [cfg, want] of [[{ token: TOK }, TOK], [null, '-'], [{ token: 'short' }, '-']]) {
+    t = await openAt(TEST_ORIGIN, { save: SAVE, basket: NORMAL3, ship: 'US' }); const cfgAsked = [];
+    await t.ctx.route(TEST_ORIGIN + '/merch/test_cfg.json', (r) => { cfgAsked.push(r.request().url()); return cfg ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(cfg) }) : r.fulfill({ status: 404, body: '' }); });
+    W.pay = { status: 403, body: { error: 'test_only' } }; const n2 = W.tok.length;
+    pg = await t.tab('/merch/#/basket'); await pg.waitForSelector('#qtable'); await tap(pg, '#payBtn'); await settle(pg);
+    const sent = W.tok.slice(n2), tag = 'R4-m4 page, config ' + JSON.stringify(cfg);
+    ok(tag + ': the checkout ' + (want === '-' ? 'without' : 'with') + ' the token', sent.some((x) => x === 'POST /merch/checkout ' + want) && sent.filter((x) => /^POST /.test(x)).every((x) => x.endsWith(' ' + want)), sent);
+    ok(tag + ': GETs never carry it; the config read once', sent.filter((x) => /^GET /.test(x)).every((x) => x.endsWith(' -')) && cfgAsked.length === 1, [sent, cfgAsked]);
+    ok(tag + ': no payment page', t.stripe.length === 0 && /\/merch\//.test(pg.url()), pg.url());
+    await finishAt(tag, t);
+  }
+  W.pay = null;
+  const n3 = W.tok.length; t = await openAt(BASE, { save: SAVE, basket: NORMAL3, ship: 'US' }); const asked2 = [];
+  pg = await t.tab('/merch/#/basket'); pg.on('request', (r) => asked2.push(r.url())); await pg.waitForSelector('#qtable'); await pg.reload(); await pg.waitForSelector('#qtable');
+  ok('R4-m4 page: away from the test copy the config is never asked for', !asked2.some((u) => /test_cfg/.test(u)) && W.tok.length === n3, asked2.filter((u) => /test_cfg/.test(u)));
+  await finishAt('R4-m4 page elsewhere', t);
 }
 
 // ================= part 9: the phone review (M1-M8, m1-m10) and the art review (M1, m1, m2, m4) fixes on the shop page =================

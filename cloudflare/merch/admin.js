@@ -1,14 +1,14 @@
 // The owner's admin routes (TRANSACTIONS.md 6.3): there is no SQL console for a Durable Object, so tools/merch.sh calls these.
 // Authorization: Bearer MERCH_ADMIN_KEY (unset = always 401). 60 an hour per IP. No buyer data leaves here except what the owner needs for a
 // dispute (the tracking, the delivery date and signed links to the print PNGs); never an address or an email.
-import { json, fail, same, ORDER_ID, DAY, jstDay } from './util.js';
+import { json, fail, same, ORDER_ID, DAY, jstDay, keyOf } from './util.js';
 import * as stripe from './stripe.js';
 
 // a game gift code as tools/promo.sh makes them: letters, digits and dashes, 4-40 characters (PROMO.md 1)
 export const GIFT_CODE = /^[A-Z0-9][A-Z0-9-]{3,39}$/;
 // part 9, C2: which printer this Worker uses now, first in `merch.sh show` and `report`, so the sandbox's stand-in (test_printer.js, the key
 // 'test-printer' the test entry passes) is never taken for Printful: its drafts are not at Printful and its costs are catalog.js estimates
-export const printerNow = (env) => (env.MERCH_PROVIDER_KEY !== 'test-printer' ? (env.MERCH_PROVIDER_KEY ? 'printful' : 'none')
+export const printerNow = (env) => (keyOf(env.MERCH_PROVIDER_KEY) !== 'test-printer' ? (keyOf(env.MERCH_PROVIDER_KEY) ? 'printful' : 'none')
   : env.MERCH_TEST === '1' && env.PROVIDER_FETCH ? 'STAND-IN (test_printer.js): not Printful; these drafts and costs are made up from catalog.js'
   : 'none (the key test-printer is only the stand-in on the test Worker with its binding)');
 

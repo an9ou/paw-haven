@@ -10,10 +10,15 @@
 //   meta_new.json     the upload metadata for the FIRST deploy (with the Durable Object migration, without SELF)
 //   meta.json         the upload metadata for every later deploy and the second upload (with SELF, without a migration)
 //   vars.json         the plain variables, as sent (no secrets: there are none in this file)
+//   test_cfg.json     {"token": ...}: the shared test token (fourth review R4-m4), for the test copy of the page (SANDBOX.md F, G3)
+//   .merch_test_build the marker: this build wipes and rewrites only a folder that has it, or an empty or new one (R4-m5)
 // Every value comes from cloudflare/merch/wrangler.example.toml [env.test] (the contract), with three run values on top (printed):
 //   MERCH_FROM       open for the run: MERCH_TEST_FROM (default 2026-11-25T00:00:00+09:00; "" keeps the test shop shut)
 //   MERCH_COUNTRIES  the recommended launch list, catalog.js LAUNCH_COUNTRIES (MERCH_TEST_COUNTRIES to change it)
 //   MERCH_ART_VERS   the older print folders (as cloudflare/merch/build_assets.mjs prints it)
+//   MERCH_TEST_TOKEN the shared test token (R4-m4): the test Worker takes an order, a button on the order page or an unsigned printer hint
+//                    only with it (header X-Merch-Test-Token). Random (32 bytes); kept when the same folder is built again, or
+//                    MERCH_TEST_TOKEN=<it> to keep it across folders. Never printed: it is in test_cfg.json. The live Worker never has one.
 // MERCH_TEST_PRINTER=1 (part 9, C2: run 1, before the owner's Printful key) also builds the stand-in printer Worker
 // doodle-doggo-merch-test-printer (cloudflare/merch/test_printer.js) into printer/ (its bundle, printer_parts.txt, printer_meta_new.json with its
 // own migration, printer_meta.json), adds the service binding PROVIDER_FETCH -> that Worker to the test Worker's metadata, and wraps the ledger so
@@ -30,6 +35,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { randomBytes } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,6 +47,19 @@ const STAND_IN = process.env.MERCH_TEST_PRINTER === '1', PNAME = 'doodle-doggo-m
 if (process.env.MERCH_TEST_PRINTER && !['0', '1'].includes(process.env.MERCH_TEST_PRINTER)) die('MERCH_TEST_PRINTER is "1" or "0"');
 if (!OUT) die('--out <dir> is needed (a folder outside the repo)');
 if (path.resolve(OUT).startsWith(path.resolve(ROOT) + path.sep)) die('--out must be outside the repo (' + OUT + ')');
+// R4-m5: the folder is wiped below, so only a folder this build made (its marker file) or an empty or new one is taken
+const MARK = '.merch_test_build';
+let kept = null;
+if (fs.existsSync(OUT)) {
+  const st = fs.lstatSync(OUT);
+  if (st.isSymbolicLink() || !st.isDirectory()) die('--out ' + OUT + ' is not a folder (or is a link): give a new or empty folder');
+  const has = fs.readdirSync(OUT);
+  if (has.length && !has.includes(MARK)) die('--out ' + OUT + ' is not empty and was not made by this build (no ' + MARK + ' file in it), so it is not wiped: give a new or empty folder');
+  try { kept = JSON.parse(fs.readFileSync(path.join(OUT, 'test_cfg.json'), 'utf8')).token || null; } catch (e) { kept = null; }
+}
+const TOKEN_RE = /^[A-Za-z0-9_-]{32,128}$/;
+if (process.env.MERCH_TEST_TOKEN && !TOKEN_RE.test(process.env.MERCH_TEST_TOKEN)) die('MERCH_TEST_TOKEN must be 32 to 128 letters, numbers, - or _');
+const TOKEN = process.env.MERCH_TEST_TOKEN || (kept && TOKEN_RE.test(kept) ? kept : randomBytes(32).toString('base64url'));
 if (STAND_IN && (process.env.MERCH_TEST_NAME || NAME) !== NAME) die('the stand-in printer is only ever wired into ' + NAME + ' (got ' + process.env.MERCH_TEST_NAME + ')');
 if ((process.env.MERCH_TEST_NAME || NAME) !== NAME) die('the target name must be exactly ' + NAME);
 
@@ -80,7 +99,7 @@ if (!folders.includes(AV)) die('no released print folder for the current ART_VER
 const cat = await import(path.join(ROOT, 'cloudflare', 'merch', 'catalog.js'));
 const env = (k, d) => (process.env[k] !== undefined ? process.env[k] : d);
 const run = { MERCH_FROM: env('MERCH_TEST_FROM', '2026-11-25T00:00:00+09:00'), MERCH_COUNTRIES: env('MERCH_TEST_COUNTRIES', cat.LAUNCH_COUNTRIES),
-  MERCH_ART_VERS: folders.filter((d) => d !== AV).join(','), MERCH_DAY_CAP: env('MERCH_TEST_DAY_CAP', vars0.MERCH_DAY_CAP) };
+  MERCH_ART_VERS: folders.filter((d) => d !== AV).join(','), MERCH_DAY_CAP: env('MERCH_TEST_DAY_CAP', vars0.MERCH_DAY_CAP), MERCH_TEST_TOKEN: TOKEN };
 if (run.MERCH_FROM && !Number.isFinite(Date.parse(run.MERCH_FROM))) die('MERCH_TEST_FROM is not a date: ' + run.MERCH_FROM);
 if (!/^\d{1,3}$/.test(String(run.MERCH_DAY_CAP))) die('MERCH_TEST_DAY_CAP must be a small number');
 const vars = Object.assign({}, vars0, run);
@@ -96,6 +115,8 @@ const left = Object.keys(vars).filter((k) => !(k in sent)).sort();
 
 // ---------- the entry ----------
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'print'), { recursive: true });
+fs.writeFileSync(path.join(OUT, MARK), 'Made by tools/merch_test_build.mjs (the merch test Worker build). The next build wipes this folder.\n');
+fs.writeFileSync(path.join(OUT, 'test_cfg.json'), JSON.stringify({ token: TOKEN }) + '\n'); // R4-m4: for the test copy only (G3), behind the test password
 const TYPES = { html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', json: 'application/json' };
 const imports = [], table = []; let n = 0;
 for (const d of folders) {
@@ -200,6 +221,7 @@ if (STAND_IN) {
   console.log('    the ledger uses it only while MERCH_TEST = "1", the binding is there and no real MERCH_PROVIDER_KEY is set (then MERCH_PROVIDER_KEY = test-printer); a real key goes to Printful, never to it');
 } else console.log('  stand-in printer (C2): not built (MERCH_TEST_PRINTER=1 builds it); no PROVIDER_FETCH binding');
 console.log('  first deploy migration: new_tag v2, new_sqlite_classes MerchLedger, MerchPrints, MerchRender; later deploys send none');
-console.log('  variables sent (' + Object.keys(sent).length + '): ' + Object.entries(sent).map(([k, v]) => k + '=' + (v.length > 40 ? v.slice(0, 37) + '...' : v)).join(' '));
+console.log('  variables sent (' + Object.keys(sent).length + '): ' + Object.entries(sent).map(([k, v]) => k + '=' + (k === 'MERCH_TEST_TOKEN' ? '<' + (process.env.MERCH_TEST_TOKEN ? 'given' : TOKEN === kept ? 'kept' : 'new') + ', in test_cfg.json>' : v.length > 40 ? v.slice(0, 37) + '...' : v)).join(' '));
+console.log('  test token (R4-m4): ' + path.join(OUT, 'test_cfg.json') + ' (the test copy serves it at /merch/test_cfg.json behind the test password: SANDBOX.md F, G3)');
 console.log('  left out (empty; the owner may add them as Secrets): ' + left.join(', '));
 console.log('  files: ' + OUT);

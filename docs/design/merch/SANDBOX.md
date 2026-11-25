@@ -17,7 +17,7 @@ bundle in local workerd (Miniflare) with a dummy value for every key: the catalo
 | C1 | **Done** (c7a0b63; `merch_worker` rows C1-node, C1-live-key, C1-throw, C1-timeout, C1-mf-global, C1-mf-refused). Was: **Stripe and Resend have no real network path.** `stripe.js` only calls `env.STRIPE_FETCH` and `mail.js` only `env.MAIL_FETCH` (test seams, "never set in production"). On Cloudflare neither is set, so `stripeReady()` is false and no email is ever sent. The printer already does it right (`provider_printful.js` `net()`: the seam, else the global `fetch` on Cloudflare's runtime with a key). | [M] | every run, and the launch |
 | P1 | **Done** (c7a0b63; `merch_page` rows "P1: ...", "P1 test copy: ..."). Was: **The page never talks to a Worker.** `site/merch/api.js` has `MERCH_API = ''` (the page's own fake). | [M] | every run |
 | P2 | **Done** (c7a0b63; `merch_page` rows "P2 ...", "live client: ...", "late pending: ...", "fake: late cancel ..."). Was: **Pay never opens Stripe.** `site/merch/merch.js` `pay()` shows the "shop is not open" card even on a good checkout answer. | [M] | every run, and the launch |
-| G1-G2 | **The test copy does not serve `/merch/`** and its CSP blocks the merch API (part F). | [GM] | every run |
+| G1-G3 | **The test copy does not serve `/merch/`** and its CSP blocks the merch API (part F); G3 (fourth review): it serves the test token file, without which the test Worker takes no order. | [GM] | every run |
 | C2 | **Done** (25 Nov, branch `merch/part9-test-printer`; `merch_worker` rows C2-shape, C2-flow, C2-address, C2-tee, C2-all, C2-down, C2-file, C2-realkey, C2-live, C2-build, C2-mf, C2-mf-keys). Was: **no printer without a Printful key**: the gate wants one, so no order is taken. Now a stand-in printer Worker for the test Worker only (part C). | [M] | run 1 (the owner said "not yet" to the key) |
 
 C1, P1, P2 and C2 are built (part C, "Code changes", says what each does); they need one review before the run (the part 9 lesson: every fix
@@ -41,13 +41,14 @@ are never charged. About **40 minutes** in all before the first run. Never paste
 | 7 | **The restricted key** for the test Worker. Name "merch test Worker". Permissions, exactly: **Checkout Sessions: Write; Refunds: Write; PaymentIntents: Read; Charges: Read; Disputes: Read**; everything else None. It starts with `rk_test_`. | Developers, API keys, **Create restricted key** | the key, once, straight into Cloudflare step 10 (`MERCH_STRIPE_KEY`) | 3 min | free | no |
 | 8 | **The webhook.** Endpoint URL `https://merch-api-test.doodledoggo.app/merch/webhook/stripe`; API version `2025-03-31.basil` if the form offers a choice (to confirm). Events, all of these: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, **`charge.dispute.updated`**, `charge.dispute.closed`, and the refund-failure events the list offers: `refund.failed`, `refund.updated`, `charge.refund.updated` (tick each one that exists). It can be made before the Worker exists. | Developers, Webhooks, **Add destination** (Your account, Webhook endpoint) | its **signing secret** (`whsec_...`, Reveal) into Cloudflare step 10 (`MERCH_STRIPE_WEBHOOK_SECRET`) | 5 min | free | no |
 | 9 | **Radar**: block when the CVC check fails, block the highest risk. | Radar, **Rules** | nothing | 1 min | free | yes |
-| 10 | **Secrets on the test Worker** (after our first deploy made it: a Worker must exist before a secret can be added). For each: **Add**, Type **Secret**, the name, the value, then **Deploy**. `MERCH_STRIPE_KEY` (step 7), `MERCH_STRIPE_WEBHOOK_SECRET` (step 8), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`, `MERCH_ADMIN_KEY` (each a **new** random password of 50+ characters from your password manager's generator; keep only the admin one, in your password manager), and `MERCH_OWNER_TO` (your email, as a Secret so our redeploys keep it). | Cloudflare dashboard, Workers & Pages, **doodle-doggo-merch-test**, Settings, **Variables and Secrets** | the values above | 10 min | free | no |
+| 10 | **Secrets on the test Worker** (after our first deploy made it: a Worker must exist before a secret can be added). For each: **Add**, Type **Secret**, the name, the value, then **Deploy**. `MERCH_STRIPE_KEY` (step 7), `MERCH_STRIPE_WEBHOOK_SECRET` (step 8), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`, `MERCH_ADMIN_KEY` (each a **new** random password of 50+ characters from your password manager's generator; keep only the admin one, in your password manager), `MERCH_OWNER_TO` (your email, as a Secret so our redeploys keep it), and `MERCH_TEST_MAIL_TO` (fourth review: the only addresses the test may email buyers at, comma between them: your own, and anyone else's who pays test orders; `you+location_JP@...` counts as `you@...`. As a Secret too. Without it no buyer email goes out). | Cloudflare dashboard, Workers & Pages, **doodle-doggo-merch-test**, Settings, **Variables and Secrets** | the values above | 10 min | free | no |
 | 11 | **The admin key for Claude.** When the session opens a secure form for the host `merch-api-test.doodledoggo.app`, paste the `MERCH_ADMIN_KEY` value there. Then `tools/merch.sh` works from the session and the key never shows in chat. | the secure form in the Claude app | `MERCH_ADMIN_KEY`'s value | 1 min | free | no |
 | 12 | **Emails** (if you say yes in Q3): a Resend key with **Sending access** for the domain doodledoggo.app only (the domain is already verified for the game's password codes, so no DNS work), and **open and click tracking off** for the domain. | resend.com, API Keys, **Create**; Domains, doodledoggo.app (tracking: to confirm where) | the key into Cloudflare step 10 as `RESEND_API_KEY` | 3 min | free (100 emails a day on the free plan, shared with the game's reset codes: to confirm; the run sends about 30) | yes (run 1 can go without) |
 | 13 | **Printful** (later, run 2): a separate **test store** in Printful, its private token (orders, file library, webhooks) through the secure form for `api.printful.com`, and on the Worker `MERCH_PROVIDER_KEY` and, once the webhook is set up, `MERCH_PROVIDER_WEBHOOK_SECRET`. | printful.com; the secure form; Cloudflare step 10 | the token | 10 min | free (drafts are never charged) | yes |
 | 14 | **During the run**: pay test orders on your phone or computer with Stripe's test card numbers (part D), and a few clicks in the Stripe dashboard (a refund, dispute evidence). | test.doodledoggo.app/merch/ (the test password), the Stripe sandbox | nothing | 2-3 sittings of about an hour (about 45 short orders, with waits for the cancel hour in between) | free | - |
 
 Also the four go-aheads in part F ("Questions for the owner"). The game's test copy password (`TEST_PASSWORD`) is already set; nothing new there.
+The shared test token (fourth review) needs nothing from you: the build makes it and the test copy gets it from the GM (part F, G3).
 
 ---
 
@@ -80,7 +81,8 @@ everything (and skips the cron) unless `MERCH_TEST = "1"`. Bundle built here on 
 
 | Variable | Test value | Why |
 |---|---|---|
-| `MERCH_TEST` | `1` | refuses `sk_live` / `rk_live` keys, every origin but https://test.doodledoggo.app, and any printer confirm |
+| `MERCH_TEST` | `1` | takes only `sk_test_` / `rk_test_` Stripe keys (after trimming: fourth review R4-m2), refuses every origin but https://test.doodledoggo.app and any printer confirm; buyer emails only to `MERCH_TEST_MAIL_TO` |
+| `MERCH_TEST_TOKEN` | random, 32 bytes (run value, fourth review R4-m4; never printed: in the build folder's `test_cfg.json`; kept when the same folder is built again, `MERCH_TEST_TOKEN=<it>` to give it) | the test order server is public: a checkout, an order button (cancel, wait, address, refund) and an unsigned printer hint need it in the header `X-Merch-Test-Token`. The test page reads it from `/merch/test_cfg.json` behind the test password (part F, G3). The live Worker never has one |
 | `MERCH_FROM` | `2026-11-25T00:00:00+09:00` (run value; `MERCH_TEST_FROM=` keeps it shut) | the test shop is open; it still takes no order until the keys are there |
 | `MERCH_COUNTRIES` | `catalog.js LAUNCH_COUNTRIES` (run value): every country but GB, the EU 27, Brazil, Korea and a few others | the run tests the recommended launch list, "coming soon" included |
 | `MERCH_DAY_CAP` | `10` (`MERCH_TEST_DAY_CAP` changes it) | the soft-launch cap |
@@ -92,17 +94,20 @@ everything (and skips the cron) unless `MERCH_TEST = "1"`. Bundle built here on 
 | `MERCH_STRIPE_VERSION` | `2025-03-31.basil` | pinned |
 | `MERCH_BROWSER_BUDGET_MS` | `60000` | shares the account's 10 minutes |
 | `MERCH_RENDER_VIA`, `MERCH_PF_V1_CANCEL`, `MERCH_PF_PRICE_REGION`, `MAIL_FROM` | `direct`, `1`, `worldwide`, `orders@doodledoggo.app` | as the toml |
-| left out (empty) | `MERCH_OFF`, `MERCH_ART_VERS`, `MERCH_OWNER_TO`, `MERCH_SELLER_NAME`, `MERCH_SELLER_ADDR`, `MERCH_GIFT_NAME`, `MERCH_PROVIDER_STORE` | so the owner can add them as Secrets and a redeploy keeps them |
+| left out (empty) | `MERCH_OFF`, `MERCH_ART_VERS`, `MERCH_OWNER_TO`, `MERCH_SELLER_NAME`, `MERCH_SELLER_ADDR`, `MERCH_GIFT_NAME`, `MERCH_PROVIDER_STORE` | so the owner can add them as Secrets and a redeploy keeps them (and `MERCH_TEST_MAIL_TO`, not in the toml: A10) |
 
 The build refuses to send a test seam (`STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT`, `RESVG_WASM`,
 `MERCH_RENDER_PROBE`) or a secret's name as a variable. The stand-in's `PROVIDER_FETCH` (C2) is a service binding the build adds itself with
 `MERCH_TEST_PRINTER=1`, never a variable; the build refuses a toml that binds `PROVIDER_FETCH`.
 
-**The script**: `tools/merch_test_deploy.sh` (new; `tools/cf_test_deploy.sh` is untouched). Dry by default; `BUILD_ONLY=1` builds only; a real send
+**The script**: `tools/merch_test_deploy.sh` (new; `tools/cf_test_deploy.sh` is untouched). It builds into one fixed folder outside the repo
+(`MERCH_TEST_OUT`, default `$TMPDIR/dd-merch-test-build`), so a rebuild keeps the test token; the build wipes only a folder it made (its
+`.merch_test_build` marker) or an empty or new one, and refuses any other (fourth review R4-m5). Dry by default; `BUILD_ONLY=1` builds only; a real send
 needs `DRY_RUN=0` **and** `MERCH_TEST_DEPLOY_OK=1`; it refuses any name but `doodle-doggo-merch-test`; it never reads, prints or sets a secret (in a
-cloud session the proxy adds the Cloudflare token; elsewhere only curl reads `CLOUDFLARE_API_TOKEN`). What it printed here on 25 Nov:
+cloud session the proxy adds the Cloudflare token; elsewhere only curl reads `CLOUDFLARE_API_TOKEN`). Its public checks also expect a checkout
+without the test token to be refused (403, or 503 while shut). What it printed here on 25 Nov:
 - `BUILD_ONLY=1`: the bundle (entry.js, the wasm, three print files as Text modules; 4,457 KiB, gzip 1,533 KiB), the bindings, the migration and
-  the 15 variables above; "nothing sent". Loaded in local Miniflare: the catalog answers (`shut: true` with no keys), the print page 200, CORS 204
+  the 15 variables above (16 since the fourth review: `MERCH_TEST_TOKEN`); "nothing sent". Loaded in local Miniflare: the catalog answers (`shut: true` with no keys), the print page 200, CORS 204
   for the test copy and 403 for the live site, the Stripe webhook 503 `not_set_up`, admin 401, checkout `merch_closed`; with `MERCH_TEST=0` every
   route 503. With dummy values for every key it stays `shut` (blocker C1).
 - the default dry run: the same build, then every request it would send: the zone, the Worker list, the cron count per Worker, two uploads
@@ -116,7 +121,7 @@ cloud session the proxy adds the Cloudflare token; elsewhere only curl reads `CL
   stand-in was not built). The build refuses the stand-in for any Worker name but `doodle-doggo-merch-test`.
 
 **The first deploy, in order**
-1. C1, P1, P2 (and C2 for run 1) merged into `merch/shop` and reviewed; `merch_worker` and `merch_page` green; G1-G2 merged by the GM.
+1. C1, P1, P2 (and C2 for run 1) merged into `merch/shop` and reviewed; `merch_worker` and `merch_page` green; G1-G3 merged by the GM.
 2. The owner's go-ahead (Q1). Stripe steps A1-A8 may come before or after.
 3. `DRY_RUN=0 MERCH_TEST_DEPLOY_OK=1 MERCH_TEST_PRINTER=1 bash tools/merch_test_deploy.sh` (run 1): makes the stand-in printer Worker
    (workers.dev off), then the Worker (two uploads), the cron, workers.dev off, the Custom Domain; lists the missing secrets; checks the public
@@ -152,8 +157,25 @@ prompt for the secrets: the owner types them in the dashboard.
 | Missing | What happens | So |
 |---|---|---|
 | Printful key (`MERCH_PROVIDER_KEY`) | `providerReady()` is false, the gate says `not_set_up`: the catalog is `shut`, **every checkout is refused**. No draft, no cost read, no hint. | Run 1 uses the stand-in printer (C2, built): deployed with `MERCH_TEST_PRINTER=1`, it is the printer while no key is set. |
+| `MERCH_TEST_MAIL_TO` (fourth review) | Orders go on; no buyer email at all: each row `failed` / `test_not_listed`, no "mail failed" owner email. Owner emails still go. | Set it (A10) before the email rows (D8). |
 | Resend key (`RESEND_API_KEY`) | Orders go on. Each email is still an outbox row, marked `failed` / `not_set_up` at once, with no retries and no "mail failed" owner email. `tools/merch.sh show <order>` lists every row (kind, status). | Run 1 proves **which** emails are queued **when**; not their delivery or looks. |
 | Both | As above: nothing at all can be ordered. | - |
+
+### Differences between the stand-in printer and real Printful (fourth review: read run 1's results with these in mind)
+
+1. It never confirms, and the test Worker is in draft mode: every order ends `held draft_mode`. Nothing after a confirm runs in the sandbox
+   (parcels, hints, re-reads, the late cancel's read, the reship hold, Printful's hold, reprints, the lost-dispute cancel): only the Node and
+   Miniflare suites cover those.
+2. It never posts, returns or sends webhooks: the hint route and Printful's webhook signature are never used. Unsigned hints on the test
+   Worker need the test token (R4-m4).
+3. It never fetches the print file: the signed `/merch/file/` link, its expiry and size checks are not tried by a printer ("Test Refuse File"
+   is a canned answer).
+4. Its costs are our own `catalog.js` estimates, always `done`, no tax or VAT: the cost hold (over 110%), `cost_unknown` and `calculating`
+   are never reached, and the run's margins are not Printful's.
+5. It checks the recipient only for blank fields and the magic name; real Printful refuses bad state or ZIP codes and more.
+6. "Test Printer Down" stops every order for 30 minutes, not just the one that typed it.
+7. It frees an external id once its draft is deleted; what Printful does is not recorded (the ledger's `-d<n>` ids make it not matter).
+8. No 429, 409 or Retry-After answers, no split or partial shipments (so R4-M1 cannot show up in the run).
 
 ### The options (one recommendation each)
 
@@ -241,7 +263,8 @@ the suite covers those rows.
 ## D. The run
 
 **Setup for every row**: the test copy https://test.doodledoggo.app/merch/ (log in once with the test password; open email links in that same
-browser: the password page drops the `#/order/...` part of a link). Stripe test cards: any future date, any CVC, any postcode (the card numbers below are from Stripe's testing page, docs.stripe.com/testing: if one behaves differently, note what it did). Emails at checkout:
+browser: the password page drops the `#/order/...` part of a link). A `curl` to `/merch/checkout`, an order's buttons or an unsigned printer hint
+needs the test token (`-H "X-Merch-Test-Token: <test_cfg.json's token>"`, fourth review); the catalog, a quote and `merch.sh` need none. Stripe test cards: any future date, any CVC, any postcode (the card numbers below are from Stripe's testing page, docs.stripe.com/testing: if one behaves differently, note what it did). Emails at checkout:
 your own address with `+location_XX` before the `@` (for example `you+location_JP@...`), which makes Stripe's sandbox act as a buyer in country XX
 for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresses. Commands run from the session, after A11:
 `MERCH_API=https://merch-api-test.doodledoggo.app MERCH_ADMIN_KEY=placeholder DRY_RUN=0 bash tools/merch.sh <command>` (the proxy puts the real key in;
@@ -293,7 +316,7 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 | E-2 | 3-D Secure | card `4000 0025 0000 3155`, approve | paid as usual | |
 | E-3 | Back from Stripe | press Stripe's back link | `/merch/?back=<order>`, the basket is back | |
 | E-4 | Two taps, two tabs | tap Pay twice; open Pay in two tabs, pay one | one order per tap; the unpaid one expires (T2.1-03, T2.2-01) | |
-| E-5 | A race in the cloud | from the session: 5 checkouts at once with one nonce (curl, no Origin) | one order, one Stripe session (third review, could-not-check 3: the Durable Object's input gate under workerd) | |
+| E-5 | A race in the cloud | from the session: 5 checkouts at once with one nonce (curl, no Origin; with the test token: `-H "X-Merch-Test-Token: $(node -p "require('$TMPDIR/dd-merch-test-build/test_cfg.json').token")"`, without it each answers 403 `test_only`) | one order, one Stripe session (third review, could-not-check 3: the Durable Object's input gate under workerd) | |
 | E-6 | Day cap | dashboard: `MERCH_DAY_CAP` = the day's paid count; pay again | 409 "We've made all we can for today"; an open session still honoured (T2.2-11). Put it back after (our next deploy also does) | |
 | E-7 | A lost webhook | Stripe: disable the endpoint; pay; wait 2 h; enable it | the order page waits; at `expires_at + 1 h` the ledger asks Stripe and the order is paid (T2.2-27) | |
 | E-8 | An event twice | Stripe: an event of E-7, **Resend** | 200, nothing changes (T2.1-24, T2.1-25) | |
@@ -322,8 +345,12 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 ### D6. The printer (run 1: the stand-in, by the shipping name on Stripe's page; run 2: the real one)
 
 The names work in any case and spacing, but only as the whole name. Run 1: `merch.sh show` starts with `"printer": "STAND-IN ..."`.
-Before run 2 (a real key on the test Worker), end every run-1 order that is still open (`merch.sh orders`; refund what is held), so nothing
-drafted by the stand-in is tried again at the real Printful.
+**Run 2 (the real Printful key) starts only after every run-1 order has ended** (`merch.sh orders`: none `paid`, `held`, `confirming` or
+`confirmed`; refund or cancel what is left), so nothing drafted by the stand-in is tried again at the real Printful. How the ledger tells
+them apart (fourth review): each order keeps which printer made its draft, `provider` = `stand-in` or `printful` (`merch.sh show`, in the
+order). And a guard: once a real key is set, a `stand-in` draft is never read, deleted or cancelled at Printful (no call is sent; a delete
+is only forgotten here, event `stand_in_draft`; a read counts as failed, so the owner hears after 24 hours). The stand-in's ids (931000xx)
+could be a real Printful order's id, which is why the guard looks at `provider`, never at the number.
 
 | # | What | How | Expected | Result |
 |---|---|---|---|---|
@@ -441,13 +468,28 @@ With it, add to the files:
 - (Known, no change needed) the gate's 30-day `dd_test` cookie is SameSite=Lax, so it is sent when Stripe sends the buyer back. A link opened in a
   browser without the cookie loses its `#/order/<id>` part at the password page: testers open email links in the logged-in browser.
 
-**G3. `tools/cf_test_deploy.sh`: no change** beyond passing G1's option. Its deploy needs the owner's go-ahead as always.
+**G3 (fourth review, R4-m4). The test token file, behind the password.** The test Worker is public, so it takes an order, an order-page
+button or an unsigned printer hint only with a shared token in the header `X-Merch-Test-Token`. The merch build makes the token and writes
+it to `<build folder>/test_cfg.json` (`{"token":"..."}`; default folder `$TMPDIR/dd-merch-test-build`, printed by
+`tools/merch_test_deploy.sh`); the page (`site/merch/api.js`) reads `/merch/test_cfg.json` once, only on https://test.doodledoggo.app, and
+sends the header on every POST. What G1/G2 need to add:
+- G1 (`tools/cf_test.js`): with `--merch <dir>`, also `--merch-cfg <file>` (or `MERCH_TEST_CFG=<file>`): that file served at
+  `/merch/test_cfg.json`, as it is. Check it is JSON with one `token` of 32-128 letters, numbers, `-` or `_`, and refuse anything else. No file
+  given: leave the path out (the page then sends no token, and the test Worker answers 403 `test_only` to a checkout: safe, but the run stops).
+  The token is a test value, not a key: it may sit in the test copy's upload, never in the repo or the live site.
+- G2 (`tools/test_gate.mjs`): `/merch/test_cfg.json` only behind the password like every other path (no exception for it), with
+  `cache-control: private, no-store`, plus a `test_gate` row: without the cookie it is the password page, never the file. The merch CSP of G2
+  is enough (`connect-src 'self'` covers the file; the header is allowed by the test Worker's CORS).
+- When the merch test Worker is rebuilt into another folder (a new token), the test copy is deployed again with the new file. The same
+  folder (or `MERCH_TEST_TOKEN=<it>`) keeps the token, so the usual redeploys need nothing.
+
+**G4. `tools/cf_test_deploy.sh`: no change** beyond passing G1's options. Its deploy needs the owner's go-ahead as always.
 
 **Not needed**: no change to `cloudflare/worker.js`, `cloudflare/schema.sql`, `site/tpl/*`, the live site build or the game. The merch test Worker
 is deployed by `tools/merch_test_deploy.sh` (merch file), not by any `tools/cf_*` script. When the GM merges `merch/shop` work for the run: C1, P1,
 P2 and C2 each come with their own review report.
 
-**Order for the GM**: MERCH builds C1, P1, P2, C2 (one batch, one review) -> GM merges G1-G2 -> the owner's go-ahead (Q1) -> MERCH runs the merch
+**Order for the GM**: MERCH builds C1, P1, P2, C2 (one batch, one review) -> GM merges G1-G3 -> the owner's go-ahead (Q1) -> MERCH runs the merch
 test Worker deploy -> the owner sets the secrets -> GM deploys the test copy -> the run (owner and MERCH; results filled into part D).
 
 ### Questions for the owner (for the choice window; recommendation first)

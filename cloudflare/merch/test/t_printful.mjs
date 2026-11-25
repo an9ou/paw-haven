@@ -133,8 +133,8 @@ export async function printful() {
     eq(R.calls.map((c) => c.method + ' ' + c.path), ['GET /v2/orders/@' + EXT, 'GET /v2/orders/' + PID + '/shipments?limit=100'], 'two reads');
     ok(r.ok && r.data.status === 'partial', 'status');
     eq(r.data.shipments, [
-      { id: '70001', carrier: 'USPS', tracking_url: 'https://tracking.example.test/9400100000000000000001', items: [EXT + '_1'], shipped_at: Date.parse('2026-12-03T16:35:35Z'), delivered_at: Date.parse('2026-12-06T19:15:05Z'), returned: false },
-      { id: '70002', carrier: 'USPS', tracking_url: 'https://tracking.example.test/9400100000000000000002', items: [EXT + '_2'], shipped_at: Date.parse('2026-12-04T10:00:00Z'), delivered_at: null, returned: true }], 'the shipped and the returned parcel; canceled and packaged left out');
+      { id: '70001', carrier: 'USPS', tracking_url: 'https://tracking.example.test/9400100000000000000001', items: [EXT + '_1'], units: [{ ext: EXT + '_1', qty: 1 }], reship: false, shipped_at: Date.parse('2026-12-03T16:35:35Z'), delivered_at: Date.parse('2026-12-06T19:15:05Z'), returned: false },
+      { id: '70002', carrier: 'USPS', tracking_url: 'https://tracking.example.test/9400100000000000000002', items: [EXT + '_2'], units: [{ ext: EXT + '_2', qty: 1 }], reship: false, shipped_at: Date.parse('2026-12-04T10:00:00Z'), delivered_at: null, returned: true }], 'the shipped and the returned parcel; canceled and packaged left out');
     const D = replay(['order_create_draft']); const d = await pf.get(envOf(D), PID); ok(d.ok && D.calls.length === 1 && D.calls[0].path === '/v2/orders/' + PID, 'a draft: no shipments read, by Printful id');
     const I = replay(['order_confirm_inreview', emptyShips]); const i = await pf.get(envOf(I), PID); eq(i.data.status, 'pending', 'inreview counts as pending (confirmed, not yet made)');
     const N = replay(['order_not_found']); eq((await pf.get(envOf(N), EXT)).kind, 'not_found', '404');

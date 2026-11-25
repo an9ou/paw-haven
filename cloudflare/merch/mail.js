@@ -7,10 +7,10 @@
 // about, sent after commit, retried with backoff. The network (util.js netOf): env.MAIL_FETCH in the tests (never set in production), else, on
 // Cloudflare's runtime only and only with RESEND_API_KEY, the global fetch to https://api.resend.com (part 9, C1). Without a network or the key
 // nothing is sent and the answer says so (not_set_up); in Node there is never a global path. The buyer's address is passed in by the caller, read from the Stripe session at send time: it is never stored here.
-import { netOf, call, siteOf, orderLink } from './util.js';
+import { netOf, call, siteOf, orderLink, keyOf } from './util.js';
 
 export const CONTACT = 'contact@doodledoggo.app';
-export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'late_posted', 'reprint'];
+export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'late_posted', 'reprint', 'checking'];
 const ZERO_DEC = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']; // Stripe's zero-decimal currencies
 const THREE_DEC = ['BHD', 'JOD', 'KWD', 'OMR', 'TND'];
 const INK = '#5B3D32', PAPER = '#FFFBF3', YELLOW = '#FFE3A1', MINT = '#C8E9CF';
@@ -259,17 +259,33 @@ export function build(kind, view, env) {
       B.push(['facts', [orderFact]], toPage);
       return page('A new one is on its way', 'A new one is on its way', B, env, site);
     }
+    case 'checking': { // fourth review (R4-m3, R4-M1): a parcel came back and the owner checks it with the print partner (the address form is shut)
+      B.push(['p', 'A parcel from your order came back to our print partner. We’re checking with them what happens next, and we’ll write to you as soon as we know.'],
+        ['p', 'You don’t need to do anything for now: we’ll either send it again or refund it.'],
+        ['facts', [orderFact]], toPage);
+      return page('We’re checking on your parcel', 'We’re checking on your parcel', B, env, site);
+    }
     default: // an unknown kind (never sent by the ledger): a plain note with the order link, never a blank email
       B.push(['p', 'There is news about your order.'], ['facts', [orderFact]], toPage);
       return page('About your order', 'About your order', B, env, site);
   }
 }
 
+// the test Worker's allow list (R4-m4): MERCH_TEST_MAIL_TO, a comma list the owner sets in the Cloudflare dashboard (never in the repo); the
+// address must be one of them (any case, spaces trimmed), a "+tag" before the @ aside: you+location_JP@... is you@... (the sandbox's country
+// trick; it lands in the same mailbox). Not read at all on the live Worker.
+const mailbox = (a) => { const s = String(a == null ? '' : a).trim().toLowerCase(), i = s.lastIndexOf('@'); return i > 0 && !/[\s,]/.test(s) ? s.slice(0, i).replace(/\+.*$/, '') + s.slice(i) : ''; };
+export function testMailOk(env, to) {
+  const want = mailbox(to);
+  return !!want && !want.startsWith('@') && String((env && env.MERCH_TEST_MAIL_TO) || '').split(',').map(mailbox).filter(Boolean).includes(want);
+}
 export async function send(env, to, kind, view, key) {
-  const f = netOf(env.MAIL_FETCH, env.RESEND_API_KEY);
-  if (!f || !env.RESEND_API_KEY || !to) return { sent: false, why: !to ? 'no_address' : 'not_set_up' };
+  const key0 = keyOf(env.RESEND_API_KEY), f = netOf(env.MAIL_FETCH, key0);
+  if (!f || !key0 || !to) return { sent: false, why: !to ? 'no_address' : 'not_set_up' };
+  // fourth review (R4-m4): the test Worker is public, so it writes only to the addresses the owner listed (MERCH_TEST_MAIL_TO); none listed: none
+  if (env.MERCH_TEST === '1' && !testMailOk(env, to)) return { sent: false, why: 'test_not_listed' };
   const m = build(kind, view, env);
-  const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': key },
+  const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + key0, 'Content-Type': 'application/json', 'Idempotency-Key': key },
     body: JSON.stringify({ from: env.MAIL_FROM || 'orders@doodledoggo.app', reply_to: CONTACT, to: [to], subject: m.subject, text: m.text, html: m.html }) }, 15000);
   return { sent: !!r.ok, status: r.status, why: r.ok ? null : 'error' };
 }
@@ -306,10 +322,12 @@ const OWNER = {
   report: ['The nightly report.', null, 'report'],
   stuck: ['A step failed with an error; it is tried again every 5 minutes.', 'If it keeps failing, look at the order.', 'show'],
   late_cancel_unread: ['A buyer cancelled the late part while Printful could not be read.', 'Check the Printful order and cancel what you still can there.', 'show'],
-  reship_unread: ['A returned parcel waited 7 days, but its Printful order could not be read, so nothing was refunded.', 'Check the Printful order: refund or reprint those lines if it was not reshipped.', 'show'],
+  reship_unread: ['A returned parcel waited 7 days, but its Printful order could not be read, so nothing was refunded.', 'Check the Printful order: refund or reprint those lines if it was not reshipped. The buyer was told we are checking.', 'show'],
   dispute_lost: ['A dispute was lost (the bank paid the buyer back).', 'Cancel in the Printful dashboard what still goes on there, if you can.', 'show'],
   cancel_late: ['The late part of an order was refunded (the buyer cancelled it, or its new date passed).', 'Cancel those items in the Printful dashboard if you can.', 'show'],
   returned: ['A parcel came back to Printful.', 'Nothing is reshipped (the order is refunded, cancelled or disputed).', 'show'],
+  returned_review: ['Another parcel came back to Printful while the order is held for your check.', 'Check the Printful order; refund or reprint what was not reshipped. The hold ends once nothing is left to settle.', 'show'],
+  reship_part: ['A parcel came back with part of a line in it (the line was posted in more than one parcel).', 'Check the Printful order: if those units were not reshipped, refund them (merch.sh refund with the quantity) or reprint the line. Nothing is refunded or reshipped by itself; the buyer was told we are checking.', 'show'],
   reprint_held: ['A reprint waits (the printer mode is not live).', 'Confirm it once the mode is live.', 'confirm'],
   reprint_stopped: ['A reprint was stopped or paused.', 'Nothing to do unless a dispute ends: then confirm releases it.', 'show'],
   reprint_after_stop: ['A reprint was confirmed at Printful just as its order was refunded or disputed.', 'Cancel it in the Printful dashboard if you can.', 'show'],
@@ -346,10 +364,10 @@ export function reportText(rep) {
 }
 // key: the outbox row's id, which carries the JST day (one mail per order, reason and day; the nightly report never collides with yesterday's)
 export async function owner(env, orderId, reason, note, key) {
-  const f = netOf(env.MAIL_FETCH, env.RESEND_API_KEY);
-  if (!f || !env.RESEND_API_KEY || !env.MERCH_OWNER_TO) return { sent: false, why: 'not_set_up' };
+  const key0 = keyOf(env.RESEND_API_KEY), f = netOf(env.MAIL_FETCH, key0);
+  if (!f || !key0 || !env.MERCH_OWNER_TO) return { sent: false, why: 'not_set_up' };
   const m = ownerBuild(env, orderId, reason, note);
-  const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': key || 'mo_owner_' + orderId + '_' + reason },
+  const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + key0, 'Content-Type': 'application/json', 'Idempotency-Key': key || 'mo_owner_' + orderId + '_' + reason },
     body: JSON.stringify({ from: env.MAIL_FROM || 'orders@doodledoggo.app', to: [env.MERCH_OWNER_TO], subject: m.subject, text: m.text }) }, 15000);
   return { sent: !!r.ok, why: r.ok ? null : 'error' };
 }

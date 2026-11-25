@@ -17,7 +17,8 @@ export function corsFor(origin, env) {
   if (!origin) return null;
   const ok = env.MERCH_TEST === '1' ? origin === TEST_ORIGIN : LIVE_ORIGINS.includes(origin) || LOCAL.test(origin);
   if (!ok) return null;
-  return { 'Access-Control-Allow-Origin': origin, Vary: 'Origin', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' };
+  // fourth review (R4-m4): the test copy also sends the shared test token (X-Merch-Test-Token); the live Worker never asks for it
+  return { 'Access-Control-Allow-Origin': origin, Vary: 'Origin', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': env.MERCH_TEST === '1' ? 'Content-Type, X-Merch-Test-Token' : 'Content-Type', 'Access-Control-Max-Age': '86400' };
 }
 const ledger = (env) => env.LEDGER.get(env.LEDGER.idFromName('ledger'));
 
@@ -33,7 +34,7 @@ export default {
       else if (p.startsWith('/merch/file/')) res = await fileRoute(p, env);
       else if (p.startsWith('/merch/') && !p.startsWith('/merch/internal')) {
         const h = new Headers();
-        for (const k of ['content-type', 'stripe-signature', 'x-pf-webhook-signature', 'x-pf-signature', 'authorization']) { const v = req.headers.get(k); if (v) h.set(k, v); }
+        for (const k of ['content-type', 'stripe-signature', 'x-pf-webhook-signature', 'x-pf-signature', 'authorization'].concat(env.MERCH_TEST === '1' ? ['x-merch-test-token'] : [])) { const v = req.headers.get(k); if (v) h.set(k, v); }
         h.set('x-merch-ip', req.headers.get('CF-Connecting-IP') || 'local'); // the client cannot set these: only the ones above are copied
         if (origin) h.set('x-merch-origin', origin);
         const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer();

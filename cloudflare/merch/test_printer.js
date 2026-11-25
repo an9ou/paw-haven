@@ -14,7 +14,7 @@
 //   "Test Printer Down"    the whole printer answers 503 to every call for 30 minutes (one outage per order)         -> retried (T2.2-34, T2.2-41)
 //   "Test Refuse File"     a print file it "could not download" (every try)                                          -> retried as down, never a buyer email
 // A missing name, first address line, city or country is refused like an address Printful cannot use.
-import { nowOf } from './util.js';
+import { nowOf, keyOf } from './util.js';
 import { PRODUCTS, PF_PRODUCTS, PF_VARIANT_IDS, SHIP_COSTS, regionOf, unitCost } from './catalog.js';
 
 export const PRINTER_NAME = 'doodle-doggo-merch-test-printer';
@@ -27,7 +27,7 @@ export const magicOf = (name) => MAGIC[String(name == null ? '' : name).trim().r
 // (MERCH_TEST = "1"), with the PROVIDER_FETCH binding there, and with no real MERCH_PROVIDER_KEY set. Otherwise the binding is taken away, so a
 // real key is never sent to the stand-in (it goes to Printful, as without C2), and the key 'test-printer' is never sent anywhere.
 export function printerEnv(env) {
-  const e = Object.assign({}, env), key = env && env.MERCH_PROVIDER_KEY;
+  const e = Object.assign({}, env), key = env ? keyOf(env.MERCH_PROVIDER_KEY) : ''; // R4-m2: trimmed, as provider_printful.js reads it
   if (env && env.MERCH_TEST === '1' && env.PROVIDER_FETCH && (!key || key === PRINTER_KEY)) { e.MERCH_PROVIDER_KEY = PRINTER_KEY; return e; }
   delete e.PROVIDER_FETCH;
   if (key === PRINTER_KEY) delete e.MERCH_PROVIDER_KEY;

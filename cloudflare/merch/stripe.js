@@ -2,22 +2,24 @@
 // that makes something). The network (util.js netOf): env.STRIPE_FETCH in the tests (never set in production), else, on Cloudflare's runtime
 // only and only with MERCH_STRIPE_KEY, the global fetch to https://api.stripe.com. In Node there is never a global path, so a test without
 // STRIPE_FETCH has no Stripe at all. Without a network, a key or the webhook secret, stripeReady() is false and checkout is refused. The test
-// Worker (MERCH_TEST=1) refuses sk_live / rk_live keys: stripeReady() is false and no call is ever made with one (part 9, C1).
-import { form, netOf, call, hmacHex, same, enc, orderLink } from './util.js';
+// Worker (MERCH_TEST=1) takes only sk_test_ / rk_test_ keys: with any other stripeReady() is false and no call is ever made with it (part 9, C1;
+// fourth review R4-m2: an allow list, after trimming).
+import { form, netOf, call, hmacHex, same, enc, orderLink, keyOf } from './util.js';
 
 const BASE = 'https://api.stripe.com/v1';
 export const STRIPE_VERSION = '2025-03-31.basil'; // pinned: adaptive_pricing, presentment_details, collected_information exist from here
 export const SIG_TOL = 300; // seconds
 
-// the test Worker (doodle-doggo-merch-test) refuses live keys (TRANSACTIONS 3.3)
-const liveOnTest = (env) => env.MERCH_TEST === '1' && /^(sk|rk)_live/.test(String(env.MERCH_STRIPE_KEY));
-const net = (env) => (liveOnTest(env) ? null : netOf(env.STRIPE_FETCH, env.MERCH_STRIPE_KEY));
+// the test Worker (doodle-doggo-merch-test) takes test keys only (TRANSACTIONS 3.3). Fourth review (R4-m2): an allow list on the trimmed key
+// (sk_test_ / rk_test_), not a block list on the raw value, so " sk_live_..." with a space or a tab in front is refused too; the trimmed key is sent
+const notTestKey = (env) => env.MERCH_TEST === '1' && !/^(sk|rk)_test_/.test(keyOf(env.MERCH_STRIPE_KEY));
+const net = (env) => (notTestKey(env) ? null : netOf(env.STRIPE_FETCH, keyOf(env.MERCH_STRIPE_KEY)));
 export function stripeReady(env) {
-  return !!(net(env) && env.MERCH_STRIPE_KEY && env.MERCH_STRIPE_WEBHOOK_SECRET);
+  return !!(net(env) && keyOf(env.MERCH_STRIPE_KEY) && env.MERCH_STRIPE_WEBHOOK_SECRET);
 }
 async function req(env, method, path, body, idem) {
-  const f = net(env); if (!f || !env.MERCH_STRIPE_KEY) return { ok: false, status: 0, data: null, error: 'not_set_up' };
-  const h = { Authorization: 'Bearer ' + env.MERCH_STRIPE_KEY, 'Stripe-Version': env.MERCH_STRIPE_VERSION || STRIPE_VERSION };
+  const f = net(env), key = keyOf(env.MERCH_STRIPE_KEY); if (!f || !key) return { ok: false, status: 0, data: null, error: 'not_set_up' };
+  const h = { Authorization: 'Bearer ' + key, 'Stripe-Version': env.MERCH_STRIPE_VERSION || STRIPE_VERSION };
   if (body) h['Content-Type'] = 'application/x-www-form-urlencoded';
   if (idem) h['Idempotency-Key'] = idem;
   return call(f, BASE + path, { method, headers: h, body: body ? form(body) : undefined }, Number(env.MERCH_TIMEOUT_MS) || 20000);
