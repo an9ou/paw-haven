@@ -34,6 +34,22 @@ export const PNG_MAX = 7.5 * (1 << 20);
 // difference per channel over white and over black, and the pixels more than 32 apart in any channel over white or black (a missing body part is
 // tens of thousands; the 8 sample dogs reach at most 1,687 on a tee and 1,042 on a mug)
 export const MATCH = { mean: 0.2, far: 32, far_px: { tee: 5000, mug: 3000 } };
+// two decoded RGBA pictures of one size (straight alpha) -> { mean_white, mean_black, far_px, equal_px }. For the tests and the cloud kit only;
+// the Worker never decodes a picture
+export function matchPx(A, B) {
+  const a = A.data, b = B.data, n = a.length / 4; let sw = 0, sk = 0, far = 0, same = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    const aa = a[i + 3] / 255, ba = b[i + 3] / 255; let f = false;
+    if (a[i] === b[i] && a[i + 1] === b[i + 1] && a[i + 2] === b[i + 2] && a[i + 3] === b[i + 3]) same++;
+    for (let c = 0; c < 3; c++) {
+      const x = a[i + c], y = b[i + c], dk = Math.abs(x * aa - y * ba), dw = Math.abs(x * aa + 255 * (1 - aa) - (y * ba + 255 * (1 - ba)));
+      sw += dw; sk += dk; if (dw > MATCH.far || dk > MATCH.far) f = true;
+    }
+    if (f) far++;
+  }
+  return { mean_white: sw / (3 * n), mean_black: sk / (3 * n), far_px: far, equal_px: same / n };
+}
+export const matchOk = (m, product) => m.mean_white < MATCH.mean && m.mean_black < MATCH.mean && m.far_px <= (MATCH.far_px[product] || 0);
 
 const via = (env, v) => (v || env.MERCH_RENDER_VIA || 'direct') === 'worker' ? 'worker' : 'direct';
 const hasBrowser = (env) => !!(env.BROWSER && typeof env.BROWSER.quickAction === 'function');
