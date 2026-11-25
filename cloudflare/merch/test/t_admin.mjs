@@ -41,7 +41,7 @@ export async function admin() {
     ok(!/buyer@example|Example Street|Exampleton|Pat Example|email|PC-4242/.test(t), 'no buyer data on the page: ' + t.slice(0, 300));
     eq(Object.keys(p.json).sort(), ['can_cancel', 'cancel_until', 'country', 'dispute', 'gift_code', 'hold', 'id', 'late', 'lines', 'paid_at', 'parcels', 'pay_pending', 'pres', 'status', 'totals'].sort(), 'fields');
     ok(p.json.lines[1].name === "D'Artagnan" && p.json.lines[0].name === null && p.json.parcels.length === 1, 'the dog’s name only where printed');
-    const all = JSON.stringify([w.q('select * from merch_orders'), w.q('select * from merch_order_items'), w.q('select * from merch_events'), w.q('select * from merch_refunds'), w.q('select * from merch_parcels'), w.q('select * from merch_meta')]);
+    const all = JSON.stringify([w.q('select * from merch_orders'), w.q('select * from merch_order_items'), w.q('select * from merch_events'), w.q('select * from merch_refunds'), w.q('select * from merch_parcels'), w.q('select * from merch_meta'), w.q('select * from merch_outbox')]);
     ok(!/buyer@example|Example Street|Exampleton|Pat Example|PC-4242/.test(all), 'nothing about the buyer in any table but the email HMAC');
   });
   await T('X-time-travel', 'time travel for the cooling hour: can_cancel until cancel_until + 120 s, the confirm alarm at exactly that time', async () => {

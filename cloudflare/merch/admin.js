@@ -40,7 +40,7 @@ export async function adminRoute(L, req, path, ip) {
         const q = body.qty == null ? l.qty - l.refunded_qty : Number(body.qty);
         return L.lineRefund(x, l, q, reason);
       });
-      if (r.error) return fail(r.error, r.error === 'bad_line' || r.error === 'bad_qty' ? 400 : 409);
+      if (r.error) return fail(r.error, r.error === 'bad_line' || r.error === 'bad_qty' ? 400 : 409, r.reprint ? { reprint: r.reprint } : {});
       L.tx(() => L.event('x:refund:' + r.id, o.id, 'admin_refund', reason));
       await L.flush();
       return json({ ok: true, refund: r.id, amount: r.amount, status: L.order(o.id).status });

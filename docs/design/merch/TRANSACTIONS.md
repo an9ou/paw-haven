@@ -244,6 +244,24 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 | T2.2-55 | The Worker or object stops mid-step (after a Stripe or Printful call) | Every outbound call has an idempotency key or a GET-before-create; a `confirming` or `sending` claim older than 2 min is retried by the alarm | Nothing |
 | T2.2-56 | Stripe Tax returns tax on a paid order where we expected none (a registration was added) | The real tax is stored from the session; the margin is re-checked; below the floor: nightly report only (the buyer is served) | Tax shown on Stripe's page and receipt |
 
+> Notes (25 Nov 2026, part 3 review fixes; PART3.md has the map):
+> - **Day cap (T2.1-02, T2.1-09, T2.2-01, T2.2-11, 6.4 `MERCH_DAY_CAP`):** it counts the orders **paid** in the JST day; open sessions never count, a
+>   cancelled order does not. A buyer who pays after the cap was reached is still served: nothing is refused after payment.
+> - **T2.2-18 / T2.2-19:** a **partial** Dashboard refund before `completed` records the amount and holds the order `held review` (`dash_refund`) for the
+>   owner (never "refunded, make nothing", never printed silently); 24 h without the owner: the rest is refunded.
+> - **T2.2-25 / T2.2-39:** `merch.sh confirm` releases only a `review` hold, `draft_mode`, or a `dispute` hold whose dispute was won; never a cancelled,
+>   refunded or open-dispute order. A draft made while the order was cancelled, refunded or disputed is deleted.
+> - **Question 13 (T2.2-14):** a `completed` event for an order we had expired is re-read: `held review` (`late_pay`), full refund after 24 h unless the owner confirms.
+> - **T2.1-13, T2.1-23, T2.2-45:** with `MERCH_PROVIDER_MODE` other than `live` a reprint is held too (no printer call). No reprint or reship for a
+>   refunded, cancelled or disputed order, or a fully refunded line; a returned parcel on such an order only emails the owner.
+> - **T2.2-45 (question 16):** when the print file is gone, the reship is redrawn first and the buyer is then asked for the address again through the
+>   form; never the address that bounced, never the Stripe session's.
+> - **T2.1-30 / T2.2-34:** the delay email runs for held orders too (not during a dispute), and the late cancel works for them.
+> - **T2.2-48:** hints are rate-limited (300 an hour per IP hash); in live mode an unsigned hint is refused, and live mode needs `MERCH_PROVIDER_WEBHOOK_SECRET`.
+> - **Emails (section 2):** every email is an outbox row written with the change, sent after commit, retried (1, 5, 15, 60, 180 min); after the 6th
+>   failure the owner is told. The owner email's key carries the JST day.
+> - **Taking orders (6.4):** besides Stripe and the keys, the printer and the renderer must be set up, or no order is taken.
+
 ---
 
 ## 3. Money safety
@@ -412,6 +430,9 @@ versions since 2025-03-31 `collected_information.shipping_details.address.countr
 - `merch_events`: 90 days. Unpaid orders (`expired`): deleted after 30 days. Rate rows: at `reset_at`.
 - **Deletion on request** (contact@): clear the hash, the name and the recipe at once; ask Printful to delete the recipient; Stripe keeps its records as
   the law asks (the privacy page says so, as for the Kind shop).
+  > Note (25 Nov 2026, part 3): `tools/merch.sh forget <order|email:address>` (`POST /merch/admin/forget`) does it for ended orders (not during an open
+  > dispute): the email hash, the dog's name, the recipe, the print link, the print PNGs and the tracking links go; the order and line rows (money,
+  > country, product, status, dates), refunds, parcels' carrier and dates, events and fraud flags (a hash) stay. Its answer lists the Printful orders.
 - **Processors for /privacy:** Stripe (payment, address, email), Printful and its carriers (name, address), Cloudflare (the merch Worker's storage and
   its browser, which only ever sees the dog), Resend (order emails).
 - **Grown-ups only:** "You must be 18 or over to order. If you're younger, ask a parent or carer to order for you." The game's button keeps "Ask a
@@ -534,6 +555,8 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
   holds the words, so they can be translated. No other free text in the catalog.
 - `POST /merch/quote` answers while the shop is shut by `MERCH_FROM` (prices are public) and says `shut: true`; a `soon` country still
   gets 403 `country_closed`. `POST /merch/checkout` stays 503 `merch_closed`.
+- Note (25 Nov 2026, built in part 3): sizes also carry `add` (the extra over the base price); `eta` is `[min, max]` business days in the catalog
+  and the quote. A new admin route, `forget {order | email}` (section 5 note).
 
 Stripe events on the merch webhook endpoint [O]: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`, and the refund
@@ -578,6 +601,8 @@ later (the Browser Run binding).
 - **Checked:** PNG width and height from the header equal the product's; bytes ≤ 7.5 MB (the row limit is 8 MB); SHA-256 stored on the line.
 - **Versions:** the Worker's static assets keep one folder per released `ART_VER` (about 0.8 MB each). The page sends its `art_ver`; a line renders
   with that folder forever (T2.2-49), so a re-render after the file is gone is the same picture.
+  > Note (25 Nov 2026, part 3, question 17): the released folders live in git under `site/merch/print/<ART_VER>/` (the page build puts each there and it
+  > is committed); `cloudflare/merch/build_assets.mjs` copies every one into the Worker's assets and never deletes; a folder is never removed once an order was taken with it.
 - **Served** at `/merch/file/<key>/<exp>/<sig>.png`, links valid 30 days, given to Printful in the draft.
 - **Kept 180 days after the line's last shipment** (covers Printful's 30-day claim window after delivery and the usual 120-day card dispute window),
   2 days after a cancel or a refund before printing. Storage per order is about 0.8 MB (a tee 0.65-0.71 MB, a mug 0.19-0.20 MB).

@@ -65,7 +65,7 @@ export async function t22() {
     await w.pay(id); eq(st(w, id), ['paid', null], 'paid at the old price'); ok(w.order(id).total === 2498, 'the order row');
     w.L().cat.products.mug.price = 1999;
   });
-  await T('T2.2-11', 'day cap reached: 409 sold_out_today; sessions already open are honoured when paid, even after the cap is lowered', async () => {
+  await T('T2.2-11', 'day cap reached (paid orders of the JST day): 409 sold_out_today; sessions already open are honoured when paid, even after the cap is lowered', async () => {
     const w = await world({ env: { MERCH_DAY_CAP: '2' } }); const a = await w.newOrder([mug(0)]); await w.paidOrder([mug(1)]); await w.paidOrder([mug(3)]);
     const r = await w.checkout([mug(2)]); ok(r.status === 409 && r.json.error === 'sold_out_today', r.text); ok((await w.call('GET', '/merch/catalog')).json.sold_out_today === true, 'the catalog says so');
     w.env.MERCH_DAY_CAP = '0'; await w.pay(a); eq(st(w, a), ['paid', null], 'a session opened before the cap was reached, paid after it: still served');
@@ -79,14 +79,18 @@ export async function t22() {
     const w = await world(); let r = await w.checkout([mug(0)], 'US', { art_ver: 'pp1-00000000' }); ok(r.status === 409 && r.json.error === 'art_changed', r.text);
     w.env.MERCH_ART_VERS = 'pp1-00000000'; r = await w.checkout([mug(0)], 'US', { art_ver: 'pp1-00000000' }); ok(r.status === 200, 'an older version the Worker still serves');
   });
-  await T('T2.2-14', 'a paid session fails the re-read checks (amount, currency, lines, order id, discount): held review; no render; owner email; 24 h: full refund', async () => {
+  await T('T2.2-14', 'a paid session fails the re-read checks (amount, currency, lines, order id, a discount alone, a shipping fee): held review; no render; owner email; 24 h: full refund', async () => {
     for (const [po, why] of [[{ amount: 100 }, 'amount'], [{ currency: 'eur' }, 'currency']]) {
       const w = await world(); const id = await w.newOrder([mug(0)]); await w.pay(id, po);
       eq([...st(w, id), w.order(id).why], ['held', 'review', why], why); await w.advance(2 * HOUR); ok(!w.rd.calls.length && !w.pf.calls.length, 'no render, no Printful');
       ok(w.owner(/review/).length === 1, 'owner email'); await w.advance(23 * HOUR); eq(w.order(id).status, 'refunded', 'refunded after 24 h'); ok(w.mails(/refund_all/).length === 1, 'kind email');
     }
-    const w = await world(); const id = await w.newOrder([mug(0)]); const cs = w.stripe.pay(w.sid(id)); cs.total_details.amount_discount = 100; cs.metadata = { merch: 'mo_other' };
+    const w = await world(); const id = await w.newOrder([mug(0)]); const cs = w.stripe.pay(w.sid(id)); cs.metadata = { merch: 'mo_other' };
     await w.hook('checkout.session.completed', { id: cs.id, payment_status: 'paid' }); eq(w.order(id).why, 'order_id', 'order id mismatch');
+    const d = await world(); const di = await d.newOrder([mug(0)]); const dc = d.stripe.pay(d.sid(di)); dc.total_details.amount_discount = 100; dc.amount_total -= 100; // only the discount is wrong
+    await d.hook('checkout.session.completed', { id: dc.id, payment_status: 'paid' }); eq([...st(d, di), d.order(di).why], ['held', 'review', 'discount'], 'a discount (metadata intact) is caught');
+    const f = await world(); const fi = await f.newOrder([mug(0)]); const fc = f.stripe.pay(f.sid(fi)); fc.shipping_cost.amount_subtotal = 0; fc.amount_total -= 499; // a shipping fee that is not ours
+    await f.hook('checkout.session.completed', { id: fc.id, payment_status: 'paid' }); eq(f.order(fi).why, 'shipping', 'a shipping-fee mismatch is caught');
     const w2 = await world(); const id2 = await w2.newOrder([mug(0), tee(1)]); const c2 = w2.stripe.pay(w2.sid(id2)); c2.line_items.data[1].quantity = 2;
     await w2.hook('checkout.session.completed', { id: c2.id, payment_status: 'paid' }); eq(w2.order(id2).why, 'lines', 'line items');
   });
@@ -110,12 +114,19 @@ export async function t22() {
     w.clock.t += 400e3; const replay = await w.call('POST', '/merch/webhook/stripe', good.raw, { 'stripe-signature': good.sig }); ok(replay.status === 400 && replay.json.error === 'stale', 'a replay after 5 minutes is stale');
     const w2 = await world({ env: { MERCH_STRIPE_WEBHOOK_SECRET: undefined } }); r = await w2.call('POST', '/merch/webhook/stripe', '{}', { 'stripe-signature': 't=1,v1=' + '0'.repeat(64) }); ok(r.status === 503, 'no secret set: 503 so Stripe retries later');
   });
-  await T('T2.2-18', 'charge.refunded (full) before completed: session looked up by payment_intent; order refunded, lines cancelled; the later completed makes nothing; lookup fails: 502', async () => {
+  await T('T2.2-18', 'charge.refunded (full) before completed: session looked up by payment_intent; order refunded, lines cancelled; the later completed makes nothing; lookup fails: 502; a PARTIAL refund before completed: held review for the owner, 24 h: the rest back (S3)', async () => {
     const w = await world(); const id = await w.newOrder([mug(0)]); const cs = w.stripe.pay(w.sid(id)); w.stripe.dashRefund(cs.payment_intent, 2498);
     w.stripe.fail.list = 1; let r = await w.hook('charge.refunded', { id: 'ch_1', payment_intent: cs.payment_intent, amount: 2498, refunded: true }); ok(r.status === 502, 'lookup fails: 502');
     r = await w.hook('charge.refunded', { id: 'ch_1', payment_intent: cs.payment_intent, amount: 2498, refunded: true }); ok(r.status === 200, r.text);
     eq([w.order(id).status, w.lines(id)[0].status, w.order(id).refunded], ['refunded', 'cancelled', 2498], 'refunded');
     await w.hook('checkout.session.completed', { id: cs.id, payment_status: 'paid' }); await w.advance(3 * HOUR); ok(w.order(id).status === 'refunded' && !w.rd.calls.length && !w.pf.calls.length, 'nothing rendered, no Printful order');
+    ok(w.lines(id).every((l) => l.refunded_qty === l.qty), 'every line counts as refunded');
+    // S3: a PARTIAL refund before completed: held for the owner, never "refunded, make nothing", never printed silently
+    const x = await world(); const j = await x.newOrder([mug(0)]); const c2 = x.stripe.pay(x.sid(j)); x.stripe.dashRefund(c2.payment_intent, 500);
+    await x.hook('charge.refunded', { id: 'ch_p', payment_intent: c2.payment_intent, amount: 2498, refunded: false });
+    eq([...st(x, j), x.order(j).why, x.order(j).refunded], ['held', 'review', 'dash_refund', 500], 'held review, the amount recorded'); ok(x.owner(/review/).length === 1, 'owner email');
+    await x.hook('checkout.session.completed', { id: c2.id, payment_status: 'paid' }); ok(x.order(j).paid_at && x.order(j).status === 'held' && !x.rd.calls.length, 'completed records the payment; the hold stays; nothing printed');
+    await x.advance(DAY + MIN); ok(x.order(j).status === 'refunded' && refunded(x) === 2498, '24 h without the owner: the rest (1998) back, 2498 in all: ' + refunded(x));
   });
   await T('T2.2-19', 'a partial refund made in the Stripe Dashboard: refunded += amount; an unassigned merch_refunds row; lines unchanged; nightly report', async () => {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(1)]); const pi = w.order(id).payment_intent; const re = w.stripe.dashRefund(pi, 500);
@@ -219,10 +230,14 @@ export async function t22() {
     eq([...st(w, id)], ['held', 'provider'], 'held provider past the hour'); await w.advance(DAY); ok(w.owner(/provider_down/).length === 1, 'owner email at 24 h');
     w.pf.fail.create = 0; await w.advance(HOUR); ok(['confirmed', 'confirming'].includes(w.order(id).status), 'back when Printful is: ' + st(w, id));
   });
-  await T('T2.2-35', 'Printful create times out (result unknown): GET by external id before creating again; never two Printful orders', async () => {
+  await T('T2.2-35', 'Printful create times out or the object is killed after it (result unknown): GET by external id before creating again; never two Printful orders', async () => {
     const w = await world(); w.pf.timeoutCreate = 1; const id = await w.paidOrder([mug(0)]); await w.advance(1); ok(w.order(id).last_error === 'timeout', 'timeout noted');
     await w.advance(2 * MIN); ok(w.pf.orders.size === 1 && w.order(id).provider_order === Array.from(w.pf.orders.keys())[0], 'one Printful order, adopted');
     ok(w.pf.calls.some((c) => c.m === 'GET' && c.path === '/orders/@' + id), 'GET by external id first');
+    // a CRASH during create (no timeout recorded: S16): the next try still GETs first and adopts it
+    const x = await world(); x.pf.after.create = async () => { x.pf.after.create = null; x.evict(); }; const j = await x.paidOrder([mug(0)]); await x.advance(1);
+    ok(!x.order(j).provider_order && x.pf.orders.size === 1, 'killed after Printful made it: nothing recorded'); await x.advance(10 * MIN);
+    ok(x.pf.orders.size === 1 && x.order(j).provider_order === Array.from(x.pf.orders.keys())[0] && x.lines(j)[0].status === 'drafted', 'one Printful order, adopted after the crash');
   });
   await T('T2.2-36', 'Printful refuses the recipient: held address; "We need your address" email; 7 days without a fix: full refund', async () => {
     const w = await world(); w.pf.refuse.recipient = true; const id = await w.paidOrder([mug(0)]); await w.advance(1);
@@ -249,7 +264,7 @@ export async function t22() {
     const x = await world(); x.pf.costMul = 1.4; const j = await x.drafted([tee(0)]); await x.advance(48 * HOUR + MIN); ok(['confirmed', 'confirming'].includes(x.order(j).status), '48 h, margin >= 0: confirmed');
     const y = await world(); y.pf.costMul = 3; const k = await y.drafted([tee(0)]); await y.advance(48 * HOUR + MIN); eq(y.order(k).status, 'refunded', '48 h, margin < 0: refunded');
   });
-  await T('T2.2-40', 'cancel at minute 59 racing the confirm: both orders of arrival (time travel against the confirm alarm)', async () => {
+  await T('T2.2-40', 'cancel at minute 59 racing the confirm: both orders of arrival; a cancel during the draft call deletes the new draft (M1)', async () => {
     const w = await world(); const id = await w.drafted([tee(0)]); const paid = w.order(id).paid_at;
     await w.advance(paid + 59 * MIN - w.clock.t); const r = await w.call('POST', '/merch/order/' + id + '/cancel', {}); eq([r.status, r.json.status], [200, 'cancelled'], 'minute 59: cancelled');
     await w.advance(5 * MIN); ok(!w.pf.calls.some((c) => /confirm/.test(c.path)) && w.order(id).status === 'cancelled', 'the confirm alarm then does nothing');
@@ -260,19 +275,29 @@ export async function t22() {
     eq(x.order(j).status, 'confirming', 'the alarm claimed it before calling Printful');
     const c = await x.call('POST', '/merch/order/' + j + '/cancel', {}); ok(c.status === 409 && c.json.error === 'too_late', 'a cancel that finds confirming: too_late');
     x.pf.hangConfirm = null; go(); await alarm; eq(x.order(j).status, 'confirmed', 'confirmed'); ok(!x.stripe.refunds.length, 'no refund');
+    // M1: a cancel while Printful is making the draft: the new draft is deleted; no cost review; never confirmed
+    const y = await world(); y.pf.costMul = 1.4; let k; y.pf.after.create = async () => { y.pf.after.create = null; const c2 = await y.call('POST', '/merch/order/' + k + '/cancel', {}); ok(c2.json.status === 'cancelled', 'cancelled during the draft'); };
+    k = await y.paidOrder([tee(0)]); await y.advance(3 * HOUR);
+    const P = Array.from(y.pf.orders.values()); ok(P.length === 1 && P[0].deleted, 'the draft made during the cancel is deleted'); eq([y.order(k).status, y.order(k).hold], ['cancelled', null], 'cancelled, not held for cost');
+    ok(!y.pf.calls.some((c) => /confirm/.test(c.path)) && y.stripe.refunds.length === 1 && (await y.admin('POST', 'order/' + k + '/confirm', {})).status === 409, 'never confirmed; one refund; merch.sh confirm refuses');
   });
   await T('T2.2-41', 'cancel while Printful is down: cancelled and the refund first; the draft deletion is retried; a cancelled order is never confirmed', async () => {
     const w = await world(); const id = await w.drafted([tee(0)]); const po = w.order(id).provider_order; w.pf.fail.delete = 2;
     const r = await w.call('POST', '/merch/order/' + id + '/cancel', {}); ok(r.json.status === 'cancelled' && w.stripe.refunds.length === 1 && !w.pf.orders.get(po).deleted, 'cancelled and refunded; the draft is still there');
     await w.advance(40 * MIN); ok(w.pf.orders.get(po).deleted && w.order(id).draft_del === 0, 'deleted on a retry'); ok(!w.pf.calls.some((c) => /confirm/.test(c.path)), 'never confirmed');
   });
-  await T('T2.2-42', 'Stripe refund call fails: the row stays sending with its key; the alarm retries with the same Idempotency-Key; owner email after 24 h', async () => {
+  await T('T2.2-42', 'Stripe refund call fails: the row stays sending with its key; the alarm retries with the same Idempotency-Key; owner email after 24 h; Stripe forgets keys after 24 h', async () => {
     const w = await world(); const id = await w.paidOrder([mug(0)]); w.stripe.fail.refund = 400;
     const r = await w.call('POST', '/merch/order/' + id + '/cancel', {}); eq([r.json.status, r.json.refund], ['cancelled', 'sending'], 'sending');
     await w.advance(30 * MIN); const keys = w.stripe.calls.filter((c) => c.path === '/v1/refunds' && c.m === 'POST').map((c) => c.key);
     ok(keys.length >= 3 && keys.every((k) => k === 'mr_' + id + '_all_1'), 'retried with the same key: ' + keys.length);
     await w.advance(DAY); ok(w.owner(/refund_stuck/).length === 1, 'owner email after 24 h');
     w.stripe.fail.refund = 0; await w.advance(10 * MIN); ok(w.one('select status from merch_refunds where id = ?', 'mr_' + id + '_all_1').status === 'done' && w.stripe.refunds.length === 1, 'done once');
+    // the fake forgets keys after 24 h, as Stripe does: a refund made whose answer was lost, then Stripe down for 25 h: found by its metadata, never sent twice
+    const x = await world(); const j = await x.paidOrder([mug(0)]); x.stripe.after.refund = async () => { x.stripe.after.refund = null; x.stripe.fail.refund = 400; x.evict(); };
+    await x.call('POST', '/merch/order/' + j + '/cancel', {}); ok(x.stripe.refunds.length === 1, 'made at Stripe; the answer lost');
+    await x.advance(25 * HOUR); x.stripe.fail.refund = 0; await x.advance(30 * MIN);
+    ok(x.stripe.refunds.length === 1 && x.one('select status from merch_refunds where order_id = ?', j).status === 'done', 'one refund only, the row done: ' + x.stripe.refunds.length);
   });
   await T('T2.2-43', 'a refund fails later at the bank (refund.failed / charge.refund.updated failed): refund_failed = 1; owner email', async () => {
     const w = await world(); const id = await w.paidOrder([mug(0)]); await w.call('POST', '/merch/order/' + id + '/cancel', {}); const re = w.stripe.refunds[0];
@@ -290,7 +315,7 @@ export async function t22() {
     const x = await world(); const j = await x.confirmedOrder([mug(0), tee(1)]); const t1 = x.pf.ship(x.order(j).provider_order, [j + '_1']); await shipHint(x, j);
     const rr = await x.admin('POST', 'order/' + j + '/lost', { parcel: t1.id, then: 'refund' }); ok(rr.json.refunds.length === 1 && x.stripe.refunds[0].amount === 1999, 'or refunded: ' + rr.text);
   });
-  await T('T2.2-45', 'a parcel comes back to Printful: returned_at; hold reship (status stays); "We need your address"; one free reship after the fix; 7 days: refund those lines', async () => {
+  await T('T2.2-45', 'a parcel comes back to Printful: returned_at; hold reship (status stays); "We need your address"; one free reship after the fix; 7 days: refund those lines; a refunded order is never reshipped (M4)', async () => {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(1)]); const po = w.order(id).provider_order;
     const s = w.pf.ship(po, [id + '_1', id + '_2'], { status: 'fulfilled' }); await shipHint(w, id); s.returned = true; await shipHint(w, id);
     eq([w.order(id).status, w.order(id).hold], ['shipped', 'reship'], 'hold reship, status shipped'); ok(w.mails(new RegExp('_address_' + s.id + '$')).length === 1, 'address email');
@@ -299,6 +324,11 @@ export async function t22() {
     ok(rp.recipient.address1 === '9 New Lane' && rp.status === 'pending' && rp.files.length === 2, 'reshipped with the same files, confirmed'); ok(!w.order(id).hold && !w.stripe.refunds.length, 'free');
     const x = await world(); const j = await x.confirmedOrder([mug(0)]); const t = x.pf.ship(x.order(j).provider_order, [j + '_1'], { status: 'fulfilled' }); await shipHint(x, j); t.returned = true; await shipHint(x, j);
     await x.advance(7 * DAY + MIN); ok(x.stripe.refunds.length === 1 && x.order(j).status === 'refunded', '7 days: refunded');
+    // M4: a parcel coming back on a REFUNDED order: no reship, the buyer is not asked, the form says not needed
+    const y = await world(); const k = await y.confirmedOrder([mug(0)]); const u = y.pf.ship(y.order(k).provider_order, [k + '_1'], { status: 'fulfilled' }); await shipHint(y, k);
+    await y.admin('POST', 'order/' + k + '/refund', { line: 1, reason: 'never came' }); u.returned = true; await shipHint(y, k);
+    ok(y.order(k).status === 'refunded' && !y.order(k).hold && !y.mails(/_address_/).length && y.owner(/returned/).length === 1, 'refunded: no hold, no buyer email, the owner told');
+    const f = await y.call('POST', '/merch/order/' + k + '/address', { name: 'Pat', line1: '9 New Lane', city: 'Town', postal: '12345', country: 'US' }); ok(f.status === 409 && !y.pf.calls.some((c) => c.m === 'POST' && /-r\d/.test((c.body || {}).external_id || '')), 'no free reprint');
   });
   await T('T2.2-46', 'Printful puts a confirmed order on hold: held provider; owner email; back when the hold is removed', async () => {
     const w = await world(); const id = await w.confirmedOrder([tee(0)]); const P = w.pfOrder(id); P.status = 'onhold'; await w.phook(w.pf.hook(P, 'order_put_hold', 'h1'));
@@ -312,7 +342,7 @@ export async function t22() {
     const a = await w.admin('POST', 'order/' + id + '/reprint', { lines: [1], provider_order: '777' }); ok(a.status === 200 && w.one("select status from merch_reprints where provider_order = '777'").status === 'attached', a.text);
     ok(!w.pf.calls.some((c) => c.m === 'POST' && c.path === '/orders' && c.body.external_id === id + '-r1'), 'no new Printful order for an attached claim');
   });
-  await T('T2.2-48', 'a Printful hint with a bad or missing signature: 401 when signing is set up; otherwise accepted as a hint', async () => {
+  await T('T2.2-48', 'a Printful hint with a bad or missing signature: 401 when signing is set up; without a secret: accepted as a hint only while not live (S8)', async () => {
     const w = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: 'pf-hook-secret' } }); const body = JSON.stringify({ id: 'z1', type: 'x', data: { order: { id: 1 } } });
     ok((await w.phook(body, {}, { unsigned: true })).status === 401 && (await w.phook(body, { 'x-pf-signature': '0'.repeat(64) })).status === 401, 'missing and bad: 401');
     ok((await w.phook(body, { 'x-pf-signature': await hmacHex('pf-hook-secret', body) })).status === 200, 'good: 200');
@@ -360,18 +390,29 @@ export async function t22() {
     const fresh = (await w.L().fileUrl(key, HOUR)).replace('https://merch-api.doodledoggo.app', ''); ok((await w.raw('GET', fresh)).status === 200, 'a fresh link works');
     const exp = Math.floor(w.clock.t / 1000) + 600, missing = '/merch/file/p-2026-12-01~nope~1/' + exp + '/' + await hmacHex(w.env.MERCH_FILE_KEY, 'p-2026-12-01~nope~1/' + exp) + '.png'; ok((await w.call('GET', missing)).status === 404, 'signed but missing: 404');
   });
-  await T('T2.2-55', 'the Worker or object stops mid-step: a confirming claim older than 2 min is retried (GET first); a sending refund is retried', async () => {
+  await T('T2.2-55', 'the Worker or object stops mid-step (timeouts and real kills after the confirm and the refund): the confirming claim is re-read (GET first); a sending refund is retried', async () => {
     const w = await world(); const id = await w.drafted([tee(0)]); w.pf.timeoutConfirm = 1; await w.advance(w.order(id).cancel_until + GRACE - w.clock.t);
     eq(w.order(id).status, 'confirming', 'stuck in confirming (result unknown)'); await w.advance(2 * MIN + 1);
     eq(w.order(id).status, 'confirmed', 'the alarm re-read Printful (already pending) and finished'); ok(w.pf.calls.filter((c) => /confirm/.test(c.path)).length === 1, 'no second confirm');
     const x = await world(); const j = await x.paidOrder([mug(0)]); x.stripe.fail.refund = 1; await x.call('POST', '/merch/order/' + j + '/cancel', {});
     await x.advance(6 * MIN); ok(x.one('select status from merch_refunds where order_id = ?', j).status === 'done', 'the sending refund was retried');
+    // real crashes (the object killed between the call and the write): the confirm, then the refund
+    const y = await world(); const k = await y.drafted([tee(0)]); y.pf.after.confirm = async () => { y.pf.after.confirm = null; y.evict(); };
+    await y.advance(y.order(k).cancel_until + GRACE - y.clock.t); eq(y.order(k).status, 'confirming', 'killed after Printful confirmed: still confirming');
+    await y.advance(10 * MIN); eq(y.order(k).status, 'confirmed', 'the wake re-read it and finished'); ok(y.pf.calls.filter((c) => /confirm/.test(c.path)).length === 1, 'never a second confirm');
+    const z = await world(); const m = await z.paidOrder([mug(0)]); z.stripe.after.refund = async () => { z.stripe.after.refund = null; z.evict(); };
+    const c = await z.call('POST', '/merch/order/' + m + '/cancel', {}); ok(c.status === 503 && z.order(m).status === 'cancelled', 'killed after the refund call: the cancel was written first');
+    await z.advance(10 * MIN); ok(z.stripe.refunds.length === 1 && z.one('select status from merch_refunds where order_id = ?', m).status === 'done', 'retried with the same key: one refund');
   });
-  await T('T2.2-56', 'Stripe Tax returns tax on a paid order where none was expected: the real tax is stored; the margin re-checked; the buyer is served', async () => {
+  await T('T2.2-56', 'Stripe Tax returns tax on a paid order where none was expected: the real tax is stored; the margin re-checked; the buyer is served; an inclusive-tax line refund adds no tax (S2)', async () => {
     const w = await world(); const id = await w.newOrder([tee(0)]); await w.pay(id, { tax: 250 });
     eq([w.order(id).status, w.order(id).tax, w.order(id).total, w.lines(id)[0].line_tax], ['paid', 250, 3198 + 250, 250], 'paid with the tax stored');
     const x = await world({ env: { MERCH_COUNTRIES: 'all' } }); const j = await x.newOrder([mug(0)], 'HK'); await x.pay(j, { tax: 2000, amount: 3198 }); // inside the price (inclusive): the margin drops
     ok(x.order(j).status === 'paid' && x.L().report().margin_low.some((m) => m.order_id === j), 'below the floor: nightly report only');
-    const r = await w.admin('POST', 'order/' + id + '/refund', { line: 1, reason: 'x' }); ok(r.json.amount === 3198 + 250, 'a line refund carries its share of the tax');
+    const r = await w.admin('POST', 'order/' + id + '/refund', { line: 1, reason: 'x' }); ok(r.json.amount === 3198 + 250, 'a line refund carries its share of the (exclusive) tax');
+    // S2: inclusive tax is inside the price: a line refund is the item price, never price + tax
+    const y = await world({ env: { MERCH_COUNTRIES: 'all' } }); const k = await y.newOrder([mug(0), tee(1)], 'HK'); const cs = y.stripe.pay(y.sid(k)); cs.total_details.amount_tax = 300; cs.line_items.data[1].amount_tax = 150; cs.line_items.data[0].amount_tax = 150;
+    await y.hook('checkout.session.completed', { id: cs.id, payment_status: 'paid' }); await y.advance(65 * MIN); eq(y.order(k).status, 'confirmed', 'served');
+    const t = await y.admin('POST', 'order/' + k + '/refund', { line: 2, reason: 'misprint' }); ok(t.json.amount === 2699 + 599, 'the tee alone: 2699 + the world extra item, no tax on top: ' + t.json.amount);
   });
 }

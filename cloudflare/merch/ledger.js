@@ -460,7 +460,9 @@ export class MerchLedger {
   }
   // queued, waiting or held reprints of an order that ended: never made (a draft already made at Printful is deleted). Sync.
   stopReprints(id) {
-    if (this.q("update merch_reprints set status = case when provider_order is not null then 'drop' else 'cancelled' end where order_id = ? and status in ('queued', 'need_address', 'held') returning status", id).some((r) => r.status === 'drop')) this.fx.push({ t: 'droprp', order: id });
+    const rs = this.q("update merch_reprints set status = case when provider_order is not null then 'drop' else 'cancelled' end where order_id = ? and status in ('queued', 'need_address', 'held') returning *", id);
+    for (const rp of rs) this.undoReprint(rp);
+    if (rs.some((r) => r.status === 'drop')) this.fx.push({ t: 'droprp', order: id });
   }
   async sendRefund(rid) {
     const now = this.now();
@@ -1154,7 +1156,11 @@ export class MerchLedger {
     const rp = this.one("select * from merch_reprints where order_id = ? and status = 'queued' order by n limit 1", id); if (!rp) return false;
     const still = () => { const x = this.order(id), y = this.one('select * from merch_reprints where id = ?', rp.id); return !this.stopped(x) && y && y.status === 'queued' ? x : null; };
     const stop = (draftId) => this.tx(() => { // M4 / rule 3: refunded or cancelled: the reprint is dropped; in a dispute it waits for the owner (no printer call made yet)
-      const x = this.order(id), y = this.one('select * from merch_reprints where id = ?', rp.id); if (!y || !['queued', 'need_address'].includes(y.status)) return;
+      const x = this.order(id), y = this.one('select * from merch_reprints where id = ?', rp.id); if (!y) return;
+      if (!['queued', 'need_address'].includes(y.status)) { // already stopped (by the refund itself) while its draft was being made: that draft is deleted too
+        if (draftId && !y.provider_order) { this.run("update merch_reprints set status = 'drop', provider_order = ? where id = ?", draftId, rp.id); this.fx.push({ t: 'droprp', order: id }); this.next(id, this.now()); }
+        return;
+      }
       const st = draftId ? 'drop' : ENDED.includes(x.status) ? 'cancelled' : 'held';
       this.run('update merch_reprints set status = ?, provider_order = coalesce(?, provider_order) where id = ?', st, draftId || null, rp.id);
       if (st !== 'held') this.undoReprint(rp);

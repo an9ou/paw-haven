@@ -6,11 +6,14 @@
 #   tools/merch.sh list [status] [hold]                    orders (newest first)
 #   tools/merch.sh show <order>                            one order: lines, parcels, refunds, events, signed print links (7 days)
 #   tools/merch.sh refund <order> <line> [qty] <reason>    refund a line (or qty of it): Stripe partial refund, the buyer is emailed
+#                                                          (the reason is words: "refund mo_x 2 1" with no reason is refused)
 #   tools/merch.sh reprint <order> <line,line> [printful order]   reprint lines (or attach Printful's own claim reship)
 #   tools/merch.sh confirm <order>                         release a held order (review, cost, a won dispute): the flow goes on
 #   tools/merch.sh lost <order> <parcel> [reprint|refund]  mark a parcel lost, then reprint or refund its lines
 #   tools/merch.sh flag <e:hash|ip:hash|email:addr|ipaddr:ip> <block|allow|clear> [note]
 #   tools/merch.sh export [from] [to]                      JSON lines, no buyer data -> merch-export-<from>-<to>.jsonl (keep one a month)
+#   tools/merch.sh forget <order|email:address>            deletion on request: clears the email hash, the dog's name and recipe, the
+#                                                          print files and tracking links of ended orders; the money rows stay (the law)
 #   tools/merch.sh report                                  the nightly report (held orders, refunds, disputes, sales per country, storage)
 #   tools/merch.sh tick | nightly                          wake the ledger / run the nightly job now
 #
@@ -49,7 +52,8 @@ case "$cmd" in
   refund)
     need "${1:-}" order; need "${2:-}" line; order_ok "$1"
     if [ $# -ge 4 ]; then qty="$3"; reason="$4"; else qty=""; reason="${3:-}"; fi
-    need "$reason" reason; [[ "$2" =~ ^[0-9]{1,3}$ ]] || { echo "merch.sh: line must be a number" >&2; exit 2; }
+    need "$reason" reason
+    [[ "$reason" =~ [A-Za-z] ]] || { echo "merch.sh: the reason must be words (did you forget it after the quantity? refund <order> <line> [qty] <reason>)" >&2; exit 2; }; [[ "$2" =~ ^[0-9]{1,3}$ ]] || { echo "merch.sh: line must be a number" >&2; exit 2; }
     [ -z "$qty" ] || [[ "$qty" =~ ^[1-3]$ ]] || { echo "merch.sh: qty is 1-3" >&2; exit 2; }
     send POST "order/$1/refund" "{\"line\": $2${qty:+, \"qty\": $qty}, \"reason\": \"$(esc "$reason")\"}" ;;
   reprint)
@@ -63,9 +67,13 @@ case "$cmd" in
   flag) need "${1:-}" key; need "${2:-}" mode; send POST flag "{\"key\": \"$(esc "$1")\", \"mode\": \"$(esc "$2")\", \"note\": \"$(esc "${3:-}")\"}" ;;
   export) from="${1:-$(date -u -v-1m +%Y-%m-01 2>/dev/null || date -u -d '1 month ago' +%Y-%m-01)}"; to="${2:-$(date -u +%Y-%m-01)}"
     send GET "export?from=$from&to=$to" "" "merch-export-$from-$to.jsonl" ;;
+  forget)
+    need "${1:-}" "order or email:address"
+    if [[ "$1" =~ ^email:[^@[:space:]]+@[^@[:space:]]+$ ]]; then send POST forget "{\"email\": \"$(esc "${1#email:}")\"}"
+    else order_ok "$1"; send POST forget "{\"order\": \"$1\"}"; fi ;;
   report) send GET report ;;
   tick) send POST tick "{}" ;;
   nightly) send POST nightly "{}" ;;
-  help|-h|--help) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help|-h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) echo "merch.sh: unknown command $cmd (tools/merch.sh help)" >&2; exit 2 ;;
 esac

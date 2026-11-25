@@ -45,7 +45,7 @@ export async function world(o) {
   const w = { env, clock, stripe, pf, rd, mail, after: {} }; stripe.now = () => clock.t;
   // a crash between an outside call and the write: the running instance is killed (its later storage calls throw), a new one takes over
   w.evict = () => env.LEDGER.evict('ledger');
-  w.cron = () => w.call('POST', '/merch/admin/tick', {}, { authorization: 'Bearer ' + env.MERCH_ADMIN_KEY }); // the */10 backstop (it wakes the ledger)
+  w.cron = () => worker.scheduled({ cron: '*/10 * * * *' }, env, { waitUntil() {} }); // the */10 backstop: wakes the ledger (and runs the nightly job once a JST day after 04:00)
   w.L = () => stub().obj;
   w.state = () => stub().state;
   w.init = async () => { await w.L().init(); return w.L(); };

@@ -12,7 +12,7 @@ export async function t21() {
     eq([r.json.subtotal, r.json.ship_fee, r.json.total, r.json.zone], [7397, 0, 7397, 'us_jp'], 'totals'); ok(r.json.eta[0] === 5 && r.json.cat_ver, 'eta, cat_ver');
     ok(w.q('select count(*) as n from merch_orders')[0].n === 0 && w.stripe.calls.length === 0, 'nothing written, no Stripe call');
   });
-  await T('T2.1-02', 'checkout, valid, new nonce: order + lines, day cap counted, one Stripe session (mc_<order>, expires in 1 h, only the quoted country), url stored', async () => {
+  await T('T2.1-02', 'checkout, valid, new nonce: order + lines (an open session is not counted: S9), one Stripe session (mc_<order>, expires in 1 h, only the quoted country), url stored', async () => {
     const w = await world(); const r = await w.checkout([mug(0), tee(4, { colour: 'black', size: 'L' })], 'CA');
     ok(r.status === 200 && /^mo_[A-Za-z0-9_-]{22}$/.test(r.json.order) && r.json.url.startsWith('https://checkout.stripe.test/'), r.text);
     const o = w.order(r.json.order), L = w.lines(o.id), c = w.stripe.calls.find((x) => x.m === 'POST');
@@ -41,12 +41,17 @@ export async function t21() {
     const second = await w.call('POST', '/merch/checkout', b); eq([second.status, second.json.error], [409, 'busy'], 'busy');
     w.stripe.hang = null; go(); const f = await first; ok(f.status === 200, 'the first tap finishes');
   });
-  await T('T2.1-05', 'Stripe errors or cannot be reached at checkout: order and lines deleted, 503 busy, the next tap starts clean', async () => {
+  await T('T2.1-05', 'Stripe errors, cannot be reached or times out at checkout: order and lines deleted, 503 busy, the next tap starts clean', async () => {
     const w = await world(); w.stripe.fail.create = 1;
     const q = await w.quote([mug(0)]), b = { country: 'US', lines: [mug(0)], expect_total: q.json.total, art_ver: PP.ART_VER, nonce: 'stripe-down-01', agree: true };
     const r = await w.call('POST', '/merch/checkout', b); ok(r.status === 503 && r.json.error === 'busy' && /Nothing was paid/.test(r.json.say), r.text);
     ok(w.q('select count(*) as n from merch_orders')[0].n === 0 && w.q('select count(*) as n from merch_order_items')[0].n === 0, 'nothing kept');
     const again = await w.call('POST', '/merch/checkout', b); ok(again.status === 200, 'the next tap works: ' + again.text);
+    // a timeout: Stripe made the session but its answer came too late (the result is unknown): the same as an error, and the lost session is never shown to anyone
+    const x = await world(); x.stripe.slowCreate = 1; const q2 = await x.quote([mug(0)]), b2 = Object.assign({}, b, { expect_total: q2.json.total, nonce: 'stripe-slow-01' });
+    const t = await x.call('POST', '/merch/checkout', b2); ok(t.status === 503 && t.json.error === 'busy', 'timeout: 503 busy: ' + t.text);
+    ok(x.q('select count(*) as n from merch_orders')[0].n === 0 && x.stripe.sessions.size === 1, 'nothing kept (Stripe has a session nobody was given)');
+    const t2 = await x.call('POST', '/merch/checkout', b2); ok(t2.status === 200 && t2.json.url !== Array.from(x.stripe.sessions.values())[0].url, 'the next tap gets a new order and its own session');
   });
   await T('T2.1-06', 'completed + paid, checks pass: paid_at, cancel_until, amounts, pres_*, email_hash; lines queued; Thank you; alarm; gift code', async () => {
     const w = await world(); await w.init(); w.L().run("insert into merch_gift_pool (code) values ('GIFT-0001'), ('GIFT-0002')");
@@ -70,7 +75,7 @@ export async function t21() {
     const r = await w.hook('checkout.session.async_payment_succeeded', { id: w.sid(id), object: 'checkout.session', payment_status: 'paid' });
     ok(r.status === 200, r.text); eq([w.order(id).status, w.order(id).cancel_until, w.order(id).pay_pending], ['paid', w.clock.t + HOUR, 0], 'paid, hour from now');
   });
-  await T('T2.1-09', 'session expired or async_payment_failed: lines void, the day cap place is free again', async () => {
+  await T('T2.1-09', 'session expired or async_payment_failed: lines void; an expired order never takes a day-cap place (S9: paid orders only)', async () => {
     const w = await world({ env: { MERCH_DAY_CAP: '1' } }); const id = await w.newOrder([mug(0)]);
     let r = await w.hook('checkout.session.expired', { id: w.sid(id), object: 'checkout.session' });
     eq([w.order(id).status, w.lines(id)[0].status], ['expired', 'void'], 'expired'); r = await w.quote([mug(1)]); ok(r.status === 200, 'an expired order never takes a day-cap place');
@@ -219,7 +224,7 @@ export async function t21() {
     await w.advance(w.order(id).ship_by - w.clock.t + 1e3); ok(w.order(id).late_sent_at && w.mails(/_late$/).length === 1, 'late email');
     await w.advance(3 * DAY); ok(w.mails(/_late$/).length === 1, 'once'); ok((await w.call('GET', '/merch/order/' + id)).json.late === true, 'the page offers the late cancel');
   });
-  await T('T2.1-31', 'cancel {scope: late} after the delay email: refunds every unshipped live line; asks Printful to cancel them; owner email when it cannot', async () => {
+  await T('T2.1-31', 'cancel {scope: late} after the delay email: refunds every unshipped live line; Printful cancels the order only if none of it shipped (N5), else an owner email', async () => {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(1)]); w.pf.ship(w.order(id).provider_order, [id + '_1']); await shipHint(w, id);
     let r = await w.call('POST', '/merch/order/' + id + '/cancel', { scope: 'late' }); ok(r.status === 409 && r.json.error === 'not_late', 'not before the delay email');
     await w.advance(w.order(id).ship_by - w.clock.t + 1e3); w.pfOrder(id).status = 'inprocess';

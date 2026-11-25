@@ -55,11 +55,36 @@ MERCH_OWNER_TO = ""                        # the owner's address for owner email
 #   RESEND_API_KEY                send-only, this Worker
 # Never set in production: STRIPE_FETCH, PROVIDER_FETCH, RENDER_FETCH, MAIL_FETCH, NOW, PAWPRINT (test seams). Without them part 3 refuses every order.
 
+# [env.test]: wrangler does NOT inherit vars, Durable Object bindings or the browser binding into an environment (S12), so every one is repeated
+# here. Top-level keys that are inherited (main, compatibility_date, migrations, triggers, assets): checked again at the first test deploy (part 9).
 [env.test]                                 # doodle-doggo-merch-test: sandbox keys, Printful draft, only https://test.doodledoggo.app
 name = "doodle-doggo-merch-test"
+# routes = [{ pattern = "merch-api-test.doodledoggo.app", custom_domain = true }]   # [O]
+
+[[env.test.durable_objects.bindings]]
+name = "LEDGER"
+class_name = "MerchLedger"                 # the test Worker's own objects: never the live ones
+
+[[env.test.durable_objects.bindings]]
+name = "PRINTS"
+class_name = "MerchPrints"
+
+# [env.test.browser]
+# binding = "BROWSER"                      # part 4
+
 [env.test.vars]
 MERCH_TEST = "1"                           # refuses sk_live / rk_live keys and every origin but the test copy
 MERCH_FROM = ""
-MERCH_PROVIDER_MODE = "draft"
+MERCH_OFF = ""
+MERCH_COUNTRIES = ""
+MERCH_PRODUCTS = "mug,tee"
 MERCH_DAY_CAP = "10"
+MERCH_PROVIDER_MODE = "draft"              # the test Worker never confirms at Printful
+MERCH_COOL_MIN = "60"
+MERCH_STRIPE_VERSION = "2025-03-31.basil"
+MERCH_ART_VERS = ""
+MAIL_FROM = "orders@doodledoggo.app"
+MERCH_SITE = "https://test.doodledoggo.app" # order links in emails point at the test copy, never the live site
 MERCH_PUBLIC_URL = "https://merch-api-test.doodledoggo.app"
+MERCH_OWNER_TO = ""
+# The test Worker's secrets are its own (sandbox keys), set with `wrangler secret put --env test`: the same names as above.

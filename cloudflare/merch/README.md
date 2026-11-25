@@ -8,15 +8,15 @@ and the T-row table are in `docs/design/merch/PART3.md`. **Nothing here is deplo
 | File | What |
 |---|---|
 | `worker.js` | The front Worker: CORS, the signed file route, the print pages (static assets); every order route goes to the ledger. Never loads PawPrint. |
-| `ledger.js` | `MerchLedger`, one SQLite Durable Object: every table (6.2), the alarm, the order state machine (2.1, 2.2), refunds (4), the nightly job and tidy (3.3, 5). Loads PawPrint lazily. |
+| `ledger.js` | `MerchLedger`, one SQLite Durable Object: every table (6.2), the alarm, the order state machine (2.1, 2.2), refunds (4), the email outbox, the nightly job and tidy (3.3, 5). Loads PawPrint lazily. Its five rules (a lease and a wake before every outside call, read again after it, nothing for a stopped order, nothing confirmed unless live, money and mail as rows) are in PART3.md. |
 | `prints.js` | `MerchPrints`, one SQLite Durable Object per JST day: the PNGs, in 1 MB parts. |
 | `catalog.js` | The price list: products, zones, countries, the never list, Printful's shipping table, the holiday surcharge, the floor. |
 | `lines.js` | The basket: switches, the line checks (PawPrint), prices, the margin guard. |
 | `stripe.js`, `provider_printful.js`, `render.js`, `mail.js` | The four seams. Each talks only through an injected fetch (`STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`). |
 | `admin.js` | The owner's admin routes (`tools/merch.sh`). |
-| `build_assets.mjs` | Copies the print pages (`merch/dist/print/<ART_VER>/`) into `assets/merch/print/`, never deleting a released folder. |
+| `build_assets.mjs` | Copies every released print folder from `site/merch/print/<ART_VER>/` (in git) into `assets/merch/print/` (git-ignored, a copy), never deleting one. |
 | `wrangler.example.toml` | Bindings, the two Durable Object classes and their migration, the cron, the variables (shut by default). No ids, no secrets. |
-| `test/` | The `merch_worker` suite. |
+| `test/` | The `merch_worker` suite (156 checks): the contract rows, the review's cases (R-*), crashes (C-*), races (X-race-*), a draft-mode world, Miniflare. |
 
 ## Run the tests
 
@@ -31,11 +31,12 @@ Printful, the renderer and Resend are stateful fakes (`test/fakes.mjs`), and the
 
 ## Safe by default
 
-- `MERCH_FROM` is empty: the shop is shut (catalog `shut: true`, quote and checkout 503 `merch_closed`).
-- Part 3 never calls the global `fetch`. Without the injected fetches, or without `MERCH_STRIPE_KEY`, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_HASH_KEY` and
-  `MERCH_FILE_KEY`, it refuses every order, so it can never charge anyone. Wiring the real Stripe, Printful, Browser Run and Resend calls is parts 4, 5,
+- `MERCH_FROM` is empty: the shop is shut (catalog `shut: true`; a quote still answers with `shut: true`, prices are public; checkout 503 `merch_closed`).
+- Part 3 never calls the global `fetch`. Without the injected fetches, or without `MERCH_STRIPE_KEY`, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_HASH_KEY`,
+  `MERCH_FILE_KEY`, a printer (`PROVIDER_FETCH`, `MERCH_PROVIDER_KEY`) and a renderer, it refuses every order, so it can never charge anyone, nor take a
+  payment it then cannot make. In live mode it also needs `MERCH_PROVIDER_WEBHOOK_SECRET` (printer hints must be signed). Wiring the real Stripe, Printful, Browser Run and Resend calls is parts 4, 5,
   6 and 9, each with the owner's approval.
-- `MERCH_PROVIDER_MODE` defaults to `draft`: Printful is never asked to confirm (no wholesale charge).
+- `MERCH_PROVIDER_MODE` defaults to `draft`: Printful is never asked to confirm (no wholesale charge), and reprints are held.
 - The test Worker (`MERCH_TEST=1`) refuses `sk_live` / `rk_live` keys and every origin but `https://test.doodledoggo.app`; the live Worker refuses that origin.
 
 ## What the owner must approve and set before any deploy
@@ -50,7 +51,15 @@ Secrets, by name only (set in the dashboard or with `wrangler secret put`, never
 
 Never set in production: `STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT` (test seams).
 
+## The print folders (never remove one)
+
+Each released print page lives in git under `site/merch/print/<ART_VER>/` (the page build puts a new one there and it is committed). Before a deploy,
+`node cloudflare/merch/build_assets.mjs` copies every folder into `assets/` (git-ignored) and prints `MERCH_ART_VERS`. **A folder is never removed once an
+order was taken with it**: a line is redrawn from its own folder forever (a reprint, or a reship after the file was deleted at 180 days).
+
 ## The owner's console
 
-`tools/merch.sh` (list, show, refund a line, reprint, confirm, lost, flag, export, report). It prints what it would do unless `DRY_RUN=0`, and reads the
+`tools/merch.sh` (list, show, refund a line, reprint, confirm, lost, flag, export, forget, report). It prints what it would do unless `DRY_RUN=0`, and reads the
 key from `MERCH_ADMIN_KEY` in the environment only (sent on stdin, so it never shows in the process list). Keep one `export` a month.
+`forget` is deletion on request: it clears the buyer data of ended orders and says what stays (the money rows the law asks for) and which Printful
+recipients to ask Printful to delete.

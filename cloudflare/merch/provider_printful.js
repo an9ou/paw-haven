@@ -37,7 +37,12 @@ export function createDraft(env, o, lines, recipient, fileUrls, extId) {
 export const get = (env, idOrExternal) => pf(env, 'GET', '/orders/' + (/^\d+$/.test(String(idOrExternal)) ? idOrExternal : '@' + encodeURIComponent(idOrExternal))).then((r) => (r.ok ? { ok: true, data: mapOrder(r.data) } : r));
 export const update = (env, id, recipient) => pf(env, 'PUT', '/orders/' + id, { recipient });
 export const confirm = (env, id) => pf(env, 'POST', '/orders/' + id + '/confirm').then((r) => (r.ok ? { ok: true, data: mapOrder(r.data) } : r));
-export const deleteDraft = (env, id) => pf(env, 'DELETE', '/orders/' + id).then((r) => (r.ok || r.kind === 'not_found' ? { ok: true } : r));
+// a draft already gone (404, or Printful says it is canceled: a retry after a crash) counts as deleted [not verified: part 5]
+export const deleteDraft = (env, id) => pf(env, 'DELETE', '/orders/' + id).then(async (r) => {
+  if (r.ok || r.kind === 'not_found') return { ok: true };
+  if (r.kind === 'cannot' || r.kind === 'refused') { const g = await get(env, id); if (g.ok && g.data && g.data.status === 'canceled') return { ok: true }; }
+  return r;
+});
 // after confirm Printful may refuse: 'cannot' [not verified]
 export const cancel = (env, id) => pf(env, 'DELETE', '/orders/' + id);
 export const quoteCost = (env, o, lines, recipient) => pf(env, 'POST', '/orders/estimate-costs', { recipient, items: lines.map((l) => ({ variant_id: l.provider_variant, quantity: l.qty })) });
