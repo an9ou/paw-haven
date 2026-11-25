@@ -101,6 +101,12 @@ preview with PawPrint in the browser. The server never trusts a price, a fee or 
 the Stripe session at send time, never stored): Thank you; We need your address; On its way (one per parcel); Cancelled; Refunded (one per refund);
 Sorry, we couldn't print one thing; Taking longer than we said; A new one is on its way (reprint). Stripe's own receipt is on too.
 
+> Note (25 Nov 2026, part 6; PART6.md): the texts are written (`cloudflare/merch/mail.js`, `build(kind, view, env)`: a plain-text and a small
+> inline-styled HTML body each, from the order as it is at send time). The order page link is **`<MERCH_SITE>/merch/#/order/<id>`** everywhere
+> (the static site serves only `/merch/`); Stripe's `success_url` is `<MERCH_SITE>/merch/?new=1#/order/<id>`. Several lines refunded at once (the
+> late part, a reship that timed out, a lost parcel) get **one** Refunded email. An order whose only line could not be printed gets "refunded in full".
+> The footer carries `MERCH_SELLER_NAME` / `MERCH_SELLER_ADDR` (left out while empty) and the Terms, Shipping and Privacy links.
+
 ### 2.1 States, transitions and repeats
 
 **Order states** (`merch_orders.status`; `hold` says why a paid order waits):
@@ -307,7 +313,7 @@ custom_text[terms_of_service_acceptance][message]="I'm 18 or over and agree to t
 custom_text[submit][message]="You can cancel within 1 hour of paying, from your order page."
 client_reference_id=<order>  metadata[merch]=<order>  payment_intent_data[metadata][merch]=<order>
 expires_at=<now + 3600>
-success_url=https://doodledoggo.app/merch/order/<order>?new=1   cancel_url=https://doodledoggo.app/merch/?back=<order>
+success_url=https://doodledoggo.app/merch/?new=1#/order/<order>   cancel_url=https://doodledoggo.app/merch/?back=<order>   (part 6, 25 Nov 2026: was /merch/order/<order>?new=1, a path the site does not serve)
 ```
 
   No `payment_method_types` and no `capture_method=manual` (both work against Adaptive Pricing: 3.1). Payment methods are chosen in the merch
@@ -558,6 +564,17 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 - Note (25 Nov 2026, built in part 3): sizes also carry `add` (the extra over the base price); `eta` is `[min, max]` business days in the catalog
   and the quote. A new admin route, `forget {order | email}` (section 5 note).
 
+**Note, 25 Nov 2026 (part 6, PART6.md): the order answer and the gift.**
+- `GET /merch/order/:id` answers exactly `{id, status, hold, pay_pending, paid_at, cancel_until, can_cancel, country, lines[{line, product, colour, size,
+  pose, name_on, name, qty, unit, status, refunded_qty, parcel, recipe, reprint_of}], parcels[...], totals{subtotal, ship_fee, tax, total, refunded},
+  pres, gift_code, gift_name, late, dispute}`, plus `resting: true` only while `MERCH_OFF=1`. New since the table: `pay_pending`, `reprint_of`,
+  `dispute` (part 3) and `gift_name` (part 6: `MERCH_GIFT_NAME` while a code is set, else null). The page's fake (`site/merch/api_fake.js`) answers
+  the same set; `merch_page` checks it.
+- The gift code is claimed whenever an order becomes `paid` (so a held order gets it when it is released); a cancelled or refunded order keeps it.
+- New admin route `gift`: `POST {codes: [...]}` (1-2000, letters, digits and dashes, 4-40, stored upper case, duplicates kept once) answers only
+  counts `{added, skipped, left}`; `GET` answers `{left, claimed}`. A code never appears in logs, events, the report, `order/:id` (shows
+  `gift_code: true|false`) or the export.
+
 Stripe events on the merch webhook endpoint [O]: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`, and the refund
 failure event (T2.2-43). Every other event: 200, ignored. CORS: `https://doodledoggo.app`, `https://www.doodledoggo.app`, localhost; the test Worker only
@@ -576,6 +593,9 @@ failure event (T2.2-43). Every other event: 200, ignored. CORS: `https://doodled
 | `MERCH_COOL_MIN` | `60` | The cancel window in minutes (the grace of 120 s is fixed in code). |
 | `MERCH_STRIPE_VERSION` | (pinned) | `Stripe-Version` header, 2025-03-31 or later. |
 | `MAIL_FROM`, `MERCH_OWNER_TO` | - | Sender and the owner's address for owner emails. |
+| `MERCH_SITE` | `https://doodledoggo.app` | The site in every buyer link (the test Worker: the test copy). |
+| `MERCH_SELLER_NAME`, `MERCH_SELLER_ADDR` | `''` | Part 6: the seller's legal name and business address for the email footer; empty: the line is left out. |
+| `MERCH_GIFT_NAME` | `''` | Part 6: the thank-you gift's item name in emails and on the order page; empty: "a little gift for your dog in the game". |
 
 Secrets: `MERCH_STRIPE_KEY` (restricted: Checkout Sessions write, Refunds write, Charges, PaymentIntents and Disputes read),
 `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_PROVIDER_KEY`, `MERCH_PROVIDER_WEBHOOK_SECRET` (if Printful signs), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`,

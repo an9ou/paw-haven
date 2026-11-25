@@ -83,7 +83,8 @@ tap at least 44 px, no text past its card (with 6 lines, a 20-letter name, a pup
   5-13, elsewhere 7-27 working days.
 - **Everywhere else** follows model C to the letter: $11.99 + $5.99 per extra mug or tee, never free (9 things to St. Vincent = $59.91 shipping).
 - The gift code block of the prototype is left out (TRANSACTIONS 10 point 5 is still open). "Terms of sale" and "Shipping and returns" are plain
-  text until part 7 writes them.
+  text until part 7 writes them. (Part 6, 25 Nov 2026: both done: the gift card is on the order page, and the footer and the pay card link
+  `/merch/terms/`, `/merch/shipping/` and `/merch/seller/`; PART6.md.)
 - Settled in TRANSACTIONS.md 6.3 (note of 24 Nov): quotes answer while shut with `shut: true`; the page still has words for a quote's `merch_closed`.
 - Grey text: the site's `--muted` #8A7468 is 3.9-4.3:1 on this page's backgrounds, so `merch.css` sets `--muted: #6B5548` for this page (4.9:1 or
   more on every fill) and the money and legal lines use the ink.

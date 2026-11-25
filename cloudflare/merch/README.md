@@ -59,7 +59,7 @@ order was taken with it**: a line is redrawn from its own folder forever (a repr
 
 ## The owner's console
 
-`tools/merch.sh` (list, show, refund a line, reprint, confirm, lost, flag, export, forget, report). It prints what it would do unless `DRY_RUN=0`, and reads the
+`tools/merch.sh` (list, show, refund a line, reprint, confirm, lost, flag, export, forget, report, and since part 6 `gift add` (codes on STDIN only) and `gift count`). It prints what it would do unless `DRY_RUN=0`, and reads the
 key from `MERCH_ADMIN_KEY` in the environment only (sent on stdin, so it never shows in the process list). Keep one `export` a month.
 `forget` is deletion on request: it clears the buyer data of ended orders and says what stays (the money rows the law asks for) and which Printful
 recipients to ask Printful to delete.
