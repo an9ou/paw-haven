@@ -22,6 +22,9 @@ if (!PP_SRC || !fs.existsSync(path.join(SITE, 'merch', PP_SRC))) { console.error
 const P = require(path.join(SITE, 'merch', PP_SRC)), MerchFake = require(path.join(SITE, 'merch', 'api_fake.js'));
 const CAT = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json'), 'utf8'));
 const API_JS = fs.readFileSync(path.join(SITE, 'merch', 'api.js'), 'utf8'), MERCH_JS = fs.readFileSync(path.join(SITE, 'merch', 'merch.js'), 'utf8');
+// the line of api.js that picks the order server (part 9, P1); the live-style checks point it at this file's own /live server
+const LIVE_LINE = 'var MERCH_API = apiFor(G.location && G.location.origin);';
+if (!API_JS.includes(LIVE_LINE)) { console.error('site/merch/api.js no longer has the line: ' + LIVE_LINE); process.exit(1); }
 let CATJS = null; // cloudflare/merch/catalog.js (an ES module), loaded in main
 // a fixed clock for the order page (the cancel time, "same day", the posting date): local noon, far from midnight (review row T)
 const FIX = new Date(2026, 11, 1, 12, 0).getTime();
@@ -151,7 +154,7 @@ async function open(o) {
   if (P9) ctx.setDefaultTimeout(5000);
   if (o.clock) await ctx.clock.setFixedTime(o.clock);
   if (o.catalog) await ctx.route('**/merch/catalog.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o.catalog) }));
-  if (o.live) await ctx.route('**/merch/api.js', (r) => r.fulfill({ contentType: 'text/javascript', body: API_JS.replace("var MERCH_API = '';", "var MERCH_API = '" + BASE + "/live';") }));
+  if (o.live) await ctx.route('**/merch/api.js', (r) => r.fulfill({ contentType: 'text/javascript', body: API_JS.replace(LIVE_LINE, "var MERCH_API = '" + BASE + "/live';") }));
   await ctx.addInitScript((seed) => {
     if (!localStorage.getItem('__seeded')) { // once per context: a second tab or a reload never seeds again
       localStorage.setItem('__seeded', '1');
@@ -413,6 +416,7 @@ async function pageChecks() {
   await tabChecks();
   await routeChecks();
   await liveChecks();
+  await wiringChecks();
   await part9Checks();
 
   // ---- dogs from a link (no save): this tab only, the hash turns into the route
@@ -794,6 +798,187 @@ async function liveChecks() {
   await setShip(pg, 'GB'); await settle(pg);
   ok('live api: a soon country is said kindly, once', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && !/can't send orders/.test(await text(pg, '#totals')) && await pg.$eval('#payBtn', (b) => b.disabled));
   await finish('live api', t);
+}
+
+// ================= part 9 wiring (SANDBOX.md part C, P1 and P2): the order server by the page's own origin; Pay goes to Stripe only =================
+// The test copy's origin is served by Playwright routes from site/ (as the test copy serves it), the test order server's routes
+// (TRANSACTIONS 6.3) by the fake behind them, and Stripe's page by a stand-in: every other request is blocked, so nothing leaves the machine.
+const TEST_ORIGIN = 'https://test.doodledoggo.app', TEST_API = 'https://merch-api-test.doodledoggo.app', STRIPE_PAGE = 'https://checkout.stripe.com';
+const MO = (s) => 'mo_' + (s + 'A'.repeat(22)).slice(0, 22);
+function siteFile(p) {
+  let f = /^\/(favicon\.svg|icon-\d+\.png|doodle-doggo-(icon|logo)\.svg|site\.webmanifest)$/.test(p) ? path.join(BRAND, p) : path.join(SITE, p);
+  if (!f.startsWith(SITE) && !f.startsWith(BRAND)) return null;
+  try { if (fs.statSync(f).isDirectory()) f = path.join(f, 'index.html'); } catch (e) { if (fs.existsSync(f + '.html')) f += '.html'; }
+  try { return { body: fs.readFileSync(f), contentType: TYPES[path.extname(f)] || 'application/octet-stream' }; } catch (e) { return null; }
+}
+// the test Worker as the page meets it: its routes, its CORS for the test copy only, the fake's answers. W.pay: what checkout answers instead
+// ({ status, body }, a function of the body, or 'abort': the network fails)
+const W = { log: [], pay: null };
+async function workerRoute(route) {
+  const q = route.request(), p = new URL(q.url()).pathname, m = q.method(), origin = q.headers().origin || '';
+  const cors = origin === TEST_ORIGIN ? { 'access-control-allow-origin': origin, vary: 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'Content-Type' } : {};
+  if (m === 'OPTIONS') return route.fulfill({ status: cors['access-control-allow-origin'] ? 204 : 403, headers: cors, body: '' });
+  W.log.push(m + ' ' + p + (origin === TEST_ORIGIN ? '' : ' (origin ' + origin + ')'));
+  const send = (st, j) => route.fulfill({ status: st, headers: Object.assign({ 'content-type': 'application/json' }, cors), body: JSON.stringify(j) });
+  const bad = (e) => send(e.status || 503, Object.assign({}, e, { status: undefined }));
+  let b = null; try { b = q.postData() ? JSON.parse(q.postData()) : null; } catch (e) { return send(400, { error: 'bad_json' }); }
+  const go = (pr) => pr.then((x) => send(200, x), bad);
+  let mm;
+  if (m === 'GET' && p === '/merch/catalog') return go(LIVE.catalog());
+  if (m === 'POST' && p === '/merch/quote') return go(LIVE.quote(b));
+  if (m === 'POST' && p === '/merch/checkout') {
+    if (!W.pay) return go(LIVE.checkout(b));
+    const a = typeof W.pay === 'function' ? W.pay(b) : W.pay; if (a === 'abort') return route.abort('internetdisconnected');
+    return send(a.status, a.body);
+  }
+  if ((mm = /^\/merch\/order\/([^/]+)(?:\/(cancel|address|refund|wait))?$/.exec(p))) { // ledger.js: the order and its four buttons
+    const id = decodeURIComponent(mm[1]), act = mm[2];
+    if (!act && m === 'GET') return go(LIVE.order(id));
+    if (act && m === 'POST') return go(act === 'cancel' ? LIVE.cancel(id, b || {}) : act === 'wait' ? LIVE.wait(id) : act === 'address' ? LIVE.address(id, b || {}) : LIVE.refundHeld(id));
+  }
+  send(404, { error: 'not_found' });
+}
+// a fresh context whose pages open at `origin` (seeded like open()); t.stripe: the Stripe pages asked for; t.blocked: anything else
+async function openAt(origin, o) {
+  o = o || {};
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US' }), stripe = [], blocked = [];
+  if (o.clock) await ctx.clock.setFixedTime(o.clock);
+  await ctx.route('**/*', (r) => { blocked.push(r.request().url()); return r.abort('blockedbyclient'); });
+  await ctx.route(origin + '/**', (r) => { const f = siteFile(decodeURIComponent(new URL(r.request().url()).pathname)); return f ? r.fulfill({ status: 200, contentType: f.contentType, body: f.body }) : r.fulfill({ status: 404, body: '' }); });
+  await ctx.route(TEST_API + '/**', workerRoute);
+  await ctx.route(STRIPE_PAGE + '/**', (r) => { stripe.push(r.request().method() + ' ' + r.request().url()); return r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Stripe stand-in</title><p>stand-in</p>' }); });
+  await ctx.addInitScript((seed) => {
+    if (!localStorage.getItem('__seeded')) { localStorage.setItem('__seeded', '1'); if (seed.save) localStorage.setItem('pawhaven_proto_v1', seed.save); if (seed.basket) localStorage.setItem('dd_merch_basket_v1', seed.basket); if (seed.ship) localStorage.setItem('dd_merch_ship_v1', seed.ship); }
+  }, { save: o.save || '', basket: o.basket ? JSON.stringify(o.basket) : '', ship: o.ship || '' });
+  const t = { ctx, stripe, blocked, errors: [], dialogs: [] };
+  t.tab = async (p) => {
+    const page = await ctx.newPage();
+    page.on('console', (m) => { if (m.type() === 'error' && !/status of (4\d\d|5\d\d)|ERR_INTERNET_DISCONNECTED/.test(m.text())) t.errors.push(m.text()); });
+    page.on('pageerror', (e) => t.errors.push(String(e)));
+    page.on('dialog', (d) => { t.dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+    await page.goto(origin + (p || '/merch/')); await page.waitForSelector('html.merch-ready', { timeout: 20000 }); t.page = page; return page;
+  };
+  return t;
+}
+async function finishAt(name, t) {
+  ok(name + ': no console errors', t.errors.length === 0, t.errors.slice(0, 3));
+  ok(name + ': nothing else was asked for (no request left the machine)', t.blocked.length === 0, t.blocked.slice(0, 3));
+  ok(name + ': no dialog opened', t.dialogs.length === 0, t.dialogs);
+  await t.ctx.close();
+}
+async function wiringChecks() {
+  // ---- P1: the address of the order server, from the page's origin exactly (api.js run on its own, as the browser runs it)
+  const vm = require('vm');
+  const apiAt = (origin) => { const G = { location: origin === undefined ? undefined : { origin }, MerchFake: () => ({ test: true }), PawPrint: {} }; vm.runInNewContext(API_JS, { self: G }); return G.MerchApi; };
+  const a = apiAt(TEST_ORIGIN);
+  ok('P1: the test copy talks to the test order server', a.MERCH_API === TEST_API && a.make().mode === 'live', a.MERCH_API);
+  for (const o of ['https://doodledoggo.app', 'https://www.doodledoggo.app', 'http://test.doodledoggo.app', 'https://test.doodledoggo.app:8443', 'https://test.doodledoggo.app.example', 'https://xtest.doodledoggo.app',
+    'https://merch-api-test.doodledoggo.app', 'http://127.0.0.1:8765', 'http://localhost:8765', 'https://an9ou.itch.io', 'null', '', undefined, '__proto__', 'constructor', 'hasOwnProperty']) {
+    const x = apiAt(o); ok('P1: ' + JSON.stringify(o) + ' uses the page\'s own fake', x.MERCH_API === '' && x.make().mode === 'test', x.MERCH_API);
+  }
+  // ---- the test copy in a browser: the live client, every call to the test order server, never the stand-in catalog
+  let t = await openAt(TEST_ORIGIN, { save: SAVE, basket: NORMAL3, ship: 'US' }); let pg = await t.tab('/merch/#/basket'); const asked = [];
+  pg.on('request', (r) => asked.push(r.url()));
+  await pg.waitForSelector('#qtable');
+  ok('P1 test copy: the live client', (await pg.evaluate(() => [window.MerchApi.MERCH_API, window.__merch.api.mode].join())) === TEST_API + ',live');
+  ok('P1 test copy: the catalog and the quote came from the test order server', W.log.includes('GET /merch/catalog') && W.log.includes('POST /merch/quote') && !W.log.some((x) => /origin/.test(x)), W.log);
+  await pg.reload(); await pg.waitForSelector('#qtable');
+  ok('P1 test copy: never the stand-in catalog.json', !asked.some((u) => /catalog\.json/.test(u)), asked.filter((u) => /catalog/.test(u)));
+  await finishAt('P1 test copy', t);
+  for (const origin of ['https://doodledoggo.app', BASE]) {
+    const n0 = W.log.length; t = await openAt(origin, { save: SAVE, basket: NORMAL3, ship: 'US' }); pg = await t.tab('/merch/#/basket'); await pg.waitForSelector('#qtable');
+    ok('P1 ' + origin + ': the page\'s own fake, no order server', (await pg.evaluate(() => [window.MerchApi.MERCH_API, window.__merch.api.mode].join())) === ',test' && W.log.length === n0, W.log.slice(n0));
+    await finishAt('P1 ' + origin, t);
+  }
+  // ---- P2: Pay goes to Stripe's page with a good answer, only there; the navigation is caught by a stand-in (Stripe is never loaded)
+  t = await openAt(TEST_ORIGIN, { save: SAVE, basket: NORMAL3, ship: 'US' });
+  const PAYURL = STRIPE_PAGE + '/c/pay/cs_test_a1B2c3D4e5#fidkdWxOYHwnPyd1blpxYHZxWjA0', nonces = [];
+  W.pay = (b) => { nonces.push(b.nonce); return { status: 200, body: { order: MO('PAYGOOD'), url: PAYURL } }; };
+  pg = await t.tab('/merch/#/basket'); await pg.waitForSelector('#qtable');
+  await Promise.all([pg.waitForURL(/^https:\/\/checkout\.stripe\.com\//, { timeout: 10000 }).catch(() => null), pg.click('#payBtn')]);
+  ok('P2 good url: the page went to Stripe\'s payment page', pg.url() === PAYURL && t.stripe.length === 1 && t.stripe[0] === 'GET ' + PAYURL.split('#')[0], [pg.url(), t.stripe]);
+  ok('P2 good url: one checkout, with a nonce', nonces.length === 1 && /^[0-9a-f]{24}$/.test(nonces[0]), nonces);
+  // a bad url: the kind error, no navigation, nothing asked of any other host
+  const BAD = ['http://checkout.stripe.com/c/pay/cs_test_x', 'https://checkout.stripe.com.evil.example/c/pay/x', 'https://evil.example/?u=https://checkout.stripe.com/', 'https://pay.stripe.com/c/pay/x',
+    'https://checkout.stripe.test/c/pay/cs_test_x', 'javascript:alert(1)', '//checkout.stripe.com/c/pay/x', ' https://checkout.stripe.com/c/pay/x', 'https://checkout.stripe.com', 'HTTPS://CHECKOUT.STRIPE.COM/c/pay/x',
+    'https://checkout.stripe.com/c/pay/x"><img src=x onerror=alert(1)>', 'https://checkout.stripe.com/c/pay/x\\@evil.example', 'https://checkout.stripe.com/' + 'x'.repeat(2100), '', null, 42, ['https://checkout.stripe.com/x'], undefined];
+  pg = await t.tab('/merch/#/basket'); await pg.waitForSelector('#qtable'); const url0 = pg.url();
+  for (const u of BAD) {
+    W.pay = { status: 200, body: u === undefined ? { order: MO('NOURL') } : { order: MO('BADURL'), url: u } };
+    await tap(pg, '#payBtn'); await settle(pg);
+    const s = await text(pg, '#payErr'), tag = 'P2 bad url ' + JSON.stringify(u === undefined ? '(none)' : u).slice(0, 60);
+    ok(tag + ': "We couldn\'t reach the payment page", the page stays', /We couldn't reach the payment page\. Nothing was paid\. Try again in a moment\./.test(s) && pg.url() === url0 && (await pg.$eval('#closed', (e) => e.hidden)) && !(await pg.$('#payErr img')), [s, pg.url()]);
+  }
+  ok('P2 bad urls: Stripe was asked once only (the good url)', t.stripe.length === 1, t.stripe);
+  W.pay = { status: 200, body: null }; await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 an answer that is not an object: the same error', /couldn't reach the payment page/.test(await text(pg, '#payErr')) && pg.url() === url0);
+  // each checkout error, over HTTP from the test order server, in its own words; none navigates
+  const LIVE_ERR = PAY_ERR.map(([c, re, ln]) => [c, 409, re, ln]).concat([['bad_nonce', 400, /Something went wrong on our side\. Reload the page/], ['busy', 503, /a little busy just now/, 0, { say: "We couldn't reach the payment page. Nothing was paid." }],
+    ['nonce_used', 409, /This basket was already sent to the payment page once\. See that order, or tap Pay again to start a new payment\./, 0, { order: MO('USEDBEFORE') }], ['bad_json', 400, /couldn't work out the total just now/]]);
+  for (const [code, st, re, ln, more] of LIVE_ERR) {
+    W.pay = { status: st, body: Object.assign({ error: code }, ln ? { line: ln } : {}, more || {}) };
+    await tap(pg, '#payBtn'); await settle(pg);
+    const s = await text(pg, '#payErr');
+    ok('P2 live error ' + code + ': its own words, no payment page', re.test(s) && !(await pg.$eval('#payErr', (e) => e.hidden)) && (await pg.$eval('#closed', (e) => e.hidden)) && pg.url() === url0, s);
+    await pg.evaluate(() => window.__merch.requote()); await pg.waitForSelector('#qtable');
+  }
+  // nonce_used: a link to that order (a checked id only), and the next tap starts a new payment (a new nonce)
+  const seen = []; W.pay = (b) => { seen.push(b.nonce); return { status: 409, body: { error: 'nonce_used', order: MO('USEDBEFORE') } }; };
+  await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 nonce_used: a link to that order', (await pg.$eval('#payErr a', (x) => x.getAttribute('href')).catch(() => '')) === '#/order/' + MO('USEDBEFORE'));
+  await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 nonce_used: the next tap is a new payment (a new nonce)', seen.length === 2 && seen[0] !== seen[1], seen);
+  W.pay = { status: 409, body: { error: 'nonce_used', order: 'mo_"><b>x</b>' } }; await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 nonce_used with an odd order id: no link, nothing of it on the page', !(await pg.$('#payErr a')) && !(await pg.$('#payErr b')) && /Tap Pay again/.test(await text(pg, '#payErr')));
+  W.pay = { status: 503, body: { error: 'merch_closed' } }; await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 live merch_closed: the "not open yet" card, no error box', !(await pg.$eval('#closed', (e) => e.hidden)) && (await pg.$eval('#payErr', (e) => e.hidden)) && pg.url() === url0);
+  ok('P2 live: no test-order button', await pg.$eval('#demoRow', (e) => e.hidden));
+  W.pay = 'abort'; await tap(pg, '#payBtn'); await settle(pg);
+  ok('P2 live network error: "couldn\'t reach the shop"', /couldn't reach the shop/.test(await text(pg, '#payErr')) && pg.url() === url0, await text(pg, '#payErr'));
+  W.pay = null;
+  ok('P2: Stripe was asked for once in all (the good url)', t.stripe.length === 1, t.stripe);
+  await finishAt('P2 live', t);
+  // the page's own fake never pays, even if a checkout answered with a Stripe url
+  t = await open({ save: SAVE, basket: NORMAL3, ship: 'US', path: '/merch/#/basket' }); pg = t.page; await pg.waitForSelector('#qtable');
+  await pg.evaluate((u) => { window.__merch.api.checkout = () => Promise.resolve({ order: 'mo_x', url: u }); }, PAYURL);
+  const navs0 = t.navs.length; await tap(pg, '#payBtn'); await pg.waitForTimeout(200);
+  ok('P2 test mode: a Stripe url from the fake is never followed (the "not open yet" card)', t.navs.length === navs0 && !(await pg.$eval('#closed', (e) => e.hidden)) && t.outside.length === 0, t.navs);
+  await finish('P2 test mode', t);
+
+  // ---- the late cancel that waits for the printer (refund: 'pending', R3-m3): the fake answers it as the Worker does
+  const F = MerchFake({ PawPrint: P, catalog: CAT }), lo = mkOrder('latepend', (o) => { late(o); o._fail = { late: 'pending' }; }); F.put(lo);
+  const r1 = await F.cancel(lo.id, { scope: 'late' }), v1 = await F.order(lo.id), r2 = await F.cancel(lo.id, { scope: 'late' }).then(() => null, (e) => e);
+  ok('fake: late cancel while the printer can\'t be read: refund pending, the Worker\'s fields', keys(r1) === 'asked,refund,say,status' && r1.refund === 'pending' && r1.status === 'confirmed' && r1.asked === true, r1);
+  ok('fake: after it, nothing refunded yet and no delay choice; a second tap is not_late', v1.late === false && v1.totals.refunded === 0 && v1.lines.every((l) => l.refunded_qty === 0 && l.status === 'confirmed') && r2 && r2.error === 'not_late', [v1.late, v1.totals, r2]);
+  ok('fake: the hook is not in the order\'s answer', keys(v1) === F_ORDER.join(), keys(v1));
+  t = await open({ save: SAVE, path: '/merch/#/', clock: FIX }); pg = t.page;
+  await showOrder(pg, mkOrder('latepend', (o) => { late(o); o._fail = { late: 'pending' }; }));
+  await tap(pg, '#lateCancel'); await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('late pending: "your cancel is in, the refund follows", the choice gone, nothing refunded yet', /^Your cancel is in\. We're checking with our print partner, and your refund follows: we'll email you\.$/.test(await text(pg, '.oknote')) && !(await pg.$('#lateBox')) && (await text(pg, '#h-order-t')) !== 'Your order is refunded' && !(await pg.$('[data-q=refunded]')), [await text(pg, '.oknote'), await text(pg, '#h-order-t')]);
+  await finish('late pending', t);
+
+  // ---- the live client's whole path on the test copy: the order and its four buttons reach the test order server's routes
+  t = await openAt(TEST_ORIGIN, { save: SAVE, clock: FIX }); pg = await t.tab('/merch/#/');
+  const go = async (o) => { LIVE.put(o); await toHash(pg, '#/order/' + o.id); await pg.waitForSelector('#h-order-t'); await settle(pg); };
+  const n1 = W.log.length, lp = mkOrder('livelate', (o) => { late(o); o._fail = { late: 'pending' }; });
+  await go(lp); await tap(pg, '#lateWait'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('live client: Keep waiting', /Thank you for waiting/.test(await text(pg, '.oknote')) && W.log.includes('POST /merch/order/' + lp.id + '/wait'));
+  await tap(pg, '#lateCancel'); await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('live client: the late cancel answered refund: pending (the Worker\'s answer) is said as it is', /^Your cancel is in\. We're checking with our print partner/.test(await text(pg, '.oknote')) && !(await pg.$('#lateBox')) && W.log.includes('POST /merch/order/' + lp.id + '/cancel'), await text(pg, '.oknote'));
+  const ad = mkOrder('liveaddr', STATES.find((x) => x[0] === 'address')[1]); await go(ad);
+  for (const [k, v] of Object.entries({ name: 'Pat Tester', line1: '9 New Lane', city: 'Testville', state: 'NY', postal: 'QZ-9Q9' })) await pg.$eval('#af-' + k, (e, x) => { e.value = x; }, v);
+  await tap(pg, '#addrSend'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('live client: the address', /Thanks! We.ll send it there\./.test(await text(pg, '.oknote')) && W.log.includes('POST /merch/order/' + ad.id + '/address'));
+  const rf = mkOrder('liverefund', STATES.find((x) => x[0] === 'address')[1]); await go(rf);
+  await tap(pg, '#addrRefund'); await tap(pg, '#askYes'); await pg.waitForSelector('.oknote'); await settle(pg);
+  ok('live client: refund me instead', (await text(pg, '#h-order-t')) === 'Your order is refunded' && W.log.includes('POST /merch/order/' + rf.id + '/refund'));
+  const cn = mkOrder('livecancel'); await go(cn); await tap(pg, '#cancelBtn'); await tap(pg, '#cancelYes'); await settle(pg); await settle(pg);
+  ok('live client: cancel in the hour', (await text(pg, '#h-order-t')) === 'Your order is cancelled' && W.log.includes('POST /merch/order/' + cn.id + '/cancel'), await text(pg, '#h-order-t'));
+  await toHash(pg, '#/order/' + MO('NOSUCH')); await pg.waitForSelector('#h-order-t'); await settle(pg);
+  ok('live client: an order the server does not know', /We couldn't find this order/.test(await text(pg, '#h-order-t')));
+  const calls = W.log.slice(n1);
+  ok('live client: every call was a route of the order server', calls.length > 0 && calls.every((c) => /^(GET \/merch\/order\/[^/]+|POST \/merch\/order\/[^/]+\/(cancel|wait|address|refund)|GET \/merch\/catalog|POST \/merch\/quote)$/.test(c)), calls);
+  await finishAt('live client', t);
 }
 
 // ================= part 9: the phone review (M1-M8, m1-m10) and the art review (M1, m1, m2, m4) fixes on the shop page =================

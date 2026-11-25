@@ -4,9 +4,10 @@
 // as it is printed; the gift code only in the buyer's own emails. Each body is a plain-text part and a small HTML part (inline styles only, no
 // remote images, no tracking, no scripts) drawn from the same blocks, so they always say the same and the text reads fine alone.
 // The ledger sends through its outbox (merch_outbox, PART3.md S7): a row per email written in the same transaction as the change it tells
-// about, sent after commit, retried with backoff. Talks only through env.MAIL_FETCH; without it (or without RESEND_API_KEY) nothing is sent and
-// the answer says so. The buyer's address is passed in by the caller, read from the Stripe session at send time: it is never stored here.
-import { fetcher, call, siteOf, orderLink } from './util.js';
+// about, sent after commit, retried with backoff. The network (util.js netOf): env.MAIL_FETCH in the tests (never set in production), else, on
+// Cloudflare's runtime only and only with RESEND_API_KEY, the global fetch to https://api.resend.com (part 9, C1). Without a network or the key
+// nothing is sent and the answer says so (not_set_up); in Node there is never a global path. The buyer's address is passed in by the caller, read from the Stripe session at send time: it is never stored here.
+import { netOf, call, siteOf, orderLink } from './util.js';
 
 export const CONTACT = 'contact@doodledoggo.app';
 export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'late_posted', 'reprint'];
@@ -265,7 +266,7 @@ export function build(kind, view, env) {
 }
 
 export async function send(env, to, kind, view, key) {
-  const f = fetcher(env.MAIL_FETCH);
+  const f = netOf(env.MAIL_FETCH, env.RESEND_API_KEY);
   if (!f || !env.RESEND_API_KEY || !to) return { sent: false, why: !to ? 'no_address' : 'not_set_up' };
   const m = build(kind, view, env);
   const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': key },
@@ -345,7 +346,7 @@ export function reportText(rep) {
 }
 // key: the outbox row's id, which carries the JST day (one mail per order, reason and day; the nightly report never collides with yesterday's)
 export async function owner(env, orderId, reason, note, key) {
-  const f = fetcher(env.MAIL_FETCH);
+  const f = netOf(env.MAIL_FETCH, env.RESEND_API_KEY);
   if (!f || !env.RESEND_API_KEY || !env.MERCH_OWNER_TO) return { sent: false, why: 'not_set_up' };
   const m = ownerBuild(env, orderId, reason, note);
   const r = await call(f, 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json', 'Idempotency-Key': key || 'mo_owner_' + orderId + '_' + reason },

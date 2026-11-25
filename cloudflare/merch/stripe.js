@@ -1,20 +1,22 @@
-// The Stripe seam (TRANSACTIONS.md 3, 3.2, 4). A real-shaped client (form-encoded, no SDK, Stripe-Version pinned) that only ever talks through
-// env.STRIPE_FETCH. Part 3 never calls the global fetch: without STRIPE_FETCH (or without a key) stripeReady() is false and checkout is refused, so
-// this Worker can never charge anyone by accident. Part 9 (the sandbox run) decides how the real fetch is wired, with the owner's approval.
-import { form, fetcher, call, hmacHex, same, enc, orderLink } from './util.js';
+// The Stripe client (TRANSACTIONS.md 3, 3.2, 4). Real-shaped (form-encoded, no SDK, Stripe-Version pinned, an Idempotency-Key on every POST
+// that makes something). The network (util.js netOf): env.STRIPE_FETCH in the tests (never set in production), else, on Cloudflare's runtime
+// only and only with MERCH_STRIPE_KEY, the global fetch to https://api.stripe.com. In Node there is never a global path, so a test without
+// STRIPE_FETCH has no Stripe at all. Without a network, a key or the webhook secret, stripeReady() is false and checkout is refused. The test
+// Worker (MERCH_TEST=1) refuses sk_live / rk_live keys: stripeReady() is false and no call is ever made with one (part 9, C1).
+import { form, netOf, call, hmacHex, same, enc, orderLink } from './util.js';
 
 const BASE = 'https://api.stripe.com/v1';
 export const STRIPE_VERSION = '2025-03-31.basil'; // pinned: adaptive_pricing, presentment_details, collected_information exist from here
 export const SIG_TOL = 300; // seconds
 
+// the test Worker (doodle-doggo-merch-test) refuses live keys (TRANSACTIONS 3.3)
+const liveOnTest = (env) => env.MERCH_TEST === '1' && /^(sk|rk)_live/.test(String(env.MERCH_STRIPE_KEY));
+const net = (env) => (liveOnTest(env) ? null : netOf(env.STRIPE_FETCH, env.MERCH_STRIPE_KEY));
 export function stripeReady(env) {
-  if (!fetcher(env.STRIPE_FETCH) || !env.MERCH_STRIPE_KEY || !env.MERCH_STRIPE_WEBHOOK_SECRET) return false;
-  // the test Worker (doodle-doggo-merch-test) refuses live keys (TRANSACTIONS 3.3)
-  if (env.MERCH_TEST === '1' && /^(sk|rk)_live/.test(String(env.MERCH_STRIPE_KEY))) return false;
-  return true;
+  return !!(net(env) && env.MERCH_STRIPE_KEY && env.MERCH_STRIPE_WEBHOOK_SECRET);
 }
 async function req(env, method, path, body, idem) {
-  const f = fetcher(env.STRIPE_FETCH); if (!f || !env.MERCH_STRIPE_KEY) return { ok: false, status: 0, data: null, error: 'not_set_up' };
+  const f = net(env); if (!f || !env.MERCH_STRIPE_KEY) return { ok: false, status: 0, data: null, error: 'not_set_up' };
   const h = { Authorization: 'Bearer ' + env.MERCH_STRIPE_KEY, 'Stripe-Version': env.MERCH_STRIPE_VERSION || STRIPE_VERSION };
   if (body) h['Content-Type'] = 'application/x-www-form-urlencoded';
   if (idem) h['Idempotency-Key'] = idem;

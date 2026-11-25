@@ -443,7 +443,9 @@ versions since 2025-03-31 `collected_information.shipping_details.address.countr
 - **Switches** (Worker vars, like `BT_FROM`, `HP_FROM`): section 6.4.
 - **Test mode end to end:** a separate Worker `doodle-doggo-merch-test` with the merch account's **sandbox** keys and Printful in `draft` mode, its own
   Durable Objects, allowing only the origin `https://test.doodledoggo.app`. The live Worker refuses that origin. The game's own payments-off rule
-  (`window.__ddNoPay`, the `/shop/checkout` refusal) is unchanged. The test Worker refuses a key that starts with `sk_live` or `rk_live`.
+  (`window.__ddNoPay`, the `/shop/checkout` refusal) is unchanged. The test Worker refuses a key that starts with `sk_live` or `rk_live`, and
+  never sends a request with one (part 9, C1). The shop page goes to a payment page only when the url starts with `https://checkout.stripe.com/`
+  (part 9, P2); its order server is chosen by its own origin, exactly (the test copy: the test Worker; anywhere else: the page's fake, P1).
 
 ---
 
@@ -613,9 +615,9 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 |---|---|---|---|---|---|
 | `GET /merch/catalog` | none | edge cache 60 s | - | `{cat_ver, shut, sold_out_today, products[{id, price, sizes, colours, poses, on}], zones[{id, fee, free_from, extra, eta}], countries[{code, zone}], max_lines: 6, max_qty: 3, art_vers[]}` | - |
 | `POST /merch/quote` | none | 60/h per IP | `{country, lines[{recipe, product, colour, size, pose, name_on, qty}]}` | `{cat_ver, zone, lines[{line, unit, qty, total}], subtotal, ship_fee, free_from, total, eta, notes[]}` | 400 `bad_line`, `bad_name`, `too_many`, `bad_qty`, `bad_country`; 403 `country_closed`; 409 `variant_off`, `sold_out_today`; 503 `merch_closed`; 429 `slow_down` |
-| `POST /merch/checkout` | none | 10/h per IP | quote input + `{expect_total, art_ver, nonce, agree: true, lang}` | `{order, url}` | quote errors + 400 `no_agree`; 409 `price_changed {quote}`, `art_changed`, `busy`, `cant_make`; 403 `not_available`; 503 `busy` |
+| `POST /merch/checkout` | none | 10/h per IP | quote input + `{expect_total, art_ver, nonce, agree: true, lang}` | `{order, url}` | quote errors + 400 `no_agree`, `bad_nonce`; 409 `price_changed {quote}`, `art_changed`, `busy`, `cant_make`, `nonce_used {order}`; 403 `not_available`; 503 `busy` |
 | `GET /merch/order/:id` | the id | 120/h per IP | - | `{id, status, hold, paid_at, cancel_until, can_cancel, country, lines[{line, product, colour, size, pose, name_on, name, qty, unit, status, refunded_qty, parcel, recipe}], parcels[{id, product, carrier, tracking_url, shipped_at, delivered_at}], totals{subtotal, ship_fee, tax, total, refunded}, pres{currency, amount}, gift_code, late: bool}`; never an address or email | 404 `not_found` |
-| `POST /merch/order/:id/cancel` | the id | 10/h | `{scope: 'order' \| 'late'}` | `{status, refund: 'sending' \| 'done'}` | 409 `too_late`, `not_late`; 404 |
+| `POST /merch/order/:id/cancel` | the id | 10/h | `{scope: 'order' \| 'late'}` | `{status, refund: 'sending' \| 'done'}`; a late cancel while Printful can't be read: `{status, refund: 'pending', asked: true}` (R3-m3) | 409 `too_late`, `not_late`, `busy`; 404 |
 | `POST /merch/order/:id/wait` (25 Nov 2026) | the id | 10/h (shared with cancel) | `{}` ("Keep waiting"; only while part of the order is late) | `{ok, late_ok: true, late_eta}`; idempotent, records `late_ok_at` once | 409 `not_late`; 404 |
 | `POST /merch/order/:id/address` | the id | 10/h | `{name, line1, line2, city, state, postal, country}` (sent to Printful, never stored) | `{ok: true}` | 409 `not_needed`; 400 `other_country`, `bad_address {field}`; 503 `busy` |
 | `POST /merch/order/:id/refund` | the id | 10/h | `{}` (only in `held address`) | `{status: 'refunded'}` | 409 `not_allowed` |
@@ -679,7 +681,9 @@ failure event (T2.2-43). Every other event: 200, ignored. CORS: `https://doodled
 
 Secrets: `MERCH_STRIPE_KEY` (restricted: Checkout Sessions write, Refunds write, Charges, PaymentIntents and Disputes read),
 `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_PROVIDER_KEY`, `MERCH_PROVIDER_WEBHOOK_SECRET` (if Printful signs), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`,
-`MERCH_ADMIN_KEY`, `RESEND_API_KEY` (send-only, this Worker). Tests only: `STRIPE_FETCH`, `PROVIDER_FETCH`, a fake `BROWSER`, `NOW` (the clock).
+`MERCH_ADMIN_KEY`, `RESEND_API_KEY` (send-only, this Worker). Tests only: `STRIPE_FETCH`, `PROVIDER_FETCH`, `MAIL_FETCH`, a fake `BROWSER`, `NOW` (the clock).
+Without a test seam, the Worker calls Stripe, Printful and Resend with Cloudflare's own `fetch`, each only with its key (`util.js` `netOf`, part 9 C1);
+in Node there is no such path, so a test without the seam calls nothing.
 Bindings: `LEDGER` (`MerchLedger`), `PRINTS` (`MerchPrints`), `BROWSER` (Browser Run), `ASSETS` (the print pages). Compatibility date 2026-03-24 or
 later (the Browser Run binding).
 

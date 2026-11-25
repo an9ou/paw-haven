@@ -11,7 +11,8 @@
    waiting": late_ok, the part 6 review batch), address (checked, then dropped: never kept), refundHeld. The cancel hour has the Worker's 120 s
    grace. A stored order's gift ('soon' | 'ready') decides whether its gift_code is answered (only when 'ready', as the Worker shows it after the
    hour); a stored gift_code with no gift field counts as 'ready'. Test hooks: put(order) stores a made-up order in any state; a stored order's own _fail field
-   ({ address: 'busy' | 'address' | 'slow_down' | 'other_country' }) makes its next address call fail that way once. An order is always answered with exactly the
+   ({ address: 'busy' | 'address' | 'slow_down' | 'other_country' }) makes its next address call fail that way once, and { late: 'pending' } makes its
+   next late cancel answer as the Worker does when the printer can't be read (refund: 'pending'). An order is always answered with exactly the
    fields of GET /merch/order/:id (TRANSACTIONS.md 6.3 and its notes), whatever was stored.
    Browser: <script> -> window.MerchFake(opts); Node (the tests): require('./api_fake.js') -> the same function.
    opts: { PawPrint, catalog (an object) or load() -> Promise of it, demo, now() -> ms, store (a Storage-like object for demo orders) } */
@@ -145,6 +146,9 @@
         if (o.late && o.status === 'confirming') return Promise.reject(fail(409, 'busy', { say: 'We\u2019re sending your order to print right this minute. Please try again in a minute or two.' }));
         if (!o.late || o.dispute === 'open' || o.hold === 'dispute') return Promise.reject(fail(409, 'not_late'));
         var late = o.lines.filter(function (l) { return live(l) && SHIPPED.indexOf(l.status) < 0; }); if (!late.length) return Promise.reject(fail(409, 'not_late'));
+        // test hook _fail.late = 'pending': the Worker could not read the printer, so it takes the cancel and refunds after the next good
+        // read (R3-m3): nothing is refunded yet, and the delay choice is gone from the order (there is nothing more to choose)
+        if (o._fail && o._fail.late === 'pending') { delete o._fail.late; o.late = false; saveOrders(); return Promise.resolve({ status: o.status, refund: 'pending', asked: true, say: 'Your cancel is in. We’re checking with our print partner, and your refund follows: we’ll email you.' }); }
         late.forEach(function (l) { var q = l.qty - (l.refunded_qty || 0); l.refunded_qty = l.qty; l.status = 'cancelled'; o.totals.refunded = (o.totals.refunded || 0) + l.unit * q; });
         o.late = false;
         if (!o.lines.some(live)) { o.status = 'refunded'; o.totals.refunded = o.totals.total; } else if (o.lines.filter(live).every(function (l) { return SHIPPED.indexOf(l.status) >= 0; })) o.status = 'shipped';

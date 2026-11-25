@@ -6,7 +6,7 @@
 // Every call answers
 //   { ok: true, data } or { ok: false, kind: 'down' | 'timeout' | 'refused' (items: [item external ids]) | 'address' | 'billing' | 'not_found' | 'cannot' | 'not_set_up' }
 // ('down' may carry retry_ms: Printful's Retry-After) and never throws. Nothing here logs the key, a recipient or a reply body.
-import { fetcher, call, same, hex, enc } from './util.js';
+import { netOf, call, same, hex, enc } from './util.js';
 import { PRODUCTS as CATP, PF_PRODUCTS, PF_VARIANT_IDS, SHIP_COSTS } from './catalog.js';
 import { taxBehavior } from './lines.js';
 
@@ -21,11 +21,8 @@ export const pfVariant = (pv) => PF_VARIANT_IDS[String(pv || '').replace(/^pf:/,
 
 // The network: env.PROVIDER_FETCH (tests, a service binding), else, on Cloudflare's runtime only and with a key, the global fetch. Node never
 // gets the global fetch, so a test without PROVIDER_FETCH has no printer at all (the gate stays shut) and nothing reaches the network.
-const onWorkers = () => typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
-function net(env) {
-  const f = fetcher(env.PROVIDER_FETCH); if (f) return f;
-  return env.MERCH_PROVIDER_KEY && onWorkers() && typeof fetch === 'function' ? (u, i) => fetch(u, i) : null;
-}
+// (the shared rule, util.js netOf: the same for Stripe and Resend)
+const net = (env) => netOf(env.PROVIDER_FETCH, env.MERCH_PROVIDER_KEY);
 // ready = a network and a key; the test Worker (MERCH_TEST=1) never runs live
 export const providerReady = (env) => !!(net(env) && env.MERCH_PROVIDER_KEY) && !(env.MERCH_TEST === '1' && env.MERCH_PROVIDER_MODE === 'live');
 
