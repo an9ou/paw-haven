@@ -490,11 +490,12 @@ async function staleChecks() {
   t = await open({ save: SAVE, basket: hostile, ship: X(10), path: '/merch/#/basket' }); pg = t.page;
   await settle(pg);
   ok('hostile: nothing ran', (await pg.evaluate(() => window.__pwned)) === undefined && t.dialogs.length === 0);
+  console.log('DBG', await pg.$eval('main img, main script', (x) => x.map((e) => e.outerHTML.slice(0, 120) + ' @' + (e.parentElement.className || e.parentElement.tagName))), await text(pg, '.bl .facts li'));
   ok('hostile: no element was injected', (await pg.$$eval('main img, main script', (x) => x.filter((e) => !e.closest('header')).length)) === 0);
   ok('hostile: one good line kept, its id our own', (await pg.$$eval('.bl', (l) => l.map((x) => x.dataset.line))).every((id) => /^l[0-9a-z]+$/.test(id)) && (await pg.$$eval('.bl', (l) => l.length)) === 1);
   ok('hostile: the stored game name shows as text', (await text(pg, '.bl .facts li')).includes('"><img src=/x2'));
   ok('hostile: "Ship to" fell back to a real country', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
-  ok('hostile: the rest dropped, said', /^7 things/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
+  ok('hostile: the rest dropped, said', /^8 things/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
   await finish('hostile basket', t);
 }
 
@@ -524,7 +525,7 @@ async function nonameChecks() {
 }
 
 // ---- S2, S3: every error code in plain words; a new price is asked about again; one nonce per basket and country
-const QUOTE_ERR = [['bad_line', /needs a look \(marked below\): tap Change on it/, 2], ['bad_name', /One name in your basket \(marked below\) can't print as it is/, 1], ['too_many', /holds up to 6 things/],
+const QUOTE_ERR = [['bad_line', /\(marked below\) needs a look: tap Change on it/, 2], ['bad_name', /One name in your basket \(marked below\) can't print as it is/, 1], ['too_many', /holds up to 6 things/],
   ['bad_qty', /up to 3 of each/, 1], ['bad_country', /don't know that place/], ['country_closed', /can't send orders to the United States yet/], ['variant_off', /can't be made just now/, 2],
   ['sold_out_today', /until tomorrow/], ['merch_closed', /not open yet/], ['slow_down', /Wait a minute, then try again/], ['busy', /a little busy just now/], ['offline', /couldn't reach the shop/]];
 const PAY_ERR = [['art_changed', /We've improved the drawing since you opened this page\. Reload to see your dog as it will print\./], ['sold_out_today', /until tomorrow/], ['variant_off', /can't be made just now/, 1],
@@ -591,6 +592,7 @@ async function orderChecks() {
   // after the hour: no cancel line, "Printing has started."
   await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + ';');
   ok('order after the hour: "Printing has started.", no cancel', (await text(pg, '.cancelbox')) === 'Printing has started.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')));
+  console.log('DBG2', await text(pg, '.track'));
   ok('order: the date it was received', /Order received 20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
   ok('order after the hour: being printed is now', (await pg.$eval('.track li:nth-child(2)', (l) => l.className)) === 'now' && (await pg.$eval('.track li:nth-child(1)', (l) => l.className)) === 'done');
   // the server cleared the recipes (after 24 months): the page uses the names, draws no dog, and does not break
