@@ -13,6 +13,7 @@ and the T-row table are in `docs/design/merch/PART3.md`. **Nothing here is deplo
 | `catalog.js` | The price list: products, zones, countries, the never list, Printful's shipping table, the holiday surcharge, the floor. |
 | `lines.js` | The basket: switches, the line checks (PawPrint), prices, the margin guard. |
 | `stripe.js`, `provider_printful.js`, `render.js`, `mail.js` | The four seams. Each talks only through an injected fetch (`STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`). |
+| `provider_printful.js` (part 5) | The real Printful adapter, API v2 (one v1 call: the late cancel), built against the replies in `test/printful/` (each marked docs / built / public). On Cloudflare, with `MERCH_PROVIDER_KEY` set and no `PROVIDER_FETCH`, it uses the global `fetch`; Node never does, so the tests never reach the network. `tools/merch_pf_check.mjs` is the key-day kit (dry run by default). See PART5.md. |
 | `admin.js` | The owner's admin routes (`tools/merch.sh`). |
 | `build_assets.mjs` | Copies every released print folder from `site/merch/print/<ART_VER>/` (in git) into `assets/merch/print/` (git-ignored, a copy), never deleting one. |
 | `wrangler.example.toml` | Bindings, the two Durable Object classes and their migration, the cron, the variables (shut by default). No ids, no secrets. |
@@ -34,9 +35,10 @@ Printful, the renderer and Resend are stateful fakes (`test/fakes.mjs`), and the
 - `MERCH_FROM` is empty: the shop is shut (catalog `shut: true`; a quote still answers with `shut: true`, prices are public; checkout 503 `merch_closed`).
 - Part 3 never calls the global `fetch`. Without the injected fetches, or without `MERCH_STRIPE_KEY`, `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_HASH_KEY`,
   `MERCH_FILE_KEY`, a printer (`PROVIDER_FETCH`, `MERCH_PROVIDER_KEY`) and a renderer, it refuses every order, so it can never charge anyone, nor take a
-  payment it then cannot make. In live mode it also needs `MERCH_PROVIDER_WEBHOOK_SECRET` (printer hints must be signed). Wiring the real Stripe, Printful, Browser Run and Resend calls is parts 4, 5,
+  payment it then cannot make. In live mode it also needs `MERCH_PROVIDER_WEBHOOK_SECRET` (printer hints must be signed: Printful's webhook v2 `secret_key`, in hex as Printful shows it). Wiring the real Stripe, Printful, Browser Run and Resend calls is parts 4, 5,
   6 and 9, each with the owner's approval.
-- `MERCH_PROVIDER_MODE` defaults to `draft`: Printful is never asked to confirm (no wholesale charge), and reprints are held.
+- `MERCH_PROVIDER_MODE` defaults to `draft`: Printful is never asked to confirm (no wholesale charge), and reprints are held. The adapter itself also
+  refuses a confirm unless the mode is `live`, and always on the test Worker (`MERCH_TEST=1`, which never opens in live mode).
 - The test Worker (`MERCH_TEST=1`) refuses `sk_live` / `rk_live` keys and every origin but `https://test.doodledoggo.app`; the live Worker refuses that origin.
 
 ## What the owner must approve and set before any deploy
@@ -46,10 +48,16 @@ Browser Run binding (part 4). Do: open the separate Stripe account (Hong Kong, U
 with the events in TRANSACTIONS.md 6.3; open Printful and fund its wallet; choose the launch countries with the accountant (section 10.1).
 
 Secrets, by name only (set in the dashboard or with `wrangler secret put`, never in the repo or chat): `MERCH_STRIPE_KEY` (restricted key),
-`MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_PROVIDER_KEY`, `MERCH_PROVIDER_WEBHOOK_SECRET` (if Printful signs), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`,
+`MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_PROVIDER_KEY` (a Printful private token: orders, file library, webhooks), `MERCH_PROVIDER_WEBHOOK_SECRET`
+(Printful webhook v2 signs: PART5.md), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`,
 `MERCH_ADMIN_KEY`, `RESEND_API_KEY`. Variables: `MERCH_OWNER_TO` (the owner's address), then `MERCH_COUNTRIES` and, last, `MERCH_FROM` with the launch date.
 
 Never set in production: `STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT` (test seams).
+
+Printer variables (part 5, all optional): `MERCH_PROVIDER_STORE` (the store id, only with an account-level token: sent as `X-PF-Store-Id`),
+`MERCH_PF_V1_CANCEL` (`0`: never use v1's cancel; the owner cancels a late confirmed order in the dashboard), `MERCH_PF_POLLS` / `MERCH_PF_POLL_MS`
+(re-reads of a draft whose costs are still being worked out, default 2 x 1500 ms), `MERCH_PF_PRICE_REGION` (the nightly price read, default
+`worldwide`), `MERCH_PF_SHIP_REGIONS` (the cost regions whose rates the nightly job reads, default all eight).
 
 ## The print folders (never remove one)
 

@@ -142,17 +142,30 @@ Not simulated: the real Stripe, Printful, Browser Run and Resend answers (assump
 
 ## To verify with the printer's key (part 5): a checklist
 
+Part 5 (25 Nov 2026) answered what Printful's published docs settle; each line says which. The details and sources are in PART5.md.
+
 - [ ] Every error shape in `pf()` (the reasons `recipient`, `items`, `billing`, `cannot_cancel` are invented); map the real ones.
+  *Part 5: answered from the docs for the shape (`{ code, result, error: { reason, message } }`, reasons such as `BadRequest`, `NotFound`, `TooManyRequests`; RFC 9457 on newer v2 routes), items named "Item <n>:" or `/order_items/<n>`, the recipient "Recipient: ...", OR-13 for a used external id, 429 with Retry-After. Still needs the key: the exact texts of a refused variant, a refused address and a failed charge.*
 - [ ] Shipments: `order_item_external_id` or `item_id` per item (with `item_id`, parcels never attach: `mapOrder`).
+  *Part 5: answered from the docs. v1 shipments name only `item_id` (the worry was right); v2 `shipment_items` carry `order_item_external_id` and `order_item_id`. The adapter uses v2, with the id as a fallback.*
 - [ ] GET an order by external id (`/orders/@<external_id>`), including after it was deleted (what status, or 404).
+  *Part 5: answered from the docs for GET by `@<external_id>` (v1 and v2). Still needs the key: what a deleted v2 draft answers (the adapter takes 404 and canceled as gone).*
 - [ ] Whether a duplicate external id is refused (the `-d<n>` and `-r<n>` ids assume a new id is needed).
+  *Part 5: answered from the docs (v1): "Each order's External ID must be unique within the store", OR-13 EXTERNAL_ID_IN_USE; at most 32 characters. Still needs the key: whether a deleted v2 draft frees its id (`-d<n>` stays either way).*
 - [ ] DELETE on a draft vs a pending order; what a second DELETE answers (`deleteDraft` treats 404 and "canceled" as done).
+  *Part 5: answered from the docs. v2 DELETE deletes a draft, failed or cancelled order not yet charged (204); v2 cannot cancel a pending order; v1 DELETE "Cancels pending order or draft" (used for the late cancel). Still needs the key: the second DELETE's answer.*
 - [ ] The cost fields of a draft (`costs.subtotal`, `costs.shipping`, `costs.tax`).
+  *Part 5: answered from the docs (v2 Costs: subtotal, discount, shipping, digitization, additional_fee, fulfillment_fee, retail_delivery_fee, vat, tax, total, worked out after the create: `calculation_status`). Still needs the key: one real draft's numbers (and whether `front_large` adds a fee as the only placement).*
 - [ ] When Printful fetches the print files, against the 30-day signed link.
+  *Part 5: still needs the key (not in the docs; the kit adds one file by URL and reads its status).*
 - [ ] Webhook signing (header name, HMAC over what) and the event names (returned, on hold, hold removed); see question 20.
+  *Part 5: answered from the docs. v1 cannot sign; v2 signs: HMAC-SHA256 of the raw body with the hex-decoded `secret_key`, hex in `x-pf-webhook-signature`. Events: shipment_sent, shipment_delivered, shipment_returned, order_failed, order_canceled, order_put_hold, order_remove_hold and others. Merge step: worker.js must forward `x-pf-webhook-signature` (PART5.md).*
 - [ ] Whether a recipient can be deleted on request (section 5, `merch.sh forget`).
+  *Part 5: still open (not in the API docs; ask Printful support, who are our processor under their Data Processing Terms).*
 - [ ] `/merch/catalog-costs` is not a Printful route: the nightly cost read is written for real; the variant ids (`pf:<variant>`) are placeholders.
+  *Part 5: done. `catalogCosts` reads v2 prices and Standard rates; the variant ids are Printful's, from the public catalog (catalog.js `PF_VARIANT_IDS`). Still needs the key: that the v2 ids are the same (the kit checks).*
 - [ ] Browser Run (part 4): the 429 texts (daily vs rate), and calling it from inside the object.
+  *Not part 5 (part 4).*
 
 ## To verify in the Stripe sandbox (part 9): a checklist
 
