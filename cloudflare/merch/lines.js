@@ -78,7 +78,7 @@ export function priceBasket(zoneId, lines) {
   const Z = ZONES[zoneId], subtotal = lines.reduce((a, l) => a + l.line_total, 0), units = lines.reduce((a, l) => a + l.qty, 0);
   const free = Z.free_from != null && subtotal >= Z.free_from;
   const extra = free ? 0 : Z.extra * Math.max(0, units - 1), fee = free ? 0 : Z.fee + extra;
-  return { subtotal, ship_fee: fee, ship_extra: extra, total: subtotal + fee, free, units, free_from: Z.free_from, eta: { min: Z.eta[0], max: Z.eta[1], unit: 'business_day' } };
+  return { subtotal, ship_fee: fee, ship_extra: extra, total: subtotal + fee, free, units, free_from: Z.free_from, eta: Z.eta.slice() }; // eta: [min, max] business days
 }
 // The margin of an order (TRANSACTIONS 3.3, as tools/merch_econ.js cartEcon computes it, so SHIPPING.md's numbers hold to the cent):
 // W = wholesale + Printful's shipping (each product group its own first-item rate); margin = P - T - W - h - tool tax (W + h) - Stripe fee - reserve (5% of W).
@@ -100,10 +100,12 @@ export function marginOf(cat, country, lines, sub, fee, now, costs, taxInside) {
   return { margin, net, W: Math.round(W), ship, pass: margin >= FEES.floor - 1e-9 && margin >= FEES.floor_share * net - 1e-9 };
 }
 // the quote the page shows (also inside 409 price_changed)
+// a zone's note codes for the catalog: vat_included only while one of its regions is registered (TRANSACTIONS 1.1)
+export const zoneNotes = (Z) => (Z.vat_note && (REGISTERED.uk || REGISTERED.eu) ? ['vat_included'] : []).concat(Z.notes);
 export function quoteOut(cat, b, pr) {
   const Z = ZONES[b.zone], notes = Z.notes.slice();
-  if (Z.vat_note && REGISTERED[b.region]) notes.unshift(Z.vat_note);
-  if (new Set(b.lines.map((l) => l.group)).size > 1) notes.push('Mugs and tees travel in their own parcels, so they may arrive on different days.');
+  if (Z.vat_note && REGISTERED[b.region]) notes.unshift('vat_included');
+  if (new Set(b.lines.map((l) => l.group)).size > 1) notes.push('separate_parcels');
   return { cat_ver: cat.cat_ver, country: b.country, zone: b.zone, lines: b.lines.map((l) => ({ line: l.line, product: l.product, colour: l.colour, size: l.size, pose: l.pose, name_on: !!l.name_on, unit: l.unit, qty: l.qty, total: l.line_total })),
     subtotal: pr.subtotal, ship_fee: pr.ship_fee, free_from: pr.free_from, total: pr.total, eta: pr.eta, notes };
 }

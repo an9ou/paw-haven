@@ -1,10 +1,16 @@
 // Suite merch_page: the /merch page of doodledoggo.app in TEST MODE (site/merch/, docs/design/merch/PART2.md).
 //   NODE_PATH=$(npm root -g) node merch/test_page.js            all checks (Playwright's Chromium; this file serves site/ itself)
 //   SHOTS=1 NODE_PATH=$(npm root -g) node merch/test_page.js    also writes the owner's screenshots to docs/design/merch/part2_shots/ (dpr 2)
-// Covers: dogs from a save, from a link, none; every step; adding, changing and removing basket lines; the 6-line and 3-each limits; "Ship to"
-// changing the fee, the free-shipping line and the tax line; a shut country; the name rules and their words; the preview equals PawPrint.print()
-// for the same options; no stickers anywhere; the page's quote equals the fake api's to the cent for 8 baskets; the pay button never leaves the
-// page; nothing written to the game's save; no console errors; no request leaves the origin; the fit at 360x640, 390x844 and 1280x720.
+//   LOOK=<dir> ...                                              also writes the review pictures (a dropped line, a name that can't print, an
+//                                                               error, the order page after the hour, the "Ship to" list) at 360, 390 and 1280
+// Covers: the fake on its own, with answers of exactly the TRANSACTIONS.md 6.3 fields; 32 baskets in every zone priced by hand from SHIPPING.md
+// (the page and the fake against the hand table: $34.99 pays shipping, $35.00 ships free, the extra-item fee, bigger tee sizes, 6 lines of 3);
+// dogs from a save, a link, none, and a game name the print can't draw; every step; add, change (the preview after Change), remove; the 6-line
+// and 3-each limits; a stale and a hostile stored basket; every error code's words; one nonce per basket; the order page without recipes and
+// after the hour; two tabs; Back/Forward and deep links; the footer "Questions" link; "Ship to" named by the browser and sorted; the page
+// against a live-style api that answers exactly the 6.3 fields; contrast (4.5:1, ink for money and legal lines); no stickers; Pay never
+// navigates; the game save and pawhaven_cloud_v1 never written; no console errors, no dialogs; no request leaves the origin; the fit at
+// 360x640, 390x844 and 1280x720.
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), BRAND = path.join(ROOT, 'brand');
@@ -13,17 +19,41 @@ const PP_SRC = (/src="\/merch\/(print\/pp1-[0-9a-z]+\/pawprint\.js)"/.exec(HTML)
 if (!PP_SRC || !fs.existsSync(path.join(SITE, 'merch', PP_SRC))) { console.error('site/merch has no PawPrint build: run NODE_PATH=$(npm root -g) node tools/merch_build.js'); process.exit(1); }
 const P = require(path.join(SITE, 'merch', PP_SRC)), MerchFake = require(path.join(SITE, 'merch', 'api_fake.js'));
 const CAT = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json'), 'utf8'));
-const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part2_shots');
+const API_JS = fs.readFileSync(path.join(SITE, 'merch', 'api.js'), 'utf8');
+const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part2_shots'), LOOK = process.env.LOOK || '';
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('Playwright is needed (NODE_PATH=$(npm root -g))'); process.exit(1); }
 
 let pass = 0, fail = 0; const fails = [];
 function ok(name, cond, detail) { if (cond) { pass++; } else { fail++; fails.push(name + (detail !== undefined ? ': ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : '')); console.log('FAIL ' + name, detail !== undefined ? detail : ''); } }
 const money = (c) => '$' + (c / 100).toFixed(2);
+const clone = (x) => JSON.parse(JSON.stringify(x));
 
-// ---- the site, served as the web root (the brand icons at the root, as tools/cf_site.js serves them)
+// ---- the catalog variants: the real one, one with prices on the free-shipping edges, one with the UK and two EU countries open
+const CAT_EDGE = clone(CAT); CAT_EDGE.products[0].price = 3499; CAT_EDGE.products[1].price = 3500;
+const CAT_UKEU = clone(CAT); CAT_UKEU.countries.forEach((c) => { if (['GB', 'DE', 'FR'].includes(c.code)) c.soon = false; });
+const CATS = { real: CAT, edge: CAT_EDGE, ukeu: CAT_UKEU };
+
+// ---- the site, served as the web root (the brand icons at the root, as tools/cf_site.js serves them); /live/merch/* is a live-style order
+//      server for one test (the fake behind real HTTP, answering exactly the 6.3 fields)
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.webp': 'image/webp', '.webmanifest': 'application/manifest+json' };
+const LIVE = MerchFake({ PawPrint: P, catalog: CAT }); const liveLog = [];
+function live(q, s, p) {
+  let body = ''; q.on('data', (c) => { body += c; }); q.on('end', () => {
+    const send = (st, j) => { s.writeHead(st, { 'content-type': 'application/json' }); s.end(JSON.stringify(j)); };
+    const fail2 = (e) => send(e.status || 503, Object.assign({}, e, { status: undefined }));
+    let b = null; try { b = body ? JSON.parse(body) : null; } catch (e) { return send(400, { error: 'bad_line' }); }
+    liveLog.push(q.method + ' ' + p);
+    let m;
+    if (q.method === 'GET' && p === '/live/merch/catalog') return LIVE.catalog().then((c) => send(200, c), fail2);
+    if (q.method === 'POST' && p === '/live/merch/quote') return LIVE.quote(b).then((x) => send(200, x), fail2);
+    if (q.method === 'POST' && p === '/live/merch/checkout') return LIVE.checkout(b).then((x) => send(200, x), fail2);
+    if (q.method === 'GET' && (m = /^\/live\/merch\/order\/([A-Za-z0-9_-]+)$/.exec(p))) return LIVE.order(m[1]).then((x) => send(200, x), fail2);
+    send(404, { error: 'not_found' });
+  });
+}
 const server = http.createServer((q, s) => {
   const p = decodeURIComponent(q.url.split(/[?#]/)[0]);
+  if (p.startsWith('/live/merch/')) return live(q, s, p);
   let f = /^\/(favicon\.svg|icon-\d+\.png|doodle-doggo-(icon|logo)\.svg|site\.webmanifest)$/.test(p) ? path.join(BRAND, p) : path.join(SITE, p);
   if (!f.startsWith(SITE) && !f.startsWith(BRAND)) { s.writeHead(403); return s.end(); }
   try { if (fs.statSync(f).isDirectory()) { if (!p.endsWith('/')) { s.writeHead(301, { location: p + '/' }); return s.end(); } f = path.join(f, 'index.html'); } } catch (e) { if (fs.existsSync(f + '.html')) f += '.html'; }
@@ -39,20 +69,79 @@ const SAVE = JSON.stringify({ v: 1, activeId: 'd2', coins: 120, dogs: [
   { id: 'd3', key: 'golden', genes: G('220200'), artSeed: 77, born: day(60), sex: 'female', name: 'Sir Wigglesworth III', sparkle: true, outfit: { head: 'Flower Crown', body: 'Superhero Cape' } },
   { id: 'd4', key: 'beagle', artSeed: 5, born: day(0), sex: 'female', name: 'Bo' },
   { id: 'd5', key: 'lab', genes: G('222200'), artSeed: 3, born: day(90), sex: 'male', name: 'Pepper' }] });
+// game names the print font can't draw: an emoji, kana, and a word it won't print (kept out of this file as plain text)
+const ROT = (s) => s.replace(/[a-z]/g, (ch) => String.fromCharCode((ch.charCodeAt(0) - 84) % 26 + 97));
+const SAVE_NONAME = JSON.stringify({ v: 1, activeId: 'n1', dogs: [
+  { id: 'n1', key: 'shiba', genes: G('220200'), artSeed: 41, born: day(80), sex: 'female', name: 'ポチ', outfit: {} },
+  { id: 'n2', key: 'pug', artSeed: 42, born: day(80), sex: 'male', name: 'Pochi 🐶' },
+  { id: 'n3', key: 'corgi', artSeed: 43, born: day(80), sex: 'male', name: ROT('shpx') },
+  { id: 'n4', key: 'beagle', artSeed: 44, born: day(80), sex: 'female', name: 'Daisy' }] });
+const NOSAY = "We can't draw these letters yet. Print without the name, or type one we can draw.";
 const FROM_SAVE = P.merchFromSave(SAVE, { today: new Date() }).dogs; // Biscuit, Mochi, Sir Wigglesworth III, Bo, Pepper (page order: Mochi first, the active one)
 const R = (name) => FROM_SAVE.find((d) => d.name === name).recipe;
 const enc = (r) => P.merchEncode([r]);
-const line = (r, product, o) => Object.assign({ id: 'x' + Math.random().toString(36).slice(2, 8), recipe: enc(r), product, colour: product === 'tee' ? 'white' : 'white', size: product === 'tee' ? 'M' : null, pose: 'stand', name_on: !!r.n, qty: 1 }, o || {});
+const line = (r, product, o) => Object.assign({ id: 'x' + Math.random().toString(36).slice(2, 8), recipe: enc(r), product, colour: 'white', size: product === 'tee' ? 'M' : null, pose: 'stand', name_on: !!r.n, qty: 1 }, o || {});
+const apiL = (l) => ({ recipe: l.recipe, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, qty: l.qty });
+const D = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map(R);
+const NORMAL3 = [line(R('Mochi'), 'tee', { colour: 'navy' }), line(R('Biscuit'), 'mug', { pose: 'sit' }), line(R('Sir Wigglesworth III'), 'tee', { size: 'L', pose: 'happy' })]; // $73.97, ships free in the US
+
+// ---- the hand table: every total worked out by hand from SHIPPING.md model C (mug $19.99, tee $26.99, 2XL +$2, 3XL +$4, 4XL +$6;
+//      USA/Japan $4.99, free from $35; UK/EU $5.99, free from $70; Canada/Australia/NZ $7.99, free from $70; everywhere else $11.99
+//      + $5.99 per extra mug or tee, never free). "edge" prices the mug at $34.99 and the tee at $35.00. [country, catalog, lines, sub, ship, total]
+const T = (d, p, o) => line(D[d], p, o);
+const SIX3 = () => [T(0, 'mug', { qty: 3 }), T(1, 'mug', { qty: 3 }), T(3, 'tee', { qty: 3 }), T(4, 'tee', { size: '2XL', qty: 3 }), T(0, 'tee', { colour: 'black', size: '3XL', qty: 3 }), T(1, 'tee', { size: '4XL', qty: 3 })];
+const HAND = [
+  ['US', 'real', [T(0, 'mug')], 1999, 499, 2498],
+  ['US', 'real', [T(1, 'tee')], 2699, 499, 3198],
+  ['US', 'real', [T(2, 'tee', { size: '4XL' })], 3299, 499, 3798],
+  ['US', 'real', [T(0, 'mug', { qty: 2 })], 3998, 0, 3998],
+  ['US', 'real', [T(0, 'mug'), T(1, 'tee')], 4698, 0, 4698],
+  ['JP', 'real', [T(3, 'mug')], 1999, 499, 2498],
+  ['JP', 'real', [T(1, 'tee', { colour: 'navy', size: '2XL' })], 2899, 499, 3398],
+  ['JP', 'real', [T(4, 'tee', { colour: 'black', size: '3XL' })], 3099, 499, 3598],
+  ['CA', 'real', [T(0, 'mug')], 1999, 799, 2798],
+  ['CA', 'real', [T(0, 'mug', { qty: 3 })], 5997, 799, 6796],
+  ['CA', 'real', [T(1, 'tee', { qty: 2 }), T(2, 'mug')], 7397, 0, 7397],
+  ['AU', 'real', [T(2, 'tee', { size: '3XL', qty: 2 })], 6198, 799, 6997],
+  ['AU', 'real', [T(1, 'tee', { size: 'L' }), T(4, 'tee', { colour: 'black', size: '4XL' })], 5998, 799, 6797],
+  ['NZ', 'real', [T(1, 'tee'), T(0, 'mug', { qty: 2 })], 6697, 799, 7496],
+  ['NZ', 'real', [T(0, 'mug', { qty: 2 }), T(3, 'tee', { size: '2XL' })], 6897, 799, 7696],
+  ['NZ', 'real', [T(2, 'tee', { size: '3XL' }), T(4, 'mug', { qty: 2 })], 7097, 0, 7097],
+  ['HK', 'real', [T(0, 'mug')], 1999, 1199, 3198],
+  ['HK', 'real', [T(0, 'mug', { qty: 2 })], 3998, 1798, 5796],
+  ['MX', 'real', [T(3, 'tee', { colour: 'ice-blue', size: 'XS' })], 2699, 1199, 3898],
+  ['NO', 'real', [T(0, 'mug', { qty: 3 }), T(1, 'tee', { size: '4XL', qty: 3 })], 15894, 4194, 20088],
+  ['VC', 'real', SIX3(), 47982, 11382, 59364],
+  ['US', 'real', SIX3(), 47982, 0, 47982],
+  ['CA', 'real', SIX3(), 47982, 0, 47982],
+  ['US', 'edge', [T(0, 'mug')], 3499, 499, 3998],
+  ['US', 'edge', [T(1, 'tee')], 3500, 0, 3500],
+  ['JP', 'edge', [T(1, 'tee', { size: '2XL' })], 3700, 0, 3700],
+  ['CA', 'edge', [T(0, 'mug', { qty: 2 })], 6998, 799, 7797],
+  ['CA', 'edge', [T(1, 'tee', { qty: 2 })], 7000, 0, 7000],
+  ['HK', 'edge', [T(1, 'tee', { qty: 2 })], 7000, 1798, 8798],
+  ['GB', 'ukeu', [T(0, 'mug')], 1999, 599, 2598],
+  ['DE', 'ukeu', [T(1, 'tee', { qty: 2 }), T(0, 'mug')], 7397, 0, 7397],
+  ['FR', 'ukeu', [T(0, 'mug', { qty: 3 })], 5997, 599, 6596]];
+
+// ---- the exact field lists of TRANSACTIONS.md 6.3 (with the note of 24 Nov 2026)
+const F_CAT = ['art_vers', 'cat_ver', 'countries', 'max_lines', 'max_qty', 'products', 'shut', 'sold_out_today', 'zones'];
+const F_PROD = ['colours', 'id', 'on', 'poses', 'price', 'sizes'], F_ZONE = ['eta', 'extra', 'fee', 'free_from', 'id', 'notes'], F_CTRY = ['code', 'soon', 'zone'];
+const F_QUOTE = ['cat_ver', 'eta', 'free_from', 'lines', 'notes', 'ship_fee', 'shut', 'subtotal', 'total', 'zone'], F_QLINE = ['line', 'qty', 'total', 'unit'];
+const keys = (o) => Object.keys(o).sort().join();
+const NOTE_CODES = ['import_tax', 'vat_included', 'separate_parcels'];
 
 let BASE, browser;
-// one page in a fresh context: { save, basket, ship, path, vp, dpr, lang }
+// one page in a fresh context: { save, basket (array or a raw string), ship, path, vp, dpr, lang, catalog, live, link }
 async function open(o) {
   o = o || {};
   const vp = o.vp || [390, 844];
   const ctx = await browser.newContext({ viewport: { width: vp[0], height: vp[1] }, deviceScaleFactor: o.dpr || 1, locale: o.lang || 'en-US' });
+  if (o.catalog) await ctx.route('**/merch/catalog.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o.catalog) }));
+  if (o.live) await ctx.route('**/merch/api.js', (r) => r.fulfill({ contentType: 'text/javascript', body: API_JS.replace("var MERCH_API = '';", "var MERCH_API = '" + BASE + "/live';") }));
   await ctx.addInitScript((seed) => {
-    if (!sessionStorage.getItem('__seeded')) {
-      sessionStorage.setItem('__seeded', '1');
+    if (!localStorage.getItem('__seeded')) { // once per context: a second tab or a reload never seeds again
+      localStorage.setItem('__seeded', '1');
       if (seed.save) localStorage.setItem('pawhaven_proto_v1', seed.save);
       if (seed.basket) localStorage.setItem('dd_merch_basket_v1', seed.basket);
       if (seed.ship) localStorage.setItem('dd_merch_ship_v1', seed.ship);
@@ -62,23 +151,30 @@ async function open(o) {
     S.setItem = function (k, v) { W.push(['set', k]); return set.call(this, k, v); };
     S.removeItem = function (k) { W.push(['remove', k]); return rem.call(this, k); };
     S.clear = function () { W.push(['clear', '*']); return clr.call(this); };
-  }, { save: o.save || '', basket: o.basket ? JSON.stringify(o.basket) : '', ship: o.ship || '' });
+  }, { save: o.save || '', basket: o.basket ? (typeof o.basket === 'string' ? o.basket : JSON.stringify(o.basket)) : '', ship: o.ship || '' });
+  const t = await tab(ctx, o.path || '/merch/', o);
+  t.ctx = ctx; return t;
+}
+async function tab(ctx, p, o) {
   const page = await ctx.newPage();
-  const errors = [], outside = [], navs = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  const errors = [], outside = [], navs = [], dialogs = [];
+  page.on('console', (m) => { if (m.type() === 'error' && !(o && o.live && /status of (503|403|409|400)/.test(m.text()))) errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
   page.on('request', (r) => { if (!r.url().startsWith(BASE) && !r.url().startsWith('data:')) outside.push(r.url()); });
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(r.status() + ' ' + r.url()); });
+  page.on('response', (r) => { if (r.status() >= 400 && !(o && o.live && r.url().includes('/live/merch/'))) errors.push(r.status() + ' ' + r.url()); });
   page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs.push(f.url()); });
-  await page.goto(BASE + (o.path || '/merch/'));
+  await page.goto(BASE + p);
   await page.waitForSelector('html.merch-ready', { timeout: 20000 });
-  return { page, ctx, errors, outside, navs };
+  return { page, errors, outside, navs, dialogs, ctx };
 }
 const tap = async (page, sel) => { await page.click(sel); await page.waitForTimeout(60); };
 const toHash = async (page, h) => { await page.evaluate((x) => { location.hash = x; }, h); await page.waitForTimeout(80); };
 const setShip = async (page, code) => { await page.selectOption('#shipSel', code); await page.waitForTimeout(80); };
 const view = (page) => page.evaluate(() => (document.querySelector('.mview.on') || {}).dataset.view);
+const hash = (page) => page.evaluate(() => location.hash);
 const text = (page, sel) => page.$eval(sel, (e) => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+const settle = (page) => page.waitForTimeout(120);
 // the page's preview against PawPrint.print() from Node, both parsed by the same browser (so only the drawing can differ)
 async function previewIs(page, sel, recipe, o) {
   const want = P.print(recipe, o);
@@ -87,12 +183,13 @@ async function previewIs(page, sel, recipe, o) {
     const g = document.querySelector(sel); return !!g && g.outerHTML === w;
   }, [sel, want]);
 }
-async function finish(name, t) {
+async function finish(name, t, o) {
   ok(name + ': no console errors', t.errors.length === 0, t.errors.slice(0, 3));
   ok(name + ': no request left the origin', t.outside.length === 0, t.outside.slice(0, 3));
+  ok(name + ': no dialog opened', t.dialogs.length === 0, t.dialogs);
   const w = await t.page.evaluate(() => window.__writes).catch(() => []);
-  ok(name + ': the game save was never written', !w.some((x) => x[1] === 'pawhaven_proto_v1' || x[0] === 'clear'), w);
-  await t.ctx.close();
+  ok(name + ': the game save and the cloud bookkeeping were never written', !w.some((x) => x[1] === 'pawhaven_proto_v1' || x[1] === 'pawhaven_cloud_v1' || x[0] === 'clear'), w);
+  if (!(o && o.keep)) await t.ctx.close();
 }
 
 // ================= the fake api on its own (Node) =================
@@ -100,27 +197,32 @@ async function fakeChecks() {
   const F = MerchFake({ PawPrint: P, catalog: CAT }), FD = MerchFake({ PawPrint: P, catalog: CAT, demo: true });
   const c = await F.catalog();
   ok('fake: catalog has the mug and the tee only (no stickers)', c.products.map((p) => p.id).join() === 'mug,tee');
-  ok('fake: catalog shape', ['cat_ver', 'shut', 'sold_out_today', 'products', 'zones', 'countries', 'max_lines', 'max_qty', 'art_vers'].every((k) => k in c) && c.max_lines === 6 && c.max_qty === 3 && c.shut === true && c.art_vers[0] === P.ART_VER);
+  ok('fake: catalog has exactly the 6.3 fields', keys(c) === F_CAT.join() && c.products.every((p) => keys(p) === F_PROD.join()) && c.zones.every((z) => keys(z) === F_ZONE.join()) && c.countries.every((x) => keys(x) === F_CTRY.join()),
+    { cat: keys(c), country: keys(c.countries[0]) });
+  ok('catalog.json has exactly the 6.3 fields', keys(CAT) === F_CAT.join() && CAT.countries.every((x) => keys(x) === F_CTRY.join() && typeof x.soon === 'boolean'));
+  ok('catalog: no names, no sentences (codes only)', !CAT.countries.some((x) => 'name' in x) && CAT.zones.every((z) => z.notes.every((n) => NOTE_CODES.includes(n))) && !/[a-z] [a-z]+ [a-z]/i.test(JSON.stringify(CAT)));
+  ok('catalog: the UK and EU zone says vat_included, everywhere else import_tax', CAT.zones.find((z) => z.id === 'uk_eu').notes.join() === 'vat_included' && CAT.zones.find((z) => z.id === 'world').notes.join() === 'import_tax');
+  ok('fake: catalog shape', c.max_lines === 6 && c.max_qty === 3 && c.shut === true && c.art_vers[0] === P.ART_VER);
   ok('fake: prices from SHIPPING.md model C', c.products[0].price === 1999 && c.products[1].price === 2699 && c.zones.find((z) => z.id === 'us_jp').fee === 499 && c.zones.find((z) => z.id === 'us_jp').free_from === 3500 && c.zones.find((z) => z.id === 'world').free_from === null);
-  ok('fake: tee colours and sizes are PawPrint\'s', c.products[1].colours.every((x) => { const T = P.TEE_COLOURS.find((y) => y.id === x.id); return T && x.sizes.join() === T.sizes.both.join(); }) && c.products[1].colours.length === P.TEE_COLOURS.length);
+  ok('fake: tee colours and sizes are PawPrint\'s', c.products[1].colours.every((x) => { const T2 = P.TEE_COLOURS.find((y) => y.id === x.id); return T2 && x.sizes.join() === T2.sizes.both.join(); }) && c.products[1].colours.length === P.TEE_COLOURS.length);
   ok('fake: never-countries are not listed', !['RU', 'BY', 'IR', 'KP', 'CU', 'SY', 'UA', 'VE', 'EC', 'PS'].some((k) => c.countries.some((x) => x.code === k)));
-  ok('fake: the UK and the EU are coming soon', ['GB', 'DE', 'FR', 'BR', 'KR'].every((k) => c.countries.find((x) => x.code === k).soon === true) && !c.countries.find((x) => x.code === 'US').soon);
+  ok('fake: the UK and the EU are coming soon', ['GB', 'DE', 'FR', 'BR', 'KR'].every((k) => c.countries.find((x) => x.code === k).soon === true) && c.countries.find((x) => x.code === 'US').soon === false);
   const L1 = line(R('Mochi'), 'mug'), L2 = line(R('Biscuit'), 'tee', { colour: 'navy', size: '2XL', qty: 2 });
-  const api = (l) => ({ recipe: l.recipe, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, qty: l.qty });
-  const q = await F.quote({ country: 'US', lines: [api(L1), api(L2)] });
+  const q = await F.quote({ country: 'US', lines: [apiL(L1), apiL(L2)] });
+  ok('fake: a quote has exactly the 6.3 fields, shut: true while shut', keys(q) === F_QUOTE.join() && q.lines.every((l) => keys(l) === F_QLINE.join()) && q.shut === true, keys(q));
   ok('fake: quote numbers', q.subtotal === 1999 + 2 * 2899 && q.ship_fee === 0 && q.total === q.subtotal && q.lines[1].unit === 2899 && q.notes.includes('separate_parcels'), q);
-  const q2 = await F.quote({ country: 'HK', lines: [api(L1), api(L2)] });
+  const q2 = await F.quote({ country: 'HK', lines: [apiL(L1), apiL(L2)] });
   ok('fake: everywhere else pays $11.99 + $5.99 each extra', q2.ship_fee === 1199 + 2 * 599 && q2.free_from === null && q2.notes.includes('import_tax'), q2);
   const err = async (p) => p.then(() => null, (e) => e);
-  ok('fake: bad country', (await err(F.quote({ country: 'ZZ', lines: [api(L1)] }))).error === 'bad_country');
-  ok('fake: shut country 403', (await err(F.quote({ country: 'GB', lines: [api(L1)] }))).status === 403);
-  ok('fake: 7 lines is too many', (await err(F.quote({ country: 'US', lines: Array(7).fill(api(L1)) }))).error === 'too_many');
-  ok('fake: qty 4 refused', (await err(F.quote({ country: 'US', lines: [Object.assign(api(L1), { qty: 4 })] }))).error === 'bad_qty');
-  ok('fake: stickers are not on sale', (await err(F.quote({ country: 'US', lines: [Object.assign(api(L1), { product: 'stickers' })] }))).error === 'variant_off');
-  ok('fake: a size the colour lacks', (await err(F.quote({ country: 'US', lines: [Object.assign(api(L2), { colour: 'pink', size: '4XL' })] }))).error === 'bad_line');
+  ok('fake: bad country', (await err(F.quote({ country: 'ZZ', lines: [apiL(L1)] }))).error === 'bad_country');
+  ok('fake: a country coming soon is 403 country_closed', (await err(F.quote({ country: 'GB', lines: [apiL(L1)] }))).status === 403);
+  ok('fake: 7 lines is too many', (await err(F.quote({ country: 'US', lines: Array(7).fill(apiL(L1)) }))).error === 'too_many');
+  ok('fake: qty 4 refused', (await err(F.quote({ country: 'US', lines: [Object.assign(apiL(L1), { qty: 4 })] }))).error === 'bad_qty');
+  ok('fake: stickers are not on sale', (await err(F.quote({ country: 'US', lines: [Object.assign(apiL(L1), { product: 'stickers' })] }))).error === 'variant_off');
+  ok('fake: a size the colour lacks', (await err(F.quote({ country: 'US', lines: [Object.assign(apiL(L2), { colour: 'pink', size: '4XL' })] }))).error === 'bad_line');
   const longMug = enc(Object.assign({}, R('Mochi'), { n: 'WWWWWWWWWWWWWWWWWWWW' }));
-  ok('fake: a name too long for the mug', (await err(F.quote({ country: 'US', lines: [Object.assign(api(L1), { recipe: longMug })] }))).error === 'bad_name');
-  const body = { country: 'US', lines: [api(L1)], expect_total: 2498, art_ver: P.ART_VER, nonce: 'abcdefgh12', agree: true, lang: 'en' };
+  ok('fake: a name too long for the mug', (await err(F.quote({ country: 'US', lines: [Object.assign(apiL(L1), { recipe: longMug })] }))).error === 'bad_name');
+  const body = { country: 'US', lines: [apiL(L1)], expect_total: 2498, art_ver: P.ART_VER, nonce: 'abcdefgh12', agree: true, lang: 'en' };
   ok('fake: checkout while shut is 503 merch_closed', (await err(F.checkout(body))).error === 'merch_closed');
   ok('fake: checkout needs agree', (await err(F.checkout(Object.assign({}, body, { agree: false })))).error === 'no_agree');
   ok('fake: checkout checks the total', (await err(F.checkout(Object.assign({}, body, { expect_total: 2000 })))).error === 'price_changed');
@@ -130,6 +232,13 @@ async function fakeChecks() {
   ok('fake: a demo order reads back', o.test === true && o.totals.total === 2498 && o.can_cancel === true && o.lines[0].name === 'Mochi');
   ok('fake: cancel in the hour', (await FD.cancel(d.order, { scope: 'order' })).status === 'cancelled' && (await FD.order(d.order)).status === 'cancelled');
   ok('fake: unknown order 404', (await err(FD.order('mo_nope'))).status === 404);
+  // the hand table against the fake
+  for (const [i, [cc, cv, lines, sub, ship, total]] of HAND.entries()) {
+    const Fx = MerchFake({ PawPrint: P, catalog: CATS[cv] }), x = await Fx.quote({ country: cc, lines: lines.map(apiL) }).catch((e) => e);
+    ok('hand ' + (i + 1) + ' (' + cc + ', ' + cv + '): the fake = the hand table', x.subtotal === sub && x.ship_fee === ship && x.total === total && x.lines.reduce((n, l) => n + l.total, 0) === sub, { got: [x.subtotal, x.ship_fee, x.total], want: [sub, ship, total] });
+  }
+  ok('hand table: at least 24 baskets, every zone', HAND.length >= 24 && ['us_jp', 'uk_eu', 'ca_au_nz', 'world'].every((z) => HAND.some((h) => CATS[h[1]].countries.find((c) => c.code === h[0]).zone === z)));
+  ok('hand table: $34.99 pays shipping, $35.00 ships free', HAND.some((h) => h[3] === 3499 && h[4] === 499) && HAND.some((h) => h[3] === 3500 && h[4] === 0));
 }
 
 // ================= the page =================
@@ -143,6 +252,17 @@ async function pageChecks() {
   ok('home: ship to has the US first guess', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
   ok('home: test mode is said', /Test mode/.test(await text(pg, '#testbar')));
   ok('home: noindex', /noindex/.test(await pg.$eval('meta[name=robots]', (m) => m.content)));
+  ok('home: the bag says its count to a screen reader', (await pg.$eval('#bagBtn', (a) => a.getAttribute('aria-label'))) === 'Basket, empty');
+  // "Ship to": named by the browser in the page's language, sorted by the shown name, the code as nothing else
+  const opts = await pg.$$eval('#shipSel option', (o) => o.map((x) => [x.value, x.textContent]));
+  const shown = opts.map((x) => x[1].replace(' (coming soon)', ''));
+  ok('ship to: every country named, none "undefined"', opts.length === CAT.countries.length && !opts.some((x) => /undefined|null/.test(x[1]) || x[1] === x[0]), opts.filter((x) => x[1] === x[0]).slice(0, 5));
+  ok('ship to: sorted by the shown name', shown.every((s, i) => i === 0 || new Intl.Collator('en').compare(shown[i - 1], s) <= 0));
+  ok('ship to: names from Intl.DisplayNames', opts.find((x) => x[0] === 'US')[1] === 'United States' && opts.find((x) => x[0] === 'GB')[1] === 'United Kingdom (coming soon)' && opts.find((x) => x[0] === 'AX')[1] === 'Åland Islands');
+  ok('copy: no promise of a game button', !/will get a button/i.test(HTML) && !/will get a button/i.test(await pg.evaluate(() => document.body.innerText)));
+  ok('copy: "Terms of sale" and "Shipping and returns" plain text, no tooltip', (await pg.$$eval('.mfoot .todo', (s) => s.map((x) => x.textContent + '|' + (x.getAttribute('title') || '')).join())) === 'Terms of sale|,Shipping and returns|');
+  ok('copy: no "print file" jargon', !/print file/i.test(await pg.evaluate(() => document.body.innerText)));
+  ok('copy: one age message', /You need to be 18 or over to order\. Younger\? Ask a grown-up to order for you\./.test(HTML) && !/A grown-up pays/.test(HTML));
   await tap(pg, '#useDog');
   ok('pick: five dogs from the save', (await pg.$$eval('[data-pick]', (b) => b.length)) === 5);
   const names = await pg.$$eval('[data-pick] .n', (b) => b.map((x) => x.textContent));
@@ -161,7 +281,7 @@ async function pageChecks() {
   ok('make: preview = PawPrint.print (tee, white, stand, name)', await previewIs(pg, '#pvOn svg[data-pawprint]', R('Mochi'), { product: 'tee', colour: 'white', pose: 'stand', name: true }));
   await tap(pg, '[data-col=navy]'); await tap(pg, '[data-pose=happy]');
   ok('make: preview = PawPrint.print (tee, navy, happy, name)', await previewIs(pg, '#pvOn svg[data-pawprint]', R('Mochi'), { product: 'tee', colour: 'navy', pose: 'happy', name: true }));
-  ok('make: the file view = PawPrint.print', await previewIs(pg, '#pvFlat svg[data-pawprint]', R('Mochi'), { product: 'tee', colour: 'navy', pose: 'happy', name: true }));
+  ok('make: the picture we print = PawPrint.print', await previewIs(pg, '#pvFlat svg[data-pawprint]', R('Mochi'), { product: 'tee', colour: 'navy', pose: 'happy', name: true }) && /The picture we print/.test(await text(pg, '[data-pv=flat]')));
   ok('make: the dark colour says why the patch', !(await pg.$eval('#darkNote', (e) => e.hidden)) && /Navy/.test(await text(pg, '#colName')));
   ok('make: navy sizes are PawPrint\'s', (await pg.$$eval('[data-size]', (b) => b.map((x) => x.dataset.size).join())) === P.TEE_COLOURS.find((c) => c.id === 'navy').sizes.both.join());
   await tap(pg, '#sgBtn'); ok('make: the size guide opens', await pg.$eval('#sizeg', (d) => d.open)); await tap(pg, '#sgClose');
@@ -173,7 +293,7 @@ async function pageChecks() {
   ok('name: letters we cannot draw yet', /letters we can't draw yet/.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled));
   await pg.fill('#nameIn', ''); await pg.waitForTimeout(60);
   ok('name: empty asks kindly', /Type a name, or turn the name off/.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled));
-  await pg.fill('#nameIn', 'shpx'.replace(/[a-z]/g, (ch) => String.fromCharCode((ch.charCodeAt(0) - 84) % 26 + 97))); await pg.waitForTimeout(60);
+  await pg.fill('#nameIn', ROT('shpx')); await pg.waitForTimeout(60);
   ok('name: a word we won\'t print gets "Let\'s try another name"', /Let's try another name/.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled));
   await pg.fill('#nameIn', 'WWWWWWWWWWWWWWWWWWWW'); await pg.waitForTimeout(60);
   ok('name: 20 W fit the tee', !(await pg.$eval('#addBtn', (b) => b.disabled)) && /20 \/ 20/.test(await text(pg, '#nameMsg')));
@@ -184,11 +304,12 @@ async function pageChecks() {
   await tap(pg, '#qm'); await tap(pg, '#qm');
   await tap(pg, '#addBtn');
   ok('basket: the line is in', (await view(pg)) === 'basket' && (await pg.$$eval('.bl', (l) => l.length)) === 1 && /Mochi the Brave/.test(await text(pg, '.bl')));
+  ok('basket: the bag says "Basket, 1 thing"', (await pg.$eval('#bagBtn', (a) => a.getAttribute('aria-label'))) === 'Basket, 1 thing');
   ok('basket: its picture is the print', await previewIs(pg, '.bl svg[data-pawprint]', Object.assign({}, R('Mochi'), { n: 'Mochi the Brave' }), { product: 'tee', colour: 'navy', pose: 'happy', name: true }));
-  ok('basket: kept under its own key', JSON.parse(await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1'))).length === 1);
+  ok('basket: kept under its own key, with no ids', ((b) => b.length === 1 && !('id' in b[0]))(JSON.parse(await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1')))));
   ok('basket: one tee to the US: $4.99 shipping', (await text(pg, '[data-q=ship]')) === '$4.99' && (await text(pg, '[data-q=total]')) === '$31.98');
   ok('basket: the plain free-shipping line', /Orders of \$35 or more ship free\./.test(await text(pg, '#totals')));
-  ok('basket: USD only, with one currency line', /Prices are in US dollars/.test(await text(pg, '#totals')) && !/£|€|GBP/.test(await text(pg, '#totals')));
+  ok('basket: the currency line, as decided', /Prices are in US dollars\. On the payment page you may be offered your own currency\./.test(await text(pg, '#totals')) && !/£|€|GBP|Stripe's rate/.test(await text(pg, '#totals')));
   ok('basket: the policy lines', /can't be returned if you change your mind/.test(await text(pg, '#promise')) && /damaged, misprinted or lost/.test(await text(pg, '#promise')) && /cancel within 1 hour/.test(await text(pg, '#promise')));
   ok('basket: an adult orders', /18 or over/.test(await text(pg, '.grown')));
   // a second line: the mug with the 20-letter name
@@ -202,25 +323,31 @@ async function pageChecks() {
   await tap(pg, '#addBtn');
   ok('basket: mug + tee ship free in the US', (await text(pg, '[data-q=ship]')) === 'Free' && (await text(pg, '[data-q=total]')) === '$46.98');
   ok('basket: separate parcels said', /own parcels/.test(await text(pg, '#totals')));
-  // Ship to: Canada, Hong Kong, the UK (coming soon), back to the US
+  // Ship to: Canada, Hong Kong, the longest name, the UK (coming soon), back to the US
   await setShip(pg, 'CA');
   ok('ship to Canada: $7.99, free from $70', (await text(pg, '[data-q=ship]')) === '$7.99' && /Orders of \$70 or more ship free/.test(await text(pg, '#totals')) && /Canada: \$7\.99/.test(await text(pg, '#shipBox')));
   await setShip(pg, 'HK');
   ok('ship to Hong Kong: $11.99 + $5.99, never free, the tax line', (await text(pg, '[data-q=ship]')) === '$17.98' && !/ship free/.test(await text(pg, '#totals')) && /import tax/.test(await text(pg, '#totals')) && /\$5\.99/.test(await text(pg, '#shipBox')));
-  await setShip(pg, 'VC');
-  ok('ship to the longest name', /St\. Vincent and Grenadines/.test(await text(pg, '#shipBox')));
+  await setShip(pg, 'FK');
+  ok('ship to the longest name', /the Falkland Islands \(Islas Malvinas\)/.test(await text(pg, '#shipBox')));
   await setShip(pg, 'GB');
   ok('ship to the UK: coming soon, no total, no pay', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && !(await pg.$('#qtable')) && await pg.$eval('#payBtn', (b) => b.disabled));
+  ok('ship to the UK: the quote said country_closed in words', /can't send orders to the United Kingdom yet/.test(await text(pg, '#totals')));
   await setShip(pg, 'US');
   ok('ship to is kept', (await pg.evaluate(() => localStorage.getItem('dd_merch_ship_v1'))) === 'US');
   // change a line, qty, remove
   await pg.click('.bl:nth-child(1) [data-chg]'); await pg.waitForTimeout(80);
   ok('change: back on make, with Save changes', (await view(pg)) === 'make' && (await text(pg, '#addBtn')) === 'Save changes');
-  await tap(pg, '[data-col=black]'); await tap(pg, '[data-size=L]'); await tap(pg, '#addBtn');
+  ok('change: the preview is that line\'s print', await previewIs(pg, '#pvOn svg[data-pawprint]', Object.assign({}, R('Mochi'), { n: 'Mochi the Brave' }), { product: 'tee', colour: 'navy', pose: 'happy', name: true }) &&
+    (await pg.$eval('[data-col=navy]', (b) => b.getAttribute('aria-pressed'))) === 'true' && (await pg.$eval('[data-size=M]', (b) => b.getAttribute('aria-pressed'))) === 'true' && (await pg.$eval('#nameIn', (i) => i.value)) === 'Mochi the Brave');
+  await tap(pg, '[data-col=black]'); await tap(pg, '[data-size=L]');
+  ok('change: the preview follows the change', await previewIs(pg, '#pvOn svg[data-pawprint]', Object.assign({}, R('Mochi'), { n: 'Mochi the Brave' }), { product: 'tee', colour: 'black', pose: 'happy', name: true }));
+  await tap(pg, '#addBtn');
   ok('change: the line changed in place', /Black · L/.test(await text(pg, '.bl:nth-child(1)')) && (await pg.$$eval('.bl', (l) => l.length)) === 2);
   await pg.click('.bl:nth-child(2) [data-qp]'); await pg.waitForTimeout(80); await pg.click('.bl:nth-child(2) [data-qp]'); await pg.waitForTimeout(80);
   ok('qty: 3 of the mug, then no more', (await text(pg, '.bl:nth-child(2) output')) === '3' && await pg.$eval('.bl:nth-child(2) [data-qp]', (b) => b.disabled));
   ok('qty: the total follows', (await text(pg, '[data-q=total]')) === money(2699 + 3 * 1999));
+  ok('qty: the bag says "Basket, 4 things"', (await pg.$eval('#bagBtn', (a) => a.getAttribute('aria-label'))) === 'Basket, 4 things');
   await pg.click('.bl:nth-child(1) [data-rm]'); await pg.waitForTimeout(80);
   ok('remove: one line left', (await pg.$$eval('.bl', (l) => l.length)) === 1 && (await text(pg, '[data-q=total]')) === money(3 * 1999));
   // pay never leaves the page
@@ -232,7 +359,7 @@ async function pageChecks() {
   ok('pay: the basket stays', (await pg.$$eval('.bl', (l) => l.length)) === 1);
   // back through the stepper
   await pg.click('#steps li[data-s=pick] button'); await pg.waitForTimeout(80);
-  ok('stepper: a done step goes back', (await view(pg)) === 'pick');
+  ok('stepper: a done step goes back', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');
   const saveAfter = await pg.evaluate(() => localStorage.getItem('pawhaven_proto_v1'));
   ok('the game save is unchanged', saveAfter === SAVE);
   await finish('save flow', t);
@@ -240,7 +367,7 @@ async function pageChecks() {
   // ---- the 6-line and 3-each limits
   const six = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug')).concat([line(R('Pepper'), 'tee', { colour: 'black', size: 'XL' })]);
   t = await open({ save: SAVE, basket: six, path: '/merch/#/basket' }); pg = t.page;
-  ok('six lines: shown', (await pg.$$eval('.bl', (l) => l.length)) === 6);
+  ok('six lines: shown', (await pg.$$eval('.bl', (l) => l.length)) === 6 && (await pg.$eval('#bdrop', (e) => e.hidden)));
   ok('six lines: "Put another dog" is off, and says why', (await pg.$eval('#another', (a) => a.getAttribute('aria-disabled'))) === 'true' && /holds up to 6 things/.test(await text(pg, '#bfull')));
   await toHash(pg, '#/pick'); await pg.evaluate(() => { const b = [...document.querySelectorAll('[data-pick]')].find((x) => /Biscuit/.test(x.textContent)); b.click(); });
   await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=tee]');
@@ -251,34 +378,20 @@ async function pageChecks() {
   ok('3 each: adding the same mug again stops at 3', (await pg.$$eval('.bl', (l) => l.length)) === 6 && (await text(pg, '.bl:nth-child(1) output')) === '3');
   await finish('limits', t);
 
-  // ---- the quote the page shows = the fake api's, to the cent, for 8 baskets
-  const F = MerchFake({ PawPrint: P, catalog: CAT });
-  const D = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map(R);
-  const BASKETS = [
-    ['US', [line(D[0], 'mug')]],
-    ['US', [line(D[1], 'tee', { colour: 'pink', size: 'S' })]],
-    ['JP', [line(D[0], 'mug'), line(D[1], 'tee', { colour: 'navy', size: 'XS', pose: 'sit' })]],
-    ['CA', [line(D[2], 'tee', { size: '3XL', qty: 2 }), line(D[3], 'mug', { pose: 'happy' })]],
-    ['AU', [line(D[4], 'mug', { qty: 3 })]],
-    ['HK', [line(D[0], 'mug'), line(D[1], 'mug', { qty: 2 }), line(D[2], 'tee', { colour: 'black', size: '4XL' })]],
-    ['MX', [line(D[3], 'tee', { colour: 'ice-blue', size: 'XS', name_on: false })]],
-    ['NZ', D.map((d, i) => line(d, i % 2 ? 'tee' : 'mug', { qty: 1 + (i % 3), colour: i % 2 ? 'athletic-heather' : 'white', size: i % 2 ? 'L' : null })).concat([line(D[0], 'tee', { colour: 'soft-cream', size: '2XL' })])]];
-  t = await open({ save: SAVE }); pg = t.page;
-  for (const [i, [cc, lines]] of BASKETS.entries()) {
-    const q = await F.quote({ country: cc, lines: lines.map((l) => ({ recipe: l.recipe, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, qty: l.qty })) });
-    await pg.evaluate(([b, cc]) => { localStorage.setItem('dd_merch_basket_v1', JSON.stringify(b)); localStorage.setItem('dd_merch_ship_v1', cc); }, [lines, cc]);
-    await pg.reload(); await pg.waitForSelector('html.merch-ready'); await toHash(pg, '#/basket'); await pg.waitForSelector('#qtable');
-    const shown = await pg.evaluate(() => ({ sub: document.querySelector('[data-q=subtotal]').textContent, ship: document.querySelector('[data-q=ship]').textContent, total: document.querySelector('[data-q=total]').textContent, lines: [...document.querySelectorAll('[data-lp]')].map((x) => x.textContent) }));
-    const want = { sub: money(q.subtotal), ship: q.ship_fee ? money(q.ship_fee) : 'Free', total: money(q.total), lines: q.lines.map((l) => money(l.total)) };
-    ok('quote ' + (i + 1) + ' (' + cc + ', ' + lines.length + ' lines): the page = the fake api', JSON.stringify(shown) === JSON.stringify(want), { shown, want });
-  }
-  await finish('quotes', t);
+  await handChecks();
+  await staleChecks();
+  await nonameChecks();
+  await errorChecks();
+  await orderChecks();
+  await tabChecks();
+  await routeChecks();
+  await liveChecks();
 
   // ---- dogs from a link (no save): this tab only, the hash turns into the route
   const link = '#p=' + P.merchEncode([R('Biscuit'), R('Bo')]);
   t = await open({ path: '/merch/' + link }); pg = t.page;
   ok('link: two dogs', (await view(pg)) === 'pick' && (await pg.$$eval('[data-pick]', (b) => b.length)) === 2 && /2 dogs came with your link/.test(await text(pg, '.from')));
-  ok('link: the hash became the route', (await pg.evaluate(() => location.hash)) === '#/pick');
+  ok('link: the hash became the route', (await hash(pg)) === '#/pick');
   ok('link: kept for this tab only', (await pg.evaluate(() => !!sessionStorage.getItem('dd_merch_link_v1') && !localStorage.getItem('dd_merch_link_v1'))));
   await pg.reload(); await pg.waitForSelector('html.merch-ready');
   ok('link: still there after a reload', (await pg.$$eval('[data-pick]', (b) => b.length)) === 2);
@@ -298,9 +411,11 @@ async function pageChecks() {
   await tap(pg, '#readyPick [data-dog]');
   ok('none: a ready-made dog goes to the thing', (await view(pg)) === 'thing');
   await tap(pg, '.prodb[data-p=tee]');
-  ok('none: a ready-made dog has its name off', (await pg.$eval('#nameTog', (b) => b.getAttribute('aria-checked'))) === 'false');
+  ok('none: a ready-made dog has its name off', (await pg.$eval('#nameTog', (b) => b.getAttribute('aria-checked'))) === 'false' && /prints without a name/.test(await text(pg, '#nameMsg')));
   const ready = await pg.evaluate(() => window.__merch.READY[0].recipe);
   ok('none: preview = PawPrint.print (ready-made Lab)', await previewIs(pg, '#pvOn svg[data-pawprint]', ready, { product: 'tee', colour: 'white', pose: 'stand', name: false }));
+  await tap(pg, '#addBtn');
+  ok('none: the basket says "A ready-made"', /A ready-made Labrador Retriever/.test(await text(pg, '.bl')));
   await finish('no dogs', t);
 
   // ---- ?demo=1: the rest of the flow, marked test
@@ -312,15 +427,272 @@ async function pageChecks() {
   ok('demo: pay still did not navigate', t.navs.length === navsD);
   await tap(pg, '#demoBtn'); await pg.waitForSelector('.testtag');
   ok('demo: the thank-you page, marked test', (await view(pg)) === 'order' && /Test order/.test(await text(pg, '.testtag')) && /Thank you! Your order is in/.test(await text(pg, '#orderBody')));
-  ok('demo: the cancel line is a plain time', /We'll start printing at \d\d:\d\d/.test(await text(pg, '.cancelbox')) && !(await text(pg, '.cancelbox')).match(/\d+:\d\d:\d\d/));
+  ok('demo: the cancel line is a plain time', /We'll start printing at \d\d:\d\d\. If you change your mind/.test(await text(pg, '.cancelbox')) && !(await text(pg, '.cancelbox')).match(/\d+:\d\d:\d\d/));
   ok('demo: the order shows its total', /\$24\.98/.test(await text(pg, '#orderBody')));
+  ok('demo: no "Ship to" picker on the order page', !(await pg.isVisible('#shipSel')));
   ok('demo: the basket is empty after it', (await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1'))) === null);
   await tap(pg, '#cancelBtn'); await tap(pg, '#cancelYes'); await pg.waitForTimeout(150);
-  ok('demo: cancel in the hour', /Your order is cancelled/.test(await text(pg, '#orderBody')));
+  ok('demo: cancel in the hour', /Your order is cancelled/.test(await text(pg, '#orderBody')) && !(await pg.$('.cancelbox')));
   await finish('demo', t);
 }
 
-// ================= fit: every step at three sizes =================
+// ---- the hand table on the page: what it shows = the hand table, for every basket
+async function handChecks() {
+  for (const cv of Object.keys(CATS)) {
+    const t = await open({ save: SAVE, catalog: cv === 'real' ? null : CATS[cv] }), pg = t.page;
+    for (const [i, [cc, c2, lines, sub, ship, total]] of HAND.entries()) {
+      if (c2 !== cv) continue;
+      await pg.evaluate(([b, cc]) => { localStorage.setItem('dd_merch_basket_v1', JSON.stringify(b)); localStorage.setItem('dd_merch_ship_v1', cc); location.hash = '#/basket'; }, [lines, cc]);
+      await pg.reload(); await pg.waitForSelector('html.merch-ready'); await pg.waitForSelector('#qtable');
+      const s = await pg.evaluate(() => ({ sub: document.querySelector('[data-q=subtotal]').textContent, ship: document.querySelector('[data-q=ship]').textContent, total: document.querySelector('[data-q=total]').textContent, n: document.querySelectorAll('.bl').length, notes: document.querySelector('#totals').textContent }));
+      const want = { sub: money(sub), ship: ship ? money(ship) : 'Free', total: money(total), n: lines.length };
+      ok('hand ' + (i + 1) + ' (' + cc + ', ' + cv + ', ' + lines.length + ' lines): the page = the hand table', s.sub === want.sub && s.ship === want.ship && s.total === want.total && s.n === want.n, { s, want });
+      if (cc === 'GB') ok('hand ' + (i + 1) + ': UK prices include VAT, said', /Prices include VAT\./.test(s.notes));
+      if (cc === 'VC') ok('hand ' + (i + 1) + ': everywhere else, the import tax line', /import tax/.test(s.notes) && !/ship free/.test(s.notes));
+    }
+    await finish('hand table ' + cv, t);
+  }
+}
+
+// ---- a stale stored basket (an old catalog, an old build) and a hostile one (the storage is shared with /play/)
+async function staleChecks() {
+  const good = line(R('Biscuit'), 'mug'), raw = (r, product, o) => Object.assign(line(r, product), o);
+  const stale = [good, raw(R('Mochi'), 'tee', { pose: 'walk' }), raw(R('Mochi'), 'tee', { colour: 'mustard' }), raw(R('Mochi'), 'stickers', { size: null }), raw(R('Mochi'), 'tee', { size: '5XL' }),
+    raw(R('Pepper'), 'tee', { qty: 7 }), raw(R('Mochi'), 'mug', { qty: 0 }), raw(R('Bo'), 'mug', { recipe: 'AAAAAAAA' }),
+    raw(Object.assign({}, R('Pepper'), { n: 'WWWWWWWWWWWWWWWWWWWW' }), 'mug', { name_on: true }), raw(R('Bo'), 'tee', { qty: 2.6 }), raw(R('Bo'), 'mug', { size: 'M' }), null, 'a line', 42];
+  let t = await open({ save: SAVE, basket: stale, path: '/merch/#/basket' }), pg = t.page;
+  ok('stale: the good lines stay, the rest go', (await pg.$$eval('.bl', (l) => l.length)) === 4, await pg.$$eval('.bl', (l) => l.map((x) => x.textContent.slice(0, 40))));
+  ok('stale: said kindly, with the count', /^10 things in your basket can't be made any more, so we took them out\.$/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
+  ok('stale: qty 7 became 3, 0 became 1, 2.6 became 3', (await pg.$$eval('.bl output', (o) => o.map((x) => x.textContent).join())) === '1,3,1,3');
+  ok('stale: the totals show', /\$/.test(await text(pg, '[data-q=total]')) && !(await pg.$eval('#payBtn', (b) => b.disabled)));
+  ok('stale: the bag says 8', (await text(pg, '#bagN')) === '8');
+  const kept = JSON.parse(await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1')));
+  ok('stale: the stored basket is written back clean', kept.length === 4 && kept.every((l) => !('id' in l) && l.qty >= 1 && l.qty <= 3) && !JSON.stringify(kept).includes('walk'));
+  await pg.click('.bl:nth-child(1) [data-rm]'); await settle(pg);
+  ok('stale: Remove works, and the note goes', (await pg.$$eval('.bl', (l) => l.length)) === 3 && (await pg.$eval('#bdrop', (e) => e.hidden)));
+  await finish('stale basket', t);
+  t = await open({ save: SAVE, basket: [good, raw(R('Mochi'), 'tee', { colour: 'mustard' })], path: '/merch/#/basket' }); pg = t.page;
+  ok('stale: one line dropped says "One thing"', (await text(pg, '#bdrop')) === "One thing in your basket can't be made any more, so we took it out.");
+  await finish('stale basket (one)', t);
+  const eight = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug')).concat(['Biscuit', 'Mochi', 'Bo'].map((n) => line(R(n), 'tee')));
+  t = await open({ save: SAVE, basket: eight, path: '/merch/#/basket' }); pg = t.page;
+  ok('stale: 8 lines become 6, 2 dropped', (await pg.$$eval('.bl', (l) => l.length)) === 6 && /^2 things/.test(await text(pg, '#bdrop')));
+  await finish('stale basket (8 lines)', t);
+  t = await open({ save: SAVE, basket: '{not json', path: '/merch/#/basket' }); pg = t.page;
+  ok('stale: an unreadable basket starts empty, said kindly', /Your basket is empty/.test(await text(pg, '#blines')) && /can't be made any more/.test(await text(pg, '#bdrop')));
+  await finish('stale basket (unreadable)', t);
+
+  // hostile: script in id, qty, name, colour, product; the "Ship to" key too
+  const X = (n) => '"><img src=/x' + n + ' onerror="window.__pwned=' + n + '"><script>window.__pwned=' + n + '</script>';
+  const hostile = [Object.assign(line(R('Mochi'), 'mug', { qty: 2 }), { id: X(1), who: X(2), name: X(3) }), Object.assign(line(R('Biscuit'), 'tee'), { colour: X(4) }), Object.assign(line(R('Bo'), 'mug'), { qty: X(5) }),
+    Object.assign(line(R('Bo'), 'tee'), { size: X(6) }), Object.assign(line(R('Bo'), 'mug'), { pose: X(7) }), Object.assign(line(R('Bo'), 'mug'), { product: '__proto__' }), Object.assign(line(R('Bo'), 'mug'), { name_on: X(8) }),
+    Object.assign(line(R('Bo'), 'mug'), { recipe: X(9) }), { __proto__: { recipe: 1 } }];
+  t = await open({ save: SAVE, basket: hostile, ship: X(10), path: '/merch/#/basket' }); pg = t.page;
+  await settle(pg);
+  ok('hostile: nothing ran', (await pg.evaluate(() => window.__pwned)) === undefined && t.dialogs.length === 0);
+  ok('hostile: no element was injected', (await pg.$$eval('main img, main script', (x) => x.filter((e) => !e.closest('header')).length)) === 0);
+  ok('hostile: one good line kept, its id our own', (await pg.$$eval('.bl', (l) => l.map((x) => x.dataset.line))).every((id) => /^l[0-9a-z]+$/.test(id)) && (await pg.$$eval('.bl', (l) => l.length)) === 1);
+  ok('hostile: the stored game name shows as text', (await text(pg, '.bl .facts li')).includes('"><img src=/x2'));
+  ok('hostile: "Ship to" fell back to a real country', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
+  ok('hostile: the rest dropped, said', /^7 things/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
+  await finish('hostile basket', t);
+}
+
+// ---- S1: a game name the print can't draw keeps its own name on the card and in the basket; the name print is off, with one kind line
+async function nonameChecks() {
+  const t = await open({ save: SAVE_NONAME, path: '/merch/#/pick' }), pg = t.page;
+  const names = await pg.$$eval('[data-pick] .n', (b) => b.map((x) => x.textContent));
+  ok('no-print name: the cards keep the game names', names.join('|') === ['ポチ', 'Pochi 🐶', ROT('shpx'), 'Daisy'].join('|'), names);
+  ok('no-print name: the heading says the name', (await pg.click('#pickNext').then(() => settle(pg)).then(() => text(pg, '#h-thing'))).includes('ポチ'));
+  await tap(pg, '.prodb[data-p=mug]');
+  ok('no-print name: the name print is off, with one kind line', (await pg.$eval('#nameTog', (b) => b.getAttribute('aria-checked'))) === 'false' && (await text(pg, '#nameMsg')) === NOSAY && !(await pg.$eval('#addBtn', (b) => b.disabled)));
+  ok('no-print name: the preview has no name', await previewIs(pg, '#pvOn svg[data-pawprint]', P.merchFromSave(SAVE_NONAME, { today: new Date() }).dogs[0].recipe, { product: 'mug', colour: 'white', pose: 'stand', name: false }));
+  await tap(pg, '#nameTog');
+  ok('no-print name: turned on, it asks for one we can draw', /Type a name, or turn the name off/.test(await text(pg, '#nameMsg')) && (await pg.$eval('#nameIn', (i) => i.value)) === '');
+  await tap(pg, '#nameTog'); await tap(pg, '#addBtn');
+  ok('no-print name: the basket label keeps the game name', (await text(pg, '.bl .facts li')) === 'ポチ, Shiba Inu' && /no name/.test(await text(pg, '.bl')));
+  await toHash(pg, '#/pick'); await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Daisy/.test(x.textContent)).click(); });
+  await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=tee]');
+  ok('no-print name: a name it can draw is still on', (await pg.$eval('#nameTog', (b) => b.getAttribute('aria-checked'))) === 'true');
+  await tap(pg, '#nameTog');
+  ok('no-print name: a drawable name turned off says the plain line', /The tee prints without a name/.test(await text(pg, '#nameMsg')));
+  await tap(pg, '#addBtn');
+  ok('no-print name: Daisy, name off, still says Daisy', (await text(pg, '.bl:nth-child(2) .facts li')) === 'Daisy, Beagle');
+  await pg.click('.bl:nth-child(1) [data-chg]'); await settle(pg);
+  ok('no-print name: Change keeps the kind line', (await text(pg, '#nameMsg')) === NOSAY);
+  await finish('no-print name', t);
+}
+
+// ---- S2, S3: every error code in plain words; a new price is asked about again; one nonce per basket and country
+const QUOTE_ERR = [['bad_line', /needs a look \(marked below\): tap Change on it/, 2], ['bad_name', /One name in your basket \(marked below\) can't print as it is/, 1], ['too_many', /holds up to 6 things/],
+  ['bad_qty', /up to 3 of each/, 1], ['bad_country', /don't know that place/], ['country_closed', /can't send orders to the United States yet/], ['variant_off', /can't be made just now/, 2],
+  ['sold_out_today', /until tomorrow/], ['merch_closed', /not open yet/], ['slow_down', /Wait a minute, then try again/], ['busy', /a little busy just now/], ['offline', /couldn't reach the shop/]];
+const PAY_ERR = [['art_changed', /We've improved the drawing since you opened this page\. Reload to see your dog as it will print\./], ['sold_out_today', /until tomorrow/], ['variant_off', /can't be made just now/, 1],
+  ['slow_down', /Wait a minute/], ['busy', /a little busy/], ['cant_make', /can't make this order just now, and nothing was paid/], ['bad_qty', /up to 3 of each/, 2], ['too_many', /holds up to 6 things/],
+  ['country_closed', /can't send orders to the United States yet/], ['bad_line', /needs a look/, 2], ['bad_name', /can't print as it is/, 1], ['not_available', /can't take this order here/], ['no_agree', /Reload the page/]];
+async function errorChecks() {
+  const t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/#/basket' }), pg = t.page;
+  await pg.waitForSelector('#qtable');
+  await pg.evaluate(() => { window.__q = window.__merch.api.quote; window.__c = window.__merch.api.checkout; });
+  for (const [code, re, ln] of QUOTE_ERR) {
+    await pg.evaluate(([code, ln]) => { window.__merch.api.quote = () => Promise.reject({ status: 400, error: code, line: ln }); return window.__merch.requote(); }, [code, ln || 0]); await settle(pg);
+    const s = await text(pg, '#totals .qerr'), marked = await pg.$$eval('.bl', (l) => l.map((x) => x.classList.contains('needs')));
+    ok('quote error ' + code + ': its own words', re.test(s) && !/couldn't work out the total/.test(s), s);
+    ok('quote error ' + code + ': ' + (ln ? 'line ' + ln + ' marked' : 'no line marked'), marked.every((m, i) => m === (i + 1 === ln)) && (ln ? /This one needs a look/.test(await text(pg, '.bl:nth-child(' + ln + ')')) : true), marked);
+    ok('quote error ' + code + ': no total, no pay', !(await pg.$('#qtable')) && await pg.$eval('#payBtn', (b) => b.disabled));
+  }
+  await pg.evaluate(() => { window.__merch.api.quote = window.__q; return window.__merch.requote(); }); await pg.waitForSelector('#qtable');
+  for (const [code, re, ln] of PAY_ERR) {
+    await pg.evaluate(([code, ln]) => { window.__merch.api.checkout = () => Promise.reject({ status: 409, error: code, line: ln }); }, [code, ln || 0]);
+    await tap(pg, '#payBtn'); await settle(pg);
+    const s = await text(pg, '#payErr');
+    ok('pay error ' + code + ': its own words', re.test(s) && !(await pg.$eval('#payErr', (e) => e.hidden)) && (await pg.$eval('#closed', (e) => e.hidden)), s);
+    if (ln) ok('pay error ' + code + ': line ' + ln + ' marked', (await pg.$$eval('.bl', (l) => l.map((x) => x.classList.contains('needs')))).every((m, i) => m === (i + 1 === ln)));
+    if (code === 'art_changed') ok('pay error art_changed: a Reload button', !!(await pg.$('#payErr [data-reload]')) && (await text(pg, '#payErr [data-reload]')) === 'Reload');
+  }
+  // price_changed: the new quote is shown and asked about again; checkout is not called again by itself
+  const q0 = await pg.evaluate(() => window.__merch.st.quote);
+  await pg.evaluate((q0) => { const q = JSON.parse(JSON.stringify(q0)); q.lines[0].unit += 100; q.lines[0].total += 100; q.subtotal += 100; q.total += 100; window.__calls = 0;
+    window.__merch.api.checkout = () => { window.__calls++; return Promise.reject({ status: 409, error: 'price_changed', quote: q }); }; }, q0);
+  await tap(pg, '#payBtn'); await settle(pg);
+  ok('price_changed: the new total shows, and it asks again', (await text(pg, '[data-q=total]')) === money(q0.total + 100) && new RegExp('it\'s now \\' + money(q0.total + 100) + '\\. Check it above, then tap Pay again').test(await text(pg, '#payErr')), await text(pg, '#payErr'));
+  await pg.waitForTimeout(300);
+  ok('price_changed: never paid by itself (one checkout call)', (await pg.evaluate(() => window.__calls)) === 1 && (await pg.$eval('#closed', (e) => e.hidden)));
+  // merch_closed is the "not open yet" card
+  await pg.evaluate(() => { window.__merch.api.checkout = window.__c; return window.__merch.requote(); }); await pg.waitForSelector('#qtable');
+  await tap(pg, '#payBtn'); await settle(pg);
+  ok('pay merch_closed: the "not open yet" card, no error box', !(await pg.$eval('#closed', (e) => e.hidden)) && (await pg.$eval('#payErr', (e) => e.hidden)));
+  // S3: one nonce for one basket to one country, kept on a retry
+  await pg.evaluate(() => { window.__n = []; window.__merch.api.checkout = (b) => { window.__n.push(b.nonce); return Promise.reject({ status: 503, error: 'busy' }); }; });
+  await tap(pg, '#payBtn'); await settle(pg); await tap(pg, '#payBtn'); await settle(pg);
+  await pg.click('.bl:nth-child(1) [data-qp]'); await pg.waitForSelector('#qtable'); await settle(pg);
+  await tap(pg, '#payBtn'); await settle(pg);
+  await setShip(pg, 'CA'); await pg.waitForSelector('#qtable'); await settle(pg); await tap(pg, '#payBtn'); await settle(pg);
+  await setShip(pg, 'US'); await pg.waitForSelector('#qtable'); await settle(pg);
+  await pg.click('.bl:nth-child(1) [data-qm]'); await pg.waitForSelector('#qtable'); await settle(pg); await tap(pg, '#payBtn'); await settle(pg);
+  const n = await pg.evaluate(() => window.__n);
+  ok('nonce: the same on a retry', n.length === 5 && n[0] === n[1] && /^[0-9a-f]{24}$/.test(n[0]), n);
+  ok('nonce: new when the basket or the country changes', n[2] !== n[1] && n[3] !== n[2] && n[4] !== n[3], n);
+  // sold out for today in the catalog: said, and no pay
+  await finish('errors', t);
+  const t2 = await open({ save: SAVE, basket: NORMAL3, ship: 'US', path: '/merch/#/basket', catalog: Object.assign(clone(CAT), { sold_out_today: true }) });
+  await t2.page.waitForSelector('#qtable');
+  ok('sold out today (catalog): said, Pay off', /until tomorrow/.test(await text(t2.page, '#totals')) && await t2.page.$eval('#payBtn', (b) => b.disabled));
+  await finish('sold out today', t2);
+}
+
+// ---- S4, S5: the order page needs no recipe, follows can_cancel and cancel_until, and shows the order's own dates
+async function orderChecks() {
+  const t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?demo=1#/basket' }), pg = t.page;
+  await pg.waitForSelector('#qtable'); await tap(pg, '#payBtn'); await tap(pg, '#demoBtn'); await pg.waitForSelector('.testtag');
+  const id = (await hash(pg)).replace('#/order/', '');
+  const edit = async (f) => { await pg.evaluate(([id, f]) => { const k = 'dd_merch_test_orders_v1', all = JSON.parse(sessionStorage.getItem(k)); new Function('o', f)(all[id]); sessionStorage.setItem(k, JSON.stringify(all)); }, [id, f]); await pg.reload(); await pg.waitForSelector('.testtag'); await settle(pg); };
+  const paid = new Date(2026, 10, 20, 10, 5).getTime();
+  // after the hour: no cancel line, "Printing has started."
+  await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + ';');
+  ok('order after the hour: "Printing has started.", no cancel', (await text(pg, '.cancelbox')) === 'Printing has started.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')));
+  ok('order: the date it was received', /Order received 20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
+  ok('order after the hour: being printed is now', (await pg.$eval('.track li:nth-child(2)', (l) => l.className)) === 'now' && (await pg.$eval('.track li:nth-child(1)', (l) => l.className)) === 'done');
+  // the server cleared the recipes (after 24 months): the page uses the names, draws no dog, and does not break
+  await edit('o.lines.forEach(function (l) { delete l.recipe; }); o.lines[1].name = "<img src=/xo onerror=window.__pwned=1>";');
+  ok('order without recipes: the lines and names still show', (await pg.$$eval('#orderBody .bl', (l) => l.length)) === 2 && /Mochi/.test(await text(pg, '#orderBody .bl:nth-child(1)')) && (await text(pg, '#orderBody .bl:nth-child(2) .facts li')).startsWith('<img'));
+  ok('order without recipes: no dog drawn, nothing ran', !(await pg.$('#orderBody .thanks svg')) && (await pg.evaluate(() => window.__pwned)) === undefined && !(await pg.$('#orderBody img')));
+  // shipped and arrived: the parcel's dates and its tracking link
+  await edit('o.status = "shipped"; o.parcels = [{ id: "p1", product: "mug", carrier: "USPS", tracking_url: "https://tracking.example/1", shipped_at: ' + new Date(2026, 10, 22).getTime() + ', delivered_at: null }];');
+  ok('order shipped: "Sent 22 Nov 2026", a tracking link, no cancel box', /On its way Sent 22 Nov 2026\. Track it/.test(await text(pg, '.track li:nth-child(3)')) && (await pg.$eval('.track li:nth-child(3)', (l) => l.className)) === 'now' && !(await pg.$('.cancelbox')));
+  await edit('o.parcels[0].delivered_at = ' + new Date(2026, 10, 25).getTime() + ';');
+  ok('order arrived: its date', /Arrived 25 Nov 2026/.test(await text(pg, '.track li:nth-child(4)')) && (await pg.$eval('.track li:nth-child(4)', (l) => l.className)) === 'now');
+  // inside the hour, from the server: a time and the button
+  await edit('o.status = "paid"; o.parcels = []; o.cancel_until = Date.now() + 600000;');
+  ok('order in the hour: the time and the button', /We'll start printing at \d\d:\d\d\. If you change your mind before then, you can cancel here\./.test(await text(pg, '.cancelbox')) && !!(await pg.$('#cancelBtn')));
+  await edit('o.can_cancel_override = 1; o.cancel_until = Date.now() - 1000;');
+  ok('order: the button follows can_cancel from the server', !(await pg.$('#cancelBtn')) && (await text(pg, '.cancelbox')) === 'Printing has started.');
+  await finish('order page', t);
+}
+
+// ---- S6: two tabs of the same browser
+async function tabChecks() {
+  const A = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/#/basket' });
+  const B = await tab(A.ctx, '/merch/#/basket');
+  await A.page.waitForSelector('#qtable'); await B.page.waitForSelector('#qtable');
+  // B changes line 1 while A removes it: B's change comes back as a new line, nothing is lost
+  await B.page.click('.bl:nth-child(1) [data-chg]'); await settle(B.page);
+  await A.page.click('.bl:nth-child(1) [data-rm]'); await settle(A.page); await settle(B.page);
+  ok('two tabs: B sees the line gone (Add, not Save)', (await text(B.page, '#addBtn')) === 'Add to basket' && (await text(B.page, '#bagN')) === '1');
+  await tap(B.page, '[data-col=black]'); await tap(B.page, '#addBtn'); await settle(B.page);
+  ok('two tabs: B\'s change is added as a new line', (await B.page.$$eval('.bl', (l) => l.length)) === 2 && /Black · M/.test(await text(B.page, '#blines')));
+  await settle(A.page);
+  ok('two tabs: A shows B\'s basket', (await A.page.$$eval('.bl', (l) => l.length)) === 2 && /Black · M/.test(await text(A.page, '#blines')));
+  // B changes a line while A only bumps its qty: still the same line, "Save changes" changes it in place
+  await B.page.click('.bl:nth-child(1) [data-chg]'); await settle(B.page);
+  await A.page.click('.bl:nth-child(1) [data-qp]'); await settle(A.page); await settle(B.page);
+  ok('two tabs: a qty change elsewhere keeps the line ("Save changes")', (await text(B.page, '#addBtn')) === 'Save changes');
+  await tap(B.page, '[data-pose=sit]'); await tap(B.page, '#addBtn'); await settle(B.page);
+  ok('two tabs: changed in place', (await B.page.$$eval('.bl', (l) => l.length)) === 2);
+  await finish('two tabs B', B, { keep: true });
+  await finish('two tabs A', A);
+}
+
+// ---- S7: the address always says the step on show
+async function routeChecks() {
+  let t = await open({ save: SAVE, path: '/merch/#/make' }), pg = t.page;
+  ok('deep link #/make with nothing chosen: the first step that can show, and the address says so', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');
+  await finish('deep make', t);
+  t = await open({ save: SAVE, path: '/merch/#/thing' }); pg = t.page;
+  ok('deep link #/thing with no dog: pick, #/pick', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');
+  await toHash(pg, '#/nowhere');
+  ok('an unknown step: home, #/', (await view(pg)) === 'home' && (await hash(pg)) === '#/');
+  await toHash(pg, '#/basket/zzz');
+  ok('a step with junk after it: the step, its own address', (await view(pg)) === 'basket' && (await hash(pg)) === '#/basket');
+  await finish('deep links', t);
+  t = await open({ save: SAVE, path: '/merch/' }); pg = t.page;
+  await tap(pg, '#useDog'); await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=mug]'); await tap(pg, '#addBtn');
+  ok('flow: on the basket', (await view(pg)) === 'basket' && (await hash(pg)) === '#/basket');
+  await pg.goBack(); await settle(pg);
+  ok('Back after Add: the step shown is in the address', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing');
+  await pg.goBack(); await settle(pg);
+  ok('Back again: thing', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing');
+  await pg.goBack(); await settle(pg);
+  ok('Back again: pick', (await view(pg)) === 'pick' && (await hash(pg)) === '#/pick');
+  await pg.goForward(); await settle(pg); await pg.goForward(); await settle(pg);
+  ok('Forward: thing', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing');
+  await pg.goForward(); await settle(pg);
+  ok('Forward: the basket', (await view(pg)) === 'basket' && (await hash(pg)) === '#/basket');
+  // the footer "Questions" from any step lands on the questions
+  for (const h of ['#/basket', '#/pick', '#/']) {
+    await toHash(pg, h); await pg.evaluate(() => window.scrollTo(0, 0));
+    await pg.click('#faqlink'); await settle(pg);
+    const r = await pg.evaluate(() => { const b = document.querySelector('#faq').getBoundingClientRect(); return { top: b.top, h: innerHeight }; });
+    ok('footer Questions from ' + h + ': the questions in view, #/faq', (await view(pg)) === 'home' && (await hash(pg)) === '#/faq' && r.top >= 0 && r.top < r.h * 0.5, r);
+  }
+  await pg.evaluate(() => window.scrollTo(0, 0)); await pg.click('#faqlink'); await settle(pg);
+  ok('footer Questions again on #/faq: still lands there', (await pg.evaluate(() => document.querySelector('#faq').getBoundingClientRect().top)) < 300);
+  await finish('routes', t);
+  // a small phone: "Make it yours" opens with its preview in view
+  for (const vp of [[360, 640], [390, 844]]) {
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp }); pg = t.page;
+    await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=tee]'); await settle(pg);
+    const r = await pg.evaluate(() => { const b = document.querySelector('#preview').getBoundingClientRect(), h = document.querySelector('#sitehead').getBoundingClientRect(); return { top: b.top, bottom: b.bottom, head: h.bottom, vh: innerHeight }; });
+    ok('make at ' + vp.join('x') + ': the preview in view', r.top >= r.head - 2 && Math.min(r.bottom, r.vh) - r.top >= Math.min(250, r.bottom - r.top), r);
+    await finish('make view ' + vp.join('x'), t);
+  }
+}
+
+// ---- M2: the page against a live-style order server that answers exactly the 6.3 fields (MERCH_API set; ?demo=1 is then ignored)
+async function liveChecks() {
+  const t = await open({ save: SAVE, basket: NORMAL3, ship: 'CA', path: '/merch/?demo=1#/basket', live: true }), pg = t.page;
+  await pg.waitForSelector('#qtable');
+  ok('live api: the catalog and the quote came over HTTP', liveLog.includes('GET /live/merch/catalog') && liveLog.includes('POST /live/merch/quote'));
+  ok('live api: names, totals and words from codes', (await pg.$eval('#shipSel', (s) => s.selectedOptions[0].textContent)) === 'Canada' && (await text(pg, '[data-q=total]')) === money(7397) && (await text(pg, '[data-q=ship]')) === 'Free' && /own parcels/.test(await text(pg, '#totals')));
+  await tap(pg, '#payBtn'); await settle(pg);
+  ok('live api: checkout 503 merch_closed is the "not open yet" card', liveLog.includes('POST /live/merch/checkout') && !(await pg.$eval('#closed', (e) => e.hidden)));
+  ok('live api: no test-order button, even with ?demo=1', await pg.$eval('#demoRow', (e) => e.hidden));
+  await setShip(pg, 'GB'); await settle(pg);
+  ok('live api: a soon country is said kindly', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && /can't send orders to the United Kingdom yet/.test(await text(pg, '#totals')));
+  await finish('live api', t);
+}
+
+// ================= fit: every step at three sizes, and contrast =================
 const STEPS = [
   ['home', '/merch/', []],
   ['pick', '/merch/#/pick', []],
@@ -330,35 +702,57 @@ const STEPS = [
   ['basket', '/merch/#/basket', []],
   ['closed', '/merch/#/basket', ['#payBtn']],
   ['order', '/merch/?demo=1#/basket', ['#payBtn', '#demoBtn']]];
+const INK = 'rgb(91, 61, 50)';
+// the contrast of every piece of text against what is behind it (WCAG 2), and the colour of the money and legal lines
+function measure() {
+  const out = { wide: document.documentElement.scrollWidth - document.documentElement.clientWidth, small: [], spill: [], low: [], notInk: [] };
+  const vis = (e) => { const b = e.getBoundingClientRect(), s = getComputedStyle(e); return b.width > 0 && b.height > 0 && s.visibility !== 'hidden' && !e.closest('[hidden],dialog:not([open])'); };
+  document.querySelectorAll('main button, main a, main select, main input, main summary').forEach((e) => {
+    if (!vis(e)) return; const b = e.getBoundingClientRect();
+    if (b.height < 43.5 || b.width < 43.5) out.small.push((e.id || e.className || e.tagName) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height) + ' "' + e.textContent.trim().slice(0, 20) + '"');
+  });
+  document.querySelectorAll('.card, .dogb, .prodb, .bl, .promise, .grown, .paybar, .from, .how3 li, .shopbar, .testbar, .eta, .ready button, .dropnote, .qerr').forEach((c) => {
+    if (!vis(c)) return; const cb = c.getBoundingClientRect();
+    c.querySelectorAll('*').forEach((k) => { if (!vis(k) || k.closest('svg')) return; const b = k.getBoundingClientRect(); if (b.right > cb.right + 1.5 || b.left < cb.left - 1.5) out.spill.push((c.className || c.tagName) + ' > ' + (k.className || k.tagName) + ' ' + Math.round(b.left) + '-' + Math.round(b.right) + ' in ' + Math.round(cb.left) + '-' + Math.round(cb.right)); });
+  });
+  const rgb = (s) => { const m = /rgba?\(([^)]+)\)/.exec(s); if (!m) return null; const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
+  const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const L = (c) => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+  const over = (top, bot) => [0, 1, 2].map((i) => top[i] * top[3] + bot[i] * (1 - top[3])).concat([1]);
+  const bgOf = (e) => { const layers = []; for (let x = e; x; x = x.parentElement) { const c = rgb(getComputedStyle(x).backgroundColor); if (c && c[3] > 0) { layers.push(c); if (c[3] >= 1) break; } } let b = [255, 251, 243, 1]; for (let i = layers.length - 1; i >= 0; i--) b = over(layers[i], b); return b; };
+  document.querySelectorAll('main *, footer *').forEach((e) => {
+    if (!vis(e) || e.closest('svg') || e.closest('button:disabled,[aria-disabled="true"],option,select,.testtag,.testbar')) return;
+    if (![...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return;
+    const s = getComputedStyle(e), fg = rgb(s.color); let op = 1; for (let x = e; x; x = x.parentElement) op *= +getComputedStyle(x).opacity;
+    const bg = bgOf(e), f2 = over([fg[0], fg[1], fg[2], fg[3] * op], bg), a = L(f2), b = L(bg), r = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    if (r < 4.5) out.low.push((e.id || e.className || e.tagName) + ' ' + r.toFixed(2) + ' "' + e.textContent.trim().slice(0, 24) + '"');
+  });
+  document.querySelectorAll('#totals td, #totals .small2, .lp, #amt, #amt small, .trio small, .prodb .p, .small2, .mfoot .todo, .mfoot .small, #orderBody .lines td').forEach((e) => {
+    if (vis(e) && getComputedStyle(e).color !== 'rgb(91, 61, 50)') out.notInk.push((e.id || e.className || e.tagName) + ' ' + getComputedStyle(e).color);
+  });
+  for (const k of ['small', 'spill', 'low', 'notInk']) out[k] = out[k].slice(0, 6);
+  return out;
+}
 async function fitChecks() {
   const six = [line(R('Sir Wigglesworth III'), 'tee', { colour: 'navy', size: '2XL', pose: 'happy', qty: 3 }), line(R('Mochi'), 'mug', { pose: 'sit' }), line(R('Bo'), 'tee', { colour: 'black', size: 'XS', pose: 'sit' }),
     line(R('Biscuit'), 'mug', { qty: 2 }), line(R('Pepper'), 'tee', { colour: 'ice-blue', size: 'L' }), line(R('Sir Wigglesworth III'), 'mug', { pose: 'happy' })];
   for (const vp of [[360, 640], [390, 844], [1280, 720]]) {
     for (const [name, p, clicks] of STEPS) {
-      const t = await open({ save: SAVE, basket: six, ship: 'VC', path: p, vp });
+      const t = await open({ save: SAVE, basket: six, ship: 'FK', path: p, vp });
       const pg = t.page;
       for (const c of clicks) { await pg.click(c); await pg.waitForTimeout(80); }
       if (name === 'order') await pg.waitForSelector('.testtag');
       await pg.evaluate(() => window.scrollTo(0, 0));
-      const r = await pg.evaluate(() => {
-        const out = { wide: document.documentElement.scrollWidth - document.documentElement.clientWidth, small: [], spill: [] };
-        const vis = (e) => { const b = e.getBoundingClientRect(), s = getComputedStyle(e); return b.width > 0 && b.height > 0 && s.visibility !== 'hidden' && !e.closest('[hidden],dialog:not([open])'); };
-        document.querySelectorAll('main button, main a, main select, main input, main summary').forEach((e) => {
-          if (!vis(e)) return; const b = e.getBoundingClientRect();
-          if (b.height < 43.5 || b.width < 43.5) out.small.push((e.id || e.className || e.tagName) + ' ' + Math.round(b.width) + 'x' + Math.round(b.height) + ' "' + e.textContent.trim().slice(0, 20) + '"');
-        });
-        document.querySelectorAll('.card, .dogb, .prodb, .bl, .promise, .grown, .paybar, .from, .how3 li, .shopbar, .testbar, .eta, .ready button').forEach((c) => {
-          if (!vis(c)) return; const cb = c.getBoundingClientRect();
-          c.querySelectorAll('*').forEach((k) => { if (!vis(k) || k.closest('svg')) return; const b = k.getBoundingClientRect(); if (b.right > cb.right + 1.5 || b.left < cb.left - 1.5) out.spill.push((c.className || c.tagName) + ' > ' + (k.className || k.tagName) + ' ' + Math.round(b.left) + '-' + Math.round(b.right) + ' in ' + Math.round(cb.left) + '-' + Math.round(cb.right)); });
-        });
-        out.small = out.small.slice(0, 6); out.spill = out.spill.slice(0, 6); return out;
-      });
+      const r = await pg.evaluate(measure);
       const tag = name + ' ' + vp.join('x');
       ok('fit ' + tag + ': no sideways scroll', r.wide <= 0, r.wide);
       ok('fit ' + tag + ': taps at least 44 px', r.small.length === 0, r.small);
       ok('fit ' + tag + ': text stays inside its card', r.spill.length === 0, r.spill);
+      ok('contrast ' + tag + ': every text at least 4.5:1', r.low.length === 0, r.low);
+      ok('contrast ' + tag + ': money and legal lines in ink', r.notInk.length === 0, r.notInk);
       if (SHOTS && vp[0] !== 360) {
-        const t2 = await open({ save: SAVE, basket: name === 'basket' || name === 'closed' || name === 'order' ? six.slice(0, name === 'order' ? 2 : 6) : six, ship: name === 'order' ? 'US' : 'VC', path: p, vp, dpr: 2 });
+        const normal = name === 'basket' || name === 'closed' || name === 'order'; // the usual case: 3 lines to the United States, over $35, free shipping
+        const t2 = await open({ save: SAVE, basket: normal ? NORMAL3.slice(0, name === 'order' ? 2 : 3) : six, ship: normal ? 'US' : 'FK', path: p, vp, dpr: 2 });
         for (const c of clicks) { await t2.page.click(c); await t2.page.waitForTimeout(80); }
         if (name === 'order') await t2.page.waitForSelector('.testtag');
         await t2.page.addStyleTag({ content: '.paybar{position:static!important} .sheet>.sitehead.stuck{position:relative!important}' }); // full-page pictures: the sticky bars in their place
@@ -372,12 +766,37 @@ async function fitChecks() {
   }
 }
 
+// ================= LOOK=<dir>: the review pictures =================
+async function lookShots() {
+  fs.mkdirSync(LOOK, { recursive: true });
+  for (const vp of [[360, 640], [390, 844], [1280, 720]]) {
+    const W = vp[0], shot = async (pg, n, full) => pg.screenshot({ path: path.join(LOOK, n + '_' + W + '.png'), fullPage: !!full });
+    let t = await open({ save: SAVE, basket: [NORMAL3[0], NORMAL3[1], Object.assign(line(R('Bo'), 'tee'), { colour: 'mustard' })], ship: 'US', path: '/merch/#/basket', vp });
+    await t.page.waitForSelector('#qtable'); await shot(t.page, 'dropped', true); await t.ctx.close();
+    t = await open({ save: SAVE_NONAME, path: '/merch/#/pick', vp }); await shot(t.page, 'noname-pick', true);
+    await tap(t.page, '#pickNext'); await tap(t.page, '.prodb[data-p=mug]'); await settle(t.page); await shot(t.page, 'noname-make');
+    await tap(t.page, '#addBtn'); await t.page.waitForSelector('#qtable'); await shot(t.page, 'noname-basket', true); await t.ctx.close();
+    t = await open({ save: SAVE, basket: NORMAL3, ship: 'US', path: '/merch/#/basket', vp }); await t.page.waitForSelector('#qtable');
+    await t.page.evaluate(() => { window.__merch.api.checkout = () => Promise.reject({ status: 409, error: 'art_changed' }); });
+    await tap(t.page, '#payBtn'); await settle(t.page); await t.page.evaluate(() => document.querySelector('#payErr').scrollIntoView({ block: 'center' })); await shot(t.page, 'error');
+    await t.page.evaluate(() => { window.__merch.api.quote = () => Promise.reject({ status: 400, error: 'bad_name', line: 2 }); return window.__merch.requote(); }); await settle(t.page);
+    await t.page.evaluate(() => document.querySelector('.bl.needs').scrollIntoView({ block: 'start' })); await shot(t.page, 'error-line'); await t.ctx.close();
+    t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/?demo=1#/basket', vp }); await t.page.waitForSelector('#qtable');
+    await tap(t.page, '#payBtn'); await tap(t.page, '#demoBtn'); await t.page.waitForSelector('.testtag');
+    await t.page.evaluate(() => { const k = 'dd_merch_test_orders_v1', all = JSON.parse(sessionStorage.getItem(k)), o = all[Object.keys(all)[0]]; o.paid_at -= 7200000; o.cancel_until -= 7200000; sessionStorage.setItem(k, JSON.stringify(all)); });
+    await t.page.reload(); await t.page.waitForSelector('.testtag'); await settle(t.page); await shot(t.page, 'order-late', true);
+    await t.page.evaluate(() => { location.hash = '#/'; }); await settle(t.page);
+    await t.page.evaluate(() => { const s = document.querySelector('#shipSel'); s.size = 14; s.style.height = 'auto'; s.style.backgroundImage = 'none'; s.value = 'FK'; s.scrollIntoView({ block: 'start' }); s.selectedOptions[0].scrollIntoView({ block: 'center' }); window.scrollTo(0, 0); });
+    await shot(t.page, 'shipto'); await t.ctx.close();
+  }
+}
+
 (async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   BASE = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch();
   const t0 = Date.now();
-  try { await fakeChecks(); await pageChecks(); await fitChecks(); } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
+  try { await fakeChecks(); await pageChecks(); await fitChecks(); if (LOOK) await lookShots(); } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
   await browser.close(); server.close();
   console.log(`merch_page: ${pass} passed, ${fail} failed (${((Date.now() - t0) / 1000).toFixed(0)} s, ART_VER ${P.ART_VER})`);
   if (fail) { console.log(fails.join('\n')); process.exit(1); }

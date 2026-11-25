@@ -28,10 +28,11 @@ export const NEVER = ['RU', 'BY', 'EC', 'VE', 'PS', 'UA', 'CU', 'IR', 'SY', 'KP'
 
 // zones (TRANSACTIONS 3, model C). eta: business days from payment to the door (making 2-5 + delivery) [estimates; not verified for JP, AU, NZ]
 export const ZONES = {
+// notes are short codes the page turns into words (TRANSACTIONS 6.3, note of 24 Nov 2026): import_tax, vat_included, separate_parcels
   us_jp: { id: 'us_jp', fee: 499, free_from: 3500, extra: 0, eta: [5, 9], notes: [] },
-  uk_eu: { id: 'uk_eu', fee: 599, free_from: 7000, extra: 0, eta: [5, 25], notes: [], vat_note: 'Prices include VAT.' },
+  uk_eu: { id: 'uk_eu', fee: 599, free_from: 7000, extra: 0, eta: [5, 25], notes: [], vat_note: true }, // vat_included only while registered
   ca_au_nz: { id: 'ca_au_nz', fee: 799, free_from: 7000, extra: 0, eta: [5, 14], notes: [] },
-  world: { id: 'world', fee: 1199, free_from: null, extra: 599, eta: [7, 25], notes: ['Your country may charge import tax or a fee when it arrives.'] }
+  world: { id: 'world', fee: 1199, free_from: null, extra: 599, eta: [7, 25], notes: ['import_tax'] }
 };
 const ZONE_OF = Object.assign({ US: 'us_jp', JP: 'us_jp', GB: 'uk_eu', CA: 'ca_au_nz', AU: 'ca_au_nz', NZ: 'ca_au_nz' }, Object.fromEntries(EU27.map((c) => [c, 'uk_eu'])));
 export const zoneOf = (c) => ZONE_OF[c] || 'world';

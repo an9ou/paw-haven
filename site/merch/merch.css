@@ -1,6 +1,9 @@
 /* Doodle Doggo /merch (test mode). Builds on the site's own /style.css. Phones first. Grew from docs/design/merch/prototype/css/merch.css. */
 
 /* ---- shared bits ---- */
+/* every grey line on this page reads at least 4.5:1 on paper, white, the preview tint and the soft fills (the site's #8A7468 is 3.9-4.3:1 there);
+   money and legal lines use the ink itself (merch/test_page.js measures both) */
+:root{--muted:#6B5548}
 .mview{display:none}
 .mview.on{display:block}
 .vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -29,12 +32,21 @@
 .seg button,.chipb{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:4px 14px;border:2px solid var(--ink);
   border-radius:12px 9px 13px 8px;background:var(--paper);color:var(--ink);font-family:var(--read);font-size:18px;line-height:1.1;cursor:pointer}
 .seg button[aria-pressed="true"],.chipb[aria-pressed="true"]{background:var(--w-yellow);box-shadow:2px 3px 0 var(--ink);font-weight:700}
-.small2{font-size:15px;color:var(--muted);text-align:center;margin:6px 0 0;line-height:1.35}
+.small2{font-size:15px;color:var(--ink);text-align:center;margin:6px 0 0;line-height:1.35}
 .small2.left{text-align:left}
 .langnote{display:block;padding:6px 14px;font-size:16px;color:var(--muted);line-height:1.3}
 .loading{text-align:center;color:var(--muted)}
 html.merch-ready .loading{display:none}
-.mfoot .todo{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;color:var(--muted)}
+.mfoot .todo{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;color:var(--ink)}
+.mfoot .small{color:var(--ink)}
+.shipto.off{display:none}
+.dropnote{margin:0 0 12px;padding:8px 12px;background:var(--w-blue);border:2px dashed var(--ink);border-radius:12px 9px 13px 8px;font-size:17px;line-height:1.35;color:var(--ink)}
+.dropnote[hidden]{display:none}
+.bl.needs{border-color:#9A2F45;border-width:3px;box-shadow:2px 3px 0 rgba(154,47,69,.35)}
+.lneed{margin:0 0 4px;font-size:16px;font-weight:700;color:#9A2F45}
+.qerr .btn{margin:8px 0 0;display:flex}
+#payErr{margin:10px 0 0}
+#payErr[hidden]{display:none}
 
 /* the test-mode strip, the shop bar ("Ship to" first, the basket) and the stepper */
 .testbar{margin:0 0 12px;padding:6px 12px;background:#FFF1C9;border:2px dashed #C98A3A;border-radius:10px;font-size:16px;line-height:1.35;text-align:center;color:#6b3b0e}
@@ -73,7 +85,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 .trio li:nth-child(1){transform:rotate(-1.5deg)} .trio li:nth-child(2){transform:rotate(1.5deg)}
 .trio svg.mock{border:2px solid var(--ink);box-shadow:2px 3px 0 rgba(91,61,50,.16);margin-bottom:6px}
 .trio span{display:block}
-.trio small{display:block;font-family:var(--read);font-weight:400;font-size:17px;color:var(--muted)}
+.trio small{display:block;font-family:var(--read);font-weight:400;font-size:17px;color:var(--ink)}
 .herocta{display:flex;flex-direction:column;align-items:center;gap:6px;margin:8px 0 6px}
 .herocta .btn.go{min-width:min(340px,100%)}
 .shipline{font-size:18px;line-height:1.4;text-align:center;margin:8px auto 0;max-width:640px}
@@ -181,7 +193,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 .paybar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px -6px 0;padding:10px;
   background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:0 -3px 0 rgba(91,61,50,.10)}
 .paybar .amt{font-family:var(--hand);font-weight:700;font-size:32px;line-height:1;min-width:0}
-.paybar .amt small{display:block;font-family:var(--read);font-weight:400;font-size:14px;color:var(--muted);margin-top:2px}
+.paybar .amt small{display:block;font-family:var(--read);font-weight:400;font-size:14px;color:var(--ink);margin-top:2px}
 .paybar .btn.go{font-size:26px;min-height:52px;padding:6px 16px;flex:none}
 .addmsg{margin:0;font-size:16px;color:#9A2F45;line-height:1.35}
 .addmsg:empty{display:none}
@@ -198,7 +210,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 .brow2{display:flex;gap:4px;flex-wrap:wrap;margin-left:-6px}
 .lp{font-family:var(--hand);font-weight:700;font-size:26px;white-space:nowrap}
 .blines .empty{text-align:center;padding:10px}
-.bnote{font-size:15px;color:var(--muted);margin:8px 0 0}
+.bnote{font-size:15px;color:var(--ink);margin:8px 0 0}
 .bnote:empty{display:none}
 .ship .lg{font-family:var(--hand);font-size:28px;font-weight:700;margin-bottom:2px}
 .ship .shipline{text-align:left;margin:0}
@@ -235,6 +247,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 .track .dot{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:2.5px solid var(--ink);border-radius:50% 46% 52% 48%;background:#fff;font-size:22px}
 .track li.now .dot{background:var(--w-yellow);box-shadow:2px 3px 0 var(--ink)}
 .track li.later{color:var(--muted)}
+.track li.done .dot{background:var(--w-mint)}
 .track li.later .dot{border-style:dashed;border-color:rgba(91,61,50,.45)}
 .track b{display:block;font-family:var(--hand);font-size:27px;line-height:1.05}
 .track span span{display:block;font-size:17px;line-height:1.3}
