@@ -68,3 +68,14 @@ CHECKED AND FINE
 - Patch and edges: alpha is only 0/255 on every patched colour, in both Chromium and the 12-band resvg fallback. Banded vs one pass: no seam (at most 12 px of anti-alias difference at a band row). Patch edge and corners are clean at 100% on all 7 colours (B1_samoyed_all_tee_colours.png).
 - Names, mug, page: Caveat names are clean at 100%. The mug's 16-wide-letter limit holds (17 refused, 16 at 90 px). Mug faces are the same size and level, clear of the 0.25 in rim/base and 0.5 in ends. The tee preview places the patch at the print's scale and spot. The legal pages follow the site's style.
 ```
+
+## Fixes
+
+### Print and email fixes (branch `merch/part9-print-fixes`, 25 Nov 2026)
+
+New print build **`pp1-5688199b`** (released in `site/merch/print/pp1-5688199b/`; the pre-launch `pp1-3f73333c` folder, never used for an order, is removed).
+
+- **m3** (`merch/pawprint_core.js` `teeBody`, `PRODUCTS.tee.name.grow` 1.15 / `minW` 1800): the tee name's band is at most max(dog width x 1.15, 6 in); the letters shrink to fit, down to `nameMin` (87 px) and no further. "Sir Wigglesworth III" under the 5 in Maltese puppy: 9.6 in -> 6.0 in (244 px letters), patch 10.6 -> 7.0 in wide; twenty W's under the 7.9 in Golden: 9.6 -> 9.1 in; short names unchanged at 390 px. Check: `test_pawprint.js` "long names under small dogs" and a "wide name" row over the 720-tee scan.
+- **m5** (`yardStrip`): a whole number of pickets with half a gap at each end, so the seam at the handle falls in a whole gap; the rail and the grass line level at x 0 and x 2700; no flower within 150 px of either end. Check: "mug yard strip, 24 wraps".
+- **m6** (`teeBody`, `PRODUCTS.tee.backing` 2.4 px): on white tees the drawing and the name lie on a crisp-edged white backing (as the sticker sheet's), so every tee file has only alpha 0 or 255, in Chromium and in the 12-band resvg fallback; white prints no ink on a white tee. Checks: `test_pawprint.js` (the backing in the SVG; rendered white tees: 0 soft pixels) and `render_chromium.mjs` (now also the white tee of every sample dog, both renderers, alpha 0/255, within `MATCH`).
+- **m7** (`cloudflare/merch/mail.js`): `itemName` is one template, "<Product> with <the dog's name>" (+ a tee's colour and size), "with your dog" only for a line with no name (the order keeps the name only when it is printed, so a name-off tee line still says "your dog"; the sample's tee line had no name). Headings use a rounded sans stack (`HEAD_FONT`), not Georgia. Samples in `docs/design/merch/part6_shots/emails/` remade with the tee line named. Check: `merch_worker` row P9-mail-words.

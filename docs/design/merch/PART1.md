@@ -26,7 +26,7 @@ PawPrint makes the final print files for the launch products, the **tee and the 
 ## Edges on coloured fabric
 
 - The patch is drawn with `shape-rendering="crispEdges"`, and it is the only thing that touches the fabric: the drawing and the name lie inside it. Every soft crayon pass is composited onto cream. Measured on the Chromium render: alpha is only 0 or 255 in every navy and black tee file, and for every patched colour.
-- On white tees the soft edges stay (no white ink on white); the mug is sublimation, where soft edges are fine.
+- On white tees (part 9 fix m6) the drawing and the name lie on a crisp-edged **white backing** (`PRODUCTS.tee.backing`: every shape in white, 2.4 px wider, as the sticker sheet's backing; `<g class="pp-back">`), so a white tee file too has only alpha 0 or 255, in Chromium and in the 12-band resvg fallback. White is not printed on a white tee, so it looks as before; the backing carries no ink, so the 0.5 mm line rule does not count it. The mug is sublimation, where soft edges are fine.
 - Pixel post-processing (flatten alpha at 0.5) is only needed if a renderer ignores `crispEdges` (Chromium and resvg both honour it), or if we ever print on colour without the patch.
 
 ## How to run
@@ -44,3 +44,12 @@ PawPrint makes the final print files for the launch products, the **tee and the 
 - **Not verified with Printful** (needs the store key or a sample): the exact printfile pixels, where the 15 x 18 in area sits under the collar, the mug's handle zone, and how the sticker cut is traced.
 - Game art (the Game Manager's): the Shiba happy-pose ear and cheek fill, and the tricolour Corgi happy-pose neck outline (review item 12); both show on prints.
 - Part 2: the merch page preview should switch to `PawPrint.print` and `PawPrint.nameOk(s, { product })` (its own name rule goes), saying "A little shorter, please" for `why: 'long'`. Part 3: the order server builds the recipe from the save, not the client's link (review 16), sends the print page link with `av`, and stores `ART_VER`.
+
+## Part 9 fixes (25 Nov 2026, print files; `docs/reviews/MERCH_PART9_art_review.md` m3, m5, m6)
+
+New build **`pp1-5688199b`** (was `pp1-3f73333c`, never used for an order: that folder is removed from `site/merch/print/`).
+
+- **m3, long tee names**: the name's band is no wider than max(the dog's drawn width x 1.15, 6 in) (`PRODUCTS.tee.name.grow`, `minW: 1800`), and the letters shrink to fit it, down to `nameMin` (87 px) and never further; if even 87 px letters need more, they get the whole 9.6 in band at 87 px (no name of 20 letters needs it: twenty W's fit 6 in at 124 px). Short names are unchanged (390 px). "Sir Wigglesworth III" under a 5 in Maltese puppy: 9.6 in at 390 px, patch 10.6 in wide -> 6.0 in at 244 px, patch 7.0 in; twenty W's under a 7.9 in Golden: 9.6 -> 9.1 in. `nameOk(s, { product: 'tee' })` is unchanged. `print.last.nameW` is the band used.
+- **m5, the mug's yard strip** joins up at the handle: a whole number of pickets with half a gap at each end (the seam falls in a whole gap), the rail and the grass line level at x 0 and x 2700 (they wobble only in between), and no flower within the 0.5 in keep-clear at either end (`yardStrip(..., ends)`).
+- **m6, white tees**: a crisp white backing under the drawing and the name (above, "Edges on coloured fabric"). Each backing shape names its own `stroke`, so the box the 12-band renderer measures shape by shape (to leave out shapes outside a band) holds its whole stroke: without it the banded newborn tee kept 152 soft pixels at band edges (one pass: none). Measured: 0 soft pixels in the 12 bands (8 sample dogs x 3 poses) and in Chromium (the 8 sample dogs); resvg against Chromium on white tees within `MATCH`.
+- Tests: `merch/test_pawprint.js` 88 checks (was 84: the long-name widths, the white backing in the SVG, the mug strip over 24 wraps, and the rendered white tees with no soft pixel; the line-width walks skip the backing, which carries no ink); `render_chromium.mjs` also draws the white tee of each sample dog with both renderers and checks alpha 0 / 255 on every tee.

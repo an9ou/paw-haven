@@ -192,3 +192,9 @@ From `docs/reviews/MERCH_PART9_code_review.md` (the code review of `merch/shop` 
 too) wait while a dispute is open; an inquiry does not block the buyer's email for future orders; a buyer's own late cancel and the owner's
 refunds are not read from Printful first (a person chose them); a full refund is capped only for USD charges. **To do at the Stripe set-up
 (part 9 sandbox):** subscribe the merch endpoint to `charge.dispute.updated`.
+
+## Part 9 fixes (25 Nov 2026, the emails; `docs/reviews/MERCH_PART9_art_review.md` m7)
+
+- **Line names, one wording**: `mail.itemName` builds every line as "<Product> with <the dog's name>", then a tee's colour and size: "Mug with Biscuit", "Tee with Biscuit, navy, L"; "with your dog" only for a line with no name. The order keeps a dog's name only for a line printed with it (`lines.js`), so a tee ordered with the name off still says "with your dog": the reviewer's "Tee with your dog" came from the sample order, whose tee line had no name. The samples in `part6_shots/emails/` are remade with the tee line named too (`merch/test_page.js` `part6Shots()` should give that line `name: 'Biscuit'` so its next run matches).
+- **Headings**: a rounded sans stack (`mail.HEAD_FONT`: `ui-rounded`, SF Pro Rounded, Arial Rounded MT Bold, then Trebuchet MS, Segoe UI, Arial, sans-serif) for the heading and the gift heading, instead of Georgia / Times. No pictures were added.
+- Test: `merch_worker` row P9-mail-words (the four line forms, both lines of a Biscuit order, every kind's headings in the stack and no serif face): 260 checks.

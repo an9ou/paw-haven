@@ -61,6 +61,7 @@ Rules for every product [fetched B, D unless marked]:
 
 **(3) Dark garments: keep the paper patch.** Every non-white garment gets an underbase, and semi-transparent pixels speckle on it. The patch is one opaque shape, so the crayon opacity (the second pencil pass at 0.35, the hatching, sparkle) is composited onto cream and prints solid; the brown ink and the name stay readable. A white crayon border would also back the dog, but the name, the hearts and any pencil overshoot would still sit semi-transparent on bare fabric. Keep the patch tight (the 10 x 10 block plus 0.4 in of wobble) and print it DTG, not DTF, so the big solid area stays soft. On white garments: no patch, no white ink (white parts of the dog show the shirt).
 - On every non-white garment, also **flatten the alpha** of whatever touches bare fabric: alpha 0.5 or more becomes fully opaque, under 0.5 becomes clear. At 300 dpi the hard edge is 0.08 mm and does not show.
+- **Part 9 (m6): white tees too.** No file has semi-transparent edges any more: on white the drawing and the name lie on a crisp white backing (white prints no ink on a white tee), so every tee file is alpha 0 or 255 (PART1.md "Edges on coloured fabric").
 
 **(4) Sticker sheet layout rule.**
 - Each sticker is **one connected opaque shape**: the dog (or head, label, doodle) plus a white backing made by `silhouette()` 0.06 in wide, which joins bits up to 0.12 in apart. Bits further out are left out: no floating hearts or sparkle stars (use stand or sit, or draw the hearts overlapping the head).

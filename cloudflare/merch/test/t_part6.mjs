@@ -105,7 +105,23 @@ export async function part6() {
     const u = mail.build('nonsense', base, {}); ok(u.subject && u.text.includes(SITE + '/merch/#/order/' + id), 'an unknown kind: a plain note, never blank');
     const t2 = mail.build('thanks', base, { MERCH_SITE: 'https://test.doodledoggo.app/' }); ok(t2.text.includes('https://test.doodledoggo.app/merch/#/order/' + id) && t2.text.includes('https://test.doodledoggo.app/merch/terms/'), 'MERCH_SITE (the test copy) in every link');
   });
-  await T('P6-order-link', 'the order link is <MERCH_SITE>/merch/#/order/<id> everywhere: Stripe success_url /merch/?new=1#/order/<id>, emails, owner emails', async () => {
+  await T('P9-mail-words', 'part 9 art review m7: one wording for line names (the dog\'s name on both products, "your dog" only without one) and a sans heading, never the system serif', async () => {
+    const id = 'mo_BBBBBBBBBBBBBBBBBBBBBB', L = (product, name, extra) => Object.assign({ line: 1, product, colour: 'white', name, qty: 1, unit: 1999, status: 'queued', refunded_qty: 0, parcel: null }, extra || {});
+    const navy = { colour: 'navy', colour_name: 'Navy', size: 'L' };
+    eq([mail.itemName(L('mug', 'Biscuit')), mail.itemName(L('tee', 'Biscuit', navy)), mail.itemName(L('mug', null)), mail.itemName(L('tee', null, navy)), mail.itemName(L('tee', '', navy))],
+      ['Mug with Biscuit', 'Tee with Biscuit, navy, L', 'Mug with your dog', 'Tee with your dog, navy, L', 'Tee with your dog, navy, L'], 'line names');
+    const v = { id, status: 'paid', can_cancel: true, ship_by: Date.parse('2026-12-10T00:00:00Z'), eta: [5, 9], lines: [L('mug', 'Biscuit'), L('tee', 'Biscuit', Object.assign({ line: 2, qty: 2, unit: 2699 }, navy))],
+      parcels: [], totals: { subtotal: 7397, ship_fee: 0, total: 7397, refunded: 0 }, pres: null, gift_code: null };
+    const th = mail.build('thanks', v, {}); ok(/- Mug with Biscuit: \$19\.99\n- 2 × Tee with Biscuit, navy, L: \$53\.98/.test(th.text), 'thanks: both lines with the dog\'s name: ' + th.text.slice(0, 200));
+    let heads = 0, serif = 0;
+    for (const k of mail.KINDS) {
+      const m = mail.build(k, Object.assign({}, v, { gift: 'ready', gift_code: 'TEST-GIFT-0001', about: { parcel: 'p1', gift: true, line: 1, refund: { amount: 1999, reason: 'lost', lines: [{ line: 1, qty: 1 }] }, reprint: { n: 1, why: 'lost' } } }), {});
+      const h = m.html.match(/font-family:[^;"]*/g) || []; heads += h.filter((f) => f === 'font-family:' + mail.HEAD_FONT).length;
+      serif += h.filter((f) => /serif/.test(f.replace(/sans-serif/g, '')) || /Georgia|Times/.test(f)).length;
+    }
+    ok(heads >= mail.KINDS.length && serif === 0 && /ui-rounded/.test(mail.HEAD_FONT) && /sans-serif$/.test(mail.HEAD_FONT), `every email heading in the rounded sans stack (${heads} headings), no serif face anywhere (${serif})`);
+  });
+  await T('P6-order-link','the order link is <MERCH_SITE>/merch/#/order/<id> everywhere: Stripe success_url /merch/?new=1#/order/<id>, emails, owner emails', async () => {
     const w = await world(); const id = await w.newOrder([mug(0)]);
     const c = w.stripe.calls.find((x) => x.m === 'POST' && x.path === '/v1/checkout/sessions');
     eq([c.body.success_url, c.body.cancel_url], [SITE + '/merch/?new=1#/order/' + id, SITE + '/merch/?back=' + id], 'Stripe urls');

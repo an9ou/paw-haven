@@ -109,15 +109,16 @@ console.log('# ART_VER: every file that decides a print is hashed, and the build
 console.log('# every print SVG: exact size, the art version, nothing outside, no cut lines, no line under 0.5 mm (the name too)');
 // an independent walk: the printed width of every stroke (transforms and nested viewBoxes followed); the name: its letter size x the font's thin stroke
 function thinnest(svg) {
-  const st = [{ sc: 1, sw: 1, on: false }]; let min = 1e9;
+  const st = [{ sc: 1, sw: 1, on: false, back: false }]; let min = 1e9; // back: inside the white tee's white backing (pp-back), which prints no ink
   for (const m of svg.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>/g)) {
     const [, close, tag, a, self] = m; if (close) { if (/^(g|svg|clipPath|defs)$/.test(tag)) st.pop(); continue; }
     const up = st[st.length - 1], tf = /\stransform="([^"]*)"/.exec(a); let sc = up.sc;
     if (tf) for (const t of tf[1].matchAll(/(translate|scale|rotate|matrix)\(([^)]*)\)/g)) { const v = t[2].trim().split(/[\s,]+/).map(Number); if (t[1] === 'scale') sc *= Math.sqrt(Math.abs(v[0] * (v.length > 1 ? v[1] : v[0]))); if (t[1] === 'matrix') sc *= Math.sqrt(Math.abs(v[0] * v[3] - v[1] * v[2])); }
     if (tag === 'svg') { const vb = /viewBox="([^"]*)"/.exec(a), w = /\swidth="([\d.]+)"/.exec(a); if (vb && w) sc *= +w[1] / +vb[1].trim().split(/\s+/)[2]; }
     const sw = /\sstroke-width="([\d.]+)"/.exec(a), s = /\sstroke="([^"]*)"/.exec(a), width = sw ? +sw[1] : up.sw, on = s ? s[1] !== 'none' : up.on;
-    if (on && !/^(g|svg)$/.test(tag)) min = Math.min(min, width * sc);
-    if (!self && /^(g|svg|clipPath|defs)$/.test(tag)) st.push({ sc, sw: width, on });
+    const back = up.back || /\sclass="pp-back"/.test(a);
+    if (on && !back && !/^(g|svg)$/.test(tag)) min = Math.min(min, width * sc);
+    if (!self && /^(g|svg|clipPath|defs)$/.test(tag)) st.push({ sc, sw: width, on, back });
   }
   for (const n of nameSizes(svg)) min = Math.min(min, n * P.FONT_THIN_EM);
   return min;
@@ -176,6 +177,7 @@ console.log('# the tee');
     if (!inside(st.dogBox, st.patchIn) || !inside(st.name.bb, st.patchIn)) why.push('patch');
     if (!inside(st.dogBox, st.nest[0])) why.push('nest');
     if (st.name.size < T.nameMin || st.name.bb[1] < st.dogBox[3]) why.push('name');
+    if (st.name.bb[2] - st.name.bb[0] > Math.max((st.dogBox[2] - st.dogBox[0]) * T.name.grow, T.name.minW) + 0.5 && st.name.size > T.nameMin + 0.01) why.push('wide name');
     if (Math.abs(st.k - T.unit * Math.max(1, T.minDogIn * 300 / natural)) > 0.01) why.push('scale');
     if (why.length) bad.push(P.BREEDS[b] + a + pose + dress + ':' + why);
   }
@@ -190,6 +192,17 @@ console.log('# the tee');
   ok(pw(nbNavy) < pw(adNavy) * 0.8 && ph(nbNavy) < ph(adNavy) && Math.abs((nbNavy.patchIn[0] + nbNavy.patchIn[2]) / 2 - 2250) < 1, `the patch hugs the drawing and the name: newborn ${(pw(nbNavy) / 300).toFixed(1)} x ${(ph(nbNavy) / 300).toFixed(1)} in, adult Lab ${(pw(adNavy) / 300).toFixed(1)} x ${(ph(adNavy) / 300).toFixed(1)} in`);
   ok(P.TEE_COLOURS.every((c) => { const s = P.print(DOGS[0].r, { product: 'tee', colour: c.id }); return s.includes('fill="#FFFBF3"') === c.patch && (!c.patch || /<g shape-rendering="crispEdges"><path d="[^"]+" fill="#FFFBF3"\/>/.test(s)); }) && !pr(DOGS[0].r, 'white').s.includes('#FFFBF3'),
     'the paper patch on every colour but white, drawn with crisp edges (no anti-aliasing: the only edge on the fabric)');
+  { // part 9 art review m3: a long name is no wider than max(dog x 1.15, 6 in) (letters shrink, down to nameMin), so no wide, empty patch
+    const mal = { v: 1, b: B('maltese'), g: null, e: 0, p: P.hashId('m3-maltese'), a: 1, s: 'f', n: 'Sir Wigglesworth III' }, gold = DOGS.find((d) => d.id === 'golden').r;
+    const nw = (st) => st.name.bb[2] - st.name.bb[0], dw = (st) => st.dogBox[2] - st.dogBox[0], cap = (st) => Math.max(dw(st) * T.name.grow, T.name.minW);
+    const m = pr(mal, 'navy', { pose: 'stand' }).st, g = pr(Object.assign({}, gold, { n: 'W'.repeat(20) }), 'navy', { pose: 'stand' }).st, s = pr(Object.assign({}, gold, { n: 'Honey' }), 'navy', { pose: 'stand' }).st;
+    const a = pr(DOGS[0].r, 'white', { pose: 'sit' }).st, pin = (st) => (st.patch[2] - st.patch[0]) / 300;
+    ok(Math.abs(m.dogIn - T.minDogIn) < 0.02 && nw(m) <= cap(m) + 0.5 && nw(m) >= T.name.minW - 2 && m.name.size >= T.nameMin && pin(m) < 7.2 && nw(g) <= dw(g) * T.name.grow + 0.5 && g.name.size >= T.nameMin && s.name.size === T.name.max && a.name.size === T.name.max,
+      `long names under small dogs: "Sir Wigglesworth III" under a ${m.dogIn} in Maltese puppy ${(nw(m) / 300).toFixed(2)} in wide at ${m.name.size} px (patch ${pin(m).toFixed(2)} in), twenty W's under a ${g.dogIn} in Golden ${(nw(g) / 300).toFixed(2)} in at ${g.name.size} px; short names keep ${T.name.max} px ("Honey" ${s.name.size}, "Mochi" ${a.name.size})`);
+    const wb = pr(DOGS[3].r, 'white', { pose: 'stand' }).s, nb = pr(DOGS[3].r, 'navy', { pose: 'stand' }).s;
+    ok(/<g class="pp-back" shape-rendering="crispEdges"><svg [^>]*><g fill="#FFFFFF" stroke="#FFFFFF"/.test(wb) && (wb.match(/class="pp-back"/g) || []).length === 1 && wb.indexOf('pp-back') < wb.lastIndexOf('<svg x=') && !/#FFFFFF" stroke="#FFFFFF/.test(nb) && !/pp-back/.test(nb),
+      'part 9 m6: on white the drawing and the name lie on one crisp-edged white backing (drawn first), so no soft edge is left on the fabric; patched colours need none');
+  }
   ok(noName.st.patch[3] < pr(DOGS[0].r, 'navy', { pose: 'sit' }).st.patch[3] && !noName.s.includes('pp-name'), 'name off: no name and a shorter patch round the drawing only');
   const typed = pr(DOGS[0].r, 'white', { name: 'Pip' }).st.name.text; let threw = [];
   for (const nm of ['sh1t', 'ポチ', '', 'x'.repeat(21), 42]) { try { P.print(DOGS[0].r, { product: 'tee', name: nm }); } catch (e) { threw.push(e.message); } }
@@ -208,6 +221,24 @@ console.log('# the mug');
   }
   ok(!out.length, `the whole drawing and the name stay 0.25 in from top and bottom and 0.5 in from both ends (the handle), on both sides: ${all} prints (40 breeds x 3 ages x 3 poses, two outfits, one with sparkle)${out.length ? ' FAIL: ' + out.slice(0, 5) : ''}`);
   ok(small >= P.MIN_ART_MM, `the dog's art box is never under 80 mm on the mug: smallest ${small} mm`);
+  { // part 9 art review m5: the yard strip joins up at the handle: no picket cut at either end (the seam falls in a whole gap), the rail and
+    // the grass line level at x 0 and x 2700, and no flower in the 0.5 in keep-clear at each end
+    const M = P.PRODUCTS.mug, E = M.safe.ends, els = (s, re) => [...s.matchAll(re)].map((x) => x[0]), box = (el) => P.bbox('<svg>' + el + '</svg>');
+    const yAt = (d, x) => [...d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].filter((q) => Math.abs(+q[1] - x) < 0.01).map((q) => +q[2]).sort((a, b) => a - b);
+    let n = 0; const bad = [];
+    for (const k of ['greyhound', 'dane', 'golden', 'chihuahua', 'lab', 'dachs', 'pug', 'samoyed']) for (const p of [1, 2, 3]) {
+      const s = P.print({ v: 1, b: B(k), g: null, e: 0, p: P.hashId('m5-' + k + p), a: 0, s: 'f', n: 'Biscuit' }, { product: 'mug', pose: 'stand' }); n++;
+      const pk = els(s, /<path d="[^"]*" fill="#FFF4DF"\/><path d="[^"]*" fill="none" stroke="#5B3D32" stroke-width="[\d.]+"[^>]*\/>/g).map((e) => box(e.replace(/^<path[^>]*\/>/, ''))).sort((a, b) => a[0] - b[0]);
+      const gaps = pk.slice(1).map((q, i) => q[0] - pk[i][2]), seam = pk[0][0] + M.w - pk[pk.length - 1][2], med = gaps.slice().sort((a, b) => a - b)[gaps.length >> 1];
+      if (pk[0][0] <= 0 || pk[pk.length - 1][2] >= M.w || Math.abs(seam - med) > 12) bad.push(k + p + ' fence ' + pk[0][0].toFixed(1) + '/' + (M.w - pk[pk.length - 1][2]).toFixed(1) + ' seam ' + seam.toFixed(1) + ' gap ' + med.toFixed(1));
+      const grass = /<path d="([^"]*)" fill="#B8DC94"/.exec(s)[1], rail = /<path d="([^"]*)" fill="#F4E3C3"/.exec(s)[1];
+      if (JSON.stringify(yAt(grass, 0)) !== JSON.stringify(yAt(grass, M.w)) || !yAt(grass, 0).length) bad.push(k + p + ' grass ' + yAt(grass, 0) + ' / ' + yAt(grass, M.w));
+      if (JSON.stringify(yAt(rail, 0)) !== JSON.stringify(yAt(rail, M.w)) || yAt(rail, 0).length !== 2) bad.push(k + p + ' rail ' + yAt(rail, 0) + ' / ' + yAt(rail, M.w));
+      const fl = els(s, /<path d="[^"]*" fill="#(?:F7B2C4|FFE27A|FFFFFF|C9B6F2)" stroke="#5B3D32"[^>]*\/>|<circle [^>]*fill="#E8B53A"[^>]*\/>/g).map(box);
+      if (fl.some((b) => b[0] < E || b[2] > M.w - E)) bad.push(k + p + ' flower in the keep-clear');
+    }
+    ok(!bad.length, `mug yard strip, ${n} wraps: whole pickets with the seam in a gap, rail and grass line level at x 0 and ${M.w}, no flower within ${E} px of either end${bad.length ? ' FAIL ' + bad.slice(0, 4).join('; ') : ''}`);
+  }
   ok(faceOk === all && nmin >= P.NAME_MIN_PX, `the name fits its face (${(P.PRODUCTS.mug.nameW / 300).toFixed(1)} in, centred on each side), sits above the dog, letters at least ${P.NAME_MIN_PX} px (smallest ${nmin})`);
 }
 
@@ -341,7 +372,7 @@ const alphaStats = (img, R) => { let semi = 0, on = 0; const bb = [1e9, 1e9, -1,
   for (let y = Math.max(0, r[1]); y <= Math.min(img.h - 1, r[3]); y++) for (let x = Math.max(0, r[0]); x <= Math.min(img.w - 1, r[2]); x++) { const a = img.data[(y * img.w + x) * 4 + 3]; if (a) { on++; if (x < bb[0]) bb[0] = x; if (y < bb[1]) bb[1] = y; if (x > bb[2]) bb[2] = x; if (y > bb[3]) bb[3] = y; if (a < 255) semi++; } }
   return { semi, on, bb }; };
 
-const RENDERED = 13; let rendered = 0; const rok = (c, l) => { rendered++; ok(c, l); };
+const RENDERED = 14; let rendered = 0; const rok = (c, l) => { rendered++; ok(c, l); };
 async function browser() {
   let chromium; try { ({ chromium } = require('playwright')); } catch (e) { return false; }
   const http = require('http'), DIR = path.join(__dirname, 'dist', 'print');
@@ -358,11 +389,12 @@ async function browser() {
   };
   try {
     console.log('# rendered: the print page in Chromium');
-    let sizeOk = 0, navyHard = 0, navyOne = 0, whiteIn = 0, n = 0;
+    let sizeOk = 0, navyHard = 0, navyOne = 0, whiteIn = 0, whiteHard = 0, whiteSoft = 0, n = 0;
     for (const d of DOGS) {
       const w = await shoot(P.printHash(d.r, { product: 'tee', colour: 'white', pose: d.pose }), 'tee'), a = alphaStats(w.img); n++;
       P.print(d.r, { product: 'tee', colour: 'white', pose: d.pose }); const st = P.print.last;
       if (w.img.w === 4500 && w.img.h === 5400 && w.title === want('tee', 'white', d.pose, 1) && w.kids === 1) sizeOk++;
+      if (a.semi === 0) whiteHard++; whiteSoft += a.semi;
       if (inside(a.bb, [st.box[0] - 8, st.box[1] - 8, st.box[2] + 8, st.box[3] + 8]) && inside(a.bb, P.PRODUCTS.tee.safe)) whiteIn++;
       const v = await shoot(P.printHash(d.r, { product: 'tee', colour: 'navy', pose: d.pose }), 'tee'), b = alphaStats(v.img), c = components(v.img);
       P.print(d.r, { product: 'tee', colour: 'navy', pose: d.pose }); const sv = P.print.last;
@@ -371,6 +403,7 @@ async function browser() {
     }
     rok(sizeOk === n, `the tee file is 4500 x 5400 px (half viewport at deviceScaleFactor 2), one SVG, titled "${want('tee', 'white', 'sit', 1)}": ${sizeOk}/${n}`);
     rok(whiteIn === n, `on white every inked pixel is inside the drawing and name's box and the safe area: ${whiteIn}/${n}`);
+    rok(whiteHard === n, `part 9 m6: on white too the file has only clear or opaque pixels (alpha 0 or 255; the soft edges lie on the crisp white backing): ${whiteHard}/${n} hard, ${whiteSoft} soft pixels in all`);
     rok(navyHard === n && navyOne === n, `on navy the file is one opaque patch with no soft pixel at all (alpha only 0 or 255), the patch where print.last says: ${navyHard}/${n} hard, ${navyOne}/${n} one shape`);
     let allCol = 0; const pc = P.TEE_COLOURS.filter((c) => c.patch);
     for (const c of pc) { const v = await shoot(P.printHash(DOGS[3].r, { product: 'tee', colour: c.id, pose: 'stand', name: c.id !== 'pink' }), 'tee'), b = alphaStats(v.img); if (b.semi === 0 && components(v.img).length === 1 && v.title === want('tee', c.id, 'stand', c.id !== 'pink' ? 1 : 0)) allCol++; }
@@ -407,6 +440,7 @@ async function browser() {
         const svg = P.print(d.r, { product: prod, colour: col, pose: d.pose }); await pg.setContent(`<!doctype html><body style="margin:0">${svg}</body>`);
         const r = await pg.evaluate((upm) => { let ms = 1e9, mn = 1e9, n = 0; const det = (m) => Math.sqrt(Math.abs(m.a * m.d - m.b * m.c));
           for (const el of document.querySelectorAll('path,ellipse,circle,rect,line,polyline,polygon')) { const cs = getComputedStyle(el), m = el.getScreenCTM(); if (!m) continue; n++;
+            if (el.closest('.pp-back')) continue; // the white tee's white backing: no ink
             if (el.closest('.pp-name')) { mn = Math.min(mn, det(m) * upm); continue; }
             if (cs.stroke !== 'none' && cs.display !== 'none' && parseFloat(cs.strokeWidth) > 0) ms = Math.min(ms, parseFloat(cs.strokeWidth) * det(m)); }
           return { ms, mn, n }; }, FONT.upm);
