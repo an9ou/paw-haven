@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { T, ok, eq, world, mug, tee, MIN, HOUR, DAY } from './harness.mjs';
 import * as pf from '../provider_printful.js';
 
@@ -205,5 +206,22 @@ export async function f5() {
     await night(4); eq(w.owner(/cost_missing/).length, 1, 'night 3, still missing: not told again');
     w.pf.costs = { variants: { 'tee:pink:M': 1700 }, ship: {} }; await night(5); eq([cost(), w.L().meta('cost_missing')], [1700, ''], 'night 4: priced again, cleared');
     w.pf.costs.unpriced = ['tee:pink:M']; await night(6); eq(w.owner(/cost_missing/).length, 2, 'missing again later: told again');
+  });
+
+  /* ---------------- finding 8: the key-day kit ---------------- */
+  await T('F5-kit', 'the key-day kit: a v1 GET of its own draft (by id and external id) before the draft is deleted; scrub takes names, emails, phones and address lines out anywhere in a reply; still dry by default, never a confirm', async () => {
+    const kit = await import('../../../tools/merch_pf_check.mjs'), names = kit.plan.map((x) => x.name);
+    const v1 = kit.plan.find((x) => x.name === 'draft_get_v1');
+    ok(v1 && v1.method === 'GET' && v1.path === '/orders/{order_id}' && names.indexOf('draft_get_v1') < names.indexOf('draft_delete') && names.indexOf('draft_get_v1') > names.indexOf('draft_create'), 'the v1 read of the draft, after its create and before its delete');
+    ok(names.indexOf('draft_get_v1_ext') < names.indexOf('draft_delete'), 'and by external id');
+    ok(!kit.plan.some((x) => /confirm/i.test(x.path)) && kit.plan.filter((x) => x.method === 'DELETE').every((x) => x.path.startsWith('/v2/orders/{')), 'never a confirm; deletes only of its own v2 drafts');
+    const reply = { code: 200, result: { id: 1, external_id: 'pfcheck-1', recipient: { name: 'Real Person', address1: '9 Real Road', address2: 'Flat 3', city: 'Realtown', zip: 'RT1 2AB', phone: '+44 20 7946 0958', email: 'real.person@mail.example' },
+      packing_slip: { email: 'shop@mail.example', phone: '+1 555 123 4567', message: 'Questions? Call +81 90-1234-5678' }, customer: { name: 'Real Person', company: 'Real Co' }, contact: { first_name: 'Real', last_name: 'Person' },
+      notes: 'ordered by real.person@mail.example', billing: { line1: '9 Real Road', name: 'Real Person' }, store: { id: 7, name: 'Doodle Doggo Merch' }, items: [{ id: 2, name: 'Mug with your dog', retail_price: '19.99' }], secret_key: 'abc' } };
+    const out = JSON.stringify(kit.scrub(reply));
+    for (const bad of ['Real Person', '9 Real Road', 'Flat 3', 'Realtown', 'RT1 2AB', '7946', '555 123', '1234-5678', 'real.person', 'shop@mail', 'Real Co', '"Real"', 'abc']) ok(!out.includes(bad), 'scrubbed: ' + bad + ' in ' + out);
+    ok(out.includes('Mug with your dog') && out.includes('Doodle Doggo Merch') && out.includes('19.99') && out.includes('pfcheck-1'), 'product and store names, prices and ids are kept');
+    const dry = spawnSync(process.execPath, [fileURLToPath(new URL('../../../tools/merch_pf_check.mjs', import.meta.url))], { encoding: 'utf8' });
+    ok(dry.status === 0 && /DRY RUN, nothing is sent/.test(dry.stdout) && /draft_get_v1: GET/.test(dry.stdout), 'run with no flags: the dry plan, nothing sent');
   });
 }

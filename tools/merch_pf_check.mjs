@@ -18,7 +18,7 @@
 // Writes (with --run): cloudflare/merch/test/printful/recorded/<step>.json (or --out), and prints a short summary of what each check found.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PF_PRODUCTS, PF_VARIANT_IDS, PRODUCTS, SHIP_COSTS } from '../cloudflare/merch/catalog.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -64,6 +64,9 @@ if (FILE_URL || !RUN) {
     'ONE draft (never confirmed): its costs (subtotal, shipping, tax), calculation_status, the item ids');
   add('draft_get', 'GET', '/v2/orders/{order_id}', null, 'the draft again: costs done? (re-read up to 5 times, 2 s apart)', { needs: 'order_id', untilDone: true });
   add('draft_get_ext', 'GET', '/v2/orders/@' + EXT, null, 'GET by external id', { needs: 'order_id' });
+  // review finding 8: question 22 (the late cancel through v1 DELETE /orders/{id}) rests on v1 seeing an order made through v2 by the same id
+  add('draft_get_v1', 'GET', '/orders/{order_id}', null, 'v1 GET of the v2 draft by its id: does v1 see orders made through v2? (question 22; the late cancel needs it)', { needs: 'order_id', v1: true });
+  add('draft_get_v1_ext', 'GET', '/orders/@' + EXT, null, 'v1 GET of the v2 draft by its external id', { needs: 'order_id', v1: true });
   add('draft_patch', 'PATCH', '/v2/orders/{order_id}', { recipient: { address2: 'Unit 2' } }, 'PATCH the recipient (an address fix): the answer, and whether costs recalculate', { needs: 'order_id' });
   add('draft_delete', 'DELETE', '/v2/orders/{order_id}', null, 'delete the draft (204?)', { needs: 'order_id', cleanup: true });
   add('draft_after_delete', 'GET', '/v2/orders/@' + EXT, null, 'a deleted draft by external id: 404, or canceled? (question 21)', { needs: 'order_id' });
@@ -81,19 +84,31 @@ add('order_v1_missing', 'GET', '/orders/@pfcheck-does-not-exist', null, 'v1 (the
 // self-check: never a confirmation, never a v1 DELETE of anything (the late cancel is not tried with a real order)
 for (const s of plan) if (/confirm/i.test(s.path) || (s.method === 'DELETE' && !s.path.startsWith('/v2/orders/{'))) { console.error('merch_pf_check: refusing to start: a step would confirm or cancel: ' + s.path); process.exit(3); }
 
-// ---------- scrubbing: what is recorded never holds a person or a secret
+// ---------- scrubbing: what is recorded never holds a person or a secret (review finding 8: anywhere in a reply, not only inside addresses)
 const PERSON = { name: 'Test Buyer', company: '', address1: '1 Example Street', address2: '', city: 'Exampleton', zip: '00000', phone: '', email: '', tax_number: '' };
-// an object with address1 is an address (a recipient, a store's return address): its person fields become the invented ones; emails anywhere
-function scrub(x) {
-  if (Array.isArray(x)) return x.map(scrub);
+// always a person's, whatever object holds them: emails, phones, address lines, tax numbers, person names
+const ALWAYS = /^(e?mail|email_address|phone|phone_number|telephone|mobile|fax|address|address[_ ]?[123]|address_line_?\d*|street\d*|line[12]|tax_number|vat_number|first_name|last_name|full_name|contact_name|customer_name|recipient_name|buyer_name)$/i;
+// a person's only inside something that looks like a person or an address (a product or a store also has a name)
+const IN_PERSON = /^(name|company|city|zip|postal_code|state_name)$/i;
+const PERSONISH = /^(recipient|customer|buyer|contact|billing(_address)?|shipping_address|return_address|address|packing_slip|owner|user)$/i;
+const looksPerson = (x) => ['address1', 'address2', 'email', 'phone', 'zip', 'state_code', 'country_code', 'tax_number'].some((k) => Object.prototype.hasOwnProperty.call(x, k));
+const fake = (k, v) => (v == null ? v : Object.prototype.hasOwnProperty.call(PERSON, k.toLowerCase()) ? PERSON[k.toLowerCase()] : /mail/i.test(k) ? 'someone@example.test' : /name/i.test(k) ? 'Test Buyer' : /address|street|line/i.test(k) ? '1 Example Street' : '');
+export function scrub(x, parentKey) {
+  if (Array.isArray(x)) return x.map((v) => scrub(v, parentKey));
   if (x && typeof x === 'object') {
-    const o = {}, isAddr = Object.prototype.hasOwnProperty.call(x, 'address1');
-    for (const [k, v] of Object.entries(x)) o[k] = /secret|public_key|token|authorization/i.test(k) ? '<removed>' : isAddr && Object.prototype.hasOwnProperty.call(PERSON, k) && v != null ? PERSON[k] : scrub(v);
+    const o = {}, person = looksPerson(x) || PERSONISH.test(String(parentKey || ''));
+    for (const [k, v] of Object.entries(x)) {
+      if (/secret|public_key|token|authorization|password/i.test(k)) o[k] = '<removed>';
+      else if (typeof v !== 'object' && (ALWAYS.test(k) || (person && IN_PERSON.test(k)))) o[k] = fake(k, v);
+      else o[k] = scrub(v, k);
+    }
     return o;
   }
-  if (typeof x === 'string') return x.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+/g, 'someone@example.test');
+  if (typeof x === 'string') return x.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+/g, 'someone@example.test').replace(/\+\d[\d ().-]{6,}\d/g, '+00 0000 0000');
   return x;
 }
+export { plan };
+const MAIN = !!process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href; // the suite imports scrub and the plan
 
 function show(s) {
   console.log('- ' + s.name + ': ' + s.method + ' ' + BASE + s.path + (s.needs ? '   (uses ' + s.needs + ' from an earlier step)' : ''));
@@ -101,7 +116,7 @@ function show(s) {
   if (s.body) console.log('    body: ' + JSON.stringify(s.body).slice(0, 300));
 }
 
-if (!RUN) {
+if (MAIN && !RUN) {
   console.log('merch_pf_check: DRY RUN, nothing is sent (add --run on the key day). ' + plan.length + ' steps:');
   for (const s of plan) show(s);
   console.log('\nWith --run: replies are recorded in ' + path.relative(ROOT, OUT) + '/<step>.json; without --file-url the file and draft steps are left out.');
@@ -110,6 +125,7 @@ if (!RUN) {
 }
 
 // ---------- the run (key day only)
+if (MAIN && RUN) {
 fs.mkdirSync(OUT, { recursive: true });
 const ctx = {}, found = [];
 const headersFor = (body) => Object.assign({ Accept: 'application/json' }, body ? { 'Content-Type': 'application/json' } : {}, BASE === 'https://api.printful.com' ? { Authorization: 'Bearer proxy-injects-the-key' } : {}, STORE ? { 'X-PF-Store-Id': STORE } : {});
@@ -145,8 +161,10 @@ for (const s of plan) {
   if (s.name.startsWith('rates_') && s.name !== 'rates_bad_country' && Array.isArray(d)) {
     const [, c, g, q] = s.name.split('_'), st = d.find((x) => x.shipping === 'STANDARD') || d[0]; found.push(s.name + ': ' + (st ? st.rate + ' ' + st.currency + ' (' + (st.min_delivery_days || '?') + '-' + (st.max_delivery_days || '?') + ' days)' : 'no rate') + '; catalog.js ' + JSON.stringify((SHIP_COSTS[{ US: 'us', JP: 'jp', GB: 'uk', DE: 'eu', CA: 'ca', AU: 'au', HK: 'row' }[c]] || {})[g]) + ' for x' + q);
   }
+  if (s.name === 'draft_get_v1') { const v1 = r.body && r.body.result; found.push(s.name + ': ' + (r.status === 200 && v1 && String(v1.id) === String(ctx.order_id) ? 'v1 sees the v2 order by its id: the v1 late cancel can work (question 22)' : 'v1 does NOT see the v2 order (' + r.status + '): set MERCH_PF_V1_CANCEL=0 (question 22)')); }
   if (s.name.startsWith('prices_') && d && d.variants) found.push(s.name + ': ' + d.variants.slice(0, 2).map((v) => v.id + ' ' + JSON.stringify((v.techniques || []).map((t) => t.technique_key + ' ' + t.price))).join('; ') + ' (catalog.js mug ' + PRODUCTS.mug.cost + ', tee ' + PRODUCTS.tee.cost + ' cents)');
 }
 if ((ctx.order_id && !ctx.order_deleted) || ctx.reuse_id || ctx.probe_id) console.log('\nWARNING: a draft may be left at Printful (' + [ctx.order_deleted ? null : ctx.order_id, ctx.reuse_id, ctx.probe_id].filter(Boolean).join(', ') + '): delete it in the dashboard (drafts are never charged).');
 console.log('\nFound:'); for (const f of found) console.log('  ' + f);
 console.log('\nRecorded in ' + path.relative(ROOT, OUT) + '. Next: compare them with test/printful/*.json (PART5.md, "The key-day kit"), then re-run the suite.');
+}
