@@ -990,6 +990,8 @@ export class MerchLedger {
         if (inquiry || ['won', 'lost', 'prevented'].includes(st) || !(o.dispute == null || o.dispute === 'inquiry')) return;
         type = 'charge.dispute.created';
       }
+      // second review (R2-m2): a created that arrives after its own close (events out of order) is old news: it never reopens the dispute
+      if (type === 'charge.dispute.created' && d.id && d.id === o.dispute_id && ['won', 'lost'].includes(o.dispute)) { this.event('x:dispute_late_created:' + d.id, o.id, 'dispute_late_created', o.dispute); return; }
       if (type === 'charge.dispute.created' && inquiry) {
         if (o.dispute === 'open' || o.dispute === 'lost') return;
         this.set(o.id, { disputed_at: now, dispute: 'inquiry', dispute_id: d.id || null });
@@ -1038,8 +1040,11 @@ export class MerchLedger {
     const ref = h && h.order, m = ref && /^(mo_[A-Za-z0-9_-]{22})(?:-[rd](\d+))?$/.exec(ref);
     const o = (m && this.order(m[1])) || (ref && (this.one('select * from merch_orders where provider_order = ?', ref) || this.orderOfReprint(ref)));
     if (!o) { this.tx(() => this.event(eid, null, 'unknown', ref)); return json({ received: true }); } // T2.2-47
-    const g = await provider.get(this.env, ref);
+    const snap = this.pfSnap(this.order(o.id)), g = await provider.get(this.env, ref);
     if (!g.ok || !g.data) return fail('provider_error', 502); // not marked: Printful sends it again
+    // second review (R2-m1): the order changed while the read was out (another hint, a dispute, a cancel): this read may be the older one, so
+    // it is not applied and not marked; Printful sends the hint again and that read is fresh (the daily re-read is the backstop)
+    if (this.pfSnap(this.order(o.id)) !== snap) return fail('provider_error', 502);
     this.tx(() => { if (this.event(eid, o.id, h.type)) this.applyProvider(o.id, g.data); });
     await this.flush();
     return json({ received: true });
@@ -1807,16 +1812,16 @@ export class MerchLedger {
     const os = this.q("select id, provider_order from merch_orders where provider_order is not null and confirmed_at is not null and (status in ('confirmed', 'part_shipped') or (status = 'held' and hold = 'provider') or (status = 'shipped' and hold = 'reship')) and coalesce(pf_read_at, confirmed_at) <= ? and coalesce(pf_wait, 0) <= ? and coalesce(lease_until, 0) <= ? order by coalesce(pf_read_at, confirmed_at) limit ?", now - DAY, now, now, left);
     for (const x of os) {
       left--;
-      const g = await provider.get(this.env, x.provider_order);
-      this.tx(() => { if (g.ok && g.data) this.applyRead(x.id, x.provider_order, g.data); else this.readFailed(x.id, x.provider_order, g.kind); });
+      const snap = this.pfSnap(this.order(x.id)), g = await provider.get(this.env, x.provider_order); // R2-m1: not applied if the order changed meanwhile
+      this.tx(() => { if (g.ok && g.data) this.applyRead(x.id, x.provider_order, g.data, snap); else this.readFailed(x.id, x.provider_order, g.kind); });
     }
     if (left <= 0) { await this.flush(); return; }
     // reprints with a line not posted yet, and (R2-M3) reprints whose parcel came back while the order waits on a reship
     const rs = this.q("select r.id, r.order_id, r.provider_order from merch_reprints r join merch_orders o on o.id = r.order_id where r.status = 'confirmed' and r.provider_order is not null and coalesce(r.read_at, r.created_at) <= ? and ((o.status in ('confirmed', 'part_shipped') and exists (select 1 from merch_order_items i where i.order_id = r.order_id and i.rp = r.n and i.status in ('confirmed', 'in_production'))) or (o.status in ('confirmed', 'part_shipped', 'shipped') and o.hold = 'reship' and exists (select 1 from merch_order_items i join merch_parcels p on p.id = i.parcel_id where i.order_id = r.order_id and i.rp = r.n and p.returned_at is not null))) order by coalesce(r.read_at, r.created_at) limit ?", now - DAY, left);
     for (const r of rs) {
-      const g = await provider.get(this.env, r.provider_order);
+      const snap = this.pfSnap(this.order(r.order_id)), g = await provider.get(this.env, r.provider_order);
       this.tx(() => {
-        const fresh = true;
+        const fresh = this.pfSnap(this.order(r.order_id)) === snap;
         this.run('update merch_reprints set read_at = ? where id = ?', g.ok && g.data && fresh ? this.now() : this.now() - DAY + HOUR, r.id);
         if (g.ok && g.data && fresh && String(g.data.id) === String(r.provider_order)) this.applyProvider(r.order_id, g.data);
       });
