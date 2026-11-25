@@ -311,10 +311,26 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      pawprint 89, merch_legal 383, render_chromium, test_enc 36, the game round trip, both `--check`s, the deploy script's
      `BUILD_ONLY=1` with and without the stand-in. The deploy for run 1 is `MERCH_TEST_PRINTER=1 ... bash tools/merch_test_deploy.sh`.
      Before run 2 (the real Printful key) every run-1 order still open must be ended (SANDBOX.md D6).
-  3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring
-     (`git diff 99a110d..3376171`) and C2 (`git diff 4e42257..927a019`); then one fix batch. None of the three has been reviewed.
-     **This is the next thing to start** (the sixth MERCH session; the fifth handed over at 19:05 JST at about 215k context, weekly
-     figure 83%, slow pace until Thu 26 Nov 13:00 JST: one agent at a time, stop starting things at 90%).
+  3. (done 25 Nov 19:50 JST, the sixth MERCH session, session_01D6KLY5jgpsjA7kUBm3xv6h) The ONE combined review of the third fix batch,
+     the wiring and C2: `docs/reviews/MERCH_PART9_fourth_review.md` (0 blocker, 1 major, 5 minor; its "Fixes (fourth review)" list ends
+     the file). **All six fixed, plus the stand-in draft guard** (`merch/part9-fixes4`, merge 1e830eb; tests
+     `cloudflare/merch/test/t_fix9d.mjs`, 17 rows, each failing on 9815a07): R4-M1 a line posted in two parcels is no longer taken for a
+     reship (`mapOrder` keeps the reshipment flag and the quantities; new table `merch_parcel_items`; a line moves only to a flagged
+     reship or, with no flag, to a parcel first seen at or after the return; **a part of a line that comes back is held for the owner**,
+     `hold=review`, `why=reship_part`, one owner email and one buyer note, because the address form, the reprint and the 7-day refund
+     all take whole lines); the time limit covers the body read; the test Worker takes only `sk_test_` / `rk_test_` keys after trimming
+     and every key is trimmed; a new buyer email `checking` when a case ends `reship_unread`, the owner's refund or reprint ends the
+     review hold, a parcel back during a review is one owner email `returned_review`; **the test order server is no longer open**:
+     buyer emails only to `MERCH_TEST_MAIL_TO` (a Secret the owner sets, SANDBOX A10; without it no buyer email goes out) and checkout,
+     the order buttons and unsigned printer hints need the build's random `MERCH_TEST_TOKEN`, which the test page reads from
+     `/merch/test_cfg.json` behind the test password (**new GM point G3 in SANDBOX.md part F; until G3 is done the test Worker takes no
+     order, 403 `test_only`**); the test build wipes only a folder it made; `merch_orders.provider` records `stand-in` or `printful` and a
+     stand-in draft is never sent to real Printful. **Green on 1e830eb**: merch_worker 333, merch_page 2058, pawprint 89, merch_legal
+     383, render_chromium, test_enc 36, the game round trip, both `--check`s, `BUILD_ONLY=1` with and without the stand-in.
+     Left open: the real name of Printful's reshipment flag and whether `quantity` is always given (run 2, the Printful key); a
+     part-line reship is the owner's job by hand. **This fourth fix batch (about 670 lines) has had no review of its own**: one short
+     review of `git diff 9815a07..1e830eb` is worth doing at the normal pace after the weekly reset, before run 2 at the latest (the
+     stand-in never confirms or posts, so run 1 cannot reach the shipment code either way).
   4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
      `get_environment` first; a blocked host is a need to propose, see the tool's rules) and try ONE test order only after the deploy.
   5. The test deploy: the GM's G1/G2 first, then `tools/merch_test_deploy.sh` for real (the owner's yes is given; the prompts are the
