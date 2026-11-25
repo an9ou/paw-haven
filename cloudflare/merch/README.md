@@ -17,10 +17,11 @@ and the T-row table are in `docs/design/merch/PART3.md`. **Nothing here is deplo
 | `render.js` | Part 4, the print render: Browser Run's `env.BROWSER.quickAction('screenshot', ...)` (from the ledger object, or through the front Worker's `RenderGate` with `MERCH_RENDER_VIA = "worker"`), the 429 classifier, and the call to the fallback. `RENDER_FETCH` (tests) still wins. |
 | `resvg.js` | Part 4, `MerchRender`: the resvg-wasm fallback in its own SQLite Durable Object (12 bands for a tee, one piece for a mug, one PNG out). |
 | `vendor/resvg-wasm/` | `@resvg/resvg-wasm` 2.6.2 (MPL-2.0, `LICENSE-NOTICE.txt`): the wasm unchanged, its JS glue wrapped in a factory. Loaded only on the first fallback render. |
-| `admin.js` | The owner's admin routes (`tools/merch.sh`). |
+| `admin.js` | The owner's admin routes (`tools/merch.sh`). `show` and `report` start with `printer`: `printful`, `none`, or `STAND-IN ...` (part 9, C2). |
+| `test_printer.js` | Part 9, C2: the stand-in printer for the **test Worker only** (`doodle-doggo-merch-test-printer`, run 1 of the sandbox before the Printful key). One SQLite Durable Object (`TestPrinter`) answering the Printful calls the adapter makes, in the shapes of `test/printful/`; refusals chosen by the shipping name ("Test Refuse Address", "Test Refuse Tee", "Test Refuse All", "Test Printer Down", "Test Refuse File"). No route, no domain, workers.dev off; never calls the network, never confirms, keeps no address. Wired only by `tools/merch_test_build.mjs` with `MERCH_TEST_PRINTER=1` (`printerEnv`). Not part of the live Worker. SANDBOX.md part C. |
 | `build_assets.mjs` | Copies every released print folder from `site/merch/print/<ART_VER>/` (in git) into `assets/merch/print/` (git-ignored, a copy), never deleting one. |
 | `wrangler.example.toml` | Bindings (three Durable Object classes, Browser Run, the self binding), the migrations v1 and v2, the cron, the variables (shut by default). No ids, no secrets. |
-| `test/` | The `merch_worker` suite (242 checks): the contract rows, the review's cases (R-*), crashes (C-*), races (X-race-*), a draft-mode world, Miniflare, part 4 (P4-*, F4-*), part 5 (P5-*, F5-*). `test/render_chromium.mjs`: part 4's Chromium truth test, run on its own. |
+| `test/` | The `merch_worker` suite (316 checks): the contract rows, the review's cases (R-*), crashes (C-*), races (X-race-*), a draft-mode world, Miniflare, part 4 (P4-*, F4-*), part 5 (P5-*, F5-*), part 9 (F9-*, C1-*, C2-*: `t_testprinter.mjs`, the stand-in printer and the built test bundle in workerd). `test/render_chromium.mjs`: part 4's Chromium truth test, run on its own. |
 
 ## Run the tests
 
@@ -51,6 +52,11 @@ never faked in the part 4 rows: it draws real PNGs with the vendored wasm.
   refuses a confirm unless the mode is `live`, and always on the test Worker (`MERCH_TEST=1`, which never opens in live mode).
 - The test Worker (`MERCH_TEST=1`) refuses `sk_live` / `rk_live` keys (Stripe is not set up, and no request is ever sent with one) and every origin
   but `https://test.doodledoggo.app`; the live Worker refuses that origin.
+- The stand-in printer (part 9, C2, `test_printer.js`) exists only in the test build (`MERCH_TEST_PRINTER=1`): a service binding `PROVIDER_FETCH`
+  that the live toml and the plain build never have. The test entry makes it the printer only while `MERCH_TEST=1`, the binding is there and no
+  real `MERCH_PROVIDER_KEY` is set; with a real key the binding is taken away, so that key goes to Printful and never to the stand-in. The key
+  word `test-printer` is a printer only there: on the live Worker (or without the binding) it means "no printer" (shut, nothing sent). The
+  stand-in answers 401 to any other key, never confirms and keeps no address; `merch.sh show` and `report` say `STAND-IN` while it is in use.
 - The shop page (`site/merch/`) talks to this Worker only from the test copy (`https://test.doodledoggo.app` -> `https://merch-api-test.doodledoggo.app`,
   P1); everywhere else it uses its own fake until the launch adds the live address. It opens a payment page only when checkout answers a url that
   starts with `https://checkout.stripe.com/` (P2).

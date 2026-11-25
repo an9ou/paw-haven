@@ -22,7 +22,11 @@ export const pfVariant = (pv) => PF_VARIANT_IDS[String(pv || '').replace(/^pf:/,
 // The network: env.PROVIDER_FETCH (tests, a service binding), else, on Cloudflare's runtime only and with a key, the global fetch. Node never
 // gets the global fetch, so a test without PROVIDER_FETCH has no printer at all (the gate stays shut) and nothing reaches the network.
 // (the shared rule, util.js netOf: the same for Stripe and Resend)
-const net = (env) => netOf(env.PROVIDER_FETCH, env.MERCH_PROVIDER_KEY);
+// Part 9, C2: the key 'test-printer' names the sandbox's stand-in printer (test_printer.js), never Printful: it counts only on the test Worker
+// (MERCH_TEST = "1") with the PROVIDER_FETCH binding there; anywhere else (the live Worker, or no binding) the printer is not set up and nothing
+// is sent, so that word never reaches api.printful.com and a live Worker never takes an order on it.
+const STAND_IN = 'test-printer';
+const net = (env) => (env.MERCH_PROVIDER_KEY === STAND_IN && !(env.MERCH_TEST === '1' && env.PROVIDER_FETCH) ? null : netOf(env.PROVIDER_FETCH, env.MERCH_PROVIDER_KEY));
 // ready = a network and a key; the test Worker (MERCH_TEST=1) never runs live
 export const providerReady = (env) => !!(net(env) && env.MERCH_PROVIDER_KEY) && !(env.MERCH_TEST === '1' && env.MERCH_PROVIDER_MODE === 'live');
 
