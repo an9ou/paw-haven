@@ -1,0 +1,79 @@
+/* Doodle Doggo /merch legal pages (drafts): /merch/terms/, /merch/shipping/, /merch/seller/, /merch/tokushoho/.
+   Loaded after /style.css and /merch/merch.css. Phones first. Every text reads at least 4.5:1 (merch/test_legal.js measures it). */
+.legal{max-width:760px}
+.legal h1{font-size:46px;margin:.1em 0 .2em}
+.legal h2{font-size:34px;margin:1.1em 0 .25em;scroll-margin-top:84px}
+.legal h3{font-size:27px;margin:.8em 0 .2em}
+.legal p,.legal li,.legal dd,.legal td{font-size:19px}
+.legal ul,.legal ol{padding-left:1.3em}
+
+/* the draft banner, right under the title, and the date line */
+.draft{margin:0 0 8px;padding:8px 12px;background:#FFF1C9;border:2px dashed #C98A3A;border-radius:10px 8px 11px 7px;font-size:18px;font-weight:700;line-height:1.35;color:#5B3D32}
+.updated{margin:0 0 12px;font-size:17px;color:var(--muted)}
+
+/* the four pages, side by side */
+.legalnav{margin:4px 0 16px}
+.legalnav ul{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+.legalnav li{margin:0}
+.legalnav a{display:inline-flex;align-items:center;min-height:44px;padding:2px 14px;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;
+  font-size:18px;line-height:1.15;text-decoration:none;color:var(--ink)}
+.legalnav a[aria-current="page"]{background:var(--w-yellow);font-weight:700}
+
+/* "The short version" */
+.short{margin:16px 0 18px;padding:14px 16px 12px;background:var(--w-mint)}
+.short h2{margin:0 0 .2em;font-size:32px}
+.short ul{margin:0;padding-left:1.2em}
+.short li{margin:.25em 0}
+
+/* on this page */
+.toc{margin:0 0 8px}
+.toc h2{font-size:28px;margin:.4em 0 .1em}
+.toc ol{margin:0;padding-left:1.4em;columns:1}
+.toc li{margin:0}
+.toc a{display:inline-flex;align-items:center;min-height:44px}
+@media (min-width:760px){ .toc ol{columns:2;column-gap:28px} }
+
+/* a placeholder the owner fills in, and a choice left to a professional */
+.ph{background:#FFE3A1;color:#5B3D32;border:1.5px dashed #9A5B12;border-radius:6px;padding:0 3px;font-weight:700;overflow-wrap:anywhere}
+.decide{margin:12px 0;padding:12px 14px;background:var(--w-pink);border:2.5px dashed #9A2F45;border-radius:14px 10px 15px 9px}
+.decide>.dlabel{display:block;margin:0 0 4px;font-family:var(--hand);font-size:26px;font-weight:700;line-height:1.1;color:#5B3D32}
+.decide p{margin:.3em 0}
+
+/* the seller's facts, the Japanese notice: a label above its value on phones, side by side on wide screens */
+.facts{margin:10px 0 16px;padding:0;border-top:2px solid rgba(91,61,50,.25)}
+.facts>div{padding:10px 0;border-bottom:2px solid rgba(91,61,50,.25)}
+.facts dt{font-family:var(--hand);font-size:26px;font-weight:700;line-height:1.15}
+.facts dd{margin:4px 0 0;overflow-wrap:anywhere}
+.facts dd p{margin:.25em 0}
+.facts dd ul{margin:.25em 0}
+@media (min-width:760px){ .facts>div{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px} .facts dd{margin:0} }
+
+/* the fee table: a table on wide screens, one card per row on phones */
+.fees{width:100%;border-collapse:collapse;margin:10px 0 6px;table-layout:fixed}
+.fees caption{text-align:left;font-size:17px;color:var(--muted);padding:0 0 6px}
+.fees th,.fees td{border:2px solid rgba(91,61,50,.35);padding:8px 10px;text-align:left;vertical-align:top;overflow-wrap:anywhere;font-size:18px;line-height:1.35}
+.fees thead th{background:var(--w-yellow);font-family:var(--hand);font-size:24px;line-height:1.1}
+.fees tbody th{background:#fff;font-weight:700}
+.fees td{background:#fff}
+@media (max-width:640px){
+  .fees,.fees caption,.fees tbody,.fees tr,.fees th,.fees td{display:block;width:auto}
+  .fees thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .fees tr{margin:0 0 12px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;background:#fff;overflow:hidden}
+  .fees tbody th{border:0;border-bottom:2px solid rgba(91,61,50,.25);background:var(--w-yellow);font-family:var(--hand);font-size:25px;line-height:1.1}
+  .fees td{border:0;padding:6px 12px}
+  .fees td::before{content:attr(data-label);display:block;font-size:16px;font-weight:700;color:var(--muted)}
+}
+
+.legal .mail{font-weight:700}
+.contactline{margin:.4em 0}
+
+/* the Japanese page: the system Japanese face for running text (the site's Japanese subset only covers the site's own words) */
+html[lang="ja"] .legal .jtext,html[lang="ja"] .legal .facts dd,html[lang="ja"] .legal .jtext p{font-family:var(--jp);line-height:1.75}
+html[lang="ja"] .legal .facts dt{font-family:var(--jp);font-size:20px;font-weight:700}
+html[lang="ja"] .legal h1{font-family:var(--jp);font-size:30px;line-height:1.35}
+html[lang="ja"] .legal h2{font-family:var(--jp);font-size:24px;line-height:1.35}
+html[lang="ja"] .legal .draft,html[lang="ja"] .legal .updated{font-family:var(--jp)}
+html[lang="ja"] .legal .decide>.dlabel{font-family:var(--jp);font-size:20px}
+.enline{font-size:18px}
+html[lang="ja"] .legal .draft [lang="en"],html[lang="ja"] .legal .updated [lang="en"]{display:block;font-family:var(--read)}
+@media (max-width:700px){ .legal h1{font-size:40px} .legal h2{font-size:31px} html[lang="ja"] .legal h1{font-size:26px} html[lang="ja"] .legal h2{font-size:22px} .legal p,.legal li,.legal dd,.legal td{font-size:18px} }
