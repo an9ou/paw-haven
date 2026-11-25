@@ -42,7 +42,7 @@ export async function adminRoute(L, req, path, ip) {
       if (!/[A-Za-z]/.test(reason)) return fail('no_reason', 400, { say: 'Give the reason in words, for example: damaged' }); // S15: "2" is a quantity, not a reason
       const r = L.tx(() => {
         const x = L.order(o.id); if (!['paid', 'held', 'confirming', 'confirmed', 'part_shipped', 'shipped'].includes(x.status)) return { error: 'not_paid' };
-        if (x.dispute === 'open') return { error: 'disputed' };
+        if (x.dispute === 'open' || x.dispute === 'lost') return { error: 'disputed' }; // part 9 (M1): lost, the bank already paid the buyer back
         const l = L.lines(x.id).find((y) => y.line === line); if (!l) return { error: 'bad_line' };
         if (l.status === 'replaced') return { error: 'replaced', reprint: (L.lines(x.id).find((y) => y.reprint_of === l.line && y.status !== 'replaced') || {}).line || null }; // S4: refund the reprint's line
         const q = body.qty == null ? l.qty - l.refunded_qty : Number(body.qty);
@@ -59,7 +59,7 @@ export async function adminRoute(L, req, path, ip) {
       const r = await L.reprint(o, lines, po, null, 'owner');
       return r.ok ? json(r) : fail(r.error, r.status || 409);
     }
-    if (act === 'confirm') { // the owner's go (T2.2-25, T2.2-39). M1: only from a review hold, draft_mode or a won dispute; never a stopped order
+    if (act === 'confirm') { // the owner's go (T2.2-25, T2.2-39). M1: only from a review hold, draft_mode or a won dispute (part 9: any close but lost is 'won'); never a stopped order
       const okHold = (x) => x.status === 'held' && (x.hold === 'review' || x.hold === 'draft_mode' || (x.hold === 'dispute' && x.dispute === 'won'));
       let x = L.order(o.id);
       const held = L.q("select id from merch_reprints where order_id = ? and status = 'held'", o.id).length > 0;

@@ -62,7 +62,7 @@ const J = (o, status) => new Response(JSON.stringify(o), { status: status || 200
 
 // ---------------- Stripe ----------------
 export function fakeStripe() {
-  const S = { now: () => Date.now(), sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch', after: {}, slowCreate: 0 };
+  const S = { now: () => Date.now(), sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch', after: {}, slowCreate: 0, disputed: new Set() };
   // Stripe keeps an idempotency key for 24 hours, then forgets it (a retry after that makes a NEW object): S5
   const keyGet = (m, k) => { const e = k && m.get(k); if (!e) return null; if (S.now() - e.at > 864e5) { m.delete(k); return null; } return e.v; };
   const keySet = (m, k, v) => { if (k) m.set(k, { at: S.now(), v }); };
@@ -90,9 +90,28 @@ export function fakeStripe() {
     if (mm && m === 'GET') { if (take('get')) return J({ error: { message: 'rate' } }, 429); if (S.after.get) await S.after.get(mm[1]); const cs = S.sessions.get(mm[1]); if (cs && cs.status === 'open' && S.now() / 1000 > cs.expires_at) cs.status = 'expired'; // Stripe expires it at expires_at
       return cs ? J(cs) : J({ error: {} }, 404); }
     if (p === '/v1/checkout/sessions' && m === 'GET') { if (take('list')) return J({ error: {} }, 500); const pi = u.searchParams.get('payment_intent'); return J({ data: Array.from(S.sessions.values()).filter((c) => c.payment_intent === pi) }); }
+    // part 9: the payment with its charge expanded (what is left to refund), as GET /v1/payment_intents/:id?expand[]=latest_charge answers
+    const pim = /^\/v1\/payment_intents\/([^/]+)$/.exec(p);
+    if (pim && m === 'GET') {
+      if (take('pi')) return J({ error: { message: 'boom' } }, 500);
+      const pi = decodeURIComponent(pim[1]), cs = Array.from(S.sessions.values()).find((c) => c.payment_intent === pi);
+      if (!cs) return J({ error: { type: 'invalid_request_error', code: 'resource_missing', message: 'No such payment_intent: ' + pi } }, 404);
+      const back = S.refunds.filter((r) => r.payment_intent === pi && ['succeeded', 'pending'].includes(r.status)).reduce((a, r) => a + r.amount, 0);
+      return J({ id: pi, object: 'payment_intent', amount: cs.amount_total, currency: 'usd', status: 'succeeded',
+        latest_charge: { id: 'ch_' + pi, object: 'charge', amount: cs.amount_total, amount_refunded: back, currency: 'usd', refunded: back >= cs.amount_total, disputed: S.disputed.has(pi) } });
+    }
     if (p === '/v1/refunds' && m === 'POST') {
       if (take('refund')) return J({ error: { message: 'no' } }, 500);
-      const was = keyGet(S.refundKeys, key); if (was) return J(was);
+      const was = keyGet(S.refundKeys, key);
+      // Stripe: a key sent again with other parameters is refused (idempotency_error); with the same ones it answers the first result
+      if (was) return was.amount === Number(body.amount) ? J(was) : J({ error: { type: 'idempotency_error', message: 'Keys for idempotent requests can only be used with the same parameters they were first used with.' } }, 400);
+      // part 9 (review M2): refuse what real Stripe refuses: an unknown payment, a charged-back charge, more than is left on the charge
+      const cs = Array.from(S.sessions.values()).find((c) => c.payment_intent === body.payment_intent);
+      if (!cs) return J({ error: { type: 'invalid_request_error', code: 'resource_missing', param: 'payment_intent', message: 'No such payment_intent: ' + body.payment_intent } }, 400);
+      if (S.disputed.has(body.payment_intent)) return J({ error: { type: 'invalid_request_error', code: 'charge_disputed', message: 'Charge ch_' + body.payment_intent + ' has been charged back; cannot issue a refund.' } }, 400);
+      const back = S.refunds.filter((r) => r.payment_intent === body.payment_intent && ['succeeded', 'pending'].includes(r.status)).reduce((a, r) => a + r.amount, 0), rest = cs.amount_total - back;
+      if (rest <= 0) return J({ error: { type: 'invalid_request_error', code: 'charge_already_refunded', message: 'Charge ch_' + body.payment_intent + ' has already been refunded.' } }, 400);
+      if (Number(body.amount) > rest) return J({ error: { type: 'invalid_request_error', param: 'amount', message: 'Refund amount ($' + (Number(body.amount) / 100).toFixed(2) + ') is greater than unrefunded amount on charge ($' + (rest / 100).toFixed(2) + ')' } }, 400);
       const re = { id: 're_' + (++S.n), object: 'refund', amount: Number(body.amount), payment_intent: body.payment_intent, status: 'succeeded', metadata: { merch: body['metadata[merch]'], merch_refund: body['metadata[merch_refund]'] } };
       S.refunds.push(re); keySet(S.refundKeys, key, re);
       if (S.after.refund) await S.after.refund(re);
@@ -202,7 +221,7 @@ export function fakePrintful() {
     if (v === 2 && (mm = /^\/orders\/(@?)([^/]+)(\/confirmation|\/shipments)?$/.exec(p))) {
       const id = mm[1] ? P.byExt.get(decodeURIComponent(mm[2])) : mm[2], o0 = id && P.orders.get(id), o = o0 && !o0.gone ? o0 : null; // a deleted draft is gone
       if (mm[3] === '/shipments') return o ? J({ data: o.shipments.map((s) => v2Ship(o, s)), paging: { total: o.shipments.length, offset: 0, limit: 100 } }) : pfErr(404, 'Not found');
-      if (m === 'GET') { if (take('get')) return pfProblem(503, 'Service Unavailable'); return o ? out(o) : pfErr(404, 'Not found'); }
+      if (m === 'GET') { if (take('get')) return pfProblem(503, 'Service Unavailable'); if (P.down) return pfProblem(503, 'Service Unavailable'); if (P.after.get) await P.after.get(o); return o ? out(o) : pfErr(404, 'Not found'); }
       if (!o) return pfErr(404, 'Not found');
       if (mm[3] === '/confirmation') {
         if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return pfProblem(503, 'Service Unavailable');
