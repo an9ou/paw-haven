@@ -79,8 +79,13 @@ function kit(r){
       // the old drifted fill is still measured for the fit (not drawn), so every dog keeps its size and place; its wobble is the fill's own wobble
       const jw=fill?P.map(q=>{const j=[J(fa),J(fa)];tr(cx+(q[0]-cx)*sc+ox+j[0],Math.min(cy+(q[1]-cy)*sc+oy+j[1],h.cy||1e9));return j}):null;
       if(o.noline){if(fill){const Q=P.map((q,i)=>[q[0]+jw[i][0],Math.min(q[1]+jw[i][1],h.cy||1e9)]);acc.push(`<path d="${pd(part&&!o.own?dense(Q,true,3).map(q=>pin(q,part)):Q)}Z" fill="${fill}"${fo}/>`)}return}
-      const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[],Q=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);const d=pl(L,o.amp??1.2,Q);
+      const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[],Q=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);let d=pl(L,o.amp??1.2,Q);
       if(fill)acc.push(`<path d="${pd(Q.slice(0,n))}Z" fill="${fill}"${fo}/>`);
+      // 24 Nov 2026 (owner's rule, found at print size: the Shiba's ear and cheek, the tricolour Corgi's chest): the crayon outline used to stop one step short of its
+      // start, so the fill's last edge showed with no line on it. A filled shape's line now always ends back where it began: one more stroke from its last point to
+      // its first, the same wobbly points, no new jitter (the random stream and every other point stay as they were). Written with commas (never used elsewhere),
+      // so dogs/check_identical.js can leave exactly this stroke out and prove nothing else moved. A shape with no fill keeps its crayon gap.
+      if(fill&&!o.closed){const a=Q[Q.length-1],b=Q[0];d+=`M${R1(a[0])},${R1(a[1])}L${R1(b[0])},${R1(b[1])}`}
       acc.push(st(d,o.w||LW,INK));lastQ=Q.slice(0,n);lastW=o.w||LW
     },
     // part(true): keep the marks that follow inside the outline just drawn; part(false): stop
@@ -900,7 +905,8 @@ function drawTail(h,s,L,B){
    case 'brush':{h.tube(map([[0,0],[-12,10],[-21,25],[-24,40],[-19,52]]),s.wet?9.5:12.5,col);h.line(map([[-3,-3],[-14,6],[-24,20],[-28,34]]),3.2,s.dark?mix(s.dark,col,.25):curlCol(col),.6);
      h.line(map([[-16,30],[-19,40],[-16,47]]),2,curlCol(col),.3);break}// v2.11 gsd: long, bushy, carried low, darker on top
    case 'low':h.tube(map([[0,0],[-8,11],[-13,24],[-12,38]]),8.4,col);break;// v2.11 mastiff: thick and hanging
-  }  if(s.tailTip){const E={ring:[-1,-33],brush:[-19,52],low:[-12,38],plume:PLUME_TIP,pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
+  }  if(s.tailTip){const E={ring:[-1,-33],brush:[-19,52],low:[-12,38],plume:PLUME_TIP,pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W);
+    if(/^(line|wiggle|whip|plume|ring)$/.test(s.tail)){const i=h.acc.length-1;h.acc[i]=h.acc[i].replace('/>',` stroke="${INK}" stroke-width="2.2"/>`)}}}// 24 Nov 2026: where the tail ends thinner than its white tip (a stick tail, the plume's point, the afghan's ring) the tip gets its own ink ring (no new jitter)
   if(s.tailFn)s.tailFn(h,s,L,map,col);// v2.12 ART B: a breed's own tail drawing (new spec field tailFn)
 }
 /* v2.11: the plumed tail (spitz, pom) and the neck ruff (spitz, pom, a little on the akita) */
@@ -5230,6 +5236,6 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
 if (typeof module !== 'undefined' && module.exports) module.exports = PawPrintMake;
 
   return PawPrintMake; })(undefined);
-  var api = make(shim.PawArt, shim.PawGenes, font, names, '28a21566');
+  var api = make(shim.PawArt, shim.PawGenes, font, names, '3f73333c');
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else G.PawPrint = api;
 })(typeof self !== 'undefined' ? self : globalThis);
