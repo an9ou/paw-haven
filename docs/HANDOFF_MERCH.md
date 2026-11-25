@@ -220,14 +220,23 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     **This fix batch has had no second review** (the part 6 lesson): point ONE more code review at `t_fix9.mjs` and the `ledger.js` diff of
     3f21682d, together with the three points above once fixed.
   - **For the sandbox set-up list:** the merch webhook endpoint must also subscribe to `charge.dispute.updated`.
-  - **Running when this was written (15:35 JST), each in its own worktree, not pushed until merged:** the page fixes
-    (`merch/part9-page-fixes`: phone M1-M8, m1-m10; art M1, m1, m2, m4; files `site/merch/**` but not `print/`, `merch/test_page.js`,
-    `merch/test_legal.js`) and the print and email fixes (`merch/part9-print-fixes`: art m3, m5, m6, m7; a new ART_VER and print folder,
-    the owner’s samples refreshed). Agent worktrees do not survive a new session: merge and push before handing over.
+  - **Page fixes and print fixes: merged, 25 Nov about 16:15 JST** (`merch/part9-print-fixes` merge ea311ba7, `merch/part9-page-fixes`
+    merge 88e7c1f0). Phone M1-M8 and m1-m10 and art M1, m1, m2, m4 on the page; art m3 (the tee name is at most max(dog width x 1.15, 6 in)
+    wide), m5 (the mug strip at the handle), m6 (white tees: a crisp white backing, so every tee file is alpha 0 or 255), m7 (email
+    headings in a rounded sans). **ART_VER is now `pp1-5688199b`** (folder `site/merch/print/pp1-5688199b/`; the old pre-launch folder is
+    removed). The owner’s samples were remade (`docs/design/merch/samples/`). The "Fixes" lists are at the end of each review file.
+    **Every suite green on 88e7c1f0** (each with `NODE_PATH=$(npm root -g)`, after `node tools/merch_build.js`): pawprint 88; the game round
+    trip 11 checks (483 renders); merch_worker 260; render_chromium ALL OK (8 dogs, now also white tees by both renderers); merch_page 1932
+    (about 120 s; `P9=1` runs only the part 9 checks); merch_legal 383; test_enc 36; `gen.js --check` and `merch_catalog_json.js --check`
+    current.
+  - **Neither of these two fix batches has been reviewed.** Small points left by the fixers: the four legal pages’ footers still use dots
+    between links (the shop footer does not); the shop page’s flat print view on a checker shows the white backing as a 1-2 px white
+    outline round the dog on white tees (invisible on the tee mock-up); the mug’s face direction and "white prints no ink on a white tee"
+    both want a real sample (part 10).
 - **Next, in this order:**
-  1. Merge the two fix branches above (page first, then print; after the print merge run `merch_build.js` and the page suite again, since
-     ART_VER changes), run every suite once on the merged head, add the "Fixes" lists to the phone and art review files, push.
-  2. One more code fix batch for the three money points above, then ONE second code review of the part 9 code fixes (see above).
+  1. ONE combined second review (code + phone + art, read-only) of the three part 9 fix batches: the `ledger.js` / `stripe.js` diff of
+     3f21682d with `t_fix9.mjs`, the page at 360x640 and 390x844, and the new print files and samples at full size.
+  2. One code fix batch for the three money points above plus whatever that review finds; green; push.
   3. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox keys in a NEW, separate Stripe account;
      ask the owner in the choice window when you get there; no 5-minute rule], and the Printful key through the secure form when the owner
      says they are ready (`tools/merch_pf_check.mjs`, then re-record the fixtures).
