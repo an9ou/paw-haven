@@ -300,8 +300,17 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      game round trip, both `--check`s, `BUILD_ONLY=1 bash tools/merch_test_deploy.sh`. Small points left: Stripe's cancel_url lands on
      the shop home, not the basket (the basket is kept); a Resend retry after a timeout can get a 409 and be noted as a failed mail
      though it went; the pay note's "Test mode" words need new words at launch.
-  2. (running since 18:25 JST) C2, the stand-in printer for the test Worker only, on `merch/part9-test-printer` (SANDBOX.md C; the
-     owner said yes to it). NOT C3. Merge when green.
+  2. (done 19:00 JST, merge 927a019) C2 (`merch/part9-test-printer`): `cloudflare/merch/test_printer.js`, the Worker
+     `doodle-doggo-merch-test-printer` (one SQLite Durable Object, no route or domain, only behind the service binding `PROVIDER_FETCH`;
+     never calls the network, never confirms, 401 for any key but `test-printer`), wired only in the test build with
+     `MERCH_TEST_PRINTER=1` (`tools/merch_test_build.mjs`; `ledger.js` unchanged; a real `MERCH_PROVIDER_KEY` removes the binding).
+     Live code touched: `provider_printful.js` `net()` (the key `test-printer` is "no printer" unless `MERCH_TEST=1` and the binding are
+     both there) and `admin.js` (`merch.sh show` / `report` start with a STAND-IN line). The magic shipping names: "Test Refuse
+     Address", "Test Refuse Tee", "Test Refuse All", "Test Printer Down" (the whole stand-in down for 30 minutes), "Test Refuse File"
+     (refuses on every try). **Every suite green on 927a019**: merch_worker 316 (new `t_testprinter.mjs`, 12 rows), merch_page 2036,
+     pawprint 89, merch_legal 383, render_chromium, test_enc 36, the game round trip, both `--check`s, the deploy script's
+     `BUILD_ONLY=1` with and without the stand-in. The deploy for run 1 is `MERCH_TEST_PRINTER=1 ... bash tools/merch_test_deploy.sh`.
+     Before run 2 (the real Printful key) every run-1 order still open must be ended (SANDBOX.md D6).
   3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring and
      C2; then one fix batch.
   4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
