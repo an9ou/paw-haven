@@ -61,6 +61,14 @@ Printful sends its signature in **`x-pf-webhook-signature`**. The front Worker (
 only that name (the old fallback `x-pf-signature` is gone: a hint signed under it is refused), and the harness signs under the real name. Row
 `F5-mf-header` sends a hint through the front Worker in workerd with only the real name (200) and only the old name (401).
 
+### Hints are only hints (part 9 code review, B1)
+
+A hint can be lost (a webhook outage, a 502 while we re-read the order, an event we do not subscribe to, Printful giving up after its last
+retry at 1024 minutes). So the ledger never decides "not posted" from hints alone: before the delay email, the automatic late refund and the
+24-hour refund of a printer-failed hold it reads the order itself (`provider.get`, TRANSACTIONS T2.1-35; a failed read waits 15 minutes,
+never refunds), and the cron reads every confirmed or part-shipped order once a day, 5 a run (T2.1-36). Each read is 2 calls (the order and
+its shipments), well under Printful's 120 a minute.
+
 ## PART3 checklist: what the docs answered, what needs the key
 
 | PART3 checklist item | Answered from the docs (source, read 25 Nov 2026) | Still needs the key |

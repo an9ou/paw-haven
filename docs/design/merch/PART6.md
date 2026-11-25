@@ -171,3 +171,24 @@ you by that day" (it goes at the moment of `ship_by`); the second-notice subject
 offered while `confirming` (kind words instead); the gift goes in the first email after it is shown, which may be the delay email; a lost
 dispute returns an unshown code; `NO_POST` places are no longer listed or taken by the Worker; Australia and New Zealand's post time is the
 regional "5-9" figure until part 5.
+
+## Part 9 fixes (25 Nov 2026)
+
+From `docs/reviews/MERCH_PART9_code_review.md` (the code review of `merch/shop` at 12d9fe4). Worker tests in
+`cloudflare/merch/test/t_fix9.mjs` (rows `F9-*`, and the new contract rows `T2.1-35`, `T2.1-36`). Suite: merch_worker 259.
+
+| # | What changed | Where it is tested |
+|---|---|---|
+| B1 | Never refund blind. Before the delay email, the automatic refund of a late part and the 24-hour refund of a `review` hold of an order Printful has past its draft (`pf_failed`, `pf_canceled`, `confirm_*`), `ledger.js` reads the Printful order (`readPrinter`, outside any transaction) and applies it (`applyRead` -> `applyProvider`) in the same transaction as the decision (`lateStep` -> `lateCheck(id, true)`; `workHeld`'s `refund`). A failed read writes only `pf_wait` (+15 min) and `pf_read_fail`: no decision; after 24 hours of failed reads one owner email (`printer_unread`). At most 10 reads an alarm. A confirm Printful did take (the owner sent it again in its dashboard) now ends a `confirm_*` hold as `confirmed`. The cron's daily re-read (`rereads`): every confirmed, part-shipped or Printful-held order and every confirmed reprint with something not posted, read once a day, 5 a cron run, the oldest first | F9-B1-repro1, F9-B1-repro2, T2.1-35, F9-B1-fail, F9-B1-tell, F9-B1-crash, F9-B1-held, F9-B1-confirm, T2.1-36 |
+| M1 | A lost dispute: the late cancel (409 `not_late`), the owner's line refund (409 `disputed`) and `page().late` are refused or false while a dispute is open or after it was lost; `lateDue` has no step then at all (the first delay email waits too) | F9-M1 |
+| M2 | `sendRefund`: a refund Stripe refuses for good (`stripe.refusedForGood`: 400, 402 or 404 but `lock_timeout`, `idempotency_key_in_use`, `rate_limit`) is marked `failed`, the order `refund_failed`, the owner emailed at once (`refund_refused`); never retried. A full refund is capped, before its first send only (`sent_n`), at what is left on the charge (`stripe.chargeOf`: `latest_charge.amount - amount_refunded`, USD charges), with `refunded` lowered by what was taken off; nothing left: the row is done with 0. The Stripe fake now refuses what Stripe refuses (over what is left, already refunded, charged back, an unknown payment, a key sent again with another amount) | F9-M2-cap, F9-M2-cap-retry, F9-M2-refused |
+| M3 | Only `lost` is lost: `won`, `warning_closed`, `prevented` or any other close is `won` (the hold is released by `merch.sh confirm` as before). An inquiry (`warning_*` on `created`) is `dispute = inquiry` and an owner email (`dispute_inquiry`), never a pause and no block flag; `charge.dispute.updated` to an open chargeback status (or a new `created`) pauses it then. The statuses relied on are listed in TRANSACTIONS.md (part 9 notes) | F9-M3-inquiry, F9-M3-closed |
+| m1 | A line refunded in full that Printful posts all the same: one owner email per parcel (`refunded_shipped`); the buyer still gets "On its way" | F9-m1 |
+| m2 | The gift is shown only once the order is past its hour, drafted at the printer and at or past `confirming` (or `draft_mode`, or held after a confirm); an order whose lines are all rejected never shows it and the code goes back to the pool | F9-m2 |
+| m3 | TRANSACTIONS.md rows T2.1-06, T2.1-31, T2.1-34, T2.2-23, T2.2-25, T2.2-42, the new T2.1-35 and T2.1-36, the part 9 notes and the webhook event list (`charge.dispute.updated` added) | - |
+
+**Decisions taken here** (the owner or the Game Manager may change them): a failed printer read waits 15 minutes and the owner hears after
+24 hours of them (the step never runs blind, however long); the daily re-read reads 5 orders a cron run; the delay steps (the first email
+too) wait while a dispute is open; an inquiry does not block the buyer's email for future orders; a buyer's own late cancel and the owner's
+refunds are not read from Printful first (a person chose them); a full refund is capped only for USD charges. **To do at the Stripe set-up
+(part 9 sandbox):** subscribe the merch endpoint to `charge.dispute.updated`.

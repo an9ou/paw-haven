@@ -50,6 +50,18 @@ export const getSession = (env, sid) => req(env, 'GET', '/checkout/sessions/' + 
 export const expireSession = (env, sid) => req(env, 'POST', '/checkout/sessions/' + encodeURIComponent(sid) + '/expire', {}, null);
 export const sessionByPI = (env, pi) => req(env, 'GET', '/checkout/sessions?payment_intent=' + encodeURIComponent(pi) + '&expand[]=data.line_items', null);
 export const listRefunds = (env, pi) => req(env, 'GET', '/refunds?payment_intent=' + encodeURIComponent(pi) + '&limit=100', null);
+// part 9 (review M2): the payment with its charge, to read what is left to refund (latest_charge.amount - latest_charge.amount_refunded)
+export const chargeOf = (env, pi) => req(env, 'GET', '/payment_intents/' + encodeURIComponent(pi) + '?expand[]=latest_charge', null);
+// a refund Stripe will never take (review M2): a 400, 402 or 404 (an amount over what is left, a charge already refunded or charged back, a
+// payment intent that does not exist, a key sent again with other parameters). Not final: a lock or a key still in use, a rate limit, a 5xx,
+// a timeout, a key problem (401/403: the owner hears after 24 hours like any stuck refund).
+const AGAIN = ['lock_timeout', 'idempotency_key_in_use', 'rate_limit'];
+export function refusedForGood(res) {
+  if (!res || res.ok || ![400, 402, 404].includes(res.status)) return null;
+  const e = (res.data && res.data.error) || {};
+  if (AGAIN.includes(e.code)) return null;
+  return { code: String(e.code || e.type || res.status).slice(0, 60), message: String(e.message || '').slice(0, 160) };
+}
 // a refund in USD cents; the row id is the Idempotency-Key and rides in metadata, so charge.refunded can tell our refunds from Dashboard ones
 export const refund = (env, pi, amount, rowId, orderId) => req(env, 'POST', '/refunds', { payment_intent: pi, amount, 'metadata[merch]': orderId, 'metadata[merch_refund]': rowId }, rowId);
 
