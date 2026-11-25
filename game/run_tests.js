@@ -37,6 +37,7 @@ const SUITES = {
   v2_play: { file: 'test_v2_play.js', group: 'all', est: 70 },
   v21_genes: { file: 'test_v21_genes_node.js', group: 'all', est: 15 },
   copy: { file: 'test_copy_node.js', group: 'all', est: 2 },
+  audio_sig: { file: 'test_audio_sig.js', group: 'all', est: 2 }, // v2.33.2: every place's resolved music matches mods/audio/sig_snapshot.json (plain node; full check: node mods/audio/check_wxmas.js)
   i18n: { file: 'test_i18n_node.js', group: 'all', est: 3 }, // v2.14 SPEC (V214.md 13): msg.js, glossaries, string tables, helper names
   v21_breed: { file: 'test_v21_breed.js', group: 'all', est: 15 },
   v21_journal: { file: 'test_v21_journal.js', group: 'all', est: 30 },
