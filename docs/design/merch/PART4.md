@@ -2,7 +2,8 @@
 
 Replaces part 3's render seam with the real print render of `RENDER_FREE.md` 8: Cloudflare's browser (Browser Run) draws the released print page and
 the PNG goes into `MerchPrints`; the first fallback is resvg-wasm in a Durable Object ("option G"). **Nothing is deployed; no Cloudflare API was called
-(the cloud test kit was only run dry).** Suite `merch_worker`: **194 checks, 194 pass** (181 before, 13 new `P4-*` rows); the Chromium truth script
+(the cloud test kit was only run dry).** Suite `merch_worker`: **194 checks, 194 pass** (181 before, 13 new `P4-*` rows; one old check changed: R-S12 now counts 3
+Durable Object bindings under `[env.test]`, since the test Worker needs `RENDER` too); the Chromium truth script
 `cloudflare/merch/test/render_chromium.mjs`: 18 checks, all pass.
 
 ## What was built
