@@ -272,20 +272,20 @@ async function pageChecks() {
   let pg = t.page;
   ok('home: the landing shows', (await view(pg)) === 'home' && /Put your dog on a mug/.test(await text(pg, '#h-home')));
   ok('home: two products, no stickers', (await pg.$$eval('#trio li', (l) => l.length)) === 2 && !/sticker/i.test(await pg.evaluate(() => document.body.innerText)));
-  ok('home: the shipping line for the guessed country', /United States: \$4\.99\. Orders of \$35 or more ship free/.test(await text(pg, '#homeShip')));
+  ok('home: the shipping line for the guessed country', /United States: \$4\.99\. Free shipping when your things come to \$35 or more \(before shipping\)\./.test(await text(pg, '#homeShip')), await text(pg, '#homeShip'));
   ok('home: ship to has the US first guess', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
   ok('home: test mode is said', /Test mode/.test(await text(pg, '#testbar')));
   ok('home: noindex', /noindex/.test(await pg.$eval('meta[name=robots]', (m) => m.content)));
   ok('home: the bag says its count to a screen reader', (await pg.$eval('#bagBtn', (a) => a.getAttribute('aria-label'))) === 'Basket, empty');
   // "Ship to": named by the browser in the page's language, sorted by the shown name, the code as nothing else
   const opts = await pg.$$eval('#shipSel option', (o) => o.map((x) => [x.value, x.textContent]));
-  const shown = opts.map((x) => x[1].replace(' (coming soon)', ''));
+  const shown = opts.map((x) => x[1].replace(/^Soon: /, ''));
   ok('ship to: every country named, none "undefined"', opts.length === CAT.countries.length && !opts.some((x) => /undefined|null/.test(x[1]) || x[1] === x[0]), opts.filter((x) => x[1] === x[0]).slice(0, 5));
   ok('ship to: sorted by the shown name', shown.every((s, i) => i === 0 || new Intl.Collator('en').compare(shown[i - 1], s) <= 0));
-  ok('ship to: names from Intl.DisplayNames', opts.find((x) => x[0] === 'US')[1] === 'United States' && opts.find((x) => x[0] === 'GB')[1] === 'United Kingdom (coming soon)' && opts.find((x) => x[0] === 'AX')[1] === 'Åland Islands');
+  ok('ship to: names from Intl.DisplayNames', opts.find((x) => x[0] === 'US')[1] === 'United States' && opts.find((x) => x[0] === 'GB')[1] === 'Soon: United Kingdom' && opts.find((x) => x[0] === 'AX')[1] === 'Åland Islands');
   ok('copy: no promise of a game button', !/will get a button/i.test(HTML) && !/will get a button/i.test(await pg.evaluate(() => document.body.innerText)));
-  ok('legal links: the footer has Terms of sale, Shipping and returns, Seller and Privacy, with their pages', (await pg.$$eval('.mfoot a', (s) => s.map((x) => x.textContent.trim() + '=' + x.getAttribute('href')).slice(0, 4).join())) === 'Terms of sale=/merch/terms/,Shipping and returns=/merch/shipping/,Seller=/merch/seller/,Privacy=/privacy' && !(await pg.$('.todo')));
-  ok('legal links: the pay card links the Terms of sale and Shipping and returns', /href="\/merch\/terms\/">Terms of sale<\/a> \(<a class="lnk" href="\/merch\/shipping\/">Shipping and returns/.test(HTML));
+  ok('legal links: the footer has Terms of sale, Shipping and returns, Seller details, the Japan notice and Privacy, with their pages', (await pg.$$eval('.mfoot a', (s) => s.map((x) => x.textContent.trim() + '=' + x.getAttribute('href')).slice(0, 5).join())) === 'Terms of sale=/merch/terms/,Shipping and returns=/merch/shipping/,Seller details=/merch/seller/,特定商取引法に基づく表記=/merch/tokushoho/,Privacy=/privacy' && !(await pg.$('.todo')));
+  ok('legal links: the pay card links the Terms of sale, Shipping and returns, Seller details and the Japan notice', /By paying you agree to the <a class="lnk" href="\/merch\/terms\/">Terms of sale<\/a>\.<\/p>\s*<nav class="paylinks" aria-label="Shop rules"><a class="lnk" href="\/merch\/shipping\/">Shipping and returns<\/a><a class="lnk" href="\/merch\/seller\/">Seller details<\/a><a class="lnk" href="\/merch\/tokushoho\/" lang="ja">特定商取引法に基づく表記<\/a><\/nav>/.test(HTML));
   ok('copy: no "print file" jargon', !/print file/i.test(await pg.evaluate(() => document.body.innerText)));
   ok('copy: one age message', /You need to be 18 or over to order\. Younger\? Ask a grown-up to order for you\./.test(HTML) && !/A grown-up pays/.test(HTML));
   await tap(pg, '#useDog');
@@ -296,8 +296,7 @@ async function pageChecks() {
   ok('pick: from the save, said so', /from the game in this browser/.test(await text(pg, '.from')));
   ok('pick: four ready-made dogs too', (await pg.$$eval('#readyPick [data-dog]', (b) => b.length)) === 4);
   ok('pick: step 1 of 4', /step 1 of 4/.test(await text(pg, '#crumbs')));
-  await pg.click('[data-pick]:nth-of-type(1)'); // Mochi (already chosen)
-  await tap(pg, '#pickNext');
+  await tap(pg, '[data-pick]:nth-of-type(1)'); // Mochi (already chosen): a tap on a dog goes on to the thing (part 9 M7)
   ok('thing: mug and tee', (await view(pg)) === 'thing' && (await pg.$$eval('.prodb', (b) => b.map((x) => x.dataset.p).join())) === 'mug,tee');
   ok('thing: prices from the catalog', /\$19\.99/.test(await text(pg, '[data-p=mug]')) && /from \$26\.99/.test(await text(pg, '[data-p=tee]')));
   ok('thing: product tiles are PawPrint prints', await previewIs(pg, '[data-p=tee] svg[data-pawprint]', R('Mochi'), { product: 'tee', colour: 'white', pose: 'stand', name: true }));
@@ -333,14 +332,14 @@ async function pageChecks() {
   ok('basket: its picture is the print', await previewIs(pg, '.bl svg[data-pawprint]', Object.assign({}, R('Mochi'), { n: 'Mochi the Brave' }), { product: 'tee', colour: 'navy', pose: 'happy', name: true }));
   ok('basket: kept under its own key, with no ids', ((b) => b.length === 1 && !('id' in b[0]))(JSON.parse(await pg.evaluate(() => localStorage.getItem('dd_merch_basket_v1')))));
   ok('basket: one tee to the US: $4.99 shipping', (await text(pg, '[data-q=ship]')) === '$4.99' && (await text(pg, '[data-q=total]')) === '$31.98');
-  ok('basket: the plain free-shipping line', /Orders of \$35 or more ship free\./.test(await text(pg, '#totals')));
+  ok('basket: the free-shipping rule once (before shipping), and how much more ships it free', /Free shipping when your things come to \$35 or more \(before shipping\)\./.test(await text(pg, '#shipBox')) && (await text(pg, '#freeMore')) === 'Add ' + money(3500 - 2699) + ' more for free shipping.' && !/ship free|Free shipping when/.test(await text(pg, '#totals')), [await text(pg, '#shipBox'), await text(pg, '#totals')]);
   ok('basket: the currency line, as decided', /Prices are in US dollars\. On the payment page you may be offered your own currency\./.test(await text(pg, '#totals')) && !/£|€|GBP|Stripe's rate/.test(await text(pg, '#totals')));
   ok('basket: the policy lines', /can't be returned if you change your mind/.test(await text(pg, '#promise')) && /damaged, misprinted or lost/.test(await text(pg, '#promise')) && /cancel within 1 hour/.test(await text(pg, '#promise')));
   ok('basket: an adult orders', /18 or over/.test(await text(pg, '.grown')));
   // a second line: the mug with the 20-letter name
-  await tap(pg, '#another'); await pg.click('[data-pick]:nth-of-type(1)');
-  await pg.evaluate(() => { const b = [...document.querySelectorAll('[data-pick]')].find((x) => /Wigglesworth/.test(x.textContent)); b.click(); });
-  await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=mug]');
+  await tap(pg, '#another');
+  await pg.evaluate(() => { const b = [...document.querySelectorAll('[data-pick]')].find((x) => /Wigglesworth/.test(x.textContent)); b.click(); }); await settle(pg);
+  await tap(pg, '.prodb[data-p=mug]');
   ok('make: the mug preview = PawPrint.print', await previewIs(pg, '#pvOn svg[data-pawprint]', R('Sir Wigglesworth III'), { product: 'mug', colour: 'white', pose: 'stand', name: true }));
   await pg.fill('#nameIn', 'WWWWWWWWWWWWWWWWWWWW'); await pg.waitForTimeout(60);
   ok('name: too long for the mug says "A little shorter, please" and how many fit', /A little shorter, please: up to 16/.test(await text(pg, '#nameMsg')));
@@ -350,14 +349,14 @@ async function pageChecks() {
   ok('basket: separate parcels said', /own parcels/.test(await text(pg, '#totals')));
   // Ship to: Canada, Hong Kong, the longest name, the UK (coming soon), back to the US
   await setShip(pg, 'CA');
-  ok('ship to Canada: $7.99, free from $70', (await text(pg, '[data-q=ship]')) === '$7.99' && /Orders of \$70 or more ship free/.test(await text(pg, '#totals')) && /Canada: \$7\.99/.test(await text(pg, '#shipBox')));
+  ok('ship to Canada: $7.99, free from $70, and how much more', (await text(pg, '[data-q=ship]')) === '$7.99' && /Free shipping when your things come to \$70 or more \(before shipping\)/.test(await text(pg, '#shipBox')) && /Canada: \$7\.99/.test(await text(pg, '#shipBox')) && (await text(pg, '#freeMore')) === 'Add ' + money(7000 - 4698) + ' more for free shipping.');
   await setShip(pg, 'HK');
-  ok('ship to Hong Kong: $11.99 + $5.99, never free, the tax line', (await text(pg, '[data-q=ship]')) === '$17.98' && !/ship free/.test(await text(pg, '#totals')) && /import tax/.test(await text(pg, '#totals')) && /\$5\.99/.test(await text(pg, '#shipBox')));
+  ok('ship to Hong Kong: $11.99 + $5.99, never free (no free-shipping line at all), the tax line', (await text(pg, '[data-q=ship]')) === '$17.98' && !/free shipping|ship free/i.test(await text(pg, '#totals') + await text(pg, '#shipBox')) && !(await pg.$('#freeMore')) && /import tax/.test(await text(pg, '#totals')) && /\$5\.99/.test(await text(pg, '#shipBox')));
   await setShip(pg, 'FK');
   ok('ship to the longest name', /the Falkland Islands \(Islas Malvinas\)/.test(await text(pg, '#shipBox')));
   await setShip(pg, 'GB');
   ok('ship to the UK: coming soon, no total, no pay', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && !(await pg.$('#qtable')) && await pg.$eval('#payBtn', (b) => b.disabled));
-  ok('ship to the UK: the quote said country_closed in words', /can't send orders to the United Kingdom yet/.test(await text(pg, '#totals')));
+  ok('ship to the UK: said once, in the Shipping box (part 9 m3: no repeat under it); the lines keep their catalog prices', !/can't send orders|Coming soon/.test(await text(pg, '#totals')) && (await pg.$$eval('.bl .lp', (x) => x.map((y) => y.textContent).join())) === [money(2699), money(1999)].join(), await pg.$$eval('.bl .lp', (x) => x.map((y) => y.textContent)));
   await setShip(pg, 'US');
   ok('ship to is kept', (await pg.evaluate(() => localStorage.getItem('dd_merch_ship_v1'))) === 'US');
   // change a line, qty, remove
@@ -393,9 +392,9 @@ async function pageChecks() {
   const six = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug')).concat([line(R('Pepper'), 'tee', { colour: 'black', size: 'XL' })]);
   t = await open({ save: SAVE, basket: six, path: '/merch/#/basket' }); pg = t.page;
   ok('six lines: shown', (await pg.$$eval('.bl', (l) => l.length)) === 6 && (await pg.$eval('#bdrop', (e) => e.hidden)));
-  ok('six lines: "Put another dog" is off, and says why', (await pg.$eval('#another', (a) => a.getAttribute('aria-disabled'))) === 'true' && /holds up to 6 things/.test(await text(pg, '#bfull')));
-  await toHash(pg, '#/pick'); await pg.evaluate(() => { const b = [...document.querySelectorAll('[data-pick]')].find((x) => /Biscuit/.test(x.textContent)); b.click(); });
-  await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=tee]');
+  ok('six lines: "Put another dog" is off, and says why', (await pg.$eval('#another', (a) => a.getAttribute('aria-disabled'))) === 'true' && /holds up to 6 different designs, up to 3 of each/.test(await text(pg, '#bfull')));
+  await toHash(pg, '#/pick'); await pg.evaluate(() => { const b = [...document.querySelectorAll('[data-pick]')].find((x) => /Biscuit/.test(x.textContent)); b.click(); }); await settle(pg);
+  await tap(pg, '.prodb[data-p=tee]');
   ok('six lines: a seventh can\'t be added', await pg.$eval('#addBtn', (b) => b.disabled) && /basket is full/.test(await text(pg, '#addMsg')));
   await toHash(pg, '#/thing'); await tap(pg, '.prodb[data-p=mug]');
   ok('six lines: the same thing again may still add up', !(await pg.$eval('#addBtn', (b) => b.disabled)));
@@ -411,6 +410,7 @@ async function pageChecks() {
   await tabChecks();
   await routeChecks();
   await liveChecks();
+  await part9Checks();
 
   // ---- dogs from a link (no save): this tab only, the hash turns into the route
   const link = '#p=' + P.merchEncode([R('Biscuit'), R('Bo')]);
@@ -488,7 +488,7 @@ async function staleChecks() {
     raw(Object.assign({}, R('Pepper'), { n: 'WWWWWWWWWWWWWWWWWWWW' }), 'mug', { name_on: true }), raw(R('Bo'), 'tee', { qty: 2.6 }), raw(R('Bo'), 'mug', { size: 'M' }), null, 'a line', 42];
   let t = await open({ save: SAVE, basket: stale, path: '/merch/#/basket' }), pg = t.page;
   ok('stale: the good lines stay, the rest go', (await pg.$$eval('.bl', (l) => l.length)) === 4, await pg.$$eval('.bl', (l) => l.map((x) => x.textContent.slice(0, 40))));
-  ok('stale: said kindly, with the count', /^10 things in your basket can't be made any more, so we took them out\.$/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
+  ok('stale: said kindly, with the count', /^10 designs in your basket can't be made any more, so we took them out\.$/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
   ok('stale: qty 7 became 3, 0 became 1, 2.6 became 3', (await pg.$$eval('.bl output', (o) => o.map((x) => x.textContent).join())) === '1,3,1,3');
   ok('stale: the totals show', /\$/.test(await text(pg, '[data-q=total]')) && !(await pg.$eval('#payBtn', (b) => b.disabled)));
   ok('stale: the bag says 8', (await text(pg, '#bagN')) === '8');
@@ -498,11 +498,11 @@ async function staleChecks() {
   ok('stale: Remove works, and the note goes', (await pg.$$eval('.bl', (l) => l.length)) === 3 && (await pg.$eval('#bdrop', (e) => e.hidden)));
   await finish('stale basket', t);
   t = await open({ save: SAVE, basket: [good, raw(R('Mochi'), 'tee', { colour: 'mustard' })], path: '/merch/#/basket' }); pg = t.page;
-  ok('stale: one line dropped says "One thing"', (await text(pg, '#bdrop')) === "One thing in your basket can't be made any more, so we took it out.");
+  ok('stale: one line dropped says "One design"', (await text(pg, '#bdrop')) === "One design in your basket can't be made any more, so we took it out.");
   await finish('stale basket (one)', t);
   const eight = ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug')).concat(['Biscuit', 'Mochi', 'Bo'].map((n) => line(R(n), 'tee')));
   t = await open({ save: SAVE, basket: eight, path: '/merch/#/basket' }); pg = t.page;
-  ok('stale: 8 lines become 6, 2 dropped', (await pg.$$eval('.bl', (l) => l.length)) === 6 && /^2 things/.test(await text(pg, '#bdrop')));
+  ok('stale: 8 lines become 6, 2 dropped', (await pg.$$eval('.bl', (l) => l.length)) === 6 && /^2 designs/.test(await text(pg, '#bdrop')));
   await finish('stale basket (8 lines)', t);
   t = await open({ save: SAVE, basket: '{not json', path: '/merch/#/basket' }); pg = t.page;
   ok('stale: an unreadable basket starts empty, said kindly', /Your basket is empty/.test(await text(pg, '#blines')) && /can't be made any more/.test(await text(pg, '#bdrop')));
@@ -520,7 +520,7 @@ async function staleChecks() {
   ok('hostile: one good line kept, its id our own', (await pg.$$eval('.bl', (l) => l.map((x) => x.dataset.line))).every((id) => /^l[0-9a-z]+$/.test(id)) && (await pg.$$eval('.bl', (l) => l.length)) === 1);
   ok('hostile: the stored game name shows as text', (await text(pg, '.bl .facts li')).includes('"><img src=/x2'));
   ok('hostile: "Ship to" fell back to a real country', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
-  ok('hostile: the rest dropped, said', /^8 things/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
+  ok('hostile: the rest dropped, said', /^8 designs/.test(await text(pg, '#bdrop')), await text(pg, '#bdrop'));
   await finish('hostile basket', t);
 }
 
@@ -537,8 +537,8 @@ async function nonameChecks() {
   ok('no-print name: turned on, it asks for one we can draw', /Type a name, or turn the name off/.test(await text(pg, '#nameMsg')) && (await pg.$eval('#nameIn', (i) => i.value)) === '');
   await tap(pg, '#nameTog'); await tap(pg, '#addBtn');
   ok('no-print name: the basket label keeps the game name', (await text(pg, '.bl .facts li')) === 'ポチ, Shiba Inu' && /no name/.test(await text(pg, '.bl')));
-  await toHash(pg, '#/pick'); await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Daisy/.test(x.textContent)).click(); });
-  await tap(pg, '#pickNext'); await tap(pg, '.prodb[data-p=tee]');
+  await toHash(pg, '#/pick'); await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Daisy/.test(x.textContent)).click(); }); await settle(pg);
+  await tap(pg, '.prodb[data-p=tee]');
   ok('no-print name: a name it can draw is still on', (await pg.$eval('#nameTog', (b) => b.getAttribute('aria-checked'))) === 'true');
   await tap(pg, '#nameTog');
   ok('no-print name: a drawable name turned off says the plain line', /The tee prints without a name/.test(await text(pg, '#nameMsg')));
@@ -550,11 +550,11 @@ async function nonameChecks() {
 }
 
 // ---- S2, S3: every error code in plain words; a new price is asked about again; one nonce per basket and country
-const QUOTE_ERR = [['bad_line', /\(marked below\) needs a look: tap Change on it/, 2], ['bad_name', /One name in your basket \(marked below\) can't print as it is/, 1], ['too_many', /holds up to 6 things/],
-  ['bad_qty', /up to 3 of each/, 1], ['bad_country', /don't know that place/], ['country_closed', /can't send orders to the United States yet/], ['variant_off', /can't be made just now/, 2],
+const QUOTE_ERR = [['bad_line', /One design in your basket \(marked below\) needs a look: tap Change on it/, 2], ['bad_name', /One name in your basket \(marked below\) can't print as it is/, 1], ['too_many', /holds up to 6 different designs/],
+  ['bad_qty', /One design in your basket \(marked below\) has more than we can make: up to 3 of each/, 1], ['bad_country', /don't know that place/], ['country_closed', /can't send orders to the United States yet/], ['variant_off', /can't be made just now/, 2],
   ['sold_out_today', /until tomorrow/], ['merch_closed', /not open yet/], ['slow_down', /Wait a minute, then try again/], ['busy', /a little busy just now/], ['offline', /couldn't reach the shop/]];
 const PAY_ERR = [['art_changed', /We've improved the drawing since you opened this page\. Reload to see your dog as it will print\./], ['sold_out_today', /until tomorrow/], ['variant_off', /can't be made just now/, 1],
-  ['slow_down', /Wait a minute/], ['busy', /a little busy/], ['cant_make', /can't make this order just now, and nothing was paid/], ['bad_qty', /up to 3 of each/, 2], ['too_many', /holds up to 6 things/],
+  ['slow_down', /Wait a minute/], ['busy', /a little busy/], ['cant_make', /can't make this order just now, and nothing was paid/], ['bad_qty', /up to 3 of each/, 2], ['too_many', /holds up to 6 different designs/],
   ['country_closed', /can't send orders to the United States yet/], ['bad_line', /needs a look/, 2], ['bad_name', /can't print as it is/, 1], ['not_available', /can't take this order here/], ['no_agree', /Reload the page/]];
 async function errorChecks() {
   const t = await open({ save: SAVE, basket: NORMAL3.slice(0, 2), ship: 'US', path: '/merch/#/basket' }), pg = t.page;
@@ -619,7 +619,7 @@ async function orderChecks() {
   // after the hour: no cancel line, "Printing has started."
   await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + '; o.ship_by = ' + addBD(paid, 7) + ';');
   ok('order after the hour: "Printing has started.", the posting date, no cancel', (await itext(pg, '.cancelbox')) === 'Printing has started. We\'ll post it by Tuesday 1 December.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')), await text(pg, '.cancelbox'));
-  ok('order: the date it was received', /Order received\s*20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
+  ok('order: the date it was received (no receipt line after the first hour: part 9 M6)', /Order received\s*20 Nov 2026\.$/.test(await text(pg, '.track li:nth-child(1)')) && !/Today|receipt/.test(await text(pg, '#orderBody')), await text(pg, '.track li:nth-child(1)'));
   ok('order after the hour: being printed is now', (await pg.$eval('.track li:nth-child(2)', (l) => l.className)) === 'now' && (await pg.$eval('.track li:nth-child(1)', (l) => l.className)) === 'done');
   // the server cleared the recipes (after 24 months): the page uses the names, draws no dog, and does not break
   await edit('o.lines.forEach(function (l) { delete l.recipe; }); o.lines[1].name = "<img src=/xo onerror=window.__pwned=1>";');
@@ -789,8 +789,169 @@ async function liveChecks() {
   ok('live api: checkout 503 merch_closed is the "not open yet" card', liveLog.includes('POST /live/merch/checkout') && !(await pg.$eval('#closed', (e) => e.hidden)));
   ok('live api: no test-order button, even with ?demo=1', await pg.$eval('#demoRow', (e) => e.hidden));
   await setShip(pg, 'GB'); await settle(pg);
-  ok('live api: a soon country is said kindly', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && /can't send orders to the United Kingdom yet/.test(await text(pg, '#totals')));
+  ok('live api: a soon country is said kindly, once', /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')) && !/can't send orders/.test(await text(pg, '#totals')) && await pg.$eval('#payBtn', (b) => b.disabled));
   await finish('live api', t);
+}
+
+// ================= part 9: the phone review (M1-M8, m1-m10) and the art review (M1, m1, m2, m4) fixes on the shop page =================
+// the drawn mug's face: which x of the 2700 px wrap shows at the face's left and right edge (mock.js mug(): the face window is x 30 to 100)
+const mugFaces = (pg, sel) => pg.$$eval(sel, (l) => l.map((g) => { const m = /translate\(([-\d.]+) [-\d.]+\) scale\(([\d.]+)\)/.exec(g.getAttribute('transform')); return m ? [Math.round((30 - +m[1]) / +m[2]), Math.round((100 - +m[1]) / +m[2])] : null; }));
+async function part9Checks() {
+  // M1: the keyboard up (a short screen) while typing the name: the bar is not over the field or its message; the reason Add is off sits in the bar
+  for (const vp of [[360, 640], [390, 844]]) {
+    let t = await open({ save: SAVE, path: '/merch/#/pick', vp }), pg = t.page;
+    await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=tee]'); await settle(pg);
+    await pg.focus('#nameIn'); await pg.fill('#nameIn', 'Mochi金'); await settle(pg);
+    await pg.setViewportSize({ width: vp[0], height: 330 }); await pg.waitForTimeout(300);
+    const k = await pg.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(), i = r('#nameIn'), m = r('#nameMsg'), b = r('.paybar'), h = r('#sitehead');
+      const hit = (a) => !(a.bottom <= b.top || a.top >= b.bottom); return { inView: i.top >= h.bottom - 1 && Math.max(i.bottom, m.bottom) <= innerHeight + 1, covered: hit(i) || hit(m), focus: document.activeElement.id, i: [i.top, i.bottom], m: [m.top, m.bottom], bar: [b.top, b.bottom], vh: innerHeight }; });
+    ok('part 9 M1 ' + vp[0] + ': keyboard up, the name field and its message in view and not under the price bar', k.inView && !k.covered && k.focus === 'nameIn', k);
+    await pg.evaluate(() => document.activeElement.blur()); await pg.setViewportSize({ width: vp[0], height: vp[1] }); await settle(pg);
+    await pg.evaluate(() => { const o = document.querySelector('#o-col').getBoundingClientRect(); window.scrollBy(0, o.top - 120); }); await settle(pg); // mid-way down the choices: the bar is stuck to the bottom
+    const a = await pg.evaluate(() => { const m = document.querySelector('#addMsg'), b = document.querySelector('.paybar').getBoundingClientRect(), r = m.getBoundingClientRect(); return { inBar: !!m.closest('.paybar'), shown: r.height > 0 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && r.bottom <= innerHeight + 1, sticky: getComputedStyle(document.querySelector('.paybar')).position, text: m.textContent }; });
+    ok('part 9 M1 ' + vp[0] + ': why Add is off is said inside the (sticky) bar, in view', a.inBar && a.shown && a.sticky === 'sticky' && /Fix the name first/.test(a.text), a);
+    ok('part 9 m5: the sticky bar keeps clear of an iPhone\'s home bar', await pg.evaluate(() => [...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => r.selectorText === '.paybar' && /env\(safe-area-inset-bottom\)/.test(r.cssText)); } catch (e) { return false; } })));
+    // m6: the size guide never touches the size chips
+    const g = await pg.evaluate(() => { const s = document.querySelector('#sgBtn').getBoundingClientRect(); return s.top - Math.max(...[...document.querySelectorAll('[data-size]')].map((b) => b.getBoundingClientRect().bottom)); });
+    ok('part 9 m6 ' + vp[0] + ': "Size guide" sits at least 6 px below the size chips', g >= 6, g);
+    await finish('part 9 make ' + vp[0], t);
+  }
+  // M2, M4: one tee to the US (under $35), a mug just under the edge, Hong Kong (never free)
+  let t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '4XL' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640] }), pg = t.page;
+  await pg.waitForSelector('#qtable');
+  const zus = CAT.zones.find((z) => z.id === 'us_jp'), tee4 = CAT.products.find((p) => p.id === 'tee').price + CAT.products.find((p) => p.id === 'tee').sizes.find((s) => s.id === '4XL').add;
+  ok('part 9 M2: the rule counts the things before shipping, and says how much more ships it free (from the catalog)', (await text(pg, '#shipBox .shipline')) === 'Shipping to the United States: ' + money(zus.fee) + '. Free shipping when your things come to $' + zus.free_from / 100 + ' or more (before shipping).' &&
+    (await text(pg, '#freeMore')) === 'Add ' + money(zus.free_from - tee4) + ' more for free shipping.' && (await text(pg, '[data-q=subtotal]')) === money(tee4), [await text(pg, '#shipBox .shipline'), await text(pg, '#freeMore')]);
+  ok('part 9 M4: the delivery time is from payment to the door, printing included, then the one posting promise', (await text(pg, '#shipBox .eta span:last-child')) === 'About ' + zus.eta[0] + ' to ' + zus.eta[1] + ' working days from payment to your door, printing included. Printing usually takes 2 to 5 working days, and we post every order within ' + CATJS.SHIP_BY_DAYS + ' working days of payment.', await text(pg, '#shipBox .eta'));
+  ok('part 9 M4: the questions say it the same way (no "then the post")', /Your basket shows how long it usually takes from payment to your door, printing included\./.test(HTML) && !/Then the post/.test(HTML));
+  // M8, m7: the Japan notice and "Seller details" by the pay card and in the footer; links never touching, no dots left dangling
+  for (const [w, h] of [[360, 640], [390, 844]]) {
+    await pg.setViewportSize({ width: w, height: h }); await settle(pg);
+    const f = await pg.evaluate(() => { const rows = (sel) => { const r = [...document.querySelectorAll(sel)].map((a) => a.getBoundingClientRect()); let touch = 0; r.forEach((a, i) => r.forEach((b, j) => { if (i < j && a.left < b.right && b.left < a.right && Math.abs(a.top - b.top) > 2 && !(a.bottom + 4 <= b.top || b.bottom + 4 <= a.top)) touch++; })); return touch; };
+      return { foot: rows('.mfoot a'), pay: rows('.paylinks a, #basketPayText a'), dots: /·/.test(document.querySelector('.mfoot').textContent), paren: /\(\s*$|^\s*\)/m.test(document.querySelector('.paylinks').previousElementSibling.textContent) || /\(/.test(document.querySelector('.paylinks').previousElementSibling.textContent),
+        ja: [...document.querySelectorAll('.mfoot a[href="/merch/tokushoho/"], .paylinks a[href="/merch/tokushoho/"]')].length, seller: [...document.querySelectorAll('.mfoot a, .paylinks a')].filter((a) => a.getAttribute('href') === '/merch/seller/').every((a) => a.textContent === 'Seller details') }; });
+    ok('part 9 M8/m7 ' + w + ': the Japan notice in the footer and by the pay card, "Seller details", rows of links never touching, no dangling dots or brackets', f.ja === 2 && f.seller && !f.foot && !f.pay && !f.dots && !f.paren, f);
+  }
+  await finish('part 9 basket', t);
+  for (const p of ['tokushoho', 'seller']) ok('part 9 M8: /merch/' + p + '/ exists', fs.existsSync(path.join(SITE, 'merch', p, 'index.html')));
+  const CAT_E = clone(CAT_EDGE);
+  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug')], ship: 'US', path: '/merch/#/basket', catalog: CAT_E }); pg = t.page; await pg.waitForSelector('#qtable');
+  ok('part 9 M2: the amount to add comes from the catalog ($34.99 mug: add $0.01)', (await text(pg, '#freeMore')) === 'Add $0.01 more for free shipping.', await text(pg, '#freeMore'));
+  await setShip(pg, 'HK'); await pg.waitForSelector('#qtable');
+  ok('part 9 M2: where shipping is never free, no free-shipping line', !(await pg.$('#freeMore')) && !/free shipping/i.test(await text(pg, '#shipBox') + await text(pg, '#totals')));
+  await setShip(pg, 'US'); await pg.click('.bl [data-qp]'); await pg.waitForSelector('#qtable'); await settle(pg);
+  ok('part 9 M2: at the threshold or over, no "add more" line (the Shipping row says Free)', !(await pg.$('#freeMore')) && (await text(pg, '[data-q=ship]')) === 'Free');
+  await finish('part 9 free shipping', t);
+  // M3: a basket line is a "design", everywhere on the page; "things" are what gets made (the bag, the Things row)
+  t = await open({ save: SAVE, basket: ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug', { qty: 2 })).concat([line(R('Pepper'), 'tee')]), ship: 'US', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page;
+  await pg.waitForSelector('#qtable');
+  const body = await pg.evaluate(() => document.querySelector('.msheet').innerText);
+  ok('part 9 M3: six lines: "6 different designs, up to 3 of each", and the count of things is 11', /Your basket holds up to 6 different designs, up to 3 of each\./.test(body) && /Things \(11\)/.test(body) && (await text(pg, '#bagN')) === '11' && !/\b6 things\b|things in one order|holds up to \d+ things/.test(body), body.slice(0, 300));
+  ok('part 9 M3: the page\'s own words call a line a design (no "One thing in your basket" anywhere)', !/One thing in your basket|things in your basket|up to ' \+ maxLines\(\) \+ ' things/.test(MERCH_JS) && /different designs/.test(MERCH_JS));
+  await finish('part 9 designs', t);
+  // m3: a country coming soon: the line prices from the catalog, said once, "Soon:" first in the picker
+  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '2XL' }), line(R('Bo'), 'mug', { qty: 2 })], ship: 'GB', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page; await settle(pg); await settle(pg);
+  ok('part 9 m3: coming soon: each line still shows its price (the catalog\'s)', (await pg.$$eval('.bl .lp', (x) => x.map((y) => y.textContent).join())) === [money(2899), money(2 * 1999)].join() && !(await pg.$('#totals .qerr')) && /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')));
+  ok('part 9 m3: the picker says "Soon:" before the name, so a narrow picker never hides it', (await pg.$eval('#shipSel', (s) => s.selectedOptions[0].textContent)) === 'Soon: United Kingdom');
+  await finish('part 9 soon', t);
+  // M7: a tap on one of your own dogs goes on to "the thing"; Back changes the dog
+  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
+  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Biscuit').click(); }); await settle(pg);
+  ok('part 9 M7: a tap on a dog goes straight on to the thing, with that dog', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing' && /Biscuit/.test(await text(pg, '#h-thing')));
+  await pg.goBack(); await settle(pg);
+  ok('part 9 M7: Back is the dog list again, that dog marked, to change it', (await view(pg)) === 'pick' && (await pg.$eval('[data-pick][aria-pressed=true] .n', (e) => e.textContent)) === 'Biscuit');
+  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Pepper').click(); }); await settle(pg);
+  ok('part 9 M7: another dog, another thing', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
+  // m1: a reload on "make it" keeps every choice; Back is still the thing
+  await tap(pg, '.prodb[data-p=tee]'); await tap(pg, '[data-col=navy]'); await tap(pg, '[data-size=L]'); await tap(pg, '[data-pose=sit]'); await pg.fill('#nameIn', 'Pep'); await tap(pg, '#qp');
+  await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
+  const dr = await pg.evaluate(() => { const d = window.__merch.st.draft; return d && [d.product, d.colour, d.size, d.pose, d.name, d.qty].join(); });
+  ok('part 9 m1: a reload keeps the dog, colour, size, pose, name and how many', (await view(pg)) === 'make' && dr === 'tee,navy,L,sit,Pep,2' && (await pg.$eval('#nameIn', (i) => i.value)) === 'Pep' && /Pepper/.test(await text(pg, '.dn')), dr);
+  await tap(pg, '#makeBack');
+  ok('part 9 m1: then Back is the thing, with that dog', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
+  await tap(pg, '.prodb[data-p=mug]'); await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+  await pg.click('.bl [data-chg]'); await settle(pg); await tap(pg, '[data-pose=happy]');
+  await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
+  ok('part 9 m1: a reload while changing a line still changes that line ("Save changes")', (await view(pg)) === 'make' && (await text(pg, '#addBtn')) === 'Save changes' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'happy');
+  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+  ok('part 9 m1: saved in place (one line, happy)', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'happy');
+  await finish('part 9 pick and reload', t);
+  // m2: an empty basket from the bag ticks nothing; its button asks for a first dog
+  t = await open({ save: SAVE, path: '/merch/', vp: [360, 640] }); pg = t.page;
+  await tap(pg, '#bagBtn');
+  ok('part 9 m2: an empty basket ticks no step it hasn\'t seen', (await view(pg)) === 'basket' && (await pg.$$eval('#steps li.done', (l) => l.length)) === 0 && (await pg.$$eval('#steps li button:not(:disabled)', (l) => l.length)) === 0);
+  ok('part 9 m2: and its button says "Put your dog on something"', (await text(pg, '#another')) === 'Put your dog on something');
+  // m10: "No dog yet?" only without dogs
+  await toHash(pg, '#/');
+  ok('part 9 m10: with dogs from the game, no "No dog yet?"', await pg.$eval('#nodog', (e) => e.hidden && e.getBoundingClientRect().height === 0));
+  await finish('part 9 empty', t);
+  t = await open({ path: '/merch/', vp: [360, 640] }); pg = t.page;
+  ok('part 9 m10: with no dogs, "No dog yet?" and the ready-made dogs', !(await pg.$eval('#nodog', (e) => e.hidden)) && (await pg.$$eval('#readyHome [data-dog]', (b) => b.length)) === 4);
+  await finish('part 9 no dogs home', t);
+  // m4 (phone): the mug's counter counts against the mug's own limit
+  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
+  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Wigglesworth/.test(x.textContent)).click(); }); await settle(pg); await tap(pg, '.prodb[data-p=mug]');
+  ok('part 9 m4: a 20-letter name that fits the mug says it fits, never "/ 20"', (await text(pg, '#nameMsg')) === '20 letters: that\'s as long as it fits on the mug.' && !(await pg.$eval('#addBtn', (b) => b.disabled)), await text(pg, '#nameMsg'));
+  await pg.fill('#nameIn', 'W'.repeat(16)); await settle(pg);
+  ok('part 9 m4: 16 wide letters: little room left', (await text(pg, '#nameMsg')) === '16 letters: it fits on the mug, with little room left.', await text(pg, '#nameMsg'));
+  await pg.fill('#nameIn', 'W'.repeat(17)); await settle(pg);
+  ok('part 9 m4: 17 wide letters: too long, and how many fit', /A little shorter, please: up to 16 of these letters fit on the mug\./.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled), await text(pg, '#nameMsg'));
+  await pg.fill('#nameIn', 'Bo'); await settle(pg);
+  ok('part 9 m4: a short name: it fits', (await text(pg, '#nameMsg')) === '2 letters: it fits on the mug.');
+  // art M1: every drawn mug shows the half a buyer sees with the handle on the right: x 1350 to 2700 of the wrap
+  const mf = await mugFaces(pg, '#pvOn .mock-mug .pp-print');
+  ok('part 9 art M1: the make-it mug shows the print\'s x 1350 to 2700', mf.length === 1 && mf[0][0] === 1350 && mf[0][1] === 2700, mf);
+  await finish('part 9 mug name', t);
+  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug', { pose: 'happy' })], path: '/merch/', vp: [390, 844] }); pg = t.page;
+  const home = await mugFaces(pg, '#trio .mock-mug .pp-print'); await tap(pg, '#useDog'); await tap(pg, '[data-pick]'); const thing = await mugFaces(pg, '#prods .mock-mug .pp-print');
+  await toHash(pg, '#/basket'); await pg.waitForSelector('#qtable'); const bk = await mugFaces(pg, '.bl .mock-mug .pp-print');
+  ok('part 9 art M1: the home card, the thing and the basket picture agree (x 1350 to 2700)', [home, thing, bk].every((a) => a.length === 1 && a[0][0] === 1350 && a[0][1] === 2700), { home, thing, bk });
+  ok('part 9 art M1: the right half\'s dog faces away from the handle (it faces left: PawPrint mugBody draws the right side\'s dog facing left)', /the right side's faces left/.test(fs.readFileSync(path.join(ROOT, 'merch', 'pawprint_core.js'), 'utf8')) && P.PRODUCTS.mug.sides[1] === 2025 && P.PRODUCTS.mug.w === 2700);
+  await finish('part 9 mug face', t);
+  // art m1: the tee mock's hems (and everything drawn on the tee) inside the tee's outline, on every colour
+  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [1280, 720] }); pg = t.page; await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=tee]');
+  for (const c of CAT.products.find((p) => p.id === 'tee').colours.map((x) => x.id)) {
+    await tap(pg, '[data-col=' + c + ']');
+    const out = await pg.evaluate(() => {
+      const svg = document.querySelector('#pvOn svg.mock-tee'), body = svg.querySelector('path'), bad = [], hems = [...svg.querySelectorAll('path.hem')];
+      hems.forEach((h) => { const L = h.getTotalLength(), w = +h.getAttribute('stroke-width') / 2 + 0.3;
+        for (let i = 0; i <= 40; i++) { const p = h.getPointAtLength(L * i / 40), q = h.getPointAtLength(Math.min(L, L * i / 40 + 0.5)), r = h.getPointAtLength(Math.max(0, L * i / 40 - 0.5)), dx = q.x - r.x, dy = q.y - r.y, n = Math.hypot(dx, dy) || 1;
+          for (const [ox, oy] of [[0, 0], [-dy / n * w, dx / n * w], [dy / n * w, -dx / n * w], [dx / n * w * (i === 40 ? 1 : 0), dy / n * w * (i === 40 ? 1 : 0)], [-dx / n * w * (i === 0 ? 1 : 0), -dy / n * w * (i === 0 ? 1 : 0)]]) {
+            const pt = new DOMPoint(p.x + ox, p.y + oy); if (!body.isPointInFill(pt)) bad.push([Math.round(pt.x), Math.round(pt.y)]); } } });
+      return { n: hems.length, bad: bad.slice(0, 4) };
+    });
+    ok('part 9 art m1: ' + c + ' tee: the sleeve and body hems (lines and caps) lie inside the tee', out.n === 3 && out.bad.length === 0, out);
+  }
+  await finish('part 9 tee hems', t);
+  // art m4: the dog cards, the ready-made cards and the pose buttons are drawn without the ground shadow, as the print is
+  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
+  const shade = () => pg.evaluate(() => ({ pics: document.querySelectorAll('.mview.on svg.dogpic').length, shadows: [...document.querySelectorAll('.mview.on svg.dogpic ellipse')].filter((e) => e.getAttribute('cy') === '187.5' && /5B3D32/i.test(e.getAttribute('fill') || '') && +e.getAttribute('opacity') < 1).length }));
+  let s9 = await shade(); ok('part 9 art m4: "Which dog?" cards without the ground shadow', s9.pics >= 9 && s9.shadows === 0, s9);
+  await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=mug]'); s9 = await shade(); ok('part 9 art m4: the pose buttons too', s9.pics === 3 && s9.shadows === 0, s9);
+  await finish('part 9 shadows', t);
+  // art m2: a newborn has one pose, "Sleeping": on "make it", in the basket and on the order page; a link asking another pose still works
+  const bo = R('Bo');
+  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
+  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Bo').click(); }); await settle(pg); await tap(pg, '.prodb[data-p=tee]');
+  ok('part 9 art m2: a newborn: one pose, "Sleeping", and a word why', (await pg.$$eval('[data-pose]', (b) => b.map((x) => x.textContent.trim() + '=' + x.getAttribute('aria-pressed')).join())) === 'Sleeping=true' && !(await pg.$eval('#poseNote', (e) => e.hidden)) && bo.a === 2);
+  ok('part 9 art m2: its preview is the one print', await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'tee', colour: 'white', pose: 'stand', name: true }));
+  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+  ok('part 9 art m2: the basket says "Sleeping"', /^Bo, Beagle\s*Sleeping · name on/.test(await text(pg, '.bl .facts')), await text(pg, '.bl .facts'));
+  await finish('part 9 newborn', t);
+  t = await open({ path: SHARE(bo, '&prod=mug&pose=happy&from=share'), vp: [360, 640] }); pg = t.page;
+  ok('part 9 art m2: a share link asking "happy" for a newborn opens "make it" with "Sleeping"', (await view(pg)) === 'make' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'stand' && (await text(pg, '#poses')) === 'Sleeping' && await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'mug', colour: 'white', pose: 'happy', name: true }));
+  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+  ok('part 9 art m2: and it adds as the one sleeping pose', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'stand' && /Sleeping/.test(await text(pg, '.bl .facts')));
+  await finish('part 9 newborn link', t);
+  t = await open({ save: SAVE, basket: [line(bo, 'mug', { pose: 'happy' }), line(bo, 'mug', { pose: 'sit' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640], clock: FIX }); pg = t.page; await pg.waitForSelector('#qtable');
+  ok('part 9 art m2: stored newborn lines in other poses are one line, "Sleeping"', (await pg.$$eval('.bl', (l) => l.length)) === 1 && (await text(pg, '.bl output')) === '2' && /Sleeping/.test(await text(pg, '.bl .facts')));
+  const on = mkOrder('nb', (o) => { o.lines = [Object.assign({}, o.lines[1], { recipe: enc(bo), name: 'Bo', pose: 'happy' }), o.lines[0]]; }); await showOrder(pg, on);
+  ok('part 9 art m2: the order page names each pose, a newborn\'s "Sleeping"', (await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent).join())) === 'Sleeping,Stand', await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent)));
+  // m9: the safe answer is the big button
+  await showOrder(pg, mkOrder('m9'));
+  ok('part 9 m9: "Keep my order" is the primary button, "Yes, cancel it" the quiet one', await pg.$eval('#cancelNo', (b) => b.classList.contains('go')) && await pg.$eval('#cancelYes', (b) => b.classList.contains('quiet') && !b.classList.contains('go')) &&
+    await pg.$eval('#askNo', (b) => b.classList.contains('go')) && await pg.$eval('#askYes', (b) => b.classList.contains('quiet')));
+  await finish('part 9 order', t);
 }
 
 // ================= fit: every step at three sizes, and contrast =================
@@ -868,7 +1029,7 @@ async function fitChecks() {
 }
 
 // ================= part 6: the order page in every state the Worker answers (docs/design/merch/PART6.md) =================
-const HR = 3600000, MINUTE = 60000;
+const HR = 3600000, MINUTE = 60000, num0 = (x) => (typeof x === 'number' ? x : 0);
 // the Worker's own rules for the posting date: paid + n working days (Mon-Fri, UTC), said as its UTC date
 function addBD(t, n) { let d = t; while (n > 0) { d += 864e5; const w = new Date(d).getUTCDay(); if (w !== 0 && w !== 6) n--; } return d; }
 const postDay = (t) => { const d = new Date(t); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getUTCMonth()]; };
@@ -889,19 +1050,19 @@ const partShip = (o) => { past(o); o.status = 'part_shipped'; o.lines.forEach((l
 const SIX_LINES = () => ORDER_LINES().concat([line(R('Bo'), 'tee', { colour: 'black', size: 'XS', pose: 'sit' }), line(R('Pepper'), 'mug', { pose: 'happy' }), line(R('Sir Wigglesworth III'), 'tee', { colour: 'ice-blue', size: '2XL', qty: 3 })].map((l, i) => {
   const r = P.merchDecode(l.recipe).dogs[0]; return { line: 4 + i, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on, name: l.name_on ? r.n : null, qty: l.qty, unit: l.product === 'tee' ? (l.size === '2XL' ? 2899 : 2699) : 1999, status: 'queued', refunded_qty: 0, parcel: null, recipe: l.recipe, reprint_of: null }; }));
 const STATES = [
-  ['open', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; }, { title: /^Waiting for payment$/, box: /^Waiting for payment\.$/ }],
-  ['bank', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; o.pay_pending = true; }, { title: /^Waiting for your bank$/, box: /^Waiting for your bank\.$/ }],
-  ['paid', null, { title: /^Thank you! Your order is in\.$/, box: new RegExp("^We'll start printing at \\d\\d:\\d\\d\\. If you change your mind before then, you can cancel here\\.\\s*" + PB + '\\s*Cancel my order$'), cancel: true }],
-  ['after', past, { box: new RegExp('^Printing has started\\.\\s*' + PB + '$') }],
+  ['open', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; }, { title: /^Waiting for payment$/, step1: /Now: Waiting for payment\s*We start once it's paid\.$/, box: /^Waiting for payment\.$/ }],
+  ['bank', (o) => { o.status = 'open'; o.paid_at = null; o.cancel_until = null; o.ship_by = null; o.pay_pending = true; }, { title: /^Waiting for your bank$/, step1: /Now: Waiting for your bank\s*This page shows it as soon as it arrives\.$/, box: /^Waiting for your bank\.$/ }],
+  ['paid', null, { title: /^Thank you! Your order is in\.$/, step1: /Order received\s*\d+ \w+ 2026\. Your receipt is in your email\.$/, box: new RegExp("^We'll start printing at \\d\\d:\\d\\d\\. If you change your mind before then, you can cancel here\\.\\s*" + PB + '\\s*Cancel my order$'), cancel: true }],
+  ['after', past, { title: /^Your order is being printed$/, stage: 2, box: new RegExp('^Printing has started\\.\\s*' + PB + '$') }],
   ['review', (o) => { o.status = 'held'; o.hold = 'review'; }, { box: /^Getting ready to print\. It's taking a little longer than usual\.\s*We'll start printing at \d\d:\d\d/, cancel: true }],
-  ['render', (o) => { past(o); o.status = 'held'; o.hold = 'render'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
+  ['render', (o) => { past(o); o.status = 'held'; o.hold = 'render'; }, { title: /^Getting your order ready$/, step1: /Order received\s*\d+ \w+ 2026\. Getting ready to print\.$/, box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
   ['provider', (o) => { past(o); o.status = 'held'; o.hold = 'provider'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
   ['wallet', (o) => { past(o); o.status = 'held'; o.hold = 'wallet'; }, { box: new RegExp("^Getting ready to print\\. It's taking a little longer than usual\\.\\s*" + PB + '$') }],
   ['draft', (o) => { past(o); o.status = 'held'; o.hold = 'draft_mode'; }, { box: new RegExp('^Getting ready to print\\.\\s*' + PB + '$') }],
-  ['address', (o) => { past(o); o.status = 'held'; o.hold = 'address'; }, { form: true, refund: true, box: null }],
-  ['dispute', (o) => { o.status = 'held'; o.hold = 'dispute'; o.dispute = 'open'; }, { title: /^Your order is paused$/, box: /^Your bank is looking at this payment, so we've paused it\./ }],
+  ['address', (o) => { past(o); o.status = 'held'; o.hold = 'address'; }, { title: /^We need your address$/, step1: /Order received\s*\d+ \w+ 2026\. Waiting for your address\.$/, form: true, refund: true, box: null }],
+  ['dispute', (o) => { o.status = 'held'; o.hold = 'dispute'; o.dispute = 'open'; }, { title: /^Your order is paused$/, step1: /Order received\s*\d+ \w+ 2026\. Paused while your bank looks at the payment\.$/, box: /^Your bank is looking at this payment, so we've paused it\./ }],
   ['disputesent', (o) => { allShip(o); o.dispute = 'open'; }, { title: /^Your order is on its way$/, box: /^Your bank is looking at this payment\. What we posted is yours either way, and the bank decides about the money\./, stage: 3 }],
-  ['reship', (o) => { allShip(o); o.hold = 'reship'; }, { form: true, refund: false, box: null }],
+  ['reship', (o) => { allShip(o); o.hold = 'reship'; }, { title: /^A parcel came back to us$/, track: /A parcel came back to us: tell us where to send it again\./, form: true, refund: false, box: null }],
   ['confirming', (o) => { past(o); o.status = 'confirming'; o.lines.forEach((l) => { l.status = 'drafted'; }); }, { title: /^Your order is being printed$/, box: new RegExp('^Printing has started\\.\\s*' + PB + '$'), stage: 2 }],
   ['confirmed', (o) => { past(o); o.status = 'confirmed'; o.lines.forEach((l) => { l.status = 'confirmed'; }); }, { title: /^Your order is being printed$/, box: new RegExp('^Printing has started\\.\\s*' + PB + '$'), stage: 2 }],
   ['part', partShip, { title: /^Part of your order is on its way$/, track: /On its way\s*Sent 22 Nov 2026 \(1 of 2 parcels\)\. Track it$/, box: null, stage: 3 }],
@@ -935,6 +1096,11 @@ async function orderStateChecks() {
     ok(tag + ': drawn, marked test', (await view(pg)) === 'order' && /Test order/.test(await text(pg, '.testtag')) && body.includes(o.id.slice(3)), body.slice(0, 120));
     ok(tag + ': no undefined, null or NaN', !/\bundefined\b|\bnull\b|NaN/.test(body), body.slice(0, 200));
     if (want.title) ok(tag + ': the title', want.title.test(await text(pg, '#h-order-t')), await text(pg, '#h-order-t'));
+    // part 9 M5/M6: the title and the tracker agree; the receipt is spoken of only under the thank-you, in the first hour after paying
+    const title = await text(pg, '#h-order-t'), thanks = title === 'Thank you! Your order is in.';
+    ok(tag + ': a receipt line only with the thank-you in the first hour (none unpaid, none later)', /receipt/i.test(body) === thanks && (!thanks || num0(o.paid_at) > FIX - HR), [title, (body.match(/[^.]*receipt[^.]*\./i) || [])[0]]);
+    if (o.status === 'open') ok(tag + ': unpaid: the tracker waits for the payment too', !/Order received/.test(await text(pg, '.track')) && (await text(pg, '.track li:nth-child(1)')).includes(title.replace('Thank you! Your payment is on its way to us', 'Waiting for payment')));
+    if (want.step1) ok(tag + ': step 1 of the tracker says what the title says', want.step1.test(await text(pg, '.track li:nth-child(1)')), await text(pg, '.track li:nth-child(1)'));
     if (want.box === null) ok(tag + ': no status box', !(await pg.$('.cancelbox')), await text(pg, '.cancelbox'));
     else if (want.box) ok(tag + ': the status words', want.box.test(await text(pg, '.cancelbox')), await text(pg, '.cancelbox'));
     ok(tag + ': the cancel button only in the hour', !!(await pg.$('#cancelBtn')) === !!want.cancel);
@@ -1004,17 +1170,19 @@ async function orderStateChecks() {
   await finish('order states', t);
 
   // the address form: each error, and the values never kept
-  t = await open({ save: SAVE, path: '/merch/#/' }); pg = t.page;
+  t = await open({ save: SAVE, path: '/merch/#/', clock: FIX }); pg = t.page;
   const fill = async (v) => { for (const [k, x] of Object.entries(v)) await pg.$eval('#af-' + k, (e, x) => { e.value = x; }, x); };
   const A = { name: 'Pat Tester', line1: '9 New Lane', line2: 'Flat Q2', city: 'Testville', state: 'NY', postal: 'QZ-9Q9' };
-  const err = async () => [await text(pg, '#addrErr'), await pg.$$eval('#addrForm [aria-invalid=true]', (x) => x.map((e) => e.id))];
+  // [the box under the form (only when visible), the fields marked, what the fields say]
+  const err = async () => [(await pg.$eval('#addrErr', (e) => e.hidden)) ? '' : await text(pg, '#addrErr'), await pg.$$eval('#addrForm [aria-invalid=true]', (x) => x.map((e) => e.id)), await pg.$$eval('#addrForm .aerr', (x) => x.map((e) => e.textContent).join(''))];
   await showOrder(pg, mkOrder('address', STATES.find((x) => x[0] === 'address')[1]));
+  ok('address: names and towns start with a capital on a phone keyboard (part 9 m8)', await pg.$$eval('#af-name, #af-city', (l) => l.every((e) => e.getAttribute('autocapitalize') === 'words')));
   ok('address: the order\'s own country, said, no picker', /Country: United States/.test(await text(pg, '.acountry')) && !(await pg.$('#addrForm select')));
   ok('address: every input at least 44 px and labelled', await pg.$$eval('#addrForm input', (l) => l.length === 6 && l.every((e) => e.getBoundingClientRect().height >= 44 && e.closest('label') && e.closest('label').textContent.trim().length > 3)));
   await fill(Object.assign({}, A, { name: '' })); await tap(pg, '#addrSend');
-  let e = await err(); ok('address: a missing name, said at the field', /name for the parcel/.test(e[0]) && e[1].join() === 'af-name', e);
+  let e = await err(); ok('address: a missing name, said once, at the field (part 9 m8)', /name for the parcel/.test(e[2]) && e[0] === '' && e[1].join() === 'af-name', e);
   await fill(Object.assign({}, A, { line1: 'x'.repeat(130) })); await tap(pg, '#addrSend'); await settle(pg);
-  e = await err(); ok('address: bad_address {field} from the server, said at that field', /street address/.test(e[0]) && e[1].join() === 'af-line1', e);
+  e = await err(); ok('address: bad_address {field} from the server, said once, at that field', /street address/.test(e[2]) && e[0] === '' && e[1].join() === 'af-line1', e);
   for (const [hook, re] of [['address', /still can't send to this address/], ['other_country', /We can only send this order to the United States\. To send it somewhere else, we'll refund you/], ['busy', /One moment, please try again/], ['slow_down', /a lot of tries/]]) {
     await pg.evaluate(([id, h]) => { const k = 'dd_merch_test_orders_v1', all = JSON.parse(sessionStorage.getItem(k)); all[id]._fail = { address: h }; sessionStorage.setItem(k, JSON.stringify(all)); }, ['mo_P6address', hook]);
     await fill(A); await tap(pg, '#addrSend'); await settle(pg);
@@ -1025,7 +1193,7 @@ async function orderStateChecks() {
   ok('address: not_needed (sorted meanwhile): said, the form gone', /sorted already/.test(await text(pg, '.oknote')) && !(await pg.$('#addrForm')));
   await showOrder(pg, mkOrder('address2', STATES.find((x) => x[0] === 'address')[1]));
   await fill(A); await tap(pg, '#addrSend'); await pg.waitForSelector('.oknote'); await settle(pg);
-  ok('address: sent, thanked, the form gone', /Thanks! We.ll send it there\./.test(await text(pg, '.oknote')) && !(await pg.$('#addrForm')) && (await text(pg, '#h-order-t')) === 'Thank you! Your order is in.');
+  ok('address: sent, thanked, the form gone, and the order goes on to be printed', /Thanks! We.ll send it there\./.test(await text(pg, '.oknote')) && !(await pg.$('#addrForm')) && (await text(pg, '#h-order-t')) === 'Your order is being printed', await text(pg, '#h-order-t'));
   const kept = await pg.evaluate(() => JSON.stringify([Object.assign({}, localStorage), Object.assign({}, sessionStorage), document.body.innerHTML, [...document.querySelectorAll('input')].map((i) => i.value)]));
   ok('address: the values are kept nowhere (storage, the page)', !/9 New Lane|Pat Tester|Testville|Flat Q2|QZ-9Q9/.test(kept), kept.match(/9 New Lane|Pat Tester|Testville|Flat Q2|QZ-9Q9/));
   // refund me instead (held address only)

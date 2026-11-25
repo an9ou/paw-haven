@@ -33,22 +33,28 @@
     var u = 10, cx = 170, top = 15, P = function (x, y) { return [cx + x * u, top + y * u]; };
     var neck = qpts(P(-4, 0), P(0, 1.6), P(4, 0), 6);
     var body = neck.concat([P(11, 1.5), P(16, 7), P(12.5, 10), P(11, 8.5), P(11, 29), P(-11, 29), P(-11, 8.5), P(-12.5, 10), P(-16, 7), P(-11, 1.5)]);
+    // the sleeve hems run along the inside of each sleeve's opening (P(16,7) to P(12.5,10)), 0.4 units in and 0.5 short of each corner, so
+    // their whole line (round caps too) stays inside the tee's outline on every colour (art review part 9, m1; merch/test_page.js checks it)
     return { u: u, cx: cx, top: top, body: body, collar: qpts(P(-4, 0), P(0, 2.4), P(4, 0), 6), area: [cx - 7.5 * u, top + 3.5 * u, 15 * u, 18 * u],
-      hems: [[P(15.2, 8), P(12, 10.6)], [P(-15.2, 8), P(-12, 10.6)], [P(-10.9, 28), P(10.9, 28)]], folds: [[P(-8, 19), P(-7.7, 25)], [P(8.2, 17), P(7.9, 22)]] };
+      hems: [[P(15.36, 7.03), P(12.62, 9.37)], [P(-15.36, 7.03), P(-12.62, 9.37)], [P(-10.5, 28), P(10.5, 28)]], folds: [[P(-8, 19), P(-7.7, 25)], [P(8.2, 17), P(7.9, 22)]] };
   })();
   function tee(o) {
     var c = o.hex || '#FFFFFF', dark = lum(c) < 0.45, d = wob(TEE.body, 11, 2.2), dc = dark ? 'rgba(255,251,243,.55)' : INK, a = TEE.area;
     var s = '<svg class="mock mock-tee" viewBox="0 0 340 312" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(o.label || 'A tee') + '">';
     s += '<path d="' + d + '" fill="' + c + '"/>';
     s += '<path d="' + wob(TEE.body, 77, 3.4) + '" fill="none" stroke="' + INK + '" stroke-width="1" opacity=".3" stroke-linejoin="round"/>';
-    s += line(TEE.collar, dc, 2) + TEE.hems.map(function (h) { return line(h, dc, 1.6); }).join('') + TEE.folds.map(function (h) { return line(h, dc, 1.2, 0.35); }).join('');
+    s += line(TEE.collar, dc, 2) + TEE.hems.map(function (h) { return line(h, dc, 1.6).replace('<path ', '<path class="hem" '); }).join('') + TEE.folds.map(function (h) { return line(h, dc, 1.2, 0.35); }).join('');
     s += lay(o.print, a[0], a[1], a[2]);
     if (o.area) s += '<rect class="mock-area" x="' + a[0] + '" y="' + a[1] + '" width="' + a[2] + '" height="' + a[3] + '" fill="none" stroke="#E07A93" stroke-width="1" stroke-dasharray="4 4"/>';
     s += '<path d="' + d + '" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
     return s + '</svg>';
   }
 
-  // an 11 oz mug from the front, handle right: the front face shows the left half of the 9 x 3.5 in wrap (one face of the two)
+  // an 11 oz mug from the front, handle right: the front face shows the RIGHT half of the 9 x 3.5 in wrap (x 1350 to 2700 of 2700), one face
+  // of the two. Why (art review part 9, M1): the wrap's two ends meet at the handle (the print core keeps its 0.5 in "ends" clear for it) and
+  // the strip reads left to right from outside, so going round the mug the print runs handle -> back -> far side -> front -> handle. Seen with
+  // the handle on the right, the face runs from the far side (x 1350) to the handle (x 2700): the right half, whose dog faces away from the
+  // handle (pawprint_core.js mugBody: the right side's dog faces left). PART1.md "Mug face direction": still to be confirmed with a sample.
   // body 70 units = 4.5 in, so 15.6 units an inch. viewBox 140 x 104
   function mug(o) {
     var k = 70 / 4.5, body = [[30, 22]].concat(qpts([30, 22], [65, 25], [100, 22], 6).slice(1)).concat([[99, 82]]).concat(qpts([99, 82], [65, 89], [31, 82], 6).slice(1));
@@ -59,8 +65,8 @@
     var s = '<svg class="mock mock-mug" viewBox="0 0 140 104" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(o.label || 'A mug') + '">';
     s += '<path d="' + hand + '" fill="none" stroke="' + INK + '" stroke-width="7.4" stroke-linecap="round"/><path d="' + hand + '" fill="none" stroke="#FFFFFF" stroke-width="4.4" stroke-linecap="round"/>';
     s += '<path d="' + d + '" fill="#FFFFFF"/>';
-    // the wrap is 9 in wide: the face shows 4.5 in of it, from 0 to the middle; its top 0.35 in under the rim
-    s += '<svg x="30" y="22" width="70" height="66" viewBox="30 22 70 66" overflow="hidden">' + lay(o.print, 30, 26.5, 9 * k) + '</svg>';
+    // the wrap is 9 in wide: the face shows 4.5 in of it, from the middle to the handle end; its top 0.35 in under the rim
+    s += '<svg x="30" y="22" width="70" height="66" viewBox="30 22 70 66" overflow="hidden">' + lay(o.print, 30 - 4.5 * k, 26.5, 9 * k) + '</svg>';
     s += '<path d="M33 24Q33 80 35 81M95 24Q97 80 95 81" fill="none" stroke="' + INK + '" stroke-width=".8" opacity=".18"/>';
     s += '<path d="' + wob(rim, 43, 1) + '" fill="#F4EFE6"/><path d="' + wob(inn, 44, 0.8) + '" fill="#E9DFD1"/>';
     s += '<path d="' + wob(inn, 44, 0.8) + '" fill="none" stroke="' + INK + '" stroke-width="1" opacity=".5"/><path d="' + wob(rim, 43, 1) + '" fill="none" stroke="' + INK + '" stroke-width="1.8"/>';
@@ -78,11 +84,14 @@
     return s + '<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" fill="none" stroke="' + INK + '" stroke-width="1.5" stroke-dasharray="6 5"/></svg>';
   }
 
-  // a dog drawing cropped to what is drawn (PawPrint.printArt's box), for the pose buttons and the dog cards
+  // a dog drawing cropped to what is drawn (PawPrint.printArt's box), for the pose buttons and the dog cards. Drawn as the print draws it: without
+  // the game's faint ground shadow (one ink ellipse at the ground line plus its hatching; the same pattern pawprint_core.js dropShadow removes;
+  // art review part 9, m4). If the art's shadow ever changes, the card simply keeps it: merch/test_page.js would then fail.
+  var SHADOW = /<ellipse cx="[\d.]+" cy="187.5" rx="[\d.]+" ry="[\d.]+" fill="#5B3D32" opacity="0?\.\d+"\/><path d="[^"]*" stroke="#5B3D32" stroke-width="1.3"[^>]*\/>/g;
   function dog(svg, box) {
     if (!svg) return '';
     var vb = box ? box.map(function (n) { return f(n); }).join(' ') : '0 0 240 200';
-    return svg.replace(/^<svg [^>]*>/, '<svg class="dogpic" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">');
+    return svg.replace(SHADOW, '').replace(/^<svg [^>]*>/, '<svg class="dogpic" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">');
   }
 
   G.MerchMock = { tee: tee, mug: mug, flat: flat, dog: dog, lum: lum, esc: esc };

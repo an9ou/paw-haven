@@ -129,7 +129,7 @@
     var a = st.share; st.share = null;
     if (!a || st.src !== 'link' || st.dogs.length !== 1) return;
     var p = prodCat(a.prod); if (!p || !colourCat(a.prod, 'white') || p.poses.indexOf(a.pose) < 0) return;
-    pickDog(st.dogs[0].id); startDraft(a.prod); st.draft.pose = a.pose;
+    pickDog(st.dogs[0].id); startDraft(a.prod); st.draft.pose = newborn(st.dog.recipe) ? babyPose(p) : a.pose; // a newborn: its one pose, whatever the link asked
     var at = location.pathname + location.search;
     try { history.pushState(null, '', at + '#/thing'); history.pushState(null, '', at + '#/make'); } catch (e) { setHash('#/make'); }
   }
@@ -170,13 +170,13 @@
     else if (l.size != null && l.size !== '') return null;
     if (typeof l.pose !== 'string' || p.poses.indexOf(l.pose) < 0) return null;
     if (typeof l.name_on !== 'boolean') return null;
-    var r = d.dogs[0];
+    var r = d.dogs[0], pose = newborn(r) ? babyPose(p) : l.pose; // a newborn's lines all carry its one pose (so two of them are the same thing)
     if (l.name_on && !(r.n && P.nameOk(r.n, { product: l.product }).ok)) return null;
     var q = typeof l.qty === 'number' ? l.qty : typeof l.qty === 'string' && /^\s*\d{1,3}\s*$/.test(l.qty) ? +l.qty : NaN;
     if (!isFinite(q)) return null;
     q = Math.max(1, Math.min(maxQty(), Math.round(q)));
-    try { P.print(r, { product: l.product, colour: l.colour, pose: l.pose, name: l.name_on }); } catch (e) { return null; } // it must draw, with this build
-    return { recipe: l.recipe, product: l.product, colour: l.colour, size: size, pose: l.pose, name_on: l.name_on, qty: q, who: cleanWho(l.who), ready: l.ready === true };
+    try { P.print(r, { product: l.product, colour: l.colour, pose: pose, name: l.name_on }); } catch (e) { return null; } // it must draw, with this build
+    return { recipe: l.recipe, product: l.product, colour: l.colour, size: size, pose: pose, name_on: l.name_on, qty: q, who: cleanWho(l.who), ready: l.ready === true };
   }
   // -> { lines, dropped }: bad lines dropped, quantities repaired, the same thing twice merged, at most max_lines
   function cleanBasket(text) {
@@ -248,13 +248,20 @@
     if (c.soon) return '<b>Coming soon to ' + esc(placeName(c)) + '.</b> We\'re sorting out the tax paperwork first, so we can\'t take orders there yet.';
     if (!z) return '';
     var s = 'Shipping to ' + esc(placeName(c)) + ': <b>' + money(z.fee) + '</b>.';
-    if (z.free_from != null) s += ' Orders of ' + money(z.free_from).replace('.00', '') + ' or more ship free.';
+    if (z.free_from != null) s += ' ' + freeRule(z.free_from);
     else if (z.extra) s += ' Each extra mug or tee adds ' + money(z.extra) + '.';
     return s;
   }
+  // the free-shipping rule, said once (part 9 phone review M2): it counts the things, before shipping; the threshold is the zone's own (catalog)
+  function freeRule(from) { return 'Free shipping when your things come to ' + money(from).replace('.00', '') + ' or more (before shipping).'; }
+  // under the threshold, how much more ships it free (the quote's own numbers: the zone's free_from and the things' subtotal); none where it's never free
+  function freeMore(q) { return q && q.free_from != null && num(q.subtotal) < num(q.free_from) ? 'Add ' + money(num(q.free_from) - num(q.subtotal)) + ' more for free shipping.' : ''; }
   // the one posting promise (cloudflare/merch/catalog.js SHIP_BY_DAYS; the legal pages say it word for word; merch/test_page.js checks the number)
   var SHIP_BY_DAYS = 7, PROMISE = 'Printing usually takes 2 to 5 working days, and we post every order within ' + SHIP_BY_DAYS + ' working days of payment.';
-  function etaLine(eta) { return Array.isArray(eta) && eta.length === 2 ? 'About ' + num(eta[0]) + ' to ' + num(eta[1]) + ' working days to your door. ' + PROMISE : ''; }
+  // the zone's delivery time is payment to door, printing included (catalog.js ZONES eta; review M4: said so, so nobody adds the two up).
+  // The legal shipping page's table says the same words (merch/test_legal.js)
+  var ETA_TAIL = 'working days from payment to your door, printing included';
+  function etaLine(eta) { return Array.isArray(eta) && eta.length === 2 ? 'About ' + num(eta[0]) + ' to ' + num(eta[1]) + ' ' + ETA_TAIL + '. ' + PROMISE : ''; }
 
   // ---- what an error from the order server means, in plain words (TRANSACTIONS.md 6.3). -> { t (html), line (1-based, or 0), reload }
   function errInfo(e) {
@@ -263,15 +270,15 @@
     var T = {
       art_changed: 'We\'ve improved the drawing since you opened this page. Reload to see your dog as it will print.',
       sold_out_today: 'So many orders came in today that we can\'t take more until tomorrow. Your basket stays right here.',
-      variant_off: 'One thing in your basket' + mark + ' can\'t be made just now. Remove it, or tap Change and pick another colour or size.',
+      variant_off: 'One design in your basket' + mark + ' can\'t be made just now. Remove it, or tap Change and pick another colour or size.',
       slow_down: 'That was a lot of tries in a short time. Wait a minute, then try again.',
       busy: 'We\'re a little busy just now. Try again in a moment.',
       cant_make: 'We can\'t make this order just now, and nothing was paid. Try again later, or write to us at ' + CONTACT + '.',
-      bad_qty: 'One thing in your basket' + mark + ' has more than we can make: up to ' + maxQty() + ' of each. Change it on that line.',
-      too_many: 'Your basket holds up to ' + maxLines() + ' things. Remove one to go on.',
+      bad_qty: 'One design in your basket' + mark + ' has more than we can make: up to ' + maxQty() + ' of each. Change it on that line.',
+      too_many: 'Your basket holds up to ' + maxLines() + ' different designs. Remove one to go on.',
       country_closed: 'We can\'t send orders to ' + place + ' yet. Choose another place under <b>Ship to</b>.',
       bad_country: 'We don\'t know that place. Choose it again under <b>Ship to</b>.',
-      bad_line: 'One thing in your basket' + mark + ' needs a look: tap Change on it.',
+      bad_line: 'One design in your basket' + mark + ' needs a look: tap Change on it.',
       bad_name: 'One name in your basket' + mark + ' can\'t print as it is: tap Change on that line to fix it, or turn the name off.',
       not_available: 'We can\'t take this order here. Write to us at ' + CONTACT + ' and we\'ll help.',
       no_agree: 'Something went wrong on our side. Reload the page and try again.',
@@ -291,13 +298,21 @@
     var i = ORDER_STEPS.indexOf(v);
     $('#steps').hidden = i < 0;
     $('#shipTo').classList.toggle('off', v === 'order'); // the order page has its own country: no picker there
-    $$('#steps li').forEach(function (li, k) {
-      li.className = k < i ? 'done' : k === i ? 'now' : '';
-      var b = $('button', li); b.disabled = !(k < i); if (k === i) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
-    });
+    ticks(v);
     $('#crumbs').textContent = i >= 0 ? 'Merch · step ' + (i + 1) + ' of 4' : v === 'order' ? 'Merch · your order' : 'Merch';
     ({ home: rHome, pick: rPick, thing: rThing, make: rMake, basket: rBasket, order: rOrder })[v](arg);
+    keepMaking();
     $$('.dn').forEach(function (e) { e.textContent = st.dog ? (shownName(st.dog) || 'your ' + breedOf(st.dog.recipe)) : 'your dog'; });
+  }
+  // a step before this one is ticked only when it was really done (review m2: an empty basket reached from the bag ticks nothing it has not
+  // seen): a basket with lines in it means steps 1-3 were done; otherwise a chosen dog is step 1, a thing being made is step 2
+  function ticks(v) {
+    var i = ORDER_STEPS.indexOf(v), did = v === 'basket' && basket.length ? [1, 1, 1] : [!!st.dog, !!st.draft, v !== 'basket'];
+    $$('#steps li').forEach(function (li, k) {
+      var done = k < i && !!did[k];
+      li.className = done ? 'done' : k === i ? 'now' : '';
+      var b = $('button', li); b.disabled = !done; if (k === i) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
   }
   function setHash(h) { try { history.replaceState(history.state, '', location.pathname + location.search + h); } catch (e) { /* the old address stays */ } }
   // the address always names the step on show: a step that can't show yet (nothing chosen) goes to the first one that can, and says so in the address
@@ -332,6 +347,8 @@
       return '<li>' + mockOf(r, { product: t[0], colour: t[2], pose: t[1], name_on: mine && !!r.n }, PROD[t[0]].title) + '<span>' + (t[0] === 'mug' ? 'A mug' : 'A tee') + '</span><small>' + (p.sizes.length ? 'from ' : '') + money(p.price) + '</small></li>';
     }).join('');
     $('#homeShip').innerHTML = shipLine();
+    // "No dog yet?" only for a buyer with no dogs here (review m10): with dogs from the save or a link, the ready-made ones are on "Which dog?"
+    $('#nodog').hidden = st.src !== 'none';
     readyList($('#readyHome'));
   }
   function readyList(el) {
@@ -339,6 +356,11 @@
     $$('[data-dog]', el).forEach(function (b) { b.onclick = function () { pickDog(b.dataset.dog); go('#/thing'); }; });
   }
   function pickDog(id) { st.dog = dogById(id); st.edit = null; st.draft = null; }
+  // a newborn has one pose: every pose prints the same sleeping pup (art review m2). Its lines carry the one pose the catalog offers first
+  // ('stand' where offered), and the page calls it "Sleeping" wherever a pose is named
+  function newborn(r) { return !!r && r.a === 2; }
+  function babyPose(p) { return p && p.poses.indexOf('stand') >= 0 ? 'stand' : p && p.poses.length ? p.poses[0] : 'stand'; }
+  function poseName(r, pose) { return newborn(r) ? 'Sleeping' : POSE_NAME[pose] || ''; }
 
   // ---- 2. which dog
   function rPick() {
@@ -363,7 +385,8 @@
     }).join('') + '</ul>';
     h += '<div class="subh">Or a ready-made dog</div><ul class="ready small" id="readyPick"></ul>';
     b.innerHTML = h; readyList($('#readyPick'));
-    $$('[data-pick]', b).forEach(function (x) { x.onclick = function () { pickDog(x.dataset.pick); $$('[data-pick]', b).forEach(function (y) { y.setAttribute('aria-pressed', String(y === x)); }); }; });
+    // a tap on a dog goes straight on to "the thing", as the ready-made cards do (review M7); Back there comes here to change the dog
+    $$('[data-pick]', b).forEach(function (x) { x.onclick = function () { pickDog(x.dataset.pick); $$('[data-pick]', b).forEach(function (y) { y.setAttribute('aria-pressed', String(y === x)); }); go('#/thing'); }; });
     var nx = $('#pickNext'); nx.removeAttribute('aria-disabled'); nx.href = '#/thing';
   }
 
@@ -392,11 +415,20 @@
   function nameMsg(n) {
     var d = st.draft;
     if (n.off) return d.who && !d.base.n ? { t: NOSAY, bad: false } : { t: 'The ' + PROD[d.product].one + ' prints without a name.', bad: false }; // the game name can't print
-    if (n.ok) return { t: Array.from(n.name).length + ' / 20 letters', bad: false };
+    if (n.ok) return { t: roomSay(n.name, d.product), bad: false };
     if (n.why === 'empty') return { t: 'Type a name, or turn the name off.', bad: true };
     if (n.why === 'long') return { t: (n.say || 'A little shorter, please') + (n.max ? ': up to ' + n.max + ' of these letters fit on the ' + PROD[d.product].one + '.' : ': up to 20 letters.'), bad: true };
     if (n.why === 'letters') return { t: 'Some of those letters we can\'t draw yet. Letters A to Z (with accents), numbers, spaces and \' - . & ! all work.', bad: true };
     return { t: (n.say || 'Let\'s try another name') + '.', bad: true }; // 'word': no reason given, just kindly
+  }
+  // how much room a good name has, counted against the product's own limit (review m4). The tee fits any 20 letters (PawPrint's NAME_MAX); the
+  // mug's limit is a width (16 of the widest letters), so it says how full the line is (one more wide letter, one more narrow one), never a
+  // count it can't keep
+  function roomSay(name, pid) {
+    var len = Array.from(name).length, max = P.NAME_MAX || 20, word = len === 1 ? ' letter' : ' letters', on = ' on the ' + PROD[pid].one + '.';
+    var fits = function (t) { try { return Array.from(t).length <= max && P.nameFit(t, pid).ok; } catch (e) { return false; } };
+    if (pid === 'tee' || !P.nameFit) return len + ' / ' + max + ' letters';
+    return len + word + (fits(name + 'W') ? ': it fits' + on : fits(name + 'i') ? ': it fits' + on.slice(0, -1) + ', with little room left.' : ': that\'s as long as it fits' + on);
   }
   // the recipe this line prints from: the dog, with the typed name when it is on and good
   function draftRecipe() {
@@ -411,7 +443,9 @@
   }
   function editing() { return !!st.edit && basket.some(function (l) { return l.id === st.edit; }); }
   function rMake() {
-    var d = st.draft, p = prodCat(d.product), r = draftRecipe(), n = nameState(), tee = d.product === 'tee';
+    var d = st.draft, p = prodCat(d.product), baby = newborn(d.base);
+    if (baby) d.pose = babyPose(p); // one pose for a newborn, whatever was asked (a link, an old line)
+    var r = draftRecipe(), n = nameState(), tee = d.product === 'tee';
     var o = { product: d.product, colour: d.colour, pose: d.pose, name_on: !!(d.name_on && n.ok) };
     $$('.pn').forEach(function (e) { e.textContent = PROD[d.product].one; });
     // the preview: the picture we print on the thing, and the picture alone
@@ -422,7 +456,8 @@
     $('#preview').classList.toggle('isflat', st.pv === 'flat');
     $$('[data-pv]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.pv === st.pv)); b.onclick = function () { st.pv = b.dataset.pv; rMake(); }; });
     // pose
-    $('#poses').innerHTML = POSES.filter(function (x) { return p.poses.indexOf(x[0]) >= 0; }).map(function (x) { return '<button type="button" data-pose="' + x[0] + '" aria-pressed="' + (d.pose === x[0]) + '">' + dogPic(d.base, x[0]) + x[1] + '</button>'; }).join('');
+    $('#poses').innerHTML = (baby ? [[d.pose, 'Sleeping']] : POSES.filter(function (x) { return p.poses.indexOf(x[0]) >= 0; })).map(function (x) { return '<button type="button" data-pose="' + x[0] + '" aria-pressed="' + (d.pose === x[0]) + '">' + dogPic(d.base, x[0]) + x[1] + '</button>'; }).join('');
+    $('#poseNote').hidden = !baby;
     $$('[data-pose]').forEach(function (b) { b.onclick = function () { d.pose = b.dataset.pose; rMake(); }; });
     // name
     var tog = $('#nameTog'), inp = $('#nameIn'), msg = nameMsg(n);
@@ -452,8 +487,41 @@
     var add = $('#addBtn'), full = !ed && basket.length >= maxLines() && !basket.some(function (l) { return sameThing(l, draftLine()); });
     add.textContent = ed ? 'Save changes' : 'Add to basket';
     add.disabled = !!msg.bad || full;
-    $('#addMsg').textContent = full ? 'Your basket is full: it holds up to ' + maxLines() + ' things. Change or remove one there to make room.' : msg.bad ? 'Fix the name first, or turn it off.' : '';
+    $('#addMsg').textContent = full ? 'Your basket is full: it holds up to ' + maxLines() + ' different designs. Change or remove one there to make room.' : msg.bad ? 'Fix the name first, or turn it off.' : '';
     $('#makeBack').href = st.edit ? '#/basket' : '#/thing';
+    keepMaking();
+  }
+  // review m1: what is being made survives a reload of this tab (sessionStorage, as the link dogs are): the dog, the draft and the line being
+  // changed. Read back as untrusted like everything else (restoreMaking). Gone once the line is in the basket.
+  var MAKE_KEY = 'dd_merch_make_v1';
+  function keepMaking() {
+    if (!cat) return;
+    var d = st.draft;
+    if (!st.dog || !(d || st.view === 'thing')) { ssSet(MAKE_KEY, null); return; } // kept while a dog's thing is chosen or made, not after
+    try {
+      var el = st.edit && basket.filter(function (l) { return l.id === st.edit; })[0];
+      var o = { dog: { id: String(st.dog.id || ''), src: String(st.dog.src || ''), recipe: P.merchEncode([st.dog.recipe]), name: cleanWho(st.dog.name || '') } };
+      if (d) o.draft = { base: P.merchEncode([d.base]), product: d.product, colour: d.colour, size: d.size, pose: d.pose, name_on: !!d.name_on, name: String(d.name || '').slice(0, 40), qty: d.qty, who: cleanWho(d.who || ''), ready: !!d.ready };
+      if (d && el) o.edit = storeLine(el);
+      ssSet(MAKE_KEY, JSON.stringify(o));
+    } catch (e) { ssSet(MAKE_KEY, null); }
+  }
+  function restoreMaking() {
+    if (!/^#\/(thing|make)\/?$/.test(location.hash)) return; // only a reload on those two steps picks up where it was
+    var o = null; try { o = JSON.parse(ssGet(MAKE_KEY) || 'null'); } catch (e) { o = null; }
+    if (!o || typeof o !== 'object' || !o.dog || typeof o.dog !== 'object') return;
+    var one = function (s) { var x = typeof s === 'string' ? P.merchDecode(s) : { ok: false }; return x.ok && x.dogs.length === 1 && P.check(x.dogs[0]).ok ? x.dogs[0] : null; };
+    var r = one(o.dog.recipe); if (!r) return;
+    var same = st.dogs.concat(READY).filter(function (x) { return x.id === o.dog.id && P.merchEncode([x.recipe]) === o.dog.recipe; })[0];
+    st.dog = same || { id: 'k-' + newId(), src: o.dog.src === 'ready' ? 'ready' : 'kept', recipe: r, name: cleanWho(o.dog.name) };
+    var d = o.draft; if (!d || typeof d !== 'object') return;
+    var base = one(d.base), p = prodCat(d.product); if (!base || !p) return;
+    var col = colourCat(d.product, d.colour); if (!col) return;
+    var size = null; if (p.sizes.length) { if (typeof d.size !== 'string' || col.sizes.indexOf(d.size) < 0) return; size = d.size; }
+    if (typeof d.pose !== 'string' || p.poses.indexOf(d.pose) < 0) return;
+    var q = typeof d.qty === 'number' && d.qty % 1 === 0 ? Math.max(1, Math.min(maxQty(), d.qty)) : 1;
+    st.draft = { base: base, product: d.product, colour: d.colour, size: size, pose: d.pose, name_on: d.name_on === true, name: typeof d.name === 'string' ? d.name.slice(0, 40) : '', qty: q, who: cleanWho(d.who), ready: d.ready === true };
+    if (o.edit) { var e = cleanLine(o.edit), was = e && basket.filter(function (l) { return sameThing(l, e); })[0]; if (was) st.edit = was.id; }
   }
   function addDraft() {
     var l = draftLine();
@@ -480,18 +548,20 @@
     return api.quote({ country: st.country, lines: basket.map(apiLine) }).then(function (q) { if (n !== st.qn) return; st.quote = okQuote(q) ? q : null; st.qerr = st.quote ? null : { error: 'busy' }; if (st.view === 'basket') rBasket(); },
       function (e) { if (n !== st.qn) return; st.qerr = e && typeof e === 'object' ? e : { error: 'busy' }; if (st.view === 'basket') rBasket(); });
   }
+  function droppedWords(n) { return n === 1 ? 'One design in your basket can\'t be made any more, so we took it out.' : n + ' designs in your basket can\'t be made any more, so we took them out.'; }
+  function lineUnit(l) { var p = prodCat(l.product); return p ? p.price + (l.product === 'tee' ? sizeAdd('tee', l.size) : 0) : 0; }
   function okQuote(q) { return !!q && typeof q === 'object' && Array.isArray(q.lines) && q.lines.length === basket.length && typeof q.total === 'number' && typeof q.subtotal === 'number' && typeof q.ship_fee === 'number'; }
   function lineHTML(l, i, q, need) {
     try {
       var r = recipeOf(l), ql = q && q.lines[i], C = l.product === 'tee' ? P.TEE_COLOURS.filter(function (x) { return x.id === l.colour; })[0] : null, who = whoOf(l, r);
       return '<li class="bl card' + (need ? ' needs' : '') + '" data-line="' + esc(l.id) + '">' + mockOf(r, l, PROD[l.product].title + ': ' + who) +
-        '<div class="bt"><h3>' + PROD[l.product].title + '</h3>' + (need ? '<p class="lneed">This one needs a look.</p>' : '') + '<ul class="facts"><li>' + esc(who) + '</li><li>' + POSE_NAME[l.pose] + ' · ' + (l.name_on ? 'name on' : 'no name') + '</li>' +
+        '<div class="bt"><h3>' + PROD[l.product].title + '</h3>' + (need ? '<p class="lneed">This one needs a look.</p>' : '') + '<ul class="facts"><li>' + esc(who) + '</li><li>' + poseName(r, l.pose) + ' · ' + (l.name_on ? 'name on' : 'no name') + '</li>' +
         (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + '</ul>' +
         '<div class="brow"><div class="qty small" role="group" aria-label="How many"><button type="button" data-qm="' + esc(l.id) + '" aria-label="One less"' + (l.qty <= 1 ? ' disabled' : '') + '>−</button><output>' + esc(l.qty) + '</output><button type="button" data-qp="' + esc(l.id) + '" aria-label="One more"' + (l.qty >= maxQty() ? ' disabled' : '') + '>+</button></div>' +
-        '<span class="lp" data-lp="' + (i + 1) + '">' + (ql ? money(ql.total) : '') + '</span></div>' +
+        '<span class="lp" data-lp="' + (i + 1) + '">' + money(ql ? ql.total : lineUnit(l) * l.qty) + '</span></div>' + // no quote (a country coming soon, an error): the catalog's own prices (review m3)
         '<div class="brow2"><button type="button" class="lnk" data-chg="' + esc(l.id) + '">Change</button><button type="button" class="lnk" data-rm="' + esc(l.id) + '">Remove</button></div></div></li>';
     } catch (e) { // one line that can't draw never blanks the basket: it says so, and can be removed
-      return '<li class="bl card broken" data-line="' + esc(l.id) + '"><div class="bt"><h3>' + esc(PROD[l.product] ? PROD[l.product].title : 'One thing') + '</h3><p>We can\'t draw this one just now.</p>' +
+      return '<li class="bl card broken" data-line="' + esc(l.id) + '"><div class="bt"><h3>' + esc(PROD[l.product] ? PROD[l.product].title : 'One design') + '</h3><p>We can\'t draw this one just now.</p>' +
         '<div class="brow2"><button type="button" class="lnk" data-rm="' + esc(l.id) + '">Remove</button></div></div></li>';
     }
   }
@@ -499,15 +569,18 @@
     var c = country(), q = st.quote, e = st.qerr, pe = st.payErr, ei = e ? errInfo(e) : pe ? errInfo(pe) : null;
     $('#closed').hidden = true;
     var dn = $('#bdrop'); dn.hidden = !st.dropped;
-    dn.textContent = st.dropped === 1 ? 'One thing in your basket can\'t be made any more, so we took it out.' : st.dropped > 1 ? st.dropped + ' things in your basket can\'t be made any more, so we took them out.' : '';
+    dn.textContent = st.dropped ? droppedWords(st.dropped) : '';
     if (!basket.length) {
       $('#blines').innerHTML = '<li class="empty"><p class="lead">Your basket is empty.</p><p>Pick a dog, then a mug or a tee.</p></li>';
     } else {
       $('#blines').innerHTML = basket.map(function (l, i) { return lineHTML(l, i, q, ei && ei.line === i + 1); }).join('');
     }
+    if (st.view === 'basket') ticks('basket'); // the last line removed: the steps forget what an empty basket never saw
     var full = basket.length >= maxLines(), an = $('#another');
-    $('#bfull').textContent = full ? 'Your basket holds up to ' + maxLines() + ' things, and up to ' + maxQty() + ' of each. To add another, change or remove one.' : basket.length ? 'Up to ' + maxLines() + ' things in one order, up to ' + maxQty() + ' of each.' : '';
+    // one word for a basket line, everywhere: a "design" (review M3); "things" are what gets made (the bag's count, the Things row)
+    $('#bfull').textContent = full ? 'Your basket holds up to ' + maxLines() + ' different designs, up to ' + maxQty() + ' of each. To add another, change or remove one.' : basket.length ? 'Up to ' + maxLines() + ' different designs in one order, up to ' + maxQty() + ' of each.' : '';
     if (full) { an.setAttribute('aria-disabled', 'true'); an.removeAttribute('href'); } else { an.removeAttribute('aria-disabled'); an.href = '#/pick'; }
+    an.textContent = basket.length ? '＋ Put another dog on something' : 'Put your dog on something'; // review m2
     $$('[data-qm]').forEach(function (b) { b.onclick = function () { bump(b.dataset.qm, -1); }; });
     $$('[data-qp]').forEach(function (b) { b.onclick = function () { bump(b.dataset.qp, 1); }; });
     $$('[data-rm]').forEach(function (b) { b.onclick = function () { remove(b.dataset.rm); }; });
@@ -522,9 +595,11 @@
       t += '<table class="lines" id="qtable"><tr><td>Things (' + itemCount() + ')</td><td data-q="subtotal">' + money(q.subtotal) + '</td></tr>' +
         '<tr><td>Shipping</td><td data-q="ship">' + (q.ship_fee ? money(q.ship_fee) : 'Free') + '</td></tr>' +
         '<tr class="tot"><td>Total</td><td data-q="total">' + money(q.total) + '</td></tr></table>';
-      if (q.free_from != null) t += '<p class="small2 left">Orders of ' + money(q.free_from).replace('.00', '') + ' or more ship free.</p>';
+      var more = freeMore(q); if (more) t += '<p class="small2 left freemore" id="freeMore">' + more + '</p>'; // the rule itself is in the Shipping box above
       t += '<p class="small2 left">Prices are in US dollars. On the payment page you may be offered your own currency.</p>';
       (Array.isArray(q.notes) ? q.notes : []).forEach(function (k) { if (typeof k === 'string' && Object.prototype.hasOwnProperty.call(NOTE, k)) t += '<p class="small2 left note-' + k + '">' + NOTE[k] + '</p>'; });
+    } else if (basket.length && e && c && c.soon && e.error === 'country_closed') {
+      // a country coming soon: the Shipping box above already says so (review m3); the lines keep their catalog prices
     } else if (basket.length && e) {
       t += '<p class="qerr">' + errHTML(ei) + '</p>';
     } else if (basket.length && !c) t += '<p class="qerr">Choose where it\'s going under <b>Ship to</b> to see the shipping and the total.</p>';
@@ -662,7 +737,7 @@
     return '<div class="addr card" id="addrBox"><h2 class="h2s" id="h-addr">' + (reship ? 'Where should we send it again?' : 'Please check your address') + '</h2>' +
       '<p>' + (reship ? 'A parcel came back to our print partner: it couldn\'t be delivered. Type the address again and we\'ll send it once more, free.' : 'We couldn\'t send to this address. Please check it.') + '</p>' +
       '<form id="addrForm" novalidate autocomplete="on">' + AFIELDS.map(function (f) {
-        return '<label class="afield" for="af-' + f[0] + '"><span>' + f[1] + '</span><input id="af-' + f[0] + '" name="' + f[0] + '" maxlength="' + f[3] + '" autocomplete="shipping ' + f[2] + '"' + (f[4] ? ' required' : '') + ' aria-describedby="ae-' + f[0] + '"><small class="aerr" id="ae-' + f[0] + '"></small></label>';
+        return '<label class="afield" for="af-' + f[0] + '"><span>' + f[1] + '</span><input id="af-' + f[0] + '" name="' + f[0] + '" maxlength="' + f[3] + '" autocomplete="shipping ' + f[2] + '"' + (f[0] === 'name' || f[0] === 'city' ? ' autocapitalize="words"' : f[0] === 'postal' ? ' autocapitalize="characters"' : '') + (f[4] ? ' required' : '') + ' aria-describedby="ae-' + f[0] + '"><small class="aerr" id="ae-' + f[0] + '"></small></label>';
       }).join('') +
       '<p class="acountry">Country: <b>' + esc(c ? cname(c) : '') + '</b><br><span class="note">This order can only go to ' + esc(c ? placeName({ code: c }) : 'its country') + '.</span></p>' +
       '<p class="small2 left">It goes straight to our print partner to send your parcel. We don\'t keep it.</p>' +
@@ -700,18 +775,24 @@
     var pic = ''; try { pic = first ? dogPic(first, 'happy') : ''; } catch (e) { pic = ''; }
     var track = function (p) { return typeof p.tracking_url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(p.tracking_url) ? ' <a class="lnk" href="' + esc(p.tracking_url) + '" target="_blank" rel="noopener noreferrer">Track it' + (sent.length > 1 ? ' (' + (p.product === 'tee' ? 'tee' : 'mug') + ')' : '') + '</a>' : ''; };
     var postBy = num(o.ship_by) > 0 ? postDay(o.ship_by) : '', lateBy = num(o.late_eta) > 0 ? postDay(o.late_eta) : '';
-    // the top: a calm thank-you, or what happened (?new=1 only changes an order still waiting for its payment)
+    // the top: a calm thank-you, or what happened (?new=1 only changes an order still waiting for its payment). Review M5/M6: each state has its
+    // own title, and the tracker below says the same; the receipt is spoken of only in the first hour after paying, never on an unpaid order
+    // fresh: the hour after paying (a clock a little off either way still counts)
+    var paid = num(o.paid_at), fresh = !!paid && Math.abs(Date.now() - paid) < HOUR_MS, addrHold = s === 'held' && hold === 'address', back = hold === 'reship' && !ended && !disputed;
     var title = ended === 'cancelled' ? 'Your order is cancelled' : ended === 'refunded' ? 'Your order is refunded' : ended === 'expired' ? 'This order wasn\'t paid' :
       s === 'open' ? (IS_NEW ? 'Thank you! Your payment is on its way to us' : o.pay_pending ? 'Waiting for your bank' : 'Waiting for payment') :
-      disputed && !sent.length ? 'Your order is paused' : s === 'paid' || (s === 'held' && !sent.length) ? 'Thank you! Your order is in.' :
-      s === 'confirming' || s === 'confirmed' ? 'Your order is being printed' : allCame ? 'Your order has been delivered' : sent.length && unsent.length ? 'Part of your order is on its way' : sent.length ? 'Your order is on its way' : 'Your order';
+      disputed && !sent.length ? 'Your order is paused' : addrHold && !sent.length ? 'We need your address' : back ? 'A parcel came back to us' :
+      (s === 'paid' || s === 'held') && !sent.length && fresh ? 'Thank you! Your order is in.' : s === 'held' && !sent.length ? 'Getting your order ready' :
+      s === 'paid' || s === 'confirming' || s === 'confirmed' ? 'Your order is being printed' : allCame ? 'Your order has been delivered' : sent.length && unsent.length ? 'Part of your order is on its way' : sent.length ? 'Your order is on its way' : 'Your order';
+    var thanks = title === 'Thank you! Your order is in.';
     var lead = ended === 'cancelled' ? 'Nothing will be printed. Your refund is on its way: it can take a few days to show on your card.' :
       ended === 'refunded' ? 'Your money is on its way back: it can take a few days to show on your card.' : ended === 'expired' ? 'Nothing was paid, so nothing will be made.' :
       s === 'open' ? (ORD.stale ? 'It\'s taking a little longer than usual. Reload this page in a minute to see it.' : o.pay_pending ? 'Your bank is still sending the payment. This page shows it as soon as it arrives.' : IS_NEW ? 'It usually takes a moment. This page shows it as soon as it arrives.' : 'This order isn\'t paid yet.') :
-      'A receipt is on its way to your email.';
+      disputed && !sent.length ? '' : addrHold && !sent.length ? 'Your order is safe. We just need an address we can send it to.' : back ? 'It couldn\'t be delivered. Tell us where to send it, and we\'ll send it again, free.' :
+      thanks ? 'A receipt is on its way to your email.' : '';
     var h = (TEST_ORDERS ? '<p class="testtag">Test order: made up to show this page. Nothing was paid and nothing will be printed.</p>' : '') +
       '<div class="thanks">' + pic + '<h1 class="mh2" id="h-order-t" tabindex="-1">' + esc(title) + '</h1>' +
-      '<p class="lead"><span class="ordnum">Order ' + esc(String(o.id || '').replace(/^mo_/, '')) + '</span><br>' + esc(lead) + '</p></div>';
+      '<p class="lead"><span class="ordnum">Order ' + esc(String(o.id || '').replace(/^mo_/, '')) + '</span>' + (lead ? '<br>' + esc(lead) : '') + '</p></div>';
     if (ORD.note) h += '<p class="oknote card" role="status" id="ordNote">' + esc(ORD.note) + '</p>';
     if (o.resting === true && !ended) h += '<p class="restnote card">The shop is resting for now. Your order is safe, and we\'re still making it.</p>';
     // what happens now, and the cancel hour: only what the server says (can_cancel, cancel_until); after the hour there is no cancel line at all
@@ -743,9 +824,13 @@
         '<div class="row arow">' + (o.late_ok === true ? '' : '<button type="button" class="btn mint" id="lateWait">Keep waiting</button>') + '<button type="button" class="btn quiet" id="lateCancel">Cancel the late part</button></div></div>';
     }
     // where it is now (not for an order that ended before anything was sent). Numbered dots, a drawn tick when done (review finding 15: no emoji)
-    var S = [['Order received', (o.paid_at ? fmtDate(o.paid_at) + '. ' : '') + 'Your receipt is in your email.'],
+    // step 1 says what the title says: waiting for the payment (no receipt: nothing was paid), the address or the bank; the receipt only in
+    // the first hour after paying (review M5, M6)
+    var step1 = s === 'open' ? [o.pay_pending ? 'Waiting for your bank' : 'Waiting for payment', (IS_NEW || o.pay_pending) && !ORD.stale ? 'This page shows it as soon as it arrives.' : 'We start once it\'s paid.'] :
+      ['Order received', (paid ? fmtDate(paid) + '.' : '') + (stage > 0 ? '' : disputed ? ' Paused while your bank looks at the payment.' : addrHold ? ' Waiting for your address.' : s === 'held' && !thanks ? ' Getting ready to print.' : '') + (thanks ? ' Your receipt is in your email.' : '')];
+    var S = [[step1[0], step1[1].trim()],
       ['Being printed', 'At our print partner: printing usually takes 2 to 5 working days.'],
-      ['On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (unsent.length && nParcels > 1 ? ' (' + sent.length + ' of ' + nParcels + ' parcels)' : sent.length > 1 ? ' (' + sent.length + ' parcels)' : '') + '.' : 'You get an email with a tracking link.'],
+      ['On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (unsent.length && nParcels > 1 ? ' (' + sent.length + ' of ' + nParcels + ' parcels)' : sent.length > 1 ? ' (' + sent.length + ' parcels)' : '') + '.' + (back ? ' A parcel came back to us: tell us where to send it again.' : '') : 'You get an email with a tracking link.'],
       ['Delivered', allCame ? 'Delivered ' + fmtDate(came[came.length - 1].delivered_at) + '. Say hello to your dog, in real life.' : 'Say hello to your dog, in real life.']];
     var showTrack = !ended || sent.length, STATE = { done: 'Done: ', now: 'Now: ', later: '' };
     h += '<div class="order">';
@@ -760,7 +845,7 @@
       var pid = l.product === 'tee' ? 'tee' : 'mug', r = null, C = pid === 'tee' ? P.TEE_COLOURS.filter(function (x) { return x.id === l.colour; })[0] : null, pic2 = '';
       try { r = recipeOf(l); pic2 = mockOf(r, { product: pid, colour: C ? C.id : 'white', pose: POSE_NAME[l.pose] ? l.pose : 'stand', name_on: l.name_on === true }, PROD[pid].title); } catch (e) { pic2 = ''; }
       var nm = typeof l.name === 'string' && l.name ? cleanWho(l.name) : r && r.n ? r.n : '', free = l.reprint_of != null;
-      return '<li class="bl card' + (l.status === 'replaced' || l.status === 'rejected' ? ' gone' : '') + '">' + pic2 + '<div class="bt"><h3>' + PROD[pid].title + '</h3><ul class="facts"><li>' + esc(nm || (r ? 'Your ' + breedOf(r) : 'Your dog')) + '</li>' + (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + '<li>How many: ' + esc(num(l.qty)) + '</li></ul>' +
+      return '<li class="bl card' + (l.status === 'replaced' || l.status === 'rejected' ? ' gone' : '') + '">' + pic2 + '<div class="bt"><h3>' + PROD[pid].title + '</h3><ul class="facts"><li>' + esc(nm || (r ? 'Your ' + breedOf(r) : 'Your dog')) + '</li>' + (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + (r && poseName(r, l.pose) ? '<li class="opose">' + poseName(r, l.pose) + '</li>' : '') + '<li>How many: ' + esc(num(l.qty)) + '</li></ul>' +
         (lateL.indexOf(l) >= 0 ? '<p class="ltag late">Running late' + (lateBy && o.late_ok !== true ? ': we now expect to post it by ' + esc(lateBy) : '') + '.</p>' : lineTag(l)) + '<span class="lp">' + (free ? 'Free' : money(num(l.unit) * num(l.qty))) + '</span></div></li>';
     }).join('') + '</ul><table class="lines"><tr><td>Things</td><td>' + money(tot.subtotal) + '</td></tr><tr><td>Shipping</td><td>' + (num(tot.ship_fee) ? money(tot.ship_fee) : 'Free') + '</td></tr>' +
       (num(tot.tax) ? '<tr><td>' + (num(tot.subtotal) + num(tot.ship_fee) + num(tot.tax) === num(tot.total) ? 'Tax' : 'Tax (included in the prices)') + '</td><td>' + money(tot.tax) + '</td></tr>' : '') + '<tr class="tot"><td>Total</td><td>' + money(tot.total) + '</td></tr>' + (num(tot.refunded) ? '<tr><td>Refunded</td><td data-q="refunded">' + money(tot.refunded) + '</td></tr>' : '') + '</table>';
@@ -794,8 +879,9 @@
     var f = $('#addrForm'), err = $('#addrErr'), send = $('#addrSend'), busy = false;
     var show = function (t, field) {
       $$('.aerr', f).forEach(function (x) { x.textContent = ''; }); $$('input', f).forEach(function (x) { x.removeAttribute('aria-invalid'); });
-      if (field && $('#af-' + field)) { $('#af-' + field).setAttribute('aria-invalid', 'true'); $('#ae-' + field).textContent = t; try { $('#af-' + field).focus(); } catch (e) { /* fine */ } }
-      err.hidden = !t; err.innerHTML = t ? '<span class="errt">' + esc(t) + '</span>' : '';
+      var at = !!(field && $('#af-' + field)); // a field's error is said once, at the field (review m8); the box under the form is for the rest
+      if (at) { $('#af-' + field).setAttribute('aria-invalid', 'true'); $('#ae-' + field).textContent = t; try { $('#af-' + field).focus(); } catch (e) { /* fine */ } }
+      err.hidden = !t || at; err.innerHTML = t && !at ? '<span class="errt">' + esc(t) + '</span>' : '';
     };
     f.onsubmit = function (e) {
       e.preventDefault(); if (busy) return;
@@ -853,7 +939,7 @@
     try { var a = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']; for (var i = 0; i < a.length && !guess; i++) { var m = /-([A-Za-z]{2})\b/.exec(String(a[i])); if (m) guess = m[1].toUpperCase(); } } catch (e) { guess = ''; }
     var has = function (c) { return cat.countries.some(function (x) { return x.code === c; }); };
     st.country = saved && has(saved) ? saved : has(guess) ? guess : has('US') ? 'US' : cat.countries.length ? cat.countries[0].code : '';
-    sel.innerHTML = cat.countries.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === st.country ? ' selected' : '') + '>' + esc(cname(c.code)) + (c.soon ? ' (coming soon)' : '') + '</option>'; }).join('');
+    sel.innerHTML = cat.countries.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === st.country ? ' selected' : '') + '>' + (c.soon ? 'Soon: ' : '') + esc(cname(c.code)) + '</option>'; }).join(''); // "Soon:" first, so a narrow picker never cuts it off (review m3)
     sel.onchange = function () { st.country = sel.value; lsSet(SHIP_KEY, st.country); requote(); if (st.view === 'home' || st.view === 'thing') $$('.mview.on .shipline').forEach(function (p) { p.innerHTML = shipLine(); }); if (st.view === 'basket') rBasket(); };
   }
 
@@ -862,6 +948,20 @@
   // ---- controls outside the views
   $('#nameTog').onclick = function () { var d = st.draft; d.name_on = !d.name_on; if (d.name_on && !d.name) d.name = d.base.n || ''; rMake(); if (d.name_on && !d.name) $('#nameIn').focus(); };
   $('#nameIn').oninput = function (e) { st.draft.name = String(e.target.value).slice(0, 40); rMake(); };
+  // review M1: while the name is typed (a phone's keyboard up, the screen short) the price bar stops being sticky, so it never covers the field
+  // or its message; and the field with its message is kept in the part of the screen the keyboard leaves
+  var OPTS = $('#opts');
+  function nameInView() {
+    if (!OPTS.classList.contains('typing')) return;
+    var vv = window.visualViewport, top = vv ? vv.offsetTop : 0, h = vv ? vv.height : window.innerHeight, hd = $('#sitehead');
+    var under = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 0, inp = $('#nameIn').getBoundingClientRect(), msg = $('#nameMsg').getBoundingClientRect();
+    var low = Math.max(inp.bottom, msg.bottom) - (top + h - 8), high = inp.top - (top + under + 8);
+    if (low > 0) window.scrollBy(0, Math.min(low, high)); else if (high < 0) window.scrollBy(0, high);
+  }
+  $('#nameIn').addEventListener('focus', function () { OPTS.classList.add('typing'); setTimeout(nameInView, 80); });
+  $('#nameIn').addEventListener('blur', function () { OPTS.classList.remove('typing'); });
+  window.addEventListener('resize', function () { setTimeout(nameInView, 30); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function () { setTimeout(nameInView, 30); });
   $('#qm').onclick = function () { st.draft.qty = Math.max(1, st.draft.qty - 1); rMake(); };
   $('#qp').onclick = function () { st.draft.qty = Math.min(maxQty(), st.draft.qty + 1); rMake(); };
   $('#addBtn').onclick = addDraft;
@@ -901,9 +1001,9 @@
     useCatalog(c);
     var res = readBasket(null); basket = res.lines; st.dropped = res.dropped;
     if (res.dropped || lsGet(BASKET_KEY) !== (basket.length ? JSON.stringify(basket.map(storeLine)) : null)) saveBasket(); else updateBag();
-    if (res.dropped) say(st.dropped === 1 ? 'One thing in your basket can\'t be made any more, so we took it out.' : st.dropped + ' things in your basket can\'t be made any more, so we took them out.');
+    if (res.dropped) say(droppedWords(st.dropped));
     $('#loading').hidden = true; document.documentElement.classList.add('merch-ready');
-    fillShip(); requote(); openShare(); route();
+    fillShip(); requote(); restoreMaking(); openShare(); route();
   }, function () { $('#loading').textContent = 'The shop couldn\'t load just now. Try again in a moment.'; });
 
   // hooks for the tests (merch/test_page.js) and the screenshots

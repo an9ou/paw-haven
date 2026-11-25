@@ -38,6 +38,10 @@
 .loading{text-align:center;color:var(--muted)}
 html.merch-ready .loading{display:none}
 .mfoot .small{color:var(--ink)}
+/* review m7, M8: the footer links and the pay card's links as rows of taps with room between them (no dots left dangling at a row's end) */
+.flinks,.paylinks{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 4px}
+.paylinks{margin:4px 0 0}
+.paylinks .lnk{font-size:17px}
 .shipto.off{display:none}
 .dropnote{margin:0 0 12px;padding:8px 12px;background:var(--w-blue);border:2px dashed var(--ink);border-radius:12px 9px 13px 8px;font-size:17px;line-height:1.35;color:var(--ink)}
 .dropnote[hidden]{display:none}
@@ -93,6 +97,7 @@ svg.dogpic{display:block;width:100%;height:auto}
 .how3 b{display:block;font-family:var(--hand);font-size:28px;line-height:1.05;margin-bottom:2px}
 .how3 b::before{content:counter(h) ". ";color:#D8607E}
 .how3 li:nth-child(1){background:var(--w-mint)} .how3 li:nth-child(2){background:var(--w-pink)} .how3 li:nth-child(3){background:var(--w-peach)}
+.nodog[hidden]{display:none}
 .nodog{margin:22px auto 0;max-width:860px;background:var(--w-blue);border:2px solid var(--ink);border-radius:16px 12px 17px 11px;padding:16px 14px 14px}
 .nodog h2{font-size:34px;margin:0 0 .2em;text-align:center}
 .nodog>p{text-align:center;margin:.2em 0 .6em}
@@ -183,6 +188,8 @@ svg.dogpic{display:block;width:100%;height:auto}
 .sizes{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .sizes .chipb{min-width:52px;padding:4px 10px}
 .sizes .chipb small{font-size:14px;font-weight:400}
+#sgBtn{margin-top:8px} /* review m6: never touching the size chips */
+#poseNote{margin:6px 0 0}
 .qtyrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .qty{display:inline-flex;align-items:center;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;overflow:hidden}
 .qty button{width:48px;min-height:46px;border:0;background:var(--w-blue);font-size:24px;font-family:var(--read);color:var(--ink);cursor:pointer}
@@ -190,8 +197,12 @@ svg.dogpic{display:block;width:100%;height:auto}
 .qty output{min-width:44px;text-align:center;font-size:21px;font-weight:700}
 .qty.small button{width:44px;min-height:44px}
 .qty.small output{min-width:36px}
-.paybar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px -6px 0;padding:10px;
+/* part 9 review m5: clear of an iPhone's home bar; M1: why Add is off is said inside the bar, above the price; while the name is typed
+   (.opts.typing, merch.js) the bar is not sticky, so the keyboard's short screen keeps the field and its message in view */
+.paybar{position:sticky;bottom:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;margin:6px -6px 0;padding:10px 10px calc(10px + env(safe-area-inset-bottom));
   background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:0 -3px 0 rgba(91,61,50,.10)}
+.opts.typing .paybar{position:static}
+.paybar .addmsg{flex:1 1 100%;font-weight:700}
 .paybar .amt{font-family:var(--hand);font-weight:700;font-size:32px;line-height:1;min-width:0}
 .paybar .amt small{display:block;font-family:var(--read);font-weight:400;font-size:14px;color:var(--ink);margin-top:2px}
 .paybar .btn.go{font-size:26px;min-height:52px;padding:6px 16px;flex:none}

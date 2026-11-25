@@ -170,6 +170,7 @@ function facts() {
     // each figure with the zone of its nearest [data-zone] and whether that is a fee-table row
     money: [...sheet.querySelectorAll('[data-money]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.money, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
     eta: [...sheet.querySelectorAll('[data-eta]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.eta, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
+    etaCells: [...sheet.querySelectorAll('.fees [data-eta]')].map((e) => [txt(e.closest('td')), e.closest('td').dataset.label]),
     promise: [...sheet.querySelectorAll('.shipby')].map(txt), lateauto: [...sheet.querySelectorAll('.lateauto')].map(txt),
     rowNames: [...sheet.querySelectorAll('.fees tbody tr')].map((r) => [r.dataset.zone, txt(r.querySelector('th'))]),
     limits: txt(sheet.querySelector('.limits')),
@@ -284,6 +285,11 @@ async function pageChecks() {
       ok(tag + ': every open zone with a threshold says "Orders of $N or more ship free."', OPEN_ZONES.map((id) => C.ZONES[id]).filter((z) => z.free_from != null).every((z) => f.ownText.includes('Orders of $' + (z.free_from % 100 ? (z.free_from / 100).toFixed(2) : z.free_from / 100) + ' or more ship free.')), '');
       ok(tag + ': a zone with no threshold never says free', OPEN_ZONES.every((id) => C.ZONES[id].free_from != null) || /Not offered/.test(f.ownText));
       ok(tag + ': every open zone\'s delivery time is in its own table row', OPEN_ZONES.every((z) => f.eta.some(([e, , zz, row]) => e === z && zz === z && row)), f.eta);
+      // part 9 phone review M4: the delivery time is payment to door, printing included, in the shop's own words (site/merch/merch.js ETA_TAIL)
+      const tail = (/var ETA_TAIL = '([^']+)'/.exec(fs.readFileSync(path.join(ROOT, 'site', 'merch', 'merch.js'), 'utf8')) || [])[1];
+      ok(tag + ': each delivery time says "from payment to your door, printing included", as the shop does', tail === 'working days from payment to your door, printing included' && f.etaCells.length === OPEN_ZONES.length &&
+        f.etaCells.every(([t, l]) => /^about \d+ to \d+ /.test(t) && t.endsWith(' ' + tail) && l === 'How long'), [tail, f.etaCells]);
+      ok(tag + ': nothing reads as if the post comes on top of the printing', !/Then the post|door to door/i.test(f.ownText), (f.ownText.match(/.{0,30}(Then the post|door to door).{0,30}/i) || [])[0]);
       ok(tag + ': "We can\'t deliver to some places yet."', f.ownText.includes("We can't deliver to some places yet."));
       ok(tag + ': separate parcels, tracking, the address window, the cancel hour, the 30 days', /their own parcels/.test(f.ownText) && /tracking link/.test(f.ownText) && f.ownText.includes('within ' + EXPECT.address_days + ' days') && f.ownText.includes(EXPECT.cool_min / 60 + ' hour') && f.ownText.includes(EXPECT.fault_days + ' days'));
       ok(tag + ': "usual times", not "estimates, not promises"', /usual times/.test(f.ownText) && !/not promises/.test(f.ownText));

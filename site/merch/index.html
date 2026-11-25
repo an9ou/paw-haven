@@ -36,7 +36,7 @@
         <li><b>Pick a thing</b>A mug or a tee. Choose a pose, and whether its name goes on too.</li>
         <li><b>We print it</b>Our print partner makes it just for you and posts it to your door.</li>
       </ol>
-      <section class="nodog tape t3" aria-labelledby="h-nodog">
+      <section class="nodog tape t3" id="nodog" aria-labelledby="h-nodog">
         <h2 id="h-nodog">No dog yet?</h2>
         <p>Adopt one first: the game is free and your dog is waiting at the shelter. <a class="lnk" href="/">Play first <span aria-hidden="true">→</span></a></p>
         <p class="note">Or start from a famous face. These four are ready to print:</p>
@@ -45,7 +45,7 @@
       <section class="faq" id="faq" aria-labelledby="h-faq">
         <h2 id="h-faq" tabindex="-1">Questions</h2>
         <details><summary>How do I bring my dog from the game?</summary><p>Playing on doodledoggo.app? Your dogs are already here when you open this page in the same browser. Playing somewhere else, like itch.io? We can't see those dogs from here yet, so pick one of the ready-made dogs for now.</p></details>
-        <details><summary>Where is it made, and how long does it take?</summary><p>Each order is printed just for you by our print partner, at a print shop near you where it can. Printing usually takes 2 to 5 working days, and we post every order within 7 working days of payment. Then the post: your basket shows how long it usually takes to reach you. You get a tracking link by email.</p></details>
+        <details><summary>Where is it made, and how long does it take?</summary><p>Each order is printed just for you by our print partner, at a print shop near you where it can. Printing usually takes 2 to 5 working days, and we post every order within 7 working days of payment. Your basket shows how long it usually takes from payment to your door, printing included. You get a tracking link by email.</p></details>
         <details><summary>How much is shipping?</summary><p>Choose where it's going under <b>Ship to</b> at the top: the shipping, and when shipping is free, show right there and again in your basket before you pay. Prices are in US dollars.</p></details>
         <details><summary>Can I send it back?</summary><p>Because it is made just for you, with your own dog on it, it can't be returned if you change your mind. If it arrives damaged, misprinted or lost, tell us within 30 days and we reprint it or refund you, free. Changed your mind straight away? You can cancel within 1 hour of paying.</p></details>
         <details><summary>Which size should I get?</summary><p>The tees are unisex adult sizes. Lay a tee you like flat, measure from armpit to armpit and compare with the size guide on the tee. Between two sizes? Pick the bigger one.</p></details>
@@ -83,7 +83,7 @@
           <p class="honest" id="honest">What you see is what is printed: the same lines, the same place, the same size. Printed colours look a little softer than a bright screen.</p>
         </div>
         <div class="opts" id="opts">
-          <fieldset class="opt"><legend>Pose</legend><div class="thumbs" id="poses"></div></fieldset>
+          <fieldset class="opt"><legend>Pose</legend><div class="thumbs" id="poses"></div><p class="note" id="poseNote" hidden>A newborn pup sleeps through every picture, so there's one pose.</p></fieldset>
           <div class="opt" id="o-name"><div class="lg" id="lg-name">Name</div>
             <div class="namerow">
               <button type="button" class="tog" id="nameTog" role="switch" aria-checked="true" aria-labelledby="lg-name nameTogL"><span class="t" aria-hidden="true"></span><span id="nameTogL">Print the name</span></button>
@@ -94,8 +94,7 @@
           <fieldset class="opt" id="o-col"><legend>Colour: <span id="colName"></span></legend><div class="sw" id="cols"></div><p class="note" id="darkNote" hidden>On this colour your dog gets a little paper patch, so its crayon lines still show.</p></fieldset>
           <fieldset class="opt" id="o-size"><legend>Size</legend><div class="sizes" id="sizes"></div><button type="button" class="lnk" id="sgBtn">Size guide</button></fieldset>
           <div class="opt"><div class="lg" id="lg-qty">How many</div><div class="qtyrow"><div class="qty" role="group" aria-labelledby="lg-qty"><button type="button" id="qm" aria-label="One less">−</button><output id="qv" aria-live="polite">1</output><button type="button" id="qp" aria-label="One more">+</button></div><span class="note" id="qnote">Up to 3 of each.</span></div></div>
-          <div class="paybar"><span class="amt" id="amt"></span><button type="button" class="btn go" id="addBtn">Add to basket</button></div>
-          <p class="addmsg" id="addMsg" aria-live="polite"></p>
+          <div class="paybar"><p class="addmsg" id="addMsg" aria-live="polite"></p><span class="amt" id="amt"></span><button type="button" class="btn go" id="addBtn">Add to basket</button></div>
           <a class="btn quiet" id="makeBack" href="#/thing" style="align-self:flex-start">← Back</a>
         </div>
       </div>
@@ -132,7 +131,8 @@
             <p class="note" id="closedWhy"></p>
             <div class="row" id="demoRow" hidden><button type="button" class="btn quiet" id="demoBtn">Test only: see the thank-you page</button></div>
           </div>
-          <p class="small2">Printed and posted by our print partner. You pay on Stripe's secure page: we never see card details. By paying you agree to the <a class="lnk" href="/merch/terms/">Terms of sale</a> (<a class="lnk" href="/merch/shipping/">Shipping and returns</a>).</p>
+          <p class="small2">Printed and posted by our print partner. You pay on Stripe's secure page: we never see card details. By paying you agree to the <a class="lnk" href="/merch/terms/">Terms of sale</a>.</p>
+          <nav class="paylinks" aria-label="Shop rules"><a class="lnk" href="/merch/shipping/">Shipping and returns</a><a class="lnk" href="/merch/seller/">Seller details</a><a class="lnk" href="/merch/tokushoho/" lang="ja">特定商取引法に基づく表記</a></nav>
         </div>
       </div>
     </section>
@@ -144,7 +144,7 @@
 
   </div>
   <footer class="foot mfoot">
-    <a href="/merch/terms/">Terms of sale</a> · <a href="/merch/shipping/">Shipping and returns</a> · <a href="/merch/seller/">Seller</a> · <a href="/privacy">Privacy</a> · <a href="#/faq" id="faqlink">Questions</a> · <a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a>
+    <nav class="flinks" aria-label="Shop rules and help"><a href="/merch/terms/">Terms of sale</a><a href="/merch/shipping/">Shipping and returns</a><a href="/merch/seller/">Seller details</a><a href="/merch/tokushoho/" lang="ja">特定商取引法に基づく表記</a><a href="/privacy">Privacy</a><a href="#/faq" id="faqlink">Questions</a><a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a></nav>
     <div class="small">Printed and posted by our print partner. Payments by Stripe. No ads, no tracking, no cookies.</div>
   </footer>
 </main>
@@ -158,12 +158,12 @@
 <dialog class="hand" id="cancelDlg" aria-labelledby="h-cancel">
   <h2 id="h-cancel">Cancel this order?</h2>
   <p>Nothing gets printed, and you get all your money back, shipping too.</p>
-  <div class="row"><button type="button" class="btn go" id="cancelYes">Yes, cancel it</button><button type="button" class="btn quiet" id="cancelNo">Keep my order</button></div>
+  <div class="row"><button type="button" class="btn go" id="cancelNo">Keep my order</button><button type="button" class="btn quiet" id="cancelYes">Yes, cancel it</button></div>
 </dialog>
 <dialog class="hand" id="askDlg" aria-labelledby="h-ask">
   <h2 id="h-ask">Are you sure?</h2>
   <p id="askText"></p>
-  <div class="row"><button type="button" class="btn go" id="askYes">Yes</button><button type="button" class="btn quiet" id="askNo">No</button></div>
+  <div class="row"><button type="button" class="btn go" id="askNo">No</button><button type="button" class="btn quiet" id="askYes">Yes</button></div>
 </dialog>
 <p class="vh" id="live" aria-live="polite"></p>
 
