@@ -75,7 +75,7 @@ async function pf(env, method, path, body, sent) {
 const pollMs = (env) => { const n = Number(env.MERCH_PF_POLL_MS); return Number.isFinite(n) && n >= 0 ? n : 1500; };
 const polls = (env) => { const n = Number(env.MERCH_PF_POLLS); return Number.isFinite(n) && n >= 0 ? n : 2; };
 const calcOf = (d) => (d && d.costs && d.costs.calculation_status) || 'done';
-const CALCULATING = { ok: false, kind: 'down', why: 'calculating', retry_ms: 60000 }; // a draft whose costs Printful is still working out
+const CALCULATING = () => ({ ok: false, kind: 'down', why: 'calculating', retry_ms: 60000 }); // a draft whose costs Printful is still working out
 const ordPath = (ref) => '/v2/orders/' + (/^\d+$/.test(String(ref)) ? ref : '@' + encodeURIComponent(ref));
 
 function recipientOut(rc) {
@@ -108,14 +108,14 @@ export async function createDraft(env, o, lines, recipient, fileUrls, extId) {
   }
   let d = r.json && r.json.data; if (!d || d.id == null) return { ok: false, kind: 'down', why: 'empty' };
   for (let i = 0; calcOf(d) === 'calculating' && i < polls(env); i++) { await sleep(pollMs(env)); const g = await pf(env, 'GET', '/v2/orders/' + d.id); if (g.ok && g.json && g.json.data) d = g.json.data; }
-  if (calcOf(d) === 'calculating') return CALCULATING; // the draft exists: the ledger's next try finds it by external id (GET before create)
+  if (calcOf(d) === 'calculating') return CALCULATING(); // the draft exists: the ledger's next try finds it by external id (GET before create)
   return { ok: true, data: mapOrder(d, []) };
 }
 // GET by Printful id or by external id ('@<id>'), with its shipments (a second read, v2 keeps them apart)
 export async function get(env, ref) {
   const r = await pf(env, 'GET', ordPath(ref)); if (!r.ok) return r;
   const d = r.json && r.json.data; if (!d || d.id == null) return { ok: false, kind: 'down', why: 'empty' };
-  if (d.status === 'draft' && calcOf(d) === 'calculating') return CALCULATING;
+  if (d.status === 'draft' && calcOf(d) === 'calculating') return CALCULATING();
   let ships = [];
   if (!NO_SHIPMENTS.includes(d.status)) {
     const s = await pf(env, 'GET', '/v2/orders/' + d.id + '/shipments?limit=100');
