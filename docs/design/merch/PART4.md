@@ -118,6 +118,15 @@ Miniflare cannot emulate Browser Run's binding, so `P4-miniflare` wraps the real
 - The fallback's CPU and wall time in a Free Durable Object with this code (the spike's version ran there in 1.15-1.70 s a tee).
 - That the self binding to `RenderGate` can be made by the API upload in one Worker (the kit uploads twice: the second upload adds it).
 - The metadata form of `migrations` and the `browser` binding in a direct API upload (wrangler's own form is in `wrangler.example.toml`).
+- (Added by the review.) The front Worker's start-up time and CPU with the wasm module in the bundle (the kit records `startup_time_ms` from both
+  upload answers and reads `workersInvocationsAdaptive` once, if the token may read analytics).
+- (Added by the review.) The PNG colour type Browser Run returns (the file check wants 6, RGBA; the kit records it for every browser file).
+- (Added by the review.) Whether `X-Browser-Ms-Used` comes with errors and timeouts (the kit records `ms_used` on every failed answer; without it
+  the ledger books the wall time).
+- **Stays unverified even after the cloud test**: the real text of Browser Run's daily 429. The kit never spends the day's 10 minutes to provoke
+  it; `render.js` matches "time limit exceeded for today" from Cloudflare's limits page, and three unknown 429s in a row call the day out for an
+  hour anyway (decision 3).
+- The tee comparison of the review stopped at 83 of 101 dogs (time); `render_chromium.mjs` covers all 8 sample dogs (`DOGS=` with all 8 ids).
 
 ## The cloud test (run book; the owner approves it first)
 
@@ -126,14 +135,54 @@ Miniflare cannot emulate Browser Run's binding, so `P4-miniflare` wraps the real
 1. Owner's go-ahead for one throwaway Worker on the Free plan, about 10 s of browser time (the kit caps the Worker's budget at 60 s).
 2. In a Claude cloud session (the proxy adds the token) or with `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit) exported:
    `NODE_PATH=$(npm root -g) DRY_RUN=0 RTEST_GO=yes-the-owner-approved node tools/merch_rtest.mjs` (`WRANGLER=<bin>` to use an installed wrangler).
-3. It counts Workers and Durable Object namespaces, uploads `doodle-doggo-merch-rtest` (workers.dev only, no domain, no cron, shop shut, random
-   admin and file keys made in memory), and runs 14 self-tests 12 s apart: tee and mug for akita, dane and golden by the browser (direct), golden's
-   tee and mug through the Worker, the same 6 by resvg; then the rate probe (two calls 1 s apart). 10 browser renders in all.
-4. Each file is downloaded through its signed link (sha checked) and compared with this machine's Chromium (`equal_px` should be 1.0 for the
-   browser files, as on 24 Nov; mean difference under 0.2 for resvg).
-5. Always, even after an error: the Worker is deleted with `force` (its Durable Object namespaces go with it) and the counts are compared.
-6. The results go to `RTEST_OUT` (a temp folder by default; never the repo): `rtest-report.json` with each status, `ms_used`, size, sha, the 429
-   texts and the differences. Then: set `MERCH_RENDER_VIA` from what worked, write the 429 text into `render.js` if it is not the daily one, and
-   tick the PART3.md checklist line.
+3. It lists the accounts (more than one and no `CLOUDFLARE_ACCOUNT_ID`: refused, nothing made), counts Workers and Durable Object namespaces,
+   uploads `doodle-doggo-merch-rtest` (workers.dev only, no domain, no cron, shop shut, random admin and file keys made in memory; from the
+   moment the first upload is sent the Worker counts as made), and runs 14 self-tests 12 s apart: tee and mug for akita, dane and golden by the
+   browser (direct), golden's tee and mug through the Worker, the same 6 by resvg; then the rate probe (two calls 1 s apart). 10 browser renders
+   in all. After 2 browser failures every later browser job and the probe are skipped (and reported); the resvg jobs still run.
+4. Each file is downloaded through its signed link (sha and PNG colour type recorded) and compared with this machine's Chromium (`equal_px`
+   should be 1.0 for the browser files, as on 24 Nov; resvg within `render.js` `MATCH`: mean under 0.2 and at most 5,000 / 3,000 pixels more than
+   32 apart). Then the start-up time (from the upload answers) and the front Worker's CPU (GraphQL, read only) if readable.
+5. Always, on every way out (an error, Ctrl-C, SIGTERM): the Worker is deleted with `force` (its Durable Object namespaces go with it; a 404
+   means it is gone already) and the counts are compared. **If the delete fails**, the kit prints this one line, still prints the counts and
+   writes the report, and exits 3:
+   `CLEAN UP BY HAND: the test Worker doodle-doggo-merch-rtest may still exist. In the Cloudflare dashboard open Workers & Pages, select doodle-doggo-merch-rtest, Settings, Delete (its Durable Objects go with it).`
+6. The results go to `RTEST_OUT` (a temp folder by default; never the repo): `rtest-report.json` with each status, `ms_used` (also on errors),
+   `ms_booked`, size, colour type, sha, the 429 texts, the differences, `startup_ms` and `cpu`. Then: set `MERCH_RENDER_VIA` from what worked,
+   write the 429 text into `render.js` if it is not the daily one, and tick the PART3.md checklist line.
 
-Dry run here (25 Nov 2026): clean; every request printed, nothing sent; a real run without `RTEST_GO` is refused (exit 2).
+Dry run here (25 Nov 2026): clean; every request printed (the GraphQL read too), nothing sent; a real run without `RTEST_GO` is refused (exit 2).
+`RTEST_FAKE=<cases>` runs the whole kit against an in-memory fake of the API (row F4-kit): nothing is sent, no bundle, no waits.
+
+## Review fixes (25 Nov 2026)
+
+The 11 findings of `docs/reviews/MERCH_PART4_review.md`, branch `merch/part4-fixes`. Suite `merch_worker`: **223 checks, 223 pass** (212 before, 11 new
+`F4-*` rows; R-S12 extended); `render_chromium.mjs` ALL OK on all 8 sample dogs (`DOGS=akita,dane,dachs,golden,corgi,newborn,black,white`), with the new
+file checks, the far-pixel limit and two self-checks. The kit's dry run is clean. Nothing deployed, no Cloudflare API called.
+
+| # | Finding | What changed | Test |
+|---|---|---|---|
+| 1 | `pngOk` checked only size and bytes | `render.pngCheck` (the ledger's `pngOk` / `pngWhy`): exact size, IHDR 8-bit colour type 6 (RGBA), not interlaced, a least byte size (tee 128 KiB, mug 64 KiB) and the old 7.5 MB most, the chunk list whole to IEND (a cut file fails), and for the tee the first scanline inflated (`DecompressionStream('deflate')`, stopped as soon as one row is out; the other 5,399 rows are never inflated) with every alpha 0. The mug has no alpha check (its top corners are clear by design, its name strip opaque). The check is async: `shot()` runs it before booking, `renderLine` re-reads the order after it (`live()` before the fallback and before the store). A browser file that fails is a browser error (it counts toward finding 4's run); the self-test reports `png_why` and `colour_type`. | F4-png; `render_chromium.mjs` (every Chromium and resvg file of the 8 dogs passes; a tee shot without `omitBackground` comes back colour type 2 and is refused) |
+| 2 | the mean could not see a missing body part | `render.js` `MATCH` (mean 0.2; pixels more than 32 apart in any channel over white or black: tee 5,000, mug 3,000) and `matchPx`, used by `render_chromium.mjs` and the kit's `compare()` (`pass`). Measured on the 8 sample dogs: at most 1,302 (navy tee) and 1,042 (mug) such pixels, 1,687 on a white tee (measured once). Self-check: a 1/5-scale pass finds the akita tee's shapes whose loss changes about 10,000+ pixels (22 of 53); the 6 the mean sees least each fail the match when left out, all 6 while the mean alone passes (closest: mean 0.063, 10,076 pixels) | F4-match; `render_chromium.mjs` |
+| 3 | the kit could leave the Worker behind | `ST.made = true` before the first upload is sent; `cleanUp()` runs once on every way out (an error, SIGINT, SIGTERM: handlers that clean up, then exit 130 / 143); a 404 on DELETE is done; a failed DELETE is caught, prints the hand line (run book step 5), the counts and the report still follow, exit 3. `RTEST_FAKE` runs the kit against an in-memory fake API (no network, no bundle, no waits) | F4-kit (upload timeout after "creating" -> deleted; delete fails -> the line, exit 3; 404; SIGTERM while waiting -> deleted, exit 143) |
+| 4 | browser errors were invisible; time booked only from the header | `render.screenshot` returns `wall` for every real call (not for not_set_up or a gate refusal); `browserBook` books `X-Browser-Ms-Used`, else the wall time (`ms_booked` in the self-test). `ERROR_RUN = 3` (ledger.js, next to `RATE_RUN`): 3 browser errors in a row put the browser off for an hour (`br_off` why `errors`, the `browser_off` owner email once a JST day); while off, a line gets the fallback at once and is still an error for T2.2-28 (a line neither renderer can draw is rejected as before, not kept waiting); any good answer resets the run. The kit stops all browser jobs (and the probe) after 2 failures and reports `browser_stopped` | F4-time, F4-errors, F4-kit |
+| 5 | an opacity or clip layer across a band edge could crash resvg or draw in the wrong place | `splitBands` -> `layerCheck`: a shape whose opacity stays (fill and stroke), any shape or group with `opacity`, `clip-path`, `mask` or `filter`, or a nested `<svg>` that clips, crossing a band edge, throws `layer: ...` before any band is drawn; `MerchRender` answers 422 `layer` (the wasm instance kept), `render.resvg` why `layer`. In `renderLine` a fallback that cannot draw the line (`layer` or `art_ver`) after two browser errors makes it **wait for the browser** (kind `wait`: an hour, held after the cancel hour, the owner told at 2 h, refunded at 72 h), never rejected and refunded. With the browser out for the day the line waits for 00:00 UTC as T2.2-29 (held, 2 h email, 72 h refund). All 336 tee prints of the 8 sample dogs (7 colours, 3 poses, name on and off) split without a refusal | F4-layer (made-up SVGs: opacity shape, group, clipping `<svg>`; the object; the ledger) |
+| 6 | the self-test row deleted in its own transaction | the `rt:` rows are deleted in the same transaction as the trash rows | F4-tidy (a crash at the trash insert rolls back both; the next tidy deletes the file) |
+| 7 | `RENDER` not listed; `not_set_up` never tried resvg | `render.renderParts` in `browserStatus().parts` and the nightly line ("set up: browser yes, fallback RENDER yes / MISSING"); a browser `not_set_up` answer goes to the fallback | F4-ready |
+| 8 | R-S12 did not check the test Worker's browser or SELF | R-S12 also checks `[env.test.browser]` binding BROWSER and `[[env.test.services]]` SELF -> `doodle-doggo-merch-test`, `RenderGate` | R-S12 |
+| 9 | the kit took the first account | more than one account visible and no `CLOUDFLARE_ACCOUNT_ID`: refused before anything is made | F4-kit |
+| 10 | `waitForSelector` without a timeout | `{ selector: '#o svg', timeout: 15000 }` (`SELECTOR_MS`). Otherwise the call is as RENDER_FREE 8 measured it (viewport, scale, `omitBackground`); Browser Run's timeouts page allows up to 60 s for `waitForSelector` | F4-selector; P4-shot and P4-via updated |
+| 11 | resvg drew after a cancel during the browser call | `live()` is read before the fallback; a cancelled or refunded order gets no fallback render | F4-reread |
+| - | the old-art line's 72 h refund on a browser-out day was untested | (test only) | F4-oldart72 |
+
+**The least byte sizes**, from the measured files: the smallest real print of the 8 sample dogs in 3 poses, with and without a name, was 181 KB
+(tee, resvg, dachs, no name) and 112 KB (mug, resvg, black lab, no name); Chromium's files are 2.5-4 times bigger (673-1,005 KB tee, 323-456 KB
+mug) and Browser Run's about 0.78 of local Chromium's (RENDER_FREE 8). A blank print is 94.5 KB (tee, resvg) and 11 KB / 58 KB (mug, resvg /
+Chromium). So 128 KiB for the tee (above the resvg blank, 0.7 of the smallest real tee) and 64 KiB for the mug (above both blanks, 0.58 of the
+smallest real mug). Limit: a blank tee from local Chromium is 478 KB and passes the size; it fails nothing else either, which is why the size
+is only one of the checks. A blank from Browser Run itself was never measured.
+
+**Existing tests touched** (none weakened): P4-shot and P4-via (the measured call now has `timeout: 15000`); P4-size, P4-artver, P4-resvg-real
+(`pngOk` is async: awaited, so the real check runs instead of a truthy promise); R-S12 (two more checks); `fakes.mjs` `png()` now makes a
+structured PNG (8-bit RGBA, a first row that inflates clear, a padding chunk, IEND) and the fake browser's picture is 300 KB, so every older row
+passes the stricter check for the right reason.

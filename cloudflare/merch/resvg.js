@@ -3,7 +3,8 @@
 // and answers the PNG. The ledger stores it (render.js resvg(), then pngOk and MerchPrints, as for the browser's PNG).
 // Why its own class and not MerchPrints or the ledger: a render takes 0.4-1.9 s of CPU; here it never holds up the ledger's requests (webhooks,
 // checkouts) or the file route, and a wasm trap only ever breaks this object. It needs the migration tag v2 (wrangler.example.toml).
-//   POST /resvg { hash: '#p=...&prod=..&col=..&pose=..&n=..&av=..', product } -> 200 image/png | 409 { error: 'art_ver' } | 422 { error, why } | 500
+//   POST /resvg { hash: '#p=...&prod=..&col=..&pose=..&n=..&av=..', product } -> 200 image/png | 409 { error: 'art_ver' } | 422 { error, why }
+//   (error 'layer': the art has a layer that would cross a band edge, splitBands) | 500
 // Rules:
 //   - art version (T2.2-49): a line is drawn by its own art_ver. This object has only the CURRENT PawPrint, so a link of any other av is refused
 //     (409 art_ver), never drawn with the wrong art. PawPrint.printFromHash checks the same.
@@ -139,7 +140,41 @@ export function splitBands(P, svg, n) {
     const y1 = Math.min(h, y0 + bh), a = Math.max(0, y0 - OVERLAP), b = Math.min(h, y1 + OVERLAP);
     bands.push({ y0, y1, a, b, svg: () => bandSvg(root, rootOpen, w, a, b) });
   }
+  layerCheck(root, bands, w, h);
   return { w, h, bands };
+}
+// Review finding 5: what a band still draws through a layer (a shape whose opacity flatOpacity could not move into one paint, a shape or group
+// with opacity, clip-path, mask or filter, a nested <svg> that clips) must not cross a band's edge: resvg 2.6.2 then panics or draws it in the
+// wrong place, and a wrong place would pass the file check. Today's art has none (PART4.md); a future art change that brings one fails here, safe:
+// the object answers 422 'layer' and the line waits for the browser (ledger.js renderLine). Thrown before any band is drawn.
+const LAYER = /\s(opacity|clip-path|mask|filter)="/;
+function layerCheck(root, bands, w, h) {
+  const crosses = (bb, why) => {
+    if (!bb) throw new Error('layer: ' + why + ' with no box');
+    for (const b of bands) {
+      const drawn = bb[3] >= b.a - MARGIN && bb[1] <= b.b + MARGIN && bb[2] >= -MARGIN && bb[0] <= w + MARGIN; // the band draws it (bandSvg's own test)
+      if (drawn && ((b.a > 0 && bb[1] < b.a) || (b.b < h && bb[3] > b.b))) throw new Error('layer: ' + why + ' crosses the band ' + b.a + '-' + b.b);
+    }
+  };
+  const union = (n) => {
+    let u = null;
+    for (const k of n.kids) {
+      if (k.text || k.raw != null) continue;
+      const bb = k.leaf ? k.cb : union(k); if (k.leaf && !bb) return null;
+      if (bb) u = u ? [Math.min(u[0], bb[0]), Math.min(u[1], bb[1]), Math.max(u[2], bb[2]), Math.max(u[3], bb[3])] : bb.slice();
+    }
+    return u;
+  };
+  const walk = (n) => {
+    for (const k of n.kids) {
+      if (k.text || k.raw != null) continue;
+      if (k.leaf) { const f = k.flat || (k.flat = flatOpacity(k.open)); if (LAYER.test(f)) crosses(k.cb, '<' + k.tag + '> ' + LAYER.exec(f)[1]); continue; }
+      if (k.tag === 'svg' && !k.unclip) crosses(k.vp || union(k), 'a clipping <svg>');
+      else if (LAYER.test(k.open)) crosses(union(k), '<' + k.tag + '> ' + LAYER.exec(k.open)[1]);
+      walk(k);
+    }
+  };
+  walk(root);
 }
 
 /* ---------------- the PNG ---------------- */
@@ -207,8 +242,10 @@ export class MerchRender {
       if (!this.R) this.R = await newResvg(this.env);
       png = await drawPng(this.R, P, p.svg, BANDS[p.product] || 1, deadline);
     } catch (e) {
+      const why = String((e && e.message) || e).slice(0, 120);
+      if (/^layer: /.test(why)) return J({ error: 'layer', why }, 422); // review finding 5: nothing was drawn, the instance is fine; the line waits for the browser
       this.R = null; // a trap may have left the instance broken: the next render makes a new one
-      return J({ error: 'resvg', why: String((e && e.message) || e).slice(0, 120) }, 500);
+      return J({ error: 'resvg', why }, 500);
     }
     return new Response(png, { headers: { 'content-type': 'image/png', 'x-resvg-ms': String(Date.now() - t0), 'cache-control': 'no-store' } });
   }

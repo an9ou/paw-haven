@@ -128,12 +128,17 @@ export async function review() {
     await w.advance(3 * HOUR); ok(w.rd.calls.length === 1 && ['drafted', 'confirmed'].includes(w.lines(id)[0].status) && w.lines(id)[0].file_key, 'stored on a later try without a new render: ' + w.rd.calls.length + ' ' + w.lines(id)[0].status);
     const rep = w.L().report(); ok(rep.ledger.bytes > 0 && rep.ledger.writes_today > 0 && rep.ledger.writes_free_a_day === 100000, JSON.stringify(rep.ledger));
   });
-  await T('R-S12', 'wrangler.example.toml: [env.test] repeats every var and both Durable Object bindings, and points MERCH_SITE at the test copy', async () => {
+  await T('R-S12', 'wrangler.example.toml: [env.test] repeats every var and the Durable Object bindings, points MERCH_SITE at the test copy, has its own browser binding and a SELF that names the test Worker', async () => {
     const t = fs.readFileSync(path.join(ROOT, 'cloudflare', 'merch', 'wrangler.example.toml'), 'utf8'), top = t.slice(t.indexOf('[vars]'), t.indexOf('[env.test]')), env = t.slice(t.indexOf('[env.test.vars]'));
     const names = (s) => Array.from(s.matchAll(/^([A-Z_]+) = /gm)).map((m) => m[1]);
     const miss = names(top).filter((n) => !names(env).includes(n)); ok(!miss.length, 'missing in env.test: ' + miss);
     ok((t.match(/\[\[env\.test\.durable_objects\.bindings\]\]/g) || []).length === 3 && /MERCH_SITE = "https:\/\/test\.doodledoggo\.app"/.test(env) && /MERCH_PROVIDER_MODE = "draft"/.test(env), 'bindings, site, draft');
     ok(!/(sk|rk)_(live|test)_[A-Za-z0-9]{6}|whsec_[A-Za-z0-9]{6}/.test(t), 'no key-like strings');
+    // part 4 review finding 8: the test Worker's own browser binding, and its SELF names the test Worker itself (never the live one)
+    const tst = t.slice(t.indexOf('[env.test]'), t.indexOf('[env.test.vars]')), block = (s, h) => { const i = s.indexOf(h); if (i < 0) return ''; const j = s.indexOf('\n[', i + h.length); return s.slice(i, j < 0 ? s.length : j); };
+    ok(/^binding = "BROWSER"/m.test(block(tst, '[env.test.browser]')), '[env.test.browser] binding BROWSER');
+    const sv = block(tst, '[[env.test.services]]'); ok(/^binding = "SELF"/m.test(sv) && /^service = "doodle-doggo-merch-test"/m.test(sv) && /^entrypoint = "RenderGate"/m.test(sv), '[[env.test.services]] SELF -> doodle-doggo-merch-test, RenderGate: ' + sv.split('\n').slice(1, 4).join(' | '));
+    ok(/^name = "doodle-doggo-merch-test"/m.test(tst) && !/service = "doodle-doggo-merch"\s*(#.*)?$/m.test(tst), 'the test Worker is named and never points at the live one');
   });
   await T('R-S13', 'deletion on request (admin forget, merch.sh forget): buyer data and files of ended orders cleared, the money rows kept; orders in progress wait', async () => {
     const w = await world(); const id = await shipped(w, [mug(0)]); const busy = await w.paidOrder([mug(1)], 'US', { email: 'buyer@example.test' }); const key = w.lines(id)[0].file_key;

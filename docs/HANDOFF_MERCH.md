@@ -163,7 +163,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   one review and one fix batch. On a fresh checkout run `NODE_PATH=$(npm root -g) node tools/merch_build.js` FIRST, then the suites one at a
   time, each with `NODE_PATH=$(npm root -g)`: `node merch/test_pawprint.js` 84; the game round trip (`node game/build.js && node
   game/harness.js merged && PAW_ARGS=--ignore-certificate-errors node merch/test_merch_game.js`) 11 checks (483 renders, 161 dogs through the
-  game's encoder); `node cloudflare/merch/test/run.mjs` 231 (before the part 4 fix batch, which adds rows); `node cloudflare/merch/test/render_chromium.mjs`;
+  game's encoder); `node cloudflare/merch/test/run.mjs` 242; `node cloudflare/merch/test/render_chromium.mjs`;
   `node merch/test_page.js` 1756 (about 100 s); `node merch/test_legal.js` 381; `node merch/game/test_enc.js` 36; `node merch/game/gen.js
   --check`.
   - **Part 4** (`docs/design/merch/PART4.md`, review `docs/reviews/MERCH_PART4_review.md`): `render.js` calls Browser Run
