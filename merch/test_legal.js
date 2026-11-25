@@ -8,10 +8,11 @@
 // taps at least 44 px tall, every text at least 4.5:1; every money figure and delivery time equals cloudflare/merch/catalog.js (the Worker's own
 // price list: fees, thresholds, the extra-item fee, product prices, eta), each zone figure inside its own [data-zone] (the fee table's row); the fee
 // table has exactly one row per open zone; the order limits from catalog.js LIMITS; the cancel hour, the address window, the 30 days and the posting
-// promise against the EXPECT table below (each value also checked in its source); every placeholder marked; none of the banned words; the Japanese
+// promise against catalog.js SHIP_BY_DAYS and the other windows against the EXPECT table below (each value also checked in its source); every placeholder marked; none of the banned words; the Japanese
 // page has every heading the notice needs.
-// Open zones: catalog.js has no default open set (lines.js openCountries: MERCH_COUNTRIES '' = none), so the open set is read from the `soon`
-// flags of site/merch/catalog.json (the page's stand-in catalog), mapped to zones with catalog.js zoneOf. Nothing else is read from catalog.json.
+// Open zones: the Worker's open set is its MERCH_COUNTRIES switch; the recommended launch value is catalog.js LAUNCH_SOON (every country but
+// those), so the open zones are read from catalog.js alone (ALL_COUNTRIES minus LAUNCH_SOON, mapped with zoneOf). site/merch/catalog.json is
+// generated from catalog.js (tools/merch_catalog_json.js): its soon flags and delivery times must equal catalog.js here (no notes: failures).
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), BRAND = path.join(ROOT, 'brand');
@@ -19,7 +20,7 @@ const CATJ = JSON.parse(fs.readFileSync(path.join(SITE, 'merch', 'catalog.json')
 const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part7_shots');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('Playwright is needed (NODE_PATH=$(npm root -g))'); process.exit(1); }
 
-let pass = 0, fail = 0; const fails = [], notes = [];
+let pass = 0, fail = 0; const fails = [];
 function ok(name, cond, detail) { if (cond) { pass++; } else { fail++; fails.push(name + (detail !== undefined ? ': ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : '')); console.log('FAIL ' + name, detail !== undefined ? detail : ''); } }
 
 const PAGES = ['terms', 'shipping', 'seller', 'tokushoho'];
@@ -32,9 +33,9 @@ const JP_HEADINGS = ['販売業者', '運営統括責任者', '所在地', '電�
 const EXPECT = {
   cool_min: 60,     // the cancel hour: cloudflare/merch/ledger.js 168 coolMs(), default `: 60) * MIN` (MERCH_COOL_MIN unset)
   address_days: 7,  // the address and reship windows: cloudflare/merch/ledger.js 849 and 892 (`7 * DAY`, T2.2-36, T2.2-45)
-  fault_days: 30,   // the fault window (our own promise, no code): docs/design/merch/TRANSACTIONS.md 4 policy text "within **30 days**"
-  ship_by_days: 7   // the posting promise (MERCH decision, 25 Nov 2026): cloudflare/merch/catalog.js SHIP_BY_DAYS once it is exported
+  fault_days: 30    // the fault window (our own promise, no code): docs/design/merch/TRANSACTIONS.md 4 policy text "within **30 days**"
 };
+// (the posting promise's 7 working days is cloudflare/merch/catalog.js SHIP_BY_DAYS, read below)
 // the policy text of TRANSACTIONS.md 4, with review finding 13 ("the last day of the delivery time shown for your order" for "the latest delivery
 // date we gave you"; TRANSACTIONS.md 4 takes the same words in the Worker batch)
 const POLICY = "Everything is printed just for you with your own dog, so we can't take it back if you change your mind. You can cancel the whole order for a full refund within " + EXPECT.cool_min / 60 + ' hour of paying, from your order page. If something arrives damaged or misprinted, or never arrives, email us within ' + EXPECT.fault_days + " days of delivery (or of the last day of the delivery time shown for your order) with a photo, and we'll reprint it or refund it, whichever you prefer. This doesn't affect your legal rights.";
@@ -47,26 +48,27 @@ const SOURCE = [
 ];
 
 // ---- the Worker's catalog (an ES module), loaded in main()
-let C, MONEY, ALLOWED, OPEN_ZONES, CLOSED_ZONES, SHIP_BY, POST_EN, POST_JA;
+let C, MONEY, ALLOWED, OPEN_ZONES, CLOSED_ZONES, SHIP_BY, POST_EN, POST_JA, AUTO_EN, AUTO_JA;
 const ZONE_WORDS = { // words that name a zone's places; a closed zone's words never appear on the shipping or the Japanese page
   us_jp: [/\bUSA\b|United States|アメリカ|米国/], ca_au_nz: [/Canada|Australia|New Zealand|カナダ|オーストラリア|ニュージーランド/],
   uk_eu: [/\bVAT\b/, /European Union/, /\bUK\b|United Kingdom/, /付加価値税|英国|イギリス|欧州|\bEU\b/]
 };
 async function loadCatalog() {
   C = await import(pathToFileURL(path.join(ROOT, 'cloudflare', 'merch', 'catalog.js')).href);
-  // the open set: catalog.json's soon flags, zones from catalog.js (see the head of this file)
-  const open = new Set(CATJ.countries.filter((c) => !c.soon && C.ALL_COUNTRIES.includes(c.code)).map((c) => C.zoneOf(c.code)));
+  // the open set: catalog.js ALL_COUNTRIES minus LAUNCH_SOON (the recommended launch value), zones from catalog.js zoneOf (see the head of this file)
+  const open = new Set(C.ALL_COUNTRIES.filter((c) => !C.LAUNCH_SOON.includes(c)).map((c) => C.zoneOf(c)));
   OPEN_ZONES = Object.keys(C.ZONES).filter((z) => open.has(z)); CLOSED_ZONES = Object.keys(C.ZONES).filter((z) => !open.has(z));
   MONEY = {};
   for (const p of Object.values(C.PRODUCTS)) if (p.launch) MONEY['product.' + p.id + '.price'] = p.price;
   for (const id of OPEN_ZONES) { const z = C.ZONES[id]; MONEY['zone.' + id + '.fee'] = z.fee; if (z.free_from != null) MONEY['zone.' + id + '.free_from'] = z.free_from; if (z.extra) MONEY['zone.' + id + '.extra'] = z.extra; }
   ALLOWED = new Set(Object.values(MONEY));
-  if (Number.isInteger(C.SHIP_BY_DAYS)) SHIP_BY = C.SHIP_BY_DAYS;
-  else { SHIP_BY = EXPECT.ship_by_days; notes.push('pending: cloudflare/merch/catalog.js does not export SHIP_BY_DAYS yet; the posting promise is checked against EXPECT.ship_by_days = ' + SHIP_BY + ' (the Worker batch adds the constant)'); }
-  POST_EN = 'Printing usually takes 2 to 5 working days, and we post every order within ' + SHIP_BY + " working days of payment. If we can't, we email you before that day with a new date, and you can wait or cancel the late part for a full refund. You can cancel the late part any time until it's posted.";
-  POST_JA = ['印刷には通常2〜5営業日かかり、どのご注文もお支払いから' + SHIP_BY + '営業日以内に発送します。', '発送できない場合は、その日より前に新しい発送予定日をメールでお知らせします。', '遅れている分は、発送されるまでいつでもキャンセルできます。'];
-  // the stand-in catalog may lag behind (its generator is a Worker-batch item): said, not failed
-  for (const z of CATJ.zones) { const w = C.ZONES[z.id]; if (w && (z.eta[0] !== w.eta[0] || z.eta[1] !== w.eta[1])) notes.push('note: site/merch/catalog.json ' + z.id + ' eta ' + z.eta.join('-') + ' differs from catalog.js ' + w.eta.join('-') + ' (the pages follow catalog.js)'); }
+  SHIP_BY = C.SHIP_BY_DAYS;
+  // the delay email goes AT the posting date (the Worker's wake at ship_by), so the pages say "by that day" (part 6 review batch, 25 Nov 2026)
+  POST_EN = 'Printing usually takes 2 to 5 working days, and we post every order within ' + SHIP_BY + " working days of payment. If we can't, we email you by that day with a new date, and you can wait or cancel the late part for a full refund. You can cancel the late part any time until it's posted.";
+  POST_JA = ['印刷には通常2〜5営業日かかり、どのご注文もお支払いから' + SHIP_BY + '営業日以内に発送します。', '発送できない場合は、その日までに新しい発送予定日をメールでお知らせします。', '遅れている分は、発送されるまでいつでもキャンセルできます。'];
+  // the automatic refund at the missed new date (TRANSACTIONS T2.1-34; the owner's launch list point 13)
+  AUTO_EN = "If the new date passes too and you haven't told us you'd rather keep waiting, we refund the late part by itself.";
+  AUTO_JA = '新しい発送予定日までにも発送できず、注文ページで「Keep waiting」（このまま待つ）を選んでいただいていない場合は、遅れている分を自動で全額返金します。';
 }
 const cents = (s) => { const m = /(\d+(?:\.\d{1,2})?)/.exec(String(s).replace(/,/g, '')); return m ? Math.round(parseFloat(m[1]) * 100) : NaN; };
 const zoneOfKey = (k) => (/^zone\.([a-z_]+)\./.exec(k) || [])[1] || null;
@@ -168,7 +170,7 @@ function facts() {
     // each figure with the zone of its nearest [data-zone] and whether that is a fee-table row
     money: [...sheet.querySelectorAll('[data-money]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.money, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
     eta: [...sheet.querySelectorAll('[data-eta]')].map((e) => { const z = e.closest('[data-zone]'); return [e.dataset.eta, txt(e), z ? z.dataset.zone : null, !!(z && z.matches('.fees tbody tr'))]; }),
-    promise: [...sheet.querySelectorAll('.shipby')].map(txt),
+    promise: [...sheet.querySelectorAll('.shipby')].map(txt), lateauto: [...sheet.querySelectorAll('.lateauto')].map(txt),
     rowNames: [...sheet.querySelectorAll('.fees tbody tr')].map((r) => [r.dataset.zone, txt(r.querySelector('th'))]),
     limits: txt(sheet.querySelector('.limits')),
     short: (() => { const s = sheet.querySelector('.short'); return s ? { h: txt(s.querySelector('h2')), n: s.querySelectorAll('li').length } : null; })(),
@@ -216,7 +218,8 @@ async function pageChecks() {
       ok(tag + ': the order limit is LIMITS (' + C.LIMITS.max_lines + '種類, ' + C.LIMITS.max_qty + '個)', f.limits === '1回のご注文で' + C.LIMITS.max_lines + '種類まで、それぞれ' + C.LIMITS.max_qty + '個までです。', f.limits);
       const tens = (f.ownText.match(/(\d+)点/g) || []).filter((x) => parseInt(x, 10) !== C.LIMITS.max_lines * C.LIMITS.max_qty);
       ok(tag + ': any total of items is ' + C.LIMITS.max_lines * C.LIMITS.max_qty + ' (no "6点")', tens.length === 0, tens);
-      ok(tag + ': the posting promise in Japanese (' + SHIP_BY + '営業日以内, a new date before that day, cancel until posted)', POST_JA.every((s) => f.promise.some((p) => p.includes(s))) && /お支払いから(\d+)営業日以内に発送できない/.test(f.ownText) && RegExp.$1 === String(SHIP_BY), f.promise);
+      ok(tag + ': the posting promise in Japanese (' + SHIP_BY + '営業日以内, a new date by that day, cancel until posted)', POST_JA.every((s) => f.promise.some((p) => p.includes(s))) && /お支払いから(\d+)営業日以内に発送できない/.test(f.ownText) && RegExp.$1 === String(SHIP_BY), f.promise);
+      ok(tag + ': the automatic refund at the missed new date, in Japanese', f.lateauto.length === 1 && f.lateauto[0] === AUTO_JA && !/より前に新しい/.test(f.ownText), f.lateauto);
       ok(tag + ': the 30 days is our own promise; the law may give longer', /当店独自のお約束/.test(f.ownText) && /より長い期間が認められる/.test(f.ownText), '');
       ok(tag + ': no "latest delivery date" and no old delay timing', !/最も遅いお届け予定日|さらに2日|5営業日（/.test(f.ownText), (f.ownText.match(/最も遅いお届け予定日|さらに2日|5営業日（/) || [])[0]);
       ok(tag + ': the language menu says Japanese on the Japanese page', f.langLabel === '言語：日本語' && f.langNow === '日本語', [f.langLabel, f.langNow]);
@@ -260,6 +263,7 @@ async function pageChecks() {
     ok(tag + ': every delivery time equals catalog.js ZONES[zone].eta', badEta.length === 0, badEta);
     if (id === 'terms' || id === 'shipping') {
       ok(tag + ': the posting promise, word for word, ' + SHIP_BY + ' working days', f.promise.length === 1 && f.promise[0] === POST_EN, f.promise);
+      ok(tag + ': the automatic refund at the missed new date, word for word', f.lateauto.length === 1 && f.lateauto[0] === AUTO_EN && !/before that day/.test(f.ownText), f.lateauto);
       ok(tag + ': no old delay timing', !/5 working days of paying|2 days' leeway|Printing takes 2 to 5/.test(f.ownText), (f.ownText.match(/.{0,30}(5 working days of paying|2 days' leeway|Printing takes 2 to 5).{0,10}/) || [])[0]);
       ok(tag + ': the 30 days is our own promise; the law may give longer', f.ownText.includes('The law where you live may give you longer, so write to us anyway.'), '');
       ok(tag + ': a line refund includes its share of tax', /share of any tax you paid on it/.test(f.ownText), '');
@@ -337,12 +341,14 @@ async function fitChecks() {
   try {
     await loadCatalog();
     for (const [what, file, re] of SOURCE) ok('source: ' + what + ' still says ' + re.source + ' in ' + file, re.test(READ(file)));
+    ok('catalog.js: SHIP_BY_DAYS is a whole number of working days', Number.isInteger(C.SHIP_BY_DAYS) && C.SHIP_BY_DAYS > 0, C.SHIP_BY_DAYS);
+    ok('catalog.json (generated) has catalog.js LAUNCH_SOON as its soon countries', CATJ.countries.filter((c) => c.soon).map((c) => c.code).sort().join() === C.LAUNCH_SOON.slice().sort().join());
+    ok('catalog.json (generated) has catalog.js delivery times', CATJ.zones.every((z) => C.ZONES[z.id] && z.eta[0] === C.ZONES[z.id].eta[0] && z.eta[1] === C.ZONES[z.id].eta[1]), CATJ.zones.map((z) => z.id + ' ' + z.eta.join('-')));
     ok('catalog.js: LIMITS are whole numbers', Number.isInteger(C.LIMITS.max_lines) && Number.isInteger(C.LIMITS.max_qty), C.LIMITS);
     ok('catalog.js: the world zone is open and last', OPEN_ZONES[OPEN_ZONES.length - 1] === 'world', OPEN_ZONES);
     await pageChecks(); await fitChecks();
   } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
   await browser.close(); server.close();
-  for (const n of notes) console.log(n);
   console.log(`merch_legal: ${pass} passed, ${fail} failed (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
   if (fail) { console.log(fails.join('\n')); process.exit(1); }
 })();
