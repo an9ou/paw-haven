@@ -1,0 +1,25 @@
+Subject: On its way
+
+Part of your order is on its way
+
+Good news: this parcel has left our print partner.
+
+- Mug with Biscuit
+
+Order: SampleOrder0000000000
+Carrier: USPS
+
+Track your parcel: https://tracking.example/p1
+
+The rest of your order travels in its own parcel. We’ll email you again when it’s sent.
+
+Something wrong when it arrives? Reply to this email with a photo within 30 days, and we’ll reprint it or refund it, whichever you prefer.
+
+Open your order page: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
+
+--
+Doodle Doggo merch
+Terms of sale: https://doodledoggo.app/merch/terms/
+Shipping and returns: https://doodledoggo.app/merch/shipping/
+Privacy: https://doodledoggo.app/privacy
+Questions? Reply to this email or write to contact@doodledoggo.app

@@ -1,0 +1,26 @@
+Subject: Your order is cancelled
+
+Your order is cancelled
+
+As you asked, we’ve cancelled your order. Nothing will be printed.
+
+- Mug with Biscuit
+- 2 × Tee with your dog, navy, L
+- Mug with Biscuit
+
+Order: SampleOrder0000000000
+
+We’ve refunded all of it, $73.97, shipping too. It can take a few days to show on your card.
+
+You paid ¥11,500 at checkout; the refund comes back in that currency at the same rate.
+
+Want to change something and order again? Your order page can put these back in your basket.
+
+Open your order page: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
+
+--
+Doodle Doggo merch
+Terms of sale: https://doodledoggo.app/merch/terms/
+Shipping and returns: https://doodledoggo.app/merch/shipping/
+Privacy: https://doodledoggo.app/privacy
+Questions? Reply to this email or write to contact@doodledoggo.app

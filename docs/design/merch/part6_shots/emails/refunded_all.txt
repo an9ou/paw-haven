@@ -1,0 +1,20 @@
+Subject: Your order is refunded
+
+Your order is refunded in full
+
+Sorry: we couldn’t get your order ready to print in time, so we’ve refunded all of it.
+
+We’ve refunded your order in full: $73.97. It can take a few days to show on your card.
+
+Order: SampleOrder0000000000
+
+You paid in JPY at checkout; the refund comes back in that currency at the same rate.
+
+Open your order page: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
+
+--
+Doodle Doggo merch
+Terms of sale: https://doodledoggo.app/merch/terms/
+Shipping and returns: https://doodledoggo.app/merch/shipping/
+Privacy: https://doodledoggo.app/privacy
+Questions? Reply to this email or write to contact@doodledoggo.app

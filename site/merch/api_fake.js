@@ -6,7 +6,11 @@
      total = subtotal + shipping
    The shop is shut (catalog.shut): a quote still answers (prices are public) and says shut: true; checkout checks everything and then answers
    503 merch_closed, so nothing is ever paid. A country not open yet (soon: true) gets 403 country_closed (TRANSACTIONS.md 6.3, note of 24 Nov). demoPay() (only
-   with ?demo=1) makes a made-up order, marked test, so the thank-you and order pages can be seen; it is kept in this tab only.
+   with ?demo=1) makes a made-up order, so the thank-you and order pages can be seen; it is kept in this tab only (sessionStorage).
+   The order page's buttons answer as the Worker does (part 6, docs/design/merch/PART6.md): cancel { scope: 'order' | 'late' }, address (checked,
+   then dropped: never kept), refundHeld. Test hooks: put(order) stores a made-up order in any state; a stored order's own _fail field
+   ({ address: 'busy' | 'address' | 'slow_down' | 'other_country' }) makes its next address call fail that way once. An order is always answered with exactly the
+   fields of GET /merch/order/:id (TRANSACTIONS.md 6.3 and its notes), whatever was stored.
    Browser: <script> -> window.MerchFake(opts); Node (the tests): require('./api_fake.js') -> the same function.
    opts: { PawPrint, catalog (an object) or load() -> Promise of it, demo, now() -> ms, store (a Storage-like object for demo orders) } */
 (function (G) {
@@ -99,25 +103,81 @@
           var r = P.merchDecode(l.recipe).dogs[0];
           return { line: i + 1, product: l.product, colour: l.colour, size: l.size || null, pose: l.pose, name_on: l.name_on, name: r.n || '', qty: l.qty, unit: q.lines[i].unit, status: 'pending', refunded_qty: 0, parcel: null, recipe: l.recipe };
         });
-        orders[id] = { id: id, test: true, status: 'paid', hold: null, paid_at: t, cancel_until: t + 60 * 60 * 1000, country: body.country, lines: lines, parcels: [],
-          totals: { subtotal: q.subtotal, ship_fee: q.ship_fee, tax: 0, total: q.total, refunded: 0 }, pres: null, gift_code: null, late: false, eta: q.eta };
+        orders[id] = { id: id, status: 'paid', hold: null, pay_pending: false, paid_at: t, cancel_until: t + 60 * 60 * 1000, country: body.country, lines: lines, parcels: [],
+          totals: { subtotal: q.subtotal, ship_fee: q.ship_fee, tax: 0, total: q.total, refunded: 0 }, pres: null, gift_code: null, gift_name: null, late: false, dispute: null };
         saveOrders(); return { order: id, url: null, test: true };
       });
     }
-    function view(o) { var v = JSON.parse(JSON.stringify(o)); v.can_cancel = v.status === 'paid' && now() <= v.cancel_until; return v; }
+    // the answer of GET /merch/order/:id: exactly its fields, from whatever was stored (a test may store a partial order)
+    var LINE_F = ['line', 'product', 'colour', 'size', 'pose', 'name_on', 'name', 'qty', 'unit', 'status', 'refunded_qty', 'parcel', 'recipe', 'reprint_of'];
+    var PARCEL_F = ['id', 'product', 'carrier', 'tracking_url', 'shipped_at', 'delivered_at'];
+    function pick(o, F, d) { var r = {}; F.forEach(function (k) { var v = own(o, k); r[k] = v === undefined ? (d && k in d ? d[k] : null) : v; }); return r; }
+    function canCancel(o) { return (o.status === 'paid' || o.status === 'held') && o.hold !== 'dispute' && o.dispute !== 'open' && typeof o.cancel_until === 'number' && now() <= o.cancel_until; }
+    function view(o) {
+      var v = JSON.parse(JSON.stringify(o)), t = v.totals || {};
+      var out = { id: v.id, status: v.status, hold: v.hold || null, pay_pending: !!v.pay_pending, paid_at: v.paid_at == null ? null : v.paid_at, cancel_until: v.cancel_until == null ? null : v.cancel_until,
+        can_cancel: canCancel(v), country: v.country || null,
+        lines: (Array.isArray(v.lines) ? v.lines : []).map(function (l) { return pick(l, LINE_F, { refunded_qty: 0, name_on: false }); }),
+        parcels: (Array.isArray(v.parcels) ? v.parcels : []).map(function (p) { return pick(p, PARCEL_F); }),
+        totals: { subtotal: t.subtotal || 0, ship_fee: t.ship_fee || 0, tax: t.tax || 0, total: t.total || 0, refunded: t.refunded || 0 },
+        pres: v.pres && v.pres.currency ? { currency: v.pres.currency, amount: v.pres.amount } : null,
+        gift_code: v.gift_code || null, gift_name: v.gift_code ? v.gift_name || null : null, late: !!v.late, dispute: v.dispute || null };
+      if (v.resting) out.resting = true;
+      return out;
+    }
     function order(id) {
       readOrders();
       var o = own(orders, id); return o ? Promise.resolve(view(o)) : Promise.reject(fail(404, 'not_found'));
     }
+    var DEAD = ['void', 'replaced', 'cancelled', 'rejected'], SHIPPED = ['shipped', 'delivered'];
+    function live(l) { return DEAD.indexOf(l.status) < 0 && (l.refunded_qty || 0) < l.qty; }
+    function refundAll(o, to) { o.status = to; o.hold = null; o.totals.refunded = o.totals.total; o.late = false; o.lines.forEach(function (l) { if (SHIPPED.indexOf(l.status) < 0 && DEAD.indexOf(l.status) < 0) l.status = 'cancelled'; l.refunded_qty = l.qty; }); }
     function cancel(id, body) {
       readOrders();
       var o = own(orders, id); if (!o) return Promise.reject(fail(404, 'not_found'));
+      if (body && body.scope === 'late') { // the delay cancel: every live line not yet sent is refunded in full
+        if (!o.late || o.dispute === 'open' || o.hold === 'dispute') return Promise.reject(fail(409, 'not_late'));
+        var late = o.lines.filter(function (l) { return live(l) && SHIPPED.indexOf(l.status) < 0; }); if (!late.length) return Promise.reject(fail(409, 'not_late'));
+        late.forEach(function (l) { var q = l.qty - (l.refunded_qty || 0); l.refunded_qty = l.qty; l.status = 'cancelled'; o.totals.refunded = (o.totals.refunded || 0) + l.unit * q; });
+        o.late = false;
+        if (!o.lines.some(live)) { o.status = 'refunded'; o.totals.refunded = o.totals.total; } else if (o.lines.filter(live).every(function (l) { return SHIPPED.indexOf(l.status) >= 0; })) o.status = 'shipped';
+        saveOrders(); return Promise.resolve({ status: o.status, refund: 'done' });
+      }
       if (!body || body.scope !== 'order') return Promise.reject(fail(409, 'not_late'));
-      if (o.status !== 'paid' || now() > o.cancel_until) return Promise.reject(fail(409, 'too_late'));
-      o.status = 'cancelled'; o.totals.refunded = o.totals.total; o.lines.forEach(function (l) { l.status = 'cancelled'; l.refunded_qty = l.qty; }); saveOrders();
+      if (o.hold === 'dispute' || o.dispute === 'open') return Promise.reject(fail(409, 'not_allowed', { say: 'Your bank is looking at this payment, so we\u2019ve paused it.' }));
+      if (!canCancel(o)) return Promise.reject(fail(409, 'too_late'));
+      refundAll(o, 'cancelled'); saveOrders();
       return Promise.resolve({ status: 'cancelled', refund: 'done' });
     }
-    return { test: true, catalog: load, quote: quote, checkout: checkout, order: order, cancel: cancel, demoPay: demoPay, _price: function (c, b) { return price(c, b); } };
+    // the address form: checked as the Worker checks it, then dropped (the fake keeps nothing of it: no store, no variable)
+    function address(id, body) {
+      readOrders();
+      var o = own(orders, id); if (!o) return Promise.reject(fail(404, 'not_found'));
+      var reship = o.hold === 'reship' && ['part_shipped', 'shipped', 'confirmed'].indexOf(o.status) >= 0;
+      if (!((o.status === 'held' && o.hold === 'address') || reship)) return Promise.reject(fail(409, 'not_needed'));
+      body = body && typeof body === 'object' ? body : {};
+      var f = function (k, max, need) { var v = body[k]; if (v == null || v === '') return need ? false : ''; return typeof v === 'string' && v.trim().length <= max && !/[\u0000-\u001f]/.test(v) && (!need || v.trim()) ? v.trim() : false; };
+      var A = [['name', 80, true], ['line1', 120, true], ['line2', 120, false], ['city', 80, true], ['state', 60, false], ['postal', 20, true]];
+      for (var i = 0; i < A.length; i++) if (f(A[i][0], A[i][1], A[i][2]) === false) return Promise.reject(fail(400, 'bad_address', { field: A[i][0] }));
+      if (typeof body.country !== 'string' || !/^[A-Z]{2}$/.test(body.country)) return Promise.reject(fail(400, 'bad_address', { field: 'country' }));
+      if (body.country !== o.country) return Promise.reject(fail(400, 'other_country', { country: o.country }));
+      var hook = o._fail && o._fail.address; if (hook) { delete o._fail.address; saveOrders(); }
+      if (hook === 'busy') return Promise.reject(fail(503, 'busy', { say: 'One moment, please try again.' }));
+      if (hook === 'slow_down') return Promise.reject(fail(429, 'slow_down'));
+      if (hook === 'address') return Promise.reject(fail(400, 'bad_address', { field: 'address' }));
+      if (hook === 'other_country') return Promise.reject(fail(400, 'other_country', { country: o.country })); // the page always sends the order's own country
+      if (reship) o.hold = null; else { o.status = 'paid'; o.hold = null; }
+      saveOrders(); return Promise.resolve({ ok: true, say: 'Thanks! We\u2019ll send it there.' });
+    }
+    function refundHeld(id) {
+      readOrders();
+      var o = own(orders, id); if (!o) return Promise.reject(fail(404, 'not_found'));
+      if (!(o.status === 'held' && o.hold === 'address')) return Promise.reject(fail(409, 'not_allowed'));
+      refundAll(o, 'refunded'); saveOrders(); return Promise.resolve({ status: 'refunded' });
+    }
+    // test hook: a made-up order in any state, kept in this tab like a demo order
+    function put(o) { if (!o || typeof o.id !== 'string') return false; readOrders(); orders[o.id] = JSON.parse(JSON.stringify(o)); saveOrders(); return true; }
+    return { test: true, catalog: load, quote: quote, checkout: checkout, order: order, cancel: cancel, address: address, refundHeld: refundHeld, demoPay: demoPay, put: put, _price: function (c, b) { return price(c, b); } };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = MerchFake; else G.MerchFake = MerchFake;
 })(typeof self !== 'undefined' ? self : this);

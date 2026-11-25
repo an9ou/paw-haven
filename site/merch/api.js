@@ -3,7 +3,9 @@
      api.quote(body)          POST /merch/quote       { country, lines[{ recipe, product, colour, size, pose, name_on, qty }] }
      api.checkout(body)       POST /merch/checkout    quote body + { expect_total, art_ver, nonce, agree: true, lang }
      api.order(id)            GET  /merch/order/:id
-     api.cancel(id, body)     POST /merch/order/:id/cancel   { scope: 'order' }
+     api.cancel(id, body)     POST /merch/order/:id/cancel   { scope: 'order' | 'late' }
+     api.address(id, body)    POST /merch/order/:id/address  { name, line1, line2, city, state, postal, country } (sent on to the print partner, never kept)
+     api.refundHeld(id)       POST /merch/order/:id/refund   {} (only while the order waits for an address: "refund me instead")
    Each returns a Promise of the answer's JSON, or rejects with { status, error, ... } (the server's own error body).
    MERCH_API is empty: TEST MODE. Every call goes to the local fake (api_fake.js), nothing leaves the page and nothing can be paid.
    Part 3 sets MERCH_API (https://merch-api.doodledoggo.app) when the merch Worker exists; the page never opens a payment page in this build. */
@@ -27,7 +29,9 @@
       quote: function (b) { return fetchJSON('POST', '/merch/quote', b); },
       checkout: function (b) { return fetchJSON('POST', '/merch/checkout', b); },
       order: function (id) { return fetchJSON('GET', '/merch/order/' + encodeURIComponent(id)); },
-      cancel: function (id, b) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/cancel', b); } };
+      cancel: function (id, b) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/cancel', b); },
+      address: function (id, b) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/address', b); },
+      refundHeld: function (id) { return fetchJSON('POST', '/merch/order/' + encodeURIComponent(id) + '/refund', {}); } };
   }
   G.MerchApi = { make: make, MERCH_API: MERCH_API };
 })(typeof self !== 'undefined' ? self : this);

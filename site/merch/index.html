@@ -132,7 +132,7 @@
             <p class="note" id="closedWhy"></p>
             <div class="row" id="demoRow" hidden><button type="button" class="btn quiet" id="demoBtn">Test only: see the thank-you page</button></div>
           </div>
-          <p class="small2">Printed and posted by our print partner. You pay on Stripe's secure page: we never see card details. By paying you agree to the Terms of sale.</p>
+          <p class="small2">Printed and posted by our print partner. You pay on Stripe's secure page: we never see card details. By paying you agree to the <a class="lnk" href="/merch/terms/">Terms of sale</a> (<a class="lnk" href="/merch/shipping/">Shipping and returns</a>).</p>
         </div>
       </div>
     </section>
@@ -144,7 +144,7 @@
 
   </div>
   <footer class="foot mfoot">
-    <span class="todo">Terms of sale</span> · <span class="todo">Shipping and returns</span> · <a href="/privacy">Privacy</a> · <a href="#/faq" id="faqlink">Questions</a> · <a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a>
+    <a href="/merch/terms/">Terms of sale</a> · <a href="/merch/shipping/">Shipping and returns</a> · <a href="/merch/seller/">Seller</a> · <a href="/privacy">Privacy</a> · <a href="#/faq" id="faqlink">Questions</a> · <a href="mailto:contact@doodledoggo.app" class="contact">CONTACT US</a>
     <div class="small">Printed and posted by our print partner. Payments by Stripe. No ads, no tracking, no cookies.</div>
   </footer>
 </main>
@@ -159,6 +159,11 @@
   <h2 id="h-cancel">Cancel this order?</h2>
   <p>Nothing gets printed, and you get all your money back, shipping too.</p>
   <div class="row"><button type="button" class="btn go" id="cancelYes">Yes, cancel it</button><button type="button" class="btn quiet" id="cancelNo">Keep my order</button></div>
+</dialog>
+<dialog class="hand" id="askDlg" aria-labelledby="h-ask">
+  <h2 id="h-ask">Are you sure?</h2>
+  <p id="askText"></p>
+  <div class="row"><button type="button" class="btn go" id="askYes">Yes</button><button type="button" class="btn quiet" id="askNo">No</button></div>
 </dialog>
 <p class="vh" id="live" aria-live="polite"></p>
 

@@ -37,7 +37,6 @@
 .langnote{display:block;padding:6px 14px;font-size:16px;color:var(--muted);line-height:1.3}
 .loading{text-align:center;color:var(--muted)}
 html.merch-ready .loading{display:none}
-.mfoot .todo{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;color:var(--ink)}
 .mfoot .small{color:var(--ink)}
 .shipto.off{display:none}
 .dropnote{margin:0 0 12px;padding:8px 12px;background:var(--w-blue);border:2px dashed var(--ink);border-radius:12px 9px 13px 8px;font-size:17px;line-height:1.35;color:var(--ink)}
@@ -251,6 +250,31 @@ svg.dogpic{display:block;width:100%;height:auto}
 .track li.later .dot{border-style:dashed;border-color:rgba(91,61,50,.45)}
 .track b{display:block;font-family:var(--hand);font-size:27px;line-height:1.05}
 .track span span{display:block;font-size:17px;line-height:1.3}
+.track span span .lnk{display:inline-flex;margin-right:6px}
+/* part 6: the order page's states, the address form, the delay choice, the gift */
+.oknote,.restnote{max-width:680px;margin:0 auto 14px;text-align:center;background:var(--w-mint)}
+.restnote{background:var(--w-blue)}
+.addr,.latebox{max-width:680px;margin:0 auto 14px}
+.addr p,.latebox p{margin:.3em 0 .6em}
+.latebox{background:var(--w-peach)}
+.afield{display:block;margin:0 0 10px;font-size:17px}
+.afield span{display:block;margin:0 0 3px;font-weight:700}
+.afield input[aria-invalid="true"]{border-color:#C0475F;background:#FFF5F7}
+.aerr{display:block;min-height:0;color:#9A2F45;font-weight:700;font-size:16px;line-height:1.3}
+.aerr:empty{display:none}
+.acountry{font-size:18px}
+.arow{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.arow .btn{flex:1 1 200px}
+.navrow.ctr{justify-content:center}
+.ltag{margin:2px 0 4px;padding:2px 8px;display:inline-block;background:var(--w-lilac);border-radius:8px;font-size:16px;line-height:1.3}
+.ltag.new{background:var(--w-mint)}
+.bl.gone h3,.bl.gone .lp{opacity:.75}
+.gift{margin:0 0 14px;background:var(--w-yellow)}
+.gift h2{font-size:30px;margin:0 0 4px}
+.gift p{margin:.3em 0}
+.coderow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0 2px}
+.code{display:inline-block;max-width:100%;overflow-wrap:anywhere;font-family:'Courier New',monospace;font-size:22px;font-weight:700;letter-spacing:.06em;padding:8px 12px;background:#fff;border:2px dashed var(--ink);border-radius:8px;user-select:all;-webkit-user-select:all}
+#giftSaid:empty{display:none}
 
 dialog.hand{width:min(460px,calc(100vw - 24px));padding:20px 18px;border:2.5px solid var(--ink);border-radius:18px 13px 20px 12px;background:var(--paper);color:var(--ink);text-align:center;box-shadow:4px 6px 0 rgba(91,61,50,.25)}
 dialog.hand::backdrop{background:rgba(60,40,30,.45)}

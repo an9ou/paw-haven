@@ -130,7 +130,7 @@ export function build(kind, view, env) {
   const B = [];
   switch (kind) {
     case 'thanks': {
-      const ls = L.filter((l) => !['void', 'replaced'].includes(l.status));
+      const ls = L.filter((l) => !['void', 'replaced'].includes(l.status) && l.reprint_of == null);
       B.push(['p', 'Thank you for putting your dog on something. Here is your order:'], ['list', priced(ls)], totals());
       if (pres) B.push(['p', 'You paid ' + pres + ' at checkout.']);
       if (v.can_cancel) B.push(['p', 'Changed your mind? You can cancel the whole order for a full refund within 1 hour of paying, from your order page.']);

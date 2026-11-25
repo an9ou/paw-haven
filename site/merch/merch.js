@@ -558,54 +558,220 @@
     api.demoPay(payBody()).then(function (r) { basket = []; basketChanged(); saveBasket(); st.quote = null; go('#/order/' + r.order); }, function () { closedCard('That didn\'t work this time.'); });
   }
 
-  // ---- 6. thank you / the order page (test orders only in this build). The server's answer is untrusted text: everything is escaped,
-  //      and the page never needs a line's recipe (the server clears recipes after 24 months): the dog is drawn only when one is there
+  // ---- 6. thank you / the order page (part 6: every state the order server answers; docs/design/merch/PART6.md). The server's answer is
+  //      untrusted text: everything is escaped or set as text. The page never needs a line's recipe (the server clears recipes after 24 months):
+  //      the dog is drawn only when one is there. No address or email is ever shown or kept: the address form's values go to the server and
+  //      are then dropped (nothing in localStorage or sessionStorage, nothing left in the page after it is sent).
+  var IS_NEW = Q.get('new') === '1', TEST_ORDERS = api.mode === 'test';
+  var ORD = { id: null, note: '', wait: false, polls: 0, timer: null, cleared: false };
   function rOrder(id) {
     var b = $('#orderBody');
+    if (ORD.timer) { clearTimeout(ORD.timer); ORD.timer = null; }
+    if (id !== ORD.id) { ORD.id = id; ORD.note = ''; ORD.wait = false; ORD.polls = 0; }
     if (!id) { b.innerHTML = '<p class="lead">No order to show.</p>'; return; }
-    b.innerHTML = '<p class="lead">Finding your order…</p>';
-    var notFound = function () { b.innerHTML = '<div class="thanks"><h1 class="mh2" tabindex="-1">We can\'t find that order</h1><p class="lead">Check the link in your email, or write to us: ' + CONTACT + '.</p><div class="navrow"><a class="btn mint" href="#/">Back to the shop</a></div></div>'; };
-    api.order(id).then(function (o) { if (!o || typeof o !== 'object' || !Array.isArray(o.lines)) return notFound(); st.order = o; try { drawOrder(o); } catch (e) { b.innerHTML = '<p class="lead">We can\'t show this order just now. Try again in a moment.</p>'; } }, notFound);
+    if (!st.order || st.order.id !== id) b.innerHTML = '<p class="lead">Finding your order…</p>';
+    api.order(id).then(function (o) {
+      if (!o || typeof o !== 'object' || !Array.isArray(o.lines)) return orderGone(b, 'not_found');
+      st.order = o; try { drawOrder(o); } catch (e) { orderGone(b, 'busy'); return; }
+      if (IS_NEW && !ORD.cleared && o.status !== 'expired' && o.status !== 'open') { ORD.cleared = true; basket = []; basketChanged(); saveBasket(); } // paid: the basket is done
+      if (IS_NEW && o.status === 'open' && ORD.polls < 12 && st.view === 'order') { ORD.polls++; ORD.timer = setTimeout(function () { if (st.view === 'order' && ORD.id === id) rOrder(id); }, 5000); } // the payment is on its way to us
+    }, function (e) { orderGone(b, e && e.error === 'not_found' ? 'not_found' : e && e.error === 'slow_down' ? 'slow_down' : 'offline'); });
+  }
+  function orderGone(b, why) {
+    if (why === 'not_found') { b.innerHTML = '<div class="thanks"><h1 class="mh2" id="h-order-t" tabindex="-1">We couldn\'t find this order</h1><p class="lead">Check the link in your email. If it still doesn\'t open, write to us at ' + CONTACT + ' and we\'ll find it for you.</p><div class="navrow"><a class="btn mint" href="#/">Back to the shop</a></div></div>'; return; }
+    b.innerHTML = '<div class="thanks"><h1 class="mh2" id="h-order-t" tabindex="-1">We couldn\'t reach the shop just now</h1><p class="lead">' + (why === 'slow_down' ? 'That was a lot of tries in a short time. Wait a minute, then try again.' : 'Your order is safe. Check your connection, then try again.') +
+      '</p><div class="navrow ctr"><button type="button" class="btn mint" id="orderRetry">Try again</button></div></div>';
+    $('#orderRetry').onclick = function () { rOrder(ORD.id); };
   }
   function fmtDate(ms) { var d = new Date(num(ms)); try { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return d.toDateString(); } }
   function fmtTime(ms) { var d = new Date(num(ms)); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  // what the buyer paid in their own currency (display only; amounts in that currency's minor units, as Stripe gives them)
+  var ZERO_DEC = 'BIF CLP DJF GNF JPY KMF KRW MGA PYG RWF UGX VND VUV XAF XOF XPF', THREE_DEC = 'BHD JOD KWD OMR TND';
+  function presMoney(p) {
+    if (!p || typeof p !== 'object' || typeof p.currency !== 'string' || !isFinite(p.amount)) return '';
+    var c = p.currency.toUpperCase(); if (!/^[A-Z]{3}$/.test(c) || c === 'USD') return '';
+    var d = ZERO_DEC.indexOf(c) >= 0 ? 0 : THREE_DEC.indexOf(c) >= 0 ? 3 : 2, v = num(p.amount) / Math.pow(10, d);
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: c, minimumFractionDigits: d, maximumFractionDigits: d }).format(v); } catch (e) { return c + ' ' + v.toFixed(d); }
+  }
+  var LDEAD = ['void', 'replaced', 'cancelled', 'rejected'], LSHIP = ['shipped', 'delivered'];
+  var HOLD_SAY = { review: 'Getting ready to print. It\'s taking a little longer than usual.', render: 'Getting ready to print. It\'s taking a little longer than usual.',
+    provider: 'Getting ready to print. It\'s taking a little longer than usual.', wallet: 'Getting ready to print. It\'s taking a little longer than usual.', draft_mode: 'Getting ready to print.' };
+  var DISPUTE_SAY = 'Your bank is looking at this payment, so we\'ve paused it. Nothing more happens until the bank has decided. Questions? Write to us at ' + CONTACT + '.';
+  function giftHTML(o) {
+    var name = typeof o.gift_name === 'string' && o.gift_name ? cleanWho(o.gift_name) : '';
+    return '<div class="gift card tape t2" id="giftBox"><h2 class="h2s">A little thank-you for your dog</h2>' +
+      '<p>With your order comes ' + (name ? 'the <b>' + esc(name) + '</b>, a little gift for your dog in the game.' : 'a little gift for your dog in the game.') + '</p>' +
+      '<div class="coderow"><span class="code" id="giftCode">' + esc(String(o.gift_code)) + '</span><button type="button" class="btn quiet" id="giftCopy">Copy</button></div>' +
+      '<p class="small2 left" id="giftSaid" role="status" aria-live="polite"></p>' +
+      '<p class="small2 left">In the game, open <b>Settings</b> (on a phone: the <b>⋯</b> menu), tap <b>Have a code?</b> and type the code. Gift codes are for players with the free account (cloud save), so your gift stays safe on every device. Each game account can use one merch thank-you code: if you order again, the next one is yours to pass to a friend.</p>' +
+      '<p class="small2 left"><a class="lnk" href="https://doodledoggo.app" target="_blank" rel="noopener">Play Doodle Doggo</a></p></div>';
+  }
+  // the address form (held address, or a parcel that came back): the order's own country only; values go to the server, then are dropped
+  var AFIELDS = [['name', 'Full name', 'name', 80, true], ['line1', 'Street address', 'address-line1', 120, true], ['line2', 'Apartment, suite, floor (if any)', 'address-line2', 120, false],
+    ['city', 'Town or city', 'address-level2', 80, true], ['state', 'State, province or region (if any)', 'address-level1', 60, false], ['postal', 'Postal code', 'postal-code', 20, true]];
+  var AERR = { name: 'Please type the name for the parcel.', line1: 'Please type the street address.', line2: 'Please check the second line of the address.', city: 'Please type the town or city.',
+    state: 'Please check the state, province or region.', postal: 'Please type the postal code.', country: 'Something went wrong with the country. Reload the page and try again.',
+    address: 'Our print partner still can\'t send to this address. Please check it once more.' };
+  function addressHTML(o, reship) {
+    var c = typeof o.country === 'string' && /^[A-Z]{2}$/.test(o.country) ? o.country : '';
+    return '<div class="addr card" id="addrBox"><h2 class="h2s" id="h-addr">' + (reship ? 'Where should we send it again?' : 'Please check your address') + '</h2>' +
+      '<p>' + (reship ? 'A parcel came back to our print partner: it couldn\'t be delivered. Type the address again and we\'ll send it once more, free.' : 'We couldn\'t send to this address. Please check it.') + '</p>' +
+      '<form id="addrForm" novalidate autocomplete="on">' + AFIELDS.map(function (f) {
+        return '<label class="afield" for="af-' + f[0] + '"><span>' + f[1] + '</span><input id="af-' + f[0] + '" name="' + f[0] + '" maxlength="' + f[3] + '" autocomplete="shipping ' + f[2] + '"' + (f[4] ? ' required' : '') + ' aria-describedby="ae-' + f[0] + '"><small class="aerr" id="ae-' + f[0] + '"></small></label>';
+      }).join('') +
+      '<p class="acountry">Country: <b>' + esc(c ? cname(c) : '') + '</b><br><span class="note">This order can only go to ' + esc(c ? placeName({ code: c }) : 'its country') + '.</span></p>' +
+      '<p class="small2 left">It goes straight to our print partner to send your parcel. We don\'t keep it.</p>' +
+      '<div class="qerr" id="addrErr" role="alert" hidden></div>' +
+      '<div class="row arow"><button type="submit" class="btn go" id="addrSend">Send it here</button>' + (reship ? '' : '<button type="button" class="btn quiet" id="addrRefund">Refund me instead</button>') + '</div></form>' +
+      (reship ? '' : '<p class="small2 left">Rather not? We can refund the whole order instead. If we don\'t hear from you within 7 days, we\'ll refund it anyway.</p>') + '</div>';
+  }
+  function lineTag(l) {
+    var q = num(l.qty), r = num(l.refunded_qty);
+    if (l.status === 'rejected') return '<p class="ltag">We couldn\'t print this one, so we refunded it.</p>';
+    if (l.status === 'replaced') return '<p class="ltag">We\'re making a new one of this: see below.</p>';
+    if (l.reprint_of != null && r < q) return '<p class="ltag new">A new one, free: on its way to you.</p>';
+    if (r >= q && q > 0 && l.status !== 'cancelled') return '<p class="ltag">Refunded.</p>';
+    if (r > 0 && r < q) return '<p class="ltag">Refunded: ' + r + ' of ' + q + '.</p>';
+    return '';
+  }
   function drawOrder(o) {
-    var b = $('#orderBody'), s = String(o.status || ''), parcels = (Array.isArray(o.parcels) ? o.parcels : []).filter(function (p) { return p && typeof p === 'object'; });
-    var tot = o.totals && typeof o.totals === 'object' ? o.totals : {}, now = Date.now();
-    var ended = { cancelled: 'Your order is cancelled', refunded: 'Your order is refunded', expired: 'This order wasn\'t paid' }[s];
+    var b = $('#orderBody'), s = String(o.status || ''), hold = typeof o.hold === 'string' ? o.hold : '', parcels = (Array.isArray(o.parcels) ? o.parcels : []).filter(function (p) { return p && typeof p === 'object'; });
+    var tot = o.totals && typeof o.totals === 'object' ? o.totals : {}, L = o.lines.filter(function (l) { return l && typeof l === 'object'; });
+    var disputed = hold === 'dispute' || o.dispute === 'open', ended = { cancelled: 1, refunded: 1, expired: 1 }[s] ? s : '';
     var sent = parcels.filter(function (p) { return p.shipped_at; }), came = parcels.filter(function (p) { return p.delivered_at; });
+    var live = L.filter(function (l) { return LDEAD.indexOf(l.status) < 0 && num(l.refunded_qty) < num(l.qty); });
+    var groups = {}; live.forEach(function (l) { groups[l.product === 'tee' ? 'tee' : 'mug'] = 1; }); sent.forEach(function (p) { groups[p.product === 'tee' ? 'tee' : 'mug'] = 1; });
+    var nParcels = Math.max(sent.length, Object.keys(groups).length), allCame = !!sent.length && came.length === parcels.length && s === 'shipped';
     // where it is now: 0 received, 1 being printed, 2 on its way, 3 arrived
-    var stage = ended ? -1 : s === 'part_shipped' || s === 'shipped' ? (parcels.length && came.length === parcels.length ? 3 : 2) : s === 'confirming' || s === 'confirmed' ? 1 : s === 'paid' && !o.can_cancel ? 1 : 0;
-    var first = null; o.lines.some(function (l) { var r = l && recipeOf(l); if (r) first = r; return !!r; });
+    var stage = s === 'part_shipped' || s === 'shipped' || (s === 'refunded' && sent.length) ? (allCame ? 3 : 2) : s === 'confirming' || s === 'confirmed' ? 1 : s === 'paid' && !o.can_cancel ? 1 : 0;
+    var first = null; L.some(function (l) { var r = l && recipeOf(l); if (r) first = r; return !!r; });
     var pic = ''; try { pic = first ? dogPic(first, 'happy') : ''; } catch (e) { pic = ''; }
-    var track = function (p) { return typeof p.tracking_url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(p.tracking_url) ? ' <a class="lnk" href="' + esc(p.tracking_url) + '" target="_blank" rel="noopener noreferrer">Track it</a>' : ''; };
+    var track = function (p) { return typeof p.tracking_url === 'string' && /^https:\/\/[^\s"'<>]+$/.test(p.tracking_url) ? ' <a class="lnk" href="' + esc(p.tracking_url) + '" target="_blank" rel="noopener noreferrer">Track it' + (sent.length > 1 ? ' (' + (p.product === 'tee' ? 'tee' : 'mug') + ')' : '') + '</a>' : ''; };
+    // the top: a calm thank-you, or what happened
+    var title = ended === 'cancelled' ? 'Your order is cancelled' : ended === 'refunded' ? 'Your order is refunded' : ended === 'expired' ? 'This order wasn\'t paid' :
+      s === 'open' ? (IS_NEW ? 'Thank you! Your payment is on its way to us' : o.pay_pending ? 'Waiting for your bank' : 'Waiting for payment') :
+      disputed ? 'Your order is paused' : IS_NEW || s === 'paid' || s === 'held' ? 'Thank you! Your order is in.' :
+      s === 'confirming' || s === 'confirmed' ? 'Your order is being printed' : s === 'part_shipped' ? 'Part of your order is on its way' : allCame ? 'Your order has arrived' : s === 'shipped' ? 'Your order is on its way' : 'Your order';
+    var lead = ended === 'cancelled' ? 'Nothing will be printed. Your refund is on its way: it can take a few days to show on your card.' :
+      ended === 'refunded' ? 'Your money is on its way back: it can take a few days to show on your card.' : ended === 'expired' ? 'Nothing was paid, so nothing will be made.' :
+      s === 'open' ? (o.pay_pending ? 'Your bank is still sending the payment. This page shows it as soon as it arrives.' : IS_NEW ? 'It usually takes a moment. This page shows it as soon as it arrives.' : 'This order isn\'t paid yet.') :
+      'A receipt is on its way to your email.';
+    var h = (TEST_ORDERS ? '<p class="testtag">Test order: made up to show this page. Nothing was paid and nothing will be printed.</p>' : '') +
+      '<div class="thanks">' + pic + '<h1 class="mh2" id="h-order-t" tabindex="-1">' + esc(title) + '</h1>' +
+      '<p class="lead"><span class="ordnum">Order ' + esc(String(o.id || '').replace(/^mo_/, '')) + '</span><br>' + esc(lead) + '</p></div>';
+    if (ORD.note) h += '<p class="oknote card" role="status">' + esc(ORD.note) + '</p>';
+    if (o.resting === true && !ended) h += '<p class="restnote card">The shop is resting for now. Your order is safe, and we\'re still making it.</p>';
+    // what happens now, and the cancel hour: only what the server says (can_cancel, cancel_until); after the hour there is no cancel line at all
+    var cu = num(o.cancel_until), sameDay = new Date(cu).toDateString() === new Date().toDateString(), canCancel = o.can_cancel === true && !!cu && !disputed && !ended;
+    var cancelLine = canCancel ? 'We\'ll start printing at <b>' + fmtTime(cu) + (sameDay ? '' : ' on ' + esc(fmtDate(cu))) + '</b>. If you change your mind before then, you can cancel here.' : '';
+    var box = [];
+    if (!ended) {
+      if (s === 'open') box.push(o.pay_pending ? 'Waiting for your bank.' : 'Waiting for payment.');
+      else if (disputed) box.push(esc(DISPUTE_SAY));
+      else if (s === 'held' && hold !== 'address') box.push(esc(HOLD_SAY[hold] || HOLD_SAY.review));
+      if (!disputed && (s === 'paid' || s === 'held') && canCancel) box.push(cancelLine);
+      else if (!disputed && (s === 'paid' || s === 'confirming' || s === 'confirmed')) box.push('Printing has started.');
+    }
+    if (box.length) h += '<div class="cancelbox card">' + box.map(function (x) { return '<p>' + x + '</p>'; }).join('') + (canCancel ? '<button type="button" class="btn quiet" id="cancelBtn">Cancel my order</button>' : '') + '</div>';
+    var formOn = !ended && !disputed && ((s === 'held' && hold === 'address') || (hold === 'reship' && /^(part_shipped|shipped|confirmed)$/.test(s)));
+    if (formOn) h += addressHTML(o, hold === 'reship');
+    // the delay notice's choice (US mail-order rule): wait, or cancel the late part for a full refund
+    if (o.late === true && !ended && !disputed) {
+      h += '<div class="latebox card" id="lateBox"><h2 class="h2s">Taking longer than we said</h2>' + (ORD.wait ? '<p>Thank you for waiting. We\'ll email you as soon as it\'s on its way.</p><p class="small2 left">Changed your mind? You can still cancel the late part.</p>' :
+        (sent.length ? '<p>We\'re sorry: part of your order is taking longer than we said. You can wait for it, or cancel the late part for a full refund of those things.</p>' : '<p>We\'re sorry: your order is taking longer than we said. You can wait for it, or cancel it for a full refund.</p>')) +
+        '<div class="row arow">' + (ORD.wait ? '' : '<button type="button" class="btn mint" id="lateWait">Keep waiting</button>') + '<button type="button" class="btn quiet" id="lateCancel">Cancel the late part</button></div></div>';
+    }
+    // where it is now (not for an order that ended before anything was sent)
     var S = [['✓', 'Order received', (o.paid_at ? fmtDate(o.paid_at) + '. ' : '') + 'Your receipt is in your email.'],
       ['🖨', 'Being printed', stage >= 1 ? 'At our print partner: printing takes 2 to 5 working days.' : 'At our print partner, in 2 to 5 working days.'],
-      ['🚚', 'On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (parcels.length > 1 ? ' (' + sent.length + ' of ' + parcels.length + ' parcels)' : '') + '.' : 'You get an email with a tracking link.'],
-      ['🏠', 'Arrived', came.length === parcels.length && came.length ? 'Arrived ' + fmtDate(came[came.length - 1].delivered_at) + '. Say hello to your dog, in real life.' : 'Say hello to your dog, in real life.']];
-    var h = (o.test ? '<p class="testtag">Test order: made up to show this page. Nothing was paid and nothing will be printed.</p>' : '') +
-      '<div class="thanks">' + pic + '<h1 class="mh2" id="h-order-t" tabindex="-1">' + esc(ended || 'Thank you! Your order is in.') + '</h1>' +
-      '<p class="lead"><span class="ordnum">Order ' + esc(String(o.id || '').replace(/^mo_/, '')) + '</span><br>' + (s === 'cancelled' ? 'Nothing will be printed. Your refund is on its way: it shows on your card in 5 to 10 days.' : s === 'refunded' ? 'Your money is on its way back: it shows on your card in 5 to 10 days.' : s === 'expired' ? 'Nothing was paid, so nothing will be made.' : 'A receipt is on its way to your email.') + '</p></div>';
-    // cancelling: only what the server says (can_cancel, cancel_until); after the hour there is no cancel line at all
-    if (!ended) {
-      var cu = num(o.cancel_until), sameDay = new Date(cu).toDateString() === new Date(now).toDateString();
-      var line = s === 'open' ? 'Waiting for payment.' : s === 'held' ? 'Getting ready to print. It\'s taking a little longer than usual.' :
-        o.can_cancel === true && cu ? 'We\'ll start printing at <b>' + fmtTime(cu) + (sameDay ? '' : ' on ' + esc(fmtDate(cu))) + '</b>. If you change your mind before then, you can cancel here.' : stage <= 1 ? 'Printing has started.' : '';
-      if (line) h += '<div class="cancelbox card"><p>' + line + '</p>' + (o.can_cancel === true && cu ? '<button type="button" class="btn quiet" id="cancelBtn">Cancel my order</button>' : '') + '</div>';
-    }
-    h += '<div class="order"><div class="card"><h2 class="h2s">Where is it now?</h2><ol class="track">' + S.map(function (x, i) {
-      var c = i < stage ? 'done' : i === stage ? 'now' : 'later'; return '<li class="' + c + '"><span class="dot" aria-hidden="true">' + x[0] + '</span><span><b>' + x[1] + '</b><span>' + esc(x[2]) + (i === 2 && sent.length ? track(sent[0]) : '') + '</span></span></li>';
-    }).join('') + '</ol><p class="note">This page is your order page: bookmark it, or use the link in your email.</p></div><div>';
-    h += '<ul class="blines">' + o.lines.map(function (l) {
-      if (!l || typeof l !== 'object') return '';
+      ['🚚', 'On its way', sent.length ? 'Sent ' + fmtDate(sent[0].shipped_at) + (s === 'part_shipped' && nParcels > 1 ? ' (' + sent.length + ' of ' + nParcels + ' parcels)' : sent.length > 1 ? ' (' + sent.length + ' parcels)' : '') + '.' : 'You get an email with a tracking link.'],
+      ['🏠', 'Arrived', allCame ? 'Arrived ' + fmtDate(came[came.length - 1].delivered_at) + '. Say hello to your dog, in real life.' : 'Say hello to your dog, in real life.']];
+    var showTrack = !ended || sent.length;
+    h += '<div class="order">';
+    if (showTrack) h += '<div class="card"><h2 class="h2s">Where is it now?</h2><ol class="track">' + S.map(function (x, i) {
+      var c = i < stage ? 'done' : i === stage ? 'now' : 'later'; return '<li class="' + c + '"><span class="dot" aria-hidden="true">' + x[0] + '</span><span><b>' + x[1] + '</b><span>' + esc(x[2]) + (i === 2 ? sent.map(track).join('') : '') + '</span></span></li>';
+    }).join('') + '</ol><p class="note">This page is your order page: bookmark it, or use the link in your email.</p></div>';
+    h += '<div>';
+    if (o.gift_code && typeof o.gift_code === 'string') h += giftHTML(o);
+    h += '<ul class="blines">' + L.map(function (l) {
       var pid = l.product === 'tee' ? 'tee' : 'mug', r = null, C = pid === 'tee' ? P.TEE_COLOURS.filter(function (x) { return x.id === l.colour; })[0] : null, pic2 = '';
       try { r = recipeOf(l); pic2 = mockOf(r, { product: pid, colour: C ? C.id : 'white', pose: POSE_NAME[l.pose] ? l.pose : 'stand', name_on: l.name_on === true }, PROD[pid].title); } catch (e) { pic2 = ''; }
-      var nm = typeof l.name === 'string' && l.name ? cleanWho(l.name) : r && r.n ? r.n : '';
-      return '<li class="bl card">' + pic2 + '<div class="bt"><h3>' + PROD[pid].title + '</h3><ul class="facts"><li>' + esc(nm || (r ? 'Your ' + breedOf(r) : 'Your dog')) + '</li>' + (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + '<li>How many: ' + esc(num(l.qty)) + '</li></ul><span class="lp">' + money(num(l.unit) * num(l.qty)) + '</span></div></li>';
-    }).join('') + '</ul><table class="lines"><tr><td>Things</td><td>' + money(tot.subtotal) + '</td></tr><tr><td>Shipping</td><td>' + (num(tot.ship_fee) ? money(tot.ship_fee) : 'Free') + '</td></tr><tr class="tot"><td>Total</td><td>' + money(tot.total) + '</td></tr>' + (num(tot.refunded) ? '<tr><td>Refunded</td><td>' + money(tot.refunded) + '</td></tr>' : '') + '</table>';
+      var nm = typeof l.name === 'string' && l.name ? cleanWho(l.name) : r && r.n ? r.n : '', free = l.reprint_of != null;
+      return '<li class="bl card' + (l.status === 'replaced' || l.status === 'rejected' ? ' gone' : '') + '">' + pic2 + '<div class="bt"><h3>' + PROD[pid].title + '</h3><ul class="facts"><li>' + esc(nm || (r ? 'Your ' + breedOf(r) : 'Your dog')) + '</li>' + (C ? '<li>' + esc(C.name) + ' · ' + esc(l.size) + '</li>' : '') + '<li>How many: ' + esc(num(l.qty)) + '</li></ul>' +
+        lineTag(l) + '<span class="lp">' + (free ? 'Free' : money(num(l.unit) * num(l.qty))) + '</span></div></li>';
+    }).join('') + '</ul><table class="lines"><tr><td>Things</td><td>' + money(tot.subtotal) + '</td></tr><tr><td>Shipping</td><td>' + (num(tot.ship_fee) ? money(tot.ship_fee) : 'Free') + '</td></tr>' +
+      (num(tot.tax) ? '<tr><td>Tax</td><td>' + money(tot.tax) + '</td></tr>' : '') + '<tr class="tot"><td>Total</td><td>' + money(tot.total) + '</td></tr>' + (num(tot.refunded) ? '<tr><td>Refunded</td><td data-q="refunded">' + money(tot.refunded) + '</td></tr>' : '') + '</table>';
+    var pm = presMoney(o.pres); if (pm) h += '<p class="small2 left" id="presLine">Prices are in US dollars. You paid ' + esc(pm) + ' at checkout' + (num(tot.refunded) ? '; refunds come back in that currency at the same rate.' : '.') + '</p>';
+    if (ended === 'cancelled' && L.some(function (l) { return l.reprint_of == null && recipeOf(l); })) h += '<div class="navrow"><button type="button" class="btn mint" id="putBack">Put these back in my basket</button></div>';
     h += '<p class="small2 left">Something wrong when it arrives? Reply to the order email with a photo and we\'ll make it right.</p><div class="navrow"><a class="btn mint" href="#/pick">Put another dog on something</a></div></div></div>';
     b.innerHTML = h;
     var cb = $('#cancelBtn'); if (cb) cb.onclick = function () { $('#cancelDlg').showModal(); };
+    var gc = $('#giftCopy'); if (gc) gc.onclick = copyGift;
+    var lw = $('#lateWait'); if (lw) lw.onclick = function () { ORD.wait = true; drawOrder(st.order); say('Thank you for waiting.'); };
+    var lc = $('#lateCancel'); if (lc) lc.onclick = function () { ask('Cancel the late part?', 'The things that haven\'t been sent yet are refunded in full. Anything already on its way still comes to you.', 'Yes, cancel the late part', 'Keep waiting', function () {
+      api.cancel(o.id, { scope: 'late' }).then(function () { ORD.note = 'Done: we\'ve refunded the late part. It can take a few days to show on your card.'; rOrder(o.id); }, function (e) { ORD.note = e && e.error === 'not_late' ? 'Nothing is late any more, so there was nothing to cancel.' : 'We couldn\'t do that just now. Please try again in a moment.'; rOrder(o.id); });
+    }); };
+    var pb = $('#putBack'); if (pb) pb.onclick = function () { putBack(o); };
+    if (formOn) bindAddress(o);
+  }
+  // Copy: the clipboard when the browser allows it; otherwise the code is selected so it can be copied by hand (no permission needed)
+  function copyGift() {
+    var el = $('#giftCode'), said = $('#giftSaid'); if (!el) return;
+    var code = el.textContent, done = function (ok) { said.textContent = ok ? 'Copied' : 'The code is selected: copy it with your keyboard, or press and hold.'; };
+    try { var r = document.createRange(); r.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) { /* fine */ }
+    var byHand = function () { var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } done(ok); };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(code).then(function () { done(true); }, byHand); return; } } catch (e) { /* no clipboard */ }
+    byHand();
+  }
+  function bindAddress(o) {
+    var f = $('#addrForm'), err = $('#addrErr'), send = $('#addrSend'), busy = false;
+    var show = function (t, field) {
+      $$('.aerr', f).forEach(function (x) { x.textContent = ''; }); $$('input', f).forEach(function (x) { x.removeAttribute('aria-invalid'); });
+      if (field && $('#af-' + field)) { $('#af-' + field).setAttribute('aria-invalid', 'true'); $('#ae-' + field).textContent = t; try { $('#af-' + field).focus(); } catch (e) { /* fine */ } }
+      err.hidden = !t; err.innerHTML = t ? '<span class="errt">' + esc(t) + '</span>' : '';
+    };
+    f.onsubmit = function (e) {
+      e.preventDefault(); if (busy) return;
+      var body = { country: o.country };
+      for (var i = 0; i < AFIELDS.length; i++) { var k = AFIELDS[i][0], v = String($('#af-' + k).value || '').trim(); if (AFIELDS[i][4] && !v) return show(AERR[k], k); body[k] = v; }
+      busy = true; send.disabled = true; show('');
+      api.address(o.id, body).then(function (r) {
+        body = null; f.reset(); // the values are gone from the page as soon as they are sent
+        ORD.note = r && typeof r.say === 'string' ? r.say.slice(0, 300) : 'Thanks! We\'ll send it there.'; rOrder(o.id);
+      }, function (x) {
+        body = null; busy = false; send.disabled = false; x = x || {};
+        var c = String(x.error || 'busy');
+        if (c === 'bad_address') return show(AERR[x.field] || AERR.address, AERR[x.field] && x.field !== 'address' && x.field !== 'country' ? x.field : null);
+        if (c === 'other_country') return show('We can only send this order to ' + (typeof x.country === 'string' && /^[A-Z]{2}$/.test(x.country) ? placeName({ code: x.country }) : 'its own country') + '. To send it somewhere else, we\'ll refund you and you can order again.');
+        if (c === 'not_needed') { ORD.note = 'Your address is sorted already: nothing more to do.'; return rOrder(o.id); }
+        if (c === 'slow_down') return show('That was a lot of tries in a short time. Wait a minute, then try again.');
+        if (c === 'offline') return show('We couldn\'t reach the shop. Check your connection, then try again.');
+        return show('One moment, please try again.');
+      });
+    };
+    var rf = $('#addrRefund'); if (rf) rf.onclick = function () { ask('Refund the whole order?', 'We won\'t send anything, and all of your money comes back, shipping too.', 'Yes, refund me', 'Keep my order', function () {
+      api.refundHeld(o.id).then(function () { ORD.note = 'Done: we\'ve refunded all of it. It can take a few days to show on your card.'; rOrder(o.id); }, function () { ORD.note = 'We couldn\'t do that just now. Please try again in a moment.'; rOrder(o.id); });
+    }); };
+  }
+  // "Put these back in my basket" (a cancelled order, TRANSACTIONS 4): the dogs and choices come back from the order's own lines, checked again
+  function putBack(o) {
+    var n = 0;
+    o.lines.forEach(function (l) {
+      if (!l || l.reprint_of != null || typeof l.recipe !== 'string') return;
+      var c = null; try { c = cleanLine({ recipe: l.recipe, product: l.product, colour: l.colour, size: l.product === 'tee' ? l.size : null, pose: l.pose, name_on: l.name_on === true, qty: num(l.qty) || 1, who: '' }); } catch (e) { c = null; }
+      if (!c) return;
+      var same = basket.filter(function (x) { return sameThing(x, c); })[0];
+      if (same) { same.qty = Math.min(maxQty(), same.qty + c.qty); n++; return; }
+      if (basket.length >= maxLines()) return;
+      c.id = newId(); basket.push(c); n++;
+    });
+    basketChanged(); saveBasket(); requote(); say(n ? 'They\'re back in your basket.' : 'We couldn\'t put these back, sorry.'); if (n) go('#/basket');
+  }
+  // a small yes/no question (the late cancel, "refund me instead")
+  function ask(title, text, yes, no, fn) {
+    var d = $('#askDlg'); $('#h-ask').textContent = title; $('#askText').textContent = text; $('#askYes').textContent = yes; $('#askNo').textContent = no;
+    $('#askYes').onclick = function () { d.close(); fn(); }; $('#askNo').onclick = function () { d.close(); };
+    d.showModal();
   }
 
   // ---- "Ship to": a guess from the browser's language, then the buyer's own choice (kept). Named here, sorted by the shown name
@@ -631,8 +797,8 @@
   $('#cancelNo').onclick = function () { $('#cancelDlg').close(); };
   $('#cancelYes').onclick = function () {
     $('#cancelDlg').close(); var o = st.order; if (!o) return;
-    var again = function () { return api.order(o.id).then(function (x) { st.order = x; drawOrder(x); }); };
-    api.cancel(o.id, { scope: 'order' }).then(function () { return again().then(function () { say('Your order is cancelled.'); }); }, function () { say('It\'s too late to cancel: printing has started.'); return again(); }).catch(function () { /* the page stays */ });
+    var again = function () { return api.order(o.id).then(function (x) { st.order = x; drawOrder(x); }, function () { rOrder(o.id); }); };
+    api.cancel(o.id, { scope: 'order' }).then(function () { return again().then(function () { say('Your order is cancelled.'); }); }, function (e) { say(e && e.error === 'not_allowed' ? 'Your bank is looking at this payment, so we\'ve paused it.' : 'It\'s too late to cancel: printing has started.'); return again(); }).catch(function () { /* the page stays */ });
   };
   $('#sgBtn').onclick = function () {
     var cs = colourCat('tee', st.draft.colour).sizes;
@@ -668,5 +834,5 @@
   }, function () { $('#loading').textContent = 'The shop couldn\'t load just now. Try again in a moment.'; });
 
   // hooks for the tests (merch/test_page.js) and the screenshots
-  window.__merch = { st: st, api: api, basket: function () { return basket; }, cat: function () { return cat; }, go: go, requote: requote, READY: READY, cleanBasket: cleanBasket, rBasket: function () { rBasket(); } };
+  window.__merch = { st: st, api: api, ORD: ORD, basket: function () { return basket; }, cat: function () { return cat; }, go: go, requote: requote, READY: READY, cleanBasket: cleanBasket, rBasket: function () { rBasket(); } };
 })();
