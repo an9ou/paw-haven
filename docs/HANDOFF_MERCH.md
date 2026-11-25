@@ -251,9 +251,33 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     page, no new email); a lost dispute means no reprint, no reship and no lost-parcel refund.
   - Left open (small): dogs on the mug have no inner margin of their own (a wide dog is 37 px from the handle line: fine); the
     502-on-stale-hint relies on Printful retrying webhooks.
+- **Part 9, the review of the second fix batch and its fixes: done 25 Nov about 18:40 JST (the same session).**
+  - `docs/reviews/MERCH_PART9_third_review.md` (0 blockers, 3 major, 3 minor, every one confirmed by a probe; its "Fixes (third
+    review)" list ends the file). **All six fixed** (`merch/part9-fixes3`, merge 167d986; tests `cloudflare/merch/test/t_fix9c.mjs`, 16
+    new rows, each failing on b7ef7ab): a reshipped line is never refunded at 7 days, whatever the order of shipments, hints and reads;
+    a reprint's failed reads are counted, capped and end with the owner (new column `merch_reprints.read_fail`; in the reship step 24 h
+    of failed reads hold the order for the owner, `hold=review`, `why=reship_unread`, no refund); Printful's hold applies only to the
+    main order and never overwrites another hold; a lost close sends the owner one email (`dispute_lost`) and cancels unposted reprints
+    at Printful; closes are remembered per dispute id (`x:dclosed:<id>`); the late cancel reads Printful twice and, if both fail,
+    records `late_ask_at`, answers 200 `refund:'pending'` and lets the alarm decide after the next good read (new buyer email
+    `late_posted`; one new line on the order page in `site/merch/merch.js`).
+  - **Every suite green on 167d986**: merch_worker 298; pawprint 89; merch_page 1933; merch_legal 383; render_chromium ALL OK;
+    test_enc 36; the game round trip 11 checks; `gen.js --check` and `merch_catalog_json.js --check` current. ART_VER unchanged
+    (`pp1-6df20bb6`).
+  - **Changed money rules for the launch list** (TRANSACTIONS.md "part 9" notes; these replace the late-cancel rule in the block
+    above): a late cancel with Printful unreadable is NOT refunded at once: it is decided after a good read (posted before the buyer
+    asked: theirs, no refund, the `late_posted` email; posted after the ask: refunded and the owner told; no good read 24 h after the
+    ask: refunded on what we know and the owner emailed). A reship whose Printful order cannot be read waits for the owner, who refunds
+    or reprints by hand. A lost dispute cancels unposted reprints at Printful; whatever still goes on is named in one owner email.
+  - Left open (small): after a reship case ends with the owner, a shipped order is not in the daily re-read (the hold clears only on
+    a Printful hint showing the reship); the page's stand-in API (`api_fake.js`) never returns `pending`, so the new order-page line
+    has no `merch_page` row (the ledger tests cover the real path); the daily re-read never covers `shipped` orders without a reship
+    hold, so a lost `package_returned` hint there is never caught. To learn in the sandbox / with the Printful key: Printful's webhook
+    retry policy (do repeated 502s switch a webhook off?) and the order in which it lists shipments.
+  - **This third fix batch (482 lines) has had no review of its own.** Each batch so far hid new holes (9 found in batch 1's, 6 in
+    batch 2's), each round smaller and further from the main path.
 - **Next, in this order:**
-  1. (done) the combined second review. 2. (done) the fix batch. This second fix batch (459 lines, money logic) has had no review of
-     its own: one short code review of `git diff fb48a9f..ecddc13 -- cloudflare/merch` is worth it before or beside the sandbox run.
+  1. (done) the combined second review. 2. (done) the fix batches.
   3. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox keys in a NEW, separate Stripe account;
      ask the owner in the choice window when you get there; no 5-minute rule], and the Printful key through the secure form when the owner
      says they are ready (`tools/merch_pf_check.mjs`, then re-record the fixtures).
