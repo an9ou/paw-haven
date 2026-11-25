@@ -8,7 +8,7 @@
 //   - the turns, in offline renders: the first visit plays wxmas, a new visit the other tune, a stall or the journal pauses a visit,
 //     a quick hop away (< 60 s) keeps it, staying changes tune at the top of the form after MK_TURN s, the old tune comes back at its
 //     own bar 1 even when the visit began on an odd bar; 0 dropped voices, no clipping
-//   - loudness: the two tunes within 1.5 dB RMS of each other
+//   - loudness: the two tunes within 0.8 dB RMS of each other (25 Nov 2026: 0.5 dB in 5 runs out of 5)
 //   - live: setContext reaches wxmas, a stall and back keeps it, mute still mutes, nothing throws
 const path = require('path'); const fs = require('fs'); const crypto = require('crypto'); const vm = require('vm');
 const MOD = process.env.PAW_AUDIO || path.join(__dirname, '..', 'pawaudio.js');
@@ -89,7 +89,7 @@ function sigHashes(mod) {
   const loud = await R({ seconds: 15, vols: { master: 1, music: 1, ambience: 1 }, segments: [{ at: 0, ctx: W({ tune: 'xmas', weather: 'sunny' }) }] });
   ok(loud.peakDb < -1 && loud.dropped === 0, `worst case (all volumes 1.0): peak ${loud.peakDb} dBFS, dropped ${loud.dropped}`);
   const lv = {}; for (const tune of ['old', 'xmas']) lv[tune] = (await R({ seconds: 40, sampleRate: 22050, segments: [{ at: 0, ctx: W({ tune }) }] })).rmsDb;
-  ok(Math.abs(lv.old - lv.xmas) <= 1.5, `loudness: old ${lv.old} dB RMS, xmas ${lv.xmas} dB RMS`);
+  ok(Math.abs(lv.old - lv.xmas) <= 0.8, `loudness: old ${lv.old} dB RMS, xmas ${lv.xmas} dB RMS`);
 
   // ---- live ----
   const S = () => p.evaluate(() => window.PawAudio.state());
