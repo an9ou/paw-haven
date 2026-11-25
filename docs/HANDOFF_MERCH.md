@@ -328,9 +328,22 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      stand-in draft is never sent to real Printful. **Green on 1e830eb**: merch_worker 333, merch_page 2058, pawprint 89, merch_legal
      383, render_chromium, test_enc 36, the game round trip, both `--check`s, `BUILD_ONLY=1` with and without the stand-in.
      Left open: the real name of Printful's reshipment flag and whether `quantity` is always given (run 2, the Printful key); a
-     part-line reship is the owner's job by hand. **This fourth fix batch (about 670 lines) has had no review of its own**: one short
-     review of `git diff 9815a07..1e830eb` is worth doing at the normal pace after the weekly reset, before run 2 at the latest (the
-     stand-in never confirms or posts, so run 1 cannot reach the shipment code either way).
+     part-line reship is the owner's job by hand.
+  3b. (done 25 Nov 20:30 JST) The fourth fix batch got its own short review, with the pay driver's guards:
+     `docs/reviews/MERCH_PART9_fifth_review.md` (0 blocker, 1 major, 4 minor; the driver's guards and every live/test guard came out
+     clean; its "Fixes (fifth review)" list ends the file). **All five fixed** (`merch/part9-fixes5`, merge d426ba3; tests
+     `cloudflare/merch/test/t_fix9e.mjs`, 10 rows): R5-M1 the part-line count no longer counts a unit twice (units out in a parcel,
+     refunded or not posted yet are not waiting; the owner email's "N of Q" is the true number and refunding N ends the hold; a new
+     owner email `returned_settled` when a return is already settled by an earlier refund); with no reshipment flag only units posted
+     beyond the line's quantity count as a reship; the daily re-read covers shipped orders held `review` for `reship_part` /
+     `reship_unread`; **`merch.sh reprint` refuses a line posted in more than one parcel while some of its units are out** (409
+     `part_line`, the message names the refund to make; the part-line emails offer only the refund; new money rule in TRANSACTIONS.md
+     "part 9" notes); the test email allow list refuses non-ASCII addresses. **Green on d426ba3**: merch_worker 343 (nothing outside
+     `cloudflare/merch/` and the docs changed, so the other suites stand as on 1e830eb). Left open (small): a Printful claim reship of
+     part of a line cannot be attached by `merch.sh reprint` (the hold stays until a refund; harmless); a reprint order behind a
+     `reship_unread` is still never re-read; `merch.sh lost ... refund` of a split line refunds the whole line, as before. This fifth
+     batch (about 250 lines, all in the part-return code that run 1 cannot reach) has no review of its own: fold it into the review
+     before run 2 (the real Printful key).
   4. (done 25 Nov 20:05 JST, merge d3bb77c) The driver for Stripe's test pay page: `tools/merch_pay_driver.mjs`
      (`payStripeCheckout(url, buyer, card, opts)` and a CLI; only `https://checkout.stripe.com/` with a `cs_test_` session, only with
      Stripe's "Test mode" / "Sandbox" badge on the page, only part D's seven test cards; returns `paid` / `declined` / `needs_human` /
