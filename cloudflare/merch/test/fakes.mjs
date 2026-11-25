@@ -8,19 +8,27 @@ import { signFor } from '../stripe.js';
 const require = createRequire(import.meta.url);
 
 // ---------------- Durable Object state: storage.sql.exec / transactionSync / alarms ----------------
+// One FakeState is the object's storage (it outlives an instance); each instance gets its own ctx. evict() kills an instance: every storage
+// call it makes after that throws { evicted: true }, which is how a crash between an outside call and the write is tested (nothing is written).
+const evicted = () => Object.assign(new Error('evicted: this object instance was replaced'), { evicted: true });
 export class FakeState {
-  constructor() { this.db = new DatabaseSync(':memory:'); this.alarmAt = null; this.inTx = false; const self = this;
-    this.storage = {
-      sql: { exec(q, ...b) { return self.exec(q, b); } },
+  constructor() { this.db = new DatabaseSync(':memory:'); this.alarmAt = null; this.inTx = false; this.view = this.ctx(); this.storage = this.view.storage; }
+  ctx() {
+    const self = this, c = { dead: false };
+    const live = () => { if (c.dead) throw evicted(); };
+    c.storage = {
+      sql: { exec(q, ...b) { live(); return self.exec(q, b); }, get databaseSize() { return self.db.prepare('select page_count * page_size as n from pragma_page_count(), pragma_page_size()').get().n; } },
       transactionSync(fn) {
+        live();
         if (self.inTx) throw new Error('nested transactionSync'); // the real one would not nest either: catch it here
         self.inTx = true; self.db.exec('begin');
-        try { const r = fn(); if (r && typeof r.then === 'function') throw new Error('transactionSync got an async function'); self.db.exec('commit'); return r; }
+        try { const r = fn(); if (r && typeof r.then === 'function') throw new Error('transactionSync got an async function'); live(); self.db.exec('commit'); return r; }
         catch (e) { self.db.exec('rollback'); throw e; } finally { self.inTx = false; }
       },
-      async setAlarm(t) { self.alarmAt = Number(t); }, async getAlarm() { return self.alarmAt; }, async deleteAlarm() { self.alarmAt = null; },
-      async deleteAll() { const t = self.db.prepare("select name from sqlite_master where type = 'table'").all(); for (const r of t) self.db.exec('drop table if exists "' + r.name + '"'); self.alarmAt = null; }
+      async setAlarm(t) { live(); self.alarmAt = Number(t); }, async getAlarm() { return self.alarmAt; }, async deleteAlarm() { live(); self.alarmAt = null; },
+      async deleteAll() { live(); const t = self.db.prepare("select name from sqlite_master where type = 'table'").all(); for (const r of t) self.db.exec('drop table if exists "' + r.name + '"'); self.alarmAt = null; }
     };
+    return c;
   }
   exec(q, b) {
     if (!b.length && /;\s*\S/.test(q.trim().replace(/;\s*$/, ''))) { this.db.exec(q); return cursor([], 0); }
@@ -32,13 +40,19 @@ export class FakeState {
 }
 function cursor(rows, written) { return { toArray: () => rows, one: () => { if (rows.length !== 1) throw new Error('one(): ' + rows.length + ' rows'); return rows[0]; }, rowsWritten: written, [Symbol.iterator]: () => rows[Symbol.iterator]() }; }
 
-// a namespace: idFromName(name) -> name; get(id).fetch(...) -> the instance's fetch
+// a namespace: idFromName(name) -> name; get(id).fetch(...) -> the CURRENT instance's fetch; evict(id): a new instance on the same storage
 export function namespace(Cls, env) {
   const inst = new Map();
+  const make = (st) => { const ctx = st.instances ? st.ctx() : st.view; st.instances = (st.instances || 0) + 1; return { st, ctx, obj: new Cls(ctx, env) }; };
   const ns = {
     instances: inst,
     idFromName: (n) => n,
-    get(id) { if (!inst.has(id)) { const st = new FakeState(); inst.set(id, { st, obj: new Cls(st, env) }); } const it = inst.get(id); return { fetch: (input, init) => it.obj.fetch(input instanceof Request ? input : new Request(input, init)), obj: it.obj, state: it.st }; }
+    get(id) {
+      if (!inst.has(id)) inst.set(id, make(new FakeState()));
+      const it = () => inst.get(id);
+      return { fetch: (input, init) => it().obj.fetch(input instanceof Request ? input : new Request(input, init)), get obj() { return it().obj; }, get state() { return it().st; } };
+    },
+    evict(id) { const it = inst.get(id); if (!it) return; it.ctx.dead = true; inst.set(id, make(it.st)); }
   };
   return ns;
 }
@@ -48,7 +62,10 @@ const J = (o, status) => new Response(JSON.stringify(o), { status: status || 200
 
 // ---------------- Stripe ----------------
 export function fakeStripe() {
-  const S = { now: () => Date.now(), sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch' };
+  const S = { now: () => Date.now(), sessions: new Map(), byKey: new Map(), refunds: [], refundKeys: new Map(), calls: [], n: 0, fail: {}, hang: null, secret: 'whsec_test_merch', after: {}, slowCreate: 0 };
+  // Stripe keeps an idempotency key for 24 hours, then forgets it (a retry after that makes a NEW object): S5
+  const keyGet = (m, k) => { const e = k && m.get(k); if (!e) return null; if (S.now() - e.at > 864e5) { m.delete(k); return null; } return e.v; };
+  const keySet = (m, k, v) => { if (k) m.set(k, { at: S.now(), v }); };
   const lineItems = (f) => { const out = []; for (let i = 0; f['line_items[' + i + '][quantity]'] !== undefined; i++) { const q = Number(f['line_items[' + i + '][quantity]']), u = Number(f['line_items[' + i + '][price_data][unit_amount]']); out.push({ quantity: q, amount_subtotal: u * q, amount_tax: 0, amount_total: u * q, description: f['line_items[' + i + '][price_data][product_data][name]'] }); } return out; };
   S.fetch = async (url, init) => {
     const u = new URL(url), m = (init && init.method) || 'GET', h = (init && init.headers) || {}, key = h['Idempotency-Key'] || null, body = formParse(init && init.body);
@@ -58,23 +75,28 @@ export function fakeStripe() {
     if (p === '/v1/checkout/sessions' && m === 'POST') {
       if (S.hang) await S.hang;
       if (take('create')) return J({ error: { message: 'boom' } }, 500);
-      if (key && S.byKey.has(key)) return J(S.sessions.get(S.byKey.get(key)));
+      const was = keyGet(S.byKey, key); if (was) return J(S.sessions.get(was));
       const id = 'cs_test_' + (++S.n) + 'x'.repeat(8), li = lineItems(body), sub = li.reduce((a, x) => a + x.amount_subtotal, 0), fee = Number(body['shipping_options[0][shipping_rate_data][fixed_amount][amount]']);
       const cs = { id, object: 'checkout.session', url: 'https://checkout.stripe.test/c/pay/' + id, status: 'open', payment_status: 'unpaid', currency: 'usd', client_reference_id: body.client_reference_id,
         metadata: { merch: body['metadata[merch]'] }, amount_subtotal: sub, amount_total: sub + fee, shipping_cost: { amount_subtotal: fee, amount_total: fee }, total_details: { amount_discount: 0, amount_tax: 0, amount_shipping: fee },
         line_items: { data: li }, expires_at: Number(body.expires_at), payment_intent: null, form: body, country: body['shipping_address_collection[allowed_countries][0]'] };
-      S.sessions.set(id, cs); if (key) S.byKey.set(key, id); return J(cs);
+      S.sessions.set(id, cs); keySet(S.byKey, key, id);
+      if (S.after.create) await S.after.create(cs);
+      if (S.slowCreate > 0) { S.slowCreate--; await new Promise((r) => setTimeout(r, 400)); } // made, but the answer comes too late (a timeout)
+      return J(cs);
     }
     let mm = /^\/v1\/checkout\/sessions\/([^/]+)(\/expire)?$/.exec(p);
     if (mm && mm[2] && m === 'POST') { const cs = S.sessions.get(mm[1]); if (take('expire')) return J({ error: {} }, 500); if (!cs || cs.status !== 'open') return J({ error: { message: 'not open' } }, 400); cs.status = 'expired'; return J(cs); }
-    if (mm && m === 'GET') { if (take('get')) return J({ error: { message: 'rate' } }, 429); const cs = S.sessions.get(mm[1]); if (cs && cs.status === 'open' && S.now() / 1000 > cs.expires_at) cs.status = 'expired'; // Stripe expires it at expires_at
+    if (mm && m === 'GET') { if (take('get')) return J({ error: { message: 'rate' } }, 429); if (S.after.get) await S.after.get(mm[1]); const cs = S.sessions.get(mm[1]); if (cs && cs.status === 'open' && S.now() / 1000 > cs.expires_at) cs.status = 'expired'; // Stripe expires it at expires_at
       return cs ? J(cs) : J({ error: {} }, 404); }
     if (p === '/v1/checkout/sessions' && m === 'GET') { if (take('list')) return J({ error: {} }, 500); const pi = u.searchParams.get('payment_intent'); return J({ data: Array.from(S.sessions.values()).filter((c) => c.payment_intent === pi) }); }
     if (p === '/v1/refunds' && m === 'POST') {
       if (take('refund')) return J({ error: { message: 'no' } }, 500);
-      if (key && S.refundKeys.has(key)) return J(S.refundKeys.get(key));
+      const was = keyGet(S.refundKeys, key); if (was) return J(was);
       const re = { id: 're_' + (++S.n), object: 'refund', amount: Number(body.amount), payment_intent: body.payment_intent, status: 'succeeded', metadata: { merch: body['metadata[merch]'], merch_refund: body['metadata[merch_refund]'] } };
-      S.refunds.push(re); if (key) S.refundKeys.set(key, re); return J(re);
+      S.refunds.push(re); keySet(S.refundKeys, key, re);
+      if (S.after.refund) await S.after.refund(re);
+      return J(re);
     }
     if (p === '/v1/refunds' && m === 'GET') { if (take('listRefunds')) return J({ error: {} }, 500); const pi = u.searchParams.get('payment_intent'); return J({ data: S.refunds.filter((r) => r.payment_intent === pi) }); }
     return J({ error: { message: 'unknown ' + m + ' ' + p } }, 404);
@@ -103,7 +125,7 @@ export function fakeStripe() {
 
 // ---------------- Printful ----------------
 export function fakePrintful() {
-  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0 };
+  const P = { orders: new Map(), byExt: new Map(), calls: [], n: 9000, fail: {}, refuse: {}, costMul: 1, hangConfirm: null, timeoutCreate: 0, after: {} };
   const take = (k) => { if (P.fail[k] > 0) { P.fail[k]--; return true; } return false; };
   const out = (o) => J({ code: 200, result: o });
   P.fetch = async (url, init) => {
@@ -121,6 +143,7 @@ export function fakePrintful() {
       let ship = 0; for (const g of Object.keys(groups)) ship += SHIP_COSTS[region][g][0] + (groups[g] - 1) * SHIP_COSTS[region][g][1];
       const o = { id, external_id: body.external_id, status: 'draft', recipient: body.recipient, costs: { subtotal: (items * P.costMul / 100).toFixed(2), shipping: (ship / 100).toFixed(2), tax: '0.00' }, items: body.items.map((i) => ({ external_id: i.external_id, status: 'draft' })), files: body.items.map((i) => i.files[0].url), shipments: [] };
       P.orders.set(id, o); P.byExt.set(body.external_id, id);
+      if (P.after.create) await P.after.create(o);
       if (P.timeoutCreate > 0) { P.timeoutCreate--; await new Promise((r) => setTimeout(r, 400)); }
       return out(o);
     }
@@ -129,13 +152,14 @@ export function fakePrintful() {
       const id = mm[1] ? P.byExt.get(decodeURIComponent(mm[2])) : mm[2], o = id && P.orders.get(id);
       if (m === 'GET') { if (take('get')) return J({ error: {} }, 503); return o ? out(o) : J({ code: 404, error: { reason: 'not_found' } }, 404); }
       if (!o) return J({ code: 404, error: {} }, 404);
-      if (mm[3]) { if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return J({ code: 503, error: {} }, 503); if (P.refuse.billing) return J({ code: 402, error: { reason: 'billing' } }, 402); if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); } o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); return out(o); }
-      if (m === 'PUT') { if (P.refuse.recipient) return J({ code: 400, error: { reason: 'recipient' } }, 400); o.recipient = body.recipient; return out(o); }
-      if (m === 'DELETE') { if (take('delete')) return J({ code: 503, error: {} }, 503); if (o.status !== 'draft' && o.status !== 'pending') return J({ code: 400, error: { reason: 'cannot_cancel' } }, 400); o.status = 'canceled'; o.deleted = true; return out(o); }
+      if (mm[3]) { if (P.hangConfirm) await P.hangConfirm; if (take('confirm')) return J({ code: 503, error: {} }, 503); if (P.refuse.billing) return J({ code: 402, error: { reason: 'billing' } }, 402); if (P.timeoutConfirm) { P.timeoutConfirm--; o.status = 'pending'; await new Promise((r) => setTimeout(r, 400)); } o.status = 'pending'; o.items.forEach((i) => (i.status = 'pending')); if (P.after.confirm) await P.after.confirm(o); return out(o); }
+      if (m === 'PUT') { if (P.refuse.recipient) return J({ code: 400, error: { reason: 'recipient' } }, 400); o.recipient = body.recipient; if (P.after.update) await P.after.update(o); return out(o); }
+      if (m === 'DELETE') { if (take('delete')) return J({ code: 503, error: {} }, 503); if (o.status !== 'draft' && o.status !== 'pending') return J({ code: 400, error: { reason: 'cannot_cancel' } }, 400); o.status = 'canceled'; o.deleted = true; if (P.after.delete) await P.after.delete(o); return out(o); }
     }
     return J({ error: { message: 'unknown' } }, 404);
   };
   P.ship = (id, exts, o) => { o = o || {}; const ord = P.orders.get(id); const s = { id: 'sh_' + (++P.n), carrier: 'USPS', tracking_url: 'https://track.test/' + P.n, ship_date: new Date(o.at || Date.now()).toISOString(), items: exts.map((e) => ({ order_item_external_id: e })) }; ord.shipments.push(s); ord.status = o.status || 'partial'; return s; };
+  P.secret = 'pf-hook-secret-test';
   P.hook = (ord, type, id) => JSON.stringify({ id: id || null, type: type || 'package_shipped', data: { order: { id: Number(ord.id), external_id: ord.external_id } } });
   return P;
 }
@@ -143,7 +167,7 @@ export function fakePrintful() {
 // ---------------- the renderer and Resend ----------------
 export function png(w, h, extra) { const b = new Uint8Array(33 + (extra || 64)); b.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]); const dv = new DataView(b.buffer); dv.setUint32(16, w); dv.setUint32(20, h); for (let i = 33; i < b.length; i++) b[i] = (i * 7) & 255; return b; }
 export function fakeRender() {
-  const R = { calls: [], queue: [] };
+  const R = { calls: [], queue: [], after: {} };
   R.fetch = async (url, init) => {
     const p = new URL(url).pathname, body = JSON.parse(init.body), prod = /prod=(\w+)/.exec(body.url)[1];
     R.calls.push({ p, url: body.url, viewport: body.viewport });
@@ -153,9 +177,21 @@ export function fakeRender() {
     if (next === 'err') return new Response('ERR', { status: 500 });
     if (next === 'wrongsize') return new Response(png(100, 100));
     if (next === 'big') return new Response(png(size[0], size[1], 8 * (1 << 20)));
+    if (R.after.shot) await R.after.shot(body);
     return new Response(png(size[0], size[1], 2.5 * (1 << 20))); // over 2 MB: stored in parts
   };
   return R;
 }
-export function fakeMail() { const M = { sent: [] }; M.fetch = async (url, init) => { const b = JSON.parse(init.body); M.sent.push({ key: init.headers['Idempotency-Key'], to: b.to[0], subject: b.subject, text: b.text }); return J({ id: 'em_' + M.sent.length }); }; return M; }
+export function fakeMail() {
+  const M = { sent: [], keys: new Map(), fail: 0, calls: 0, after: {} };
+  M.fetch = async (url, init) => {
+    M.calls++; if (M.fail > 0) { M.fail--; return J({ message: 'try later' }, 500); }
+    const b = JSON.parse(init.body), key = init.headers['Idempotency-Key'];
+    if (key && M.keys.has(key)) return J({ id: M.keys.get(key) }); // Resend: the same key within 24 h sends nothing new
+    M.sent.push({ key, to: b.to[0], subject: b.subject, text: b.text }); const id = 'em_' + M.sent.length; if (key) M.keys.set(key, id);
+    if (M.after.send) await M.after.send(M.sent[M.sent.length - 1]);
+    return J({ id });
+  };
+  return M;
+}
 export { require };

@@ -13,12 +13,15 @@ export async function basics() {
     eq(c.products[1].colours.map((x) => x.id), PP.TEE_COLOURS.map((x) => x.id), 'tee colours = PawPrint.TEE_COLOURS');
     ok(c.products[1].sizes.find((s) => s.id === '2XL').price === 2899, '2XL price');
     eq(c.zones.map((z) => [z.id, z.fee, z.free_from]), [['us_jp', 499, 3500], ['uk_eu', 599, 7000], ['ca_au_nz', 799, 7000], ['world', 1199, null]], 'zones');
-    ok(c.countries.some((x) => x.code === 'US' && x.zone === 'us_jp') && !c.countries.some((x) => x.code === 'GB' || x.code === 'RU' || x.code === 'DE'), 'countries: open only');
+    ok(c.countries.some((x) => x.code === 'US' && x.zone === 'us_jp' && x.soon === false) && c.countries.some((x) => x.code === 'GB' && x.soon === true) && !c.countries.some((x) => x.code === 'RU'), 'countries {code, zone, soon}: open and not yet; never-countries left out');
+    ok(c.countries.every((x) => Object.keys(x).sort().join() === 'code,soon,zone'), 'no names in the country list');
+    eq(c.zones.map((z) => z.notes), [[], [], [], ['import_tax']], 'zone notes are codes'); ok(!c.products[1].colours.some((x) => 'name' in x), 'no free text (colour names) in the catalog');
+    ok(c.products[1].sizes.find((s) => s.id === '2XL').add === 200, 'a size carries its extra (add)');
     eq(c.art_vers, [PP.ART_VER], 'art_vers'); ok(r.headers.get('cache-control') === 'public, max-age=60', 'cached 60 s');
   });
   await T('X-shut-catalog', 'catalog says shut when MERCH_FROM is empty or in the future, or nothing is set up', async () => {
-    for (const env of [{ MERCH_FROM: '' }, { MERCH_FROM: '2027-05-01T00:00:00+09:00' }, { STRIPE_FETCH: undefined }, { MERCH_STRIPE_KEY: undefined }, { MERCH_HASH_KEY: undefined }]) {
-      const w = await world({ env }); const c = (await w.call('GET', '/merch/catalog')).json; ok(c.shut === true && c.countries.length === 0, 'shut for ' + JSON.stringify(env));
+    for (const env of [{ MERCH_FROM: '' }, { MERCH_FROM: '2027-05-01T00:00:00+09:00' }, { STRIPE_FETCH: undefined }, { MERCH_STRIPE_KEY: undefined }, { MERCH_HASH_KEY: undefined }, { PROVIDER_FETCH: undefined }, { RENDER_FETCH: undefined }]) {
+      const w = await world({ env }); const c = (await w.call('GET', '/merch/catalog')).json; ok(c.shut === true && c.countries.length > 0 && c.sold_out_today === false, 'shut for ' + JSON.stringify(env));
     }
   });
   await T('X-countries', 'MERCH_COUNTRIES: empty, all, a list, minus codes and zones; the never list always wins', async () => {
@@ -34,8 +37,8 @@ export async function basics() {
       ['HK', [mug(0)], 3198, 1199], ['HK', [mug(0), tee(1)], 4698 + 1199 + 599, 1798], ['NO', [tee(0, { qty: 3 })], 8097 + 1199 + 2 * 599, 2397],
       ['US', [tee(0, { size: '2XL' })], 2899 + 499, 499]];
     for (const [c, lines, total, fee] of cases) { const r = await w.quote(lines, c); ok(r.status === 200, c + ' ' + r.text); ok(r.json.total === total && r.json.ship_fee === fee, c + ' ' + lines.length + ' lines: ' + r.json.total + '/' + r.json.ship_fee + ' want ' + total + '/' + fee); }
-    const r = await w.quote([mug(0)], 'HK'); ok(r.json.notes.some((n) => /import tax/.test(n)), 'world note'); ok(r.json.free_from === null, 'never free in world');
-    const m = await w.quote([mug(0), tee(1)], 'US'); ok(m.json.notes.some((n) => /own parcels/.test(n)), 'mugs and tees in their own parcels');
+    const r = await w.quote([mug(0)], 'HK'); eq(r.json.notes, ['import_tax'], 'world note (a code)'); ok(r.json.free_from === null, 'never free in world');
+    const m = await w.quote([mug(0), tee(1)], 'US'); eq(m.json.notes, ['separate_parcels'], 'mugs and tees in their own parcels (a code)'); eq(m.json.eta, [5, 9], 'eta [min, max] business days');
     ok(w.q('select count(*) as n from merch_orders')[0].n === 0, 'a quote writes nothing');
   });
   await T('X-margin', 'the margin guard matches SHIPPING.md model C to the cent (US, no holiday): mug 9.41, tee 11.54, mug+tee 11.66, 2 tees 16.87, 2 mugs 13.11', async () => {
@@ -95,16 +98,20 @@ export async function basics() {
     ok(live.status === 403 && live.json.error === 'not_available', 'the live Worker refuses a checkout from the test copy');
   });
   await T('X-not-set-up', 'no fetch seams or no keys: the Worker refuses to take an order (it can never charge anyone by accident)', async () => {
-    for (const env of [{ STRIPE_FETCH: undefined }, { MERCH_STRIPE_KEY: undefined }, { MERCH_STRIPE_WEBHOOK_SECRET: undefined }, { MERCH_FILE_KEY: undefined }, { MERCH_TEST: '1', MERCH_STRIPE_KEY: 'sk_live_xx' }, { MERCH_TEST: '1', MERCH_STRIPE_KEY: 'rk_live_xx' }]) {
+    for (const env of [{ STRIPE_FETCH: undefined }, { MERCH_STRIPE_KEY: undefined }, { MERCH_STRIPE_WEBHOOK_SECRET: undefined }, { MERCH_FILE_KEY: undefined }, { MERCH_TEST: '1', MERCH_STRIPE_KEY: 'sk_live_xx' }, { MERCH_TEST: '1', MERCH_STRIPE_KEY: 'rk_live_xx' },
+      { PROVIDER_FETCH: undefined }, { MERCH_PROVIDER_KEY: undefined }, { RENDER_FETCH: undefined }, { MERCH_PROVIDER_WEBHOOK_SECRET: undefined }]) { // M5, S8: the printer, the renderer and (live) signed hints too
       const w = await world({ env }); const r = await w.call('POST', '/merch/checkout', { country: 'US', lines: [mug()], expect_total: 2498, art_ver: PP.ART_VER, nonce: 'nonce-unset-1', agree: true });
       ok(r.status === 503 && r.json.error === 'merch_closed', JSON.stringify(Object.keys(env)) + ': ' + r.status + ' ' + r.text);
       ok(w.stripe.calls.length === 0 && w.q('select count(*) as n from merch_orders')[0].n === 0, 'no Stripe call, nothing written');
     }
   });
-  await T('X-shut-gate', 'the shut gate: quote and checkout refuse when MERCH_FROM is empty (every money route that starts an order)', async () => {
+  await T('X-shut-gate', 'the shut gate: checkout refuses when MERCH_FROM is empty; a quote answers with shut: true (prices are public); a soon country still 403', async () => {
     const w = await world({ env: { MERCH_FROM: '' } });
-    for (const p of ['/merch/quote', '/merch/checkout']) { const r = await w.call('POST', p, { country: 'US', lines: [mug()], expect_total: 2498, art_ver: PP.ART_VER, nonce: 'nonce-shut-1', agree: true }); ok(r.status === 503 && r.json.error === 'merch_closed', p + ' ' + r.status); }
-    ok(w.stripe.calls.length === 0, 'no Stripe call');
+    const c = await w.call('POST', '/merch/checkout', { country: 'US', lines: [mug()], expect_total: 2498, art_ver: PP.ART_VER, nonce: 'nonce-shut-1', agree: true }); ok(c.status === 503 && c.json.error === 'merch_closed', 'checkout ' + c.status);
+    const q = await w.quote([mug()]); ok(q.status === 200 && q.json.shut === true && q.json.total === 2498, 'quote while shut: ' + q.text);
+    const s = await w.quote([mug()], 'GB'); ok(s.status === 403 && s.json.error === 'country_closed', 'a soon country: 403');
+    const off = await world({ env: { MERCH_OFF: '1' } }); ok((await off.quote([mug()])).status === 503, 'MERCH_OFF (resting): the quote is refused too');
+    ok(w.stripe.calls.length === 0 && w.q('select count(*) as n from merch_orders')[0].n === 0, 'no Stripe call, nothing written');
   });
   await T('X-stickers', 'stickers are refused everywhere: quote, checkout, catalog, even with MERCH_PRODUCTS listing them; printHash refuses them too', async () => {
     const w = await world({ env: { MERCH_PRODUCTS: 'mug,tee,stickers' } });

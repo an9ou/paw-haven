@@ -9,7 +9,7 @@ export async function t21() {
   await T('T2.1-01', 'quote, valid basket: re-checks and prices every line; writes nothing', async () => {
     const w = await world(); const r = await w.quote([mug(0), tee(1, { qty: 2 })]);
     ok(r.status === 200, r.text); eq(r.json.lines.map((l) => [l.unit, l.qty, l.total]), [[1999, 1, 1999], [2699, 2, 5398]], 'lines');
-    eq([r.json.subtotal, r.json.ship_fee, r.json.total, r.json.zone], [7397, 0, 7397, 'us_jp'], 'totals'); ok(r.json.eta.min === 5 && r.json.cat_ver, 'eta, cat_ver');
+    eq([r.json.subtotal, r.json.ship_fee, r.json.total, r.json.zone], [7397, 0, 7397, 'us_jp'], 'totals'); ok(r.json.eta[0] === 5 && r.json.cat_ver, 'eta, cat_ver');
     ok(w.q('select count(*) as n from merch_orders')[0].n === 0 && w.stripe.calls.length === 0, 'nothing written, no Stripe call');
   });
   await T('T2.1-02', 'checkout, valid, new nonce: order + lines, day cap counted, one Stripe session (mc_<order>, expires in 1 h, only the quoted country), url stored', async () => {
@@ -26,7 +26,7 @@ export async function t21() {
     ok(f['metadata[merch]'] === o.id && f.client_reference_id === o.id && f['payment_intent_data[metadata][merch]'] === o.id, 'the order id in metadata');
     eq([L[0].art_ver, /&av=pp1-/.test(L[0].print_link), L[1].name, L[0].recipe === R[0]], [PP.ART_VER, true, "D'Artagnan", true], 'recipe, ART_VER and print link stored');
     ok(L[1].print_link === '#p=' + R[4] + '&prod=tee&col=black&pose=sit&n=1&av=' + PP.ART_VER, 'the print link: ' + L[1].print_link);
-    ok(w.L().dayCount(o.day) === 1, 'day cap counted'); ok(o.checkout_url === r.json.url, 'url stored');
+    ok(w.L().dayCount(o.day) === 0, 'an open session does not count toward the day cap (S9: paid orders only)'); ok(o.checkout_url === r.json.url, 'url stored');
   });
   await T('T2.1-03', 'checkout again, same nonce, url stored: the same {order, url}; no new order, no Stripe call', async () => {
     const w = await world(); const q = await w.quote([mug(0)]);
@@ -72,10 +72,10 @@ export async function t21() {
   });
   await T('T2.1-09', 'session expired or async_payment_failed: lines void, the day cap place is free again', async () => {
     const w = await world({ env: { MERCH_DAY_CAP: '1' } }); const id = await w.newOrder([mug(0)]);
-    let r = await w.quote([mug(1)]); ok(r.status === 409 && r.json.error === 'sold_out_today', 'cap reached');
-    r = await w.hook('checkout.session.expired', { id: w.sid(id), object: 'checkout.session' });
-    eq([w.order(id).status, w.lines(id)[0].status], ['expired', 'void'], 'expired'); r = await w.quote([mug(1)]); ok(r.status === 200, 'the place is free again');
+    let r = await w.hook('checkout.session.expired', { id: w.sid(id), object: 'checkout.session' });
+    eq([w.order(id).status, w.lines(id)[0].status], ['expired', 'void'], 'expired'); r = await w.quote([mug(1)]); ok(r.status === 200, 'an expired order never takes a day-cap place');
     const id2 = await w.newOrder([mug(1)]); await w.hook('checkout.session.async_payment_failed', { id: w.sid(id2), object: 'checkout.session' }); ok(w.order(id2).status === 'expired', 'async_payment_failed too');
+    const p = await w.paidOrder([mug(2)]); ok((await w.quote([mug(1)])).status === 409, 'a paid one does'); ok(w.order(p).status === 'paid', 'paid');
   });
   await T('T2.1-10', 'alarm: a queued line, renderer free: renders, stores the PNG, checks its size, writes sha, bytes, art_ver; lines at least 11 s apart', async () => {
     const w = await world(); const id = await w.paidOrder([mug(0), tee(1)]);
@@ -225,7 +225,9 @@ export async function t21() {
     await w.advance(w.order(id).ship_by - w.clock.t + 1e3); w.pfOrder(id).status = 'inprocess';
     r = await w.call('POST', '/merch/order/' + id + '/cancel', { scope: 'late' }); ok(r.status === 200 && r.json.status === 'shipped', 'what is left has all shipped: ' + r.text);
     ok(w.stripe.refunds.map((x) => x.amount).join() === '2699' && w.lines(id)[1].refunded_qty === 1, 'the tee refunded; shipping stays as charged: ' + w.stripe.refunds.map((x) => x.amount));
-    ok(w.pf.calls.some((c) => c.m === 'DELETE'), 'asked Printful to cancel'); ok(w.owner(/cancel_late/).length === 1, 'owner email: Printful could not');
+    ok(!w.pf.calls.some((c) => c.m === 'DELETE'), 'N5: part of the Printful order shipped, so it is not cancelled whole'); ok(w.owner(/cancel_late/).length === 1 && /cancel those items/.test(w.owner(/cancel_late/)[0].text), 'owner email: cancel the late items by hand');
+    const x = await world(); const j = await x.confirmedOrder([tee(0)]); await x.advance(x.order(j).ship_by - x.clock.t + 1e3); // nothing shipped: the whole order is cancelled at Printful
+    const c = await x.call('POST', '/merch/order/' + j + '/cancel', { scope: 'late' }); ok(c.status === 200 && c.json.status === 'refunded' && x.pf.calls.some((y) => y.m === 'DELETE') && !x.order(j).pcancel, 'nothing shipped: asked Printful to cancel: ' + c.text);
   });
   await T('T2.1-32', 'nightly: a variant that fails the floor alone: on_flag = 0, owner email; quote and checkout 409 variant_off', async () => {
     const w = await world(); await w.init(); w.pf.costs = { variants: { 'tee:pink:L': 2500 }, ship: {} };

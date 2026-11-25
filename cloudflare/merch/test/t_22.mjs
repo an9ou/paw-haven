@@ -9,16 +9,16 @@ const refunded = (w) => w.stripe.refunds.reduce((a, x) => a + x.amount, 0);
 
 export async function t22() {
   console.log('--- stage 3: failures and odd cases (2.2)');
-  await T('T2.2-01', 'two tabs, two nonces, the same basket: two open orders, both count; the unpaid one expires within 1 h', async () => {
+  await T('T2.2-01', 'two tabs, two nonces, the same basket: two open orders (open sessions never count toward the cap: S9); the unpaid one expires within 1 h', async () => {
     const w = await world(); const a = await w.newOrder([mug(0)]), b = await w.newOrder([mug(0)]);
-    ok(a !== b && w.L().dayCount(w.order(a).day) === 2, 'two orders, both counted'); await w.pay(a);
+    ok(a !== b && w.L().dayCount(w.order(a).day) === 0, 'two orders, neither counts while open'); await w.pay(a); ok(w.L().dayCount(w.order(a).day) === 1, 'the paid one counts');
     await w.advance(2 * HOUR + MIN); eq(w.order(b).status, 'expired', 'the unpaid one expired (Stripe expired it at 1 h; the alarm asked)'); ok(w.order(a).status !== 'expired', 'the paid one goes on');
   });
-  await T('T2.2-02', 'shop shut (MERCH_FROM empty or future): quote and checkout 503 merch_closed, catalog shut; webhooks, renders, confirms and refunds still run', async () => {
+  await T('T2.2-02', 'shop shut (MERCH_FROM empty or future): checkout 503 merch_closed, quote answers shut: true, catalog shut; webhooks, renders, confirms and refunds still run', async () => {
     const w = await world(); const id = await w.newOrder([mug(0)]), id2 = await w.paidOrder([tee(1)]);
     w.env.MERCH_FROM = '';
-    for (const p of ['/merch/quote', '/merch/checkout']) { const r = await w.call('POST', p, { country: 'US', lines: [mug(0)], expect_total: 2498, art_ver: PP.ART_VER, nonce: 'shut-nonce-1', agree: true }); ok(r.status === 503 && r.json.error === 'merch_closed', p); }
-    ok((await w.call('GET', '/merch/catalog')).json.shut === true, 'catalog shut'); w.env.MERCH_FROM = '2027-03-01T00:00:00+09:00'; ok((await w.quote([mug(0)])).status === 503, 'a future MERCH_FROM is shut too');
+    const r0 = await w.call('POST', '/merch/checkout', { country: 'US', lines: [mug(0)], expect_total: 2498, art_ver: PP.ART_VER, nonce: 'shut-nonce-1', agree: true }); ok(r0.status === 503 && r0.json.error === 'merch_closed', 'checkout');
+    ok((await w.call('GET', '/merch/catalog')).json.shut === true, 'catalog shut'); w.env.MERCH_FROM = '2027-03-01T00:00:00+09:00'; const q = await w.quote([mug(0)]); ok(q.status === 200 && q.json.shut === true, 'a future MERCH_FROM: the quote says shut');
     const r = await w.pay(id); ok(r.status === 200 && w.order(id).status === 'paid', 'the webhook still runs');
     const c = await w.call('POST', '/merch/order/' + id + '/cancel', {}); ok(c.status === 200 && c.json.status === 'cancelled' && w.stripe.refunds.length === 1, 'refunds still run');
     await w.advance(65 * MIN); ok(w.order(id2).status === 'confirmed', 'renders and confirms still run');
@@ -66,9 +66,9 @@ export async function t22() {
     w.L().cat.products.mug.price = 1999;
   });
   await T('T2.2-11', 'day cap reached: 409 sold_out_today; sessions already open are honoured when paid, even after the cap is lowered', async () => {
-    const w = await world({ env: { MERCH_DAY_CAP: '2' } }); const a = await w.newOrder([mug(0)]); await w.newOrder([mug(1)]);
-    const r = await w.checkout([mug(2)]); ok(r.status === 409 && r.json.error === 'sold_out_today', r.text);
-    w.env.MERCH_DAY_CAP = '0'; await w.pay(a); eq(st(w, a), ['paid', null], 'still paid');
+    const w = await world({ env: { MERCH_DAY_CAP: '2' } }); const a = await w.newOrder([mug(0)]); await w.paidOrder([mug(1)]); await w.paidOrder([mug(3)]);
+    const r = await w.checkout([mug(2)]); ok(r.status === 409 && r.json.error === 'sold_out_today', r.text); ok((await w.call('GET', '/merch/catalog')).json.sold_out_today === true, 'the catalog says so');
+    w.env.MERCH_DAY_CAP = '0'; await w.pay(a); eq(st(w, a), ['paid', null], 'a session opened before the cap was reached, paid after it: still served');
     w.clock.t += DAY; w.env.MERCH_DAY_CAP = '2'; ok((await w.quote([mug(2)])).status === 200, 'the next JST day opens again');
   });
   await T('T2.2-12', 'the live margin guard fails at checkout (costs moved): 409 cant_make; owner email with the basket', async () => {
@@ -314,9 +314,10 @@ export async function t22() {
   });
   await T('T2.2-48', 'a Printful hint with a bad or missing signature: 401 when signing is set up; otherwise accepted as a hint', async () => {
     const w = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: 'pf-hook-secret' } }); const body = JSON.stringify({ id: 'z1', type: 'x', data: { order: { id: 1 } } });
-    ok((await w.phook(body)).status === 401 && (await w.phook(body, { 'x-pf-signature': '0'.repeat(64) })).status === 401, 'missing and bad: 401');
+    ok((await w.phook(body, {}, { unsigned: true })).status === 401 && (await w.phook(body, { 'x-pf-signature': '0'.repeat(64) })).status === 401, 'missing and bad: 401');
     ok((await w.phook(body, { 'x-pf-signature': await hmacHex('pf-hook-secret', body) })).status === 200, 'good: 200');
-    const x = await world(); ok((await x.phook(body)).status === 200, 'no secret set: accepted as a hint');
+    const x = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: undefined, MERCH_PROVIDER_MODE: 'draft' } }); ok((await x.phook(body)).status === 200, 'no secret set, not live: accepted as a hint (Printful is re-read anyway)');
+    const y = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: undefined } }); const r = await y.phook(body); ok(r.status === 401 && r.json.error === 'signing_required', 'S8: live without a secret: refused');
   });
   await T('T2.2-49', 'the Worker is redeployed with a new ART_VER between pay and render: the render uses the line’s own art_ver folder', async () => {
     const w = await world({ env: { MERCH_ART_VERS: 'pp1-0ldbuild' } }); const id = await w.newOrder([mug(0)], 'US', { art_ver: 'pp1-0ldbuild' }); await w.pay(id); await w.advance(1);

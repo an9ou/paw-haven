@@ -2,9 +2,10 @@
 // Authorization: Bearer MERCH_ADMIN_KEY (unset = always 401). 60 an hour per IP. No buyer data leaves here except what the owner needs for a
 // dispute (the tracking, the delivery date and signed links to the print PNGs); never an address or an email.
 import { json, fail, same, ORDER_ID, DAY, jstDay } from './util.js';
+import * as stripe from './stripe.js';
 
 export async function adminRoute(L, req, path, ip) {
-  const ih = await L.hashOf(ip);
+  const ih = await L.hashOf(ip, 'ip');
   if (!L.tx(() => L.rate('admin:ip:' + ih, 60))) return fail('slow_down', 429);
   const auth = req.headers.get('authorization') || '', key = L.env.MERCH_ADMIN_KEY;
   if (!key || String(key).length < 16 || !same(auth, 'Bearer ' + key)) return fail('unauthorized', 401);
@@ -24,16 +25,18 @@ export async function adminRoute(L, req, path, ip) {
       for (const l of lines) l.file_url = l.file_key ? await L.fileUrl(l.file_key, 7 * DAY) : null;
       const ord = Object.assign({}, o); delete ord.email_hash; delete ord.checkout_url;
       return json({ order: ord, lines, parcels: L.q('select * from merch_parcels where order_id = ?', o.id), refunds: L.q('select * from merch_refunds where order_id = ? order by created_at', o.id),
-        events: L.q('select id, type, at, note from merch_events where order_id = ? order by at', o.id), reprints: L.q('select * from merch_reprints where order_id = ?', o.id) });
+        events: L.q('select id, type, at, note from merch_events where order_id = ? order by at', o.id), reprints: L.q('select * from merch_reprints where order_id = ?', o.id),
+        mail: L.q('select id, who, kind, status, tries, last_error, sent_at from merch_outbox where order_id = ? order by created_at', o.id) });
     }
     if (m !== 'POST') return fail('not_found', 404);
     if (act === 'refund') { // T2.1-21
-      const line = Number(body.line), reason = typeof body.reason === 'string' ? body.reason.slice(0, 40) : '';
-      if (!reason) return fail('no_reason', 400);
+      const line = Number(body.line), reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 40) : '';
+      if (!/[A-Za-z]/.test(reason)) return fail('no_reason', 400, { say: 'Give the reason in words, for example: damaged' }); // S15: "2" is a quantity, not a reason
       const r = L.tx(() => {
         const x = L.order(o.id); if (!['paid', 'held', 'confirming', 'confirmed', 'part_shipped', 'shipped'].includes(x.status)) return { error: 'not_paid' };
         if (x.dispute === 'open') return { error: 'disputed' };
         const l = L.lines(x.id).find((y) => y.line === line); if (!l) return { error: 'bad_line' };
+        if (l.status === 'replaced') return { error: 'replaced', reprint: (L.lines(x.id).find((y) => y.reprint_of === l.line && y.status !== 'replaced') || {}).line || null }; // S4: refund the reprint's line
         const q = body.qty == null ? l.qty - l.refunded_qty : Number(body.qty);
         return L.lineRefund(x, l, q, reason);
       });
@@ -48,8 +51,22 @@ export async function adminRoute(L, req, path, ip) {
       const r = await L.reprint(o, lines, po, null, 'owner');
       return r.ok ? json(r) : fail(r.error, r.status || 409);
     }
-    if (act === 'confirm') { // the owner's go after a review hold or a won dispute (T2.2-25, T2.2-39)
-      const ok = L.tx(() => L.set(o.id, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: L.now() }, ['held']));
+    if (act === 'confirm') { // the owner's go (T2.2-25, T2.2-39). M1: only from a review hold, draft_mode or a won dispute; never a stopped order
+      const okHold = (x) => x.status === 'held' && (x.hold === 'review' || x.hold === 'draft_mode' || (x.hold === 'dispute' && x.dispute === 'won'));
+      let x = L.order(o.id);
+      const held = L.q("select id from merch_reprints where order_id = ? and status = 'held'", o.id).length > 0;
+      if (!okHold(x) && !(held && !L.stopped(x))) return fail('not_held', 409);
+      if (okHold(x) && !x.paid_at) { // N7: a dispute or a Dashboard refund came before completed: the payment is read from Stripe now
+        const g = await stripe.getSession(L.env, x.stripe_session); if (!g.ok || !g.data) return fail('busy', 503);
+        if (g.data.status !== 'complete' || g.data.payment_status !== 'paid') return fail('not_paid', 409);
+        await L.paidFrom(x.id, g.data, null); x = L.order(o.id);
+      }
+      const ok = L.tx(() => {
+        const y = L.order(o.id); let did = false;
+        if (okHold(y)) did = L.set(o.id, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: L.now() }, ['held']);
+        if (!L.stopped(L.order(o.id)) && L.q("update merch_reprints set status = 'queued' where order_id = ? and status = 'held' returning id", o.id).length) { did = true; L.next(o.id, L.now()); }
+        return did;
+      });
       if (!ok) return fail('not_held', 409);
       L.tx(() => L.event('x:confirm:' + o.id + ':' + L.now(), o.id, 'admin_confirm'));
       await L.tick();
@@ -59,7 +76,7 @@ export async function adminRoute(L, req, path, ip) {
       const p = typeof body.parcel === 'string' && L.one('select * from merch_parcels where id = ? and order_id = ?', body.parcel, o.id);
       if (!p) return fail('bad_parcel', 400);
       L.tx(() => { L.run('update merch_parcels set lost_at = ? where id = ?', L.now(), p.id); L.event('x:lost:' + p.id, o.id, 'lost', p.id); });
-      const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced').map((l) => l.line);
+      const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced' && l.refunded_qty < l.qty).map((l) => l.line);
       if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409); }
       if (body.then === 'refund') {
         const out = L.tx(() => lines.map((n) => { const x = L.order(o.id), l = L.lines(o.id).find((y) => y.line === n); return L.lineRefund(x, l, l.qty - l.refunded_qty, 'lost'); }));
@@ -70,8 +87,9 @@ export async function adminRoute(L, req, path, ip) {
   }
   if (path === 'flag' && m === 'POST') { // T2.2-51/52: 'e:<hash>' / 'ip:<hash>', or email:<address> / ipaddr:<ip> hashed here; mode block | allow | clear
     let k = typeof body.key === 'string' ? body.key.trim() : '';
-    if (/^email:/.test(k)) k = 'e:' + await L.hashOf(k.slice(6).trim().toLowerCase());
-    else if (/^ipaddr:/.test(k)) k = 'ip:' + await L.hashOf(k.slice(7).trim());
+    if (/^(email|ipaddr):/.test(k) && !L.env.MERCH_HASH_KEY) return fail('not_set_up', 503); // N8: hashed with MERCH_HASH_KEY only
+    if (/^email:/.test(k)) k = 'e:' + await L.hashOf(k.slice(6).trim().toLowerCase(), 'email');
+    else if (/^ipaddr:/.test(k)) k = 'ip:' + await L.hashOf(k.slice(7).trim(), 'ip');
     if (!/^(e|ip):[0-9a-f]{64}$/.test(k) || !['block', 'allow', 'clear'].includes(body.mode)) return fail('bad_flag', 400);
     L.tx(() => { if (body.mode === 'clear') L.run('delete from merch_flags where key = ?', k); else L.flag(k, body.mode, typeof body.note === 'string' ? body.note.slice(0, 120) : null); });
     return json({ ok: true, key: k, mode: body.mode });
@@ -89,6 +107,17 @@ export async function adminRoute(L, req, path, ip) {
     }
     L.tx(() => L.setMeta('last_export', L.now()));
     return new Response(out.join('\n') + (out.length ? '\n' : ''), { headers: { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store', 'content-disposition': 'attachment; filename="merch-' + jstDay(L.now()) + '.jsonl"' } });
+  }
+  if (path === 'forget' && m === 'POST') { // S13, TRANSACTIONS 5: deletion on request, by order id or by the buyer's email (hashed here, never kept)
+    let ids;
+    if (typeof body.order === 'string' && ORDER_ID.test(body.order)) ids = [body.order];
+    else if (typeof body.email === 'string' && /^[^@\s]+@[^@\s]+$/.test(body.email.trim())) {
+      const h = await L.hashOf(body.email.trim().toLowerCase(), 'email'); if (!h) return fail('not_set_up', 503);
+      ids = L.q('select id from merch_orders where email_hash = ?', h).map((r) => r.id);
+    } else return fail('bad_forget', 400);
+    const r = await L.forget(ids);
+    return json(Object.assign(r, { kept: 'order and line rows (money, country, product, colour, size, status, dates), refunds, parcels (carrier and dates), events, fraud flags (a hash only), and the records Stripe and Printful keep by law',
+      todo: r.printful.length ? 'Ask Printful to delete the recipient of these orders (dashboard or support): ' + r.printful.map((p) => p.provider_orders.join(',') || p.id).join('; ') : null }));
   }
   if (path === 'report' && m === 'GET') return json(L.report());
   if (path === 'tick' && m === 'POST') { await L.tick(); return json({ ok: true }); }

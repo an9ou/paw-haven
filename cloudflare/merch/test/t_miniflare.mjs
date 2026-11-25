@@ -28,7 +28,7 @@ export async function miniflare() {
       durableObjects: { LEDGER: { className: 'MerchLedger', useSQLite: true }, PRINTS: { className: 'MerchPrints', useSQLite: true } },
       bindings: { MERCH_FROM: '2026-01-01T00:00:00+09:00', MERCH_COUNTRIES: 'all,-uk_eu', MERCH_PROVIDER_MODE: 'live', MERCH_STRIPE_KEY: 'sk_test_fake', MERCH_STRIPE_WEBHOOK_SECRET: stripe.secret,
         MERCH_HASH_KEY: 'hash-key-for-tests', MERCH_FILE_KEY: 'file-key-for-tests', MERCH_ADMIN_KEY: 'admin-key-for-tests-0123', MERCH_PROVIDER_KEY: 'pf', RESEND_API_KEY: 're_test', MERCH_OWNER_TO: 'owner@example.test',
-        MERCH_PUBLIC_URL: 'https://merch-api.test' },
+        MERCH_PUBLIC_URL: 'https://merch-api.test', MERCH_PROVIDER_WEBHOOK_SECRET: 'pf-hook-secret-test' },
       serviceBindings: { STRIPE_FETCH: svc(stripe.fetch), PROVIDER_FETCH: svc(pf.fetch), RENDER_FETCH: svc(rd.fetch), MAIL_FETCH: svc(mail.fetch) } });
     try {
       const call = async (m, p, body, headers) => { const r = await mf.dispatchFetch('https://merch-api.test' + p, { method: m, headers: Object.assign({ 'content-type': 'application/json', 'CF-Connecting-IP': '10.70.0.1' }, headers || {}), body: body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) { j = null; } return { status: r.status, json: j, text: t, headers: r.headers }; };

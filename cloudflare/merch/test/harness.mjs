@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import worker, { MerchLedger, MerchPrints } from '../worker.js';
 import { namespace, fakeStripe, fakePrintful, fakeRender, fakeMail, require } from './fakes.mjs';
+import { hmacHex } from '../util.js';
 
 export const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 export const PP = require(path.join(ROOT, 'merch', 'dist', 'pawprint.js'));
@@ -32,13 +33,19 @@ export async function world(o) {
   const stripe = fakeStripe(), pf = fakePrintful(), rd = fakeRender(), mail = fakeMail();
   const env = Object.assign({ NOW: () => clock.t, MERCH_FROM: '2026-11-25T00:00:00+09:00', MERCH_COUNTRIES: 'all,-uk_eu,-BR,-KR', MERCH_PRODUCTS: 'mug,tee', MERCH_DAY_CAP: '10',
     MERCH_PROVIDER_MODE: 'live', MERCH_STRIPE_KEY: 'sk_test_fake', MERCH_STRIPE_WEBHOOK_SECRET: stripe.secret, MERCH_HASH_KEY: 'hash-key-for-tests', MERCH_FILE_KEY: 'file-key-for-tests',
-    MERCH_ADMIN_KEY: 'admin-key-for-tests-0123', MERCH_PROVIDER_KEY: 'pf-test-key', RESEND_API_KEY: 're_test', MERCH_OWNER_TO: 'owner@example.test',
+    MERCH_ADMIN_KEY: 'admin-key-for-tests-0123', MERCH_PROVIDER_KEY: 'pf-test-key', MERCH_PROVIDER_WEBHOOK_SECRET: pf.secret, RESEND_API_KEY: 're_test', MERCH_OWNER_TO: 'owner@example.test',
     STRIPE_FETCH: stripe.fetch, PROVIDER_FETCH: pf.fetch, RENDER_FETCH: rd.fetch, MAIL_FETCH: mail.fetch, MERCH_TIMEOUT_MS: '150', PAWPRINT: PP }, o.env || {});
   for (const k of Object.keys(env)) if (env[k] === undefined) delete env[k];
-  env.LEDGER = namespace(MerchLedger, env); env.PRINTS = namespace(MerchPrints, env);
+  env.LEDGER = namespace(MerchLedger, env);
+  const prints = namespace(MerchPrints, env), pget = prints.get;
+  prints.get = (id) => { const s = pget(id); return { obj: s.obj, state: s.state, fetch: async (i, init) => { const r = await s.fetch(i, init); if (w.after.put && /\/put/.test(String(i.url || i))) await w.after.put(); return r; } }; };
+  env.PRINTS = prints;
   env.ASSETS = { fetch: async (r) => new Response('<!doctype html>print page ' + new URL(r.url).pathname, { headers: { 'content-type': 'text/html' } }) };
   const stub = () => env.LEDGER.get('ledger');
-  const w = { env, clock, stripe, pf, rd, mail }; stripe.now = () => clock.t;
+  const w = { env, clock, stripe, pf, rd, mail, after: {} }; stripe.now = () => clock.t;
+  // a crash between an outside call and the write: the running instance is killed (its later storage calls throw), a new one takes over
+  w.evict = () => env.LEDGER.evict('ledger');
+  w.cron = () => w.call('POST', '/merch/admin/tick', {}, { authorization: 'Bearer ' + env.MERCH_ADMIN_KEY }); // the */10 backstop (it wakes the ledger)
   w.L = () => stub().obj;
   w.state = () => stub().state;
   w.init = async () => { await w.L().init(); return w.L(); };
@@ -54,11 +61,15 @@ export async function world(o) {
   w.call = async (method, p, body, headers) => { const res = await w.raw(method, p, body, headers); const text = await res.text(); let json = null; try { json = JSON.parse(text); } catch (e) { json = null; } return { status: res.status, json, text, headers: res.headers }; };
   w.admin = (method, p, body, key) => w.call(method, '/merch/admin/' + p, body, { authorization: 'Bearer ' + (key || env.MERCH_ADMIN_KEY) });
   w.hook = async (type, object, opt) => { const e = await stripe.event(type, object, Object.assign({ now: clock.t }, opt || {})); const r = await w.call('POST', '/merch/webhook/stripe', e.raw, { 'stripe-signature': e.sig, 'content-type': 'application/json' }); r.eventId = e.id; r.raw = e.raw; r.sig = e.sig; return r; };
-  w.phook = async (body, headers) => w.call('POST', '/merch/webhook/provider', body, Object.assign({ 'content-type': 'application/json' }, headers || {}));
+  // printer hints are signed like Printful's would be (S8: unsigned hints are refused in live mode); { unsigned: true } sends none
+  w.phook = async (body, headers, o) => w.call('POST', '/merch/webhook/provider', body, Object.assign({ 'content-type': 'application/json' }, (o && o.unsigned) || !env.MERCH_PROVIDER_WEBHOOK_SECRET ? {} : { 'x-pf-signature': await hmacHex(env.MERCH_PROVIDER_WEBHOOK_SECRET, body) }, headers || {}));
   // time travel: fire the ledger's alarms in order up to now + ms
   w.advance = async (ms) => {
     await w.init(); const target = clock.t + (ms || 0), st = w.state();
-    for (let i = 0; i < 2000; i++) { const a = st.alarmAt; if (a == null || a > target) break; clock.t = Math.max(clock.t, a); st.alarmAt = null; await w.L().alarm(); }
+    for (let i = 0; i < 3000; i++) {
+      const a = st.alarmAt; if (a == null || a > target) break; clock.t = Math.max(clock.t, a); st.alarmAt = null;
+      try { await w.L().alarm(); } catch (e) { if (!(e && e.evicted)) throw e; if (st.alarmAt == null) st.alarmAt = clock.t + 2e3; } // Cloudflare retries an alarm that did not finish
+    }
     clock.t = target;
   };
   w.basket = (lines, country) => ({ country: country || 'US', lines });
