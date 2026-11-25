@@ -270,6 +270,18 @@ for Adaptive Pricing (TRANSACTIONS 3.1); use a mailbox that accepts `+` addresse
 `MERCH_API=https://merch-api-test.doodledoggo.app MERCH_ADMIN_KEY=placeholder DRY_RUN=0 bash tools/merch.sh <command>` (the proxy puts the real key in;
 "placeholder" is not a key). Times: note them in JST. Run 2 rows are marked **(run 2)**; rows nobody can reach in a sandbox are in part D9.
 
+**Who taps Pay** (25 Nov 2026). The owner pays the rows that test our page or Stripe's page by eye (S-5, S-6, E-3, E-4, Z-9, and the
+first order of each kind). The repeat orders can be paid from the session with `tools/merch_pay_driver.mjs`: given the
+`https://checkout.stripe.com/...` url the order server answered (from the page, or from a `curl` checkout with the test token as in E-5), a
+made-up buyer (an `@example.com` or the `+location_XX` test address, the D6 shipping name such as "Test Refuse Address") and a card, it fills
+Stripe's page, taps Pay, answers the test 3-D Secure page (complete or fail) and answers `paid` (the success url), `declined` (Stripe's words),
+`needs_human` (a robot check or a Link code: the owner pays that one by hand) or `error`, with a screenshot for all but `paid`. It refuses any
+page but `checkout.stripe.com` with a `cs_test_` session and Stripe's "Test mode"/"Sandbox" badge, and any card but the test numbers of this
+part. Not yet proven: it was tried only on Stripe's public demo (checkout.stripe.dev), which shows Checkout embedded in demo mode, where Pay
+sends nothing; the field filling worked there in about 5 s. The first sandbox order (S-6) shows whether the hosted page's badge reads as the
+driver expects and whether Stripe asks a cloud browser for a robot check when it pays; until then plan for the owner to tap Pay.
+`shopTrip()` in the same file (the whole trip through our page) is written but not run; its TODO list is in the file's header.
+
 ### D1. Set-up checks
 
 | # | What | How | Expected | Result |
