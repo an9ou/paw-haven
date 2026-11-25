@@ -1,0 +1,510 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Catalog-v2/operation/getProductPrices",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "ProductPrice built from the schema; prices are the public v1 catalog's (11.92, 2XL 13.92, 3XL 15.92, 4XL 17.92). front_large listed as a placement price (5.95): \"pricing here only applies to each additional placement after the first\"."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/catalog-products/71/prices?selling_region_name=worldwide&currency=USD&limit=100&offset=0"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "currency": "USD",
+   "product": {
+    "id": 71,
+    "placements": [
+     {
+      "id": "front_large",
+      "title": "Large front print",
+      "type": "Large front print",
+      "technique_key": "dtg",
+      "price": "5.95",
+      "discounted_price": "5.95",
+      "placement_options": [],
+      "layers": []
+     }
+    ]
+   },
+   "variants": [
+    {
+     "id": 4011,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4012,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4013,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4014,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4015,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 5294,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "15.92",
+       "discounted_price": "15.92"
+      }
+     ]
+    },
+    {
+     "id": 5309,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "17.92",
+       "discounted_price": "17.92"
+      }
+     ]
+    },
+    {
+     "id": 4151,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4152,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4153,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4154,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4155,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 6948,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 6949,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 6950,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 6951,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 6952,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 4136,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4137,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4138,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4139,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4140,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 9576,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 9360,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 9361,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 9362,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 9363,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 9364,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 9546,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4111,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4112,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4113,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4114,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4115,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 9527,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4016,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4017,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4018,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4019,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "11.92",
+       "discounted_price": "11.92"
+      }
+     ]
+    },
+    {
+     "id": 4020,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "13.92",
+       "discounted_price": "13.92"
+      }
+     ]
+    },
+    {
+     "id": 5295,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "15.92",
+       "discounted_price": "15.92"
+      }
+     ]
+    },
+    {
+     "id": 5310,
+     "techniques": [
+      {
+       "technique_key": "dtg",
+       "technique_display_name": "DTG printing",
+       "price": "17.92",
+       "discounted_price": "17.92"
+      }
+     ]
+    }
+   ]
+  },
+  "paging": {
+   "total": 42,
+   "offset": 0,
+   "limit": 100
+  },
+  "_links": {
+   "self": {
+    "href": "https://api.printful.com/v2/catalog-products/71/prices"
+   },
+   "product_details": {
+    "href": "https://api.printful.com/v2/catalog-products/71"
+   }
+  }
+ }
+}

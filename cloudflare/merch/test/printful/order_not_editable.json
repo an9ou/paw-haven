@@ -1,0 +1,21 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/#tag/Errors",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "OR-1 ORDER_NO_LONGER_EDITABLE: \"To be editable via API must have one of the following statuses: DRAFT, FAILED\"."
+ },
+ "request": {
+  "method": "PATCH",
+  "path": "/v2/orders/93000001"
+ },
+ "status": 400,
+ "body": {
+  "code": 400,
+  "result": "The order is no longer editable",
+  "error": {
+   "reason": "BadRequest",
+   "message": "The order is no longer editable"
+  }
+ }
+}

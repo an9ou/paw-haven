@@ -1,0 +1,134 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Orders-v2/operation/getShipments",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "From the Shipment schema and the docs fragments (shipment_status, delivery_status, delivered_at, tracking_url, shipment_items with order_item_external_id). Four parcels: the mug shipped and delivered; the tee returned, naming its item by order_item_id only (the adapter looks the external id up); one canceled and one packaged (neither has left)."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/orders/93000001/shipments?limit=100"
+ },
+ "status": 200,
+ "body": {
+  "data": [
+   {
+    "id": 70001,
+    "order_id": 93000001,
+    "order_external_id": "mo_TestOrder0000000000001",
+    "carrier": "USPS",
+    "service": "USPS Ground Advantage",
+    "shipment_status": "shipped",
+    "shipped_at": "2026-12-03T16:35:35Z",
+    "delivery_status": "delivered",
+    "delivered_at": "2026-12-06T19:15:05Z",
+    "departure_address": {
+     "country_name": "United States",
+     "country_code": "US",
+     "state_code": "NC"
+    },
+    "is_reshipment": false,
+    "tracking_number": "9400100000000000000001",
+    "tracking_url": "https://tracking.example.test/9400100000000000000001",
+    "tracking_events": [
+     {
+      "triggered_at": "2026-12-06T19:15:05Z",
+      "description": "Delivered"
+     }
+    ],
+    "estimated_delivery": {
+     "from_date": "2026-12-05",
+     "to_date": "2026-12-07",
+     "calculated_at": "2026-12-03T16:35:35Z"
+    },
+    "shipment_items": [
+     {
+      "id": 10,
+      "order_item_id": 510001,
+      "order_item_external_id": "mo_TestOrder0000000000001_1",
+      "order_item_name": "Mug with your dog",
+      "quantity": 1,
+      "_links": {
+       "order_item": {
+        "href": "https://api.printful.com/v2/orders/93000001/order-items/510001"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": 70002,
+    "order_id": 93000001,
+    "order_external_id": "mo_TestOrder0000000000001",
+    "carrier": "USPS",
+    "service": "USPS Ground Advantage",
+    "shipment_status": "returned",
+    "shipped_at": "2026-12-04T10:00:00Z",
+    "delivery_status": "return_to_sender",
+    "delivered_at": null,
+    "is_reshipment": false,
+    "tracking_number": "9400100000000000000002",
+    "tracking_url": "https://tracking.example.test/9400100000000000000002",
+    "tracking_events": [],
+    "shipment_items": [
+     {
+      "id": 11,
+      "order_item_id": 510002,
+      "quantity": 1
+     }
+    ]
+   },
+   {
+    "id": 70003,
+    "order_id": 93000001,
+    "order_external_id": "mo_TestOrder0000000000001",
+    "carrier": "USPS",
+    "service": "USPS Ground Advantage",
+    "shipment_status": "canceled",
+    "shipped_at": "2023-06-15T16:35:35Z",
+    "delivery_status": "unknown",
+    "delivered_at": null,
+    "is_reshipment": false,
+    "tracking_number": "",
+    "tracking_url": "",
+    "tracking_events": [],
+    "shipment_items": [
+     {
+      "id": 12,
+      "order_item_id": 510002,
+      "order_item_external_id": "mo_TestOrder0000000000001_2",
+      "quantity": 1
+     }
+    ]
+   },
+   {
+    "id": 70004,
+    "order_id": 93000001,
+    "order_external_id": "mo_TestOrder0000000000001",
+    "carrier": null,
+    "service": null,
+    "shipment_status": "packaged",
+    "shipped_at": null,
+    "delivery_status": "pre_transit",
+    "delivered_at": null,
+    "is_reshipment": false,
+    "tracking_number": null,
+    "tracking_url": null,
+    "tracking_events": [],
+    "shipment_items": [
+     {
+      "id": 13,
+      "order_item_id": 510002,
+      "order_item_external_id": "mo_TestOrder0000000000001_2",
+      "quantity": 1
+     }
+    ]
+   }
+  ],
+  "paging": {
+   "total": 4,
+   "offset": 0,
+   "limit": 100
+  }
+ }
+}

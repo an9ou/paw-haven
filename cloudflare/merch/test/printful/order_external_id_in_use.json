@@ -1,0 +1,21 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/#tag/Errors",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "OR-13 EXTERNAL_ID_IN_USE: \"The external_id provided already exists and cannot be used\" (v1 Errors, Orders API). The code is not a body field: it is matched by its text."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/orders"
+ },
+ "status": 400,
+ "body": {
+  "code": 400,
+  "result": "The external_id provided already exists and cannot be used",
+  "error": {
+   "reason": "BadRequest",
+   "message": "The external_id provided already exists and cannot be used"
+  }
+ }
+}

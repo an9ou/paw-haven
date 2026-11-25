@@ -1,0 +1,48 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Catalog-v2/operation/getProductPrices",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "ProductPrice built from the schema; prices are the public v1 catalog's (6.07). Technique key sublimation (TechniqueEnum)."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/catalog-products/19/prices?selling_region_name=worldwide&currency=USD&limit=100&offset=0"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "currency": "USD",
+   "product": {
+    "id": 19,
+    "placements": []
+   },
+   "variants": [
+    {
+     "id": 1320,
+     "techniques": [
+      {
+       "technique_key": "sublimation",
+       "technique_display_name": "Sublimation",
+       "price": "6.07",
+       "discounted_price": "6.07"
+      }
+     ]
+    }
+   ]
+  },
+  "paging": {
+   "total": 1,
+   "offset": 0,
+   "limit": 100
+  },
+  "_links": {
+   "self": {
+    "href": "https://api.printful.com/v2/catalog-products/19/prices"
+   },
+   "product_details": {
+    "href": "https://api.printful.com/v2/catalog-products/19"
+   }
+  }
+ }
+}

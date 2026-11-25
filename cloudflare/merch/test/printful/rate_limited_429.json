@@ -1,0 +1,27 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/#tag/Rate-Limiting",
+  "read": "2026-11-25",
+  "recorded": "docs",
+  "note": "The documented 429: Retry-After (seconds) and the X-RateLimit headers; \"The rejected request is not processed at all, so nothing is created, updated or charged.\""
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/orders"
+ },
+ "status": 429,
+ "headers": {
+  "retry-after": "38",
+  "x-ratelimit-limit": "120",
+  "x-ratelimit-remaining": "0",
+  "x-ratelimit-reset": "38"
+ },
+ "body": {
+  "code": 429,
+  "result": "You've recently sent too many requests. Please try again after 38 seconds.",
+  "error": {
+   "reason": "TooManyRequests",
+   "message": "You've recently sent too many requests. Please try again after 38 seconds."
+  }
+ }
+}

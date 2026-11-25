@@ -1,0 +1,20 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Shipping-Rates-v2/operation/calculateShippingRates",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "ShippingRatesBadRequest documents the messages (here: Sorry, shipping to this country has been disabled!) and that the message is returned under data with a machine-readable code under error.reason; this body, and SH-2 (v1 Errors) as the reason, are built from that."
+ },
+ "request": {
+  "method": "POST",
+  "path": "/v2/shipping-rates"
+ },
+ "status": 400,
+ "body": {
+  "data": "Sorry, shipping to this country has been disabled!",
+  "error": {
+   "reason": "SH-2",
+   "message": "Sorry, shipping to this country has been disabled!"
+  }
+ }
+}

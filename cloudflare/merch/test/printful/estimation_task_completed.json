@@ -1,0 +1,35 @@
+{
+ "_source": {
+  "url": "https://developers.printful.com/docs/v2-beta/#tag/Orders-v2/operation/getOrderEstimationTask",
+  "read": "2026-11-25",
+  "recorded": "built",
+  "note": "OrderEstimationTaskSummary with status completed and Costs."
+ },
+ "request": {
+  "method": "GET",
+  "path": "/v2/order-estimation-tasks?id=fc959efb-b3a0-4c12-9cc6-f54d3158291d"
+ },
+ "status": 200,
+ "body": {
+  "data": {
+   "id": "fc959efb-b3a0-4c12-9cc6-f54d3158291d",
+   "status": "completed",
+   "costs": {
+    "calculation_status": "done",
+    "currency": "USD",
+    "subtotal": "17.99",
+    "discount": "0.00",
+    "shipping": "11.64",
+    "digitization": "0.00",
+    "additional_fee": "0.00",
+    "fulfillment_fee": "0.00",
+    "retail_delivery_fee": "0.00",
+    "vat": "0.00",
+    "tax": "0.00",
+    "total": "29.63"
+   },
+   "retail_costs": null,
+   "failure_reasons": []
+  }
+ }
+}
