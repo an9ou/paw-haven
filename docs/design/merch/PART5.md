@@ -55,18 +55,11 @@ What v2 costs us, and how the adapter handles it:
 - Order routes answer errors in the old shape `{ code, result, error: { reason, message } }`; some newer v2 routes (shipping rates, estimates, files)
   answer RFC 9457 problem details. `errKind` reads both.
 
-### Merge step (required before live): the webhook header
+### The webhook header (done in the review fixes)
 
-Printful sends its signature in **`x-pf-webhook-signature`**. Today's front Worker (`worker.js` line 31, part 4's file, not edited here) copies only
-`content-type`, `stripe-signature`, `x-pf-signature` and `authorization` to the ledger, so Printful's real signature would never arrive and, in live
-mode, every hint would be refused (401). Change that list to include `'x-pf-webhook-signature'` when parts 4 and 5 are merged:
-
-```
-for (const k of ['content-type', 'stripe-signature', 'x-pf-webhook-signature', 'x-pf-signature', 'authorization']) ...
-```
-
-Until then the adapter also takes the same HMAC under `x-pf-signature` (the name the harness sends), so nothing is weaker and the suite stays green.
-Once worker.js forwards the real name, the harness can send it and that fallback can go.
+Printful sends its signature in **`x-pf-webhook-signature`**. The front Worker (`worker.js`) now copies that header to the ledger, the adapter reads
+only that name (the old fallback `x-pf-signature` is gone: a hint signed under it is refused), and the harness signs under the real name. Row
+`F5-mf-header` sends a hint through the front Worker in workerd with only the real name (200) and only the old name (401).
 
 ## PART3 checklist: what the docs answered, what needs the key
 
@@ -104,7 +97,7 @@ From `GET https://api.printful.com/products/19` and `/products/71` (public, no k
 | tee:black XS, S, M, L, XL, 2XL, 3XL, 4XL | 9527, 4016, 4017, 4018, 4019, 4020, 5295, 5310 | 11.92 (2XL 13.92, 3XL 15.92, 4XL 17.92) |
 
 Found on the way: Printful's big-size extras are **+$2.00, +$4.00, +$6.00** (2XL, 3XL, 4XL), not catalog.js's `TEE_SIZE_COST` guesses of 1.50, 3.50,
-5.50 (question 25). catalog.js was not changed for this (only the id table is part 5's to edit).
+5.50 (question 25). Set to 200 / 400 / 600 in the review fixes (below).
 
 ## The recorded replies (`cloudflare/merch/test/printful/`)
 
@@ -208,7 +201,7 @@ uses the global fetch; on Cloudflare it does), and the ledger change.
 
 ## The key-day kit (`tools/merch_pf_check.mjs`)
 
-Prepared only; run dry here (68 steps listed, nothing sent). On the key day, `--run` makes these read-mostly checks and records each real reply,
+Prepared only; run dry here (70 steps listed, nothing sent). On the key day, `--run` makes these read-mostly checks and records each real reply,
 scrubbed (every address becomes "Test Buyer, 1 Example Street"; secrets and keys removed; emails replaced), as `test/printful/recorded/<step>.json`
 (`recorded: "key"`; `P5-fixtures` checks those too):
 
@@ -216,7 +209,7 @@ scrubbed (every address becomes "Test Buyer, 1 Example Street"; secrets and keys
 v1 ids?); 4. availability in north_america, uk, europe, japan, australia; 5. prices in worldwide, north_america, uk, europe; 6. Standard rates for a
 mug and a tee, one and two items, to one invented address per zone (US, JP, GB, DE, CA, AU, HK); 7. a real 404 and a refused address on the rate
 route; 8. with `--file-url <a print PNG>`: add the file by URL and read its status; make **one** draft, read it until its costs are done, read it by
-external id, PATCH its recipient, delete it, read it again, delete it again (question 21 and the second DELETE); with `--reuse-check`, the same
+external id, read it through v1 by its id and by its external id (question 22: does v1 see a v2 order?), PATCH its recipient, delete it, read it again, delete it again (question 21 and the second DELETE); with `--reuse-check`, the same
 external id once more (then deleted); an address probe (deleted at once if made); 9. the webhook configuration; 10. a v1 read (the same token on v1).
 
 It **never confirms**: there is no confirmation call in the file, and a self-check refuses to start if a step would confirm or cancel a real order.
@@ -232,3 +225,40 @@ the suite.
   OR-, FL-, SH- codes, Rate Limiting, Authorization: private tokens, account-level tokens and `X-PF-Store-Id`, Webhook API, cancelOrderById).
 - The public catalog, no key: https://api.printful.com/products/19 and https://api.printful.com/products/71.
 - Printful's help centre article on moving an API integration (50263208968209) answered 403 to this session; nothing from it is used here.
+
+## Review fixes (25 Nov 2026, `docs/reviews/MERCH_PART5_review.md`)
+
+All ten findings and Q25, on branch `merch/part5-fixes`. Suite `merch_worker`: **231 checks, 231 pass** (212 before: 19 new rows, the `F5-*` rows in
+`test/t_f5.mjs` and `F5-mf-header` in `test/t_miniflare.mjs`). PART3's ledger rules hold in every change: each write re-reads the order in its own
+transaction and changes it only from the state it expects (`set(..., from)`), no refund is dropped, and a hold always keeps a wake.
+
+| # | Finding | What changed | Test rows |
+|---|---|---|---|
+| 1 | Printful's signature header never reached the ledger | `worker.js` forwards `x-pf-webhook-signature` (the rest of its list unchanged); the adapter reads only that name; the harness signs under it; `t_22` T2.2-48 uses it | `F5-mf-header` (workerd, through the front Worker: real name 200, old name 401), the `F5-header` check in `P5-hook`, T2.2-48 |
+| 2 | A confirm Printful took but whose answer was lost was confirmed again, refused, and refunded | `confirm()`: on any answer that is not ok (down, a dropped connection, a 5xx, a timeout, a refusal) it re-reads the order; pending, inreview, inprocess, onhold, partial or fulfilled means the confirm was taken: ok with that order. A billing refusal is never re-read (it cannot be masked); a draft, failed or canceled order keeps the first answer. The fake printer now refuses a second confirm, as Printful does | `F5-confirm-adapter`, `F5-confirm-drop`, `F5-confirm-5xx`, `F5-confirm-refused` |
+| 3 | Printful failing or cancelling a confirmed order went unnoticed (Q23) | `applyProvider`: a re-read `failed` / `canceled` of our own confirmed main order (`confirmed`, `part_shipped`, or held on Printful's hold) holds it `review` with why `pf_failed` / `pf_canceled` and one owner email (`provider_failed` / `provider_canceled`: check the Printful wallet and dashboard). Never for a cancel we asked for (`pcancel`, an order already refunded or cancelled), a draft (never confirmed), a deleted draft or a reprint order (another Printful id). Fires once: the next hint finds the order held. Exits: a day without the owner, refunded in full (the existing review rule); the owner confirms (`merch.sh confirm`): sent to Printful again; Printful goes on by itself (fixed in its dashboard): the hint confirms it. Told only, never held: in a dispute, or when part has shipped (a full refund would pay back parcels that arrived; the delay plan refunds the rest) | `F5-pf-failed`, `F5-pf-canceled`, `F5-pf-ours`, `F5-pf-repeat`, `F5-pf-exits` |
+| 4 | A print-file error refunded the line, turned the variant off, or asked the buyer for an address | `errKind`: messages about a file, URL, placement or layer are `down` (why `file`), never a refused line or an address; the address fallback matches only the recipient's fields (address1/2, city, state code, country code, zip, postal code, "recipient"); a bare "address" elsewhere goes to the owner. The ledger marks the order `last_error = 'file'`, retries, and after a day the owner's `provider_down` email names the print file | `F5-errkind`, `F5-errkind-ledger` |
+| 5 | A cost that is not a number was confirmed as NaN; a missing shipping became 0 | `cents()` gives NaN for anything not a number; `mapOrder` gives costs `null` when any cost is not finite or shipping is missing (the `cost_unknown` hold); `adopt` holds on any non-finite cost; `quoteCost`, the rate and price reads skip unreadable numbers | `F5-costs-nan` |
+| 6 | `retail_costs.tax` declared the VAT twice in tax-inclusive countries | `'0.00'` where `taxBehavior` is inclusive (everywhere but the US and Canada); the tax charged for US / CA | `F5-retail-tax` |
+| 7 | The email after a confirm that came back failed had no wallet hint | "Check the Printful wallet and dashboard" in the `failed` text, the refused text and the stale re-read text | `F5-confirm-failed-mail`, `F5-confirm-refused` |
+| 8 | The kit did not check Q22; `scrub` cleaned only address objects | Two v1 reads of the kit's own draft (by id and by external id) before it is deleted, with a "Found" line; `scrub` replaces emails, phones, address lines, tax numbers and person names anywhere, and names / companies / cities / zips inside anything person-like (product and store names stay); phone numbers in text. Still dry by default (run dry: 70 steps) | `F5-kit` |
+| 9 | A variant of ours with no price in the nightly read: nobody told | `catalogCosts` answers `missing` (our variants a full product read left out; a failed read is not "missing"); the nightly job emails the owner (`cost_missing`) once per change of that list and keeps the last stored cost | `F5-cost-missing` |
+| 10 | `quoteCost` re-read one time too many | `i < polls` | `F5-quote-polls` |
+| Q25 | `TEE_SIZE_COST` guessed low | 2XL / 3XL / 4XL = 200 / 400 / 600 cents (Printful's catalog prices 13.92 / 15.92 / 17.92 against 11.92); 5XL (not sold) unchanged; no selling price changed; `site/merch/catalog.json` regenerated (its `cat_ver` changes) | `F5-size-cost` (every sold tee size against the recorded prices, and each size alone over the floor in every zone), `P5-costs` |
+
+Existing tests touched: `t_22` T2.2-48 (the header name), T2.2-55 (the timed-out confirm now re-reads at once, so the "still confirming" step
+also fails that re-read: the alarm path is still tested), `t_printful` P5-hook (the old header name is now refused), P5-costs (the 4XL cost and
+catalog.js now agree), `harness.mjs` `phook` (the header name), `fakes.mjs` (a second confirm refused; `lostConfirm`, `refuse.confirm`,
+`refuse.file`, `costs.unpriced`).
+
+Tee margins, one tee alone, US$ (the US in December, with the holiday surcharge; before -> after): S-XL 11.11 (unchanged); 2XL 11.35 -> 10.79;
+3XL 11.03 -> 10.47; 4XL 10.72 -> 10.16. The lowest anywhere: Japan 4XL 9.90 (was 10.47). Every size passes the floor ($4 and 20%) in every zone.
+`tools/merch_econ.js` (and `--cart`) has no per-size rows: its output is unchanged.
+
+Key day, added to the checks above:
+- **Paging of the prices route**: `catalogCosts` sends `limit` / `offset` and follows `paging.total`, which the route does not document; the kit's
+  `prices_*` steps record what it answers. If a page is ignored, the `missing` email names what was left out.
+- **A second confirm** is refused (the fake assumes so) and **a failed order can be confirmed again** after it is fixed (the owner's exit of a
+  `pf_failed` hold assumes so). If not, a `pf_failed` order is refunded a day later (safe, no sale).
+- **The print-file error texts** (built): which words Printful uses for a file it cannot fetch.
+
