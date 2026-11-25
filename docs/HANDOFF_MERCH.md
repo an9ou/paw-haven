@@ -233,7 +233,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     between links (the shop footer does not); the shop page’s flat print view on a checker shows the white backing as a 1-2 px white
     outline round the dog on white tees (invisible on the tee mock-up); the mug’s face direction and "white prints no ink on a white tee"
     both want a real sample (part 10).
-- **Part 9, second review and its fixes: done 25 Nov about 17:20 JST (the fifth MERCH session, session_01D6KLY4FcqQgUYQKpcr8J68).**
+- **Part 9, second review and its fixes: done 25 Nov about 16:50 JST (the fifth MERCH session, session_01D6KLY4FcqQgUYQKpcr8J68).**
   - The combined second review (code + phone + art): `docs/reviews/MERCH_PART9_second_review.md` (0 blockers, 4 major, 5 minor; the
     three money points above were confirmed as R2-M2, R2-M3, R2-M4; the page and the prints were fine but for three small points).
   - **All nine fixed** (`merch/part9-fixes2`, merge ecddc13; the "Fixes (second review)" list ends the review file; tests
@@ -251,7 +251,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     page, no new email); a lost dispute means no reprint, no reship and no lost-parcel refund.
   - Left open (small): dogs on the mug have no inner margin of their own (a wide dog is 37 px from the handle line: fine); the
     502-on-stale-hint relies on Printful retrying webhooks.
-- **Part 9, the review of the second fix batch and its fixes: done 25 Nov about 18:40 JST (the same session).**
+- **Part 9, the review of the second fix batch and its fixes: done 25 Nov about 17:35 JST (the same session).**
   - `docs/reviews/MERCH_PART9_third_review.md` (0 blockers, 3 major, 3 minor, every one confirmed by a probe; its "Fixes (third
     review)" list ends the file). **All six fixed** (`merch/part9-fixes3`, merge 167d986; tests `cloudflare/merch/test/t_fix9c.mjs`, 16
     new rows, each failing on b7ef7ab): a reshipped line is never refunded at 7 days, whatever the order of shipments, hints and reads;
