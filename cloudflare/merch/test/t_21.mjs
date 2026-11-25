@@ -54,10 +54,10 @@ export async function t21() {
     const t2 = await x.call('POST', '/merch/checkout', b2); ok(t2.status === 200 && t2.json.url !== Array.from(x.stripe.sessions.values())[0].url, 'the next tap gets a new order and its own session');
   });
   await T('T2.1-06', 'completed + paid, checks pass: paid_at, cancel_until, amounts, pres_*, email_hash; lines queued; Thank you; alarm; gift code', async () => {
-    const w = await world(); await w.init(); w.L().run("insert into merch_gift_pool (code) values ('GIFT-0001'), ('GIFT-0002')");
+    const w = await world(); await w.init(); w.L().run("insert into merch_gift_pool (code) values ('TEST-GIFT-0001'), ('TEST-GIFT-0002')");
     const id = await w.newOrder([mug(0)]); const r = await w.pay(id, { pres: { presentment_amount: 3800, presentment_currency: 'jpy' } });
     ok(r.status === 200 && r.json.received, r.text); const o = w.order(id);
-    eq([o.status, o.paid_at, o.cancel_until, o.total, o.pres_currency, o.pres_amount, o.gift_code], ['paid', w.clock.t, w.clock.t + HOUR, 2498, 'jpy', 3800, 'GIFT-0001'], 'paid row');
+    eq([o.status, o.paid_at, o.cancel_until, o.total, o.pres_currency, o.pres_amount, o.gift_code], ['paid', w.clock.t, w.clock.t + HOUR, 2498, 'jpy', 3800, 'TEST-GIFT-0001'], 'paid row');
     ok(/^[0-9a-f]{64}$/.test(o.email_hash) && !JSON.stringify(w.q('select * from merch_orders')).includes('buyer@example.test'), 'only an HMAC of the email');
     ok(w.lines(id).every((l) => l.status === 'queued'), 'lines queued'); ok(w.state().alarmAt != null && w.state().alarmAt <= w.clock.t + 1, 'alarm set');
     ok(w.mails(/_thanks$/).length === 1 && w.mails(/_thanks$/)[0].to === 'buyer@example.test', 'Thank you email to the address read from the session');

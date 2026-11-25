@@ -9,7 +9,7 @@
 //   3. nothing is confirmed, reprinted or reshipped for an order that is cancelled, refunded or in dispute, or for a line that is fully refunded;
 //   4. nothing is confirmed at the printer unless MERCH_PROVIDER_MODE is live;
 //   5. money and mail are rows written in the same transaction as the change (merch_refunds, merch_outbox), sent after commit, retried by the alarm.
-import { nowOf, jstDay, jstHour, nextUtcMidnight, addBusinessDays, json, fail, sha256hex, hmacHex, hex, orderId, ORDER_ID, pngSize, MIN, HOUR, DAY, GRACE } from './util.js';
+import { nowOf, jstDay, jstHour, nextUtcMidnight, addBusinessDays, json, fail, sha256hex, hmacHex, hex, orderId, ORDER_ID, pngSize, MIN, HOUR, DAY, GRACE, siteOf } from './util.js';
 import { buildCatalog, ZONES, zoneOf, regionOf, variantId, ALL_COUNTRIES, PRODUCTS as CATP } from './catalog.js';
 import { checkBasket, priceBasket, marginOf, quoteOut, zoneNotes, openCountries, fromOpen, productsOn, taxBehavior, withArtVer } from './lines.js';
 import * as stripe from './stripe.js';
@@ -117,6 +117,7 @@ export class MerchLedger {
     const where = from ? ' and status in (' + from.map(() => '?').join(',') + ')' : '';
     const ch = this.q('update merch_orders set ' + k.map((c) => c + ' = ?').join(', ') + ' where id = ?' + where + ' returning id', ...k.map((c) => cols[c]), id, ...(from || [])).length > 0;
     if (ch && ('next_try_at' in cols || 'status' in cols || 'hold' in cols)) this.lateWake(id);
+    if (ch && cols.status === 'paid') this.giveGift(id); // part 6: the thank-you gift, when the order becomes paid (also a held order released later)
     return ch;
   }
   setLine(id, line, cols) { const k = Object.keys(cols); this.run('update merch_order_items set ' + k.map((c) => c + ' = ?').join(', ') + ' where order_id = ? and line = ?', ...k.map((c) => cols[c]), id, line); }
@@ -138,9 +139,28 @@ export class MerchLedger {
     const id = 'o:' + (orderId || '-') + ':' + reason + ':' + jstDay(this.now()), now = this.now();
     if (this.q("insert into merch_outbox (id, order_id, who, kind, note, status, tries, next_try_at, created_at) values (?, ?, 'owner', ?, ?, 'queued', 0, ?, ?) on conflict(id) do nothing returning id", id, orderId || null, reason, note == null ? null : String(note).slice(0, 4000), now, now).length) this.fx.push({ t: 'mail', id });
   }
-  buyerMail(orderId, kind, key, to) { // key: the Idempotency-Key (me_<order>_<kind>[_n]); the address is never stored: read from the Stripe session at send time
-    const now = this.now();
-    if (this.q("insert into merch_outbox (id, order_id, who, kind, status, tries, next_try_at, created_at) values (?, ?, 'buyer', ?, 'queued', 0, ?, ?) on conflict(id) do nothing returning id", key, orderId, kind, now, now).length) { if (to) this.mem.set(key, to); this.fx.push({ t: 'mail', id: key }); }
+  // key: the Idempotency-Key (me_<order>_<kind>[_n]); the address is never stored: read from the Stripe session at send time. about: what the email
+  // is about (part 6: { parcel } | { refund, reason } | { refunds, reason } | { line, refund } | { reprint } | { reship }), kept in the row's note as
+  // ids only (never buyer data or a gift code); the facts themselves are read from the order when the email is sent.
+  buyerMail(orderId, kind, key, to, about) {
+    const now = this.now(), note = about ? JSON.stringify(about).slice(0, 1000) : null;
+    if (this.q("insert into merch_outbox (id, order_id, who, kind, note, status, tries, next_try_at, created_at) values (?, ?, 'buyer', ?, ?, 'queued', 0, ?, ?) on conflict(id) do nothing returning id", key, orderId, kind, note, now, now).length) { if (to) this.mem.set(key, to); this.fx.push({ t: 'mail', id: key }); }
+  }
+  /* ---------------- the thank-you gift (part 6; TRANSACTIONS 10 point 5): one cosmetic game code per order, from merch_gift_pool ---------------- */
+  // Sync, inside the caller's transaction (set() calls it when an order becomes paid). An empty pool: no gift, never an error. A cancelled or
+  // refunded order keeps the code it was given. The code is never logged, put in an event, the report or the admin export.
+  giveGift(id) {
+    const o = this.order(id); if (!o || o.gift_code || o.status !== 'paid') return;
+    const g = this.one('update merch_gift_pool set order_id = ?, claimed_at = ? where rowid = (select rowid from merch_gift_pool where order_id is null order by rowid limit 1) returning code', id, this.now());
+    if (g) this.run('update merch_orders set gift_code = ? where id = ?', g.code, id);
+    this.giftCheck();
+  }
+  giftCounts() { const r = this.one('select count(*) as n, count(order_id) as c from merch_gift_pool'); return { left: Number(r.n) - Number(r.c), claimed: Number(r.c) }; }
+  // one owner email a day while fewer than 10 are left, and when it is empty (only once a pool was filled: no codes at all = no gift, by choice)
+  giftCheck() {
+    const c = this.giftCounts(); if (!(c.left + c.claimed)) return;
+    if (c.left === 0) this.ownerMail(null, 'gift_empty', c.claimed + ' codes given, none left.');
+    else if (c.left < 10) this.ownerMail(null, 'gift_low', c.left + ' codes left (' + c.claimed + ' given).');
   }
   flagged(key) { const r = this.one('select mode from merch_flags where key = ?', key); return r && r.mode === 'block'; }
   // N8: never a public fallback key. Without MERCH_HASH_KEY an email is not hashed at all (and no order is taken: the gate); an IP for the rate
@@ -279,7 +299,7 @@ export class MerchLedger {
     });
     if (r.res) return r.res;
     const { o, b } = r;
-    const site = this.env.MERCH_SITE || 'https://doodledoggo.app';
+    const site = siteOf(this.env);
     const s = await stripe.createSession(this.env, o, stripe.sessionForm(o, b.lines, ZONES[o.zone], taxBehavior(o.country), site));
     if (!s.ok || !s.data || typeof s.data.id !== 'string' || typeof s.data.url !== 'string') { // T2.1-05 (an error or a timeout): nothing kept, the next tap starts clean
       this.tx(() => { if (this.q("delete from merch_orders where id = ? and status = 'open' and checkout_url is null returning id", o.id).length) this.run('delete from merch_order_items where order_id = ?', o.id); });
@@ -321,7 +341,7 @@ export class MerchLedger {
         status: l.status, refunded_qty: l.refunded_qty, parcel: l.parcel_id, recipe: l.recipe, reprint_of: l.reprint_of })),
       parcels: parcels.map((p) => ({ id: p.id, product: p.product, carrier: p.carrier, tracking_url: p.tracking_url, shipped_at: p.shipped_at, delivered_at: p.delivered_at })),
       totals: { subtotal: o.subtotal, ship_fee: o.ship_fee, tax: o.tax, total: o.total, refunded: o.refunded }, pres: o.pres_currency ? { currency: o.pres_currency, amount: o.pres_amount } : null,
-      gift_code: o.gift_code, late: !!o.late_sent_at && unshipped, resting: this.env.MERCH_OFF === '1' || undefined, dispute: o.dispute || null };
+      gift_code: o.gift_code || null, gift_name: o.gift_code ? mail.giftName(this.env) : null, late: !!o.late_sent_at && unshipped, resting: this.env.MERCH_OFF === '1' || undefined, dispute: o.dispute || null };
   }
   async rCancel(o, body) {
     const scope = body.scope === 'late' ? 'late' : 'order';
@@ -330,7 +350,7 @@ export class MerchLedger {
         const x = this.order(o.id); if (!x.late_sent_at || !['paid', 'held', 'confirmed', 'part_shipped'].includes(x.status) || x.hold === 'dispute' || x.dispute === 'open') return null;
         const late = this.lines(x.id).filter((l) => this.unshipped(l));
         if (!late.length) return null;
-        for (const l of late) this.lineRefund(this.order(x.id), this.lineRow(x.id, l.line), l.qty - l.refunded_qty, 'late');
+        this.refundLines(x.id, late.map((l) => ({ line: l.line })), 'late'); // one email for the whole late part (part 6)
         const y = this.order(x.id);
         if (y.confirmed_at) { // N5: cancel the whole Printful order only when none of it has shipped; otherwise the owner cancels those items by hand
           if (!this.lines(x.id).some((l) => l.parcel_id || (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped)) { this.set(x.id, { pcancel: 1, next_try_at: this.now() }); this.fx.push({ t: 'pcancel', order: x.id }); }
@@ -425,10 +445,11 @@ export class MerchLedger {
     if (o.provider_order && !o.confirmed_at) { cols.draft_del = 1; this.fx.push({ t: 'deldraft', order: o.id }); }
     this.set(o.id, cols);
     this.stopReprints(o.id);
-    this.buyerMail(o.id, to === 'cancelled' ? 'cancelled' : 'refunded_all', 'me_' + o.id + '_' + (to === 'cancelled' ? 'cancelled' : 'refund_all'));
+    this.buyerMail(o.id, to === 'cancelled' ? 'cancelled' : 'refunded_all', 'me_' + o.id + '_' + (to === 'cancelled' ? 'cancelled' : 'refund_all'), null, { refund: amount > 0 ? 'mr_' + o.id + '_all_' + Number(this.one('select count(*) as n from merch_refunds where id glob ?', 'mr_' + o.id + '_all_*').n) : null, reason });
   }
   // one line, q of its items (owner, a reject, a late line). Section 4 amounts; the last item left takes the shipping too (T2.1-22). Sync.
-  lineRefund(o, l, q, reason) {
+  // quiet: the caller sends one email for several lines (refundLines)
+  lineRefund(o, l, q, reason, quiet) {
     const left = l.qty - l.refunded_qty; if (!Number.isInteger(q) || q < 1 || q > left) return { error: 'bad_qty' };
     const L = this.lines(o.id).filter((x) => !['void', 'replaced'].includes(x.status));
     const before = L.reduce((a, x) => a + x.qty - x.refunded_qty, 0), after = before - q;
@@ -455,8 +476,21 @@ export class MerchLedger {
       const live = this.lines(o.id).filter((x) => !DEAD.includes(x.status) && x.refunded_qty < x.qty);
       if (live.length && live.every((x) => (LINE_RANK[x.status] || 0) >= LINE_RANK.shipped)) this.set(o.id, { status: 'shipped', next_try_at: null });
     }
-    if (reason !== 'render' && reason !== 'provider') this.buyerMail(o.id, after === 0 ? 'refunded_all' : 'refunded', 'me_' + o.id + '_refund_' + rid); // N3
+    // N3. A reject (render, provider) is told by its own "couldn't print" email, except when it was the last thing left: then "refunded in full"
+    // (part 6: before, an order whose only line could not be rendered got no email at all)
+    if (!quiet && (after === 0 || (reason !== 'render' && reason !== 'provider'))) this.buyerMail(o.id, after === 0 ? 'refunded_all' : 'refunded', 'me_' + o.id + '_refund_' + rid, null, { refund: rid, reason });
     return { id: rid, amount, last: after === 0 };
+  }
+  // several lines at once (the late part, a reship that timed out, a lost parcel): one refund row per line, ONE email for them all. Sync.
+  refundLines(id, picks, reason) {
+    const rids = [];
+    for (const p of picks) {
+      const x = this.order(id); if (!x || x.status === 'refunded') break;
+      const l = this.lineRow(id, p.line); if (!l || l.refunded_qty >= l.qty) continue;
+      const r = this.lineRefund(x, l, p.q == null ? l.qty - l.refunded_qty : p.q, reason, true); if (r.id) rids.push(r.id);
+    }
+    if (rids.length) this.buyerMail(id, this.order(id).status === 'refunded' ? 'refunded_all' : 'refunded', 'me_' + id + '_refund_' + rids[0], null, { refunds: rids, reason });
+    return rids;
   }
   // queued, waiting or held reprints of an order that ended: never made (a draft already made at Printful is deleted). Sync.
   stopReprints(id) {
@@ -495,7 +529,7 @@ export class MerchLedger {
     else {
       let to = this.mem.get(mid) || null;
       if (!to) { const o = this.order(row.order_id); if (o && o.stripe_session) { const g = await stripe.getSession(this.env, o.stripe_session); if (!g.ok || !g.data) res = { sent: false, why: 'stripe' }; else to = emailOf(g.data); } }
-      if (!res) res = to ? await mail.send(this.env, to, row.kind, row.order_id, mid) : { sent: false, why: 'no_address' };
+      if (!res) res = to ? await mail.send(this.env, to, row.kind, this.mailView(row), mid) : { sent: false, why: 'no_address' };
     }
     this.tx(() => {
       const t = this.now(), x = this.one('select * from merch_outbox where id = ?', mid); if (!x || x.status !== 'queued') return;
@@ -504,6 +538,49 @@ export class MerchLedger {
       this.run('update merch_outbox set tries = ?, last_error = ?, status = ?, next_try_at = ? where id = ?', tries, res.why || 'error', final ? 'failed' : 'queued', final ? null : t + MAIL_BACKOFF[Math.min(tries, MAIL_BACKOFF.length) - 1], mid);
       if (final && x.who === 'buyer' && res.why !== 'not_set_up') this.ownerMail(x.order_id, 'mail_failed', 'The "' + x.kind + '" email could not be sent (' + (res.why || 'error') + ', ' + tries + ' tries). Please write to the buyer from the Stripe dashboard.');
     });
+  }
+
+  // what a buyer email says, read from the order at send time (part 6): page(o) (buyer-safe: no address, no email) plus the colour names, the
+  // delivery estimate, and what this email is about. Rows written before part 6 have no note: their key says what they are about.
+  mailView(row) {
+    const o = this.order(row.order_id); if (!o) return { id: row.order_id, lines: [], totals: {} };
+    const v = this.page(o), TC = this.PP.TEE_COLOURS || [], rps = new Map(this.lines(o.id).map((l) => [l.line, l.rp]));
+    for (const l of v.lines) { const c = TC.find((x) => x.id === l.colour); l.colour_name = c ? c.name : l.colour; l.rp = rps.get(l.line) == null ? null : rps.get(l.line); delete l.recipe; }
+    Object.assign(v, { ship_by: o.ship_by, eta: ZONES[o.zone] ? ZONES[o.zone].eta.slice() : null });
+    let a = null; try { a = row.note ? JSON.parse(row.note) : null; } catch (e) { a = null; }
+    if (!a || typeof a !== 'object') {
+      a = {}; const pre = 'me_' + o.id + '_', rest = String(row.id).startsWith(pre) ? String(row.id).slice(pre.length) : ''; let m;
+      if ((m = /^ship_(.+)$/.exec(rest))) a.parcel = m[1];
+      else if ((m = /^refund_(mr_.+)$/.exec(rest))) a.refund = m[1];
+      else if ((m = /^reject_(\d+)$/.exec(rest))) a.line = Number(m[1]);
+      else if ((m = /^reprint_(\d+)$/.exec(rest))) a.reprint = Number(m[1]);
+      else if ((m = /^address_(.+?)(?:_\d{12,})?$/.exec(rest))) a.reship = m[1];
+    }
+    const about = {};
+    if (a.parcel) {
+      about.parcel = String(a.parcel);
+      if (o.gift_code) { // the gift came after the Thank you email went (a held order released later): the first "On its way" carries it
+        const th = this.one('select status, sent_at from merch_outbox where id = ?', 'me_' + o.id + '_thanks'), gp = this.one('select claimed_at from merch_gift_pool where order_id = ?', o.id);
+        const before = this.one("select id from merch_outbox where order_id = ? and kind = 'ship' and status = 'sent' and id != ? limit 1", o.id, row.id);
+        about.gift = !before && (!th || th.status !== 'sent' || !!(gp && th.sent_at < gp.claimed_at));
+      }
+    }
+    let rids = Array.isArray(a.refunds) ? a.refunds : a.refund ? [a.refund] : [];
+    if (!rids.length && a.line != null) rids = this.q("select id from merch_refunds where order_id = ? and line = ? and id glob 'mr_*' order by created_at desc limit 1", o.id, Number(a.line)).map((r) => r.id);
+    if (!rids.length && row.kind === 'refunded_all') rids = this.q("select id from merch_refunds where order_id = ? and id glob 'mr_*' order by created_at desc limit 1", o.id).map((r) => r.id);
+    if (rids.length || a.reason) {
+      const rs = rids.map((x) => this.one('select line, qty, amount, reason from merch_refunds where id = ? and order_id = ?', String(x), o.id)).filter(Boolean);
+      about.refund = { amount: rs.reduce((n, r) => n + (r.amount || 0), 0), reason: a.reason || (rs[0] && rs[0].reason) || null, lines: rs.filter((r) => r.line != null).map((r) => ({ line: r.line, qty: r.qty })) };
+    }
+    if (a.line != null) about.line = Number(a.line);
+    if (a.reprint != null) { const rp = this.one('select n, why from merch_reprints where order_id = ? and n = ?', o.id, Number(a.reprint)); about.reprint = { n: Number(a.reprint), why: rp ? rp.why : null }; }
+    if (a.reship) {
+      about.reship = true; const x = String(a.reship), rp = this.one('select n from merch_reprints where id = ? and order_id = ?', x, o.id);
+      about.reship_lines = this.lines(o.id).filter((l) => (rp ? l.rp === rp.n : l.parcel_id === x) && !['void', 'cancelled', 'rejected'].includes(l.status) && l.refunded_qty < l.qty).map((l) => l.line);
+    }
+    about.new_eta = null; // a new expected date for the delay email: none is known yet (part 5 may learn one from the printer)
+    v.about = about;
+    return v;
   }
 
   /* ---------------- side effects, after each transaction ---------------- */
@@ -622,16 +699,14 @@ export class MerchLedger {
       else if (eh && Number(this.one('select count(*) as n from merch_orders where email_hash = ? and paid_at > ? and id != ?', eh, now - DAY, id).n) >= 3) hold = 'many';
       if (hold) Object.assign(cols, { status: 'held', hold: 'review', why: hold, hold_at: now, next_try_at: now + DAY });
       else cols.status = 'paid';
-      const g = this.one('select code from merch_gift_pool where order_id is null order by code limit 1');
-      if (g && !hold) { this.run('update merch_gift_pool set order_id = ?, claimed_at = ? where code = ?', id, now, g.code); cols.gift_code = g.code; }
-      this.set(id, cols, [o.status]);
+      this.set(id, cols, [o.status]); // paid: set() gives the gift (a held one gets it when it is released)
       if (hold) this.ownerMail(id, 'review', hold === 'late_pay' ? 'Paid after it expired: confirm (merch.sh confirm) to make it, or it is refunded in full after 24 hours.' : 'Held for review: ' + hold);
       if (tax > 0) { // T2.2-56: the real tax is stored; below the floor -> the nightly report only (the buyer is served)
         const inside = taxBehavior(o.country) === 'inclusive' ? tax : 0;
         const mg = marginOf(this.cat, o.country, L, o.subtotal, o.ship_fee, now, this.costs(), inside);
         if (!mg.pass) this.event('x:margin_low:' + id, id, 'margin_low', Math.round(mg.margin));
       }
-      this.buyerMail(id, 'thanks', 'me_' + id + '_thanks', em);
+      this.buyerMail(id, 'thanks', 'me_' + id + '_thanks', em, {});
     });
     await this.flush();
   }
@@ -767,7 +842,7 @@ export class MerchLedger {
       if (!p) {
         this.run('insert into merch_parcels (id, order_id, product, carrier, tracking_url, shipped_at) values (?, ?, ?, ?, ?, ?)', s.id, id, ls[0].product, s.carrier, s.tracking_url, s.shipped_at || now);
         for (const l of ls) { if (!refunded) up(l, 'shipped', { parcel_id: s.id }); else this.setLine(id, l.line, { parcel_id: s.id }); this.setLine(id, l.line, { keep_until: (s.shipped_at || now) + 180 * DAY }); }
-        this.buyerMail(id, 'ship', 'me_' + id + '_ship_' + s.id); // T2.1-15: one "On its way" per parcel
+        this.buyerMail(id, 'ship', 'me_' + id + '_ship_' + s.id, null, { parcel: s.id }); // T2.1-15: one "On its way" per parcel
         p = this.one('select * from merch_parcels where id = ?', s.id);
       }
       if (s.delivered_at && !p.delivered_at) { this.run('update merch_parcels set delivered_at = ? where id = ?', s.delivered_at, s.id); if (!refunded) for (const l of ls) up(l, 'delivered'); } // T2.1-17
@@ -776,7 +851,7 @@ export class MerchLedger {
         const x = this.order(id), live = this.lines(id).filter((l) => l.parcel_id === s.id && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty);
         // M4: nothing to reship on a refunded or cancelled order, in a dispute, or when its lines are refunded: the buyer is not asked
         if (ENDED.includes(x.status) || x.dispute === 'open' || !live.length) this.ownerMail(id, 'returned', 'A parcel came back to Printful (' + s.id + '); nothing is reshipped (refunded, cancelled or in a dispute).');
-        else { this.set(id, { hold: 'reship', hold_at: now, next_try_at: now + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + s.id); }
+        else { this.set(id, { hold: 'reship', hold_at: now, next_try_at: now + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + s.id, null, { reship: s.id }); }
       }
     }
     if (refunded) return; // T2.2-21: parcels are stored but change no status
@@ -821,7 +896,7 @@ export class MerchLedger {
     const o = this.order(id), now = this.now();
     if (!o || !o.ship_by || now < o.ship_by || o.late_sent_at || !LATE_ST.includes(o.status) || o.hold === 'dispute') return;
     if (!this.lines(id).some((l) => this.unshipped(l))) return;
-    this.set(id, { late_sent_at: now }); this.buyerMail(id, 'late', 'me_' + id + '_late');
+    this.set(id, { late_sent_at: now }); this.buyerMail(id, 'late', 'me_' + id + '_late', null, {});
   }
   async work(id) {
     let o = this.order(id); if (!o) return;
@@ -851,7 +926,7 @@ export class MerchLedger {
         const x = this.order(id); if (x.hold !== 'reship') return;
         const na = this.q("select n from merch_reprints where order_id = ? and status = 'need_address'", id).map((r) => r.n);
         const L = this.reshipLines(x).concat(this.lines(id).filter((l) => na.includes(l.rp) && l.refunded_qty < l.qty));
-        for (const l of L) { const y = this.order(id); if (y.status === 'refunded') break; const z = this.lineRow(id, l.line); this.lineRefund(y, z, z.qty - z.refunded_qty, 'reship'); }
+        this.refundLines(id, L.map((l) => ({ line: l.line })), 'reship');
         this.run("update merch_reprints set status = 'cancelled' where order_id = ? and status = 'need_address'", id);
         this.set(id, { hold: null, hold_at: null, next_try_at: null });
       });
@@ -960,7 +1035,7 @@ export class MerchLedger {
       this.setLine(id, l.line, { status: 'rejected', last_error: 'render', tries: y.tries + 1 }); // still failing after the fallback: refunded, the others go on
       const res = this.lineRefund(x, this.lineRow(id, l.line), y.qty - y.refunded_qty, 'render');
       this.ownerMail(id, 'render_reject', 'Line ' + l.line + ' could not be rendered and was refunded.');
-      if (!res.last) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line);
+      if (!res.last) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line, null, { line: l.line, refund: res.id });
       this.next(id, t);
     });
   }
@@ -1032,15 +1107,15 @@ export class MerchLedger {
             const y = this.lineRow(id, l.line); if (y.status !== 'ready') continue;
             this.setLine(id, l.line, { status: 'rejected', last_error: 'provider' });
             this.run('insert into merch_variants (id, product, colour, size, provider_variant, on_flag) values (?, ?, ?, ?, ?, 0) on conflict(id) do update set on_flag = 0', l.variant, l.product, l.colour, l.size, l.provider_variant);
-            this.lineRefund(this.order(id), this.lineRow(id, l.line), y.qty - y.refunded_qty, 'provider');
-            this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line);
+            const rr = this.lineRefund(this.order(id), this.lineRow(id, l.line), y.qty - y.refunded_qty, 'provider');
+            if (!rr.last) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line, null, { line: l.line, refund: rr.id });
           }
           this.ownerMail(id, 'provider_reject', 'Printful refused ' + bad.map((l) => l.variant).join(', '));
         });
         continue;
       }
       if (r.kind === 'address') { // T2.2-36
-        guard(() => { const t = this.now(); this.set(id, { status: 'held', hold: 'address', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address'); });
+        guard(() => { const t = this.now(); this.set(id, { status: 'held', hold: 'address', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address', null, {}); });
         return r;
       }
       if (r.kind === 'timeout') { guard((x) => this.set(id, { tries: (x.tries || 0) + 1, last_error: 'timeout', next_try_at: this.now() + MIN })); return r; }
@@ -1177,7 +1252,7 @@ export class MerchLedger {
     }
     let recipient = this.mem.get(rp.id) || null;
     if (rp.why === 'reship' && !recipient) { // question 16, N9: never the address that bounced, never the old session's: ask the buyer again
-      this.tx(() => { const t = this.now(); if (!this.q("update merch_reprints set status = 'need_address' where id = ? and status = 'queued' returning id", rp.id).length) return; this.set(id, { hold: 'reship', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + rp.id); });
+      this.tx(() => { const t = this.now(); if (!this.q("update merch_reprints set status = 'need_address' where id = ? and status = 'queued' returning id", rp.id).length) return; this.set(id, { hold: 'reship', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + rp.id, null, { reship: rp.id }); });
       return true;
     }
     if (!recipient) { const g = await stripe.getSession(this.env, o.stripe_session); if (!g.ok || !g.data) { this.tx(() => this.next(id, this.now() + 15 * MIN)); return true; } recipient = recipientOf(g.data); }
@@ -1190,7 +1265,7 @@ export class MerchLedger {
       const urls = {}; for (const l of L) urls[l.line] = await this.fileUrl(l.file_key);
       const r = await provider.createDraft(this.env, o, L, recipient, urls, rp.id);
       if (!r.ok) {
-        if (r.kind === 'address' && rp.why === 'reship') { this.mem.delete(rp.id); this.tx(() => { const t = this.now(); this.run("update merch_reprints set status = 'need_address' where id = ? and status = 'queued'", rp.id); this.set(id, { hold: 'reship', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + rp.id + '_' + t); }); }
+        if (r.kind === 'address' && rp.why === 'reship') { this.mem.delete(rp.id); this.tx(() => { const t = this.now(); this.run("update merch_reprints set status = 'need_address' where id = ? and status = 'queued'", rp.id); this.set(id, { hold: 'reship', hold_at: t, next_try_at: t + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + rp.id + '_' + t, null, { reship: rp.id }); }); }
         else this.tx(() => this.next(id, this.now() + 15 * MIN));
         return true;
       }
@@ -1206,7 +1281,7 @@ export class MerchLedger {
       this.mem.delete(rp.id);
       const z = this.order(id);
       if (this.stopped(z)) this.ownerMail(id, 'reprint_after_stop', 'The reprint ' + rp.id + ' was confirmed at Printful just as the order was refunded or disputed: cancel it in the Printful dashboard if you can.');
-      else this.buyerMail(id, 'reprint', 'me_' + id + '_reprint_' + rp.n);
+      else this.buyerMail(id, 'reprint', 'me_' + id + '_reprint_' + rp.n, null, { reprint: rp.n });
       this.next(id, t);
     });
     return true;
@@ -1279,7 +1354,7 @@ export class MerchLedger {
     });
     await this.tidy(now);
     const rep = this.report();
-    this.tx(() => { this.setMeta('report', JSON.stringify(rep)); this.ownerMail(null, 'report', JSON.stringify(rep).slice(0, 4000)); }); // its key carries the JST day (S7)
+    this.tx(() => { this.setMeta('report', JSON.stringify(rep)); this.ownerMail(null, 'report', mail.reportText(rep).slice(0, 4000)); this.giftCheck(); }); // its key carries the JST day (S7)
     await this.flush();
     return rep;
   }
@@ -1324,6 +1399,7 @@ export class MerchLedger {
       orders_today: this.q("select country, count(*) as n, sum(total) as total from merch_orders where day = ? and status != 'expired' group by country", day),
       sales_12m: this.q('select country, count(*) as n, sum(total - refunded) as net from merch_orders where paid_at > ? group by country order by net desc limit 20', now - 365 * DAY),
       variants_off: this.q('select id from merch_variants where on_flag = 0').map((r) => r.id),
+      gift: this.giftCounts(), // counts only, never a code
       storage: { bytes: Number(this.one('select coalesce(sum(bytes), 0) as b from merch_shards').b), shards: Number(this.one('select count(*) as n from merch_shards').n) },
       ledger: { bytes, writes_today: Number(this.meta('w:' + day) || 0), writes_free_a_day: 100000 } }; // S11: the ledger's own storage and write budget
   }

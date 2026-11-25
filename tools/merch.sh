@@ -16,6 +16,9 @@
 #                                                          print files and tracking links of ended orders; the money rows stay (the law)
 #   tools/merch.sh report                                  the nightly report (held orders, refunds, disputes, sales per country, storage)
 #   tools/merch.sh tick | nightly                          wake the ledger / run the nightly job now
+#   tools/merch.sh gift add < codes.txt                    add thank-you gift codes (part 6): read from STDIN only, one per line, never
+#                                                          printed; keep the file OUTSIDE the repo. The answer is counts only
+#   tools/merch.sh gift count                              how many codes are left and how many were given
 #
 # Env: MERCH_API (default https://merch-api.doodledoggo.app; the test Worker: set it to its address), MERCH_ADMIN_KEY, DRY_RUN (default 1).
 set -euo pipefail
@@ -46,6 +49,20 @@ send() {
   [ -n "$out" ] && echo "saved $out" || echo
 }
 
+# gift add: the codes go to curl on STDIN and the key through a file descriptor, so neither is ever in the process list or printed
+gift_send() {
+  local body="$1" n="$2"
+  if [ "$DRY" != "0" ]; then
+    echo "DRY RUN (set DRY_RUN=0 to send): POST $API/merch/admin/gift"
+    echo "  body: {\"codes\": [$n codes, not shown]}"
+    echo "  header: Authorization: Bearer \$MERCH_ADMIN_KEY ($([ -n "${MERCH_ADMIN_KEY:-}" ] && echo set || echo NOT set))"
+    return 0
+  fi
+  [ -n "${MERCH_ADMIN_KEY:-}" ] || { echo "merch.sh: MERCH_ADMIN_KEY is not set in the environment" >&2; exit 2; }
+  printf '%s' "$body" | curl -sS --fail-with-body -X POST -H @<(printf 'Authorization: Bearer %s\n' "$MERCH_ADMIN_KEY") -H 'Content-Type: application/json' --data-binary @- "$API/merch/admin/gift"
+  echo
+}
+
 case "$cmd" in
   list) q=""; [ -n "${1:-}" ] && q="status=$1"; [ -n "${2:-}" ] && q="$q&hold=$2"; send GET "orders${q:+?$q}" ;;
   show) need "${1:-}" order; order_ok "$1"; send GET "order/$1" ;;
@@ -71,9 +88,47 @@ case "$cmd" in
     need "${1:-}" "order or email:address"
     if [[ "$1" =~ ^email:[^@[:space:]]+@[^@[:space:]]+$ ]]; then send POST forget "{\"email\": \"$(esc "${1#email:}")\"}"
     else order_ok "$1"; send POST forget "{\"order\": \"$1\"}"; fi ;;
+  gift)
+    sub="${1:-}"; shift || true
+    case "$sub" in
+      count) send GET gift ;;
+      add)
+        [ $# -eq 0 ] || { echo "merch.sh: gift add reads the codes from STDIN, one per line, never as arguments: tools/merch.sh gift add < codes.txt" >&2; exit 2; }
+        [ -t 0 ] && echo "Paste the codes, one per line, then press Ctrl-D:" >&2
+        list=""; n=0; bad=0; again=0
+        while IFS= read -r l || [ -n "$l" ]; do
+          l="${l//$'\r'/}"; l="${l#"${l%%[![:space:]]*}"}"; l="${l%"${l##*[![:space:]]}"}"   # trim (bash 3.2 on a Mac: no ${l^^})
+          [ -z "$l" ] && continue
+          l="$(printf '%s' "$l" | tr '[:lower:]' '[:upper:]')"
+          if [[ "$l" =~ ^[A-Z0-9][A-Z0-9-]{3,39}$ ]]; then
+            case "
+$list
+" in *"
+$l
+"*) again=$((again + 1)); continue ;; esac
+            list="$list
+$l"; n=$((n + 1))
+          else bad=$((bad + 1)); fi
+        done
+        [ "$n" -gt 0 ] || { echo "merch.sh: no codes on STDIN (one per line)" >&2; exit 2; }
+        sk="$bad line"; [ "$bad" -eq 1 ] || sk="$bad lines"
+        echo "$n codes to send ($sk skipped: not a code; $again repeated)"
+        # 1000 codes a request (the Worker takes up to 2000 and 64 KB)
+        body=""; k=0
+        while IFS= read -r c; do
+          [ -z "$c" ] && continue
+          body="$body${body:+,}\"$c\""; k=$((k + 1))
+          if [ "$k" -ge 1000 ]; then gift_send "{\"codes\": [$body]}" "$k"; body=""; k=0; fi
+        done <<EOF2
+$list
+EOF2
+        [ "$k" -gt 0 ] && gift_send "{\"codes\": [$body]}" "$k"
+        ;;
+      *) echo "merch.sh: gift add | gift count (tools/merch.sh help)" >&2; exit 2 ;;
+    esac ;;
   report) send GET report ;;
   tick) send POST tick "{}" ;;
   nightly) send POST nightly "{}" ;;
-  help|-h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help|-h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) echo "merch.sh: unknown command $cmd (tools/merch.sh help)" >&2; exit 2 ;;
 esac

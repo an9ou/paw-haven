@@ -37,6 +37,11 @@ export function orderId() {
 }
 export const ORDER_ID = /^mo_[A-Za-z0-9_-]{22}$/;
 
+// the site the buyer reads (MERCH_SITE; the test Worker points at the test copy) and the order page on it: ONE form everywhere (emails, Stripe's
+// success_url): <site>/merch/#/order/<id> (the static site serves /merch/ only; the order is a route of that page). isNew: just back from paying.
+export const siteOf = (env) => String((env && env.MERCH_SITE) || 'https://doodledoggo.app').replace(/\/+$/, '');
+export const orderLink = (site, id, isNew) => String(site).replace(/\/+$/, '') + '/merch/' + (isNew ? '?new=1' : '') + '#/order/' + id;
+
 // FNV-1a 32 bit, hex (cat_ver)
 export function fnv(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).padStart(8, '0'); }
 

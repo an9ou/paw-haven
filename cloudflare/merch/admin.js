@@ -4,6 +4,9 @@
 import { json, fail, same, ORDER_ID, DAY, jstDay } from './util.js';
 import * as stripe from './stripe.js';
 
+// a game gift code as tools/promo.sh makes them: letters, digits and dashes, 4-40 characters (PROMO.md 1)
+export const GIFT_CODE = /^[A-Z0-9][A-Z0-9-]{3,39}$/;
+
 export async function adminRoute(L, req, path, ip) {
   const ih = await L.hashOf(ip, 'ip');
   if (!L.tx(() => L.rate('admin:ip:' + ih, 60))) return fail('slow_down', 429);
@@ -23,7 +26,7 @@ export async function adminRoute(L, req, path, ip) {
     if (!act && m === 'GET') {
       const lines = L.lines(o.id);
       for (const l of lines) l.file_url = l.file_key ? await L.fileUrl(l.file_key, 7 * DAY) : null;
-      const ord = Object.assign({}, o); delete ord.email_hash; delete ord.checkout_url;
+      const ord = Object.assign({}, o); delete ord.email_hash; delete ord.checkout_url; ord.gift_code = !!o.gift_code; // part 6: never the code itself
       return json({ order: ord, lines, parcels: L.q('select * from merch_parcels where order_id = ?', o.id), refunds: L.q('select * from merch_refunds where order_id = ? order by created_at', o.id),
         events: L.q('select id, type, at, note from merch_events where order_id = ? order by at', o.id), reprints: L.q('select * from merch_reprints where order_id = ?', o.id),
         mail: L.q('select id, who, kind, status, tries, last_error, sent_at from merch_outbox where order_id = ? order by created_at', o.id) });
@@ -79,8 +82,8 @@ export async function adminRoute(L, req, path, ip) {
       const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced' && l.refunded_qty < l.qty).map((l) => l.line);
       if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409); }
       if (body.then === 'refund') {
-        const out = L.tx(() => lines.map((n) => { const x = L.order(o.id), l = L.lines(o.id).find((y) => y.line === n); return L.lineRefund(x, l, l.qty - l.refunded_qty, 'lost'); }));
-        await L.flush(); return json({ ok: true, lines, refunds: out.map((r) => r.id), status: L.order(o.id).status });
+        const out = L.tx(() => L.refundLines(o.id, lines.map((n) => ({ line: n })), 'lost')); // one email for the parcel (part 6)
+        await L.flush(); return json({ ok: true, lines, refunds: out, status: L.order(o.id).status });
       }
       return json({ ok: true, lines });
     }
@@ -100,6 +103,7 @@ export async function adminRoute(L, req, path, ip) {
     const out = [];
     for (const o of os) {
       for (const k of ['email_hash', 'checkout_url', 'nonce']) delete o[k];
+      o.gift_code = !!o.gift_code; // part 6: whether it had a gift, never the code
       o.lines = L.q('select line, product, colour, size, pose, name_on, qty, art_ver, unit, line_total, line_tax, cost_est, status, file_sha, refunded_qty, refunded, reprint_of from merch_order_items where order_id = ? order by line', o.id);
       o.refunds = L.q('select id, line, qty, amount, reason, status, created_at from merch_refunds where order_id = ?', o.id);
       o.parcels = L.q('select id, product, carrier, shipped_at, delivered_at, lost_at, returned_at from merch_parcels where order_id = ?', o.id);
@@ -118,6 +122,21 @@ export async function adminRoute(L, req, path, ip) {
     const r = await L.forget(ids);
     return json(Object.assign(r, { kept: 'order and line rows (money, country, product, colour, size, status, dates), refunds, parcels (carrier and dates), events, fraud flags (a hash only), and the records Stripe and Printful keep by law',
       todo: r.printful.length ? 'Ask Printful to delete the recipient of these orders (dashboard or support): ' + r.printful.map((p) => p.provider_orders.join(',') || p.id).join('; ') : null }));
+  }
+  if (path === 'gift') { // part 6: the thank-you gift codes. Add (POST {codes: [...]}) or count (GET). A code is never logged, echoed back or listed.
+    if (m === 'GET') return json(L.giftCounts());
+    if (m !== 'POST') return fail('not_found', 404);
+    const list = Array.isArray(body.codes) ? body.codes : null;
+    if (!list || !list.length || list.length > 2000) return fail('bad_codes', 400, { say: 'Send {codes: [...]}, 1 to 2000 codes at a time.' });
+    let added = 0, skipped = 0;
+    L.tx(() => {
+      for (const c of list) {
+        const k = typeof c === 'string' ? c.trim().toUpperCase() : '';
+        if (!GIFT_CODE.test(k)) { skipped++; continue; }
+        if (L.q('insert into merch_gift_pool (code) values (?) on conflict(code) do nothing returning code', k).length) added++; else skipped++; // the same code twice: kept once
+      }
+    });
+    return json(Object.assign({ added, skipped }, { left: L.giftCounts().left }));
   }
   if (path === 'report' && m === 'GET') return json(L.report());
   if (path === 'tick' && m === 'POST') { await L.tick(); return json({ ok: true }); }

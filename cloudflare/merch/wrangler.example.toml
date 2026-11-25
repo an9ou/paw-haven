@@ -43,6 +43,9 @@ MAIL_FROM = "orders@doodledoggo.app"
 MERCH_SITE = "https://doodledoggo.app"
 MERCH_PUBLIC_URL = "https://merch-api.doodledoggo.app"
 MERCH_OWNER_TO = ""                        # the owner's address for owner emails: set in the dashboard, not here
+MERCH_SELLER_NAME = ""                     # part 6: the seller's legal name for the email footer; empty = the line is left out (never invented)
+MERCH_SELLER_ADDR = ""                     # part 6: the seller's business address for the same line; set by the owner with the name
+MERCH_GIFT_NAME = ""                       # part 6: the thank-you gift's item name; empty = "a little gift for your dog in the game"
 
 # Secrets (wrangler secret put, by the owner; never in the repo or chat):
 #   MERCH_STRIPE_KEY              restricted: Checkout Sessions write, Refunds write, Charges / PaymentIntents / Disputes read
@@ -87,4 +90,7 @@ MAIL_FROM = "orders@doodledoggo.app"
 MERCH_SITE = "https://test.doodledoggo.app" # order links in emails point at the test copy, never the live site
 MERCH_PUBLIC_URL = "https://merch-api-test.doodledoggo.app"
 MERCH_OWNER_TO = ""
+MERCH_SELLER_NAME = ""
+MERCH_SELLER_ADDR = ""
+MERCH_GIFT_NAME = ""
 # The test Worker's secrets are its own (sandbox keys), set with `wrangler secret put --env test`: the same names as above.

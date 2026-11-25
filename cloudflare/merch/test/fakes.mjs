@@ -188,7 +188,7 @@ export function fakeMail() {
     M.calls++; if (M.fail > 0) { M.fail--; return J({ message: 'try later' }, 500); }
     const b = JSON.parse(init.body), key = init.headers['Idempotency-Key'];
     if (key && M.keys.has(key)) return J({ id: M.keys.get(key) }); // Resend: the same key within 24 h sends nothing new
-    M.sent.push({ key, to: b.to[0], subject: b.subject, text: b.text }); const id = 'em_' + M.sent.length; if (key) M.keys.set(key, id);
+    M.sent.push({ key, to: b.to[0], subject: b.subject, text: b.text, html: b.html || null }); const id = 'em_' + M.sent.length; if (key) M.keys.set(key, id);
     if (M.after.send) await M.after.send(M.sent[M.sent.length - 1]);
     return J({ id });
   };

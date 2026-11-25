@@ -1,7 +1,7 @@
 // The Stripe seam (TRANSACTIONS.md 3, 3.2, 4). A real-shaped client (form-encoded, no SDK, Stripe-Version pinned) that only ever talks through
 // env.STRIPE_FETCH. Part 3 never calls the global fetch: without STRIPE_FETCH (or without a key) stripeReady() is false and checkout is refused, so
 // this Worker can never charge anyone by accident. Part 9 (the sandbox run) decides how the real fetch is wired, with the owner's approval.
-import { form, fetcher, call, hmacHex, same, enc } from './util.js';
+import { form, fetcher, call, hmacHex, same, enc, orderLink } from './util.js';
 
 const BASE = 'https://api.stripe.com/v1';
 export const STRIPE_VERSION = '2025-03-31.basil'; // pinned: adaptive_pricing, presentment_details, collected_information exist from here
@@ -30,7 +30,7 @@ export function sessionForm(o, lines, zone, taxBeh, site) {
     'custom_text[submit][message]': 'You can cancel within 1 hour of paying, from your order page.',
     client_reference_id: o.id, 'metadata[merch]': o.id, 'payment_intent_data[metadata][merch]': o.id,
     expires_at: Math.floor(o.expires_at / 1000),
-    success_url: site + '/merch/order/' + o.id + '?new=1', cancel_url: site + '/merch/?back=' + o.id };
+    success_url: orderLink(site, o.id, true), cancel_url: String(site).replace(/\/+$/, '') + '/merch/?back=' + o.id }; // the order page: one link form (util.js)
   lines.forEach((l, i) => {
     const k = 'line_items[' + i + ']';
     f[k + '[price_data][currency]'] = 'usd'; f[k + '[price_data][unit_amount]'] = l.unit; f[k + '[price_data][tax_behavior]'] = taxBeh;
