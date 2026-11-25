@@ -336,8 +336,8 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 >   - **Part of a line came back** (a line posted in more than one parcel, some of its units back and not reshipped): never an address ask or a
 >     7-day refund (both take whole lines, and a reprint makes the whole line again). The order is held for the owner (`hold = review`,
 >     `why = reship_part`, status unchanged), one owner email names the units ("1 of 2 of line 1"), the buyer gets one kind note (`checking`).
->     It ends by itself when Printful reships those units, or when the owner refunds them (`merch.sh refund <order> <line> <qty>`) or reprints
->     the line. While a reship of whole lines already waits for an address, the part is an owner email only; the reship goes on.
+>     It ends by itself when Printful reships those units, or when the owner refunds them (`merch.sh refund <order> <line> <qty>`). While a
+>     reship of whole lines already waits for an address, the part is an owner email only; the reship goes on.
 >   - **The owner's review of a returned parcel** (`reship_unread`, `reship_part`): the buyer gets one kind note (`checking`); a refund or a
 >     reprint by the owner ends the hold once nothing of it is left; a second parcel that comes back meanwhile keeps the review (owner email
 >     `returned_review`), never a new reship or address ask.
@@ -346,6 +346,20 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 >     checkout, an order button (cancel, wait, address, refund) and an unsigned printer hint need the shared test token (`MERCH_TEST_TOKEN`,
 >     header `X-Merch-Test-Token`). None of this is read on the live Worker.
 >   - **Time limits:** an outside call's limit covers its body too: a reply that stalls after its headers is a `timeout` (result unknown).
+> - **Fifth review fixes (25 Nov 2026, `docs/reviews/MERCH_PART9_fifth_review.md`):**
+>   - **The units of part of a line that wait** (`reship_part`): the line's units that are not out in a parcel (not returned), not unposted
+>     yet and not refunded, and never more than came back and was not reshipped. Every refund of the line counts as settling one, so the
+>     count is never more than the truth: the owner is never asked to pay back a unit the buyer has, and refunding the named units ends the
+>     hold. A unit that came back twice counts once. A parcel of such a line that comes back while its refunds already cover it holds nothing;
+>     the owner hears (`returned_settled`), in case a refund was for a unit the buyer keeps. With no reshipment flag, a parcel first seen
+>     after a return is a reship only for units posted beyond the line's quantity.
+>   - **No reprint of part of a line:** `merch.sh reprint` (and `merch.sh lost ... reprint`) refuses a line posted in more than one parcel
+>     while some of its units are out (not returned, not lost): 409 `part_line`, saying how many units to refund instead. A reprint makes the
+>     whole line again, so it would print the units the buyer has and a later refund of the reprint line would pay them back too. The owner
+>     emails for part of a line offer only the refund. A line whose parcels all came back (or were lost) can still be reprinted.
+>   - **The daily re-read (T2.1-36)** also reads a shipped order held for the owner's check of a return (`reship_part`, `reship_unread`), so
+>     the hold ends when Printful reships with no hint. Its failed reads: every 15 minutes for the first 24 hours, then once a day; a
+>     `reship_unread` one is quiet (the owner was told); a Printful hold on such an order is told once per hold, not at every read.
 
 ---
 

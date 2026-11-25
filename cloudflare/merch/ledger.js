@@ -1204,7 +1204,8 @@ export class MerchLedger {
     // (a returned parcel waits for the buyer's address) the owner is told and the reship flow goes on; a reprint order on hold is told only
     const main = d.id != null && String(d.id) === String(o.provider_order);
     if (d.status === 'onhold' && !main) this.ownerMail(id, 'provider_hold', 'Printful put the reprint order ' + d.id + ' on hold; the order itself goes on.');
-    else if (d.status === 'onhold' && ['confirmed', 'part_shipped', 'shipped'].includes(o.status) && o.hold) this.ownerMail(id, 'provider_hold', 'Printful put this order on hold while it waits for ' + (o.hold === 'reship' ? 'the buyer’s address for a returned parcel: the reship (address form, 7 days) goes on here' : o.hold) + '. Check the hold in the Printful dashboard.');
+    // R5-m2: an order held for the owner's check of a return is read daily: told once per hold, not every read
+    else if (d.status === 'onhold' && ['confirmed', 'part_shipped', 'shipped'].includes(o.status) && o.hold) { if (!(o.hold === 'review' && REVIEW_RESHIP.includes(o.why)) || this.event('x:pf_onhold:' + id + ':' + o.hold_at, id, 'provider_hold_told', o.why)) this.ownerMail(id, 'provider_hold', 'Printful put this order on hold while it waits for ' + (o.hold === 'reship' ? 'the buyer’s address for a returned parcel: the reship (address form, 7 days) goes on here' : o.hold) + '. Check the hold in the Printful dashboard.'); }
     else if (d.status === 'onhold' && ['confirmed', 'part_shipped'].includes(o.status)) { this.set(id, { status: 'held', hold: 'provider', why: 'onhold', hold_at: now }); this.ownerMail(id, 'provider_hold', 'Printful put this order on hold.'); o = this.order(id); }
     else if (main && d.status !== 'onhold' && o.status === 'held' && o.hold === 'provider' && o.why === 'onhold') { this.set(id, { status: 'confirmed', hold: null, why: null, hold_at: null }); o = this.order(id); }
     if (!refunded && ['inprocess', 'partial', 'fulfilled'].includes(d.status)) for (const it of d.items.length ? d.items : L.map((l) => ({ external_id: l.provider_item || '' }))) { const l = lineOf(String(it.external_id)); if (l && l.status === 'confirmed') up(l, 'in_production'); } // T2.1-14
@@ -1256,23 +1257,28 @@ export class MerchLedger {
     for (const b of back) {
       const x = this.order(id), inB = this.lines(id).filter((l) => !DEAD.includes(l.status) && l.refunded_qty < l.qty && this.inParcel(id, l, b.id));
       const live = inB.filter((l) => l.parcel_id === b.id && !this.split(l, this.lineParcels(id, l)));
-      const part = inB.filter((l) => this.partWaiting(id, l, null) > 0);
+      const part = inB.filter((l) => this.partWaiting(id, l) > 0);
+      // R5-M1: the units of a split line that came back, already covered by its refunds (the cap counts every refund): the owner hears, nothing held
+      const settled = !live.length && !part.length ? inB.filter((l) => l.refunded_qty > 0 && this.split(l, this.lineParcels(id, l))) : [];
+      const settledMail = () => { if (settled.length) this.ownerMail(id, 'returned_settled', 'Parcel ' + b.id + ' came back to Printful with units of ' + settled.map((l) => 'line ' + l.line).join(', ') + ' (posted in more than one parcel), but the refunds of that line already cover every unit not out in a parcel, so nothing is held. If a refund was for a unit the buyer keeps and Printful did not reship this one, refund it too (merch.sh refund <order> <line> <qty> "returned").'); };
       // M4: nothing to reship on a refunded or cancelled order, in a dispute, or when its lines are refunded: the buyer is not asked
       // second review (R2-M4): nor after a lost dispute (the bank paid the buyer back)
       const onhold = x.status === 'held' && x.hold === 'provider' && x.why === 'onhold';
-      const partWords = () => part.map((l) => this.partWaiting(id, l, null) + ' of ' + l.qty + ' of line ' + l.line).join(', ');
+      const partWords = () => part.map((l) => this.partWaiting(id, l) + ' of ' + l.qty + ' of line ' + l.line).join(', ');
       const words = () => live.map((l) => 'line ' + l.line).concat(part.length ? [partWords()] : []).join(', ');
       if (ENDED.includes(x.status) || x.dispute === 'open' || x.dispute === 'lost' || !b.had || (x.status === 'held' && !onhold)) this.ownerMail(id, 'returned', 'A parcel came back to Printful (' + b.id + '); nothing is reshipped (refunded, cancelled, in a dispute or held).');
       else if (x.hold === 'review' && REVIEW_RESHIP.includes(x.why)) {
-        if (live.length || part.length) this.ownerMail(id, 'returned_review', 'Another parcel came back to Printful (' + b.id + ': ' + words() + ') while this order is held for your check (' + x.why + '). Nothing is reshipped or refunded by itself: check the Printful order, then refund (merch.sh refund) or reprint (merch.sh reprint) what was not reshipped.');
+        if (live.length || part.length) this.ownerMail(id, 'returned_review', 'Another parcel came back to Printful (' + b.id + ': ' + words() + ') while this order is held for your check (' + x.why + '). Nothing is reshipped or refunded by itself: check the Printful order, then refund what was not reshipped (merch.sh refund, with the quantity for part of a line) or reprint a whole line (merch.sh reprint; never a line posted in more than one parcel).');
+        else settledMail();
       } else if (part.length && x.hold !== 'reship') {
         if (onhold) this.ownerMail(id, 'provider_hold', 'A parcel came back while Printful holds this order. Check the hold in the Printful dashboard.');
         this.set(id, Object.assign({ hold: 'review', why: 'reship_part', hold_at: now }, onhold ? { status: 'part_shipped' } : {}));
         this.event('x:reship_part:' + id + ':' + b.id, id, 'reship_part', words());
-        this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + words() + ' (a line posted in more than one parcel). Nothing is reshipped or refunded by itself. Check the Printful order: if those units were not reshipped, refund them (merch.sh refund <order> <line> <qty> "returned") or reprint the line (merch.sh reprint: the whole line).');
+        this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + words() + ' (a line posted in more than one parcel). Nothing is reshipped or refunded by itself. Check the Printful order: if those units were not reshipped, refund them (merch.sh refund <order> <line> <qty> "returned"). No reprint: it would print the whole line again, the units the buyer has too.');
         this.buyerMail(id, 'checking', 'me_' + id + '_checking_' + b.id, null, null);
       } else {
-        if (part.length) this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + partWords() + ' (a line posted in more than one parcel), while a reship waits for the buyer’s address. Those units are not in the address form or the 7-day refund: if Printful did not reship them, refund them (merch.sh refund <order> <line> <qty> "returned") or reprint the line (merch.sh reprint).');
+        if (part.length) this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + partWords() + ' (a line posted in more than one parcel), while a reship waits for the buyer’s address. Those units are not in the address form or the 7-day refund: if Printful did not reship them, refund them (merch.sh refund <order> <line> <qty> "returned"; no reprint: it would print the units the buyer has again).');
+        else settledMail();
         if (live.length) {
           // R3-M3 (its other side): Printful's own hold never hides the reship; the order goes on posted, the owner hears of the hold
           if (onhold) this.ownerMail(id, 'provider_hold', 'A parcel came back while Printful holds this order: the reship (address form, 7 days) goes on here. Check the hold in the Printful dashboard.');
@@ -1897,23 +1903,29 @@ export class MerchLedger {
     const back = ps.filter((x) => x.returned_at != null && String(x.id) !== String(p.id)).map((x) => x.returned_at);
     return back.length > 0 && p.seen_at != null && p.seen_at >= Math.min(...back);
   }
-  // the units of a split line that came back and were not reshipped (0 for a whole line); since: refunds of this line made from then on count
-  // as settling them (the owner was asked to refund them: endReview); null: none count
-  partWaiting(id, l, since) {
+  // the units of a split line that came back and were not reshipped (0 for a whole line). Fifth review (R5-M1): of the line's units, those
+  // neither out in a parcel (not returned: the buyer has them, or they are on their way), nor never posted yet (unposted), nor refunded; any
+  // refund of the line counts as settling one (the count is never more than the truth, so the owner is never asked to pay back a unit the
+  // buyer has; a refund that was for something else is the owner's note, returned_settled), and a unit that came back twice counts once.
+  // R5-m1: with no reshipment flag, a parcel first seen after a return is a reship only for the units posted beyond the line's quantity
+  // (beyond what the flagged reships explain): else it is the line's other half, posted late
+  partWaiting(id, l) {
     if (DEAD.includes(l.status) || l.status === 'replaced' || l.refunded_qty >= l.qty) return 0;
     const ps = this.lineParcels(id, l); if (!this.split(l, ps)) return 0;
-    const sum = (a) => a.reduce((n, p) => n + (Number(p.q) || 0), 0);
-    const back = sum(ps.filter((p) => p.returned_at != null)), again = sum(ps.filter((p) => p.returned_at == null && this.reshipOf(p, ps)));
-    const paid = since == null ? 0 : Number((this.one("select coalesce(sum(qty), 0) as n from merch_refunds where order_id = ? and line = ? and created_at >= ? and coalesce(status, '') != 'failed'", id, l.line, since) || {}).n || 0);
-    return Math.max(0, Math.min(back - again - paid, l.qty - l.refunded_qty));
+    const sum = (a) => a.reduce((n, p) => n + (Number(p.q) || 0), 0), isOut = (p) => p.returned_at == null;
+    const flagged = ps.filter((p) => p.reship === 1), guess = ps.filter((p) => p.reship == null && this.reshipOf(p, ps));
+    const quota = Math.min(sum(guess), Math.max(0, sum(ps) - l.qty - sum(flagged))); // the units of unflagged parcels that are reships
+    const again = sum(flagged.filter(isOut)) + Math.min(sum(guess.filter(isOut)), quota), unposted = Math.max(0, l.qty - (sum(ps) - sum(flagged) - quota));
+    const back = sum(ps.filter((p) => !isOut(p))), out = sum(ps.filter(isOut));
+    return Math.max(0, Math.min(back - again, l.qty - l.refunded_qty - out - unposted));
   }
-  partLines(o, since) { return this.lines(o.id).filter((l) => this.partWaiting(o.id, l, since) > 0); }
+  partLines(o) { return this.lines(o.id).filter((l) => this.partWaiting(o.id, l) > 0); }
   // R4-m3: the owner's review hold of a returned parcel (reship_unread: its Printful order could not be read; reship_part: part of a line came
   // back) ends once nothing of it is left: no reship line, no part of a line (refunded since the hold began, or reprinted), no reprint waiting
   // for an address. Sync; after a Printful read, the owner's refund (lineRefund) and reprint.
   endReview(id) {
     const o = this.order(id); if (!o || o.hold !== 'review' || !REVIEW_RESHIP.includes(o.why)) return false;
-    if (this.reshipLines(o).length || this.partLines(o, o.hold_at).length || this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) return false;
+    if (this.reshipLines(o).length || this.partLines(o).length || this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) return false;
     this.set(id, { hold: null, hold_at: null, why: null }); this.event('x:review_done:' + id + ':' + this.now(), id, 'reship_review_done', o.why);
     return true;
   }
@@ -1925,6 +1937,13 @@ export class MerchLedger {
       if (!['part_shipped', 'shipped', 'confirmed'].includes(x.status) && x.hold !== 'reship') return { error: 'not_allowed', status: 409 };
       const all = this.lines(x.id), pick = all.filter((l) => lineNums.includes(l.line) && !['replaced', 'void', 'cancelled', 'rejected'].includes(l.status) && l.refunded_qty < l.qty);
       if (!pick.length || pick.length !== new Set(lineNums).size) return { error: 'bad_lines', status: 400 };
+      // fifth review (R5-m3): never a line posted in more than one parcel with units still out (not back, not lost): a reprint makes the whole
+      // line again, so the units the buyer has would be printed again and a later refund of the reprint line would pay them back too
+      for (const l of pick) {
+        const ps = this.lineParcels(x.id, l), kept = ps.filter((p) => p.returned_at == null && p.lost_at == null).reduce((m, p) => m + (Number(p.q) || 0), 0), n = this.partWaiting(x.id, l);
+        if (this.split(l, ps) && kept > 0) return { error: 'part_line', status: 409, say: 'Line ' + l.line + ' was posted in more than one parcel and ' + kept + ' of its ' + l.qty + ' units are out with the buyer: a reprint would print them again. ' +
+          (n > 0 ? 'Refund the ' + n + ' that came back instead: merch.sh refund ' + x.id + ' ' + l.line + ' ' + n + ' "returned"' : 'Refund the units the buyer does not have instead: merch.sh refund ' + x.id + ' ' + l.line + ' <qty> "<reason>"') };
+      }
       const n = Number(this.one('select count(*) as n from merch_reprints where order_id = ?', x.id).n) + 1, rid = x.id + '-r' + n;
       let next = 100 + all.filter((l) => l.line > 100).length, gone = false;
       for (const l of pick) {
@@ -2064,12 +2083,19 @@ export class MerchLedger {
   // as a hint would be. A read that fails: the order is tried again in 15 minutes (pf_wait), a reprint in an hour.
   async rereads(now) {
     let left = PF_READS_CRON;
-    // second review (R2-M3): also a shipped order with a reship hold (a parcel came back: Printful may reship it with no hint)
-    const os = this.q("select id, provider_order from merch_orders where provider_order is not null and confirmed_at is not null and (status in ('confirmed', 'part_shipped') or (status = 'held' and hold = 'provider') or (status = 'shipped' and hold = 'reship')) and coalesce(pf_read_at, confirmed_at) <= ? and coalesce(pf_wait, 0) <= ? and coalesce(lease_until, 0) <= ? order by coalesce(pf_read_at, confirmed_at) limit ?", now - DAY, now, now, left);
+    // second review (R2-M3): also a shipped order with a reship hold (a parcel came back: Printful may reship it with no hint). Fifth review
+    // (R5-m2): and one held for the owner's check of a return (reship_part, reship_unread), so the hold ends when Printful reships with no hint.
+    // A shipped one (nothing left to post: no late step waits on pf_wait) is read once a day once its reads have failed for PF_TELL, and a
+    // reship_unread one (the owner was told the read fails) is quiet
+    const os = this.q("select id, provider_order, status, hold, why from merch_orders where provider_order is not null and confirmed_at is not null and (status in ('confirmed', 'part_shipped') or (status = 'held' and hold = 'provider') or (status = 'shipped' and (hold = 'reship' or (hold = 'review' and why in ('reship_part', 'reship_unread'))))) and coalesce(pf_read_at, confirmed_at) <= ? and coalesce(pf_wait, 0) <= ? and coalesce(lease_until, 0) <= ? order by coalesce(pf_read_at, confirmed_at) limit ?", now - DAY, now, now, left);
     for (const x of os) {
       left--;
       const snap = this.pfSnap(this.order(x.id)), g = await provider.get(this.env, x.provider_order); // R2-m1: not applied if the order changed meanwhile
-      this.tx(() => { if (g.ok && g.data) this.applyRead(x.id, x.provider_order, g.data, snap); else this.readFailed(x.id, x.provider_order, g.kind); });
+      this.tx(() => {
+        if (g.ok && g.data) return this.applyRead(x.id, x.provider_order, g.data, snap);
+        const rv = x.status === 'shipped' && x.hold === 'review' && REVIEW_RESHIP.includes(x.why); this.readFailed(x.id, x.provider_order, g.kind, rv && x.why === 'reship_unread');
+        const y = this.order(x.id), t = this.now(); if (rv && y && y.pf_read_fail != null && t - y.pf_read_fail >= PF_TELL) this.run('update merch_orders set pf_wait = ? where id = ?', t + DAY, x.id);
+      });
     }
     if (left <= 0) { await this.flush(); return; }
     // reprints with a line not posted yet, and (R2-M3) reprints whose parcel came back while the order waits on a reship

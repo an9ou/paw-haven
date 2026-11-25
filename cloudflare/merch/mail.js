@@ -274,7 +274,8 @@ export function build(kind, view, env) {
 // the test Worker's allow list (R4-m4): MERCH_TEST_MAIL_TO, a comma list the owner sets in the Cloudflare dashboard (never in the repo); the
 // address must be one of them (any case, spaces trimmed), a "+tag" before the @ aside: you+location_JP@... is you@... (the sandbox's country
 // trick; it lands in the same mailbox). Not read at all on the live Worker.
-const mailbox = (a) => { const s = String(a == null ? '' : a).trim().toLowerCase(), i = s.lastIndexOf('@'); return i > 0 && !/[\s,]/.test(s) ? s.slice(0, i).replace(/\+.*$/, '') + s.slice(i) : ''; };
+// Fifth review (R5-m4): ASCII only (checked before lowercasing: the Kelvin sign lowercases to k), so a look-alike domain is never a listed one
+const mailbox = (a) => { const t = String(a == null ? '' : a).trim(); if (!/^[\x21-\x7e]+$/.test(t)) return ''; const s = t.toLowerCase(), i = s.lastIndexOf('@'); return i > 0 && !/[\s,]/.test(s) ? s.slice(0, i).replace(/\+.*$/, '') + s.slice(i) : ''; };
 export function testMailOk(env, to) {
   const want = mailbox(to);
   return !!want && !want.startsWith('@') && String((env && env.MERCH_TEST_MAIL_TO) || '').split(',').map(mailbox).filter(Boolean).includes(want);
@@ -326,8 +327,9 @@ const OWNER = {
   dispute_lost: ['A dispute was lost (the bank paid the buyer back).', 'Cancel in the Printful dashboard what still goes on there, if you can.', 'show'],
   cancel_late: ['The late part of an order was refunded (the buyer cancelled it, or its new date passed).', 'Cancel those items in the Printful dashboard if you can.', 'show'],
   returned: ['A parcel came back to Printful.', 'Nothing is reshipped (the order is refunded, cancelled or disputed).', 'show'],
-  returned_review: ['Another parcel came back to Printful while the order is held for your check.', 'Check the Printful order; refund or reprint what was not reshipped. The hold ends once nothing is left to settle.', 'show'],
-  reship_part: ['A parcel came back with part of a line in it (the line was posted in more than one parcel).', 'Check the Printful order: if those units were not reshipped, refund them (merch.sh refund with the quantity) or reprint the line. Nothing is refunded or reshipped by itself; the buyer was told we are checking.', 'show'],
+  returned_review: ['Another parcel came back to Printful while the order is held for your check.', 'Check the Printful order; refund what was not reshipped (with the quantity for part of a line) or reprint a whole line. The hold ends once nothing is left to settle.', 'show'],
+  returned_settled: ['A parcel came back with part of a line whose refunds already cover it.', 'Nothing is held. If a refund was for a unit the buyer keeps and Printful did not reship this one, refund it too (merch.sh refund with the quantity).', 'show'],
+  reship_part: ['A parcel came back with part of a line in it (the line was posted in more than one parcel).', 'Check the Printful order: if those units were not reshipped, refund them (merch.sh refund with the quantity; a reprint of the line is refused, it would print the units the buyer has again). Nothing is refunded or reshipped by itself; the buyer was told we are checking.', 'show'],
   reprint_held: ['A reprint waits (the printer mode is not live).', 'Confirm it once the mode is live.', 'confirm'],
   reprint_stopped: ['A reprint was stopped or paused.', 'Nothing to do unless a dispute ends: then confirm releases it.', 'show'],
   reprint_after_stop: ['A reprint was confirmed at Printful just as its order was refunded or disputed.', 'Cancel it in the Printful dashboard if you can.', 'show'],

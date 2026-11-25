@@ -62,7 +62,7 @@ export async function adminRoute(L, req, path, ip) {
       const lines = Array.isArray(body.lines) ? body.lines.map(Number) : [];
       const po = typeof body.provider_order === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(body.provider_order) ? body.provider_order : null;
       const r = await L.reprint(o, lines, po, null, 'owner');
-      return r.ok ? json(r) : fail(r.error, r.status || 409);
+      return r.ok ? json(r) : fail(r.error, r.status || 409, r.say ? { say: r.say } : {}); // R5-m3: part_line says what to refund instead
     }
     if (act === 'confirm') { // the owner's go (T2.2-25, T2.2-39). M1: only from a review hold, draft_mode or a won dispute (part 9: any close but lost is 'won'); never a stopped order
       const okHold = (x) => x.status === 'held' && (x.hold === 'review' || x.hold === 'draft_mode' || (x.hold === 'dispute' && x.dispute === 'won'));
@@ -91,7 +91,7 @@ export async function adminRoute(L, req, path, ip) {
       if (!p) return fail('bad_parcel', 400);
       L.tx(() => { L.run('update merch_parcels set lost_at = ? where id = ?', L.now(), p.id); L.event('x:lost:' + p.id, o.id, 'lost', p.id); });
       const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced' && l.refunded_qty < l.qty).map((l) => l.line);
-      if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409); }
+      if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409, r.say ? { say: r.say } : {}); }
       if (body.then === 'refund') {
         // second review (R2-M4, its neighbour): never while a dispute is open or after it was lost (the bank decides, or already paid the buyer back)
         const x = L.order(o.id); if (x.dispute === 'open' || x.dispute === 'lost') return fail('disputed', 409);

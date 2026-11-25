@@ -89,3 +89,38 @@ token. Fix: refuse any non-ASCII address (`/^[\x21-\x7e]+$/`).
 - **The pay driver:** the CLI cannot set `allowLocalTest`; `cs_live_` anywhere in the URL is refused; the URL is checked again after
   `goto`; locators never reach into other-origin frames; `payEmbeddedTestFrame` needs js.stripe.com, `pk_test_` and `cs_test_`; only
   Stripe test cards are accepted; no card number or buyer is printed; screenshots go to the temp folder unless `--shots` says otherwise.
+
+## Fixes (fifth review)
+
+25 Nov 2026, branch `merch/part9-fixes5` from 9ed8937. Tests: `cloudflare/merch/test/t_fix9e.mjs` (rows F9e-*, in the merch_worker run,
+343 of 343 with Miniflare). Every F9e row but two neighbours (F9e-M1-cases, F9e-m3-allback: hand checks that also held before) fails on
+9ed8937 (checked with the old `ledger.js`, `admin.js` and `mail.js`); every F9b, F9c and F9d row stays green.
+
+- **R5-M1** fixed, with one term more than the review's formula. `partWaiting` (the `since` / `paid` term gone) is now
+  `max(0, min(back - again, qty - refunded - out - unposted))`: `out` the units in parcels not returned, `unposted` the units never posted
+  yet (`qty` minus the units posted, reships aside). Without `unposted` a line of 3 with 2 posted, one back and that one refunded still
+  counted 1 waiting (the hand check "one unit never posted yet" failed), so the hold never ended. Every refund of the line counts as
+  settling one, so the count is never above the truth. Its other side: a part refund for a unit the buyer keeps, then a return, holds
+  nothing; so the owner is not left in silence there, a new owner email `returned_settled` says the refunds cover it and to refund this one
+  too if a refund was for something else. Tests F9e-M1-again (probe 1), F9e-M1-twice (probe 2), F9e-M1-cases (a unit not posted, a
+  flagged reship out, the other half back after a reship, a whole-line refund), F9e-M1-settled.
+- **R5-m1** fixed as recommended: with no flag, the units of parcels taken for a reship are at most the units posted beyond the line's
+  quantity (less what flagged reships explain); the rest is the line's other half posted late. Only the part-line count uses it (pass 2
+  never moves a split line), so F9d-noflag and the F9b/F9c rows are unchanged. Test F9e-m1-noflag (the return read first; the return and
+  the second half in one read).
+- **R5-m2** fixed as recommended for the order re-read: also `status = 'shipped'` with `hold = 'review'` and `why in ('reship_part',
+  'reship_unread')` (a `part_shipped` one was already read). What else it does to such an order: a failed read wakes the order once (it
+  then sleeps: no reship step), the owner hears once per run of failures; reads of a shipped one are every 15 minutes for the first 24
+  hours of failures, then once a day (pf_wait), never every 15 minutes for ever; a `reship_unread` one is quiet (the owner was told); a
+  Printful hold on such an order is told once per hold, not at every daily read. Tests F9e-m2-reread, F9e-m2-quiet.
+- **R5-m3** fixed by refusing (the smaller, safer choice): `reprint` refuses a line posted in more than one parcel with units still out
+  (not returned, not lost): 409 `part_line`, `say` names the units to refund (`merch.sh refund <order> <line> <N> "returned"`), nothing
+  made. It covers `merch.sh lost ... reprint` too. A line whose parcels all came back can still be reprinted. The `reship_part` and
+  `returned_review` emails offer only the refund for part of a line. Tests F9e-m3-reprint, F9e-m3-allback.
+- **R5-m4** fixed as recommended: `mailbox` refuses any address that is not printable ASCII, checked before lowercasing (the Kelvin sign
+  lowercases to k). Test F9e-m4-ascii.
+- **Docs:** TRANSACTIONS.md part 9 notes (the count, no reprint of part of a line, the re-read).
+- **Left open:** a Printful claim reship of part of a line cannot be attached (`merch.sh reprint <order> <line> <printful order>` is refused
+  too): the owner's hold then stays until a refund (no wake, nothing stranded). The reprint re-read is unchanged: a `reship_unread` hold
+  from a reprint's unreadable order is not re-read (F9b-M3-rp-unread wants no more reads there). Not looked at: `merch.sh lost ...
+  refund` of a split line refunds the whole line, as before.
