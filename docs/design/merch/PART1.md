@@ -59,4 +59,4 @@ New build **`pp1-5688199b`** (was `pp1-3f73333c`, never used for an order: that 
 New build **`pp1-6df20bb6`** (was `pp1-5688199b`, never used for an order: that folder is removed from `site/merch/print/`).
 
 - **R2-m4, long mug names**: a name keeps `PRODUCTS.mug.nameIn` (25 px) clear of the 0.5 in handle line. It is centred over its dog as before; a long name that would come nearer the handle moves towards the middle of its side by what it lacks (the band stays 1050 px wide, so the letters keep their size and `nameOk(s, { product: 'mug' })` accepts the same names). "Captain Fluffybottom" now runs from x 175 to 1225 and 1475 to 2525 (was 150 and 2550). Short names do not move.
-- Tests: `merch/test_pawprint.js` 89 checks (the new one: 25 px from the handle line on both ends over 1440 long-name mugs); the face check allows a long name moved inward by exactly that much.
+- Tests: `merch/test_pawprint.js` 89 checks (the new one: 25 px from the handle line on both ends over 720 long-name mug prints); the face check allows a long name moved inward by exactly that much.

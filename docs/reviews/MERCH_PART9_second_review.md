@@ -73,3 +73,34 @@ the code fixes (merge e12f02d3, fix commit 3f21682d, `t_fix9.mjs`), the page fix
 
 - A real DTG or mug sample (the white backing, the mug's face direction): part 10.
 - Real Stripe and Printful answers (no network calls, by the rules): the sandbox run.
+
+## Fixes (second review)
+
+25 Nov 2026, branch `merch/part9-fixes2` from fb48a9f. Tests: `cloudflare/merch/test/t_fix9b.mjs` (rows F9b-*, in the merch_worker run;
+each finding's rows fail on fb48a9f), plus the page, email and print checks named below. Every suite green after the fixes.
+
+- **R2-M1** fixed as recommended (ce50599): the late cancel reads Printful first and applies it in the refund's own transaction (posted:
+  409 `not_late`). A failed read still refunds (the buyer's right), asks Printful to cancel, and emails the owner at once
+  (`late_cancel_unread`). Changed during the read: read once more, then 409 `busy`. Tests F9b-M1, -part, -unread, -race, -still.
+- **R2-M2** fixed (ce50599): `late_eta` counts from max(ship_by, now) when the delay email goes. After a won dispute the date moves on by
+  the time the steps waited: at the close (`now - disputed_at`) when the order went on, or when the owner releases a paused order
+  (`now - hold_at`, admin confirm), so the time is never counted twice. Tests F9b-M2, -paused, -from, -lost; F6-late-held and
+  F9-B1-fail updated to the new rule.
+- **R2-M3** fixed (ce50599): the 7-day reship refund reads every Printful order that holds a returned line (ours and a reprint's) first;
+  `applyProvider` moves a line from a returned parcel to a new one; the reship hold ends when nothing waits; reship holds (and their
+  reprints) are in the daily re-read; an address email no one needs any more is not sent. Tests F9b-M3, -cron, -still, -one-read.
+- **R2-M4** fixed (ce50599): `stopped()`, `reshipOk()` and the returned-parcel path count a lost dispute. Also, beyond the review: a lost
+  close cancels waiting reprints and ends a reship hold (owner told), the 7-day reship refund never runs during an open dispute (a won close
+  gives a fresh 7 days, as the form was shut) or after a lost one, and the owner's lost-parcel refund is refused (409 `disputed`).
+  Tests F9b-M4, -returned, -hold, -held-reprint, -open.
+- **R2-m1** fixed (ce50599 for the step reads, ebac503 for hints and the daily re-reads): a read is applied only if the order is as it was
+  when the read went out (`pfSnap`); a hint whose read is overtaken answers 502 so Printful sends it again. Tests F9b-m1, -m1-hook.
+- **R2-m2** fixed (ebac503, 15810dd): a `created` with the id of a dispute already won or lost is ignored; a close that comes first records
+  the dispute id. Tests F9b-m2, -m2-lost.
+- **R2-m3** fixed (336ada6): over the threshold the basket's Shipping box says "Your shipping to ... is free". merch_page check
+  "second review R2-m3".
+- **R2-m4** fixed (9c04723): a mug name keeps 25 px (`nameIn`) from the handle line; a long name moves inward instead of shrinking, so
+  `nameOk` is unchanged. ART_VER `pp1-6df20bb6`; the mug sample remade; "Captain Fluffybottom" looked at full size, both ends.
+  test_pawprint check "second review R2-m4".
+- **R2-m5** fixed (336ada6, 50fe833): the thanks email says "about 5 to 11 working days from payment to your door, printing included.
+  Printing usually takes 2 to 5 working days, and we'll post it by ...". The email sample remade. P6-mail-kinds, F6-ship-by.
