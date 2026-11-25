@@ -88,6 +88,8 @@ dog, the confirm sheet, `merchEncode` in the game. Behind a gate that is off unt
 
 **9. Reviews and the sandbox run.** Code, phone and art reviews. Then the whole flow on test.doodledoggo.app with Stripe sandbox keys
 [O approves the test deploy]: every product, cancel within the hour, refund, a faked provider reject, a test dispute.
+  Prepared 25 Nov 2026: `SANDBOX.md` (the owner's steps, what is deployed, the printer and the emails, the run's checklist, the GM's brief and
+  the owner's questions) and `tools/merch_test_deploy.sh` (dry by default). Four code changes come first (SANDBOX.md part 0).
 
 **10. Samples and launch [O].**
 - The owner orders one sample of every product and colour, made from our real print files. Fix what the samples show.
