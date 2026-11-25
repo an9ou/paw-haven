@@ -114,9 +114,12 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   - Usage limit: both fix agents stopped at the limit on 24 Nov 23:00 JST and were only resumed at 09:40 JST. Next time
     `send_later` yourself a resume for 2 minutes after the reset as soon as you see the reset time, and resume stopped agents with
     SendMessage (their work is kept).
-- **Asked the owner on 25 Nov (choice window):** small dogs on a tee (scaled up to 5 in, built and recommended, or as in the game;
-  picture `samples/puppy_size_choice.png`), and a small in-game gift code with each order (recommended yes; part 6). Write the answers
-  here when they come. Kept for the launch go-ahead, not asked yet: TRANSACTIONS.md 10 (countries with the UK/EU registration note,
+- **The owner's third answers (25 Nov 2026, about 10:40 JST, in the choice window):** small dogs on a tee: **"Scaled up
+  (Recommended)"** (`PRODUCTS.tee.minDogIn = 5` stays; that open point is closed). A thank-you gift in the game with each order:
+  **"Yes, a small gift (Recommended)"**: one cosmetic item by gift code per order, shown on the order page and in the thank-you
+  email (part 6; an empty code pool means no gift, never an error). The GM makes the item and the code group (told on 25 Nov); never
+  write real codes in files or chat.
+  Kept for the launch go-ahead, not asked yet: TRANSACTIONS.md 10 (countries with the UK/EU registration note,
   payment methods, soft-launch limits 10 a day and a US$150 printer wallet, keep time, the delivery promise, the adviser on USD-only
   prices), PART3.md question 20 (if the printer cannot sign its webhooks: poll it, recommended), tee sizes (only those made in both the
   US and the UK, so no 5XL). Good to tell the owner then: a mug name carries at most 16 wide letters; XS-M tees print the file at 77%.
