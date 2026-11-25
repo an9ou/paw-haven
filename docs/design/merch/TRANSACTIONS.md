@@ -286,7 +286,9 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 > Notes (25 Nov 2026, part 9 code review fixes; PART6.md "Part 9 fixes"):
 > - **Never refund blind (T2.1-35, T2.1-36):** the delay email, the automatic late refund and the 24-hour refund of a printer-failed or
 >   unanswered-confirm hold read Printful's order first; a failed read waits 15 minutes (never refunds); 24 hours of failed reads email the owner
->   once. The daily re-read (5 a cron run) catches lost hints. A buyer's own late cancel and the owner's refunds are not read first (people chose them).
+>   once. The daily re-read (5 a cron run) catches lost hints. The owner's refunds are not read first (the owner chose them). The buyer's late
+  cancel IS read first (second review R2-M1): a part posted with its hint lost is not refunded too; if Printful cannot be read, the late
+  part is refunded anyway (the buyer's right), Printful is asked to cancel, and the owner is emailed at once to check (`late_cancel_unread`).
 > - **Disputes (T2.1-31, T2.1-34, T2.2-22..26):** Stripe's dispute statuses as read on docs.stripe.com (API reference, the Dispute object, 25 Nov
 >   2026): `warning_needs_response`, `warning_under_review`, `warning_closed` (an inquiry), `needs_response`, `under_review`, `appeal_needs_response`,
 >   `appeal_under_review` (open), `won`, `lost`, `prevented`. Only `lost` is lost; any other close counts as won (`merch.sh confirm` releases the
@@ -294,6 +296,17 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 >   dispute when `charge.dispute.updated` (subscribe to it) or a new `created` brings an open chargeback status. While a dispute is open or after
 >   it was lost: no delay step, no late cancel, no owner line refund, the order page never says "late".
 > - **A refunded line posted anyway:** the owner gets one email (`refunded_shipped`); the buyer still gets "On its way".
+> - **Second review fixes (25 Nov 2026, `docs/reviews/MERCH_PART9_second_review.md`):**
+>   - **The late window (T2.1-30, T2.1-34):** `late_eta` counts from the day the delay email goes, max(`ship_by`, now), so it is never in the
+>     past (it went late after a dispute, a hold the owner released, or failed reads). After a dispute closes in our favour the date moves on
+>     by the time the steps waited: by the dispute's open time when the order went on meanwhile, or, for an order the dispute paused, by the
+>     pause when the owner releases it. After a lost dispute no delay step runs.
+>   - **A lost dispute (T2.2-26):** no reprint, no reship, no owner lost-parcel refund (409); waiting reprints are cancelled and a reship hold
+>     ends with nothing refunded (the owner is told); a returned parcel only emails the owner.
+>   - **A returned parcel (T2.2-45):** the 7-day refund reads Printful first; a line Printful reshipped moves to its new parcel and the hold
+>     ends (no refund, one "On its way"). Reship holds are in the daily re-read. Not while a dispute is open; a won close gives a fresh 7 days.
+>   - **Stale reads:** a Printful read is applied only if the order did not change while it was out; a hint whose read is overtaken answers
+>     502 (Printful sends it again). A `charge.dispute.created` for a dispute already closed is ignored.
 
 ---
 

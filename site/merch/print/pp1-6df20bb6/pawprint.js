@@ -4902,8 +4902,8 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     mug: { id: 'mug', name: 'Mug, 11 oz white', launch: true, w: 2700, h: 1050, dpi: DPI, inches: [9, 3.5], transparent: true,
       printful: { product: 19, placement: 'default', technique: 'sublimation' },
       // one face per side, centred at sides[]: the dog fills sideW x (height - name), the name a nameW-wide band above it, as tall as the name needs at nameMin and
-      // at most nameH[1] (it takes what the dog leaves at 80 mm, never less than its own line)
-      safe: { top: 75, bottom: 75, ends: 150 }, sides: [675, 2025], sideW: 1050, nameW: 1050, strip: 300, nameH: [100, 190], nameMin: NAME_MIN_PX,
+      // at most nameH[1] (it takes what the dog leaves at 80 mm, never less than its own line); a name keeps nameIn px clear of the handle keep-clear line
+      safe: { top: 75, bottom: 75, ends: 150 }, sides: [675, 2025], sideW: 1050, nameW: 1050, nameIn: 25, strip: 300, nameH: [100, 190], nameMin: NAME_MIN_PX,
       scale: 'fill', poses: POSE3, colours: WHITE },
     // no stickers at launch (owner, 24 Nov 2026): the sheet is kept and tested, but not offered (launch: false)
     stickers: { id: 'stickers', name: 'Kiss-cut sticker sheet, A5', launch: false, w: 1749, h: 2481, dpi: DPI, inches: [5.83, 8.27], transparent: true,
@@ -5082,7 +5082,15 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     out.push(weight(yardStrip(P.w, P.h - P.strip, P.strip, MIN_PX * 1.6, (r.p ^ 0x5A5A) >>> 0, keep, S.ends), 1, MIN_PX).s);
     out.push(...dogs);
     let size = 0;
-    if (name) P.sides.forEach((cx, i) => { const N = fitName(name, [cx - P.nameW / 2, top, P.nameW, ns], Math.max(ns * 0.8, P.nameMin), mugRot(name, i), P.nameMin); if (!N) throw new Error('name: long'); out.push(N.svg); names.push(N.bb); size = N.size; });
+    // second review (R2-m4): a name stays P.nameIn px inside the handle's keep-clear line: centred over its dog, and a long one that would come
+    // nearer the handle moves towards the middle of its side by what it lacks (the same band width, so the same size; nameFit is unchanged)
+    if (name) P.sides.forEach((cx, i) => {
+      const fit = (x0) => fitName(name, [x0, top, P.nameW, ns], Math.max(ns * 0.8, P.nameMin), mugRot(name, i), P.nameMin);
+      let N = fit(cx - P.nameW / 2); if (!N) throw new Error('name: long');
+      const lack = i ? N.bb[2] - (P.w - S.ends - P.nameIn) : S.ends + P.nameIn - N.bb[0];
+      if (lack > 0) { N = fit(cx - P.nameW / 2 + (i ? -lack : lack)); if (!N) throw new Error('name: long'); }
+      out.push(N.svg); names.push(N.bb); size = N.size;
+    });
     Object.assign(st, { k: f2(k), artMM: f2(240 * k / MM), dogBox: boxes, nest: nests, name: name ? { text: name, size, bb: names } : null });
     return out.join('');
   }
@@ -5259,6 +5267,6 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
 if (typeof module !== 'undefined' && module.exports) module.exports = PawPrintMake;
 
   return PawPrintMake; })(undefined);
-  var api = make(shim.PawArt, shim.PawGenes, font, names, '5688199b');
+  var api = make(shim.PawArt, shim.PawGenes, font, names, '6df20bb6');
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else G.PawPrint = api;
 })(typeof self !== 'undefined' ? self : globalThis);

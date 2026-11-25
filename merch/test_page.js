@@ -855,6 +855,7 @@ async function part9Checks() {
     ok('part 9 M2: where shipping is never free, no free-shipping line', !(await pg.$('#freeMore')) && !/free shipping/i.test(await text(pg, '#shipBox') + await text(pg, '#totals')));
     await setShip(pg, 'US'); await pg.click('.bl [data-qp]'); await pg.waitForSelector('#qtable'); await settle(pg);
     ok('part 9 M2: at the threshold or over, no "add more" line (the Shipping row says Free)', !(await pg.$('#freeMore')) && (await text(pg, '[data-q=ship]')) === 'Free');
+    ok('second review R2-m3: at the threshold or over, the Shipping box says the shipping is free too (never the fee)', (await text(pg, '#shipBox .shipline')) === 'Your shipping to the United States is free: your things come to $' + CAT_E.zones.find((z) => z.id === 'us_jp').free_from / 100 + ' or more.' && !/\$\d/.test((await text(pg, '#shipBox .shipline')).replace(/\$\d+ or more/, '')), await text(pg, '#shipBox .shipline'));
     await finish('part 9 free shipping', t);
   });
   await blk('M3', async () => {

@@ -211,14 +211,18 @@ console.log('# the tee');
 
 console.log('# the mug');
 {
-  let all = 0, small = 1e9, out = [], faceOk = 0, nmin = 1e9;
+  let all = 0, small = 1e9, out = [], faceOk = 0, nmin = 1e9, gap = 1e9, moved = 0; const NI = P.PRODUCTS.mug.nameIn;
   for (let b = 0; b < P.BREEDS.length; b++) for (const a of [0, 1, 2]) for (const pose of ['stand', 'sit', 'happy']) for (const dress of [0, 1]) {
     const r = Object.assign({ v: 1, b, g: null, e: 0, p: b * 31 + a, a, s: 'f', o: [16, 12], n: 'Captain Fluffybottom' }, dress ? { o: [Wi('Witch Hat'), Wi('Bat Wings')], sp: 1 } : {});
     P.print(r, { product: 'mug', pose }); const st = P.print.last; all++; small = Math.min(small, st.artMM); nmin = Math.min(nmin, st.name.size);
-    const bad = st.dogBox.some((x) => x[0] < 150 - 0.01 || x[2] > 2550 + 0.01 || x[1] < 75 - 0.01 || x[3] > 975 + 0.01) || st.name.bb.some((x) => x[1] < 75 - 0.01 || x[3] > 975 + 0.01 || x[0] < 150 || x[2] > 2550) || !st.dogBox.every((x, i) => inside(x, st.nest[i]));
+    const bad = st.dogBox.some((x) => x[0] < 150 - 0.01 || x[2] > 2550 + 0.01 || x[1] < 75 - 0.01 || x[3] > 975 + 0.01) || st.name.bb.some((x) => x[1] < 75 - 0.01 || x[3] > 975 + 0.01 || x[0] < 150 + NI - 0.01 || x[2] > 2550 - NI + 0.01) || !st.dogBox.every((x, i) => inside(x, st.nest[i]));
     if (bad) out.push(P.BREEDS[b] + a + pose + dress);
-    if (st.name.bb.every((x, i) => x[2] - x[0] <= P.PRODUCTS.mug.nameW + 0.01 && Math.abs((x[0] + x[2]) / 2 - P.PRODUCTS.mug.sides[i]) < 1) && st.name.bb.every((x, i) => st.dogBox[i][1] >= x[3])) faceOk++;
+    // centred on its side, or (second review R2-m4) a long name moved towards the middle just enough to keep nameIn px from the handle line
+    const placed = (x, i) => Math.abs((x[0] + x[2]) / 2 - P.PRODUCTS.mug.sides[i]) < 1 || (i ? Math.abs(x[2] - (2550 - NI)) < 0.02 && (x[0] + x[2]) / 2 < P.PRODUCTS.mug.sides[i] : Math.abs(x[0] - (150 + NI)) < 0.02 && (x[0] + x[2]) / 2 > P.PRODUCTS.mug.sides[i]);
+    if (st.name.bb.every((x, i) => x[2] - x[0] <= P.PRODUCTS.mug.nameW + 0.01 && placed(x, i)) && st.name.bb.every((x, i) => st.dogBox[i][1] >= x[3])) faceOk++;
+    st.name.bb.forEach((x, i) => { gap = Math.min(gap, i ? 2550 - x[2] : x[0] - 150); if (Math.abs((x[0] + x[2]) / 2 - P.PRODUCTS.mug.sides[i]) >= 1) moved++; });
   }
+  ok(NI >= 20 && NI <= 30 && gap >= NI - 0.01 && moved > 0, `second review R2-m4: "Captain Fluffybottom" keeps ${NI} px clear of the 0.5 in handle line on both ends (closest ${gap} px; ${moved} long names moved towards the middle)`);
   ok(!out.length, `the whole drawing and the name stay 0.25 in from top and bottom and 0.5 in from both ends (the handle), on both sides: ${all} prints (40 breeds x 3 ages x 3 poses, two outfits, one with sparkle)${out.length ? ' FAIL: ' + out.slice(0, 5) : ''}`);
   ok(small >= P.MIN_ART_MM, `the dog's art box is never under 80 mm on the mug: smallest ${small} mm`);
   { // part 9 art review m5: the yard strip joins up at the handle: no picket cut at either end (the seam falls in a whole gap), the rail and
