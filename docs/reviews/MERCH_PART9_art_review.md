@@ -79,3 +79,13 @@ New print build **`pp1-5688199b`** (released in `site/merch/print/pp1-5688199b/`
 - **m5** (`yardStrip`): a whole number of pickets with half a gap at each end, so the seam at the handle falls in a whole gap; the rail and the grass line level at x 0 and x 2700; no flower within 150 px of either end. Check: "mug yard strip, 24 wraps".
 - **m6** (`teeBody`, `PRODUCTS.tee.backing` 2.4 px): on white tees the drawing and the name lie on a crisp-edged white backing (as the sticker sheet's), so every tee file has only alpha 0 or 255, in Chromium and in the 12-band resvg fallback; white prints no ink on a white tee. Checks: `test_pawprint.js` (the backing in the SVG; rendered white tees: 0 soft pixels) and `render_chromium.mjs` (now also the white tee of every sample dog, both renderers, alpha 0/255, within `MATCH`).
 - **m7** (`cloudflare/merch/mail.js`): `itemName` is one template, "<Product> with <the dog's name>" (+ a tee's colour and size), "with your dog" only for a line with no name (the order keeps the name only when it is printed, so a name-off tee line still says "your dog"; the sample's tee line had no name). Headings use a rounded sans stack (`HEAD_FONT`), not Georgia. Samples in `docs/design/merch/part6_shots/emails/` remade with the tee line named. Check: `merch_worker` row P9-mail-words.
+
+### Shop page fixes (branch `merch/part9-page-fixes`, 25 Nov 2026)
+
+- M1: `mock.js` mug() shows x 1350 to 2700 of the wrap (handle on the right): the home card, step 3, the basket and the order page agree.
+  Reasoning: the wrap's ends meet at the handle and the strip reads left to right from outside, so the face beside a right-hand handle is the
+  right half; its dog faces away from the handle (mugBody). Still to be confirmed with a sample (PART1.md "Mug face direction").
+- m1: the tee mock's sleeve hems moved inside each sleeve (and the body hem shortened); checked inside the outline on all 7 colours.
+- m2: a newborn shows one pose, "Sleeping", on make-it, in the basket and on the order page; a link or a stored line asking another pose maps to it.
+- m4: the dog cards and pose buttons drop the ground shadow (the same pattern the print removes).
+- Not in this batch: m3, m5, m6 (the print core), m7 (the emails).

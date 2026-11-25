@@ -60,3 +60,18 @@ MINOR
 
 Checked and fine: no sideways scroll on any screen (all sizes, all 7 tee colours and size lists, mug, 1/2/6 lines, every zone); main taps are 44 px or more; links in legal-page prose are inline and exempt. The share link (make → thing → pick on Back), the 6-dog link, a broken link, a hostile link and an unknown product all behave and log no console errors. The basket survives reload. All 10 order states render. Address inputs are 48 px with shipping autocomplete, and the empty submit focuses the field with its error beside it. The gift Copy works. The draft mark is in the first screen of all four legal pages. All 10 emails are 360 px wide with no small text and each has a `.txt` part. The slow first load shows "Getting your dogs ready…" and no half-drawn step.
 ```
+
+## Fixes (shop page batch, branch `merch/part9-page-fixes`)
+
+- M1: the price bar stops being sticky while the name is typed and keeps the field and its message in view; `#addMsg` is inside the bar.
+- M2: "Free shipping when your things come to $35 or more (before shipping)." once (Shipping box); "Add $X more for free shipping." from the quote.
+- M3: a line is a "design" everywhere: "up to 6 different designs, up to 3 of each"; "things" only for what gets made.
+- M4: "About 5 to 11 working days from payment to your door, printing included." on the shop page and in the shipping page's table.
+- M5, M6: own titles and trackers per state ("Waiting for payment", "We need your address", "A parcel came back to us", ...); the receipt only
+  under the thank-you, in the first hour after paying.
+- M7: a tap on your own dog goes straight on to the thing; Back changes it.
+- M8: 特定商取引法に基づく表記 in the footer and by the pay card; "Seller details".
+- m1 draft kept over a reload (sessionStorage); m2 honest step ticks, "Put your dog on something"; m3 catalog prices and "Soon:" first, said once;
+  m4 the mug counts against its own width; m5 safe-area padding; m6 8 px above "Size guide"; m7 footer and pay links as rows with gaps, no dots
+  or brackets; m8 one message per field, `autocapitalize`; m9 "Keep my order" primary; m10 "No dog yet?" only without dogs.
+- Checks: `merch/test_page.js` (`part9Checks`, the order states) and `merch/test_legal.js`; each fails on the page as reviewed.
