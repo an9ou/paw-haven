@@ -283,7 +283,12 @@ function grSpotSteps(d, s) {
     const e = grSnap(s.x, s.y + pr.box[3] + 14); if (!e) return null; const A = { id, allow: al, hop: 1 }, B = { id, allow: al, hop: -1 };
     return [mine, { to: e, gait: 'trot' }, { fn: () => { r.grIn = id; }, ms: 0 }, { to: [s.x, s.y], act: A }, { pose: 'sit', ms: 2400 }, { to: e, act: B }, free, { pose: 'happy', ms: 700 }, { pose: 'idle', ms: sec(1200, 2400) }];
   }
-  const to = at(s.x, s.y); if (!to || grCrowd(d, to)) return null; const face = pr ? (pr.box[0] + pr.box[2] / 2 < to[0] ? 'left' : 'right') : null;
+  let to = at(s.x, s.y), side = false; if (!to) return null;
+  if (rmKeepHit(to[0], to[1], rmKd(d, to[1]), d)) { // keep clear (overlap review S2): the mailbox's sniff and the door's sit from the side, the dog's body off them
+    let best = null; for (let dx = 8; dx <= 240 && !best; dx += 8) for (const sx of [1, -1]) { const x = to[0] + sx * dx; for (const y of [to[1], to[1] + 14, to[1] + 28]) if (!best && grFree(x, y) && !rmKeepHit(x, y, rmKd(d, y), d)) best = [x, y]; }
+    if (!best) return null; to = best; side = true;
+  }
+  if (grCrowd(d, to)) return null; const face = side ? (s.x < to[0] ? 'left' : 'right') : pr ? (pr.box[0] + pr.box[2] / 2 < to[0] ? 'left' : 'right') : null;
   const pose = { drink: ['eat', 2200], sit: ['sit', sec(3000, 6000)], sniff: ['sniff', 1800], rest: ['down', 1500], look: ['idle', sec(2500, 4000)], door: ['sit', 2500], arch: ['sit', 2400], trick: ['happy', 1200] }[act] || ['idle', 2000];
   const steps = [mine, { to }, { pose: pose[0], fb: pose[0] === 'sniff' || pose[0] === 'eat' ? 'sit' : 'idle', face: face || undefined, ms: pose[1] }];
   if (act === 'rest') steps.push({ pose: rmPers(d).energy < 0.6 ? 'sleep' : 'down', ms: sec(8000, 20000) }, { pose: 'idle', ms: 1000 });

@@ -1393,7 +1393,7 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 
 /* ---------------- toasts, bubbles ---------------- */
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
-function phChipClear() { if (!isPhone()) return 0; const st = $('#status'), w = $('#ddWish:not([hidden])'); const a = st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0, b = w && w.offsetParent === view ? w.offsetTop + w.offsetHeight + 14 - 8 : 0; return Math.max(a, b); } // v2.17: also under the wish chip (48_dogdays.js)
+function phChipClear() { if (!isPhone()) return 0; const st = $('#status'), w = $('#ddWish:not([hidden])'), hs = $('#hpStrip'); const a = st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0, b = w && w.offsetParent === view ? w.offsetTop + w.offsetHeight + 14 - 8 : 0, c = hs && hs.offsetParent === view ? hs.offsetTop + hs.offsetHeight + 8 - 8 : 0; return Math.max(a, b, c); } // v2.17: also under the wish chip (48_dogdays.js); v2.33 overlap review S5: and under a visit's Help out strip (60_helps.js)
 // toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
 // Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
 // or its title, never on them. Returns the toast element.
@@ -1460,9 +1460,23 @@ function toastPlace() {
   if (modal.hidden && cur.mode === 'fair' && !$('.ff-game.over')) { const ft = $('.ff-game .ff-top'), hn = $('#ffHint.on'); if (ft) { const sr = stage.getBoundingClientRect(); toasts.style.top = Math.round(Math.max(ft.getBoundingClientRect().bottom, hn ? hn.getBoundingClientRect().bottom : 0) - sr.top + 6) + 'px'; } }
   // layout audit: over a walk's how-to or pause card the toast sits on the HUD row, clear of the card's title
   if (modal.hidden && !modScr && !hud.hidden && $('#modHost:not([hidden]) .pw-ov:not([hidden])')) toasts.style.top = Math.max(6, (parseFloat(getComputedStyle(hud).paddingTop) || 4) + 2) + 'px';
+  // v2.33 overlap review N1: while the walk runs, the toast starts under the walk's HUD box, never on its fast-forward and pause buttons
+  else if (modal.hidden && !modScr) { const wh = $('#modHost:not([hidden]) .pw-hud'); if (wh && wh.offsetHeight) { const y = Math.round(wh.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 6); if (y > (parseFloat(toasts.style.top) || 0)) toasts.style.top = y + 'px'; } }
   // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Doodle Doggo Shelter" sign or the Adopt me board
   const low = cur.mode === 'shelter' && modal.hidden && dock.firstElementChild;
   if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
+  // v2.33 overlap review S5: on a friend visit the toast starts under the Help out strip (phChipClear); when their leader's wish bubble (#hpWish,
+  // 60_helps.js) sits right there, it steps under the bubble too: above the visit buttons when it fits there, else (a long Thai line at 360) above the bar.
+  // The frame loop calls this again when the bubble moves (a camera pan for a help, 60_helps.js hpFrame)
+  const hw = modal.hidden && !modScr && $('#hpWish:not([hidden])', view), th = toastLive().reduce((a, e) => a + e.offsetHeight, 0); // (the column itself also has a bottom, so its own height is not the toasts')
+  if (hw && hw.offsetWidth && th) {
+    const sr = stage.getBoundingClientRect(), wr = hw.getBoundingClientRect(), y0 = parseFloat(toasts.style.top) || 0;
+    if (y0 < wr.bottom - sr.top && y0 + th > wr.top - sr.top) {
+      const y = Math.round(wr.bottom - sr.top + 16), pb = [...view.querySelectorAll('#placeBtns > *')].filter((e) => e.offsetWidth).map((e) => e.getBoundingClientRect().top - sr.top);
+      const bt = !bar.hidden && bar.offsetHeight ? bar.getBoundingClientRect().top - sr.top : stage.clientHeight;
+      if (y + th <= (pb.length ? Math.min(...pb) : bt) - 6 || y + th <= bt - 6) toasts.style.top = y + 'px';
+    }
+  }
   stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
   if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
   // layout audit: a toast that would sit across the look-left / look-right buttons (39_roam.css) narrows to the space between them; QA 6 Nov 2026: so does
@@ -1530,6 +1544,13 @@ function sayPlace(p, o) {
   if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); hard.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
     const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } // UI/UX H9: nor under the look-right button
     const pbs = [...view.querySelectorAll('#placeBtns > *')].filter(vis).map((e) => rel(e.getBoundingClientRect())); if (pbs.length) hard.push({ l: Math.min(...pbs.map((r) => r.l)) - 4, t: Math.min(...pbs.map((r) => r.t)) - 6, r: Math.max(...pbs.map((r) => r.r)) + 4, b: Math.max(...pbs.map((r) => r.b)) }); } // v2.30.1 (audit 17 Nov): nor on the Garden / Go inside / Yard games row (a tall Thai bubble went down over it)
+  // v2.33 overlap review S6, every layout: nor on a visit's wish bubble (its tail too) or Help out strip (60_helps.js), the place chip, the wish chip,
+  // the look chips or a sleepover guest's name tag (60b_sleep.js). Read once per line, never per frame. With no clear spot (keep is not pushed
+  // out of in the last resort) the bubble goes under them (class sub) and leaves sooner (say)
+  const hard0 = hard.slice(), keep = [];
+  view.querySelectorAll('#hpWish, #hpStrip, #status, #ddWish, .rm-look').forEach((e) => { if (vis(e)) { const r = rel(e.getBoundingClientRect()); keep.push({ l: r.l - 4, t: r.t - 4, r: r.r + 4, b: r.b + (e.id === 'hpWish' ? 14 : 4) }); } });
+  view.querySelectorAll('#hpTags .sl-tag').forEach((e) => { const q = e.getBoundingClientRect(); if (q.width > 0 && !e.closest('[visibility="hidden"]')) { const r = rel(q); keep.push({ l: r.l - 4, t: r.t - 4, r: r.r + 4, b: r.b + 4 }); } });
+  hard.push(...keep);
   const tr = $('#dock .tray'); if (vis(tr) && getComputedStyle(dock).display !== 'none') soft.push(rel(tr.getBoundingClientRect()));
   const hit = (b, r) => b.l < r.r && b.l + b.w > r.l && b.t < r.b && b.t + b.h > r.t;
   const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !hard.some((r) => hit(b, r)) && !(useSoft && soft.some((r) => hit(b, r)));
@@ -1575,8 +1596,10 @@ function sayPlace(p, o) {
   for (const f of tries.slice(0, 2)) { const b = f(); if (ok(b, false)) return b; } // over the board: better than over the face (never the chip: beside the head first)
   for (const f of [() => beside(H.r + 10, 'r', 'h'), () => beside(H.l - 10, 'l', 'h')]) { const b = f(); if (ok(b, true) || ok(b, false)) return b; } // beside the head, over the dog's back
   if (D) { bubble.classList.add('below'); const b = put(6, 0); const r = put(clamp(ax - 40, 6, sw - b.w - 6), D.b + 8); if (ok(r, true)) return r; bubble.classList.remove('below'); } // under the dog, its tail pointing up
+  if (keep.length) for (const f of tries.slice(0, 2)) { const b0 = f(), k = b0 && keep.find((r) => hit(b0, r)); if (k) { const b = again(b0, k.t - b0.h - 2); if (ok(b, false)) return b; } } // S6: over the wish bubble or tag in its way
   let b = above(); b = again(b, Math.max(vtop + 4, b.t)); // nowhere clear: over the head as before, but under the chip it would sit on (v2.3)
-  const hb = hard.filter((r) => hit(b, r)).reduce((m, r) => Math.max(m, r.b), 0); return hb ? again(b, hb) : b;
+  const hb = hard0.filter((r) => hit(b, r)).reduce((m, r) => Math.max(m, r.b), 0); if (hb) b = again(b, hb);
+  b.sub = keep.some((r) => hit(b, r)); return b; // S6: the last resort: under the wish bubble, strip, chips and tags (z-order), and shorter (say)
 }
 function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking dog's drawn box in stage px (else found near the anchor), avoid: [stage boxes to keep clear when there is room] }
   const svg = $('svg.world', view); if (!svg) return;
@@ -1584,7 +1607,8 @@ function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking d
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
   bubble.classList.remove('below', 'tail-r'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
-  sayPlace(worldToStage(svg, wx, wy), o || {});
+  const pl = sayPlace(worldToStage(svg, wx, wy), o || {}), sub = !!(pl && pl.sub); // v2.33 overlap review S6: no clear spot: under the wish bubble / tag, 1.6 s at most
+  bubble.classList.toggle('sub', sub); if (sub) ms = Math.min(ms, 1600);
   if (isPhone()) {
     // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Mt. Fuji Lookout has no signs, its line stays over the head
     if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
@@ -1669,8 +1693,13 @@ function updateHUD() {
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   hudTxt($('#hudClock'), `${clockText()} · ${wxLabel()}`);
   // v2.30.1 (audit 17 Nov): on the map the chip has no place name (the map has its own title; "Home Yard" there read wrong and covered it)
-  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap + (cur.mode === 'fryard'); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span>${cur.mode === 'fryard' ? '' : ' · ' + esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) st.classList.add('tight'); } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays); v2.33 fit: no "Day N" in a friend's yard (my day count is not theirs, 50_friends.js frChip)
+  const st = $('#status'); if (st) { const onMap = cur.mode === 'map', k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil) + onMap + (cur.mode === 'fryard'); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `${onMap ? '' : `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · `}<span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())}<span class="wxl"> · ${esc(wxLabel())}</span>${cur.mode === 'fryard' ? '' : '<span class="sday"> · ' + esc(tt('core.status_day', 'Day {day}', { day: day() })) + '</span>'}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; st.classList.remove('tight', 'wrapn'); if (isPhone() && st.scrollWidth > st.clientWidth + 1) { st.classList.add('tight'); const pn = st.querySelector('.pname'); const tk = cur.mode !== 'japan' && typeof TK_PLACES !== 'undefined' && !!TK_PLACES[S.place], sd = st.querySelector('.sday'); if (tk && pn && st.scrollWidth > st.clientWidth + 1) pn.textContent = tkPinLabel(S.place); if (tk && sd && st.scrollWidth > st.clientWidth + 1) sd.hidden = true; if (tk && st.scrollWidth > st.clientWidth + 1) { st.classList.add('wrapn'); const sep = pn && pn.nextSibling; if (sep && sep.nodeType === 3) sep.replaceWith(document.createElement('br')); if (sd) { sd.hidden = false; if (st.scrollWidth > st.clientWidth + 1) sd.hidden = true; } } } } } // v2.30.1: phones keep the chip on one line (the weather word goes; its icon stays); v2.33 fit: no "Day N" in a friend's yard (my day count is not theirs, 50_friends.js frChip); overlap leftovers: a Tokyo place whose long name still does not fit takes its short Japan map pin name (tkPinLabel, 39_tokyo.js), then drops "Day N" (as a friend's yard does), then the name takes the first line and the time the second (.wrapn, 19_phone_v15b.css) and "Day N" comes back when it fits
 }
+// overlap leftovers: the chip's one-line fit is measured when it is written; a font that arrives later (CJK, Thai) or a resize makes it wider or narrower, so it is written and measured again then
+let stRefitT = 0;
+function statusRefit() { clearTimeout(stRefitT); stRefitT = setTimeout(() => { const st = $('#status'); if (!st || !S || !st.dataset.k) return; delete st.dataset.k; try { updateHUD(); } catch (e) { /* before the HUD exists */ } }, 120); }
+try { if (document.fonts) { document.fonts.addEventListener('loadingdone', statusRefit); document.fonts.ready.then(statusRefit); } } catch (e) { /* no font loading API */ }
+window.addEventListener('resize', statusRefit);
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 
 /* ---------------- action bar ---------------- */

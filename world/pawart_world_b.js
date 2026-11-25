@@ -7010,7 +7010,8 @@ PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Sui
                               (a string, escaped here) it writes the code on the line in the crayon font; without it the line is blank. Cached per code.
    wrap(n)       item 64x64   a wrapped gift with a ribbon bow; n 0 dots (pink paper), 1 stripes (yellow paper), 2 little paws (blue paper); others wrap.
    paw()         item 64x64   a pink crayon paw-print stamp, slightly uneven, with paper specks showing through; the yard path and the note letters.
-   ribbon()      icon 64x64   the guest dog's friend ribbon: a mint rosette with a pink heart and two tails; drawn at about 18 to 24 px.
+   ribbon()      icon 64x64   the guest dog's friend ribbon: a mint rosette with a pink heart and two tails, light lines; the walk
+                              (10 to 24 px), the sleepover guest tag (about 28 px) and the news icon (40 to 44 px).
    wheel()       prop 160x220 the name-wheel frame: a paper drum with shaded rounded ends between two notched wooden rails, soft pink pointers at
                               the middle row. Text area (left clear): x 24..136, y 30..190; the picked word's row is centred at y 110 (a pale
                               band y 92..128, PA.FRIENDS.wheelText). */
@@ -7083,13 +7084,16 @@ function frPaw(){const b=mk('item','fr:paw'),r=b.r,ink='#C9566E',fill='#F28FA5',
   [[16.5,27,4.6,5.8,-.35],[25.5,18.5,4.9,6.4,-.12],[37.5,17.5,5,6.6,.1],[48,24.5,4.5,5.6,.4]].forEach(([x,y,rx,ry,t],i)=>{const p=rot([[x+(r()-.5)*1.2,y+(r()-.5)*1.2]],a,c[0],c[1])[0];
     b.sh(E(p[0],p[1],rx*(.94+r()*.12),ry*(.94+r()*.12),11,t+a),fill,{k:.2,hatch:0,hl:0,lw:.9,ink,base:'#F8BFCB',dr:.15,marks:i%2?spk(p[0],p[1],rx,ry).slice(0,2):[]})});
   return b.svg('0 0 64 64','','Paw print')}
-function frRibbon(){const b=mk('icon','fr:ribbon'); // fix batch: bold lines (lw ~2), so the ink still reads at the walk's 10-24 px
-  // two tails with a soft V cut, under the rosette
-  b.sh([[25,40],[31,44],[27,61],[23.5,57],[18.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:2,marks:[{pts:[[19,52],[30,52],[30,56],[19,56]],fill:'#7FC7BF',op:.7,k:0}]});
-  b.sh([[39,40],[33,44],[37,61],[40.5,57],[45.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:2,marks:[{pts:[[34,52],[45,52],[45,56],[34,56]],fill:'#7FC7BF',op:.7,k:0}]});
-  b.sh(flowerP(32,27,23,7,.2),FR_MINT,{k:.1,hatch:0,hl:0,lw:2.2,marks:[{pts:E(32,27,16,16,14),fill:'#BDE7D2'}]});
-  b.sh(E(32,27,14,14,16),'#FFFBF3',{hatch:0,hl:0,lw:1.8,base:'#FFFFFF'});
-  b.sh(heartP(32,28.5,21),FR_PINK,{hatch:0,hl:0,lw:1.9,dr:.1});
+// fix (V233 overlap review S9): the old bold lines (lw 2 on the icon pencil, 6.6 units) swallowed the rosette. Now a light outline (about 2 units),
+// a shallow scalloped rosette with one pale ring for its pleats (no fold lines), a cream middle and a pink heart, the tails inside the box
+function frRibbon(){const b=mk('icon','fr:ribbon'),cx=32,cy=24.5,R=20.5,sc=[];
+  for(let i=0;i<60;i++){const a=i/60*Math.PI*2,q=R*(.9+.1*Math.abs(Math.cos(a*5)));sc.push([cx+Math.cos(a)*q,cy+Math.sin(a)*q])}
+  // two tails with a soft V cut, under the rosette (a darker mint shade where they tuck under it)
+  [[1,[[24.5,37],[31,40.5],[27.4,58],[23.6,54.4],[18.6,57]]],[-1,[[39.5,37],[33,40.5],[36.6,58],[40.4,54.4],[45.4,57]]]].forEach(([f,t])=>
+    b.sh(t,FR_MINT,{k:.05,hatch:0,hl:0,lw:.62,base:'#C9ECE7',marks:[{pts:[[cx-f*14,36],[cx+f*2,36],[cx+f*2,45],[cx-f*14,45]],fill:'#7FC7BF',op:.55,k:0}]}));
+  b.sh(sc,FR_MINT,{k:.1,hatch:0,hl:0,lw:.66,base:'#C9ECE7',marks:[{pts:E(cx,cy,R*.8,R*.8,18),fill:'#C9ECE7',op:.95}]});
+  b.sh(E(cx,cy,12.2,12.2,16),'#FFFBF3',{hatch:0,hl:0,lw:.5,base:'#FFFFFF'});
+  b.sh(heartP(cx,cy+1.4,17),FR_PINK,{hatch:0,hl:0,lw:.55,dr:.1,base:'#F9C9D4'});
   return b.svg('0 0 64 64','','Friend ribbon')}
 function frWheel(){const b=mk('prop','fr:wheel');
   b.shadow(80,214,62,4);
@@ -7704,8 +7708,9 @@ PA.PROMO={costumes:['Follower Star Bandana','Friendship Bandana'],decor:Object.a
    the line's own points; stripes, cheeks and shades are marks clipped to their shape). No words or numbers baked in.
    scoop()   item 64x64  a blue crayon kibble scoop heaped with kibble, the handle out to the left, the mouth up and the kibble inside the rim, so
                          it tips as one piece; drawn over the help bowl at 40 to 60 px and turned about 35 degrees for the pour.
-   moon()    icon 48x48  a sleepy crayon crescent wearing a striped blue nightcap with a white pom-pom; bold lines for the 20 to 24 px Sleepover
-                         button, also the 48 px sheet header and the 1080 px picture's night sky.
+   moon()    icon 48x48  a sleepy crayon crescent wearing a striped blue nightcap with a white pom-pom, in the scoop's pencil weight and inside
+                         its box with a 2-unit margin; the 28 px Sleepover buttons, the 34 and 56 px sheet marks, the 40 to 44 px news icon and
+                         the picture's night sky (88 units).
    stk(k)    item 64x64  the six "Helping paws" sticker faces (the book draws the round sticker frame): h5 a pink bowl of kibble and a heart,
                          h25 a watering can and a heart, h100 three paws, the gold one in the middle under crayon rays and a star (the grandest),
                          sl1 the nightcap moon in a little night sky, host two crayon dog heads nose to nose (the guest wears a mint friend badge),
@@ -7717,15 +7722,17 @@ function hpMoonDraw(b,s,ox,oy,w){const P=pts=>pts.map(([x,y])=>[ox+x*s,oy+y*s]),
   const cm=rot(crescent(21,27,18.5),-.22,21,27);
   b.sh(P(cm),'#FFE59A',{k:.16,lw:1.05*w,base:'#FFF4C2',sh:'#F2C14E',marks:[{pts:P(E(9.6,31.5,3,1.9,10)),fill:PINK,op:.6}]});
   // a sleepy closed eye and a little smile
-  b.ln(P([[7.4,24.2],[10,26.4],[13,25.4]]),{w:1.9*s*w});
-  b.ln(P([[10.6,35],[13.4,36.4],[16,34.8]]),{w:1.5*s*w});
+  b.ln(P([[7.4,24.2],[10,26.4],[13,25.4]]),{w:1.5*s*w});
+  b.ln(P([[10.6,35],[13.4,36.4],[16,34.8]]),{w:1.2*s*w});
   // the nightcap: a floppy cone off the top horn, stripes clipped inside, a cream brim and a pom-pom at the tip
   const cap=[[16,13],[17,7],[21,3],[27,.8],[33.5,1],[38.6,3.6],[42,8.4],[43.6,13.6],[43.4,17.6],[39.4,17.6],[37.4,14],[34.6,11],[32,9.6]];
   const strp=[[[20,-2],[26,-2],[23,14],[16,14]],[[30,-2],[36,-2],[34,12],[27,12]],[[40,4],[46,7],[46,12],[37,10]]].map(q=>({pts:P(q),fill:'#FFFBF3',op:.9,k:0}));
   b.sh(P(cap),'#8FB8E8',{k:.18,lw:.8*w,hl:0,base:'#CFE0F6',marks:strp});
   b.sh(P([[14,15.4],[23.4,11.2],[33.4,7.8],[35,12.8],[24.6,16.6],[15.4,20.6]]),'#FFF2DA',{k:.3,hatch:0,hl:0,lw:.8*w,base:'#FFFBF3'});
   b.sh(P(E(43,19.6,3.9,3.7,12)),'#FFFFFF',{hatch:0,hl:0,lw:.85*w,base:'#FFFFFF',marks:[{pts:P(E(44,20.8,2.4,1.8,8)),fill:'#E6EEF8',op:.9}]})}
-function hpMoon(){const b=mk('icon','hp:moon');hpMoonDraw(b,1,.6,3.2,1);b.ex('spark',38.6,37.4,3.4,'#FFE59A');
+// fix (V233 overlap review S10): the item pencil at .75, about half the old icon line (the scoop's and the stickers' weight for the drawing's
+// size), and the drawing scaled to .84 so the cap tip, the pom-pom, the horns and the spark keep a margin of about 2 units at every size
+function hpMoon(){const b=mk('item','hp:moon');hpMoonDraw(b,.84,3.1,4.4,.75);b.ex('spark',37,37.8,2.9,'#FFE59A');
   return b.svg('0 0 48 48','','Sleepover moon')}
 function hpScoop(){const b=mk('item','hp:scoop');
   // the handle (behind the cup), with a hanging hole at its end
@@ -7763,7 +7770,7 @@ const HP_ST={
   paw(b,32,37,8.6,LV_STAR,{a:0,lw:1.05});
   b.ex('spark',9,24,3.4,'#FFE59A');b.ex('spark',56,25,3,'#F9C7D6');b.ex('dots',46,58,3.4)},
  sl1(b){b.sh(cloudP(32,33,28,26,6,.1,40),'#D3C6F1',{k:.16,hatch:0,hl:0,lw:.8,base:'#E9E2F8',ink:'#8A6A9C',marks:[{pts:E(42,46,22,12,14),fill:'#B9A6E8',op:.4}]});
-  hpMoonDraw(b,1.06,5,5.6,1);
+  hpMoonDraw(b,1.06,5,5.6,.9);
   [[50,40,4.4],[11,50,3],[54,53,2.6]].forEach(([x,y,R])=>b.sh(starP(x,y,R,R*.45),'#FFE07A',{k:.06,hatch:0,hl:0,lw:.6,base:'#FFF0B8',dr:0}))},
  host(b){const k=crude(b.r);
   frHead(k,30.6,36,1,'#D8CFC6','flop','#7A5E52');

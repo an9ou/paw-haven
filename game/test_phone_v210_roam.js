@@ -8,6 +8,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
   const quiet = async () => { await t.luWait(1200); await t.lu(); };
   const vb = () => ev(() => { const v = document.querySelector('#view svg.world').viewBox.baseVal; return { x: v.x, y: v.y, w: v.width, h: v.height }; });
   const tapAt = (id) => ev((id) => { const r = document.querySelector(`#pack [data-dog="${id}"] .pd-wander > rect`).getBoundingClientRect(); for (const fy of [0.5, 0.6, 0.7, 0.4, 0.8]) for (const fx of [0.5, 0.6, 0.4, 0.7, 0.3]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y), g = e && e.closest('[data-dog]'); if (g && g.dataset.dog === id) return { x, y }; } return null; }, id);
+  if (process.env.RM_ONLY === 'look') { await lookPart(t); return; } // RM_ONLY=look: the look chips against the decorations alone
   for (const device of ['iPhone 15', 'Pixel 7']) {
     const tag = device.replace(' ', '');
     sec(device + ': one dog, the wide crop');
@@ -70,5 +71,40 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     }
     await t.ctx.close();
   }
+  await lookPart(t);
   if (!t.failed) console.log('ALL OK');
-}, { device: 'iPhone 15', prefs: { rmTest: true } });
+}, { device: 'iPhone 15', prefs: { rmTest: true }, timeout: 360000 });
+
+/* overlap leftovers (24 Nov 2026): on a narrow phone a look chip sat over a decoration (the Giant Crayon Box and the Yard Snowman on the left, the
+   Flower Barrel on the right at 360; the Family Photo Frame and the Wind Chime at 390) in every sample. A pack of five (a Great Dane leading), the 20
+   decorations of the review placed one by one with the game's free spot, and a yard visitor: 15 samples, no chip over a decoration's drawing or the
+   visitor (37_roam.js rmLookPlace) */
+const LOOK_DECOR = ['Tug Post', 'Puddle Pool', 'Play Tunnel', 'Bubble Fountain', 'Bird Bath', 'Flower Barrel', 'Garden Bench', 'Sandbox', 'Stepping Stones', 'Yard Snowman', 'Felt Fir Tree', 'Present Pile', 'Giant Crayon Box', 'Rocking Chair', 'Doggy Ramp', 'Hammock', 'String Lights', 'Wind Chime', 'Star Lantern', 'Family Photo Frame'];
+async function lookPart(t) {
+  const { ok, sec, ev } = t;
+  for (const [w, h] of [[360, 640], [390, 844]]) {
+    sec(`${w}x${h}: five dogs, 20 decorations and a yard visitor: the look chips keep off them`);
+    await t.newGame({ device: 'Pixel 7', prefs: { rmTest: true, yvTest: true }, map215: true, ground: true }, { coins: 5000 });
+    await t.p.setViewportSize({ width: w, height: h });
+    await ev((DECOR) => { const P = window.__paw, S = P.S; const d = P.addDog({ key: 'dane', sex: 'male', months: 30 }, 'Bruno'); P.addDog({ key: 'chihuahua', sex: 'female', months: 4 }, 'Pip'); P.addDog({ key: 'samoyed', sex: 'female', months: 24 }, 'Snow'); P.addDog({ key: 'mastiff', sex: 'male', months: 30 }, 'Tank'); P.switchDog(d.id);
+      DECOR.forEach((n) => { S.decor[n] = { got: '2026-11-01', out: false }; }); DECOR.forEach((n) => { const at = P.ho.freeSpot(n); S.decor[n].out = true; if (at) S.decor[n].at = at; }); }, LOOK_DECOR);
+    await ev(() => { const P = window.__paw; P.S.visitors.seen = Date.now() - 30 * 3600e3; P.yv.back(); });
+    await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.calm(); await t.lu(); await t.sleep(2500);
+    let shown = 0; const on = {};
+    for (let i = 0; i < 15; i++) {
+      const r = await ev(() => {
+        const R = (e) => { const q = e.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }, ov = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+        const ink = (svg) => { let b = null; [...svg.children].forEach((c) => { if (['defs', 'title'].includes(c.tagName)) return; const q = c.getBoundingClientRect(); if (!q.width) return; b = b ? [Math.min(b[0], q.left), Math.min(b[1], q.top), Math.max(b[2], q.right), Math.max(b[3], q.bottom)] : [q.left, q.top, q.right, q.bottom]; }); return b; };
+        const things = [...document.querySelectorAll('#view [data-decor]')].map((e) => { const s = e.querySelector('svg'); return { n: e.dataset.decor, b: (s && ink(s)) || R(e) }; }).concat([...document.querySelectorAll('#view #visitorG')].map((e) => ({ n: 'the visitor', b: R(e) })));
+        let n = 0; const out = [];
+        document.querySelectorAll('#view .rm-look').forEach((c) => { if (c.hidden || !c.getClientRects().length) return; n++; const q = R(c); things.forEach((x) => { if (x.b && ov(q, x.b) > 20) out.push(c.id + ' on ' + x.n); }); });
+        return { n, out };
+      });
+      if (r.n) shown++; r.out.forEach((x) => { on[x] = (on[x] || 0) + 1; });
+      await t.sleep(800);
+    }
+    ok(shown > 0 && !Object.keys(on).length, `${w}x${h}: a look chip in ${shown} of 15 samples, never over a decoration or the visitor: ${JSON.stringify(on)}`);
+    await t.SH(`look_${w}`);
+    await t.ctx.close();
+  }
+}

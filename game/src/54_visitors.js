@@ -149,12 +149,67 @@ function yvCatchUp(now) {
 }
 
 /* ---------------- the visitor in the yard ---------------- */
-const YV = { tick: 0, greet: false, gTe: null, gD: 0 };
+const YV = { tick: 0, greet: false, gTe: null, gD: 0, at: null, full: false };
 // fix batch (art 3, phone 4): the yard visitor has its own spot, right of the dog and clear of the mailbox (the pack's free spot stood it in front of
 // the mailbox, the mail badge on its head, and off the left edge at 390 px). Feet x 592: inside the phone crop at 360 and 390 (phHomeRefit widens the
 // crop to the right edge of visitorSpot(), which answers this spot while a yard visitor is drawn).
 const YV_SPOT = [592, 452, 'left', 0.58]; // [feet x, feet y, facing, scale] as PACK_SPOTS (0.57 at y 438)
-const yvSpot = () => YV_SPOT.slice();
+const YV_FRONT = 594; // a full yard: the visitor's feet in front of every decoration's feet (596 at most)
+// v2.33 fix (overlap review S4): a decoration on YV_SPOT (an older yard: the Felt Fir Tree, the Bubble Fountain) no longer has the visitor and its
+// name chip drawn over it. yvPickSpot looks for the nearest spot where the dog and its chip are clear of every decoration's box, the mailbox, the door,
+// the dog house, the scene's hot spots, festival props and the place buttons and chips; YV.at holds it while the visitor is drawn ([fx, fy, face, sc, up]:
+// up = the chip above its head). A full yard: the visitor stands at the front by the gate side, drawn in front of everything, its chip above its head.
+const yvSpot = () => (YV.at || YV_SPOT).slice(0, 4);
+const yvTagWH = () => (isPhone() ? [132, 31, 25, 21] : [92, 22, 17, 15]);
+// the visitor's dog box (its tap rect) and its name chip at a spot, world units (up: the chip just over the drawn head, which a phone's tap rect overshoots)
+function yvBoxes(d, sp, up) {
+  const [fx, fy, , sc] = sp, w = 264 * sc, h = 220 * sc, z = sizeK(d), ph = isPhone(), tg = yvTagWH();
+  const rw = Math.max((w - 52) * z, ph ? w - 52 : 0), hu = Math.max((h * (205 / 220) - 26) * z, ph ? h * (205 / 220) - 26 : 0), dn = Math.min(h * (15 / 220) * Math.max(z, ph ? 1 : 0), 599 - fy); // the tap rect ends at the scene's bottom edge
+  return { dog: [fx - rw / 2, fy - hu, rw, hu + dn], tag: up ? [fx - tg[0] / 2, fy - Math.min(hu, h * z * (205 / 220) * 0.76) - tg[1] - 4, tg[0], tg[1]] : [fx - tg[0] / 2, fy + 2, tg[0], tg[1]], rw, hu, dn };
+}
+// what the visitor keeps clear of, world units: hard (the fixed yard things, chips and buttons on show), the decorations' drawn ink (flat: a flat
+// thing such as the Stepping Stones, which a dog may stand on, but its chip may not cover) and soft (my dog at rest)
+function yvObstacles(svg) {
+  const hard = [], soft = [HO_DOG_REST], deco = hoOutIn('yard').map((m) => { const lb = hoFoot(m); return { b: hoInk(m, lb), flat: hoLayer(m) === 1, bot: lb[1] + lb[3] }; }); // 28_home.js
+  (HO_KEEP.yard || []).concat(hoFrontFixed('yard')).forEach((b) => hard.push(b));
+  if (Array.isArray(S.litters) && S.litters.length && typeof NURSERY_AT !== 'undefined') hard.push(NURSERY_AT.art);
+  if (typeof fsKeepOut === 'function') { try { (fsKeepOut('yard') || []).forEach((b) => { if (Array.isArray(b) && b.length === 4) hard.push(b); }); } catch (e) { /* no festival */ } }
+  if (svg) {
+    const wb = (r) => { const a = toWorld(svg, r.left, r.top), b = toWorld(svg, r.right, r.bottom); return [a.x, a.y, b.x - a.x, b.y - a.y]; };
+    svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (r.width) hard.push(wb(r)); });
+    document.querySelectorAll('#placeBtns .btn, #status, #ddWish:not([hidden]), #phPeek, #view .rm-look, #msBtn:not([hidden])').forEach((el) => { const r = el.getBoundingClientRect(); if (r.width > 1 && el.offsetParent !== null) hard.push(wb(r)); });
+  }
+  return { hard, soft, deco };
+}
+// the spot for visitor dog d: YV_SPOT when clear, else the nearest clear one. Phones: inside the home crop phHomeRefit takes with a visitor (from x 306
+// to the visitor's right; when that is wider than the screen the crop centres on both, so the visitor may stand further right while my dog's spot, x 400
+// on, stays in view)
+function yvPickSpot(d) {
+  const svg = $('svg.world', view), O = yvObstacles(svg), ph = isPhone(), vb = svg && svg.viewBox && svg.viewBox.baseVal, half = 264 * YV_SPOT[3] / 2 + 6;
+  const Wv = ph && vb && vb.width ? Math.min(1000, vb.width) : 1000;
+  const ov = (a, L) => L.reduce((s, b) => s + hoOverlap(a, b), 0);
+  const rate = (fx, fy, up) => {
+    const sp = [fx, fy, fx < 470 ? 'right' : 'left', YV_SPOT[3]], B = yvBoxes(d, sp, up), R = Math.max(530, fx + half), wide = R - 306 > Wv;
+    const c0 = ph ? (wide ? (306 + R) / 2 - Wv / 2 : 306) : 140, c1 = ph ? (wide ? (306 + R) / 2 + Wv / 2 : 306 + Wv) : 912; // what the screen shows at home
+    const inX = [B.dog, B.tag].every((b) => b[0] >= c0 + 2 && b[0] + b[2] <= c1 - 2) && c0 <= 400, inY = B.tag[1] >= 150 && B.tag[1] + B.tag[3] <= 596;
+    const deco = O.deco.reduce((s, o) => s + (o.flat ? 0 : hoOverlap(B.dog, o.b)) + hoOverlap(B.tag, o.b), 0), hard = ov(B.dog, O.hard) + ov(B.tag, O.hard), soft = ov(B.dog, O.soft) + ov(B.tag, O.soft);
+    return { sp: sp.concat([up ? 1 : 0]), clear: inX && inY && !deco && !hard, sc: (inX && inY ? 0 : 1e7) + deco * 40 + hard * 40 + soft + Math.hypot(fx - YV_SPOT[0], fy - YV_SPOT[1]) * 4 + (wide ? (R - 306 - Wv) * 6 : 0) };
+  };
+  YV.full = false; YV.rate = rate; // (the test hook yv.rate)
+  const first = rate(YV_SPOT[0], YV_SPOT[1], false); if (first.clear) return first.sp;
+  let best = null; const each = (fn) => { for (let fy = 432; fy <= 588; fy += 12) for (let fx = 312; fx <= 900; fx += 12) [false, true].forEach((up) => fn(fx, fy, up)); };
+  each((fx, fy, up) => { const r = rate(fx, fy, up); if (r.clear && (!best || r.sc < best.sc)) best = r; });
+  if (best) return best.sp;
+  // nothing clear (a full yard): at the very front of the yard, so it is drawn in front of every decoration as it stands in front of them, on the gate
+  // side (x 470), its chip above its head, inside the view and covering as little as it can
+  YV.full = true;
+  for (let fx = 312; fx <= 900; fx += 6) {
+    const r = rate(fx, YV_FRONT, true), B = yvBoxes(d, r.sp, true);
+    r.sc = (r.sc >= 1e7 ? 1e7 : 0) + (ov(B.dog, O.hard) + ov(B.tag, O.hard)) * 40 + O.deco.reduce((a, o) => a + hoOverlap(B.tag, o.b), 0) * 4 + Math.abs(fx - 470) * 2;
+    if (!best || r.sc < best.sc) best = r;
+  }
+  return best.sp;
+}
 const yvTownSpot = visitorSpot; // 14b_vet_playboard.js: the town visitor's spot (the pack's next free spot)
 visitorSpot = function () { return S && S.place === 'yard' && $('#yvHost #visitorG', view) ? yvSpot() : yvTownSpot(); }; // eslint-disable-line no-func-assign
 function yvVisDog(v) { const cs = typeof starterCoats === 'function' ? starterCoats(v.key) : [], c = cs[v.coat] || cs[0]; return { id: 'yv_' + v.id, key: v.key, genes: c ? c.genes : {}, born: bornDaysAgo(v.age), mix: null, sparkle: false }; }
@@ -165,13 +220,14 @@ function yvLine(e) {
     : tt('yv.line_sniff', '{name} came by and had a good sniff round the garden.', { name: v.name });
 }
 function yvSVG(e) {
-  const v = yvDog(e.id), d = yvVisDog(v), [fx, fy, face, sc] = yvSpot(), tg = isPhone() ? [132, 31, 25, 21] : [92, 22, 17, 15], nm = v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name, w = 264 * sc, h = 220 * sc, z = sizeK(d);
-  const ph = isPhone(), rw = Math.max((w - 52) * z, ph ? w - 52 : 0), up = Math.max((h * (205 / 220) - 26) * z, ph ? h * (205 / 220) - 26 : 0), dn = h * (15 / 220) * Math.max(z, ph ? 1 : 0);
-  return `<g id="visitorG" class="visitor yv hot" data-yv="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(tt('yv.aria', '{name} is visiting from {family}', { name: v.name, family: yvFam(v) }))}"><rect x="${(fx - rw / 2).toFixed(1)}" y="${(fy - up).toFixed(1)}" width="${rw.toFixed(1)}" height="${(up + dn).toFixed(1)}" fill="transparent"/>${place(dogSVG(d, wetOpt(d, { pose: 'happy', facing: face })), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="${-tg[0] / 2}" y="-2" width="${tg[0]}" height="${tg[1]}" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${tg[3]}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${tg[2]}" fill="#5B3D32">${esc(nm)}</text></g></g>`; // phones: a tag of 12 px or more at 360 (phone 11)
+  const v = yvDog(e.id), d = yvVisDog(v); YV.at = yvPickSpot(d);
+  const [fx, fy, face, sc] = yvSpot(), tg = yvTagWH(), nm = v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name, w = 264 * sc, h = 220 * sc, z = sizeK(d);
+  const B = yvBoxes(d, YV.at, YV.at[4]), rw = B.rw, up = B.hu, dn = B.dn, ty = B.tag[1] + 2; // the chip's own rect starts 2 units above its translate
+  return `<g id="visitorG" class="visitor yv hot" data-yv="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(tt('yv.aria', '{name} is visiting from {family}', { name: v.name, family: yvFam(v) }))}"><rect x="${(fx - rw / 2).toFixed(1)}" y="${(fy - up).toFixed(1)}" width="${rw.toFixed(1)}" height="${(up + dn).toFixed(1)}" fill="transparent"/>${place(dogSVG(d, wetOpt(d, { pose: 'happy', facing: face })), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${ty.toFixed(1)})"><rect x="${-tg[0] / 2}" y="-2" width="${tg[0]}" height="${tg[1]}" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${tg[3]}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${tg[2]}" fill="#5B3D32">${esc(nm)}</text></g></g>`; // phones: a tag of 12 px or more at 360 (phone 11)
 }
 function yvHere() { return !!(S && yvOn() && cur.mode === 'yard' && S.place === 'yard' && !(typeof HO !== 'undefined' && HO.pl)); }
 function yvDraw(greet) {
-  const old = $('#yvHost', view); if (old) old.remove();
+  const old = $('#yvHost', view); if (old) old.remove(); YV.at = null;
   if (!yvHere()) return null;
   const V = yvS(), e = V.q[V.q.length - 1]; if (!e || !yvDog(e.id)) return null;
   const svg = $('svg.world', view), pack = svg && $('#pack', svg); if (!pack) return null;
@@ -267,6 +323,10 @@ function yvTick() { if (S && S.visitors && document.visibilityState === 'visible
 function yvBack() { const got = yvCatchUp(); if (got.length && yvHere()) yvDraw(true); else if (got.length) YV.greet = true; return got; }
 on('game:ready', () => { if (!S) return; v226Fields(S); const got = yvCatchUp(); if (got.length) YV.greet = true; clearInterval(YV.tick); YV.tick = setInterval(yvTick, 30000); setTimeout(yvExpose, 0); });
 on('yard:enter', () => { if (!S || !yvOn()) return; yvDraw(YV.greet); if (YV.greet && $('#visitorG.yv', view)) YV.greet = false; });
+// v2.33 fix (overlap review S4): things moved or given out in the yard: the visitor finds its spot again
+const yvRespot = () => setTimeout(() => { if (S && yvHere() && $('#yvHost', view)) yvDraw(false); }, 0);
+on('ho:place', (o) => { if (o && !o.on && o.room === 'yard') yvRespot(); });
+on('decor:new', yvRespot);
 document.addEventListener('visibilitychange', () => { if (!S) return; if (document.visibilityState === 'hidden') { if (S.visitors) S.visitors.seen = Date.now(); } else yvBack(); });
 function yvExpose() {
   if (!window.__paw) return;
@@ -274,7 +334,8 @@ function yvExpose() {
     dogs: YV_DOGS, toys: YV_TOYS, old: YV_OLD, on: yvOn, state: () => JSON.parse(JSON.stringify(yvS())), pull: yvPull, open: yvOpen,
     plan: (day) => yvPlan(day || jstISO()), slotT: yvSlotT, can: (id, t) => yvCan(yvDog(id), t || Date.now()),
     catchUp: (now) => yvCatchUp(now), back: yvBack, draw: () => yvDraw(false), card: () => { const q = yvS().q; if (q.length) yvCard(q[q.length - 1].t); },
-    book: yvOpenBook, page: yvOpenPage, away: (ms) => { yvS().seen = Date.now() - ms; }, fields: v226Fields,
+    book: yvOpenBook, page: yvOpenPage, spot: () => yvSpot(), at: () => (YV.at ? YV.at.slice() : null), full: () => YV.full, home: YV_SPOT, rate: (fx, fy, up) => (YV.rate ? YV.rate(fx, fy, !!up) : null),
+    obstacles: () => { const o = yvObstacles($('svg.world', view)), r = (L) => L.map((b) => b.map(Math.round)); return { hard: r(o.hard), soft: r(o.soft), deco: r(o.deco.map((x) => x.b)) }; }, away: (ms) => { yvS().seen = Date.now() - ms; }, fields: v226Fields,
     env: (k, v) => { ENV[k] = v; }, test: (v) => { prefs.yvTest = !!v; }, get date() { return NEWS_V226.date; }, journal: () => openJournal('visitors'), care: () => openCareTray(), gift: (id, day, k) => yvGift({ id, day, k, t: Date.now() })
   };
 }

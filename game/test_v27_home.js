@@ -105,8 +105,11 @@ require('./test_lib').run('v27_home', async (t) => {
   const old = await ev(() => { const s = JSON.parse(JSON.stringify(window.__paw.S)); delete s.bedAt; delete s.bedOf; delete s.careOff; delete s.shelter; s.decor = {}; ['Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Ghost Garland', 'Giant Crayon Box'].forEach((n) => { s.decor[n] = { got: '2026-10-10', out: true }; }); s.beds = ['Old Blanket', 'Plaid Pillow']; s.bed = 'Plaid Pillow'; s.place = 'yard'; return JSON.stringify(s); });
   await t.ctx.close(); pg = await t.mk({ storage: { pawhaven_proto_v1: old } }); await pg.goto(URL); await pg.waitForSelector('#tContinue'); await pg.click('#tContinue'); await t.untilMode('yard'); await t.home('yard');
   await t.until(() => document.querySelectorAll('#decorG [data-decor]').length === 5);
-  const yd = await ev(() => [...document.querySelectorAll('#decorG [data-decor]')].map((g) => { const s = g.querySelector(':scope > svg'), a = window.__paw.home.specs[g.dataset.decor].at; return +s.getAttribute('x') === a[0] && +s.getAttribute('y') === a[1] && +s.getAttribute('width') === a[2]; }));
-  ok(yd.length === 5 && yd.every(Boolean), 'the four 2026 decorations and the Crayon Box are drawn at their catalogue spots');
+  // v2.33 fix (overlap review S3): the one-time tidy (S.hoTidy) moves only a thing less than 60% in sight (here the Paper Bat Bunting, 42% behind the
+  // Scarecrow); everything else stays drawn at its catalogue spot
+  const yd = await ev(() => [...document.querySelectorAll('#decorG [data-decor]')].map((g) => { const n = g.dataset.decor, s = g.querySelector(':scope > svg'), a = window.__paw.home.specs[n].at, r = window.__paw.S.decor[n]; return { n, cat: +s.getAttribute('x') === a[0] && +s.getAttribute('y') === a[1] && +s.getAttribute('width') === a[2], own: Array.isArray(r.at) }; }));
+  const seenY = await ev(() => window.__paw.ho.seen('yard'));
+  ok(yd.length === 5 && yd.every((x) => x.cat || x.own) && yd.filter((x) => !x.cat).length <= 1 && seenY.every((o) => o.f >= 0.6) && (await S()).hoTidy === 1, 'the four 2026 decorations and the Crayon Box are drawn at their catalogue spots, but for one hidden one given a spot in sight (' + yd.filter((x) => !x.cat).map((x) => x.n).join() + ')');
   st = await S(); ok(JSON.stringify(st.bedAt) === '{"Plaid Pillow":[610,360]}' && st.bed === 'Plaid Pillow', 'S.bedAt defaults to the one bed at the v2.5 spot: ' + JSON.stringify(st.bedAt));
   await t.home('house');
   const bd = await ev(() => { const s = document.querySelector('#bedG > svg'); return s && [s.getAttribute('x'), s.getAttribute('y'), s.getAttribute('width'), s.getAttribute('height')].join(','); });

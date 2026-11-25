@@ -9,6 +9,7 @@ function enterBath() {
   // keep dog drawn under the tub: move tub after dog
   const svg = $('svg.world', view); svg.insertBefore($('#tubG'), $('#fx')); svg.insertBefore($('#suds'), $('#fx'));
   updateHUD(); bindDev();
+  if ($('#pack') && typeof rmScan === 'function') requestAnimationFrame(() => { if (cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); }); // overlap review N5: the pack steps a little away from the tub (37_roam.js rmScan: the tub is a prop in the bath)
   let prog = 0, last = null, done = false, scrubT = 0;
   const startClean = S.stats.clean;
   // v2.7 PACK CARE: in a pack bath (crBath) one dog at a time is the active dog in the tub; the title counts the queue and "Next dog" skips ahead

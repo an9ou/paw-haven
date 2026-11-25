@@ -32,7 +32,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
   phone layout since v2.16 (itch_build expects 7 action buttons; i18n_phone clicks Feed, now in the Care tray; v211_breeds, v25_breeds and phone_legacy fixed in v2.23);
   mission +15 coins (v25_festival, v28_winter; 40 since v2.19.2); v215_ground looks for the Square's Pumpkin Patch pop-up (moved to the market place in v2.17.1);
   v25_fixes_b "Care > Nap on the Old Blanket" in the yard (the yard nap uses the Cardboard Box). Flaky: v219_friends greet, phone_v27_shelter room tap, phone_occl_play 360 px hint check. The local `vNN-base` branches must exist (`git branch -f v215-base origin/v215-base`).
-  - Flaky/red on 96eae646 too (6 Nov QA batch): phone_v29_pack "Tug: both crouch ... off the veggie bed" misses by 1 scene unit; i18n_smoke "Settings: after the reload the game is in ja".
+  - Flaky/red on 96eae646 too (6 Nov QA batch): phone_v29_pack "Tug: both crouch ... off the veggie bed" misses by 1 scene unit; i18n_smoke "Settings: after the reload the game is in ja". The i18n_smoke one is fixed (24 Nov 2026): headless Chromium could hand a file:// page back from `location.reload()` with a stale localStorage (the save missing), so its reload sections now run over http (`serveGame` in the suite); the game was right.
 - [x] The claude.ai artifact publish was blocked by the full-read requirement on a 1.8 MB page. Fixed in v2.4: `tools/artifact.js` builds a multi-file artifact (152 KB index.html + 6 script files); a subagent does the one-time read.
 - [x] Publish to the claude.ai artifact. Done with v2.1.
 - [x] Saves were per copy with no export. Fixed in v2.2: cloud save on the web version and Export / Import save codes on every copy.
@@ -214,7 +214,16 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Launch date from the owner: set `SHOP_LIVE = true`, change `NEWS_V224.date` in `game/src/49c_news.js` (placeholder 2026-12-01), then deploy the site (`/thanks`, `/privacy`, About, FAQ) with the game.
 
 ## Helping paws (v2.33, V233.md; accepted leftovers, 24 Nov 2026)
-- [ ] At 1280 a walking pack dog may pass in front of a Great Dane sleepover guest for a moment. `game/src/60b_sleep.js`
-- [ ] At 390 the watered patch on a friend's yard visit sits partly under the visit buttons. `game/src/60_helps.js`
-- [ ] Pack dogs can overlap each other in crowded yards (older than v2.33).
+- [ ] At 1280 a walking pack dog may pass in front of a Great Dane sleepover guest for a moment (overlap review, 24 Nov 2026: 1 of 15 samples, a walk past, never a rest). `game/src/60b_sleep.js`
 - [ ] Fit finding (older than v2.33): en, Pixel 7, "kind shop: paused: supporter": `p.small.ks-ask` has 3 px of room where the audit wants 4. `game/src/52_kindshop.js`
+- [x] Status chip at 360 in Tokyo places: English place names in every language, an ellipsis in ko, zh-Hant, yue (and th on the Japan map). Fixed 24 Nov: the names from `data.tk_places`, the short pin name, then no "Day N", then two lines. `game/src/00_core.js`, `14_town_places.js`, `39_tokyo.js`
+- [x] Friend visit on a phone: after a help pans the camera, it comes back to both leaders (FRC.home). `game/src/60_helps.js` hpPanBack
+- [x] Friend visit at 1280: dogs rest off their decorations where there is room (my leader on the Cauldron Planter). `game/src/50_friends.js` frDecorHit
+- [ ] Friend visit at 1280 with a crowded yard: their big dogs (the pair's Great Dane, a Samoyed or Husky beside it) still stand over a decoration when no clear spot exists beside the greeting pair (7 decorations: 0.26-0.58 of the dog; 20 decorations: up to 1.0). Shrinking the pack for decorations was left out. `game/src/50_friends.js`
+- [x] v219_friends 3b flake: a dog off to the side of the 360 crop went over another (18 of 60 layouts). Fixed: a lower off-crop spot before the any-spot fallback. `game/src/50_friends.js`
+- [ ] Friend visit at 360 with 4-5 big friend dogs: a dog still lands on another in every layout (no clear spot in or beside the crop: the any-spot fallback). `game/src/50_friends.js` frLayout
+- [ ] N4 (visit bowl on the Doggy Ramp at 390): not reproduced after M2 (the bowl's drawing touches the ramp's box by 7-8% in 4 of 10 layouts, clear of its drawing). Left as is. `game/src/60_helps.js` hpBowlSpot
+- [x] N3: town map at 1280: the zoom column over "Training Ground", the hover tip over the "Festival!" ribbon and the Shelter's name. `game/src/08_map.js`, `14_town_places.js` mapTipPlace
+- [x] N5: bath at 360: the pack waits a step away from the tub. `game/src/37_roam.js` (the tub a prop in the bath), `04_bath.js`
+- [x] Roam look chips over decorations or the yard visitor on narrow phones. `game/src/37_roam.js` rmLookPlace
+- [x] `v233_helps` ran 596 s against 620 s: the runner allows 840 s, its watchdog 820 s.
