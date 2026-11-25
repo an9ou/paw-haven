@@ -159,17 +159,66 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     timing above; the automatic late refund; the second notice's subject "Still taking longer than we said"; a line refused by the printer
     for several items is one email; sizes listed smallest first; pictures of every email and order state exist for the owner to look at.
   - Pictures: only a few part 6 PNGs are in git (`*.png` is ignored: `git add -f`); remake all with `SHOTS6=1 node merch/test_page.js`.
-- **Next, one at a time (at most 2 Opus agents at once), each with one combined review:**
-  - **Part 4**: the real render (`cloudflare/merch/render.js` with Browser Run into `MerchPrints`), built against the measured facts
-    of RENDER_FREE.md 8; a real test needs a new approved test deploy (ask the owner; the first one was a one-time approval).
-  - **Part 5**: the Printful adapter against recorded replies; real error shapes, variant ids, costs and a real draft order need the
-    owner's Printful key in a test Worker [O]. US territories (Puerto Rico, Guam) wait for the printer's real rates.
-  - Then part 8 (a brief for the GM: the in-game entry points), part 9 (the three big reviews and the sandbox run on
-    test.doodledoggo.app [O]), part 10 (samples and launch [O]).
+- **Parts 4, 5 and 8: built, 25 Nov about 15:00-17:30 JST (the third MERCH session, session_01D6KLY3fNKUKGLDeZrraF9a).** Each of 4 and 5 had
+  one review and one fix batch. On a fresh checkout run `NODE_PATH=$(npm root -g) node tools/merch_build.js` FIRST, then the suites one at a
+  time, each with `NODE_PATH=$(npm root -g)`: `node merch/test_pawprint.js` 84; the game round trip (`node game/build.js && node
+  game/harness.js merged && PAW_ARGS=--ignore-certificate-errors node merch/test_merch_game.js`) 11 checks (483 renders, 161 dogs through the
+  game's encoder); `node cloudflare/merch/test/run.mjs` 231 (before the part 4 fix batch, which adds rows); `node cloudflare/merch/test/render_chromium.mjs`;
+  `node merch/test_page.js` 1756 (about 100 s); `node merch/test_legal.js` 381; `node merch/game/test_enc.js` 36; `node merch/game/gen.js
+  --check`.
+  - **Part 4** (`docs/design/merch/PART4.md`, review `docs/reviews/MERCH_PART4_review.md`): `render.js` calls Browser Run
+    (`env.BROWSER.quickAction('screenshot')`) from the ledger object (`MERCH_RENDER_VIA = "direct"`) or through the front Worker's
+    `RenderGate` (`"worker"`, self binding `SELF`); the fallback is resvg-wasm 2.6.2 (vendored, MPL-2.0) in a NEW Durable Object class
+    `MerchRender` (`resvg.js`, migration tag `v2`), tees in 12 bands; our own browser budget (540 000 ms a UTC day), the 429 rules, one
+    `browser_off` owner email a day; the admin self-test `tools/merch.sh render-test <tee|mug> [browser|resvg] [direct|worker]`; the cloud
+    test kit `tools/merch_rtest.mjs` (dry by default; a real run needs `DRY_RUN=0 RTEST_GO=yes-the-owner-approved`, deploys ONE throwaway
+    Worker `doodle-doggo-merch-rtest`, about 10 browser renders, then deletes it and re-counts). Bundle 1,247 KiB gzip (Free limit 3 MB).
+    **Unverified until the cloud test** (PART4.md has the list): whether the object may call the browser binding, the real rate-limit 429
+    text, what a 429 or an error looks like, the fallback's CPU on Free, the upload format for the migration and the bindings.
+  - **Part 5** (`docs/design/merch/PART5.md`, review `docs/reviews/MERCH_PART5_review.md`): the Printful adapter on **API v2** (signed
+    webhooks, shipments by our own item ids, delivered/returned), with ONE v1 call, the late cancel of a confirmed order
+    (`MERCH_PF_V1_CANCEL`). Built against 46 reply fixtures in `cloudflare/merch/test/printful/` (33 built from the schema, 11 from the
+    docs' own examples, 2 public catalog reads). The real variant ids of all 43 variants are in `catalog.js` `PF_VARIANT_IDS` (public
+    catalog, no key). The review's three blockers are fixed: the Worker forwards `x-pf-webhook-signature`; a confirm whose answer was lost is
+    re-read, not sent twice; a confirmed order that Printful fails or cancels is held `review` (`pf_failed` / `pf_canceled`) and the owner is
+    told. `TEE_SIZE_COST` is now Printful's documented 2XL/3XL/4XL extras (+$2/$4/$6); no selling price changed; every size clears the floor
+    (lowest: 4XL to Japan, $9.90). The key-day kit `tools/merch_pf_check.mjs` (dry by default; makes one draft and deletes it, never confirms)
+    records real replies as fixtures. **Needs the owner's Printful key** (PART5.md "still needs the key"): the real error texts, a deleted
+    draft's answer, one real draft's costs (does `front_large` cost extra as the only placement? if yes every tee order is held by the 10%
+    cost check), that v2 variant ids equal v1's, that v1 sees v2 orders (Q22), webhook set-up. Open questions Q20-Q30 in PART5.md, each with
+    a recommendation; the build follows the recommendations.
+  - **Part 8** (`docs/design/merch/PART8.md`): the brief for the GM (the Merch tile, the confirm sheet, "Put this on a mug" in the share
+    sheet, the link, the gate `MERCH_FROM`, the tests) and what MERCH hands over, both built: `merch/game/61_merch_enc.js` (generated from
+    the core by `node merch/game/gen.js`, `--check` fails when stale; the GM copies it unchanged into `game/src/`; it needs only
+    `window.PawGenes` and `window.PawArt`; `merchLink(dogs, opts)` makes the address) and the page's share link
+    (`#p=<one dog>&prod=mug&pose=happy&from=share` opens the "make it" step). ART_VER is unchanged (`pp1-3f73333c`). Part 8b had no review of
+    its own: the part 9 reviews cover it.
+  - A builder tried to edit a file outside its own list (`worker.js`, part 5) and was blocked; the change was then checked by the reviewer
+    against Printful's docs and made in the fix batch. Told to the owner in this session's chat.
+  - Agents make their own branch names in their worktrees (`merch/part4-render`, `merch/part5-fixes` ...): merge those, not the
+    `worktree-agent-*` branch. `get_session`'s `context_usage.used_tokens` was already about 245k at about 130k of real conversation: the
+    count includes more than the conversation, so check it early.
+- **Next, in this order:**
+  1. **Ask the owner two things together in the choice window** (recommendation first; neither is covered by the 5-minute rule):
+     (a) the one-off cloud test of the render: `tools/merch_rtest.mjs`, one throwaway Worker on the Free plan, about 10 browser renders
+     (about 10 s of the day's 10 free browser-minutes), deleted after, the account re-counted; recommended: yes. Run it only after a yes,
+     then write the results into PART4.md and RENDER_FREE.md, fix what it shows (`MERCH_RENDER_VIA`, the 429 text) and tick the list.
+     (b) the Printful key: only through the secure form (`request_credential`, host `api.printful.com`), never in chat; then
+     `tools/merch_pf_check.mjs` (read-mostly; one draft made and deleted, never confirmed), re-record the fixtures, fix what differs.
+     The owner needs a Printful account first (and a store; a USD store and a store-level token are recommended, PART5.md Q28-Q29).
+  2. **Part 9**: the three big reviews (code, phone, art). Point the code review FIRST at the part 6 fix batch
+     (`cloudflare/merch/test/t_fix6.mjs`: the automatic late refund and the gift reserve had tests but no second review), then at part 8b
+     and at the part 4 and 5 fix batches. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox
+     keys].
+  3. Part 10 (samples and launch [O]).
   - Refresh the owner's samples (`node tools/merch_render.js part1`) after the art change of v2.33.1 before the next time they are shown.
+  - **For the launch go-ahead, not before** (add to the list kept above): PART5.md Q20-Q30; PART8.md's two open points (the tile for
+    everyone; the mug button only in the share sheet); the decisions taken in parts 4 and 5 (PART4.md, PART5.md "decisions").
+  - Told to the GM on 25 Nov: parts 4, 5 and 8 are ready on `merch/shop`; PART8.md is the GM's brief. Still on the GM's side: the gift's
+    item, its code group and who fills the pool; the `/privacy` text; the launch wiring.
 - For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
   (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
-- Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
+- Nothing is on sale and nothing is deployed (the first throwaway test Worker was deleted on 24 Nov; the second cloud test has not run).
 
 Only the owner can: open the Printful account and its payment method, open the separate Stripe account and turn on Stripe Tax, register
 for tax where needed (with an accountant: we give research, not tax advice), set secrets in the dashboards, order real samples.
