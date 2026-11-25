@@ -201,24 +201,42 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   - Agents make their own branch names in their worktrees (`merch/part4-render`, `merch/part5-fixes` ...): merge those, not the
     `worktree-agent-*` branch. `get_session`'s `context_usage.used_tokens` was already about 245k at about 130k of real conversation: the
     count includes more than the conversation, so check it early.
+- **Part 9, first half: done 25 Nov about 15:30 JST (the fourth MERCH session, session_01D6KLY5tW9BfVbcZQJsWN8B).**
+  - **The owner’s answers (25 Nov, about 14:30 JST, choice window):** the cloud test: **"Yes, run it (Recommended)"**; the Printful key:
+    **"Not yet: later"** (do not ask again before the sandbox run; then ask through `request_credential`, host `api.printful.com`).
+  - **The cloud test ran once (14:34 JST) and its Worker is deleted** (the account holds its 6 Workers, 0 Durable Object namespaces, checked
+    twice). Results: PART4.md "The cloud test: results", RENDER_FREE.md 9, the PART3.md line ticked. The ledger object may call Browser Run
+    (`MERCH_RENDER_VIA = "direct"` stays); every browser file pixel-exact; resvg inside the limits; no code change needed. Still unverified:
+    both 429 texts (the rate probe was answered from Cloudflare’s cache) and what a browser error looks like. Do NOT run the kit again
+    without a new yes from the owner.
+  - **The three reviews are in** (reports as handed back): `docs/reviews/MERCH_PART9_code_review.md` (1 blocker, 3 major, 3 minor),
+    `MERCH_PART9_phone_review.md` (0 blockers, 8 major, 10 minor), `MERCH_PART9_art_review.md` (0 blockers, 1 major, 7 minor).
+  - **Code fixes: merged** (`merch/part9-code-fixes`, merge e12f02d3; `merch_worker` 259/259): the printer is read before every automatic
+    refund and delay email (plus a daily re-read, T2.1-35/36), a lost dispute blocks the late cancel, a refund Stripe refuses for good is
+    marked failed and the owner told, only `lost` is lost (an inquiry is a flag, not a pause), the gift shows only at or past `confirming`.
+    **Not yet done, found by that fixer (money logic; give them to the next code fix batch):** (1) an order released 30+ days after a
+    dispute closes in our favour gets its delay email and is then refunded at its next wake (`late_eta` counts from `ship_by`); (2) the
+    7-day reship refund does not read Printful first; (3) `stopped()` lets a confirmed order with a lost dispute be reprinted.
+    **This fix batch has had no second review** (the part 6 lesson): point ONE more code review at `t_fix9.mjs` and the `ledger.js` diff of
+    3f21682d, together with the three points above once fixed.
+  - **For the sandbox set-up list:** the merch webhook endpoint must also subscribe to `charge.dispute.updated`.
+  - **Running when this was written (15:35 JST), each in its own worktree, not pushed until merged:** the page fixes
+    (`merch/part9-page-fixes`: phone M1-M8, m1-m10; art M1, m1, m2, m4; files `site/merch/**` but not `print/`, `merch/test_page.js`,
+    `merch/test_legal.js`) and the print and email fixes (`merch/part9-print-fixes`: art m3, m5, m6, m7; a new ART_VER and print folder,
+    the owner’s samples refreshed). Agent worktrees do not survive a new session: merge and push before handing over.
 - **Next, in this order:**
-  1. **Ask the owner two things together in the choice window** (recommendation first; neither is covered by the 5-minute rule):
-     (a) the one-off cloud test of the render: `tools/merch_rtest.mjs`, one throwaway Worker on the Free plan, 8 browser renders and a rate probe
-     (about 10-15 s of the day's 10 free browser-minutes; the kit's own cap is 60 s), deleted after, the account re-counted; recommended: yes. Run it only after a yes,
-     then write the results into PART4.md and RENDER_FREE.md, fix what it shows (`MERCH_RENDER_VIA`, the 429 text) and tick the list.
-     (b) the Printful key: only through the secure form (`request_credential`, host `api.printful.com`), never in chat; then
-     `tools/merch_pf_check.mjs` (read-mostly; one draft made and deleted, never confirmed), re-record the fixtures, fix what differs.
-     The owner needs a Printful account first (and a store; a USD store and a store-level token are recommended, PART5.md Q28-Q29).
-  2. **Part 9**: the three big reviews (code, phone, art). Point the code review FIRST at the part 6 fix batch
-     (`cloudflare/merch/test/t_fix6.mjs`: the automatic late refund and the gift reserve had tests but no second review), then at part 8b
-     and at the part 4 and 5 fix batches. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox
-     keys].
-  3. Part 10 (samples and launch [O]).
-  - Refresh the owner's samples (`node tools/merch_render.js part1`) after the art change of v2.33.1 before the next time they are shown.
-  - **For the launch go-ahead, not before** (add to the list kept above): PART5.md Q20-Q30; PART8.md's two open points (the tile for
-    everyone; the mug button only in the share sheet); the decisions taken in parts 4 and 5 (PART4.md, PART5.md "decisions").
-  - Told to the GM on 25 Nov: parts 4, 5 and 8 are ready on `merch/shop`; PART8.md is the GM's brief. Still on the GM's side: the gift's
-    item, its code group and who fills the pool; the `/privacy` text; the launch wiring.
+  1. Merge the two fix branches above (page first, then print; after the print merge run `merch_build.js` and the page suite again, since
+     ART_VER changes), run every suite once on the merged head, add the "Fixes" lists to the phone and art review files, push.
+  2. One more code fix batch for the three money points above, then ONE second code review of the part 9 code fixes (see above).
+  3. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox keys in a NEW, separate Stripe account;
+     ask the owner in the choice window when you get there; no 5-minute rule], and the Printful key through the secure form when the owner
+     says they are ready (`tools/merch_pf_check.mjs`, then re-record the fixtures).
+  4. Part 10 (samples and launch [O]).
+  - **For the launch go-ahead, not before** (the list kept above still stands): TRANSACTIONS.md 10 (13 points), PART5.md Q20-Q30, PART8.md’s
+    two open points, the seller facts only the owner can fill in (PART7.md (d)), a professional for the legal drafts, the country list with
+    the UK/EU registration note, the decisions taken in parts 4, 5, 6 and in the part 9 fixes (TRANSACTIONS.md "part 9" notes: a failed
+    printer read retries every 15 minutes and the owner hears after 24 h; an inquiry does not pause an order).
+  - Still on the GM’s side: the gift’s item, its code group and who fills the pool; the `/privacy` text; the launch wiring (PART8.md).
 - For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
   (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
 - Nothing is on sale and nothing is deployed (the first throwaway test Worker was deleted on 24 Nov; the second cloud test has not run).

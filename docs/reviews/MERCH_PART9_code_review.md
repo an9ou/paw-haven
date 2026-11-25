@@ -56,3 +56,7 @@ Not checkable without the real Stripe sandbox or a Printful key
 - Whether the v1 DELETE cancels a v2 order, and from which statuses.
 - Adaptive Pricing on partial refunds; whether a Durable Object may call Browser Run directly.
 ```
+
+## Fixes (25 Nov 2026, branch `merch/part9-code-fixes`, merged in e12f02d3; `merch_worker` 259/259)
+
+All seven findings fixed, each with tests that fail on the old code (17 new cases in `cloudflare/merch/test/t_fix9.mjs`); the contract rows are in TRANSACTIONS.md (T2.1-06, 31, 34, 35, 36; T2.2-23, 25, 42) and the notes in PART5.md and PART6.md. Left for the next batch, found by the fixer: an order released 30+ days after a dispute closes in our favour is refunded at its next wake; the 7-day reship refund does not read the printer first; `stopped()` lets a confirmed order with a lost dispute be reprinted. This fix batch still needs its own second review.
