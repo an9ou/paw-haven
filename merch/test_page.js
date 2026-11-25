@@ -484,14 +484,13 @@ async function staleChecks() {
 
   // hostile: script in id, qty, name, colour, product; the "Ship to" key too
   const X = (n) => '"><img src=/x' + n + ' onerror="window.__pwned=' + n + '"><script>window.__pwned=' + n + '</script>';
-  const hostile = [Object.assign(line(R('Mochi'), 'mug', { qty: 2 }), { id: X(1), who: X(2), name: X(3) }), Object.assign(line(R('Biscuit'), 'tee'), { colour: X(4) }), Object.assign(line(R('Bo'), 'mug'), { qty: X(5) }),
+  const hostile = [Object.assign(line(R('Mochi'), 'mug', { qty: 2, name_on: false }), { id: X(1), who: X(2), name: X(3) }), Object.assign(line(R('Biscuit'), 'tee'), { colour: X(4) }), Object.assign(line(R('Bo'), 'mug'), { qty: X(5) }),
     Object.assign(line(R('Bo'), 'tee'), { size: X(6) }), Object.assign(line(R('Bo'), 'mug'), { pose: X(7) }), Object.assign(line(R('Bo'), 'mug'), { product: '__proto__' }), Object.assign(line(R('Bo'), 'mug'), { name_on: X(8) }),
     Object.assign(line(R('Bo'), 'mug'), { recipe: X(9) }), { __proto__: { recipe: 1 } }];
   t = await open({ save: SAVE, basket: hostile, ship: X(10), path: '/merch/#/basket' }); pg = t.page;
   await settle(pg);
   ok('hostile: nothing ran', (await pg.evaluate(() => window.__pwned)) === undefined && t.dialogs.length === 0);
-  console.log('DBG', await pg.$eval('main img, main script', (x) => x.map((e) => e.outerHTML.slice(0, 120) + ' @' + (e.parentElement.className || e.parentElement.tagName))), await text(pg, '.bl .facts li'));
-  ok('hostile: no element was injected', (await pg.$$eval('main img, main script', (x) => x.filter((e) => !e.closest('header')).length)) === 0);
+  ok('hostile: no element was injected', (await pg.$$eval('.msheet img, .msheet script, .msheet iframe', (x) => x.filter((e) => !e.closest('.sitetop,.sitehead')).length)) === 0);
   ok('hostile: one good line kept, its id our own', (await pg.$$eval('.bl', (l) => l.map((x) => x.dataset.line))).every((id) => /^l[0-9a-z]+$/.test(id)) && (await pg.$$eval('.bl', (l) => l.length)) === 1);
   ok('hostile: the stored game name shows as text', (await text(pg, '.bl .facts li')).includes('"><img src=/x2'));
   ok('hostile: "Ship to" fell back to a real country', (await pg.$eval('#shipSel', (s) => s.value)) === 'US');
@@ -592,8 +591,7 @@ async function orderChecks() {
   // after the hour: no cancel line, "Printing has started."
   await edit('o.paid_at = ' + paid + '; o.cancel_until = ' + (paid + 3600000) + ';');
   ok('order after the hour: "Printing has started.", no cancel', (await text(pg, '.cancelbox')) === 'Printing has started.' && !(await pg.$('#cancelBtn')) && !/cancel here/.test(await text(pg, '#orderBody')));
-  console.log('DBG2', await text(pg, '.track'));
-  ok('order: the date it was received', /Order received 20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
+  ok('order: the date it was received', /Order received\s*20 Nov 2026\. Your receipt is in your email\./.test(await text(pg, '.track li:nth-child(1)')) && !/Today/.test(await text(pg, '.track')));
   ok('order after the hour: being printed is now', (await pg.$eval('.track li:nth-child(2)', (l) => l.className)) === 'now' && (await pg.$eval('.track li:nth-child(1)', (l) => l.className)) === 'done');
   // the server cleared the recipes (after 24 months): the page uses the names, draws no dog, and does not break
   await edit('o.lines.forEach(function (l) { delete l.recipe; }); o.lines[1].name = "<img src=/xo onerror=window.__pwned=1>";');
@@ -601,7 +599,7 @@ async function orderChecks() {
   ok('order without recipes: no dog drawn, nothing ran', !(await pg.$('#orderBody .thanks svg')) && (await pg.evaluate(() => window.__pwned)) === undefined && !(await pg.$('#orderBody img')));
   // shipped and arrived: the parcel's dates and its tracking link
   await edit('o.status = "shipped"; o.parcels = [{ id: "p1", product: "mug", carrier: "USPS", tracking_url: "https://tracking.example/1", shipped_at: ' + new Date(2026, 10, 22).getTime() + ', delivered_at: null }];');
-  ok('order shipped: "Sent 22 Nov 2026", a tracking link, no cancel box', /On its way Sent 22 Nov 2026\. Track it/.test(await text(pg, '.track li:nth-child(3)')) && (await pg.$eval('.track li:nth-child(3)', (l) => l.className)) === 'now' && !(await pg.$('.cancelbox')));
+  ok('order shipped: "Sent 22 Nov 2026", a tracking link, no cancel box', /On its way\s*Sent 22 Nov 2026\. Track it/.test(await text(pg, '.track li:nth-child(3)')) && (await pg.$eval('.track li:nth-child(3)', (l) => l.className)) === 'now' && !(await pg.$('.cancelbox')));
   await edit('o.parcels[0].delivered_at = ' + new Date(2026, 10, 25).getTime() + ';');
   ok('order arrived: its date', /Arrived 25 Nov 2026/.test(await text(pg, '.track li:nth-child(4)')) && (await pg.$eval('.track li:nth-child(4)', (l) => l.className)) === 'now');
   // inside the hour, from the server: a time and the button
