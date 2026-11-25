@@ -2,7 +2,8 @@
 //   NODE_PATH=$(npm root -g) node cloudflare/merch/test/render_chromium.mjs        (DOGS=akita,dane,golden to pick the sample dogs)
 // A fake BROWSER binding backed by local headless Chromium opens the REAL released print page (site/merch/print/<ART_VER>/, served on localhost)
 // with exactly the options render.js sends (viewport, deviceScaleFactor, omitBackground, waitForSelector '#o svg' and its timeout), through
-// render.screenshot(). Checks: exact pixel size, the page's READY title for that file, tee corners clear, the mug's name strip opaque, and every
+// render.screenshot(), for each sample dog's navy tee, white tee and mug. Checks: exact pixel size, the page's READY title for that file, tee corners
+// clear, every tee alpha 0 or 255 from both renderers (part 9 m6), the mug's name strip opaque, and every
 // file from both renderers passes the print file check (render.pngCheck; part 4 review finding 1); then the resvg fallback (the real MerchRender
 // object, render.resvg()) against Chromium: mean difference per channel over white and over black under 0.2 (RENDER_FREE.md 3 measured
 // 0.025-0.11) AND at most MATCH.far_px pixels more than 32 apart (render.js MATCH; review finding 2: the mean alone cannot see a missing body part).
@@ -61,22 +62,26 @@ const fmt = (m, product) => 'mean ' + m.mean_white.toFixed(3) + ' over white, ' 
 let tee0 = null; // the first tee: self-check 1
 
 console.log('--- part 4: Chromium truth (' + PP.ART_VER + ', print page from site/merch/print/)');
-for (const id of (process.env.DOGS || 'akita,dane,golden').split(',')) for (const product of ['tee', 'mug']) {
-  const d = SAMPLES.find((x) => x.id === id); if (!d) { say(false, 'no sample dog ' + id); continue; }
-  const url = BASE + '/merch/print/' + PP.ART_VER + '/' + PP.printHash(d.r, { product, colour: product === 'tee' ? 'navy' : 'white', pose: d.pose });
+for (const id of (process.env.DOGS || 'akita,dane,golden').split(',')) for (const [product, col] of [['tee', 'navy'], ['tee', 'white'], ['mug', 'white']]) {
+  const d = SAMPLES.find((x) => x.id === id); const tag = id + ' ' + product + (product === 'tee' ? ' ' + col : ''); if (!d) { say(false, 'no sample dog ' + id); continue; }
+  const url = BASE + '/merch/print/' + PP.ART_VER + '/' + PP.printHash(d.r, { product, colour: col, pose: d.pose });
   const t0 = Date.now(), shot = await render.screenshot(env, product, url), wall = Date.now() - t0;
-  if (!shot.ok) { say(false, id + ' ' + product + ': ' + shot.kind + ' ' + shot.why); continue; }
+  if (!shot.ok) { say(false, tag + ': ' + shot.kind + ' ' + shot.why); continue; }
   const sz = pngSize(shot.png), title = titles[titles.length - 1] || '';
-  say(sz && sz.w === SIZE[product][0] && sz.h === SIZE[product][1] && title.startsWith('READY ' + product + '-') && title.includes(SIZE[product].join('x')), id + ' ' + product + ': Chromium ' + sz.w + 'x' + sz.h + ', "' + title + '", ' + shot.ms + ' ms browser, ' + Math.round(shot.png.length / 1024) + ' KB');
+  say(sz && sz.w === SIZE[product][0] && sz.h === SIZE[product][1] && title.startsWith('READY ' + product + '-') && title.includes(SIZE[product].join('x')), tag + ': Chromium ' + sz.w + 'x' + sz.h + ', "' + title + '", ' + shot.ms + ' ms browser, ' + Math.round(shot.png.length / 1024) + ' KB');
   const C = readPNG(Buffer.from(shot.png)), cc = corner(C);
-  say(product === 'tee' ? cc.every((a) => a === 0) : cc[2] === 255 && cc[3] === 255, id + ' ' + product + ': corners alpha ' + cc.join(',') + (product === 'tee' ? ' (clear)' : ' (the name strip opaque at the bottom)'));
-  const cw = await render.pngCheck(product, shot.png, WANT[product]); say(!cw, id + ' ' + product + ': the Chromium file passes the print file check (colour type ' + shot.png[25] + ')' + (cw ? ': ' + cw : ''));
+  say(product === 'tee' ? cc.every((a) => a === 0) : cc[2] === 255 && cc[3] === 255, tag + ': corners alpha ' + cc.join(',') + (product === 'tee' ? ' (clear)' : ' (the name strip opaque at the bottom)'));
+  const cw = await render.pngCheck(product, shot.png, WANT[product]); say(!cw, tag + ': the Chromium file passes the print file check (colour type ' + shot.png[25] + ')' + (cw ? ': ' + cw : ''));
   const t1 = Date.now(), fb = await render.resvg(env, product, url), fwall = Date.now() - t1;
-  if (!fb.ok) { say(false, id + ' ' + product + ' resvg: ' + fb.why); continue; }
-  const rw = await render.pngCheck(product, fb.png, WANT[product]); say(!rw, id + ' ' + product + ': the resvg file passes the print file check' + (rw ? ': ' + rw : ''));
-  const B = readPNG(Buffer.from(fb.png)); if (B.w !== C.w || B.h !== C.h) { say(false, id + ' ' + product + ' resvg size ' + B.w + 'x' + B.h); continue; }
+  if (!fb.ok) { say(false, tag + ' resvg: ' + fb.why); continue; }
+  const rw = await render.pngCheck(product, fb.png, WANT[product]); say(!rw, tag + ': the resvg file passes the print file check' + (rw ? ': ' + rw : ''));
+  const B = readPNG(Buffer.from(fb.png)); if (B.w !== C.w || B.h !== C.h) { say(false, tag + ' resvg size ' + B.w + 'x' + B.h); continue; }
   const m = render.matchPx(B, C);
-  say(render.matchOk(m, product), id + ' ' + product + ': resvg fallback (' + fwall + ' ms, ' + Math.round(fb.png.length / 1024) + ' KB) against Chromium: ' + fmt(m, product) + '; Chromium wall ' + wall + ' ms');
+  say(render.matchOk(m, product), tag + ': resvg fallback (' + fwall + ' ms, ' + Math.round(fb.png.length / 1024) + ' KB) against Chromium: ' + fmt(m, product) + '; Chromium wall ' + wall + ' ms');
+  if (product === 'tee') { // part 9 art review m6: every tee file, white too, has only clear or opaque pixels, from both renderers
+    const soft = (X) => { let n = 0; for (let k = 3; k < X.data.length; k += 4) if (X.data[k] && X.data[k] < 255) n++; return n; }, sc = soft(C), sb = soft(B);
+    say(sc === 0 && sb === 0, tag + ': alpha only 0 or 255 (soft pixels: Chromium ' + sc + ', resvg ' + sb + ')');
+  }
   if (product === 'tee' && !tee0) tee0 = { id, url, C };
 }
 // self-check 1 (review finding 2): the first tee's fallback with ONE shape of the dog left out. A quick 1/5-scale pass finds the shapes whose loss

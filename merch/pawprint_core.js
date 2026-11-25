@@ -277,15 +277,23 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     out.push('</g>' + `<path d="M${f1(x - pad)} ${f1(y - pad)}H${f1(x + w + pad)}V${f1(y + h + pad)}H${f1(x - pad)}Z${frame}" fill="${o.paper || PAPER}" fill-rule="evenodd"/><path d="${frame}" fill="none" stroke="${INK}" stroke-width="${f1(u * 1.6)}" stroke-linejoin="round"/>`);
     return { svg: out.join(''), ground: gy };
   }
-  // a strip of grass, fence and flowers across the bottom of a mug wrap (no frame: it runs round the mug)
-  function yardStrip(w, y0, h, u, seed, keep) {
-    const R = rng(seed), out = [], fw = h * 0.42, ft = y0 + h * 0.05, gy = y0 + h * 0.62;
-    out.push(shape(wobRect(-u * 4, ft + h * 0.16, w + u * 8, h * 0.11, 2, seed + 5, u), '#F4E3C3', f1(u * 0.9)));
-    for (let fx = fw * 0.2; fx < w; fx += fw * 1.4) { const jx = (R() - 0.5) * u, d = `M${f1(fx + jx)} ${f1(gy)} L${f1(fx + jx)} ${f1(ft + fw * 0.45)} L${f1(fx + fw / 2)} ${f1(ft + (R() - 0.5) * u)} L${f1(fx + fw - jx)} ${f1(ft + fw * 0.45)} L${f1(fx + fw - jx)} ${f1(gy)} Z`; out.push(shape(d, '#FFF4DF', f1(u))); }
-    const gd = `M${f1(-u * 4)} ${f1(gy)} ` + Array.from({ length: 25 }, (_, i) => `L${f1(w * i / 24)} ${f1(gy + (R() - 0.5) * u * 2)}`).join(' ') + ` L${f1(w + u * 4)} ${f1(y0 + h + u * 4)} L${f1(-u * 4)} ${f1(y0 + h + u * 4)} Z`;
+  // a strip of grass, fence and flowers across the bottom of a mug wrap (no frame: it runs round the mug). Its two ends meet at the handle, so the
+  // strip is drawn to join up: a whole number of pickets with half a gap at each end (the seam falls in the middle of a gap, never through a
+  // picket), and the rail and the grass line level at x 0 and x w (they wobble only in between). ends: px at each end kept free of flowers (the
+  // handle's keep-clear); keep: [x0, x1] boxes kept free of flowers (the dogs)
+  function yardStrip(w, y0, h, u, seed, keep, ends) {
+    const R = rng(seed), out = [], fw = h * 0.42, ft = y0 + h * 0.05, gy = y0 + h * 0.62, e = ends || 0;
+    const inside = (x) => x > 0 && x < w, Rr = rng(seed + 5), ry = ft + h * 0.16, rh = h * 0.11;
+    const xs = [-u * 4].concat(Array.from({ length: 13 }, (_, i) => w * i / 12), [w + u * 4]);
+    const railTop = xs.map((x) => [x, ry + (inside(x) ? (Rr() - 0.5) * u : 0)]), railBot = xs.map((x) => [x, ry + rh + (inside(x) ? (Rr() - 0.5) * u : 0)]).reverse();
+    out.push(shape('M' + railTop.concat(railBot).map((q) => f1(q[0]) + ' ' + f1(q[1])).join(' L') + ' Z', '#F4E3C3', f1(u * 0.9)));
+    const n = Math.max(1, Math.round(w / (fw * 1.4))), per = w / n, gap = per - fw;
+    for (let i = 0; i < n; i++) { const fx = gap / 2 + i * per, jx = (R() - 0.5) * u, d = `M${f1(fx + jx)} ${f1(gy)} L${f1(fx + jx)} ${f1(ft + fw * 0.45)} L${f1(fx + fw / 2)} ${f1(ft + (R() - 0.5) * u)} L${f1(fx + fw - jx)} ${f1(ft + fw * 0.45)} L${f1(fx + fw - jx)} ${f1(gy)} Z`; out.push(shape(d, '#FFF4DF', f1(u))); }
+    const gd = `M${f1(-u * 4)} ${f1(gy)} ` + Array.from({ length: 25 }, (_, i) => { const j = (R() - 0.5) * u * 2; return `L${f1(w * i / 24)} ${f1(gy + (i > 0 && i < 24 ? j : 0))}`; }).join(' ') + ` L${f1(w + u * 4)} ${f1(gy)} L${f1(w + u * 4)} ${f1(y0 + h + u * 4)} L${f1(-u * 4)} ${f1(y0 + h + u * 4)} Z`;
     out.push(shape(gd, '#B8DC94', f1(u)));
+    const r0 = h * 0.05, reach = r0 * (1 + 0.75 * 1.06) + u; // a flower's petals and their line, from its middle
     for (let i = 0; i < 16; i++) {
-      const fx = w * (0.02 + R() * 0.96); if ((keep || []).some((k) => fx > k[0] && fx < k[1])) continue; const fy = gy + h * 0.1 + R() * h * 0.14, r0 = h * 0.05, col = ['#F7B2C4', '#FFE27A', '#FFFFFF', '#C9B6F2'][i % 4];
+      const fx = w * (0.02 + R() * 0.96); if (fx - reach < e || fx + reach > w - e || (keep || []).some((k) => fx > k[0] && fx < k[1])) continue; const fy = gy + h * 0.1 + R() * h * 0.14, col = ['#F7B2C4', '#FFE27A', '#FFFFFF', '#C9B6F2'][i % 4];
       let pd = ''; for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2; pd += blob(fx + Math.cos(a) * r0, fy + Math.sin(a) * r0, r0 * 0.75, r0 * 0.75, 8, seed + 60 + i * 5 + p, 0.12); }
       out.push(`<path d="${pd}" fill="${col}" stroke="${INK}" stroke-width="${f1(u * 0.55)}" stroke-linejoin="round"/><circle cx="${f1(fx)}" cy="${f1(fy)}" r="${f1(r0 * 0.5)}" fill="#E8B53A" stroke="${INK}" stroke-width="${f1(u * 0.45)}"/>`);
     }
@@ -370,7 +378,11 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
       // narrower than minDogIn inches (it is scaled up to it; 0 = off; the owner chooses, see samples/puppy_size_choice.png). The drawing (its real
       // bounds, never cut at the art box) and the name under it are centred, from 1 in below the top of the print area (top), inside safe.
       unit: 12.5, minDogIn: 5, top: 300, cx: 2250, safe: [150, 150, 4350, 5250],
-      name: { w: 2880, h: 500, max: 390, gap: 90, rot: -1.5 }, nameMin: NAME_MIN_PX, patchPad: 120,
+      // the name: letters at most max px, one line in a w-wide band, but no wider than the dog x grow or minW (6 in), whichever is wider, so a long
+      // name under a small dog shrinks its letters (down to nameMin, never further) instead of spreading into a wide, empty patch
+      name: { w: 2880, h: 500, max: 390, gap: 90, rot: -1.5, grow: 1.15, minW: 1800 }, nameMin: NAME_MIN_PX, patchPad: 120,
+      // white tees: a crisp white backing, backing px wider than every shape, under the drawing and the name (no white ink is printed on white)
+      backing: 2.4,
       scale: 'artbox', poses: POSE3, colours: TEE_COLOURS },
     mug: { id: 'mug', name: 'Mug, 11 oz white', launch: true, w: 2700, h: 1050, dpi: DPI, inches: [9, 3.5], transparent: true,
       printful: { product: 19, placement: 'default', technique: 'sublimation' },
@@ -504,17 +516,20 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
     const bw = d.bb[2] - d.bb[0], bh = d.bb[3] - d.bb[1];
     let k = P.unit, grown = 1;
     if (P.minDogIn > 0 && bw * k < P.minDogIn * P.dpi) { grown = P.minDogIn * P.dpi / (bw * k); k *= grown; }
-    const N0 = name ? fitName(name, [0, 0, P.name.w, P.name.h], P.name.max, P.name.rot, P.nameMin, true) : null;
-    if (name && !N0) throw new Error('name: long');
-    const nh = N0 ? N0.bb[3] - N0.bb[1] : 0, gap = N0 ? P.name.gap : 0;
     // never past the safe area: move it first, and only if that is not enough shrink this dog just enough
     const sw = S[2] - S[0] - 2 * pad, sh = S[3] - S[1] - 2 * pad; let shrunk = 1;
     if (bw * k > sw) { shrunk = sw / (bw * k); k *= shrunk; }
+    // the name's width: at most the dog's x grow (or minW); if even nameMin letters need more, they get the whole band at nameMin
+    const capW = Math.min(P.name.w, Math.max(bw * k * P.name.grow, P.name.minW));
+    const fitN = (cx, y) => fitName(name, [cx - capW / 2, y, capW, P.name.h], P.name.max, P.name.rot, P.nameMin, true) || fitName(name, [cx - P.name.w / 2, y, P.name.w, P.name.h], P.nameMin, P.name.rot, P.nameMin, true);
+    const N0 = name ? fitN(0, 0) : null;
+    if (name && !N0) throw new Error('name: long');
+    const nh = N0 ? N0.bb[3] - N0.bb[1] : 0, gap = N0 ? P.name.gap : 0;
     if (bh * k + gap + nh > sh) { const s2 = (sh - gap - nh) / (bh * k); shrunk *= s2; k *= s2; }
     const th = bh * k + gap + nh, y0 = Math.min(Math.max(P.top, S[1] + pad), S[3] - pad - th);
     const X = P.cx - (d.bb[0] + d.bb[2]) / 2 * k, Y = y0 - d.bb[1] * k; // where the art's (0, 0) lands
     const dogBox = [X + d.bb[0] * k, Y + d.bb[1] * k, X + d.bb[2] * k, Y + d.bb[3] * k].map(f2), nestBox = [X + d.box[0] * k, Y + d.box[1] * k, X + (d.box[0] + d.box[2]) * k, Y + (d.box[1] + d.box[3]) * k].map(f2);
-    const N = name ? fitName(name, [P.cx - P.name.w / 2, dogBox[3] + gap, P.name.w, P.name.h], P.name.max, P.name.rot, P.nameMin, true) : null;
+    const N = name ? fitN(P.cx, dogBox[3] + gap) : null;
     const U = N ? [Math.min(dogBox[0], N.bb[0]), dogBox[1], Math.max(dogBox[2], N.bb[2]), Math.max(dogBox[3], N.bb[3])] : dogBox; // what is drawn
     if (C.patch) { // the paper patch: the only edge that touches the fabric, drawn without anti-aliasing so every edge pixel is fully opaque or fully clear
       const p = P.patchPad, w = U[2] - U[0] + 2 * p, h = U[3] - U[1] + 2 * p, card = crayonCard(U[0] - p, U[1] - p, w, h, (r.p ^ 0x7EE) >>> 0, 24, Math.min(140, w / 4, h / 4));
@@ -522,8 +537,16 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
       st.patch = [U[0] - p - 30, U[1] - p - 30, U[2] + p + 30, U[3] + p + 30].map(f2); // [x0, y0, x1, y1], wobble and line included
       st.patchIn = [U[0] - p + 30, U[1] - p + 30, U[2] + p - 30, U[3] + p - 30].map(f2); // always cream inside this
     }
-    const wt = weight(d.s, k, MIN_PX); out.push(nest(wt.s, d.box, nestBox[0], nestBox[1], k));
-    Object.assign(st, { k: +k.toFixed(4), artMM: f2(240 * k / MM), dogIn: f2((dogBox[2] - dogBox[0]) / P.dpi), grown: f2(grown), shrunk: f2(shrunk), dogBox, nest: [nestBox], box: U.map(f2), thin: wt.n });
+    const wt = weight(d.s, k, MIN_PX);
+    // white: every soft edge lies on a crisp white backing (as the patch does on colour), so the file has only clear or opaque pixels; white
+    // is not printed on a white tee, so it looks as before, without semi-transparent edges (Printful: "avoid semi-transparent edges")
+    // (each backing shape names its own stroke, so a box measured shape by shape, as the 12-band renderer culls by, holds its whole stroke)
+    if (!C.patch && P.backing) {
+      const bk = (s, kk) => backing(s, kk, P.backing).replace(/ stroke-width="/g, ' stroke="#FFFFFF" stroke-width="');
+      out.push(`<g class="pp-back" shape-rendering="crispEdges">${nest(bk(wt.s, k), d.box, nestBox[0], nestBox[1], k)}${N ? bk(N.svg, 1) : ''}</g>`);
+    }
+    out.push(nest(wt.s, d.box, nestBox[0], nestBox[1], k));
+    Object.assign(st, { k: +k.toFixed(4), nameW: f2(capW), artMM: f2(240 * k / MM), dogIn: f2((dogBox[2] - dogBox[0]) / P.dpi), grown: f2(grown), shrunk: f2(shrunk), dogBox, nest: [nestBox], box: U.map(f2), thin: wt.n });
     if (N) { out.push(N.svg); st.name = { text: name, size: N.size, bb: N.bb }; }
     return out.join('');
   }
@@ -541,7 +564,7 @@ function PawPrintMake(PA, PG, FONT, NAMES, BUILD) {
       nests.push([x + d.box[0] * k, y + d.box[1] * k, x + (d.box[0] + d.box[2]) * k, y + (d.box[1] + d.box[3]) * k].map(f2));
       const box = [x + d.bb[0] * k, y + d.bb[1] * k, x + d.bb[2] * k, y + d.bb[3] * k].map(f2); boxes.push(box); keep.push([box[0] - 40, box[2] + 40]);
     });
-    out.push(weight(yardStrip(P.w, P.h - P.strip, P.strip, MIN_PX * 1.6, (r.p ^ 0x5A5A) >>> 0, keep), 1, MIN_PX).s);
+    out.push(weight(yardStrip(P.w, P.h - P.strip, P.strip, MIN_PX * 1.6, (r.p ^ 0x5A5A) >>> 0, keep, S.ends), 1, MIN_PX).s);
     out.push(...dogs);
     let size = 0;
     if (name) P.sides.forEach((cx, i) => { const N = fitName(name, [cx - P.nameW / 2, top, P.nameW, ns], Math.max(ns * 0.8, P.nameMin), mugRot(name, i), P.nameMin); if (!N) throw new Error('name: long'); out.push(N.svg); names.push(N.bb); size = N.size; });
