@@ -94,12 +94,12 @@ preview with PawPrint in the browser. The server never trusts a price, a fee or 
 10. **Production and parcels.** Printful webhooks are hints only: the Worker re-reads the Printful order. Lines move to `in_production`, then each
     Printful shipment becomes a parcel row (mugs and tees apart) with its tracking link and one "On its way" email. The order is `part_shipped`, then
     `shipped` when every live line is shipped. `delivered_at` is stored when Printful reports it.
-11. **After delivery.** Damage, misprint or loss within 30 days of delivery (or of the latest delivery date we gave): the owner reprints or refunds
+11. **After delivery.** Damage, misprint or loss within 30 days of delivery (or of the last day of the delivery time shown for the order): the owner reprints or refunds
     per line (section 4). Print files are kept for 180 days after shipping (section 6.6).
 
 **Emails** (Resend, from `orders@doodledoggo.app`, reply-to `contact@`; each with `Idempotency-Key me_<order>_<kind>[_<n>]`; the address is read from
 the Stripe session at send time, never stored): Thank you; We need your address; On its way (one per parcel); Cancelled; Refunded (one per refund);
-Sorry, we couldn't print one thing; Taking longer than we said; A new one is on its way (reprint). Stripe's own receipt is on too.
+Sorry, we couldn't print one thing; Taking longer than we said (with a new date; 25 Nov 2026), Still taking longer than we said (the second notice, T2.1-34); A new one is on its way (reprint). Stripe's own receipt is on too.
 
 > Note (25 Nov 2026, part 6; PART6.md): the texts are written (`cloudflare/merch/mail.js`, `build(kind, view, env)`: a plain-text and a small
 > inline-styled HTML body each, from the order as it is at send time). The order page link is **`<MERCH_SITE>/merch/#/order/<id>`** everywhere
@@ -185,6 +185,19 @@ A line's money is separate from its state: `refunded_qty` (0..qty) and `refunded
 | T2.1-31 | `POST /order/:id/cancel {scope: 'late'}` after the delay email | `confirmed`/`part_shipped` | Refunds every unshipped live line (T2.1-21 amounts); asks Printful to cancel them; if Printful cannot, the owner gets an email | same or `refunded` | "Refunded the late part." |
 | T2.1-32 | Nightly: a variant fails the floor alone | - | `on_flag = 0`, owner email; quote and checkout answer 409 `variant_off` for it | - | "This one isn't available right now." |
 | T2.1-33 | Tidy (nightly) | - | Section 5 retention: files, hashes, names, recipes, events, unpaid orders | - | - |
+| T2.1-34 | Alarm at `late_eta` (added 25 Nov 2026, part 6 review): a late part still not posted | `paid`/`held`/`confirmed`/`part_shipped` (not `confirming`, not in a dispute) | Buyer said keep waiting (`late_ok_at`): ONE second notice `late_again` (`me_<order>_late_2`, `late2_sent_at`): no new date, still on it, cancel any time until posted. Else: the late part refunded in full by itself through the T2.1-31 path (refund rows, the printer asked to cancel or the owner told, one "refunded" email that says why, `late_auto_at`). Every step and its marker in one transaction | same, `shipped` or `refunded` | "Thank you for waiting." / "It took too long, so we've refunded it. Sorry." |
+
+> **Note, 25 Nov 2026 (part 6 review batch, PART6.md "Review fixes"): the delay plan.**
+> - **T2.1-06:** the gift code is **reserved** when the order becomes `paid` (hidden: the order answer says `gift: 'soon'`, `gift_code: null`) and
+>   **shown** in the transaction that takes the order past `cancel_until + 120 s` (a held order: once released and past its hour); a cancel or a
+>   full refund before that puts the code back in the pool in the same transaction. The Thank you email says only that a little thank-you will be
+>   waiting on the order page once printing starts; the code goes in the first "On its way" (or delay or reprint) email after it is shown, once.
+> - **T2.1-30:** `ship_by` = payment + `SHIP_BY_DAYS` (7) working days (`catalog.js`); the Thank you email and the order page say "We'll post it
+>   by <weekday day month>" (the UTC date of `ship_by`). The delay email goes AT `ship_by` (a wake exists for held orders too, never in a dispute
+>   hold) with a definite new date `late_eta` = `ship_by` + `LATE_MORE_DAYS` (7) working days, never more than 30 days later; waiting needs no
+>   answer; "You can cancel the late part any time until it's posted." Free reprint lines are never "late".
+> - **T2.1-31:** refused while `confirming` (a confirm call in flight: lines refunded then could still be printed) with 409 `busy` and kind words
+>   ("try again in a minute or two"); the second step (T2.1-34) also waits for the confirm. "Keep waiting" is `POST /merch/order/:id/wait` (6.3).
 
 ### 2.2 Failures and odd cases
 
@@ -289,6 +302,9 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 
   `tax_behavior`: `exclusive` for US and CA, `inclusive` elsewhere (it only matters where Stripe Tax collects). Delivery estimates per zone from
   Printful's making (2-5 business days) plus delivery. `ship_by` (the FTC date) = paid date + 5 business days + 2 days slack.
+  > Note (25 Nov 2026, part 6 review): `ship_by` = paid + `SHIP_BY_DAYS` (7) working days, and each zone's `eta` = [2 + the fastest post,
+  > `SHIP_BY_DAYS` + the slowest post] working days, both in `catalog.js` (the single source; estimates until part 5): `us_jp` 5-11, `ca_au_nz`
+  > 4-16, `uk_eu` 4-27, `world` 7-27. `site/merch/catalog.json` is generated from it (`tools/merch_catalog_json.js`).
 - **The "Ship to" rule:** the zone comes from the country the page sent, re-checked against `MERCH_COUNTRIES`. The session's
   `shipping_address_collection[allowed_countries]` holds only that country, so the hosted page cannot take an address elsewhere (and it cannot
   re-price after the address is typed). The webhook checks the country again (T2.2-15).
@@ -387,7 +403,7 @@ versions since 2025-03-31 `collected_information.shipping_details.address.countr
 **Policy text** (plain words, for `/merch/shipping` and the Terms; "no returns", never "no refunds"):
 > Everything is printed just for you with your own dog, so we can't take it back if you change your mind. You can cancel the whole order for a full
 > refund within **1 hour** of paying, from your order page. If something arrives damaged or misprinted, or never arrives, email us within **30 days**
-> of delivery (or of the latest delivery date we gave you) with a photo, and we'll reprint it or refund it, whichever you prefer. This doesn't affect
+> of delivery (or of the last day of the delivery time shown for your order) with a photo, and we'll reprint it or refund it, whichever you prefer. This doesn't affect
 > your legal rights.
 
 - **Consumer law (research):** UK CCR 2013 reg. 28(1)(b) and EU CRD art. 16(c): no cancellation right for clearly personalised goods, if the buyer is
@@ -430,9 +446,13 @@ versions since 2025-03-31 `collected_information.shipping_details.address.countr
 | IP address | as Stripe logs it | no | only as an HMAC in rate-limit rows (deleted within the hour) and in flags the owner sets |
 
 **Retention** (to confirm with the accountant):
-- Order and line rows (money, country, product, status): **7 years** (HK business records; a Japanese blue-return filer also keeps 7 years).
+- Order and line rows (money, country, product, status): **at least 7 years** (HK business records; a Japanese blue-return filer also keeps 7
+  years). (25 Nov 2026: `tidy()` deletes no paid order or line; no purge is built, so the privacy text says "at least 7 years".)
 - `email_hash`, line `name`, `recipe` and `print_link`: cleared **24 months** after the order's last shipment, refund or cancel.
-- Print PNGs: **180 days after the last shipment** (section 6.6); 2 days after a cancel, an expiry or a full refund before printing.
+- Print PNGs: **180 days after the last shipment** (section 6.6); 2 days after a cancel, an expiry or a full refund before printing, and (25 Nov
+  2026) 2 days after the renderer or the printer rejected the line.
+- Faults: reported within 30 days of delivery, or of the last day of the delivery time shown for the order when a parcel never arrives
+  (section 4; the legal pages' words).
 - `merch_events`: 90 days. Unpaid orders (`expired`): deleted after 30 days. Rate rows: at `reset_at`.
 - **Deletion on request** (contact@): clear the hash, the name and the recipe at once; ask Printful to delete the recipient; Stripe keeps its records as
   the law asks (the privacy page says so, as for the Kind shop).
@@ -493,6 +513,8 @@ create table merch_orders (
   email_hash text,                  -- BUYER DATA (HMAC of the email); cleared 24 months after close
   tries integer default 0, next_try_at integer, last_error text
 );
+-- 25 Nov 2026 (part 6 review, added in place): late_eta integer, late_ok_at integer, late2_sent_at integer, late_auto_at integer,
+--   gift_shown_at integer, gift_mailed text (the outbox row that carries the gift, once); merch_refunds.told integer default 0
 create index merch_orders_pi on merch_orders (payment_intent);
 create index merch_orders_due on merch_orders (status, next_try_at);
 create index merch_orders_day on merch_orders (day, status);
@@ -545,6 +567,7 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 | `POST /merch/checkout` | none | 10/h per IP | quote input + `{expect_total, art_ver, nonce, agree: true, lang}` | `{order, url}` | quote errors + 400 `no_agree`; 409 `price_changed {quote}`, `art_changed`, `busy`, `cant_make`; 403 `not_available`; 503 `busy` |
 | `GET /merch/order/:id` | the id | 120/h per IP | - | `{id, status, hold, paid_at, cancel_until, can_cancel, country, lines[{line, product, colour, size, pose, name_on, name, qty, unit, status, refunded_qty, parcel, recipe}], parcels[{id, product, carrier, tracking_url, shipped_at, delivered_at}], totals{subtotal, ship_fee, tax, total, refunded}, pres{currency, amount}, gift_code, late: bool}`; never an address or email | 404 `not_found` |
 | `POST /merch/order/:id/cancel` | the id | 10/h | `{scope: 'order' \| 'late'}` | `{status, refund: 'sending' \| 'done'}` | 409 `too_late`, `not_late`; 404 |
+| `POST /merch/order/:id/wait` (25 Nov 2026) | the id | 10/h (shared with cancel) | `{}` ("Keep waiting"; only while part of the order is late) | `{ok, late_ok: true, late_eta}`; idempotent, records `late_ok_at` once | 409 `not_late`; 404 |
 | `POST /merch/order/:id/address` | the id | 10/h | `{name, line1, line2, city, state, postal, country}` (sent to Printful, never stored) | `{ok: true}` | 409 `not_needed`; 400 `other_country`, `bad_address {field}`; 503 `busy` |
 | `POST /merch/order/:id/refund` | the id | 10/h | `{}` (only in `held address`) | `{status: 'refunded'}` | 409 `not_allowed` |
 | `POST /merch/webhook/stripe` | `Stripe-Signature` (`MERCH_STRIPE_WEBHOOK_SECRET`), 300 s window, raw body first | - | Stripe event | 200 `{received: true}` | 400 `bad_signature` / `stale`; 502 (a failed re-read: Stripe retries) |
@@ -574,6 +597,14 @@ create table merch_meta (k text primary key, v text);   -- last nightly run, las
 - New admin route `gift`: `POST {codes: [...]}` (1-2000, letters, digits and dashes, 4-40, stored upper case, duplicates kept once) answers only
   counts `{added, skipped, left}`; `GET` answers `{left, claimed}`. A code never appears in logs, events, the report, `order/:id` (shows
   `gift_code: true|false`) or the export.
+
+**Note, 25 Nov 2026 (part 6 review batch): the order answer, the gift and "Keep waiting".**
+- `GET /merch/order/:id` also answers, always: `ship_by` (ms or null), `late_eta` (ms or null), `late_ok` (bool) and `gift` (`null` | `'soon'` |
+  `'ready'`); `gift_code` and `gift_name` only once `gift` is `'ready'` (after the cancel hour). The fake answers the same set.
+- `late` is true only while a line that is not a free reprint is unposted after the delay email; the late cancel is 409 `busy` while `confirming`.
+- New route `POST /merch/order/:id/wait` (above). `MERCH_SITE` is used only when it is a plain https origin (else `https://doodledoggo.app`).
+- `GET /merch/catalog` leaves out places with no post (`catalog.js NO_POST`) and lists sizes smallest first. The admin routes answer 413
+  `too_big` for a body over 64 KB.
 
 Stripe events on the merch webhook endpoint [O]: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
 `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`, and the refund
@@ -686,7 +717,8 @@ with mug and tee only, and for UK/EU without VAT, when `catalog.js` is made. A c
 
 ## 10. Open points for the owner (ask later, with the launch go-ahead or the next real question; recommendation first)
 
-1. **Countries on launch day:** `MERCH_COUNTRIES=all` minus GB, the EU 27, Brazil and Korea (`all,-GB,-DE,-FR,...`), until the accountant confirms a
+1. **Countries on launch day:** `MERCH_COUNTRIES=all` minus GB, the EU 27, Brazil and Korea (`all,-GB,-DE,-FR,...`; 25 Nov 2026: written out as
+   `catalog.js LAUNCH_COUNTRIES`, which also shuts the Isle of Man, Monaco, France's overseas departments and Saint Martin), until the accountant confirms a
    UK VAT registration and an EU route (and Printful's Korean customs field is known); GB the day its registration is live in Stripe Tax.
    Alternative: truly all, accepting the tax duty from the first UK or EU order.
 2. **Payment methods:** cards, Apple Pay, Google Pay and Link only at launch (no bank debits that settle days later, no pay-later).
@@ -698,5 +730,9 @@ with mug and tee only, and for UK/EU without VAT, when `catalog.js` is made. A c
 8. **A dispute won before printing:** the owner decides each time (recommended: ship it).
 9. **Cancels cost the Stripe fee** (about $1.50 on $35), because Adaptive Pricing rules out holding the card: accept it as the price of the kindness.
 10. **Orders in a Durable Object, no D1:** yes, with a monthly export kept by the owner (`tools/merch.sh export`).
-11. **The delivery promise:** Printful's estimate + 2 days on the page, so the FTC delay email is rare.
+11. **The delivery promise:** Printful's estimate + 2 days on the page, so the FTC delay email is rare. (25 Nov 2026: decided as one posting
+    promise, "we post every order within 7 working days of payment", `catalog.js SHIP_BY_DAYS`; door-to-door times in 3's note.)
 12. **USD-only prices for UK/EU buyers:** ask the adviser before GB or the EU opens (3.1 clash b).
+13. **A late part is refunded by itself if the new date is missed and the buyer has not said keep waiting:** recommended yes (built, T2.1-34;
+    25 Nov 2026). The alternative is a third email asking for a yes, which the US mail-order rule allows but which leaves a silent buyer's money
+    waiting.

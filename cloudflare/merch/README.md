@@ -61,5 +61,14 @@ order was taken with it**: a line is redrawn from its own folder forever (a repr
 
 `tools/merch.sh` (list, show, refund a line, reprint, confirm, lost, flag, export, forget, report, and since part 6 `gift add` (codes on STDIN only) and `gift count`). It prints what it would do unless `DRY_RUN=0`, and reads the
 key from `MERCH_ADMIN_KEY` in the environment only (sent on stdin, so it never shows in the process list). Keep one `export` a month.
+`gift add` also takes `tools/promo.sh`'s CSV (the first column; the header line skipped).
 `forget` is deletion on request: it clears the buyer data of ended orders and says what stays (the money rows the law asks for) and which Printful
 recipients to ask Printful to delete.
+
+## Part 6 review batch (25 Nov 2026)
+
+- `catalog.js` is the single source of the delivery promise (`SHIP_BY_DAYS` = 7, `LATE_MORE_DAYS` = 7, `ZONES[*].eta`) and of the recommended
+  launch countries (`LAUNCH_SOON`, `LAUNCH_COUNTRIES`: set `MERCH_COUNTRIES` to it at launch). `site/merch/catalog.json` is written from it:
+  `NODE_PATH=$(npm root -g) node tools/merch_catalog_json.js` (the suite fails while they differ).
+- A new buyer route: `POST /merch/order/:id/wait` ("Keep waiting" on a late part), the same id check and limit as cancel.
+- The delay plan, the gift shown after the cancel hour, and the other fixes: `docs/design/merch/PART6.md` "Review fixes (25 Nov 2026)".

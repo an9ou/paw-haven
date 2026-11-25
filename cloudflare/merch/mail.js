@@ -234,7 +234,7 @@ export function build(kind, view, env) {
         ['p', 'You can still cancel the late part for a full refund from your order page, any time until it’s posted.']);
       if (gift) B.push(gift);
       B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
-      return page('Still on its way to the post', 'Still working on your order', B, env, site);
+      return page('Still taking longer than we said', 'Still working on your order', B, env, site);
     }
     case 'reprint': {
       const n = A.reprint && A.reprint.n, ls = L.filter((l) => l.reprint_of != null && (n == null || l.rp === n)), why = A.reprint && A.reprint.why;

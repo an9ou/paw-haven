@@ -339,5 +339,8 @@ X-race rows, `t_miniflare.mjs`), named by the row id. This table is made from th
 - Then part 4 (Browser Run in `render.js`) and part 5 (the real Printful adapter, with the checklist above) replace two seams.
 - Part 6 (25 Nov 2026, `PART6.md`) wrote the real email texts in `mail.js`, the order link form, the gift pool and the order page; suite now 166 checks
   (`test/t_part6.mjs`, rows P6-*).
+- The part 6 review batch (25 Nov 2026, PART6.md "Review fixes") added the delay plan (row T2.1-34), the gift shown after the cancel hour and
+  the other fixes, keeping the ledger's rules above (every step and its marker in one transaction; crash tests F6-crash-late); suite 181 checks
+  (`test/t_fix6.mjs`, rows F6-*).
 - Owner, with the launch go-ahead (not before): the contract's section 10 points, plus questions 7 and 20 above.
 - Nothing to deploy; the README lists the secrets (names only) and approvals any deploy will need.

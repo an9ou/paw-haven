@@ -2,21 +2,19 @@ Subject: Taking longer than we said
 
 Your order is taking longer than we said
 
-We’re sorry: we said your order would be sent by 10 Dec 2026, and part of it hasn’t gone out yet.
+We’re sorry: we said we’d post your order by Thursday 10 December, and part of it hasn’t gone out yet:
 
 - 2 × Tee with your dog, navy, L
-- Mug with Biscuit
 
-We don’t know the new date yet. We’ll email you as soon as it’s on its way.
+We now expect to post the late part by Monday 21 December.
 
-You can choose:
+You don’t need to do anything to keep waiting: we’ll email you when it’s on its way.
 
-- Wait for it. You don’t need to do anything: we’ll email you when it’s sent.
-- Or cancel the late part for a full refund of those things, from your order page.
+Or, if you’d rather not wait, you can cancel the late part for a full refund from your order page, any time until it’s posted.
 
 Order: SampleOrder0000000000
 
-Choose on your order page: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
+Open your order page: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
 
 A refund goes back to your card at once; it can take a few days to show.
 

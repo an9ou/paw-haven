@@ -32,7 +32,7 @@ run_worker_first = true
 [vars]
 MERCH_FROM = ""                            # empty = the shop is shut (the safe default). Launch time, ISO with the JST offset, only with the owner's date
 MERCH_OFF = ""                             # "1": no new checkouts; paid orders finish
-MERCH_COUNTRIES = ""                       # empty = none. Recommended at launch (section 10.1): "all,-uk_eu,-BR,-KR"
+MERCH_COUNTRIES = ""                       # empty = none. Recommended at launch (section 10.1): catalog.js LAUNCH_COUNTRIES ("all,-GB,-IM,<EU 27>,-MC,-GF,-GP,-MQ,-RE,-YT,-MF,-BR,-KR")
 MERCH_PRODUCTS = "mug,tee"
 MERCH_DAY_CAP = "10"
 MERCH_PROVIDER_MODE = "draft"              # "draft" never confirms (no wholesale charge); "live" only with the owner's go-ahead
@@ -40,7 +40,7 @@ MERCH_COOL_MIN = "60"
 MERCH_STRIPE_VERSION = "2025-03-31.basil"
 MERCH_ART_VERS = ""                        # older print folders still served (build_assets.mjs prints it)
 MAIL_FROM = "orders@doodledoggo.app"
-MERCH_SITE = "https://doodledoggo.app"
+MERCH_SITE = "https://doodledoggo.app"                # a plain https origin only; anything else falls back to https://doodledoggo.app (util.js siteOf)
 MERCH_PUBLIC_URL = "https://merch-api.doodledoggo.app"
 MERCH_OWNER_TO = ""                        # the owner's address for owner emails: set in the dashboard, not here
 MERCH_SELLER_NAME = ""                     # part 6: the seller's legal name for the email footer; empty = the line is left out (never invented)

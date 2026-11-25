@@ -2,17 +2,15 @@ Subject: We need your address
 
 Could you check your address?
 
-Our print partner couldn’t send your order to the address we were given.
+A parcel from your order came back to our print partner: it couldn’t be delivered to the address it had. We’d love to send it again, free.
 
-- Mug with Biscuit
-- 2 × Tee with your dog, navy, L
 - Mug with Biscuit
 
 Order: SampleOrder0000000000
 
 Could you check it for us? Open your order page and type the address again. It goes straight to our print partner, and we don’t keep it.
 
-If you’d rather not, you can ask for a full refund on the same page. If we don’t hear from you within 7 days, we’ll refund the whole order.
+If we don’t hear from you within 7 days, we’ll refund those things instead.
 
 Check my address: https://doodledoggo.app/merch/#/order/mo_SampleOrder0000000000
 

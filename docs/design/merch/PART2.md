@@ -80,7 +80,9 @@ tap at least 44 px, no text past its card (with 6 lines, a 20-letter name, a pup
 - **Tee sizes** offered per colour = those made in both the US and the UK (`sizes.both`): white S-4XL, black XS-4XL, navy and ice blue XS-2XL,
   the rest S-2XL. 2XL-4XL prices are placeholders until the Printful key.
 - **Delivery estimates** shown: Printful's making plus post, +2 days on the top end (TRANSACTIONS 10 point 11): USA/Japan 5-11, Canada/Australia/NZ
-  5-13, elsewhere 7-27 working days.
+  5-13, elsewhere 7-27 working days. (25 Nov 2026, part 6 review batch: now from `catalog.js` `ZONES[*].eta`, the single source, with
+  `catalog.json` generated from it: USA/Japan 5-11, Canada/Australia/NZ 4-16, elsewhere 7-27; the shop page says the one posting promise, "we post
+  every order within 7 working days of payment".)
 - **Everywhere else** follows model C to the letter: $11.99 + $5.99 per extra mug or tee, never free (9 things to St. Vincent = $59.91 shipping).
 - The gift code block of the prototype is left out (TRANSACTIONS 10 point 5 is still open). "Terms of sale" and "Shipping and returns" are plain
   text until part 7 writes them. (Part 6, 25 Nov 2026: both done: the gift card is on the order page, and the footer and the pay card link
