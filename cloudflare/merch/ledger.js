@@ -186,7 +186,20 @@ export class MerchLedger {
   // the order's lease: a step that calls the printer or the renderer takes it first, and leaves a wake behind (M2). Sync: inside tx().
   claim(id) { const now = this.now(); return this.q('update merch_orders set lease_until = ?, next_try_at = ? where id = ? and (lease_until is null or lease_until <= ?) returning id', now + LEASE, now + WAKE, id, now).length > 0; }
   unlease(id) { try { this.tx(() => this.run('update merch_orders set lease_until = null where id = ?', id)); } catch (e) { rethrow(e); } }
-  stopped(o) { return !o || ENDED.includes(o.status) || o.dispute === 'open' || o.hold === 'dispute'; } // rule 3
+  // rule 3. Second review (R2-M4): a lost dispute stops the order too (the bank already paid the buyer back: no reprint, no reship)
+  stopped(o) { return !o || ENDED.includes(o.status) || o.dispute === 'open' || o.dispute === 'lost' || o.hold === 'dispute'; }
+  // second review (R2-m1): what a Printful read made outside a transaction is checked against. If the order changed while the read was out
+  // (a hint put it on hold, a dispute came, a cancel), the read may be older than what we hold now: it is not applied, the step reads again
+  pfSnap(o) { return o ? [o.updated_at, o.status, o.hold, o.why, o.dispute, o.provider_order, o.pcancel, o.draft_del].join('|') : ''; }
+  // second review (R2-M2): the delay steps wait while a dispute is open or holds the order; when they go on again, the new date moves on by
+  // the time they waited, so a dispute never uses up the buyer's waiting time or our printing time. Sync, inside tx()
+  lateResume(id, since) {
+    const o = this.order(id), now = this.now();
+    if (!o || !o.late_sent_at || !o.late_eta || o.late2_sent_at || o.late_auto_at || !since || now <= since) return;
+    this.run('update merch_orders set late_eta = ? where id = ?', o.late_eta + (now - since), id);
+    this.event('x:late_resume:' + id + ':' + now, id, 'late_resume', String(now - since));
+    this.lateWake(id);
+  }
   unshipped(l) { return !DEAD.includes(l.status) && (LINE_RANK[l.status] || 0) < LINE_RANK.shipped && l.refunded_qty < l.qty; }
   // an event row; false when it was there already (the same delivery twice)
   event(eid, orderId, type, note) { return this.q('insert into merch_events (id, order_id, type, at, note) values (?, ?, ?, ?, ?) on conflict(id) do nothing returning id', eid, orderId || null, String(type || '').slice(0, 60), this.now(), note == null ? null : String(note).slice(0, 300)).length > 0; }
@@ -441,16 +454,36 @@ export class MerchLedger {
   async rCancel(o, body) {
     const scope = body.scope === 'late' ? 'late' : 'order';
     if (scope === 'late') { // T2.1-31, S10: the FTC delay cancel, for held orders too (never during a dispute: the bank decides)
-      let busy = false;
-      const r = this.tx(() => {
-        const x = this.order(o.id);
-        // review finding 9: while 'confirming' the printer is being asked to start (a charge in flight, its answer unknown until the call returns or
-        // the re-read 2 minutes later): refunding lines then could still print them. So not now, kindly; it takes a minute or two at most.
-        if (x.status === 'confirming' && x.late_sent_at) { busy = true; return null; }
-        if (!x.late_sent_at || !['paid', 'held', 'confirmed', 'part_shipped'].includes(x.status) || x.hold === 'dispute' || x.dispute === 'open' || x.dispute === 'lost') return null; // part 9 (M1): lost too
-        return this.lateRefund(x, 'late') || null; // one email for the whole late part (part 6)
-      });
-      if (busy) return fail('busy', 409, { say: 'We’re sending your order to print right this minute. Please try again in a minute or two.' });
+      const can = (x) => !!x && !!x.late_sent_at && ['paid', 'held', 'confirmed', 'part_shipped'].includes(x.status) && x.hold !== 'dispute' && x.dispute !== 'open' && x.dispute !== 'lost'; // part 9 (M1): lost too
+      // review finding 9: while 'confirming' the printer is being asked to start (a charge in flight, its answer unknown until the call returns or
+      // the re-read 2 minutes later): refunding lines then could still print them. So not now, kindly; it takes a minute or two at most.
+      const busyNow = (x) => !!x && x.status === 'confirming' && !!x.late_sent_at;
+      // Second review (R2-M1): an order Printful has past its draft is read first, and what it says applied in the refund's own transaction,
+      // so a part posted with its hint lost is not refunded as well. A read that fails never takes the buyer's right away: the late part is
+      // refunded on what we know, Printful is asked to cancel it, and the owner is told at once to check. The order changed while the read was
+      // out (R2-m1): read once more; changed again: "try again in a minute".
+      let busy = false, r = null;
+      for (let n = 0; n < 2 && r == null && !busy; n++) {
+        const x0 = this.order(o.id);
+        if (busyNow(x0)) { busy = true; break; }
+        if (!can(x0)) { r = false; break; }
+        let po = null, snap = null, read = null;
+        if (this.needRead(x0)) { po = x0.provider_order; snap = this.pfSnap(x0); const g = await provider.get(this.env, po); read = g.ok && g.data ? g.data : null; }
+        r = this.tx(() => {
+          let x = this.order(o.id);
+          if (busyNow(x)) { busy = true; return false; }
+          if (!can(x)) return false;
+          if (po && read) {
+            if (this.pfSnap(x) !== snap) return null;
+            this.applyRead(o.id, po, read); x = this.order(o.id);
+            if (!can(x)) return false;
+          }
+          const done = this.lateRefund(x, 'late'); // one email for the whole late part (part 6)
+          if (done && po && !read) this.ownerMail(o.id, 'late_cancel_unread', 'The buyer cancelled the late part (' + this.q("select line from merch_refunds where order_id = ? and reason = 'late'", o.id).map((y) => 'line ' + y.line).join(', ') + ') and it was refunded, but Printful could not be read first. Please check the Printful dashboard: if any of it has been posted, cancel what you still can there.');
+          return done;
+        });
+      }
+      if (busy || r == null) return fail('busy', 409, { say: busy ? 'We’re sending your order to print right this minute. Please try again in a minute or two.' : 'One moment, please try again.' });
       if (!r) return fail('not_late', 409);
       await this.flush(); const x = this.order(o.id);
       return json({ status: x.status, refund: this.refundState(x.id) });
@@ -483,7 +516,7 @@ export class MerchLedger {
     return json({ status: 'cancelled', refund: this.refundState(o.id) });
   }
   refundState(id) { const r = this.q("select status from merch_refunds where order_id = ? and id glob 'mr_*'", id); if (!r.length) return null; return r.every((x) => x.status === 'done') ? 'done' : 'sending'; }
-  reshipOk(o) { return o.hold === 'reship' && ['part_shipped', 'shipped', 'confirmed'].includes(o.status) && o.dispute !== 'open'; }
+  reshipOk(o) { return o.hold === 'reship' && ['part_shipped', 'shipped', 'confirmed'].includes(o.status) && o.dispute !== 'open' && o.dispute !== 'lost'; } // R2-M4: lost too
   async rAddress(o, body) {
     const reship = this.reshipOk(o);
     if (!((o.status === 'held' && o.hold === 'address') || reship)) return fail('not_needed', 409);
@@ -678,7 +711,8 @@ export class MerchLedger {
       // review finding 13: an email whose news is out of date by the time it goes is not sent (a Thank you retried after a cancel; a delay
       // email after the late part was cancelled or posted); the email about what happened instead has gone or goes
       const o = this.order(r.order_id);
-      if (o && ((r.kind === 'thanks' && ENDED.includes(o.status)) || ((r.kind === 'late' || r.kind === 'late_again') && !this.page(o).late))) {
+      // (second review, R2-M3: an address request once nothing waits for an address, e.g. Printful reshipped the parcel in the same read)
+      if (o && ((r.kind === 'thanks' && ENDED.includes(o.status)) || ((r.kind === 'late' || r.kind === 'late_again') && !this.page(o).late) || (r.kind === 'address' && o.hold !== 'address' && o.hold !== 'reship'))) {
         this.run("update merch_outbox set status = 'skipped', next_try_at = null where id = ?", r.id); skip = true; return r;
       }
       // the gift, once shown, goes in the first of these emails sent after that, and in no other (gift_mailed: this row; a retry of it keeps it)
@@ -971,8 +1005,18 @@ export class MerchLedger {
         return;
       }
       const won = st !== 'lost'; // M3: won, warning_closed, prevented and any other close keep the money
+      const wasOpen = o.dispute === 'open';
       this.set(o.id, { dispute: won ? 'won' : 'lost' });
       if (!won) this.giftBack(o.id); // the bank took the money back: a gift not shown yet goes back to the pool
+      // Second review (R2-M2): won while the flow went on (not paused): the delay steps go on with their date moved by the time they waited. A
+      // paused order moves its date when the owner releases it (admin confirm). R2-M4: lost: no reprint and no reship ever (stopReprints), a
+      // reship hold ends with nothing refunded (the bank paid the buyer back). Won with a reship hold: the address form was shut while the
+      // dispute was open, so the buyer gets a fresh 7 days.
+      if (won && wasOpen && o.hold !== 'dispute') this.lateResume(o.id, o.disputed_at);
+      if (!won) {
+        this.stopReprints(o.id);
+        if (o.hold === 'reship') { this.set(o.id, { hold: null, hold_at: null }); this.ownerMail(o.id, 'returned', 'The dispute was lost while a returned parcel waited for the buyer’s address: nothing is reshipped or refunded (the bank paid the buyer back).'); }
+      } else if (wasOpen && o.hold === 'reship') this.set(o.id, { hold_at: now, next_try_at: o.next_try_at != null && o.next_try_at > now ? Math.min(o.next_try_at, now + 7 * DAY) : now + 7 * DAY });
       if (won) this.ownerMail(o.id, 'dispute_won', 'Dispute closed (' + st.slice(0, 40) + '): the money stays with us. If it was held before printing, decide: ship it (merch.sh confirm) or refund it.');
       else if (['paid', 'held'].includes(o.status)) pause(); // lost: the bank took the money back; it is never made
       this.event('x:dispute_' + (won ? 'won' : 'lost') + ':' + o.id, o.id, 'dispute_' + (won ? 'won' : 'lost'), st);
@@ -1047,7 +1091,14 @@ export class MerchLedger {
       let p = this.one('select * from merch_parcels where id = ?', s.id);
       if (!p) {
         this.run('insert into merch_parcels (id, order_id, product, carrier, tracking_url, shipped_at) values (?, ?, ?, ?, ?, ?)', s.id, id, ls[0].product, s.carrier, s.tracking_url, s.shipped_at || now);
-        for (const l of ls) { if (!refunded) up(l, 'shipped', { parcel_id: s.id }); else this.setLine(id, l.line, { parcel_id: s.id }); this.setLine(id, l.line, { keep_until: (s.shipped_at || now) + 180 * DAY }); }
+        for (const l of ls) {
+          // second review (R2-M3): a line already posted in a parcel that came back, now in a new parcel (Printful reshipped it): it moves to
+          // the new parcel, so it is no longer waiting for an address and never refunded as unreshipped
+          const back = l.parcel_id && l.parcel_id !== s.id && !DEAD.includes(l.status) && this.one('select returned_at from merch_parcels where id = ?', l.parcel_id);
+          if (back && back.returned_at) { this.setLine(id, l.line, { parcel_id: s.id }); l.parcel_id = s.id; }
+          else if (!refunded) up(l, 'shipped', { parcel_id: s.id }); else this.setLine(id, l.line, { parcel_id: s.id });
+          this.setLine(id, l.line, { keep_until: (s.shipped_at || now) + 180 * DAY });
+        }
         this.buyerMail(id, 'ship', 'me_' + id + '_ship_' + s.id, null, { parcel: s.id }); // T2.1-15: one "On its way" per parcel
         // part 9 (review m1): a line refunded in full that Printful posted all the same (a late refund, a cancel that came too late): the owner hears
         const paid = ls.filter((l) => l.qty > 0 && l.refunded_qty >= l.qty);
@@ -1060,9 +1111,15 @@ export class MerchLedger {
         this.run('update merch_parcels set returned_at = ? where id = ?', now, s.id);
         const x = this.order(id), live = this.lines(id).filter((l) => l.parcel_id === s.id && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty);
         // M4: nothing to reship on a refunded or cancelled order, in a dispute, or when its lines are refunded: the buyer is not asked
-        if (ENDED.includes(x.status) || x.dispute === 'open' || !live.length) this.ownerMail(id, 'returned', 'A parcel came back to Printful (' + s.id + '); nothing is reshipped (refunded, cancelled or in a dispute).');
+        // second review (R2-M4): nor after a lost dispute (the bank paid the buyer back)
+        if (ENDED.includes(x.status) || x.dispute === 'open' || x.dispute === 'lost' || !live.length) this.ownerMail(id, 'returned', 'A parcel came back to Printful (' + s.id + '); nothing is reshipped (refunded, cancelled or in a dispute).');
         else { this.set(id, { hold: 'reship', hold_at: now, next_try_at: now + 7 * DAY }); this.buyerMail(id, 'address', 'me_' + id + '_address_' + s.id, null, { reship: s.id }); }
       }
+    }
+    // R2-M3: every returned line is in a new parcel again (Printful reshipped it) and no reship waits for an address: the reship hold ends
+    o = this.order(id);
+    if (o.hold === 'reship' && !this.reshipLines(o).length && !this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) {
+      this.set(id, { hold: null, hold_at: null }); this.event('x:reshipped:' + id + ':' + now, id, 'reshipped_at_printer');
     }
     if (refunded) return; // T2.2-21: parcels are stored but change no status
     o = this.order(id);
@@ -1116,7 +1173,9 @@ export class MerchLedger {
     if (due == null || now < due) return;
     if (this.needRead(o) && !read) return;
     if (!o.late_sent_at) {
-      const eta = Math.min(addBusinessDays(o.ship_by, LATE_MORE_DAYS), o.ship_by + LATE_MAX_DAYS * DAY);
+      // second review (R2-M2): the new date counts from the day the email goes (ship_by, or later when the steps waited: a dispute, a hold the
+      // owner released, failed reads), so the buyer always gets the full LATE_MORE_DAYS working days and the date is never in the past
+      const from = Math.max(o.ship_by, now), eta = Math.min(addBusinessDays(from, LATE_MORE_DAYS), from + LATE_MAX_DAYS * DAY);
       this.set(id, { late_sent_at: now, late_eta: eta }); this.buyerMail(id, 'late', 'me_' + id + '_late', null, {});
       return;
     }
@@ -1134,7 +1193,7 @@ export class MerchLedger {
     if (!this.needRead(o)) return this.tx(() => this.lateCheck(id));
     const po = o.provider_order, r = await this.readPrinter(o);
     if (!r.ok) return;
-    this.tx(() => { if (this.applyRead(id, po, r.data)) this.lateCheck(id, true); });
+    this.tx(() => { if (this.applyRead(id, po, r.data, r.snap)) { this.lateCheck(id, true); r.snap = this.pfSnap(this.order(id)); } }); // our own change: the read stays good for this step
   }
   // one read of an order's Printful order -> { ok: true, data } | { ok: false } (then pf_wait and, on a failure, pf_read_fail are written).
   // Kept for the rest of the step (pfMemo), so the late step and the hold's refund in one work() read once; at most PF_READS_TICK an alarm.
@@ -1143,8 +1202,8 @@ export class MerchLedger {
     if (this.pfMemo.has(po)) return this.pfMemo.get(po);
     if (this.pfReads >= PF_READS_TICK) { this.tx(() => this.run('update merch_orders set pf_wait = ?, next_try_at = min(coalesce(next_try_at, ?), ?) where id = ?', this.now() + MIN, this.now() + MIN, this.now() + MIN, o.id)); return { ok: false }; }
     this.pfReads++;
-    const g = await provider.get(this.env, po);
-    const r = g.ok && g.data ? { ok: true, data: g.data } : { ok: false };
+    const snap = this.pfSnap(this.order(o.id)), g = await provider.get(this.env, po);
+    const r = g.ok && g.data ? { ok: true, data: g.data, snap } : { ok: false };
     this.pfMemo.set(po, r);
     if (!r.ok) this.tx(() => this.readFailed(o.id, po, g.kind));
     return r;
@@ -1157,9 +1216,11 @@ export class MerchLedger {
     if (now - since >= PF_TELL && this.event('x:pf_unread:' + id + ':' + since, id, 'pf_unread', kind || null))
       this.ownerMail(id, 'printer_unread', 'Printful order ' + po + ' could not be read since ' + new Date(since).toISOString().slice(0, 16) + ' UTC (' + (kind || 'error') + '). Its delay steps and automatic refunds wait until it can.');
   }
-  // sync: a good read applied (as a hint would be), if the order still has that Printful order -> true
-  applyRead(id, po, d) {
+  // sync: a good read applied (as a hint would be), if the order still has that Printful order -> true. snap (R2-m1): the order as it was when
+  // the read went out; changed since: false, nothing applied (the caller reads again)
+  applyRead(id, po, d, snap) {
     const x = this.order(id); if (!x || String(x.provider_order) !== String(po) || String(d.id) !== String(po)) return false;
+    if (snap != null && this.pfSnap(x) !== snap) { this.pfMemo.delete(po); this.event('x:pf_stale:' + id + ':' + this.now(), id, 'pf_read_stale'); return false; }
     this.run('update merch_orders set pf_read_at = ?, pf_read_fail = null, pf_wait = null where id = ?', this.now(), id);
     this.applyProvider(id, d);
     return true;
@@ -1189,8 +1250,29 @@ export class MerchLedger {
   async workAfter(o) {
     const now = this.now(), id = o.id;
     if (o.hold === 'reship' && now >= o.hold_at + 7 * DAY) { // T2.2-45: 7 days without an address: those lines are refunded
+      // Second review. R2-M4: never during an open dispute (the bank decides the money; the address form is shut too: a won close gives a fresh
+      // 7 days), never after a lost one (the hold ends, nothing refunded). R2-M3: never blind: every Printful order that holds a returned line
+      // (ours, or a reprint's) is read first and applied in the refund's own transaction; a line Printful reshipped is in a new parcel then and
+      // is not refunded. A read that fails: tried again in 15 minutes (the owner hears after 24 hours, as every failed read).
+      if (o.dispute === 'open') return this.tx(() => this.next(id, this.now() + DAY));
+      const reads = [];
+      if (o.dispute !== 'lost') for (const [po, rp] of this.reshipOrders(o)) {
+        if (rp == null) { const r = await this.readPrinter(this.order(id)); if (!r.ok) return this.tx(() => this.next(id, this.order(id).pf_wait || this.now() + PF_RETRY)); reads.push({ po, data: r.data, snap: r.snap }); }
+        else { const g = await provider.get(this.env, po); if (!g.ok || !g.data) return this.tx(() => this.next(id, this.now() + PF_RETRY)); reads.push({ po, data: g.data, rp }); }
+      }
       return this.tx(() => {
-        const x = this.order(id); if (x.hold !== 'reship') return;
+        for (const r of reads) {
+          if (r.rp == null) { if (!this.applyRead(id, r.po, r.data, r.snap)) return this.next(id, this.now() + MIN); }
+          else if (String(r.data.id) === String(r.po)) { this.run('update merch_reprints set read_at = ? where order_id = ? and n = ?', this.now(), id, r.rp); this.applyProvider(id, r.data); }
+        }
+        const x = this.order(id); if (x.hold !== 'reship') return; // Printful reshipped it (the hold ended in applyProvider): no refund
+        if (x.dispute === 'lost' || x.dispute === 'open') {
+          if (x.dispute === 'open') return this.next(id, this.now() + DAY);
+          this.run("update merch_reprints set status = 'cancelled' where order_id = ? and status = 'need_address'", id);
+          this.set(id, { hold: null, hold_at: null, next_try_at: null });
+          this.ownerMail(id, 'returned', 'A returned parcel waited 7 days after a lost dispute: nothing is reshipped or refunded (the bank paid the buyer back).');
+          return;
+        }
         const na = this.q("select n from merch_reprints where order_id = ? and status = 'need_address'", id).map((r) => r.n);
         const L = this.reshipLines(x).concat(this.lines(id).filter((l) => na.includes(l.rp) && l.refunded_qty < l.qty));
         this.refundLines(id, L.map((l) => ({ line: l.line })), 'reship');
@@ -1220,10 +1302,10 @@ export class MerchLedger {
     // part 9 (B1): an order Printful has past its draft is read first; what it says is applied in the refund's own transaction (it may have
     // gone on: then the hold ends and nothing is refunded); a read that fails pushes the refund back 15 minutes, never refunds blind
     const refund = async (w) => {
-      const o1 = this.order(id); let po = null, data = null;
-      if (this.needRead(o1)) { po = o1.provider_order; const r = await this.readPrinter(o1); if (!r.ok) return this.tx(() => this.next(id, this.order(id).pf_wait || this.now() + PF_RETRY)); data = r.data; }
+      const o1 = this.order(id); let po = null, data = null, snap = null;
+      if (this.needRead(o1)) { po = o1.provider_order; const r = await this.readPrinter(o1); if (!r.ok) return this.tx(() => this.next(id, this.order(id).pf_wait || this.now() + PF_RETRY)); data = r.data; snap = r.snap; }
       return this.tx(() => {
-        if (po && !this.applyRead(id, po, data)) return this.next(id, this.now() + PF_RETRY);
+        if (po && !this.applyRead(id, po, data, snap)) return this.next(id, this.now() + MIN); // R2-m1: changed during the read: read again soon
         const x = this.order(id); if (!same(x)) return this.next(id, x ? x.next_try_at : null);
         this.fullRefund(x, w, 'refunded'); this.ownerMail(id, 'auto_refund', 'Refunded in full: ' + w);
       });
@@ -1565,7 +1647,16 @@ export class MerchLedger {
   }
 
   /* ---------------- reprints (T2.1-23, T2.2-44, T2.2-45) ---------------- */
-  reshipLines(o) { const ps = this.q('select id from merch_parcels where order_id = ? and returned_at is not null', o.id).map((p) => p.id); return this.lines(o.id).filter((l) => ps.includes(l.parcel_id) && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty); }
+  // R2-M3: the Printful orders that hold a returned line still waiting -> Map(provider order -> null for our own order | the reprint's n)
+  reshipOrders(o) {
+    const out = new Map();
+    for (const l of this.reshipLines(o)) {
+      if (l.rp == null) { if (o.provider_order) out.set(String(o.provider_order), null); continue; }
+      const r = this.one('select provider_order from merch_reprints where order_id = ? and n = ?', o.id, l.rp); if (r && r.provider_order) out.set(String(r.provider_order), l.rp);
+    }
+    return out;
+  }
+  reshipLines(o) { const ps =this.q('select id from merch_parcels where order_id = ? and returned_at is not null', o.id).map((p) => p.id); return this.lines(o.id).filter((l) => ps.includes(l.parcel_id) && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty); }
   // new line rows (101, 102 ...) from the stored PNGs (or a re-render with the same art_ver); a Printful order <order>-r<n>, confirmed at once (live only)
   async reprint(o, lineNums, providerOrder, rec, why, leased) {
     const res = this.tx(() => {
@@ -1615,7 +1706,7 @@ export class MerchLedger {
         if (draftId && !y.provider_order) { this.run("update merch_reprints set status = 'drop', provider_order = ? where id = ?", draftId, rp.id); this.fx.push({ t: 'droprp', order: id }); this.next(id, this.now()); }
         return;
       }
-      const st = draftId ? 'drop' : ENDED.includes(x.status) ? 'cancelled' : 'held';
+      const st = draftId ? 'drop' : ENDED.includes(x.status) || x.dispute === 'lost' ? 'cancelled' : 'held'; // R2-M4: lost: never made
       this.run('update merch_reprints set status = ?, provider_order = coalesce(?, provider_order) where id = ?', st, draftId || null, rp.id);
       if (st !== 'held') this.undoReprint(rp);
       if (st === 'drop') this.fx.push({ t: 'droprp', order: id });
@@ -1712,19 +1803,22 @@ export class MerchLedger {
   // as a hint would be. A read that fails: the order is tried again in 15 minutes (pf_wait), a reprint in an hour.
   async rereads(now) {
     let left = PF_READS_CRON;
-    const os = this.q("select id, provider_order from merch_orders where provider_order is not null and confirmed_at is not null and (status in ('confirmed', 'part_shipped') or (status = 'held' and hold = 'provider')) and coalesce(pf_read_at, confirmed_at) <= ? and coalesce(pf_wait, 0) <= ? and coalesce(lease_until, 0) <= ? order by coalesce(pf_read_at, confirmed_at) limit ?", now - DAY, now, now, left);
+    // second review (R2-M3): also a shipped order with a reship hold (a parcel came back: Printful may reship it with no hint)
+    const os = this.q("select id, provider_order from merch_orders where provider_order is not null and confirmed_at is not null and (status in ('confirmed', 'part_shipped') or (status = 'held' and hold = 'provider') or (status = 'shipped' and hold = 'reship')) and coalesce(pf_read_at, confirmed_at) <= ? and coalesce(pf_wait, 0) <= ? and coalesce(lease_until, 0) <= ? order by coalesce(pf_read_at, confirmed_at) limit ?", now - DAY, now, now, left);
     for (const x of os) {
       left--;
       const g = await provider.get(this.env, x.provider_order);
       this.tx(() => { if (g.ok && g.data) this.applyRead(x.id, x.provider_order, g.data); else this.readFailed(x.id, x.provider_order, g.kind); });
     }
     if (left <= 0) { await this.flush(); return; }
-    const rs = this.q("select r.id, r.order_id, r.provider_order from merch_reprints r join merch_orders o on o.id = r.order_id where r.status = 'confirmed' and r.provider_order is not null and o.status in ('confirmed', 'part_shipped') and coalesce(r.read_at, r.created_at) <= ? and exists (select 1 from merch_order_items i where i.order_id = r.order_id and i.rp = r.n and i.status in ('confirmed', 'in_production')) order by coalesce(r.read_at, r.created_at) limit ?", now - DAY, left);
+    // reprints with a line not posted yet, and (R2-M3) reprints whose parcel came back while the order waits on a reship
+    const rs = this.q("select r.id, r.order_id, r.provider_order from merch_reprints r join merch_orders o on o.id = r.order_id where r.status = 'confirmed' and r.provider_order is not null and coalesce(r.read_at, r.created_at) <= ? and ((o.status in ('confirmed', 'part_shipped') and exists (select 1 from merch_order_items i where i.order_id = r.order_id and i.rp = r.n and i.status in ('confirmed', 'in_production'))) or (o.status in ('confirmed', 'part_shipped', 'shipped') and o.hold = 'reship' and exists (select 1 from merch_order_items i join merch_parcels p on p.id = i.parcel_id where i.order_id = r.order_id and i.rp = r.n and p.returned_at is not null))) order by coalesce(r.read_at, r.created_at) limit ?", now - DAY, left);
     for (const r of rs) {
       const g = await provider.get(this.env, r.provider_order);
       this.tx(() => {
-        this.run('update merch_reprints set read_at = ? where id = ?', g.ok && g.data ? this.now() : this.now() - DAY + HOUR, r.id);
-        if (g.ok && g.data && String(g.data.id) === String(r.provider_order)) this.applyProvider(r.order_id, g.data);
+        const fresh = true;
+        this.run('update merch_reprints set read_at = ? where id = ?', g.ok && g.data && fresh ? this.now() : this.now() - DAY + HOUR, r.id);
+        if (g.ok && g.data && fresh && String(g.data.id) === String(r.provider_order)) this.applyProvider(r.order_id, g.data);
       });
     }
     await this.flush();

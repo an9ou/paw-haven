@@ -72,6 +72,7 @@ export async function adminRoute(L, req, path, ip) {
       const ok = L.tx(() => {
         const y = L.order(o.id); let did = false;
         if (okHold(y)) did = L.set(o.id, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: L.now() }, ['held']);
+        if (did && y.hold === 'dispute') L.lateResume(o.id, y.hold_at); // second review (R2-M2): the delay date moves on by the time the dispute held it
         if (!L.stopped(L.order(o.id)) && L.q("update merch_reprints set status = 'queued' where order_id = ? and status = 'held' returning id", o.id).length) { did = true; L.next(o.id, L.now()); }
         return did;
       });
@@ -87,6 +88,8 @@ export async function adminRoute(L, req, path, ip) {
       const lines = L.lines(o.id).filter((l) => l.parcel_id === p.id && l.status !== 'replaced' && l.refunded_qty < l.qty).map((l) => l.line);
       if (body.then === 'reprint') { const r = await L.reprint(L.order(o.id), lines, null, null, 'lost'); return r.ok ? json(Object.assign({ lines }, r)) : fail(r.error, r.status || 409); }
       if (body.then === 'refund') {
+        // second review (R2-M4, its neighbour): never while a dispute is open or after it was lost (the bank decides, or already paid the buyer back)
+        const x = L.order(o.id); if (x.dispute === 'open' || x.dispute === 'lost') return fail('disputed', 409);
         const out = L.tx(() => L.refundLines(o.id, lines.map((n) => ({ line: n })), 'lost')); // one email for the parcel (part 6)
         await L.flush(); return json({ ok: true, lines, refunds: out, status: L.order(o.id).status });
       }

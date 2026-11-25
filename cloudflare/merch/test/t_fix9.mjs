@@ -50,7 +50,9 @@ export async function fix9() {
     const n = orderReads(w) - r0; ok(n >= 7 && n <= 10, 'about one read every 15 minutes: ' + n);
     w.pf.down = false; await w.advance(16 * MIN); o = w.order(id);
     ok(o.late_sent_at && !o.pf_read_fail && !o.pf_wait && w.mails(/_late$/).length === 1, 'read again: the delay email goes, once');
-    await w.advance(LATE_ETA - w.clock.t - MIN); w.pf.down = true; await w.advance(HOUR);
+    // second review (R2-M2): the new date counts from the day the delay email went (here 2 h 15 min after ship_by, once the reads worked)
+    const eta = w.order(id).late_eta; eq(eta, LATE_ETA + 2 * HOUR + 15 * MIN, 'late_eta counts from the delay email');
+    await w.advance(eta - w.clock.t - MIN); w.pf.down = true; await w.advance(HOUR);
     ok(w.order(id).status === 'confirmed' && !w.stripe.refunds.length, 'at late_eta the read fails: nothing refunded');
     w.pf.down = false; await w.advance(16 * MIN); ok(w.order(id).status === 'refunded' && w.stripe.refunds.length === 1, 'read again, still not posted: refunded once');
     ok(!w.L().report().stranded.length, 'nothing stranded');

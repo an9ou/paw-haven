@@ -112,8 +112,12 @@ export async function fix6() {
     w = await world(); id = await partLate(w); await w.advance(SHIP_BY - w.clock.t);
     await w.hook('charge.dispute.created', { id: 'dp_late', payment_intent: w.order(id).payment_intent });
     await w.advance(15 * DAY); await w.cron(); ok(!w.order(id).late_auto_at && !w.stripe.refunds.length && !w.mails(/_late_2$/).length && !w.L().report().stranded.length, 'in a dispute: nothing refunded, nothing sent, nothing stranded');
+    // second review (R2-M2): won: the steps go on with the new date moved by the 15 days the dispute held them (not at once)
+    const eta0 = w.order(id).late_eta, open0 = w.order(id).disputed_at;
     await w.hook('charge.dispute.closed', { id: 'dp_late', payment_intent: w.order(id).payment_intent, status: 'won' }); await w.advance(MIN);
-    ok(w.order(id).late_auto_at && w.stripe.refunds.length === 1, 'won: the step runs then (the new date has passed)');
+    ok(!w.order(id).late_auto_at && !w.stripe.refunds.length && w.order(id).late_eta === eta0 + (w.clock.t - MIN - open0), 'won: the new date moved on by the dispute, nothing refunded at once');
+    await w.advance(w.order(id).late_eta - w.clock.t + MIN);
+    ok(w.order(id).late_auto_at && w.stripe.refunds.length === 1, 'won: the step runs at the moved date');
     // the tee posted before late_eta: nothing more
     w = await world(); id = await partLate(w); await w.advance(SHIP_BY - w.clock.t + DAY);
     w.pf.ship(w.order(id).provider_order, [id + '_2'], { status: 'fulfilled' }); await shipHint(w, id);
