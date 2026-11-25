@@ -346,8 +346,8 @@ export async function t22() {
   });
   await T('T2.2-48', 'a Printful hint with a bad or missing signature: 401 when signing is set up; without a secret: accepted as a hint only while not live (S8)', async () => {
     const w = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: 'pf-hook-secret' } }); const body = JSON.stringify({ id: 'z1', type: 'x', data: { order: { id: 1 } } });
-    ok((await w.phook(body, {}, { unsigned: true })).status === 401 && (await w.phook(body, { 'x-pf-signature': '0'.repeat(64) })).status === 401, 'missing and bad: 401');
-    ok((await w.phook(body, { 'x-pf-signature': await hmacHex('pf-hook-secret', body) })).status === 200, 'good: 200');
+    ok((await w.phook(body, {}, { unsigned: true })).status === 401 && (await w.phook(body, { 'x-pf-webhook-signature': '0'.repeat(64) })).status === 401, 'missing and bad: 401');
+    ok((await w.phook(body, { 'x-pf-webhook-signature': await hmacHex('pf-hook-secret', body) })).status === 200, 'good: 200');
     const x = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: undefined, MERCH_PROVIDER_MODE: 'draft' } }); ok((await x.phook(body)).status === 200, 'no secret set, not live: accepted as a hint (Printful is re-read anyway)');
     const y = await world({ env: { MERCH_PROVIDER_WEBHOOK_SECRET: undefined } }); const r = await y.phook(body); ok(r.status === 401 && r.json.error === 'signing_required', 'S8: live without a secret: refused');
   });

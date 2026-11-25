@@ -209,7 +209,8 @@ export async function printful() {
     eq(await pf.parseHook({}, raw('hook_order_created_docs'), H({})), { id: 'order_created:11111::2023-04-04T12:36:42Z', order: '11111', type: 'order_created' }, 'the docs example: no external id, so the Printful id');
     eq(await pf.parseHook({}, raw('hook_catalog_price_changed'), H({})), { id: null, order: null, type: 'catalog_price_changed' }, 'no order: not ours');
     ok((await pf.parseHook({}, 'not json', H({}))) === null, 'not JSON');
-    ok(!(await pf.parseHook({ MERCH_PROVIDER_WEBHOOK_SECRET: 'not-hex-secret' }, b, H({ 'x-pf-signature': createHmac('sha256', 'not-hex-secret').update(b).digest('hex') }))).bad, 'a secret that is not hex is its text; the header name worker.js forwards today is taken too');
+    ok(!(await pf.parseHook({ MERCH_PROVIDER_WEBHOOK_SECRET: 'not-hex-secret' }, b, H({ 'x-pf-webhook-signature': createHmac('sha256', 'not-hex-secret').update(b).digest('hex') }))).bad, 'a secret that is not hex is its text');
+    ok((await pf.parseHook(env, b, H({ 'x-pf-signature': signed(b) }))).bad, 'F5-header: the old name x-pf-signature is no longer read (review finding 1)');
   });
 
   await T('P5-costs', 'catalogCosts: v2 prices (USD, our variants only) and Standard rates for one and two items per region -> { variants, ship }; these feed the margin guard', async () => {

@@ -259,9 +259,9 @@ export async function hookSign(secret, raw) {
 // ledger then uses the body's sha256).
 export async function parseHook(env, raw, headers) {
   if (env.MERCH_PROVIDER_WEBHOOK_SECRET) {
-    // Printful sends x-pf-webhook-signature. Today's front Worker (worker.js) forwards only 'x-pf-signature' to the ledger: until it also copies
-    // the real name (PART5.md, merge step), the same HMAC under that name is taken too. Same secret, same check: nothing weaker.
-    const sig = String(headers.get('x-pf-webhook-signature') || headers.get('x-pf-signature') || '').toLowerCase();
+    // Printful sends x-pf-webhook-signature, and worker.js forwards it to the ledger (review finding 1). Only that name counts: the old
+    // name x-pf-signature is never read, so a hint signed under it is refused like an unsigned one.
+    const sig = String(headers.get('x-pf-webhook-signature') || '').toLowerCase();
     if (!/^[0-9a-f]{64}$/.test(sig) || !same(sig, await hookSign(env.MERCH_PROVIDER_WEBHOOK_SECRET, raw))) return { bad: true };
   }
   let ev; try { ev = JSON.parse(raw); } catch (e) { return null; }

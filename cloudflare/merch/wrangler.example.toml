@@ -70,7 +70,7 @@ MERCH_BROWSER_BUDGET_MS = "540000"         # part 4: our own Browser Run budget 
 #   MERCH_STRIPE_KEY              restricted: Checkout Sessions write, Refunds write, Charges / PaymentIntents / Disputes read
 #   MERCH_STRIPE_WEBHOOK_SECRET   the merch account's webhook endpoint (events: TRANSACTIONS.md 6.3)
 #   MERCH_PROVIDER_KEY            Printful private token (part 5): scopes orders, file_library, webhooks
-#   MERCH_PROVIDER_WEBHOOK_SECRET Printful webhook v2 secret_key (hex, shown once when the webhook is set up; part 5)
+#   MERCH_PROVIDER_WEBHOOK_SECRET Printful webhook v2 secret_key (hex, shown once when the webhook is set up; part 5); Printful signs in x-pf-webhook-signature
 #   MERCH_FILE_KEY                signs the print file links (random, 32+ bytes)
 #   MERCH_HASH_KEY                HMAC for email and IP hashes (random, 32+ bytes; never rotate without a plan: flags use it)
 #   MERCH_ADMIN_KEY               tools/merch.sh (random, 32+ bytes)

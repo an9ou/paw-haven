@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { T, ok, eq, mug, PP, ROOT } from './harness.mjs';
-import { fakeStripe, fakePrintful, fakeRender, fakeMail, require } from './fakes.mjs';
+import { fakeStripe, fakePrintful, fakeRender, fakeMail, pfSign, require } from './fakes.mjs';
 
 function findMiniflare() {
   const roots = [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean));
@@ -44,6 +44,14 @@ export async function miniflare() {
       const f = await mf.dispatchFetch(show.json.lines[0].file_url); const buf = new Uint8Array(await f.arrayBuffer());
       ok(f.status === 200 && buf.length === show.json.lines[0].file_bytes && buf.length > 2 * (1 << 20), 'the PNG (over 2 MB, kept in 1 MB parts) comes back whole from a SQLite Durable Object: ' + buf.length);
       ok(pf.orders.size === 1 && Array.from(pf.orders.values())[0].status === 'draft', 'a Printful draft');
+      // review finding 1: Printful signs in x-pf-webhook-signature; the front Worker must hand exactly that header to the ledger
+      await T('F5-mf-header', 'workerd, through the front Worker: a hint signed only under x-pf-webhook-signature is taken (200, Printful re-read); the same signature under the old name x-pf-signature is 401', async () => {
+        const hb = JSON.stringify({ type: 'order_updated', occurred_at: '2026-12-01T01:02:03Z', retries: 0, store_id: 1, data: { order: { id: Number(Array.from(pf.orders.keys())[0]), external_id: id, status: 'draft' } } });
+        const sig = await pfSign('pf-hook-secret-test', hb), reads = pf.calls.length;
+        const old = await call('POST', '/merch/webhook/provider', hb, { 'x-pf-signature': sig }); eq([old.status, old.json && old.json.error], [401, 'bad_signature'], 'the old name alone: refused');
+        const good = await call('POST', '/merch/webhook/provider', hb, { 'x-pf-webhook-signature': sig }); eq([good.status, good.json], [200, { received: true }], 'the real name alone: taken ' + good.text);
+        ok(pf.calls.slice(reads).some((c) => c.m === 'GET' && c.path === '/orders/@' + id), 'the hint made the ledger re-read the order at Printful');
+      });
       const x = await call('POST', '/merch/order/' + id + '/cancel', {}); eq([x.status, x.json.status, x.json.refund], [200, 'cancelled', 'done'], 'cancel in the hour');
       ok(stripe.refunds.length === 1 && stripe.refunds[0].amount === 2498 && Array.from(pf.orders.values())[0].deleted, 'refunded, draft deleted');
       const w = await mf.getWorker(); if (w && typeof w.scheduled === 'function') { const s = await w.scheduled({ cron: '*/10 * * * *' }); ok(s && s.outcome === 'ok', 'the cron ran: ' + JSON.stringify(s)); }

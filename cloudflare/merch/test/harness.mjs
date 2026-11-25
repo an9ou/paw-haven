@@ -61,8 +61,8 @@ export async function world(o) {
   w.call = async (method, p, body, headers) => { const res = await w.raw(method, p, body, headers); const text = await res.text(); let json = null; try { json = JSON.parse(text); } catch (e) { json = null; } return { status: res.status, json, text, headers: res.headers }; };
   w.admin = (method, p, body, key) => w.call(method, '/merch/admin/' + p, body, { authorization: 'Bearer ' + (key || env.MERCH_ADMIN_KEY) });
   w.hook = async (type, object, opt) => { const e = await stripe.event(type, object, Object.assign({ now: clock.t }, opt || {})); const r = await w.call('POST', '/merch/webhook/stripe', e.raw, { 'stripe-signature': e.sig, 'content-type': 'application/json' }); r.eventId = e.id; r.raw = e.raw; r.sig = e.sig; return r; };
-  // printer hints are signed as Printful's webhook v2 signs them (part 5: hex secret; sent under the header name worker.js forwards today) (S8: unsigned hints are refused in live mode); { unsigned: true } sends none
-  w.phook = async (body, headers, o) => w.call('POST', '/merch/webhook/provider', body, Object.assign({ 'content-type': 'application/json' }, (o && o.unsigned) || !env.MERCH_PROVIDER_WEBHOOK_SECRET ? {} : { 'x-pf-signature': await pfSign(env.MERCH_PROVIDER_WEBHOOK_SECRET, body) }, headers || {}));
+  // printer hints are signed as Printful's webhook v2 signs them (part 5: hex secret, in Printful's header x-pf-webhook-signature) (S8: unsigned hints are refused in live mode); { unsigned: true } sends none
+  w.phook = async (body, headers, o) => w.call('POST', '/merch/webhook/provider', body, Object.assign({ 'content-type': 'application/json' }, (o && o.unsigned) || !env.MERCH_PROVIDER_WEBHOOK_SECRET ? {} : { 'x-pf-webhook-signature': await pfSign(env.MERCH_PROVIDER_WEBHOOK_SECRET, body) }, headers || {}));
   // time travel: fire the ledger's alarms in order up to now + ms
   w.advance = async (ms) => {
     await w.init(); const target = clock.t + (ms || 0), st = w.state();
