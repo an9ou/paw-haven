@@ -116,3 +116,28 @@ tap at least 44 px, no text past its card (with 6 lines, a 20-letter name, a pup
 - Register the suite in `game/run_tests.js` as `merch_page` (`node merch/test_page.js`, needs Playwright; after `tools/merch_build.js`).
 - When part 3 is live: set `MERCH_API` in `site/merch/api.js`, and the Pay step then opens `data.url` (Stripe) — that one line is deliberately
   not written yet. Keep `catalog.json` only as a test fixture.
+
+## Part 9 fixes (25 Nov 2026, branch `merch/part9-page-fixes`)
+
+The shop page findings of the part 9 phone and art reviews (`docs/reviews/MERCH_PART9_phone_review.md`, `MERCH_PART9_art_review.md`), each
+with checks in `merch/test_page.js` (the `part9Checks` blocks and the order states; `P9=1` runs only those) or `merch/test_legal.js`.
+
+- Words: a basket line is a **design** everywhere ("Your basket holds up to 6 different designs, up to 3 of each"); **things** are what gets
+  made (the bag, the "Things (11)" row). Shipping: "Free shipping when your things come to $35 or more (before shipping)." once, in the Shipping
+  box, and "Add $X more for free shipping." under the totals (X from the quote's own `free_from` and subtotal; none where it is never free).
+  Delivery: "About N to M working days from payment to your door, printing included." (`ETA_TAIL`, the same words in the shipping page table).
+- A tap on one of your dogs goes straight on to "the thing" (as the ready-made cards); Back changes the dog. "Make it" survives a reload
+  (`dd_merch_make_v1` in sessionStorage, read back as untrusted; gone once the line is in the basket). Steps are ticked only when done.
+- While the name is typed, the price bar is not sticky and the field with its message stays in view; why Add is off is said inside the bar.
+  The bar pads for the iPhone home bar. The mug's name line counts against the mug's own width limit ("it fits", "with little room left",
+  "that's as long as it fits").
+- Order page: each state has its own title and a tracker that agrees: "Waiting for payment" / "Waiting for your bank" (no receipt, no "Order
+  received"), "We need your address", "A parcel came back to us", "Getting your order ready", "Your order is being printed" after the hour; the
+  receipt is spoken of only under "Thank you! Your order is in." in the first hour after paying. Each line names its pose.
+- The Japan notice (特定商取引法に基づく表記) and "Seller details" in the footer and by the pay card; the footer is rows of links with no dots.
+  Address errors are said once, at the field. The safe answer ("Keep my order", "No") is the primary button. "No dog yet?" only without dogs.
+  A country coming soon shows the lines' catalog prices and says "coming soon" once; the picker reads "Soon: United Kingdom".
+- Art: the mug preview shows the half of the wrap seen with the handle on the right, x 1350 to 2700 (the wrap's ends meet at the handle and the
+  strip reads left to right from outside; still to be confirmed with a sample, PART1.md); the tee mock's hems lie inside its outline; a newborn
+  has one pose, "Sleeping" (its lines carry the catalog's first pose, `stand`; a link or an old line asking another is mapped to it); the dog
+  cards and pose buttons are drawn without the ground shadow.

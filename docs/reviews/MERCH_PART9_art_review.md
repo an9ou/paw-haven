@@ -68,3 +68,13 @@ CHECKED AND FINE
 - Patch and edges: alpha is only 0/255 on every patched colour, in both Chromium and the 12-band resvg fallback. Banded vs one pass: no seam (at most 12 px of anti-alias difference at a band row). Patch edge and corners are clean at 100% on all 7 colours (B1_samoyed_all_tee_colours.png).
 - Names, mug, page: Caveat names are clean at 100%. The mug's 16-wide-letter limit holds (17 refused, 16 at 90 px). Mug faces are the same size and level, clear of the 0.25 in rim/base and 0.5 in ends. The tee preview places the patch at the print's scale and spot. The legal pages follow the site's style.
 ```
+
+## Fixes (shop page batch, branch `merch/part9-page-fixes`)
+
+- M1: `mock.js` mug() shows x 1350 to 2700 of the wrap (handle on the right): the home card, step 3, the basket and the order page agree.
+  Reasoning: the wrap's ends meet at the handle and the strip reads left to right from outside, so the face beside a right-hand handle is the
+  right half; its dog faces away from the handle (mugBody). Still to be confirmed with a sample (PART1.md "Mug face direction").
+- m1: the tee mock's sleeve hems moved inside each sleeve (and the body hem shortened); checked inside the outline on all 7 colours.
+- m2: a newborn shows one pose, "Sleeping", on make-it, in the basket and on the order page; a link or a stored line asking another pose maps to it.
+- m4: the dog cards and pose buttons drop the ground shadow (the same pattern the print removes).
+- Not in this batch: m3, m5, m6 (the print core), m7 (the emails).

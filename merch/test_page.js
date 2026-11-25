@@ -2,7 +2,8 @@
 //   NODE_PATH=$(npm root -g) node merch/test_page.js            all checks (Playwright's Chromium; this file serves site/ itself)
 //   SHOTS=1 NODE_PATH=$(npm root -g) node merch/test_page.js    also writes the owner's screenshots to docs/design/merch/part2_shots/ (dpr 2)
 //   SHOTS6=1 NODE_PATH=$(npm root -g) node merch/test_page.js   only writes the part 6 pictures: order states and every email (part6_shots/)
-//   LOOK=<dir> ...                                              also writes the review pictures (a dropped line, a name that can't print, an
+//   P9=1 NODE_PATH=$(npm root -g) node merch/test_page.js       only the part 9 review checks and the order states
+//   LOOK=<dir> ...                                            also writes the review pictures (a dropped line, a name that can't print, an
 //                                                               error, the order page after the hour, the "Ship to" list) at 360, 390 and 1280
 // Covers: the fake on its own, with answers of exactly the TRANSACTIONS.md 6.3 fields; 32 baskets in every zone priced by hand from SHIPPING.md
 // (the page and the fake against the hand table: $34.99 pays shipping, $35.00 ships free, the extra-item fee, bigger tee sizes, 6 lines of 3);
@@ -25,6 +26,7 @@ let CATJS = null; // cloudflare/merch/catalog.js (an ES module), loaded in main
 // a fixed clock for the order page (the cancel time, "same day", the posting date): local noon, far from midnight (review row T)
 const FIX = new Date(2026, 11, 1, 12, 0).getTime();
 const SHOTS6 = process.env.SHOTS6 === '1'; // only the part 6 pictures (docs/design/merch/part6_shots/), no checks
+const P9 = process.env.P9 === '1'; // only the part 9 review checks and the order states (a quick run, or to see them fail on an older page)
 const SHOTS = process.env.SHOTS === '1', SHOT_DIR = path.join(ROOT, 'docs', 'design', 'merch', 'part2_shots'), LOOK = process.env.LOOK || '';
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.error('Playwright is needed (NODE_PATH=$(npm root -g))'); process.exit(1); }
 
@@ -146,6 +148,7 @@ async function open(o) {
   o = o || {};
   const vp = o.vp || [390, 844];
   const ctx = await browser.newContext({ viewport: { width: vp[0], height: vp[1] }, deviceScaleFactor: o.dpr || 1, locale: o.lang || 'en-US' });
+  if (P9) ctx.setDefaultTimeout(5000);
   if (o.clock) await ctx.clock.setFixedTime(o.clock);
   if (o.catalog) await ctx.route('**/merch/catalog.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(o.catalog) }));
   if (o.live) await ctx.route('**/merch/api.js', (r) => r.fulfill({ contentType: 'text/javascript', body: API_JS.replace("var MERCH_API = '';", "var MERCH_API = '" + BASE + "/live';") }));
@@ -796,162 +799,203 @@ async function liveChecks() {
 // ================= part 9: the phone review (M1-M8, m1-m10) and the art review (M1, m1, m2, m4) fixes on the shop page =================
 // the drawn mug's face: which x of the 2700 px wrap shows at the face's left and right edge (mock.js mug(): the face window is x 30 to 100)
 const mugFaces = (pg, sel) => pg.$$eval(sel, (l) => l.map((g) => { const m = /translate\(([-\d.]+) [-\d.]+\) scale\(([\d.]+)\)/.exec(g.getAttribute('transform')); return m ? [Math.round((30 - +m[1]) / +m[2]), Math.round((100 - +m[1]) / +m[2])] : null; }));
+// past "Which dog?" after a tap on a dog (the page does it by itself since part 9 M7, checked on its own; this only lets these checks reach
+// their own steps on an older page too, to see them fail there)
+const onward = async (pg) => { if ((await view(pg)) === 'pick') await tap(pg, '#pickNext'); };
+// each part of these checks runs on its own: one that throws (a page that never got there) is one failed check, and the rest still run
+async function blk(name, fn) { try { await fn(); } catch (e) { ok('part 9 ' + name + ': ran to the end', false, String(e && e.message || e).split('\n')[0]); } }
 async function part9Checks() {
+  let t, pg;
   // M1: the keyboard up (a short screen) while typing the name: the bar is not over the field or its message; the reason Add is off sits in the bar
-  for (const vp of [[360, 640], [390, 844]]) {
-    let t = await open({ save: SAVE, path: '/merch/#/pick', vp }), pg = t.page;
-    await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=tee]'); await settle(pg);
-    await pg.focus('#nameIn'); await pg.fill('#nameIn', 'Mochi金'); await settle(pg);
-    await pg.setViewportSize({ width: vp[0], height: 330 }); await pg.waitForTimeout(300);
-    const k = await pg.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(), i = r('#nameIn'), m = r('#nameMsg'), b = r('.paybar'), h = r('#sitehead');
-      const hit = (a) => !(a.bottom <= b.top || a.top >= b.bottom); return { inView: i.top >= h.bottom - 1 && Math.max(i.bottom, m.bottom) <= innerHeight + 1, covered: hit(i) || hit(m), focus: document.activeElement.id, i: [i.top, i.bottom], m: [m.top, m.bottom], bar: [b.top, b.bottom], vh: innerHeight }; });
-    ok('part 9 M1 ' + vp[0] + ': keyboard up, the name field and its message in view and not under the price bar', k.inView && !k.covered && k.focus === 'nameIn', k);
-    await pg.evaluate(() => document.activeElement.blur()); await pg.setViewportSize({ width: vp[0], height: vp[1] }); await settle(pg);
-    await pg.evaluate(() => { const o = document.querySelector('#o-col').getBoundingClientRect(); window.scrollBy(0, o.top - 120); }); await settle(pg); // mid-way down the choices: the bar is stuck to the bottom
-    const a = await pg.evaluate(() => { const m = document.querySelector('#addMsg'), b = document.querySelector('.paybar').getBoundingClientRect(), r = m.getBoundingClientRect(); return { inBar: !!m.closest('.paybar'), shown: r.height > 0 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && r.bottom <= innerHeight + 1, sticky: getComputedStyle(document.querySelector('.paybar')).position, text: m.textContent }; });
-    ok('part 9 M1 ' + vp[0] + ': why Add is off is said inside the (sticky) bar, in view', a.inBar && a.shown && a.sticky === 'sticky' && /Fix the name first/.test(a.text), a);
-    ok('part 9 m5: the sticky bar keeps clear of an iPhone\'s home bar', await pg.evaluate(() => [...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => r.selectorText === '.paybar' && /env\(safe-area-inset-bottom\)/.test(r.cssText)); } catch (e) { return false; } })));
-    // m6: the size guide never touches the size chips
-    const g = await pg.evaluate(() => { const s = document.querySelector('#sgBtn').getBoundingClientRect(); return s.top - Math.max(...[...document.querySelectorAll('[data-size]')].map((b) => b.getBoundingClientRect().bottom)); });
-    ok('part 9 m6 ' + vp[0] + ': "Size guide" sits at least 6 px below the size chips', g >= 6, g);
-    await finish('part 9 make ' + vp[0], t);
-  }
-  // M2, M4: one tee to the US (under $35), a mug just under the edge, Hong Kong (never free)
-  let t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '4XL' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640] }), pg = t.page;
-  await pg.waitForSelector('#qtable');
-  const zus = CAT.zones.find((z) => z.id === 'us_jp'), tee4 = CAT.products.find((p) => p.id === 'tee').price + CAT.products.find((p) => p.id === 'tee').sizes.find((s) => s.id === '4XL').add;
-  ok('part 9 M2: the rule counts the things before shipping, and says how much more ships it free (from the catalog)', (await text(pg, '#shipBox .shipline')) === 'Shipping to the United States: ' + money(zus.fee) + '. Free shipping when your things come to $' + zus.free_from / 100 + ' or more (before shipping).' &&
-    (await text(pg, '#freeMore')) === 'Add ' + money(zus.free_from - tee4) + ' more for free shipping.' && (await text(pg, '[data-q=subtotal]')) === money(tee4), [await text(pg, '#shipBox .shipline'), await text(pg, '#freeMore')]);
-  ok('part 9 M4: the delivery time is from payment to the door, printing included, then the one posting promise', (await text(pg, '#shipBox .eta span:last-child')) === 'About ' + zus.eta[0] + ' to ' + zus.eta[1] + ' working days from payment to your door, printing included. Printing usually takes 2 to 5 working days, and we post every order within ' + CATJS.SHIP_BY_DAYS + ' working days of payment.', await text(pg, '#shipBox .eta'));
-  ok('part 9 M4: the questions say it the same way (no "then the post")', /Your basket shows how long it usually takes from payment to your door, printing included\./.test(HTML) && !/Then the post/.test(HTML));
-  // M8, m7: the Japan notice and "Seller details" by the pay card and in the footer; links never touching, no dots left dangling
-  for (const [w, h] of [[360, 640], [390, 844]]) {
-    await pg.setViewportSize({ width: w, height: h }); await settle(pg);
-    const f = await pg.evaluate(() => { const rows = (sel) => { const r = [...document.querySelectorAll(sel)].map((a) => a.getBoundingClientRect()); let touch = 0; r.forEach((a, i) => r.forEach((b, j) => { if (i < j && a.left < b.right && b.left < a.right && Math.abs(a.top - b.top) > 2 && !(a.bottom + 4 <= b.top || b.bottom + 4 <= a.top)) touch++; })); return touch; };
-      return { foot: rows('.mfoot a'), pay: rows('.paylinks a, #basketPayText a'), dots: /·/.test(document.querySelector('.mfoot').textContent), paren: /\(\s*$|^\s*\)/m.test(document.querySelector('.paylinks').previousElementSibling.textContent) || /\(/.test(document.querySelector('.paylinks').previousElementSibling.textContent),
-        ja: [...document.querySelectorAll('.mfoot a[href="/merch/tokushoho/"], .paylinks a[href="/merch/tokushoho/"]')].length, seller: [...document.querySelectorAll('.mfoot a, .paylinks a')].filter((a) => a.getAttribute('href') === '/merch/seller/').every((a) => a.textContent === 'Seller details') }; });
-    ok('part 9 M8/m7 ' + w + ': the Japan notice in the footer and by the pay card, "Seller details", rows of links never touching, no dangling dots or brackets', f.ja === 2 && f.seller && !f.foot && !f.pay && !f.dots && !f.paren, f);
-  }
-  await finish('part 9 basket', t);
+  await blk('M1 m5 m6', async () => {
+    for (const vp of [[360, 640], [390, 844]]) {
+      let t = await open({ save: SAVE, path: '/merch/#/pick', vp }), pg = t.page;
+      await tap(pg, '[data-pick]'); await onward(pg); await tap(pg, '.prodb[data-p=tee]'); await settle(pg);
+      await pg.focus('#nameIn'); await pg.fill('#nameIn', 'Mochi金'); await settle(pg);
+      await pg.setViewportSize({ width: vp[0], height: 330 }); await pg.waitForTimeout(300);
+      const k = await pg.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(), i = r('#nameIn'), m = r('#nameMsg'), b = r('.paybar'), h = r('#sitehead');
+        const hit = (a) => !(a.bottom <= b.top || a.top >= b.bottom); return { inView: i.top >= h.bottom - 1 && Math.max(i.bottom, m.bottom) <= innerHeight + 1, covered: hit(i) || hit(m), focus: document.activeElement.id, i: [i.top, i.bottom], m: [m.top, m.bottom], bar: [b.top, b.bottom], vh: innerHeight }; });
+      ok('part 9 M1 ' + vp[0] + ': keyboard up, the name field and its message in view and not under the price bar', k.inView && !k.covered && k.focus === 'nameIn', k);
+      await pg.evaluate(() => document.activeElement.blur()); await pg.setViewportSize({ width: vp[0], height: vp[1] }); await settle(pg);
+      await pg.evaluate(() => { const o = document.querySelector('#o-col').getBoundingClientRect(); window.scrollBy(0, o.top - 120); }); await settle(pg); // mid-way down the choices: the bar is stuck to the bottom
+      const a = await pg.evaluate(() => { const m = document.querySelector('#addMsg'), b = document.querySelector('.paybar').getBoundingClientRect(), r = m.getBoundingClientRect(); return { inBar: !!m.closest('.paybar'), shown: r.height > 0 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && r.bottom <= innerHeight + 1, sticky: getComputedStyle(document.querySelector('.paybar')).position, text: m.textContent }; });
+      ok('part 9 M1 ' + vp[0] + ': why Add is off is said inside the (sticky) bar, in view', a.inBar && a.shown && a.sticky === 'sticky' && /Fix the name first/.test(a.text), a);
+      ok('part 9 m5: the sticky bar keeps clear of an iPhone\'s home bar', await pg.evaluate(() => [...document.styleSheets].some((s) => { try { return [...s.cssRules].some((r) => r.selectorText === '.paybar' && /env\(safe-area-inset-bottom\)/.test(r.cssText)); } catch (e) { return false; } })));
+      // m6: the size guide never touches the size chips
+      const g = await pg.evaluate(() => { const s = document.querySelector('#sgBtn').getBoundingClientRect(); return s.top - Math.max(...[...document.querySelectorAll('[data-size]')].map((b) => b.getBoundingClientRect().bottom)); });
+      ok('part 9 m6 ' + vp[0] + ': "Size guide" sits at least 6 px below the size chips', g >= 6, g);
+      await finish('part 9 make ' + vp[0], t);
+    }
+  });
+  await blk('M2 M4 M8 m7', async () => {
+    // M2, M4: one tee to the US (under $35), a mug just under the edge, Hong Kong (never free)
+    t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '4XL' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page;
+    await pg.waitForSelector('#qtable');
+    const zus = CAT.zones.find((z) => z.id === 'us_jp'), tee4 = CAT.products.find((p) => p.id === 'tee').price + CAT.products.find((p) => p.id === 'tee').sizes.find((s) => s.id === '4XL').add;
+    ok('part 9 M2: the rule counts the things before shipping, and says how much more ships it free (from the catalog)', (await text(pg, '#shipBox .shipline')) === 'Shipping to the United States: ' + money(zus.fee) + '. Free shipping when your things come to $' + zus.free_from / 100 + ' or more (before shipping).' &&
+      (await text(pg, '#freeMore')) === 'Add ' + money(zus.free_from - tee4) + ' more for free shipping.' && (await text(pg, '[data-q=subtotal]')) === money(tee4), [await text(pg, '#shipBox .shipline'), await text(pg, '#freeMore')]);
+    ok('part 9 M4: the delivery time is from payment to the door, printing included, then the one posting promise', (await text(pg, '#shipBox .eta span:last-child')) === 'About ' + zus.eta[0] + ' to ' + zus.eta[1] + ' working days from payment to your door, printing included. Printing usually takes 2 to 5 working days, and we post every order within ' + CATJS.SHIP_BY_DAYS + ' working days of payment.', await text(pg, '#shipBox .eta'));
+    ok('part 9 M4: the questions say it the same way (no "then the post")', /Your basket shows how long it usually takes from payment to your door, printing included\./.test(HTML) && !/Then the post/.test(HTML));
+    // M8, m7: the Japan notice and "Seller details" by the pay card and in the footer; links never touching, no dots left dangling
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      await pg.setViewportSize({ width: w, height: h }); await settle(pg);
+      const f = await pg.evaluate(() => { const rows = (sel) => { const r = [...document.querySelectorAll(sel)].map((a) => a.getBoundingClientRect()); let touch = 0; r.forEach((a, i) => r.forEach((b, j) => { if (i < j && a.left < b.right && b.left < a.right && Math.abs(a.top - b.top) > 2 && !(a.bottom + 4 <= b.top || b.bottom + 4 <= a.top)) touch++; })); return touch; };
+        return { foot: rows('.mfoot a'), pay: rows('.paylinks a, #basketPayText a'), dots: /·/.test(document.querySelector('.mfoot').textContent), paren: /\(\s*$|^\s*\)/m.test(document.querySelector('.paylinks').previousElementSibling.textContent) || /\(/.test(document.querySelector('.paylinks').previousElementSibling.textContent),
+          ja: [...document.querySelectorAll('.mfoot a[href="/merch/tokushoho/"], .paylinks a[href="/merch/tokushoho/"]')].length, seller: [...document.querySelectorAll('.mfoot a, .paylinks a')].filter((a) => a.getAttribute('href') === '/merch/seller/').every((a) => a.textContent === 'Seller details') }; });
+      ok('part 9 M8/m7 ' + w + ': the Japan notice in the footer and by the pay card, "Seller details", rows of links never touching, no dangling dots or brackets', f.ja === 2 && f.seller && !f.foot && !f.pay && !f.dots && !f.paren, f);
+    }
+    await finish('part 9 basket', t);
+  });
   for (const p of ['tokushoho', 'seller']) ok('part 9 M8: /merch/' + p + '/ exists', fs.existsSync(path.join(SITE, 'merch', p, 'index.html')));
   const CAT_E = clone(CAT_EDGE);
-  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug')], ship: 'US', path: '/merch/#/basket', catalog: CAT_E }); pg = t.page; await pg.waitForSelector('#qtable');
-  ok('part 9 M2: the amount to add comes from the catalog ($34.99 mug: add $0.01)', (await text(pg, '#freeMore')) === 'Add $0.01 more for free shipping.', await text(pg, '#freeMore'));
-  await setShip(pg, 'HK'); await pg.waitForSelector('#qtable');
-  ok('part 9 M2: where shipping is never free, no free-shipping line', !(await pg.$('#freeMore')) && !/free shipping/i.test(await text(pg, '#shipBox') + await text(pg, '#totals')));
-  await setShip(pg, 'US'); await pg.click('.bl [data-qp]'); await pg.waitForSelector('#qtable'); await settle(pg);
-  ok('part 9 M2: at the threshold or over, no "add more" line (the Shipping row says Free)', !(await pg.$('#freeMore')) && (await text(pg, '[data-q=ship]')) === 'Free');
-  await finish('part 9 free shipping', t);
-  // M3: a basket line is a "design", everywhere on the page; "things" are what gets made (the bag, the Things row)
-  t = await open({ save: SAVE, basket: ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug', { qty: 2 })).concat([line(R('Pepper'), 'tee')]), ship: 'US', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page;
-  await pg.waitForSelector('#qtable');
-  const body = await pg.evaluate(() => document.querySelector('.msheet').innerText);
-  ok('part 9 M3: six lines: "6 different designs, up to 3 of each", and the count of things is 11', /Your basket holds up to 6 different designs, up to 3 of each\./.test(body) && /Things \(11\)/.test(body) && (await text(pg, '#bagN')) === '11' && !/\b6 things\b|things in one order|holds up to \d+ things/.test(body), body.slice(0, 300));
-  ok('part 9 M3: the page\'s own words call a line a design (no "One thing in your basket" anywhere)', !/One thing in your basket|things in your basket|up to ' \+ maxLines\(\) \+ ' things/.test(MERCH_JS) && /different designs/.test(MERCH_JS));
-  await finish('part 9 designs', t);
-  // m3: a country coming soon: the line prices from the catalog, said once, "Soon:" first in the picker
-  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '2XL' }), line(R('Bo'), 'mug', { qty: 2 })], ship: 'GB', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page; await settle(pg); await settle(pg);
-  ok('part 9 m3: coming soon: each line still shows its price (the catalog\'s)', (await pg.$$eval('.bl .lp', (x) => x.map((y) => y.textContent).join())) === [money(2899), money(2 * 1999)].join() && !(await pg.$('#totals .qerr')) && /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')));
-  ok('part 9 m3: the picker says "Soon:" before the name, so a narrow picker never hides it', (await pg.$eval('#shipSel', (s) => s.selectedOptions[0].textContent)) === 'Soon: United Kingdom');
-  await finish('part 9 soon', t);
-  // M7: a tap on one of your own dogs goes on to "the thing"; Back changes the dog
-  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
-  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Biscuit').click(); }); await settle(pg);
-  ok('part 9 M7: a tap on a dog goes straight on to the thing, with that dog', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing' && /Biscuit/.test(await text(pg, '#h-thing')));
-  await pg.goBack(); await settle(pg);
-  ok('part 9 M7: Back is the dog list again, that dog marked, to change it', (await view(pg)) === 'pick' && (await pg.$eval('[data-pick][aria-pressed=true] .n', (e) => e.textContent)) === 'Biscuit');
-  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Pepper').click(); }); await settle(pg);
-  ok('part 9 M7: another dog, another thing', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
-  // m1: a reload on "make it" keeps every choice; Back is still the thing
-  await tap(pg, '.prodb[data-p=tee]'); await tap(pg, '[data-col=navy]'); await tap(pg, '[data-size=L]'); await tap(pg, '[data-pose=sit]'); await pg.fill('#nameIn', 'Pep'); await tap(pg, '#qp');
-  await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
-  const dr = await pg.evaluate(() => { const d = window.__merch.st.draft; return d && [d.product, d.colour, d.size, d.pose, d.name, d.qty].join(); });
-  ok('part 9 m1: a reload keeps the dog, colour, size, pose, name and how many', (await view(pg)) === 'make' && dr === 'tee,navy,L,sit,Pep,2' && (await pg.$eval('#nameIn', (i) => i.value)) === 'Pep' && /Pepper/.test(await text(pg, '.dn')), dr);
-  await tap(pg, '#makeBack');
-  ok('part 9 m1: then Back is the thing, with that dog', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
-  await tap(pg, '.prodb[data-p=mug]'); await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
-  await pg.click('.bl [data-chg]'); await settle(pg); await tap(pg, '[data-pose=happy]');
-  await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
-  ok('part 9 m1: a reload while changing a line still changes that line ("Save changes")', (await view(pg)) === 'make' && (await text(pg, '#addBtn')) === 'Save changes' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'happy');
-  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
-  ok('part 9 m1: saved in place (one line, happy)', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'happy');
-  await finish('part 9 pick and reload', t);
-  // m2: an empty basket from the bag ticks nothing; its button asks for a first dog
-  t = await open({ save: SAVE, path: '/merch/', vp: [360, 640] }); pg = t.page;
-  await tap(pg, '#bagBtn');
-  ok('part 9 m2: an empty basket ticks no step it hasn\'t seen', (await view(pg)) === 'basket' && (await pg.$$eval('#steps li.done', (l) => l.length)) === 0 && (await pg.$$eval('#steps li button:not(:disabled)', (l) => l.length)) === 0);
-  ok('part 9 m2: and its button says "Put your dog on something"', (await text(pg, '#another')) === 'Put your dog on something');
-  // m10: "No dog yet?" only without dogs
-  await toHash(pg, '#/');
-  ok('part 9 m10: with dogs from the game, no "No dog yet?"', await pg.$eval('#nodog', (e) => e.hidden && e.getBoundingClientRect().height === 0));
-  await finish('part 9 empty', t);
-  t = await open({ path: '/merch/', vp: [360, 640] }); pg = t.page;
-  ok('part 9 m10: with no dogs, "No dog yet?" and the ready-made dogs', !(await pg.$eval('#nodog', (e) => e.hidden)) && (await pg.$$eval('#readyHome [data-dog]', (b) => b.length)) === 4);
-  await finish('part 9 no dogs home', t);
-  // m4 (phone): the mug's counter counts against the mug's own limit
-  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
-  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Wigglesworth/.test(x.textContent)).click(); }); await settle(pg); await tap(pg, '.prodb[data-p=mug]');
-  ok('part 9 m4: a 20-letter name that fits the mug says it fits, never "/ 20"', (await text(pg, '#nameMsg')) === '20 letters: that\'s as long as it fits on the mug.' && !(await pg.$eval('#addBtn', (b) => b.disabled)), await text(pg, '#nameMsg'));
-  await pg.fill('#nameIn', 'W'.repeat(16)); await settle(pg);
-  ok('part 9 m4: 16 wide letters: little room left', (await text(pg, '#nameMsg')) === '16 letters: it fits on the mug, with little room left.', await text(pg, '#nameMsg'));
-  await pg.fill('#nameIn', 'W'.repeat(17)); await settle(pg);
-  ok('part 9 m4: 17 wide letters: too long, and how many fit', /A little shorter, please: up to 16 of these letters fit on the mug\./.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled), await text(pg, '#nameMsg'));
-  await pg.fill('#nameIn', 'Bo'); await settle(pg);
-  ok('part 9 m4: a short name: it fits', (await text(pg, '#nameMsg')) === '2 letters: it fits on the mug.');
-  // art M1: every drawn mug shows the half a buyer sees with the handle on the right: x 1350 to 2700 of the wrap
-  const mf = await mugFaces(pg, '#pvOn .mock-mug .pp-print');
-  ok('part 9 art M1: the make-it mug shows the print\'s x 1350 to 2700', mf.length === 1 && mf[0][0] === 1350 && mf[0][1] === 2700, mf);
-  await finish('part 9 mug name', t);
-  t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug', { pose: 'happy' })], path: '/merch/', vp: [390, 844] }); pg = t.page;
-  const home = await mugFaces(pg, '#trio .mock-mug .pp-print'); await tap(pg, '#useDog'); await tap(pg, '[data-pick]'); const thing = await mugFaces(pg, '#prods .mock-mug .pp-print');
-  await toHash(pg, '#/basket'); await pg.waitForSelector('#qtable'); const bk = await mugFaces(pg, '.bl .mock-mug .pp-print');
-  ok('part 9 art M1: the home card, the thing and the basket picture agree (x 1350 to 2700)', [home, thing, bk].every((a) => a.length === 1 && a[0][0] === 1350 && a[0][1] === 2700), { home, thing, bk });
-  ok('part 9 art M1: the right half\'s dog faces away from the handle (it faces left: PawPrint mugBody draws the right side\'s dog facing left)', /the right side's faces left/.test(fs.readFileSync(path.join(ROOT, 'merch', 'pawprint_core.js'), 'utf8')) && P.PRODUCTS.mug.sides[1] === 2025 && P.PRODUCTS.mug.w === 2700);
-  await finish('part 9 mug face', t);
-  // art m1: the tee mock's hems (and everything drawn on the tee) inside the tee's outline, on every colour
-  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [1280, 720] }); pg = t.page; await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=tee]');
-  for (const c of CAT.products.find((p) => p.id === 'tee').colours.map((x) => x.id)) {
-    await tap(pg, '[data-col=' + c + ']');
-    const out = await pg.evaluate(() => {
-      const svg = document.querySelector('#pvOn svg.mock-tee'), body = svg.querySelector('path'), bad = [], hems = [...svg.querySelectorAll('path.hem')];
-      hems.forEach((h) => { const L = h.getTotalLength(), w = +h.getAttribute('stroke-width') / 2 + 0.3;
-        for (let i = 0; i <= 40; i++) { const p = h.getPointAtLength(L * i / 40), q = h.getPointAtLength(Math.min(L, L * i / 40 + 0.5)), r = h.getPointAtLength(Math.max(0, L * i / 40 - 0.5)), dx = q.x - r.x, dy = q.y - r.y, n = Math.hypot(dx, dy) || 1;
-          for (const [ox, oy] of [[0, 0], [-dy / n * w, dx / n * w], [dy / n * w, -dx / n * w], [dx / n * w * (i === 40 ? 1 : 0), dy / n * w * (i === 40 ? 1 : 0)], [-dx / n * w * (i === 0 ? 1 : 0), -dy / n * w * (i === 0 ? 1 : 0)]]) {
-            const pt = new DOMPoint(p.x + ox, p.y + oy); if (!body.isPointInFill(pt)) bad.push([Math.round(pt.x), Math.round(pt.y)]); } } });
-      return { n: hems.length, bad: bad.slice(0, 4) };
-    });
-    ok('part 9 art m1: ' + c + ' tee: the sleeve and body hems (lines and caps) lie inside the tee', out.n === 3 && out.bad.length === 0, out);
-  }
-  await finish('part 9 tee hems', t);
-  // art m4: the dog cards, the ready-made cards and the pose buttons are drawn without the ground shadow, as the print is
-  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
-  const shade = () => pg.evaluate(() => ({ pics: document.querySelectorAll('.mview.on svg.dogpic').length, shadows: [...document.querySelectorAll('.mview.on svg.dogpic ellipse')].filter((e) => e.getAttribute('cy') === '187.5' && /5B3D32/i.test(e.getAttribute('fill') || '') && +e.getAttribute('opacity') < 1).length }));
-  let s9 = await shade(); ok('part 9 art m4: "Which dog?" cards without the ground shadow', s9.pics >= 9 && s9.shadows === 0, s9);
-  await tap(pg, '[data-pick]'); await tap(pg, '.prodb[data-p=mug]'); s9 = await shade(); ok('part 9 art m4: the pose buttons too', s9.pics === 3 && s9.shadows === 0, s9);
-  await finish('part 9 shadows', t);
+  await blk('M2 amounts', async () => {
+    t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug')], ship: 'US', path: '/merch/#/basket', catalog: CAT_E }); pg = t.page; await pg.waitForSelector('#qtable');
+    ok('part 9 M2: the amount to add comes from the catalog ($34.99 mug: add $0.01)', (await text(pg, '#freeMore')) === 'Add $0.01 more for free shipping.', await text(pg, '#freeMore'));
+    await setShip(pg, 'HK'); await pg.waitForSelector('#qtable');
+    ok('part 9 M2: where shipping is never free, no free-shipping line', !(await pg.$('#freeMore')) && !/free shipping/i.test(await text(pg, '#shipBox') + await text(pg, '#totals')));
+    await setShip(pg, 'US'); await pg.click('.bl [data-qp]'); await pg.waitForSelector('#qtable'); await settle(pg);
+    ok('part 9 M2: at the threshold or over, no "add more" line (the Shipping row says Free)', !(await pg.$('#freeMore')) && (await text(pg, '[data-q=ship]')) === 'Free');
+    await finish('part 9 free shipping', t);
+  });
+  await blk('M3', async () => {
+    // M3: a basket line is a "design", everywhere on the page; "things" are what gets made (the bag, the Things row)
+    t = await open({ save: SAVE, basket: ['Biscuit', 'Mochi', 'Sir Wigglesworth III', 'Bo', 'Pepper'].map((n) => line(R(n), 'mug', { qty: 2 })).concat([line(R('Pepper'), 'tee')]), ship: 'US', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page;
+    await pg.waitForSelector('#qtable');
+    const body = await pg.evaluate(() => document.querySelector('.msheet').innerText);
+    ok('part 9 M3: six lines: "6 different designs, up to 3 of each", and the count of things is 11', /Your basket holds up to 6 different designs, up to 3 of each\./.test(body) && /Things \(11\)/.test(body) && (await text(pg, '#bagN')) === '11' && !/\b6 things\b|things in one order|holds up to \d+ things/.test(body), body.slice(0, 300));
+    ok('part 9 M3: the page\'s own words call a line a design (no "One thing in your basket" anywhere)', !/One thing in your basket|things in your basket|up to ' \+ maxLines\(\) \+ ' things/.test(MERCH_JS) && /different designs/.test(MERCH_JS));
+    await finish('part 9 designs', t);
+  });
+  await blk('m3', async () => {
+    // m3: a country coming soon: the line prices from the catalog, said once, "Soon:" first in the picker
+    t = await open({ save: SAVE, basket: [line(R('Mochi'), 'tee', { size: '2XL' }), line(R('Bo'), 'mug', { qty: 2 })], ship: 'GB', path: '/merch/#/basket', vp: [360, 640] }); pg = t.page; await settle(pg); await settle(pg);
+    ok('part 9 m3: coming soon: each line still shows its price (the catalog\'s)', (await pg.$$eval('.bl .lp', (x) => x.map((y) => y.textContent).join())) === [money(2899), money(2 * 1999)].join() && !(await pg.$('#totals .qerr')) && /Coming soon to the United Kingdom/.test(await text(pg, '#shipBox')));
+    ok('part 9 m3: the picker says "Soon:" before the name, so a narrow picker never hides it', (await pg.$eval('#shipSel', (s) => s.selectedOptions[0].textContent)) === 'Soon: United Kingdom');
+    await finish('part 9 soon', t);
+  });
+  await blk('M7 m1', async () => {
+    // M7: a tap on one of your own dogs goes on to "the thing"; Back changes the dog
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
+    await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Biscuit').click(); }); await settle(pg);
+    ok('part 9 M7: a tap on a dog goes straight on to the thing, with that dog', (await view(pg)) === 'thing' && (await hash(pg)) === '#/thing' && /Biscuit/.test(await text(pg, '#h-thing')));
+    await pg.goBack(); await settle(pg);
+    ok('part 9 M7: Back is the dog list again, that dog marked, to change it', (await view(pg)) === 'pick' && (await pg.$eval('[data-pick][aria-pressed=true] .n', (e) => e.textContent)) === 'Biscuit');
+    await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Pepper').click(); }); await settle(pg);
+    ok('part 9 M7: another dog, another thing', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
+    await finish('part 9 pick', t);
+  });
+  await blk('m1', async () => {
+    // m1: a reload on "make it" keeps every choice; Back is still the thing
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
+    await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Pepper').click(); }); await settle(pg); await onward(pg);
+    await tap(pg, '.prodb[data-p=tee]'); await tap(pg, '[data-col=navy]'); await tap(pg, '[data-size=L]'); await tap(pg, '[data-pose=sit]'); await pg.fill('#nameIn', 'Pep'); await tap(pg, '#qp');
+    await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
+    const dr = await pg.evaluate(() => { const d = window.__merch.st.draft; return d && [d.product, d.colour, d.size, d.pose, d.name, d.qty].join(); });
+    ok('part 9 m1: a reload keeps the dog, colour, size, pose, name and how many', (await view(pg)) === 'make' && dr === 'tee,navy,L,sit,Pep,2' && (await pg.$eval('#nameIn', (i) => i.value)) === 'Pep' && /Pepper/.test(await text(pg, '.dn')), dr);
+    await tap(pg, '#makeBack');
+    ok('part 9 m1: then Back is the thing, with that dog', (await view(pg)) === 'thing' && /Pepper/.test(await text(pg, '#h-thing')));
+    await tap(pg, '.prodb[data-p=mug]'); await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+    await pg.click('.bl [data-chg]'); await settle(pg); await tap(pg, '[data-pose=happy]');
+    await pg.reload(); await pg.waitForSelector('html.merch-ready'); await settle(pg);
+    ok('part 9 m1: a reload while changing a line still changes that line ("Save changes")', (await view(pg)) === 'make' && (await text(pg, '#addBtn')) === 'Save changes' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'happy');
+    await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+    ok('part 9 m1: saved in place (one line, happy)', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'happy');
+    await finish('part 9 reload', t);
+  });
+  await blk('m2 m10', async () => {
+    // m2: an empty basket from the bag ticks nothing; its button asks for a first dog
+    t = await open({ save: SAVE, path: '/merch/', vp: [360, 640] }); pg = t.page;
+    await tap(pg, '#bagBtn');
+    ok('part 9 m2: an empty basket ticks no step it hasn\'t seen', (await view(pg)) === 'basket' && (await pg.$$eval('#steps li.done', (l) => l.length)) === 0 && (await pg.$$eval('#steps li button:not(:disabled)', (l) => l.length)) === 0);
+    ok('part 9 m2: and its button says "Put your dog on something"', (await text(pg, '#another')) === 'Put your dog on something');
+    // m10: "No dog yet?" only without dogs
+    await toHash(pg, '#/');
+    ok('part 9 m10: with dogs from the game, no "No dog yet?"', await pg.$eval('#nodog', (e) => e.hidden && e.getBoundingClientRect().height === 0));
+    await finish('part 9 empty', t);
+  });
+  await blk('m10 no dogs', async () => {
+    t = await open({ path: '/merch/', vp: [360, 640] }); pg = t.page;
+    ok('part 9 m10: with no dogs, "No dog yet?" and the ready-made dogs', !(await pg.$eval('#nodog', (e) => e.hidden)) && (await pg.$$eval('#readyHome [data-dog]', (b) => b.length)) === 4);
+    await finish('part 9 no dogs home', t);
+  });
+  await blk('m4 and art M1', async () => {
+    // m4 (phone): the mug's counter counts against the mug's own limit
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
+    await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => /Wigglesworth/.test(x.textContent)).click(); }); await settle(pg); await onward(pg); await tap(pg, '.prodb[data-p=mug]');
+    ok('part 9 m4: a 20-letter name that fits the mug says it fits, never "/ 20"', (await text(pg, '#nameMsg')) === '20 letters: that\'s as long as it fits on the mug.' && !(await pg.$eval('#addBtn', (b) => b.disabled)), await text(pg, '#nameMsg'));
+    await pg.fill('#nameIn', 'W'.repeat(16)); await settle(pg);
+    ok('part 9 m4: 16 wide letters: little room left', (await text(pg, '#nameMsg')) === '16 letters: it fits on the mug, with little room left.', await text(pg, '#nameMsg'));
+    await pg.fill('#nameIn', 'W'.repeat(17)); await settle(pg);
+    ok('part 9 m4: 17 wide letters: too long, and how many fit', /A little shorter, please: up to 16 of these letters fit on the mug\./.test(await text(pg, '#nameMsg')) && await pg.$eval('#addBtn', (b) => b.disabled), await text(pg, '#nameMsg'));
+    await pg.fill('#nameIn', 'Bo'); await settle(pg);
+    ok('part 9 m4: a short name: it fits', (await text(pg, '#nameMsg')) === '2 letters: it fits on the mug.');
+    // art M1: every drawn mug shows the half a buyer sees with the handle on the right: x 1350 to 2700 of the wrap
+    const mf = await mugFaces(pg, '#pvOn .mock-mug .pp-print');
+    ok('part 9 art M1: the make-it mug shows the print\'s x 1350 to 2700', mf.length === 1 && mf[0][0] === 1350 && mf[0][1] === 2700, mf);
+    await finish('part 9 mug name', t);
+  });
+  await blk('art M1 faces', async () => {
+    t = await open({ save: SAVE, basket: [line(R('Mochi'), 'mug', { pose: 'happy' })], path: '/merch/', vp: [390, 844] }); pg = t.page;
+    const home = await mugFaces(pg, '#trio .mock-mug .pp-print'); await tap(pg, '#useDog'); await tap(pg, '[data-pick]'); await onward(pg); const thing = await mugFaces(pg, '#prods .mock-mug .pp-print');
+    await toHash(pg, '#/basket'); await pg.waitForSelector('#qtable'); const bk = await mugFaces(pg, '.bl .mock-mug .pp-print');
+    ok('part 9 art M1: the home card, the thing and the basket picture agree (x 1350 to 2700)', [home, thing, bk].every((a) => a.length === 1 && a[0][0] === 1350 && a[0][1] === 2700), { home, thing, bk });
+    ok('part 9 art M1: the right half\'s dog faces away from the handle (it faces left: PawPrint mugBody draws the right side\'s dog facing left)', /the right side's faces left/.test(fs.readFileSync(path.join(ROOT, 'merch', 'pawprint_core.js'), 'utf8')) && P.PRODUCTS.mug.sides[1] === 2025 && P.PRODUCTS.mug.w === 2700);
+    await finish('part 9 mug face', t);
+  });
+  await blk('art m1', async () => {
+    // art m1: the tee mock's hems (and everything drawn on the tee) inside the tee's outline, on every colour
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [1280, 720] }); pg = t.page; await tap(pg, '[data-pick]'); await onward(pg); await tap(pg, '.prodb[data-p=tee]');
+    for (const c of CAT.products.find((p) => p.id === 'tee').colours.map((x) => x.id)) {
+      await tap(pg, '[data-col=' + c + ']');
+      const out = await pg.evaluate(() => {
+        const svg = document.querySelector('#pvOn svg.mock-tee'), body = svg.querySelector('path'), bad = [], hems = [...svg.querySelectorAll('path.hem')];
+        hems.forEach((h) => { const L = h.getTotalLength(), w = +h.getAttribute('stroke-width') / 2 + 0.3;
+          for (let i = 0; i <= 40; i++) { const p = h.getPointAtLength(L * i / 40), q = h.getPointAtLength(Math.min(L, L * i / 40 + 0.5)), r = h.getPointAtLength(Math.max(0, L * i / 40 - 0.5)), dx = q.x - r.x, dy = q.y - r.y, n = Math.hypot(dx, dy) || 1;
+            for (const [ox, oy] of [[0, 0], [-dy / n * w, dx / n * w], [dy / n * w, -dx / n * w], [dx / n * w * (i === 40 ? 1 : 0), dy / n * w * (i === 40 ? 1 : 0)], [-dx / n * w * (i === 0 ? 1 : 0), -dy / n * w * (i === 0 ? 1 : 0)]]) {
+              const pt = new DOMPoint(p.x + ox, p.y + oy); if (!body.isPointInFill(pt)) bad.push([Math.round(pt.x), Math.round(pt.y)]); } } });
+        return { n: hems.length, bad: bad.slice(0, 4) };
+      });
+      ok('part 9 art m1: ' + c + ' tee: the sleeve and body hems (lines and caps) lie inside the tee', out.n === 3 && out.bad.length === 0, out);
+    }
+    await finish('part 9 tee hems', t);
+  });
+  await blk('art m4', async () => {
+    // art m4: the dog cards, the ready-made cards and the pose buttons are drawn without the ground shadow, as the print is
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [390, 844] }); pg = t.page;
+    const shade = () => pg.evaluate(() => ({ pics: document.querySelectorAll('.mview.on svg.dogpic').length, shadows: [...document.querySelectorAll('.mview.on svg.dogpic ellipse')].filter((e) => e.getAttribute('cy') === '187.5' && /5B3D32/i.test(e.getAttribute('fill') || '') && +e.getAttribute('opacity') < 1).length }));
+    let s9 = await shade(); ok('part 9 art m4: "Which dog?" cards without the ground shadow', s9.pics >= 9 && s9.shadows === 0, s9);
+    await tap(pg, '[data-pick]'); await onward(pg); await tap(pg, '.prodb[data-p=mug]'); s9 = await shade(); ok('part 9 art m4: the pose buttons too', s9.pics === 3 && s9.shadows === 0, s9);
+    await finish('part 9 shadows', t);
+  });
   // art m2: a newborn has one pose, "Sleeping": on "make it", in the basket and on the order page; a link asking another pose still works
   const bo = R('Bo');
-  t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
-  await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Bo').click(); }); await settle(pg); await tap(pg, '.prodb[data-p=tee]');
-  ok('part 9 art m2: a newborn: one pose, "Sleeping", and a word why', (await pg.$$eval('[data-pose]', (b) => b.map((x) => x.textContent.trim() + '=' + x.getAttribute('aria-pressed')).join())) === 'Sleeping=true' && !(await pg.$eval('#poseNote', (e) => e.hidden)) && bo.a === 2);
-  ok('part 9 art m2: its preview is the one print', await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'tee', colour: 'white', pose: 'stand', name: true }));
-  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
-  ok('part 9 art m2: the basket says "Sleeping"', /^Bo, Beagle\s*Sleeping · name on/.test(await text(pg, '.bl .facts')), await text(pg, '.bl .facts'));
-  await finish('part 9 newborn', t);
-  t = await open({ path: SHARE(bo, '&prod=mug&pose=happy&from=share'), vp: [360, 640] }); pg = t.page;
-  ok('part 9 art m2: a share link asking "happy" for a newborn opens "make it" with "Sleeping"', (await view(pg)) === 'make' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'stand' && (await text(pg, '#poses')) === 'Sleeping' && await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'mug', colour: 'white', pose: 'happy', name: true }));
-  await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
-  ok('part 9 art m2: and it adds as the one sleeping pose', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'stand' && /Sleeping/.test(await text(pg, '.bl .facts')));
-  await finish('part 9 newborn link', t);
-  t = await open({ save: SAVE, basket: [line(bo, 'mug', { pose: 'happy' }), line(bo, 'mug', { pose: 'sit' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640], clock: FIX }); pg = t.page; await pg.waitForSelector('#qtable');
-  ok('part 9 art m2: stored newborn lines in other poses are one line, "Sleeping"', (await pg.$$eval('.bl', (l) => l.length)) === 1 && (await text(pg, '.bl output')) === '2' && /Sleeping/.test(await text(pg, '.bl .facts')));
-  const on = mkOrder('nb', (o) => { o.lines = [Object.assign({}, o.lines[1], { recipe: enc(bo), name: 'Bo', pose: 'happy' }), o.lines[0]]; }); await showOrder(pg, on);
-  ok('part 9 art m2: the order page names each pose, a newborn\'s "Sleeping"', (await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent).join())) === 'Sleeping,Stand', await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent)));
-  // m9: the safe answer is the big button
-  await showOrder(pg, mkOrder('m9'));
-  ok('part 9 m9: "Keep my order" is the primary button, "Yes, cancel it" the quiet one', await pg.$eval('#cancelNo', (b) => b.classList.contains('go')) && await pg.$eval('#cancelYes', (b) => b.classList.contains('quiet') && !b.classList.contains('go')) &&
-    await pg.$eval('#askNo', (b) => b.classList.contains('go')) && await pg.$eval('#askYes', (b) => b.classList.contains('quiet')));
-  await finish('part 9 order', t);
+  await blk('art m2', async () => {
+    t = await open({ save: SAVE, path: '/merch/#/pick', vp: [360, 640] }); pg = t.page;
+    await pg.evaluate(() => { [...document.querySelectorAll('[data-pick]')].find((x) => x.querySelector('.n').textContent === 'Bo').click(); }); await settle(pg); await onward(pg); await tap(pg, '.prodb[data-p=tee]');
+    ok('part 9 art m2: a newborn: one pose, "Sleeping", and a word why', (await pg.$$eval('[data-pose]', (b) => b.map((x) => x.textContent.trim() + '=' + x.getAttribute('aria-pressed')).join())) === 'Sleeping=true' && !(await pg.$eval('#poseNote', (e) => e.hidden)) && bo.a === 2);
+    ok('part 9 art m2: its preview is the one print', await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'tee', colour: 'white', pose: 'stand', name: true }));
+    await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+    ok('part 9 art m2: the basket says "Sleeping"', /^Bo, Beagle\s*Sleeping · name on/.test(await text(pg, '.bl .facts')), await text(pg, '.bl .facts'));
+    await finish('part 9 newborn', t);
+  });
+  await blk('art m2 link', async () => {
+    t = await open({ path: SHARE(bo, '&prod=mug&pose=happy&from=share'), vp: [360, 640] }); pg = t.page;
+    ok('part 9 art m2: a share link asking "happy" for a newborn opens "make it" with "Sleeping"', (await view(pg)) === 'make' && (await pg.evaluate(() => window.__merch.st.draft.pose)) === 'stand' && (await text(pg, '#poses')) === 'Sleeping' && await previewIs(pg, '#pvOn svg[data-pawprint]', bo, { product: 'mug', colour: 'white', pose: 'happy', name: true }));
+    await tap(pg, '#addBtn'); await pg.waitForSelector('#qtable');
+    ok('part 9 art m2: and it adds as the one sleeping pose', (await pg.evaluate(() => window.__merch.basket().map((l) => l.pose).join())) === 'stand' && /Sleeping/.test(await text(pg, '.bl .facts')));
+    await finish('part 9 newborn link', t);
+  });
+  await blk('art m2 order and m9', async () => {
+    t = await open({ save: SAVE, basket: [line(bo, 'mug', { pose: 'happy' }), line(bo, 'mug', { pose: 'sit' })], ship: 'US', path: '/merch/#/basket', vp: [360, 640], clock: FIX }); pg = t.page; await pg.waitForSelector('#qtable');
+    ok('part 9 art m2: stored newborn lines in other poses are one line, "Sleeping"', (await pg.$$eval('.bl', (l) => l.length)) === 1 && (await text(pg, '.bl output')) === '2' && /Sleeping/.test(await text(pg, '.bl .facts')));
+    const on = mkOrder('nb', (o) => { o.lines = [Object.assign({}, o.lines[1], { recipe: enc(bo), name: 'Bo', pose: 'happy' }), o.lines[0]]; }); await showOrder(pg, on);
+    ok('part 9 art m2: the order page names each pose, a newborn\'s "Sleeping"', (await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent).join())) === 'Sleeping,Stand', await pg.$$eval('#orderBody .bl .opose', (l) => l.map((x) => x.textContent)));
+    // m9: the safe answer is the big button
+    await showOrder(pg, mkOrder('m9'));
+    ok('part 9 m9: "Keep my order" is the primary button, "Yes, cancel it" the quiet one', await pg.$eval('#cancelNo', (b) => b.classList.contains('go')) && await pg.$eval('#cancelYes', (b) => b.classList.contains('quiet') && !b.classList.contains('go')) &&
+      await pg.$eval('#askNo', (b) => b.classList.contains('go')) && await pg.$eval('#askYes', (b) => b.classList.contains('quiet')));
+    await finish('part 9 order', t);
+  });
 }
 
 // ================= fit: every step at three sizes, and contrast =================
@@ -1325,7 +1369,7 @@ async function lookShots() {
   browser = await chromium.launch();
   const t0 = Date.now();
   CATJS = await import(require('url').pathToFileURL(path.join(ROOT, 'cloudflare', 'merch', 'catalog.js')).href);
-  try { if (SHOTS6) await part6Shots(); else { await fakeChecks(); await pageChecks(); await orderStateChecks(); await fitChecks(); await orderFitChecks(); if (LOOK) await lookShots(); } } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
+  try { if (SHOTS6) await part6Shots(); else if (P9) { await part9Checks(); await orderStateChecks(); } else { await fakeChecks(); await pageChecks(); await orderStateChecks(); await fitChecks(); await orderFitChecks(); if (LOOK) await lookShots(); } } catch (e) { ok('the suite ran to the end', false, String(e && e.stack || e)); }
   await browser.close(); server.close();
   console.log(`merch_page: ${pass} passed, ${fail} failed (${((Date.now() - t0) / 1000).toFixed(0)} s, ART_VER ${P.ART_VER})`);
   if (fail) { console.log(fails.join('\n')); process.exit(1); }
