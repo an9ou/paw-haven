@@ -39,7 +39,7 @@ export async function fix6() {
     const w = await world(); const id = await w.paidOrder([mug(0)]); const o = w.order(id);
     eq([o.paid_at, o.ship_by], [T0, addBusinessDays(T0, SHIP_BY_DAYS)], 'ship_by'); eq(o.ship_by, SHIP_BY, 'Thu 10 Dec 01:00 UTC');
     const p = await page(w, id); eq([p.ship_by, p.late_eta, p.late_ok, p.late, p.gift], [SHIP_BY, null, false, false, null], 'the order answer');
-    ok(/We’ll post it by Thursday 10 December\./.test(one(w, /_thanks$/).text), 'the Thank you email');
+    ok(/, and we’ll post it by Thursday 10 December\./.test(one(w, /_thanks$/).text), 'the Thank you email');
     eq([mail.postDay(Date.parse('2026-12-10T23:59:59Z')), mail.postDay(Date.parse('2026-12-11T00:00:00Z')), mail.postDay(Date.parse('2027-01-04T09:00:00+09:00'))], ['Thursday 10 December', 'Friday 11 December', 'Monday 4 January'], 'the UTC date in words');
     for (const z of Object.values(ZONES)) ok(z.eta[0] >= MAKE_DAYS[0] + 1 && z.eta[1] >= SHIP_BY_DAYS + 1 && z.eta[0] < z.eta[1], z.id + ': eta [2 + fastest post, SHIP_BY_DAYS + slowest post]: ' + z.eta);
     const c = w.stripe.calls.find((x) => x.path === '/v1/checkout/sessions'), E = ZONES.us_jp.eta;
