@@ -863,7 +863,8 @@
         function (e) { ORD.note = actErr(e, true); ORD.focus = true; rOrder(o.id); });
     };
     var lc = $('#lateCancel'); if (lc) lc.onclick = function () { ask('Cancel the late part?', 'The things that haven\'t been posted yet are refunded in full. Anything already on its way still comes to you.', 'Yes, cancel the late part', 'Keep waiting', function () {
-      api.cancel(o.id, { scope: 'late' }).then(function () { ORD.note = 'Done: we\'ve refunded the late part. It can take a few days to show on your card.'; ORD.focus = true; rOrder(o.id); }, function (e) { ORD.note = actErr(e, true); ORD.focus = true; rOrder(o.id); });
+      // third review (R3-m3): refund 'pending': the cancel is in, and the refund follows once our print partner answers (we email the buyer)
+      api.cancel(o.id, { scope: 'late' }).then(function (r) { ORD.note = r && r.refund === 'pending' ? 'Your cancel is in. We\'re checking with our print partner, and your refund follows: we\'ll email you.' : 'Done: we\'ve refunded the late part. It can take a few days to show on your card.'; ORD.focus = true; rOrder(o.id); }, function (e) { ORD.note = actErr(e, true); ORD.focus = true; rOrder(o.id); });
     }, lc); };
     var pb = $('#putBack'); if (pb) pb.onclick = function () { putBack(o); };
     if (formOn) bindAddress(o);

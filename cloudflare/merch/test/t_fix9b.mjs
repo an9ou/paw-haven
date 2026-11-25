@@ -39,15 +39,17 @@ export async function fix9b() {
     eq([r.status, w.order(id).status, w.stripe.refunds.length, w.stripe.refunds[0] && w.stripe.refunds[0].amount], [200, 'shipped', 1, tee1.unit], 'the tee refunded, the mug kept');
     ok(w.lines(id).find((l) => l.line === 1).status === 'shipped' && w.mails(/_ship_/).length === 1 && w.owner(/cancel_late/).length === 1, 'the mug told as posted; the owner asked to cancel the tee at Printful (part of it shipped)');
   });
-  await T('F9b-M1-unread', 'R2-M1: Printful cannot be read at the late cancel: the buyer\'s right stands: refunded, Printful asked to cancel, the owner told at once; a second tap changes nothing', async () => {
+  // (moved to the third review's rule, R3-m3: never refunded blind in the request; the cancel is recorded and decided after a good read)
+  await T('F9b-M1-unread', 'R2-M1 with R3-m3: Printful cannot be read at the late cancel: the cancel is in (200, refund pending), Printful asked to cancel, nothing refunded blind; a second tap: the same; Printful back: refunded once', async () => {
     const w = await world(); const id = await lateOrder(w); w.pf.down = true;
     const r = await lateCancel(w, id);
-    eq([r.status, w.order(id).status, w.stripe.refunds.length], [200, 'refunded', 1], 'refunded on what we know');
-    ok(w.owner(/late_cancel_unread/).length === 1 && /could not be read/.test(w.owner(/late_cancel_unread/)[0].text), 'the owner told to check Printful');
-    ok(w.order(id).pcancel === 1, 'the printer cancel waits for Printful');
-    const r2 = await lateCancel(w, id); eq([r2.status, w.stripe.refunds.length], [409, 1], 'a second tap: not late, no second refund');
+    eq([r.status, r.json.refund, w.order(id).status, w.stripe.refunds.length, !!w.order(id).late_ask_at], [200, 'pending', 'confirmed', 0, true], 'recorded, not refunded blind');
+    ok(w.order(id).pcancel === 1 && !w.owner(/late_cancel_unread/).length, 'the printer cancel waits for Printful; the owner not told yet');
+    ok((await w.call('GET', '/merch/order/' + id)).json.late === false, 'the order page offers no second cancel');
+    const r2 = await lateCancel(w, id); eq([r2.status, r2.json.refund, w.stripe.refunds.length], [200, 'pending', 0], 'a second tap: the same, no refund');
     w.pf.down = false; await w.advance(20 * MIN);
-    ok(!w.order(id).pcancel && w.pfOrder(id).status === 'canceled' && !stranded(w).length, 'Printful back: the order cancelled there');
+    eq([w.stripe.refunds.length, w.order(id).status, w.order(id).late_ask_at, w.pfOrder(id).status, w.owner(/late_cancel_unread/).length], [1, 'refunded', null, 'canceled', 0], 'read, then refunded once and cancelled there');
+    ok(!w.order(id).pcancel && !stranded(w).length && w.mails(/_refund_/).length === 1, 'one refund email; nothing stranded');
   });
   await T('F9b-M1-race', 'R2-M1 with R2-m1: the parcel leaves and its hint lands while the cancel\'s read is out: read again: 409 not_late, nothing refunded, one "On its way"', async () => {
     const w = await world(); const id = await lateOrder(w);
@@ -56,9 +58,10 @@ export async function fix9b() {
     eq([r.status, w.order(id).status, w.stripe.refunds.length, w.mails(/_ship_/).length], [409, 'shipped', 0, 1], 'posted: not refunded');
   });
   await T('F9b-M1-still', 'R2-M1: read and still not posted: the late cancel refunds in full and Printful cancels, no owner email', async () => {
-    const w = await world(); const id = await lateOrder(w); const reads = w.pf.calls.length;
+    const w = await world(); const id = await lateOrder(w); const reads = w.pf.calls.length; let atRefund = null;
+    w.stripe.after.refund = async () => { if (atRefund == null) atRefund = w.pf.calls.length; }; // (third review: the read must come between the cancel call and the refund)
     const r = await lateCancel(w, id);
-    ok(w.pf.calls.slice(reads).some((c) => c.m === 'GET' && /^\/orders\/\d+$/.test(c.path)), 'Printful read first');
+    ok(atRefund != null && w.pf.calls.slice(reads, atRefund).some((c) => c.m === 'GET' && /^\/orders\/\d+$/.test(c.path)), 'Printful read after the cancel call and before the refund');
     eq([r.status, w.order(id).status, w.stripe.refunds.length, w.owner(/late_cancel_unread|cancel_late/).length, w.pfOrder(id).status], [200, 'refunded', 1, 0, 'canceled'], 'refunded, cancelled at Printful');
   });
 
