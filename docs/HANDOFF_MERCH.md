@@ -95,28 +95,43 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   switch it on; goes to the sandbox run, part 9). No manual capture with Adaptive Pricing, so each cancel costs us the Stripe fee.
   **Its section 10 has 12 open points for the owner** (recommendation first): ask them together with the next real question or the
   launch go-ahead, not one by one. The build goes ahead on the recommendations; each is a switch or a table value.
-- **Part 2 built, 24 Nov night** (commit 0d97708, `docs/design/merch/PART2.md`): the `/merch` page in test mode in `site/merch/`
-  (six steps, a basket, "Ship to" first, PawPrint previews, `api_fake.js` + `catalog.json` with the shapes of TRANSACTIONS.md 6.3,
-  `?demo=1` for the thank-you and order page). Suite `NODE_PATH=$(npm root -g) node merch/test_page.js`: 276/276. Six screenshots in
-  `docs/design/merch/part2_shots/`. **Its combined review is running** (`docs/reviews/MERCH_PART2_review.md`); then one fix batch.
-  Watch out: `tools/cf_site.js` walks all of `site/`, so a site deploy from a branch that holds `site/merch/` would publish `/merch/`
-  (noindex, unlinked, pay shut): tell the GM to exclude it until launch when this branch is merged.
-- **Part 3 built, 24 Nov about 21:55 JST** (commit f0997c0, `docs/design/merch/PART3.md`): the Worker `cloudflare/merch/**` with faked
-  Stripe, Printful, render and email; `MerchLedger` + `MerchPrints` SQLite Durable Objects; every route; `tools/merch.sh`. Suite
-  `NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs`: 108/108 (one test per T row). 19 contract questions in PART3.md
-  (safest reading built). **Its combined review is running** (`docs/reviews/MERCH_PART3_review.md`); then one fix batch.
-- **Reviews of parts 2 and 3: done, 24 Nov about 22:40 JST** (`docs/reviews/MERCH_PART2_review.md`: 2 must-fix, 10 should-fix;
-  `docs/reviews/MERCH_PART3_review.md`: 5 must-fix, 16 should-fix, "not ready for real money until fixed"). The catalog and quote
-  shapes are settled in a dated note under TRANSACTIONS.md 6.3. **Both fix batches are running** (one Opus agent each: part 2 owns
-  `site/merch/**` + `merch/test_page.js` + PART2.md; part 3 owns `cloudflare/merch/**` + `tools/merch.sh` + PART3.md). When each is
-  back: run its suite yourself (`node merch/test_page.js`; `node cloudflare/merch/test/run.mjs`, both with
-  `NODE_PATH=$(npm root -g)`), look at the refreshed screenshots in `docs/design/merch/part2_shots/`, commit, push.
-  (The paw-reviewer agent no longer writes its own report file: write the review file yourself from its report.)
-- After both fix batches: message the GM (parts 1-3 ready on `merch/shop`; nothing to merge to main before the owner's go-ahead),
-  report to the owner with the screenshots, and ask the collected questions in ONE choice window (recommendation first): small dogs on
-  a tee (scaled up to 5 in, built); the points of TRANSACTIONS.md 10 that matter before launch; tee sizes (only those made in both the
-  US and the UK; no 5XL); whether cancelled orders count toward the day cap. Then parts 4 (the Browser Run render into `MerchPrints`),
-  5 (the Printful adapter; a real draft needs the owner's Printful key), 6 (emails, order page), 7 (legal drafts).
+- **Parts 2 and 3: built, reviewed and fixed, 25 Nov about 10:30 JST.** Head of `merch/shop`: 259698e (main merged in at
+  v2.33.1, the dog outline fix; ART_VER is now `pp1-3f73333c`). All four suites green on it, each run with
+  `NODE_PATH=$(npm root -g)`: `node merch/test_pawprint.js` 84/84; the game round trip (`node game/build.js && node game/harness.js
+  merged && node merch/test_merch_game.js`) 483/483; `node merch/test_page.js` 632/632; `node cloudflare/merch/test/run.mjs` 156/156.
+  - Part 2 (`docs/design/merch/PART2.md`, review `docs/reviews/MERCH_PART2_review.md`): the `/merch` page in test mode in
+    `site/merch/` (six steps, basket, "Ship to" first, PawPrint previews, `api_fake.js` + `catalog.json` in the exact shape of
+    TRANSACTIONS.md 6.3 and its dated notes, `?demo=1`). Kept screenshots: `docs/design/merch/part2_shots/` (6 files).
+  - Part 3 (`docs/design/merch/PART3.md`, review `docs/reviews/MERCH_PART3_review.md`): the Worker `cloudflare/merch/**`, money and
+    every outside service faked; `MerchLedger` + `MerchPrints` SQLite Durable Objects; claim-first with leases on every step; an email
+    outbox; `tools/merch.sh`. PART3.md holds the checklists "to verify in the Stripe sandbox" (part 9) and "with the printer's key"
+    (part 5). Nothing is deployed; the gate is shut by default and needs every service ready.
+  - Watch out at merge time: `tools/cf_site.js` walks all of `site/`, so a site deploy from a branch that holds `site/merch/` would
+    publish `/merch/` (noindex, unlinked, pay shut): the GM must exclude it until launch. Told to the GM on 25 Nov.
+  - Released print folders live in git under `site/merch/print/<ART_VER>/`; once an order has been taken with a folder it is never
+    removed (pre-launch folders may be pruned, as was done on 25 Nov).
+  - The paw-reviewer agent no longer writes its own report file: write the review file yourself from its report.
+  - Usage limit: both fix agents stopped at the limit on 24 Nov 23:00 JST and were only resumed at 09:40 JST. Next time
+    `send_later` yourself a resume for 2 minutes after the reset as soon as you see the reset time, and resume stopped agents with
+    SendMessage (their work is kept).
+- **Asked the owner on 25 Nov (choice window):** small dogs on a tee (scaled up to 5 in, built and recommended, or as in the game;
+  picture `samples/puppy_size_choice.png`), and a small in-game gift code with each order (recommended yes; part 6). Write the answers
+  here when they come. Kept for the launch go-ahead, not asked yet: TRANSACTIONS.md 10 (countries with the UK/EU registration note,
+  payment methods, soft-launch limits 10 a day and a US$150 printer wallet, keep time, the delivery promise, the adviser on USD-only
+  prices), PART3.md question 20 (if the printer cannot sign its webhooks: poll it, recommended), tee sizes (only those made in both the
+  US and the UK, so no 5XL). Good to tell the owner then: a mug name carries at most 16 wide letters; XS-M tees print the file at 77%.
+- **Next, one at a time (at most 2 Opus agents at once), each with one combined review:**
+  - **Part 6** (needs nothing from the owner): the email texts (Thank you, On its way, We need your address, Refunded, the delay
+    email) for the outbox, the order page wired to the real `GET /merch/order/:id` shape, the gift code block if the owner says yes.
+  - **Part 7** (needs nothing): legal page drafts in `site/merch/` (terms of sale, shipping and returns, seller details, the privacy
+    additions as a note for the GM), marked "draft: to be checked by a professional".
+  - **Part 4**: the real render (`cloudflare/merch/render.js` with Browser Run into `MerchPrints`), built against the measured facts
+    of RENDER_FREE.md 8; a real test needs a new approved test deploy (ask the owner; the first one was a one-time approval).
+  - **Part 5**: the Printful adapter against recorded replies; real error shapes, variant ids, costs and a real draft order need the
+    owner's Printful key in a test Worker [O]. US territories (Puerto Rico, Guam) wait for the printer's real rates.
+  - Then part 8 (a brief for the GM: the in-game entry points), part 9 (the three big reviews and the sandbox run on
+    test.doodledoggo.app [O]), part 10 (samples and launch [O]).
+  - Refresh the owner's samples (`node tools/merch_render.js part1`) after the art change of v2.33.1 before the next time they are shown.
 - For the owner to do when they are ready (nothing blocks the build yet): open the Printful account and the separate Stripe account
   (Hong Kong, USD payouts, Adaptive Pricing); talk to an accountant about the UK and the EU before launch day.
 - Nothing is on sale and nothing is deployed except the throwaway test Worker while its test runs.
