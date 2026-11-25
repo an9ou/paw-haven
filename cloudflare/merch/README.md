@@ -92,15 +92,21 @@ recipients to ask Printful to delete.
 Details, decisions and the run book: `docs/design/merch/PART4.md`.
 
 - **Browser Run first**: `render.screenshot()` calls `env.BROWSER.quickAction('screenshot', { url, viewport, screenshotOptions: { omitBackground: true },
-  waitForSelector: { selector: '#o svg' } })` exactly as the test deploy measured (tee 2250x2700 at 2, mug 2700x1050). Our own time limit 75 s.
-- **Our own budget**: the ledger adds up `X-Browser-Ms-Used` per UTC day (`br_ms:<day>` in `merch_meta`); past `MERCH_BROWSER_BUDGET_MS` (540 000 of the
-  Free 600 000) the browser is not asked until 00:00 UTC and the fallback draws. `merch.sh report` and the nightly email show it; the owner is told once a day.
-- **429s**: "Browser time limit exceeded for today" is the day; any other 429 is the 1-per-10-s rate (next try in 11 s). Three unknown 429s in a row
-  (each 11 s or more apart) call the day out for an hour. The status and the first 120 characters of any unknown answer are kept (`last_error`).
+  waitForSelector: { selector: '#o svg', timeout: 15000 } })` as the test deploy measured (tee 2250x2700 at 2, mug 2700x1050), with a 15 s limit on the wait.
+  Our own time limit 75 s.
+- **The print file check** (`render.pngCheck`): exact size, 8-bit RGBA, at least 128 KiB (tee) / 64 KiB (mug) and at most 7.5 MB, whole to IEND, and the
+  tee's first scanline clear (only that row is inflated). A file that fails it is never stored.
+- **Our own budget**: the ledger adds up `X-Browser-Ms-Used` per UTC day (`br_ms:<day>` in `merch_meta`), or the call's wall time when the header is missing
+  (our own timeout, a throw); past `MERCH_BROWSER_BUDGET_MS` (540 000 of the Free 600 000) the browser is not asked until 00:00 UTC and the fallback draws.
+  `merch.sh report` and the nightly email show it, and what is set up (the browser, `SELF`, the fallback `RENDER`); the owner is told once a day.
+- **429s and errors**: "Browser time limit exceeded for today" is the day; any other 429 is the 1-per-10-s rate (next try in 11 s). Three unknown 429s in a
+  row (each 11 s or more apart) call the day out for an hour; three browser errors in a row (`ERROR_RUN`) put the browser off for an hour (`browser_off`,
+  why `errors`) and the fallback draws at once. The status and the first 120 characters of any unknown answer are kept (`last_error`).
 - **The fallback**: `MerchRender` (migration `v2`) draws the line's own link with the bundled PawPrint and resvg-wasm; a line of another `art_ver` is refused
-  (`why: 'art_ver'`), never drawn with the wrong art.
+  (`why: 'art_ver'`), never drawn with the wrong art, and so is art with a layer across a band edge (`why: 'layer'`): such a line waits for the browser.
 - **Two call paths, one switch**: `MERCH_RENDER_VIA` unset or `direct` (the ledger object calls the binding; the default) or `worker` (the object asks
   the front Worker through `SELF` -> `RenderGate`, which streams Browser Run's answer back un-decoded). Which one works on Cloudflare is for the cloud test.
 - **Health check**: `tools/merch.sh render-test <tee|mug> [browser|resvg] [direct|worker]` (before launch and after each art change).
 - **The cloud test** (prepared, never run without the owner): `node tools/merch_rtest.mjs` prints what it would do; `DRY_RUN=0 RTEST_GO=yes-the-owner-approved`
-  runs it once and deletes everything it made.
+  runs it once and deletes everything it made (on every way out; if the delete fails it prints the one line for deleting the Worker by hand).
+- **Review fixes** (part 4 review, 11 findings): `docs/design/merch/PART4.md` "Review fixes".
