@@ -152,7 +152,7 @@ Not simulated: the real Stripe, Printful, Browser Run and Resend answers (assump
 - [ ] Webhook signing (header name, HMAC over what) and the event names (returned, on hold, hold removed); see question 20.
 - [ ] Whether a recipient can be deleted on request (section 5, `merch.sh forget`).
 - [ ] `/merch/catalog-costs` is not a Printful route: the nightly cost read is written for real; the variant ids (`pf:<variant>`) are placeholders.
-- [ ] Browser Run (part 4): the 429 texts (daily vs rate), and calling it from inside the object.
+- [ ] Browser Run (part 4): the 429 texts (daily vs rate), and calling it from inside the object. **Built, to verify in the cloud test** (PART4.md: the classifier, `MERCH_RENDER_VIA`, `tools/merch_rtest.mjs`).
 
 ## To verify in the Stripe sandbox (part 9): a checklist
 

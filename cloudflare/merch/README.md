@@ -12,22 +12,27 @@ and the T-row table are in `docs/design/merch/PART3.md`. **Nothing here is deplo
 | `prints.js` | `MerchPrints`, one SQLite Durable Object per JST day: the PNGs, in 1 MB parts. |
 | `catalog.js` | The price list: products, zones, countries, the never list, Printful's shipping table, the holiday surcharge, the floor. |
 | `lines.js` | The basket: switches, the line checks (PawPrint), prices, the margin guard. |
-| `stripe.js`, `provider_printful.js`, `render.js`, `mail.js` | The four seams. Each talks only through an injected fetch (`STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`). |
+| `stripe.js`, `provider_printful.js`, `mail.js` | Three seams. Each talks only through an injected fetch (`STRIPE_FETCH`, `PROVIDER_FETCH`, `MAIL_FETCH`). |
+| `render.js` | Part 4, the print render: Browser Run's `env.BROWSER.quickAction('screenshot', ...)` (from the ledger object, or through the front Worker's `RenderGate` with `MERCH_RENDER_VIA = "worker"`), the 429 classifier, and the call to the fallback. `RENDER_FETCH` (tests) still wins. |
+| `resvg.js` | Part 4, `MerchRender`: the resvg-wasm fallback in its own SQLite Durable Object (12 bands for a tee, one piece for a mug, one PNG out). |
+| `vendor/resvg-wasm/` | `@resvg/resvg-wasm` 2.6.2 (MPL-2.0, `LICENSE-NOTICE.txt`): the wasm unchanged, its JS glue wrapped in a factory. Loaded only on the first fallback render. |
 | `admin.js` | The owner's admin routes (`tools/merch.sh`). |
 | `build_assets.mjs` | Copies every released print folder from `site/merch/print/<ART_VER>/` (in git) into `assets/merch/print/` (git-ignored, a copy), never deleting one. |
-| `wrangler.example.toml` | Bindings, the two Durable Object classes and their migration, the cron, the variables (shut by default). No ids, no secrets. |
-| `test/` | The `merch_worker` suite (156 checks): the contract rows, the review's cases (R-*), crashes (C-*), races (X-race-*), a draft-mode world, Miniflare. |
+| `wrangler.example.toml` | Bindings (three Durable Object classes, Browser Run, the self binding), the migrations v1 and v2, the cron, the variables (shut by default). No ids, no secrets. |
+| `test/` | The `merch_worker` suite (194 checks): the contract rows, the review's cases (R-*), crashes (C-*), races (X-race-*), a draft-mode world, Miniflare, part 4 (P4-*). `test/render_chromium.mjs`: part 4's Chromium truth test, run on its own. |
 
 ## Run the tests
 
 ```
 NODE_PATH=$(npm root -g) node tools/merch_build.js           # the PawPrint bundle (merch/dist/pawprint.js)
-NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs   # about 6 s; ONLY=<regex> runs a subset
+NODE_PATH=$(npm root -g) node cloudflare/merch/test/run.mjs   # about 30 s (part 4 draws real PNGs); ONLY=<regex> runs a subset
+NODE_PATH=$(npm root -g) node cloudflare/merch/test/render_chromium.mjs   # part 4: local Chromium against render.js and the resvg fallback (Playwright)
 ```
 
 Node 22 (`node:sqlite` stands in for the Durable Object storage, as `cloudflare/d1_node.js` does for D1) and the global Miniflare (the last test runs the
 same Worker in workerd with real SQLite Durable Objects and alarms; it is skipped, and says so, when Miniflare is missing). No network is used: Stripe,
-Printful, the renderer and Resend are stateful fakes (`test/fakes.mjs`), and the clock is `env.NOW`.
+Printful, Browser Run (a fake `BROWSER` binding object) and Resend are stateful fakes (`test/fakes.mjs`), and the clock is `env.NOW`. The resvg fallback is
+never faked in the part 4 rows: it draws real PNGs with the vendored wasm.
 
 ## Safe by default
 
@@ -49,7 +54,8 @@ Secrets, by name only (set in the dashboard or with `wrangler secret put`, never
 `MERCH_STRIPE_WEBHOOK_SECRET`, `MERCH_PROVIDER_KEY`, `MERCH_PROVIDER_WEBHOOK_SECRET` (if Printful signs), `MERCH_FILE_KEY`, `MERCH_HASH_KEY`,
 `MERCH_ADMIN_KEY`, `RESEND_API_KEY`. Variables: `MERCH_OWNER_TO` (the owner's address), then `MERCH_COUNTRIES` and, last, `MERCH_FROM` with the launch date.
 
-Never set in production: `STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT` (test seams).
+Never set in production: `STRIPE_FETCH`, `PROVIDER_FETCH`, `RENDER_FETCH`, `MAIL_FETCH`, `NOW`, `PAWPRINT`, `RESVG_WASM` (test seams) and
+`MERCH_RENDER_PROBE` (only the one-off cloud test sets it).
 
 ## The print folders (never remove one)
 
@@ -72,3 +78,21 @@ recipients to ask Printful to delete.
   `NODE_PATH=$(npm root -g) node tools/merch_catalog_json.js` (the suite fails while they differ).
 - A new buyer route: `POST /merch/order/:id/wait` ("Keep waiting" on a late part), the same id check and limit as cancel.
 - The delay plan, the gift shown after the cancel hour, and the other fixes: `docs/design/merch/PART6.md` "Review fixes (25 Nov 2026)".
+
+## Part 4: the print render (25 Nov 2026)
+
+Details, decisions and the run book: `docs/design/merch/PART4.md`.
+
+- **Browser Run first**: `render.screenshot()` calls `env.BROWSER.quickAction('screenshot', { url, viewport, screenshotOptions: { omitBackground: true },
+  waitForSelector: { selector: '#o svg' } })` exactly as the test deploy measured (tee 2250x2700 at 2, mug 2700x1050). Our own time limit 75 s.
+- **Our own budget**: the ledger adds up `X-Browser-Ms-Used` per UTC day (`br_ms:<day>` in `merch_meta`); past `MERCH_BROWSER_BUDGET_MS` (540 000 of the
+  Free 600 000) the browser is not asked until 00:00 UTC and the fallback draws. `merch.sh report` and the nightly email show it; the owner is told once a day.
+- **429s**: "Browser time limit exceeded for today" is the day; any other 429 is the 1-per-10-s rate (next try in 11 s). Three unknown 429s in a row
+  (each 11 s or more apart) call the day out for an hour. The status and the first 120 characters of any unknown answer are kept (`last_error`).
+- **The fallback**: `MerchRender` (migration `v2`) draws the line's own link with the bundled PawPrint and resvg-wasm; a line of another `art_ver` is refused
+  (`why: 'art_ver'`), never drawn with the wrong art.
+- **Two call paths, one switch**: `MERCH_RENDER_VIA` unset or `direct` (the ledger object calls the binding; the default) or `worker` (the object asks
+  the front Worker through `SELF` -> `RenderGate`, which streams Browser Run's answer back un-decoded). Which one works on Cloudflare is for the cloud test.
+- **Health check**: `tools/merch.sh render-test <tee|mug> [browser|resvg] [direct|worker]` (before launch and after each art change).
+- **The cloud test** (prepared, never run without the owner): `node tools/merch_rtest.mjs` prints what it would do; `DRY_RUN=0 RTEST_GO=yes-the-owner-approved`
+  runs it once and deletes everything it made.
