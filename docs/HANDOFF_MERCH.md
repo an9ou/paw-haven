@@ -331,8 +331,18 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      part-line reship is the owner's job by hand. **This fourth fix batch (about 670 lines) has had no review of its own**: one short
      review of `git diff 9815a07..1e830eb` is worth doing at the normal pace after the weekly reset, before run 2 at the latest (the
      stand-in never confirms or posts, so run 1 cannot reach the shipment code either way).
-  4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
-     `get_environment` first; a blocked host is a need to propose, see the tool's rules) and try ONE test order only after the deploy.
+  4. (done 25 Nov 20:05 JST, merge d3bb77c) The driver for Stripe's test pay page: `tools/merch_pay_driver.mjs`
+     (`payStripeCheckout(url, buyer, card, opts)` and a CLI; only `https://checkout.stripe.com/` with a `cs_test_` session, only with
+     Stripe's "Test mode" / "Sandbox" badge on the page, only part D's seven test cards; returns `paid` / `declined` / `needs_human` /
+     `error`, a screenshot outside the repo on anything but `paid`; test 3-D Secure Complete or Fail), offline test
+     `NODE_PATH=$(npm root -g) node tools/merch_pay_driver.test.mjs` (7 of 7 against a local stand-in page). The environment's network
+     is unrestricted (`get_environment`), so no host is blocked. **Not proven on Stripe's real hosted page**: the only public demo
+     (checkout.stripe.dev, 6 tries with made-up details) shows the form embedded and takes no payment; the filling worked on Stripe's
+     real form (about 6-7 s), no robot check while filling, but Stripe checks at Pay, which the demo never reached. So: try the driver
+     on the first sandbox order (S-6); `paid`: the session takes the repeat orders; `needs_human` or a robot check: back to the owner
+     with the mix or the by-hand option (choice window). Open: the badge's exact words on our hosted page (if different the driver
+     refuses, a one-line regex change); `shopTrip()` is written but never run (TODO list in the file header); a simpler path may be a
+     `curl` checkout with the test token (SANDBOX E-5) and the driver on the url it returns.
   5. The test deploy: the GM's G1/G2 first, then `tools/merch_test_deploy.sh` for real (the owner's yes is given; the prompts are the
      owner's to approve), then the owner's part A steps 10-12, then the run (SANDBOX.md D), filling in the results.
   4. Part 10 (samples and launch [O]).
