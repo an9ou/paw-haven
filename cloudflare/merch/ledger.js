@@ -28,6 +28,11 @@ const PF_CONFIRMED = ['pending', 'inprocess', 'onhold', 'partial', 'fulfilled'];
 const BACKOFF = [1, 5, 15, 60].map((m) => m * MIN);
 const MAIL_BACKOFF = [1, 5, 15, 60, 180].map((m) => m * MIN), MAIL_TRIES = 6;
 const LEASE = 3 * MIN, WAKE = 5 * MIN; // a step's lease, and the wake it leaves behind in case it never finishes
+// Browser Run (part 4, PART4.md): our own budget of billed browser time a UTC day (Free: 600 000 ms; MERCH_BROWSER_BUDGET_MS overrides), and the
+// number of unknown 429s in a row (each 11 s or more apart, so never the 1-per-10-s rate) after which the day is called out for an hour
+const BROWSER_BUDGET_MS = 540e3, RATE_RUN = 3;
+const utcDay = (t) => new Date(t).toISOString().slice(0, 10);
+const browserLine = (b) => !b ? '' : 'Browser Run (UTC day): ' + Math.round(b.ms_today / 1000) + ' s used of our ' + Math.round(b.budget_ms / 1000) + ' s budget (Free: 600 s), yesterday ' + Math.round(b.ms_yesterday / 1000) + ' s' + (b.off ? '; out now (' + b.off + '): the resvg fallback draws the prints' : '');
 // the buyer emails that may carry the thank-you gift once it is shown (the first one sent after the cancel hour; once only: gift_mailed)
 const GIFT_KINDS = ['ship', 'reprint', 'late', 'late_again'];
 // the order statuses in which a reserved gift is shown once the cancel hour is over (a held order only once it is released; draft_mode stands
@@ -86,6 +91,11 @@ async function loadPawPrint(env) {
   if (env.PAWPRINT) return env.PAWPRINT;
   if (!PAWPRINT) { const m = await import('../../merch/dist/pawprint.js'); PAWPRINT = m.default || m; }
   return PAWPRINT;
+}
+let SAMPLES = null; // the built-in sample dogs (merch/sample_dogs.js), for the render self-test only; loaded on its first use
+async function loadSamples(P) {
+  if (!SAMPLES) { const m = await import('../../merch/sample_dogs.js'); SAMPLES = (m.default || m)(P); }
+  return SAMPLES;
 }
 const piOf = (cs) => (typeof cs.payment_intent === 'string' ? cs.payment_intent : cs.payment_intent && cs.payment_intent.id) || null;
 const countryOf = (cs) => { const a = (cs.collected_information && cs.collected_information.shipping_details && cs.collected_information.shipping_details.address) || (cs.shipping_details && cs.shipping_details.address) || {}; return a.country || null; };
@@ -1091,7 +1101,7 @@ export class MerchLedger {
       this.tx(() => this.setMeta('render_at', now));
       const url = (this.env.MERCH_PUBLIC_URL || 'https://merch-api.doodledoggo.app') + '/merch/print/' + l.art_ver + '/' + l.print_link; // the line's own art_ver folder
       const good = (x) => x.ok && this.pngOk(l.product, x.png);
-      r = await render.screenshot(this.env, l.product, url); let renderer = 'browser';
+      r = await this.shot(l.product, url); let renderer = 'browser'; // part 4: our own daily budget and the 429 run (browserBook)
       if (r.ok && !good(r)) r = { ok: false, kind: 'error', why: 'png' };
       if (!r.ok && r.kind === 'rate') return this.tx(() => this.next(id, now + 11e3)); // T2.2-30
       if (!r.ok && (r.kind === 'daily' || (r.kind === 'error' && l.tries >= 1))) { const f = await render.resvg(this.env, l.product, url); if (good(f)) { r = f; renderer = 'resvg'; } }
@@ -1126,7 +1136,7 @@ export class MerchLedger {
       const t = this.now(), ok = live(); if (!ok) return this.next(id, t);
       const { x, y } = ok;
       if (r.kind === 'daily' || r.kind === 'not_set_up') { // T2.2-29: wait for 09:00 JST; past the hour, held render
-        const reset = r.kind === 'daily' ? nextUtcMidnight(t) : t + HOUR, cols = {};
+        const reset = r.kind === 'daily' ? (r.until || nextUtcMidnight(t)) : t + HOUR, cols = {}; // part 4: a day called out after a 429 run comes back sooner (until)
         let nt = x.status === 'paid' && t < x.cancel_until ? Math.min(reset, x.cancel_until) : reset; // look again when the hour ends, to hold it
         if (x.status === 'paid' && t >= x.cancel_until) Object.assign(cols, { status: 'held', hold: 'render', hold_at: t });
         const held = cols.hold === 'render' || (x.status === 'held' && x.hold === 'render'), since = cols.hold_at || x.hold_at || t;
@@ -1143,6 +1153,74 @@ export class MerchLedger {
     });
   }
   pngOk(product, png) { const P = this.PP.PRODUCTS[product], d = pngSize(png); return !!(P && d && d.w === P.w && d.h === P.h && png.length <= PNG_MAX); }
+  /* ---------------- Browser Run: the budget and the 429s (part 4) ---------------- */
+  // meta: 'br_ms:<UTC day>' billed ms added up from X-Browser-Ms-Used; 'br_off' '<until ms> <why>' (the browser is not asked until then);
+  // 'br_rate_run' unknown 429s in a row
+  budget() { return Number(this.env.MERCH_BROWSER_BUDGET_MS) > 0 ? Number(this.env.MERCH_BROWSER_BUDGET_MS) : BROWSER_BUDGET_MS; }
+  browserOff(now) {
+    const off = String(this.meta('br_off') || '').split(' ');
+    if (off[0] && now < Number(off[0])) return { why: off[1] || 'off', until: Number(off[0]) };
+    if (Number(this.meta('br_ms:' + utcDay(now)) || 0) >= this.budget()) return { why: 'budget', until: nextUtcMidnight(now) };
+    return null;
+  }
+  // one screenshot through render.js, booked: never called while the day is out (the fallback takes over at once)
+  async shot(product, url, via) {
+    const off = this.browserOff(this.now());
+    if (off) return { ok: false, kind: 'daily', why: off.why, until: off.until, skipped: true };
+    const r = await render.screenshot(this.env, product, url, via);
+    return this.tx(() => this.browserBook(r));
+  }
+  // sync, in a transaction: the ms, the 429 run and the day out. -> the answer as the render step should treat it
+  browserBook(r) {
+    const now = this.now(), k = 'br_ms:' + utcDay(now), before = Number(this.meta(k) || 0), ms = Number(r.ms) > 0 ? Number(r.ms) : 0, after = before + ms;
+    if (ms) this.setMeta(k, after);
+    if (before < this.budget() && after >= this.budget()) this.browserDown(now, 'budget', nextUtcMidnight(now), after + ' ms used');
+    if (!r.ok && r.kind === 'rate') {
+      const run = Number(this.meta('br_rate_run') || 0) + 1;
+      if (run < RATE_RUN) { this.setMeta('br_rate_run', run); return r; }
+      const until = Math.min(now + HOUR, nextUtcMidnight(now)); // unverified: an hour, then the browser is asked again
+      this.setMeta('br_rate_run', 0); this.browserDown(now, 'rate_run', until, r.why);
+      return Object.assign({}, r, { kind: 'daily', why: 'rate_run ' + run + ': ' + (r.why || ''), until });
+    }
+    if (Number(this.meta('br_rate_run') || 0)) this.setMeta('br_rate_run', 0);
+    if (!r.ok && r.kind === 'daily') { const until = nextUtcMidnight(now); this.browserDown(now, 'daily', until, r.why); return Object.assign({}, r, { until }); }
+    return r;
+  }
+  browserDown(now, why, until, note) { // sync. The owner hears once a JST day (the outbox key carries the day)
+    this.setMeta('br_off', until + ' ' + why);
+    this.ownerMail(null, 'browser_off', 'Browser Run is out (' + why + (note ? ': ' + String(note).slice(0, 140) : '') + ') until ' + new Date(until).toISOString().slice(0, 16) + ' UTC. The resvg fallback draws the prints meanwhile. Browser time today: ' + Number(this.meta('br_ms:' + utcDay(now)) || 0) + ' ms of our ' + this.budget() + ' ms budget.');
+  }
+  browserStatus(now) {
+    const off = this.browserOff(now);
+    return { ms_today: Number(this.meta('br_ms:' + utcDay(now)) || 0), ms_yesterday: Number(this.meta('br_ms:' + utcDay(now - DAY)) || 0), budget_ms: this.budget(), free_ms: 600e3,
+      off: off ? off.why : null, off_until: off ? off.until : null, rate_run: Number(this.meta('br_rate_run') || 0), via: this.env.MERCH_RENDER_VIA === 'worker' ? 'worker' : 'direct' };
+  }
+  // the admin render self-test (part 4): one built-in sample dog of the CURRENT art through the real path (render.js, pngOk, MerchPrints with a
+  // 15-minute keep), no order. It keeps the 11 s spacing and its browser time counts toward the budget. -> { status, body }
+  async renderTest(b) {
+    const product = b.product, renderer = b.renderer || 'browser', via = b.via == null ? null : b.via;
+    if (!['tee', 'mug'].includes(product) || !['browser', 'resvg'].includes(renderer) || ![null, 'direct', 'worker'].includes(via)) return { status: 400, body: { error: 'bad_test', say: 'product tee|mug, renderer browser|resvg, via direct|worker' } };
+    const S = await loadSamples(this.PP), dog = S.find((d) => d.id === (b.dog || 'golden'));
+    if (!dog) return { status: 400, body: { error: 'bad_dog', dogs: S.map((d) => d.id) } };
+    const now = this.now(), last = Number(this.meta('render_at') || 0);
+    // probe: the one-off cloud test (tools/merch_rtest.mjs) asks twice 1 s apart on purpose, to record Browser Run's own rate-limit answer. Only
+    // with MERCH_RENDER_PROBE = "1", which is never set on the real Worker
+    const probe = !!b.probe && this.env.MERCH_RENDER_PROBE === '1';
+    if (now < last + 11e3 && !probe) return { status: 429, body: { error: 'wait', wait_ms: last + 11e3 - now } };
+    this.tx(() => this.setMeta('render_at', now));
+    const P = this.PP, colour = product === 'tee' ? (P.PRODUCTS.tee.colours.some((c) => c.id === b.colour) ? b.colour : 'navy') : 'white';
+    const link = P.printHash(dog.r, { product, colour, pose: dog.pose }), url = (this.env.MERCH_PUBLIC_URL || 'https://merch-api.doodledoggo.app') + '/merch/print/' + P.ART_VER + '/' + link;
+    const out = { ok: false, product, colour, dog: dog.id, art_ver: P.ART_VER, renderer, via: renderer === 'browser' ? (via || (this.env.MERCH_RENDER_VIA === 'worker' ? 'worker' : 'direct')) : null };
+    const t0 = Date.now(), r = renderer === 'browser' ? await this.shot(product, url, via) : await render.resvg(this.env, product, url);
+    Object.assign(out, { wall_ms: Date.now() - t0, ms_used: r.ms == null ? null : r.ms });
+    if (!r.ok) return { status: 200, body: Object.assign(out, { error: { kind: r.kind, why: r.why || null, skipped: !!r.skipped }, browser: this.browserStatus(this.now()) }) };
+    const d = pngSize(r.png); Object.assign(out, { bytes: r.png.length, width: d ? d.w : null, height: d ? d.h : null, png_ok: this.pngOk(product, r.png) });
+    if (!out.png_ok) return { status: 200, body: Object.assign(out, { error: { kind: 'error', why: 'png' }, browser: this.browserStatus(this.now()) }) };
+    const s = await this.storePng({ id: 'rt_' + now.toString(36), paid_at: now }, { line: product + '-' + renderer }, r.png);
+    if (!s.ok) return { status: 200, body: Object.assign(out, { error: { kind: 'error', why: 'store' }, browser: this.browserStatus(this.now()) }) };
+    this.tx(() => this.setMeta('rt:' + s.key, this.now() + 15 * MIN)); // the nightly tidy deletes it once its link is over
+    return { status: 200, body: Object.assign(out, { ok: true, sha256: s.sha, key: s.key, file_url: await this.fileUrl(s.key, 15 * MIN), browser: this.browserStatus(this.now()) }) };
+  }
   shardFor(day, bytes) {
     for (const suf of ['', '-b', '-c', '-d', '-e', '-f']) {
       const name = 'p-' + day + suf, r = this.one('select bytes from merch_shards where name = ?', name);
@@ -1460,7 +1538,7 @@ export class MerchLedger {
     });
     await this.tidy(now);
     const rep = this.report();
-    this.tx(() => { this.setMeta('report', JSON.stringify(rep)); this.ownerMail(null, 'report', mail.reportText(rep).slice(0, 4000)); this.giftCheck(); }); // its key carries the JST day (S7)
+    this.tx(() => { this.setMeta('report', JSON.stringify(rep)); this.ownerMail(null, 'report', (mail.reportText(rep) + '\n' + browserLine(rep.browser)).slice(0, 4000)); this.giftCheck(); }); // its key carries the JST day (S7)
     await this.flush();
     return rep;
   }
@@ -1468,6 +1546,9 @@ export class MerchLedger {
   async tidy(now) {
     // a file goes when no line that uses it (a reprint copies the key) needs it any more
     const keys = this.q('select file_key as k from merch_order_items where file_key is not null group by file_key having max(coalesce(keep_until, 9e15)) <= ?', now).map((r) => r.k);
+    // part 4: render self-test files once their 15-minute link is over, and the Browser Run day totals after 40 days
+    for (const r of this.q("select k from merch_meta where k glob 'rt:*' and cast(v as integer) <= ?", now)) { keys.push(r.k.slice(3)); this.tx(() => this.run('delete from merch_meta where k = ?', r.k)); }
+    this.tx(() => this.run("delete from merch_meta where k glob 'br_ms:*' and k < ?", 'br_ms:' + utcDay(now - 40 * DAY)));
     // storage over 4 GB: also the oldest files of orders shipped more than 60 days ago with no open dispute (6.6)
     const total = Number(this.one('select coalesce(sum(bytes), 0) as b from merch_shards').b);
     if (total > Number(this.env.MERCH_STORE_SOFT || 4 * 2 ** 30)) {
@@ -1507,6 +1588,7 @@ export class MerchLedger {
       variants_off: this.q('select id from merch_variants where on_flag = 0').map((r) => r.id),
       gift: this.giftCounts(), // counts only, never a code
       storage: { bytes: Number(this.one('select coalesce(sum(bytes), 0) as b from merch_shards').b), shards: Number(this.one('select count(*) as n from merch_shards').n) },
-      ledger: { bytes, writes_today: Number(this.meta('w:' + day) || 0), writes_free_a_day: 100000 } }; // S11: the ledger's own storage and write budget
+      ledger: { bytes, writes_today: Number(this.meta('w:' + day) || 0), writes_free_a_day: 100000 }, // S11: the ledger's own storage and write budget
+      browser: this.browserStatus(now) }; // part 4: billed Browser Run time this UTC day against our budget, and whether the fallback has it
   }
 }

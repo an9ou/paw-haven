@@ -5,7 +5,7 @@
 process.removeAllListeners('warning'); // node:sqlite is "experimental" on Node 22
 const t0 = Date.now();
 const { stats } = await import('./harness.mjs');
-const parts = [['./t_basics.mjs', 'basics'], ['./t_21.mjs', 't21'], ['./t_22.mjs', 't22'], ['./t_admin.mjs', 'admin'], ['./t_review.mjs', 'review'], ['./t_crash.mjs', 'crashes'], ['./t_part6.mjs', 'part6'], ['./t_fix6.mjs', 'fix6'], ['./t_printful.mjs', 'printful'], ['./t_miniflare.mjs', 'miniflare']];
+const parts = [['./t_basics.mjs', 'basics'], ['./t_21.mjs', 't21'], ['./t_22.mjs', 't22'], ['./t_admin.mjs', 'admin'], ['./t_review.mjs', 'review'], ['./t_crash.mjs', 'crashes'], ['./t_part6.mjs', 'part6'], ['./t_fix6.mjs', 'fix6'], ['./t_printful.mjs', 'printful'], ['./t_miniflare.mjs', 'miniflare'], ['./t_render.mjs', 't_render']];
 for (const [f, fn] of parts) {
   try { const m = await import(f); await m[fn](); }
   catch (e) { if (e && e.code === 'ERR_MODULE_NOT_FOUND' && String(e.message).includes(f.slice(2))) console.log('--- ' + f + ': not written yet'); else { console.log('  CRASH', f, e && e.stack); process.exitCode = 1; } }

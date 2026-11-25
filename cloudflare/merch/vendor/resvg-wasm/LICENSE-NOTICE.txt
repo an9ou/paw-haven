@@ -1,0 +1,16 @@
+resvg-wasm, vendored for the merch Worker's print fallback (docs/design/merch/PART4.md)
+
+Files
+  index_bg.wasm   @resvg/resvg-wasm 2.6.2, unchanged (sha-256 22bf6e9f9a100d972da0411a69c5ba504367fc1fa87b3b64e3f35e53926d2d70)
+  resvg_glue.js   the package's index.mjs (sha-256 10170d02d816f02ec76f9bc095b01d9becf536e7b1e12e5aa616652c84b237a1), wrapped in one factory
+                  function so each call makes a fresh wasm instance (see the comment at its top). The code inside is unchanged.
+
+Licence
+  Mozilla Public License 2.0 (MPL-2.0): https://www.mozilla.org/en-US/MPL/2.0/
+  resvg-js and @resvg/resvg-wasm: Copyright (c) the resvg-js authors, https://github.com/yisibl/resvg-js
+  resvg (the Rust renderer inside the wasm): https://github.com/RazrFalcon/resvg (MPL-2.0 at the version built into 2.6.2)
+
+Source code
+  The Source Code Form of both files is at https://github.com/yisibl/resvg-js/tree/v2.6.2 and in the npm package
+  https://registry.npmjs.org/@resvg/resvg-wasm/-/resvg-wasm-2.6.2.tgz. Our one change (the factory wrapper in resvg_glue.js) is in this folder and
+  stays under MPL-2.0. Nothing else of this project is under MPL-2.0: the rest of the Worker only calls these files.

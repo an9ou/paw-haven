@@ -21,6 +21,10 @@
 #                                                          tools/promo.sh writes it: code,batch,made_at) works too: the first column, the
 #                                                          header line skipped
 #   tools/merch.sh gift count                              how many codes are left and how many were given
+#   tools/merch.sh render-test <tee|mug> [browser|resvg] [direct|worker]   part 4: the render health check (before launch, after each art
+#                                                          change): one sample dog of the current art through the real render, no order;
+#                                                          JSON with renderer, bytes, sha-256, size, browser ms, a 15-minute file link.
+#                                                          11 s apart; counts toward the day's browser budget
 #
 # Env: MERCH_API (default https://merch-api.doodledoggo.app; the test Worker: set it to its address), MERCH_ADMIN_KEY, DRY_RUN (default 1).
 set -euo pipefail
@@ -125,9 +129,14 @@ EOF2
         ;;
       *) echo "merch.sh: gift add | gift count (tools/merch.sh help)" >&2; exit 2 ;;
     esac ;;
+  render-test)
+    need "${1:-}" "product (tee or mug)"; [[ "$1" =~ ^(tee|mug)$ ]] || { echo "merch.sh: render-test tee|mug [browser|resvg] [direct|worker]" >&2; exit 2; }
+    r="${2:-browser}"; [[ "$r" =~ ^(browser|resvg)$ ]] || { echo "merch.sh: the renderer is browser or resvg" >&2; exit 2; }
+    v=""; if [ -n "${3:-}" ]; then [[ "$3" =~ ^(direct|worker)$ ]] || { echo "merch.sh: the path is direct or worker" >&2; exit 2; }; v=", \"via\": \"$3\""; fi
+    send POST render-test "{\"product\": \"$1\", \"renderer\": \"$r\"$v}" ;;
   report) send GET report ;;
   tick) send POST tick "{}" ;;
   nightly) send POST nightly "{}" ;;
-  help|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help|-h|--help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) echo "merch.sh: unknown command $cmd (tools/merch.sh help)" >&2; exit 2 ;;
 esac

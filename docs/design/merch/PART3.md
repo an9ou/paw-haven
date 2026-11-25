@@ -164,8 +164,7 @@ Part 5 (25 Nov 2026) answered what Printful's published docs settle; each line s
   *Part 5: still open (not in the API docs; ask Printful support, who are our processor under their Data Processing Terms).*
 - [ ] `/merch/catalog-costs` is not a Printful route: the nightly cost read is written for real; the variant ids (`pf:<variant>`) are placeholders.
   *Part 5: done. `catalogCosts` reads v2 prices and Standard rates; the variant ids are Printful's, from the public catalog (catalog.js `PF_VARIANT_IDS`). Still needs the key: that the v2 ids are the same (the kit checks).*
-- [ ] Browser Run (part 4): the 429 texts (daily vs rate), and calling it from inside the object.
-  *Not part 5 (part 4).*
+- [ ] Browser Run (part 4): the 429 texts (daily vs rate), and calling it from inside the object. **Built, to verify in the cloud test** (PART4.md: the classifier, `MERCH_RENDER_VIA`, `tools/merch_rtest.mjs`).
 
 ## To verify in the Stripe sandbox (part 9): a checklist
 

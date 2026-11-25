@@ -143,6 +143,7 @@ export async function adminRoute(L, req, path, ip) {
     });
     return json(Object.assign({ added, skipped }, { left: L.giftCounts().left }));
   }
+  if (path === 'render-test' && m === 'POST') { const r = await L.renderTest(body); return json(r.body, r.status); } // part 4: the render self-test
   if (path === 'report' && m === 'GET') return json(L.report());
   if (path === 'tick' && m === 'POST') { await L.tick(); return json({ ok: true }); }
   if (path === 'nightly' && m === 'POST') return json(await L.nightly(L.now()));

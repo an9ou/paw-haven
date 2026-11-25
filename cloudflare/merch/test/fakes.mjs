@@ -254,6 +254,28 @@ export function fakeRender() {
   };
   return R;
 }
+// part 4: a stand-in for the Browser Run binding itself (env.BROWSER), so render.js's real path runs: quickAction('screenshot', opts) answers a
+// Response like Cloudflare's (status, X-Browser-Ms-Used, the PNG body). queue: 'ok' | 'daily' | 'rate' (an unknown 429 text) | 'err' | 'wrongsize'
+// | 'throw' | 'throwdaily' | 'hang' (never answers) | a function (opts) -> Response. ms: the billed time sent with each answer (null: no header)
+export function fakeBrowser() {
+  const B = { calls: [], queue: [], ms: 1300, after: {} };
+  B.quickAction = async (kind, opts) => {
+    B.calls.push({ kind, opts: JSON.parse(JSON.stringify(opts)) });
+    const next = B.queue.length ? B.queue.shift() : 'ok', prod = /prod=(\w+)/.exec(opts.url)[1], size = prod === 'tee' ? [4500, 5400] : [2700, 1050];
+    const h = B.ms == null ? {} : { 'X-Browser-Ms-Used': String(B.ms) };
+    if (typeof next === 'function') return next(opts);
+    if (next === 'hang') return new Promise(() => {});
+    if (next === 'throw') throw new Error('boom: browser went away');
+    if (next === 'throwdaily') throw new Error('429: Browser time limit exceeded for today');
+    if (next === 'daily') return new Response('Browser time limit exceeded for today', { status: 429, headers: h });
+    if (next === 'rate') return new Response('Rate limit exceeded: try again in a few seconds', { status: 429, headers: h });
+    if (next === 'err') return new Response('Navigation timeout of 30000 ms exceeded\nwaiting for selector #o svg', { status: 500, headers: h });
+    if (next === 'wrongsize') return new Response(png(100, 100), { headers: Object.assign({ 'content-type': 'image/png' }, h) });
+    if (B.after.shot) await B.after.shot(opts);
+    return new Response(png(size[0], size[1], 4096), { headers: Object.assign({ 'content-type': 'image/png' }, h) });
+  };
+  return B;
+}
 export function fakeMail() {
   const M = { sent: [], keys: new Map(), fail: 0, calls: 0, after: {} };
   M.fetch = async (url, init) => {

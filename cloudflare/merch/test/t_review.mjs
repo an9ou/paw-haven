@@ -132,7 +132,7 @@ export async function review() {
     const t = fs.readFileSync(path.join(ROOT, 'cloudflare', 'merch', 'wrangler.example.toml'), 'utf8'), top = t.slice(t.indexOf('[vars]'), t.indexOf('[env.test]')), env = t.slice(t.indexOf('[env.test.vars]'));
     const names = (s) => Array.from(s.matchAll(/^([A-Z_]+) = /gm)).map((m) => m[1]);
     const miss = names(top).filter((n) => !names(env).includes(n)); ok(!miss.length, 'missing in env.test: ' + miss);
-    ok((t.match(/\[\[env\.test\.durable_objects\.bindings\]\]/g) || []).length === 2 && /MERCH_SITE = "https:\/\/test\.doodledoggo\.app"/.test(env) && /MERCH_PROVIDER_MODE = "draft"/.test(env), 'bindings, site, draft');
+    ok((t.match(/\[\[env\.test\.durable_objects\.bindings\]\]/g) || []).length === 3 && /MERCH_SITE = "https:\/\/test\.doodledoggo\.app"/.test(env) && /MERCH_PROVIDER_MODE = "draft"/.test(env), 'bindings, site, draft');
     ok(!/(sk|rk)_(live|test)_[A-Za-z0-9]{6}|whsec_[A-Za-z0-9]{6}/.test(t), 'no key-like strings');
   });
   await T('R-S13', 'deletion on request (admin forget, merch.sh forget): buyer data and files of ended orders cleared, the money rows kept; orders in progress wait', async () => {

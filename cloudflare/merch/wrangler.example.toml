@@ -14,9 +14,17 @@ class_name = "MerchLedger"                 # one instance, 'ledger': every table
 name = "PRINTS"
 class_name = "MerchPrints"                 # one per JST day, 'p-YYYY-MM-DD' (-b, -c ...): the PNGs only
 
+[[durable_objects.bindings]]
+name = "RENDER"
+class_name = "MerchRender"                 # part 4: the resvg-wasm fallback ("option G"), one instance 'resvg', no storage of its own
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["MerchLedger", "MerchPrints"]   # SQLite Durable Objects: nothing to create beforehand, Free plan
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["MerchRender"]       # part 4: a new class needs its own migration (v1 may already be applied); SQLite, as Free requires
 
 [triggers]
 crons = ["*/10 * * * *"]                   # the backstop wake + the nightly job after 04:00 JST (count the account's 5 cron triggers first)
@@ -26,8 +34,13 @@ directory = "./assets"                     # assets/merch/print/<ART_VER>/ (node
 binding = "ASSETS"
 run_worker_first = true
 
-# [browser]
-# binding = "BROWSER"                      # part 4 (Browser Run); part 3 talks only through RENDER_FETCH, which is never set in production
+[browser]
+binding = "BROWSER"                        # part 4: Browser Run (Free: 10 browser-minutes a day, Quick Actions 1 a 10 s); no token, the binding is enough
+
+[[services]]
+binding = "SELF"                           # part 4: the Worker itself, entrypoint RenderGate (only used with MERCH_RENDER_VIA = "worker")
+service = "doodle-doggo-merch"
+entrypoint = "RenderGate"
 
 [vars]
 MERCH_FROM = ""                            # empty = the shop is shut (the safe default). Launch time, ISO with the JST offset, only with the owner's date
@@ -49,6 +62,9 @@ MERCH_GIFT_NAME = ""                       # part 6: the thank-you gift's item n
 MERCH_PROVIDER_STORE = ""                  # part 5: Printful's store id, only with an account-level token (sent as X-PF-Store-Id); empty for a store token
 MERCH_PF_V1_CANCEL = "1"                   # part 5: "0" never uses v1's cancel of a confirmed order (v2 has none): the owner cancels it in the dashboard
 MERCH_PF_PRICE_REGION = "worldwide"        # part 5: the nightly price read (v2 selling region; no production currency = Printful's highest price)
+MERCH_RENDER_VIA = "direct"                # part 4: "direct" = the ledger object calls Browser Run; "worker" = through the front Worker (SELF)
+MERCH_BROWSER_BUDGET_MS = "540000"         # part 4: our own Browser Run budget a UTC day (of the Free 600 000 ms); past it the resvg fallback draws
+# MERCH_RENDER_TIMEOUT_MS = "75000"        # part 4: our limit on one browser call (Browser Run's own is 60 s); MERCH_RESVG_TIMEOUT_MS = "60000"
 
 # Secrets (wrangler secret put, by the owner; never in the repo or chat):
 #   MERCH_STRIPE_KEY              restricted: Checkout Sessions write, Refunds write, Charges / PaymentIntents / Disputes read
@@ -59,7 +75,8 @@ MERCH_PF_PRICE_REGION = "worldwide"        # part 5: the nightly price read (v2 
 #   MERCH_HASH_KEY                HMAC for email and IP hashes (random, 32+ bytes; never rotate without a plan: flags use it)
 #   MERCH_ADMIN_KEY               tools/merch.sh (random, 32+ bytes)
 #   RESEND_API_KEY                send-only, this Worker
-# Never set in production: STRIPE_FETCH, PROVIDER_FETCH, RENDER_FETCH, MAIL_FETCH, NOW, PAWPRINT (test seams). Without them part 3 refuses every order.
+# Never set in production: STRIPE_FETCH, PROVIDER_FETCH, RENDER_FETCH, MAIL_FETCH, NOW, PAWPRINT, RESVG_WASM (test seams), and MERCH_RENDER_PROBE
+# (only the one-off cloud test, tools/merch_rtest.mjs, sets it). Without the keys and bindings the Worker refuses every order.
 # (Part 5: without PROVIDER_FETCH the printer adapter uses the global fetch on Cloudflare once MERCH_PROVIDER_KEY is set.)
 
 # [env.test]: wrangler does NOT inherit vars, Durable Object bindings or the browser binding into an environment (S12), so every one is repeated
@@ -76,8 +93,17 @@ class_name = "MerchLedger"                 # the test Worker's own objects: neve
 name = "PRINTS"
 class_name = "MerchPrints"
 
-# [env.test.browser]
-# binding = "BROWSER"                      # part 4
+[[env.test.durable_objects.bindings]]
+name = "RENDER"
+class_name = "MerchRender"
+
+[env.test.browser]
+binding = "BROWSER"                        # part 4: the test Worker's browser time comes out of the same account's 10 minutes a day
+
+[[env.test.services]]
+binding = "SELF"
+service = "doodle-doggo-merch-test"        # the test Worker itself, never the live one
+entrypoint = "RenderGate"
 
 [env.test.vars]
 MERCH_TEST = "1"                           # refuses sk_live / rk_live keys and every origin but the test copy
@@ -100,4 +126,6 @@ MERCH_GIFT_NAME = ""
 MERCH_PROVIDER_STORE = ""                  # part 5: a separate Printful test store (v2 docs: "Create a separate store to test scenarios")
 MERCH_PF_V1_CANCEL = "1"
 MERCH_PF_PRICE_REGION = "worldwide"
+MERCH_RENDER_VIA = "direct"
+MERCH_BROWSER_BUDGET_MS = "60000"          # the test Worker shares the account's 10 browser-minutes: keep it to one minute a day
 # The test Worker's secrets are its own (sandbox keys), set with `wrangler secret put --env test`: the same names as above.
