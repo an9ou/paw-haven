@@ -128,3 +128,11 @@ One throwaway Worker `doodle-doggo-print-test` (workers.dev only, compatibility 
 **Daily capacity on Free from the billed time:** 600 s / 1.46 s (slowest tee) = **about 410 tees a day**; mugs 600 / 0.51 = about 1,170; sheets about 790. At 1.5 files an order, all tees, that is **about 270 orders a day** (the old estimate was 80). Quick Actions at 1 per 10 s (8,640 a day) and Durable Object Free limits (100,000 requests a day, 5 GB) are far above it. Option G has its own budget on top (13,000 GB-s a day of DO time = about 100,000 s at 128 MB, tens of thousands of tees).
 
 **Decision: the Browser Run pipeline**, storing the PNGs in a SQLite Durable Object of `pawhaven-api` (KV only if the owner makes a namespace), with option G (resvg-wasm in that DO) as the first fallback when Browser Run returns 429, and GitHub Actions only as the last resort. Workers Paid is not needed at launch.
+
+## 9. The second cloud test (25 Nov 2026): the real merch Worker
+
+The real Worker code (part 4) ran once on the Free plan as a throwaway Worker and was deleted after (6 Workers and 0 Durable Object
+namespaces before and after). The ledger Durable Object calls Browser Run itself; every browser file was pixel-exact against local Chromium;
+billed browser time was 1.07-1.45 s a tee and 0.47-0.70 s a mug, so section 8’s "about 270 orders a day" holds; the resvg fallback drew all
+six files inside the match limits in under 0.9 s; the bundle is 1.5 MB gzip of the 3 MB allowed; front Worker CPU p99 2.9 ms. Not shown: the
+two 429 texts (the rate probe was answered from Cloudflare’s short cache). The full list is in PART4.md, "The cloud test: results".

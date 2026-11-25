@@ -112,6 +112,9 @@ Miniflare cannot emulate Browser Run's binding, so `P4-miniflare` wraps the real
 
 ## Unverified until the cloud test
 
+**The cloud test ran on 25 Nov 2026: see "The cloud test: results" below.** Settled: the first, the fourth to the eighth points. Still open: the 429
+texts and what an error looks like (results, points 6 and 7).
+
 - Whether a **Durable Object may call the Browser Run binding** (the `direct` default) or only the Worker can (`MERCH_RENDER_VIA = "worker"`).
 - **What `quickAction` returns** on 429 and errors: a Response with the status (assumed and handled) or a throw (also handled).
 - **The rate-limit 429's text** (recorded once by the probe), and whether `X-Browser-Ms-Used` also comes with errors.
@@ -153,6 +156,35 @@ Miniflare cannot emulate Browser Run's binding, so `P4-miniflare` wraps the real
 
 Dry run here (25 Nov 2026): clean; every request printed (the GraphQL read too), nothing sent; a real run without `RTEST_GO` is refused (exit 2).
 `RTEST_FAKE=<cases>` runs the whole kit against an in-memory fake of the API (row F4-kit): nothing is sent, no bundle, no waits.
+
+## The cloud test: results (25 Nov 2026, 14:34 JST; the owner approved it in the choice window)
+
+One real run of `tools/merch_rtest.mjs`. The Worker `doodle-doggo-merch-rtest` was deleted at the end and the account counted the same as before
+(6 Workers, 0 Durable Object namespaces). About 6.5 s of the day’s browser time was used. 13 of the 14 self-tests passed; the one that did not is
+a test-kit matter, not a render matter (point 8).
+
+1. **A Durable Object may call the Browser Run binding**: all 5 direct renders that ran passed. `MERCH_RENDER_VIA = "direct"` stays the default;
+   the way through the front Worker (`"worker"`, the self binding to `RenderGate` added by the second upload) works too (2 of 2), so it stays as
+   the switch to fall back on.
+2. **Pixel-exact**: every browser file (2 tees, 3 mugs direct; 1 tee, 1 mug through the Worker) equals this machine’s Chromium pixel for pixel
+   (`equal_px` 1, `far_px` 0). PNG colour type 6 (RGBA) every time, as the file check wants. Sizes 4500x5400 and 2700x1050; 247-528 KiB.
+3. **Browser time billed** (`X-Browser-Ms-Used`, a fraction of a millisecond, e.g. 526.14): tee 1,065-1,449 ms, mug 465-702 ms; wall time 1.0-1.8 s.
+   That is in line with RENDER_FREE 8 (about 410 tees a day on Free).
+4. **The resvg fallback in a Free Durable Object**: 6 of 6 drawn; tee 646-851 ms wall, mug 298-368 ms; all inside `MATCH` against Chromium
+   (tee mean 0.013-0.020 a channel and 811-1,274 far pixels of 5,000 allowed; mug mean 0.08-0.16 and 590-975 of 3,000).
+5. **The upload**: the metadata form of `migrations`, the `browser` binding and the three SQLite Durable Object classes was accepted as written;
+   bundle 4,416 KiB, gzip 1,522 KiB (Free limit 3 MB gzip). Start-up time 1 ms and 2 ms. Front Worker CPU p50 0.8 ms, p99 2.9 ms (58 requests).
+6. **The rate limit was NOT met**: the probe’s two calls 1 s apart both answered 200 with the very same `X-Browser-Ms-Used` (464.810546875), so
+   the second was most likely Cloudflare’s own short cache of an identical quick action, not a second drawing. So the real text of the rate 429
+   stays unverified, like the daily one. Nothing changes in the code: the ledger never asks more often than every 11 s, an unknown 429 is retried
+   in 11 s, and three in a row call the browser off for an hour (decision 3). A cached answer books its browser time a second time, which only
+   errs on the safe side.
+7. **Still unverified**: both 429 texts; what an error or a timeout of the browser looks like and whether `X-Browser-Ms-Used` comes with it (no
+   browser call failed in the run).
+8. **The one failure** (akita tee, the very first self-test): the kit’s own POST got `404 error code: 1042` from workers.dev in 0.4 s, before the
+   Worker ran: the workers.dev address had only just been switched on and one edge did not know it yet (the print page had already answered
+   once). No browser call was made. The other two tees (dane, golden) passed. If the kit is ever run again: wait for three good answers in a row
+   and retry a 404 with 1042 once. The shop itself runs on a custom domain, where this cannot happen.
 
 ## Review fixes (25 Nov 2026)
 
