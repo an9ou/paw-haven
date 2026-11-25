@@ -13,6 +13,8 @@ export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'ref
 const ZERO_DEC = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']; // Stripe's zero-decimal currencies
 const THREE_DEC = ['BHD', 'JOD', 'KWD', 'OMR', 'TND'];
 const INK = '#5B3D32', PAPER = '#FFFBF3', YELLOW = '#FFE3A1', MINT = '#C8E9CF';
+// the headings: a rounded sans where the reader has one (Apple's, Office's Arial Rounded), else a plain sans; never the system serif
+export const HEAD_FONT = "ui-rounded,'SF Pro Rounded','Arial Rounded MT Bold','Trebuchet MS','Segoe UI',Arial,Helvetica,sans-serif";
 
 /* ---------------- small words ---------------- */
 const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
@@ -36,11 +38,12 @@ export function postDay(t) { const d = new Date(num(t)); return DAYS[d.getUTCDay
 export const PRINT_WORDS = 'printing usually takes 2 to 5 working days';
 const shortId = (id) => String(id || '').replace(/^mo_/, '');
 const clean = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g, '').trim().slice(0, max || 80);
-// one line of the order in words: "Mug with Biscuit", "Tee with your dog, navy, L"; q: how many (the line's own qty by default)
+// one line of the order in words, one wording for every product: "<Product> with <the dog's name>", then a tee's colour and size:
+// "Mug with Biscuit", "Tee with Biscuit, navy, L". "with your dog" only for a line with no name (printed without one: the order keeps the
+// dog's name only when it is printed, lines.js); q: how many (the line's own qty by default)
 export function itemName(l) {
-  const who = l && l.name ? clean(l.name, 40) : 'your dog';
-  if (l && l.product === 'tee') return 'Tee with ' + who + ', ' + clean(l.colour_name || l.colour || '', 30).toLowerCase() + ', ' + clean(l.size || '', 6);
-  return 'Mug with ' + who;
+  const who = l && l.name ? clean(l.name, 40) : 'your dog', tee = !!l && l.product === 'tee';
+  return (tee ? 'Tee' : 'Mug') + ' with ' + who + (tee ? ', ' + clean(l.colour_name || l.colour || '', 30).toLowerCase() + ', ' + clean(l.size || '', 6) : '');
 }
 const itemLine = (l, q) => { q = q == null ? num(l.qty) : q; return (q > 1 ? q + ' × ' : '') + itemName(l); };
 const httpsUrl = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]{1,500}$/.test(u) ? u : null);
@@ -79,7 +82,7 @@ function htmlOf(blocks) {
     if (b[0] === 'gift') {
       const g = giftWords(b[1]);
       return '<div style="margin:0 0 14px;padding:14px 16px;background:' + YELLOW + ';border:2px solid ' + INK + ';border-radius:12px;">' +
-        '<p style="margin:0 0 6px;font-family:Georgia,\'Times New Roman\',serif;font-size:20px;font-weight:bold;">' + escH(g.h) + '</p>' +
+        '<p style="margin:0 0 6px;font-family:' + HEAD_FONT + ';font-size:20px;font-weight:bold;">' + escH(g.h) + '</p>' +
         '<p style="margin:0 0 8px;">' + escH(g.p) + '</p>' +
         '<p style="margin:0 0 8px;">Your code: <span style="display:inline-block;font-family:\'Courier New\',Courier,monospace;font-size:20px;letter-spacing:1px;padding:4px 10px;background:#FFFFFF;border:2px dashed ' + INK + ';border-radius:8px;">' + escH(b[1].code) + '</span></p>' +
         '<p style="margin:0 0 6px;font-size:15px;">' + escH(g.how) + '</p><p style="margin:0;font-size:15px;">' + escH(g.one) + '</p></div>';
@@ -100,7 +103,7 @@ function page(subject, heading, blocks, env, site) {
     '<body style="margin:0;padding:0;background:' + PAPER + ';">' +
     '<div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;font-size:17px;line-height:1.5;color:' + INK + ';">' +
     '<p style="margin:0 0 6px;font-size:15px;">Doodle Doggo merch</p>' +
-    '<h1 style="margin:0 0 16px;font-family:Georgia,\'Times New Roman\',serif;font-size:26px;line-height:1.2;color:' + INK + ';">' + escH(heading) + '</h1>' +
+    '<h1 style="margin:0 0 16px;font-family:' + HEAD_FONT + ';font-size:26px;line-height:1.2;color:' + INK + ';">' + escH(heading) + '</h1>' +
     '<div style="background:#FFFFFF;border:2px solid ' + INK + ';border-radius:14px;padding:18px 18px 4px;">' + htmlOf(blocks) + '</div>' +
     '<div style="margin:18px 4px 0;font-size:14px;line-height:1.5;">' + (f.seller ? '<p style="margin:0 0 6px;">' + escH(f.seller) + '</p>' : '') +
     '<p style="margin:0 0 6px;">' + f.links.map((l) => '<a href="' + escH(l[1]) + '" style="color:' + INK + ';">' + escH(l[0]) + '</a>').join(' &middot; ') + '</p>' +

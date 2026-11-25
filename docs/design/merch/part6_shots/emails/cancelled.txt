@@ -5,7 +5,7 @@ Your order is cancelled
 As you asked, we’ve cancelled your order. Nothing will be printed.
 
 - Mug with Biscuit
-- 2 × Tee with your dog, navy, L
+- 2 × Tee with Biscuit, navy, L
 - Mug with Biscuit
 
 Order: SampleOrder0000000000
