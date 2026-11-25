@@ -3,7 +3,12 @@
 // ledger Durable Object, which holds the tables and loads PawPrint. Webhooks and files send no CORS headers.
 export { MerchLedger } from './ledger.js';
 export { MerchPrints } from './prints.js';
+export { MerchRender } from './resvg.js'; // part 4: the resvg fallback object (nothing loads until its first render)
 import { json, fail, hmacHex, same, nowOf } from './util.js';
+import { gate } from './render.js';
+// part 4, MERCH_RENDER_VIA = "worker": the self service binding SELF points at this entrypoint (never routed from the internet); it calls Browser Run
+// and streams the answer back un-decoded (render.js gate)
+export const RenderGate = { fetch: (req, env) => gate(req, env) };
 
 const LIVE_ORIGINS = ['https://doodledoggo.app', 'https://www.doodledoggo.app'];
 const TEST_ORIGIN = 'https://test.doodledoggo.app';
