@@ -188,4 +188,22 @@ export async function f5() {
     R = replay([pend, () => { const f = fx('estimation_task_completed'); f.body.data.costs.subtotal = 'x'; return f; }]);
     r = await pf.quoteCost(envOf(R), { id: EXT }, [{ line: 1, product: 'mug', provider_variant: 'pf:mug:white', qty: 1, unit: 1999 }], { country_code: 'US' }); eq([r.ok, r.kind], [false, 'down'], 'unreadable costs');
   });
+
+  /* ---------------- finding 9: a variant of ours with no price in the nightly read ---------------- */
+  await T('F5-cost-missing', 'catalogCosts names our variants a full price read left out (not those of a read that failed); the nightly job tells the owner once per change and keeps their last cost', async () => {
+    const drop = (ids) => () => { const f = fx('catalog_prices_tee'); f.body.data.variants = f.body.data.variants.filter((v) => !ids.includes(v.id)); f.body.paging.total = f.body.data.variants.length; return f; };
+    let R = replay(['catalog_prices_mug', drop([4137, 5310])]); let r = await pf.catalogCosts(envOf(R), { regions: [], groups: [] });
+    eq([r.ok, r.data.missing, r.data.variants['tee:pink:M'], r.data.variants['tee:navy:M']], [true, ['tee:pink:M', 'tee:black:4XL'], undefined, 1192], 'two left out: named');
+    R = replay(['catalog_prices_mug', 'server_error_500']); r = await pf.catalogCosts(envOf(R), { regions: [], groups: [] }); eq([r.ok, r.data.missing], [true, []], 'the tee read failed: not "missing" (tried again tomorrow)');
+    R = replay(['catalog_prices_mug', 'catalog_prices_tee']); eq((await pf.catalogCosts(envOf(R), { regions: [], groups: [] })).data.missing, [], 'all priced: none');
+    const w = await world(); await w.init(); w.pf.costs = { variants: { 'tee:pink:M': 1500 }, ship: {} };
+    const night = async (d) => { w.clock.t = Date.parse('2026-12-0' + d + 'T04:30:00+09:00'); const x = await w.call('POST', '/merch/admin/nightly', {}, { authorization: 'Bearer ' + w.env.MERCH_ADMIN_KEY }); ok(x.status === 200, x.text); };
+    const cost = () => w.one("select cost_base from merch_variants where id = 'tee:pink:M'").cost_base;
+    await night(2); eq([cost(), w.owner(/cost_missing/).length], [1500, 0], 'night 1: read, nothing missing');
+    w.pf.costs = { variants: { 'tee:pink:M': 1700 }, ship: {}, unpriced: ['tee:pink:M'] }; await night(3);
+    const m = w.owner(/cost_missing/); ok(m.length === 1 && /tee:pink:M/.test(m[0].text) && /last known cost is kept/.test(m[0].text), 'night 2: the owner is told: ' + (m[0] && m[0].text)); eq(cost(), 1500, 'the old cost stays');
+    await night(4); eq(w.owner(/cost_missing/).length, 1, 'night 3, still missing: not told again');
+    w.pf.costs = { variants: { 'tee:pink:M': 1700 }, ship: {} }; await night(5); eq([cost(), w.L().meta('cost_missing')], [1700, ''], 'night 4: priced again, cleared');
+    w.pf.costs.unpriced = ['tee:pink:M']; await night(6); eq(w.owner(/cost_missing/).length, 2, 'missing again later: told again');
+  });
 }

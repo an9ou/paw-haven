@@ -160,7 +160,7 @@ export function fakePrintful() {
     let mm;
     if (v === 2 && (mm = /^\/catalog-products\/(\d+)\/prices$/.exec(p))) {
       if (!P.costs) return pfErr(404, 'Not found');
-      const variants = Object.entries(PF_VARIANT_IDS).filter(([k]) => PF_PRODUCTS[k.split(':')[0]] === Number(mm[1])).map(([k, id]) => {
+      const variants = Object.entries(PF_VARIANT_IDS).filter(([k]) => PF_PRODUCTS[k.split(':')[0]] === Number(mm[1]) && !(P.costs.unpriced || []).includes(k)).map(([k, id]) => { // unpriced: left out of the reply (part 5 fixes, finding 9)
         const [prod, , size] = k.split(':'), c = P.costs.variants && P.costs.variants[k] != null ? P.costs.variants[k] : unitCost(PRODUCTS[prod], size);
         return { id, techniques: [{ technique_key: prod === 'mug' ? 'sublimation' : 'dtg', technique_display_name: prod === 'mug' ? 'Sublimation' : 'DTG printing', price: (c / 100).toFixed(2), discounted_price: (c / 100).toFixed(2) }] };
       });

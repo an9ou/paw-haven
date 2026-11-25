@@ -215,12 +215,15 @@ async function rate(env, region, variant, qty) {
 }
 // The nightly cost read (TRANSACTIONS 3.3): Printful's catalog prices (v2 /catalog-products/{id}/prices in USD; with no production currency
 // Printful answers the highest price, the safe side for the margin guard) and its Standard rates for one and two items in each region.
-// -> { variants: { <our variant id>: cents }, ship: { '<region>:<group>': [first, extra] } }, as much as could be read; nothing read: the error.
+// -> { variants: { <our variant id>: cents }, ship: { '<region>:<group>': [first, extra] }, missing: [our variant ids] }, as much as could be
+// read; nothing read: the error. missing (review finding 9): our variants with no price in a product read that answered in full (all its pages,
+// in USD), e.g. if v2's variant ids ever differ from v1's; a read that failed is not "missing" (tried again tomorrow). The ledger tells the owner.
+// Paging: limit/offset are sent and paging.total followed, but the prices route does not document them: checked on key day (PART5.md).
 export async function catalogCosts(env, opt) {
   const region = (opt && opt.priceRegion) || env.MERCH_PF_PRICE_REGION || 'worldwide';
   const regions = (opt && opt.regions) || String(env.MERCH_PF_SHIP_REGIONS || Object.keys(SHIP_SAMPLES).join(',')).split(',').map((s) => s.trim()).filter((s) => SHIP_SAMPLES[s]);
   const groups = (opt && opt.groups) || Object.keys(GROUP_SAMPLE);
-  const variants = {}, ship = {}; let first = null, any = false;
+  const variants = {}, ship = {}, whole = new Set(); let first = null, any = false;
   for (const [prod, pid] of Object.entries(PF_PRODUCTS)) {
     const tech = (PLACE[prod] || [])[1];
     for (let offset = 0, page = 0; page < 10; page++) {
@@ -236,7 +239,7 @@ export async function catalogCosts(env, opt) {
         const v1 = cents(p); if (Number.isFinite(v1)) variants[ours] = v1;
       }
       const pg = (r.json && r.json.paging) || {}; offset = Number(pg.offset || 0) + Number(pg.limit || 100);
-      if (!(Number(pg.total) > offset)) break;
+      if (!(Number(pg.total) > offset)) { whole.add(prod); break; }
     }
   }
   for (const reg of regions) for (const g of groups) {
@@ -246,7 +249,8 @@ export async function catalogCosts(env, opt) {
     ship[reg + ':' + g] = [one, Math.max(0, two - one)]; any = true;
   }
   if (!any) return first || { ok: false, kind: 'down' };
-  return { ok: true, data: { variants, ship } };
+  const missing = Object.keys(PF_VARIANT_IDS).filter((v) => whole.has(v.split(':')[0]) && variants[v] == null);
+  return { ok: true, data: { variants, ship, missing } };
 }
 
 // Printful's order (+ its shipments) -> ours: { id, external_id, status, costs: { items, shipping, tax } (cents, null until known),

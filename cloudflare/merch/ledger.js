@@ -1539,6 +1539,10 @@ export class MerchLedger {
     if (c.ok && c.data) this.tx(() => {
       for (const [id, cents] of Object.entries(c.data.variants || {})) { const [p, col, size] = id.split(':'); this.run('insert into merch_variants (id, product, colour, size, cost_base, on_flag, cost_at) values (?, ?, ?, ?, ?, 1, ?) on conflict(id) do update set cost_base = excluded.cost_base, cost_at = excluded.cost_at', id, p, col, size || null, Number(cents), now); }
       for (const [id, fe] of Object.entries(c.data.ship || {})) this.run('insert or replace into merch_ship_costs (id, first, extra, cost_at) values (?, ?, ?, ?)', id, fe[0], fe[1], now);
+      // review finding 9: our variants Printful's read gave no price (their last cost stays, as above: only prices read are written). The owner
+      // hears once per change of that list, not every night; an empty list clears it.
+      const miss = (c.data.missing || []).slice().sort().join(', ');
+      if (miss !== (this.meta('cost_missing') || '')) { this.setMeta('cost_missing', miss); if (miss) this.ownerMail(null, 'cost_missing', 'No price from Printful for: ' + miss + '. The last known cost is kept for each.'); }
     });
     // T2.1-32: a variant that fails the floor alone in any open zone is turned off (and back on when it passes again)
     const regions = new Map(); for (const ct of openCountries(this.env)) { const r = regionOf(ct); if (!regions.has(r)) regions.set(r, ct); }
