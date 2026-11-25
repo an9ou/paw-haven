@@ -1008,7 +1008,7 @@ export class MerchLedger {
       }
       const won = st !== 'lost'; // M3: won, warning_closed, prevented and any other close keep the money
       const wasOpen = o.dispute === 'open';
-      this.set(o.id, { dispute: won ? 'won' : 'lost' });
+      this.set(o.id, { dispute: won ? 'won' : 'lost', dispute_id: o.dispute_id || d.id || null }); // R2-m2: a close that comes first names the dispute
       if (!won) this.giftBack(o.id); // the bank took the money back: a gift not shown yet goes back to the pool
       // Second review (R2-M2): won while the flow went on (not paused): the delay steps go on with their date moved by the time they waited. A
       // paused order moves its date when the owner releases it (admin confirm). R2-M4: lost: no reprint and no reship ever (stopReprints), a
