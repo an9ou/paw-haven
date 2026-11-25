@@ -9,7 +9,7 @@
 //   3. nothing is confirmed, reprinted or reshipped for an order that is cancelled, refunded or in dispute, or for a line that is fully refunded;
 //   4. nothing is confirmed at the printer unless MERCH_PROVIDER_MODE is live;
 //   5. money and mail are rows written in the same transaction as the change (merch_refunds, merch_outbox), sent after commit, retried by the alarm.
-import { nowOf, jstDay, jstHour, nextUtcMidnight, addBusinessDays, json, fail, sha256hex, hmacHex, hex, orderId, ORDER_ID, pngSize, MIN, HOUR, DAY, GRACE, siteOf } from './util.js';
+import { nowOf, jstDay, jstHour, nextUtcMidnight, addBusinessDays, json, fail, sha256hex, hmacHex, hex, orderId, ORDER_ID, pngSize, MIN, HOUR, DAY, GRACE, siteOf, same, keyOf } from './util.js';
 import { buildCatalog, ZONES, zoneOf, regionOf, variantId, ALL_COUNTRIES, PRODUCTS as CATP, SHIP_BY_DAYS, LATE_MORE_DAYS, LATE_MAX_DAYS } from './catalog.js';
 import { checkBasket, priceBasket, marginOf, quoteOut, catalogOut, openCountries, fromOpen, productsOn, taxBehavior, withArtVer } from './lines.js';
 import * as stripe from './stripe.js';
@@ -19,6 +19,7 @@ import * as mail from './mail.js';
 import { adminRoute } from './admin.js';
 
 const TEST_ORIGIN = 'https://test.doodledoggo.app';
+const REVIEW_RESHIP = ['reship_unread', 'reship_part']; // R4-m3: the owner's review holds of a returned parcel (status unchanged, no wake)
 const PNG_MAX = 7.5 * (1 << 20);
 const LINE_RANK = { pending: 0, queued: 1, ready: 2, drafted: 3, confirmed: 4, in_production: 5, shipped: 6, delivered: 7 };
 const DEAD = ['void', 'rejected', 'cancelled', 'replaced'];
@@ -71,6 +72,7 @@ create index if not exists merch_items_status on merch_order_items (status);
 create table if not exists merch_parcels (id text primary key, order_id text, product text, carrier text, tracking_url text, shipped_at integer,
   delivered_at integer, lost_at integer, returned_at integer);
 create index if not exists merch_parcels_order on merch_parcels (order_id);
+create table if not exists merch_parcel_items (parcel_id text, order_id text, line integer, qty integer, primary key (parcel_id, line));
 create table if not exists merch_refunds (id text primary key, order_id text, line integer, qty integer, amount integer, reason text, stripe_refund text,
   status text, created_at integer, next_try_at integer);
 create table if not exists merch_events (id text primary key, order_id text, type text, at integer, note text);
@@ -102,7 +104,10 @@ const MIGRATE = [['merch_orders', 'lease_until', 'integer'], ['merch_orders', 'p
   ['merch_refunds', 'sent_n', 'integer default 0'], ['merch_reprints', 'read_at', 'integer'],
   // third review (R3-m3): the buyer's late cancel that waits for a good printer read (late_ask_at: when they asked); (R3-M2) when the reads
   // of a reprint's Printful order started failing (read_fail: a reprint's pf_read_fail, null once one works)
-  ['merch_orders', 'late_ask_at', 'integer'], ['merch_reprints', 'read_fail', 'integer']];
+  ['merch_orders', 'late_ask_at', 'integer'], ['merch_reprints', 'read_fail', 'integer'],
+  // fourth review (R4-M1): when we first saw a parcel (seen_at) and Printful's reshipment flag (reship: 1, 0, or null when not given); the units
+  // of each line in each parcel are in merch_parcel_items
+  ['merch_parcels', 'seen_at', 'integer'], ['merch_parcels', 'reship', 'integer']];
 
 let PAWPRINT = null; // loaded once per object, lazily: about 30 ms of CPU, so never in the front Worker (Free: 10 ms a request)
 async function loadPawPrint(env) {
@@ -283,6 +288,11 @@ export class MerchLedger {
   }
   coolMs() { const m = Number(this.env.MERCH_COOL_MIN); return (Number.isFinite(m) && m > 0 ? m : 60) * MIN; }
   live() { return this.env.MERCH_PROVIDER_MODE === 'live'; }
+  // the printer that makes a draft now (merch_orders.provider): the sandbox's stand-in (test_printer.js, the key test-printer) or Printful.
+  // Fourth review (not counted): a draft the stand-in made (run 1) is never read, deleted or cancelled at real Printful once a real key is set
+  // (run 2): its id means nothing there (standIn)
+  pfName() { return keyOf(this.env.MERCH_PROVIDER_KEY) === 'test-printer' ? 'stand-in' : 'printful'; }
+  standIn(o) { return !!o && o.provider === 'stand-in' && this.pfName() !== 'stand-in'; }
   // can a new order be taken? -> { ok } or { ok: false, why }
   gate() {
     const now = this.now(), env = this.env;
@@ -294,6 +304,14 @@ export class MerchLedger {
     return { ok: true };
   }
   shut(g) { return fail('merch_closed', 503, g.why === 'off' ? { resting: true } : {}); }
+  // fourth review (R4-m4): the test Worker's order server is public, so every route that makes an order, moves money or calls the printer needs
+  // the shared test token (X-Merch-Test-Token = MERCH_TEST_TOKEN, a random value tools/merch_test_build.mjs puts in the test Worker's variables
+  // and in the test page's config behind the test password). No token set: refused (fail closed). Never asked on the live Worker.
+  testToken(req) {
+    if (this.env.MERCH_TEST !== '1') return true;
+    const want = keyOf(this.env.MERCH_TEST_TOKEN), got = String(req.headers.get('x-merch-test-token') || '').trim();
+    return want.length >= 32 && same(got, want);
+  }
   variantOff() { const off = new Set(this.q('select id from merch_variants where on_flag = 0').map((r) => r.id)); return (v) => off.has(v); }
   costs() {
     const v = new Map(this.q('select id, cost_base from merch_variants where cost_base is not null').map((r) => [r.id, r.cost_base]));
@@ -346,10 +364,11 @@ export class MerchLedger {
     });
   }
   async rCheckout(req, ip) {
-    const ih = await this.hashOf(ip, 'ip'), body = await this.body(req), origin = req.headers.get('x-merch-origin') || '';
+    const tok = this.testToken(req), ih = await this.hashOf(ip, 'ip'), body = await this.body(req), origin = req.headers.get('x-merch-origin') || '';
     const r = this.tx(() => {
       if (!this.rate('checkout:ip:' + ih, 10)) return { res: fail('slow_down', 429) };
       const g = this.gate(); if (!g.ok) return { res: this.shut(g) };
+      if (!tok) return { res: fail('test_only', 403) }; // R4-m4: the test Worker takes an order only with the shared test token
       if (!body) return { res: fail('bad_json', 400) };
       if (this.flagged('ip:' + ih)) return { res: fail('not_available', 403) };
       if (this.env.MERCH_TEST !== '1' && origin === TEST_ORIGIN) return { res: fail('not_available', 403) }; // the live Worker refuses the test copy
@@ -408,6 +427,7 @@ export class MerchLedger {
       return json(this.page(o));
     }
     if (!act || m !== 'POST') return fail('not_found', 404);
+    if (!this.testToken(req)) return fail('test_only', 403); // R4-m4: the order's buttons move money and call the printer
     if (!this.tx(() => this.rate('act:ip:' + ih, 10))) return fail('slow_down', 429);
     if (!(ORDER_ID.test(id) && this.order(id))) return fail('not_found', 404);
     const body = (await this.body(req)) || {};
@@ -593,7 +613,7 @@ export class MerchLedger {
           out = r.ok ? json({ ok: true, again: r.ask_again || undefined, say: r.ask_again ? 'Thanks! We’re printing it again first, then we’ll email you to check the address once more before it goes.' : 'Thanks! We’ll send it there.' }) : fail(r.error || 'busy', r.status || 503);
         }
       } else {
-        const r = o.provider_order ? await provider.update(this.env, o.provider_order, rec) : await this.makeDraft(o, rec);
+        const r = o.provider_order && !this.standIn(o) ? await provider.update(this.env, o.provider_order, rec) : await this.makeDraft(o, rec); // a stand-in draft: a new one
         if (r && r.kind === 'address') out = fail('bad_address', 400, { field: 'address' });
         else if (!r || !r.ok) out = fail('busy', 503);
         else this.tx(() => { const x = this.order(o.id); if (x.status === 'held' && x.hold === 'address') this.set(o.id, { status: 'paid', hold: null, why: null, hold_at: null, next_try_at: this.now() }, ['held']); });
@@ -659,6 +679,7 @@ export class MerchLedger {
     }
     // N3. A reject (render, provider) is told by refundLines / tellRejects (one email for the lines rejected together); a refund that leaves
     // nothing is "refunded in full" (part 6: before, an order whose only line could not be rendered got no email at all)
+    this.endReview(o.id); // R4-m3: the owner's refund of what came back ends their review hold of it
     if (!quiet) this.tellRefunds(o.id, [rid], reason, l.line);
     return { id: rid, amount, last: after === 0 };
   }
@@ -813,9 +834,9 @@ export class MerchLedger {
     this.tx(() => {
       const t = this.now(), x = this.one('select * from merch_outbox where id = ?', mid); if (!x || x.status !== 'queued') return;
       if (res.sent) { this.run("update merch_outbox set status = 'sent', sent_at = ?, next_try_at = null, last_error = null where id = ?", t, mid); this.mem.delete(mid); return; }
-      const tries = (x.tries || 0) + 1, final = res.why === 'not_set_up' || res.why === 'no_address' || tries >= MAIL_TRIES;
+      const tries = (x.tries || 0) + 1, final = res.why === 'not_set_up' || res.why === 'no_address' || res.why === 'test_not_listed' || tries >= MAIL_TRIES; // R4-m4: not on the test allow list
       this.run('update merch_outbox set tries = ?, last_error = ?, status = ?, next_try_at = ? where id = ?', tries, res.why || 'error', final ? 'failed' : 'queued', final ? null : t + MAIL_BACKOFF[Math.min(tries, MAIL_BACKOFF.length) - 1], mid);
-      if (final && x.who === 'buyer' && res.why !== 'not_set_up') this.ownerMail(x.order_id, 'mail_failed', 'The "' + x.kind + '" email could not be sent (' + (res.why || 'error') + ', ' + tries + ' tries). Please write to the buyer from the Stripe dashboard.');
+      if (final && x.who === 'buyer' && res.why !== 'not_set_up' && res.why !== 'test_not_listed') this.ownerMail(x.order_id, 'mail_failed', 'The "' + x.kind + '" email could not be sent (' + (res.why || 'error') + ', ' + tries + ' tries). Please write to the buyer from the Stripe dashboard.');
     });
   }
 
@@ -873,9 +894,10 @@ export class MerchLedger {
   // the Printful draft of a cancelled, refunded or disputed order (draft_del = 1 is the durable claim; the alarm retries)
   async delDraft(id) {
     const o = this.order(id); if (!o || !o.draft_del || !o.provider_order) return;
-    const po = o.provider_order, r = await provider.deleteDraft(this.env, po);
+    const po = o.provider_order, gone = this.standIn(o), r = gone ? { ok: true } : await provider.deleteDraft(this.env, po); // only the stand-in had it
     this.tx(() => {
       const x = this.order(id); if (!x || x.provider_order !== po || !x.draft_del) return;
+      if (gone) this.event('x:standin_gone:' + po, id, 'stand_in_draft', 'not sent to Printful: ' + po);
       if (!r.ok) return this.next(id, this.now() + 15 * MIN); // T2.2-41
       // gone: a later draft (a dispute won and released) uses a new external id, <order>-d<n>
       this.set(id, { draft_del: 0, provider_order: null, provider_cost: null, draft_n: (x.draft_n || 0) + 1 });
@@ -885,7 +907,7 @@ export class MerchLedger {
   }
   async provCancel(id) { // T2.1-31: the late part, when none of the Printful order has shipped (N5)
     const o = this.order(id); if (!o || !o.pcancel) return;
-    const r = o.provider_order ? await provider.cancel(this.env, o.provider_order) : { ok: false, kind: 'cannot' };
+    const r = this.standIn(o) ? { ok: true } : o.provider_order ? await provider.cancel(this.env, o.provider_order) : { ok: false, kind: 'cannot' };
     this.tx(() => {
       if (!r.ok && (r.kind === 'down' || r.kind === 'timeout')) return this.next(id, this.now() + 15 * MIN);
       this.run('update merch_orders set pcancel = 0 where id = ?', id);
@@ -1121,6 +1143,8 @@ export class MerchLedger {
     if (!this.tx(() => this.rate('hook:ip:' + ih, 300))) return fail('slow_down', 429); // S8: a flood of hints writes no rows and triggers no printer reads
     const raw = await req.text(); if (raw.length > 600000) return fail('too_big', 413);
     if (this.live() && !this.env.MERCH_PROVIDER_WEBHOOK_SECRET) return fail('signing_required', 401); // S8: unsigned hints only while not live
+    // fourth review (R4-m4): on the test Worker an unsigned hint (no webhook secret set) needs the test token, so a stranger cannot make it read
+    if (!this.env.MERCH_PROVIDER_WEBHOOK_SECRET && !this.testToken(req)) return fail('signing_required', 401);
     const h = await provider.parseHook(this.env, raw, req.headers);
     if (h && h.bad) return fail('bad_signature', 401);
     const eid = 'p:' + (h && h.id ? h.id : await sha256hex(raw));
@@ -1194,7 +1218,7 @@ export class MerchLedger {
       const ls = s.items.map(lineOf).filter(Boolean); if (!ls.length) continue;
       let p = this.one('select * from merch_parcels where id = ?', s.id);
       if (!p) {
-        this.run('insert into merch_parcels (id, order_id, product, carrier, tracking_url, shipped_at) values (?, ?, ?, ?, ?, ?)', s.id, id, ls[0].product, s.carrier, s.tracking_url, s.shipped_at || now);
+        this.run('insert into merch_parcels (id, order_id, product, carrier, tracking_url, shipped_at, seen_at, reship) values (?, ?, ?, ?, ?, ?, ?, ?)', s.id, id, ls[0].product, s.carrier, s.tracking_url, s.shipped_at || now, now, s.reship == null ? null : s.reship ? 1 : 0);
         for (const l of ls) {
           if (!refunded) up(l, 'shipped', { parcel_id: s.id }); else this.setLine(id, l.line, { parcel_id: s.id });
           this.setLine(id, l.line, { keep_until: (s.shipped_at || now) + 180 * DAY });
@@ -1206,41 +1230,63 @@ export class MerchLedger {
           this.ownerMail(id, 'refunded_shipped', 'Parcel ' + s.id + ' has ' + paid.map((l) => 'line ' + l.line).join(', ') + ', already refunded in full.');
         p = this.one('select * from merch_parcels where id = ?', s.id);
       }
+      this.parcelUnits(id, s, lineOf, p);
       if (s.delivered_at && !p.delivered_at) { this.run('update merch_parcels set delivered_at = ? where id = ?', s.delivered_at, s.id); if (!refunded) for (const l of ls) up(l, 'delivered'); } // T2.1-17
       if (s.returned && !p.returned_at) { // T2.2-45: back at Printful; the status stays, the hold says why
         this.run('update merch_parcels set returned_at = ? where id = ?', now, s.id);
-        back.push({ id: String(s.id), had: this.lines(id).filter((l) => l.parcel_id === String(s.id) && !DEAD.includes(l.status) && l.refunded_qty < l.qty).length });
+        back.push({ id: String(s.id), had: this.lines(id).filter((l) => this.inParcel(id, l, String(s.id)) && !DEAD.includes(l.status) && l.refunded_qty < l.qty).length });
       }
     }
-    // pass 2 (R3-M1): lines in a parcel that came back, found in a parcel of this read that did not (the newest one if several)
+    // pass 2 (R3-M1): lines in a parcel that came back, found in a parcel of this read that did not (the newest one if several). Fourth review
+    // (R4-M1): only a parcel that is a reship of it (Printful's reshipment flag, or with no flag a parcel first seen at or after the return), and
+    // never a line split over several parcels (some units in one, some in another): pass 3 counts those by their units
     const gone = new Set(this.q('select id from merch_parcels where order_id = ? and returned_at is not null', id).map((p) => String(p.id)));
     const out = gone.size ? (d.shipments || []).filter((s) => !s.returned && !gone.has(String(s.id)) && this.one('select id from merch_parcels where id = ? and order_id = ?', String(s.id), id))
       .sort((a, b) => (Number(b.shipped_at) || 0) - (Number(a.shipped_at) || 0) || String(b.id).localeCompare(String(a.id))) : [];
     if (out.length) for (const l of this.lines(id)) {
       if (DEAD.includes(l.status) || l.refunded_qty >= l.qty || !gone.has(String(l.parcel_id))) continue;
-      const to = out.find((s) => s.items.some((e) => { const x = lineOf(String(e)); return x && x.line === l.line; }));
+      const ps = this.lineParcels(id, l); if (this.split(l, ps)) continue;
+      const to = out.find((s) => { const p = ps.find((x) => String(x.id) === String(s.id)); return p && this.reshipOf(p, ps); });
       if (to) { this.setLine(id, l.line, { parcel_id: String(to.id) }); this.event('x:reship_moved:' + id + ':' + l.line + ':' + to.id, id, 'reshipped_line', l.parcel_id + ' -> ' + to.id); }
     }
-    // pass 3: a parcel that came back in this read, with lines still in it (not reshipped): the buyer is asked for an address
+    // pass 3: a parcel that came back in this read, with lines still in it (not reshipped): the buyer is asked for an address. R4-M1: a line
+    // split over parcels whose units came back and were not reshipped is held for the owner (a reprint makes a whole line again and the address
+    // form reships whole lines, so part of a line is the owner's call: merch.sh refund <order> <line> <qty>, or reprint), the buyer told we're
+    // checking. R4-m3: an order already held for the owner's check of a reship stays so (the owner hears of this parcel too), never back to reship.
     for (const b of back) {
-      const x = this.order(id), live = this.lines(id).filter((l) => l.parcel_id === b.id && !DEAD.includes(l.status) && l.refunded_qty < l.qty);
+      const x = this.order(id), inB = this.lines(id).filter((l) => !DEAD.includes(l.status) && l.refunded_qty < l.qty && this.inParcel(id, l, b.id));
+      const live = inB.filter((l) => l.parcel_id === b.id && !this.split(l, this.lineParcels(id, l)));
+      const part = inB.filter((l) => this.partWaiting(id, l, null) > 0);
       // M4: nothing to reship on a refunded or cancelled order, in a dispute, or when its lines are refunded: the buyer is not asked
       // second review (R2-M4): nor after a lost dispute (the bank paid the buyer back)
       const onhold = x.status === 'held' && x.hold === 'provider' && x.why === 'onhold';
+      const partWords = () => part.map((l) => this.partWaiting(id, l, null) + ' of ' + l.qty + ' of line ' + l.line).join(', ');
+      const words = () => live.map((l) => 'line ' + l.line).concat(part.length ? [partWords()] : []).join(', ');
       if (ENDED.includes(x.status) || x.dispute === 'open' || x.dispute === 'lost' || !b.had || (x.status === 'held' && !onhold)) this.ownerMail(id, 'returned', 'A parcel came back to Printful (' + b.id + '); nothing is reshipped (refunded, cancelled, in a dispute or held).');
-      else if (live.length) {
-        // R3-M3 (its other side): Printful's own hold never hides the reship; the order goes on posted, the owner hears of the hold
-        if (onhold) this.ownerMail(id, 'provider_hold', 'A parcel came back while Printful holds this order: the reship (address form, 7 days) goes on here. Check the hold in the Printful dashboard.');
-        this.set(id, Object.assign({ hold: 'reship', hold_at: now, next_try_at: now + 7 * DAY }, onhold ? { status: 'part_shipped', why: null } : {}));
-        this.buyerMail(id, 'address', 'me_' + id + '_address_' + b.id, null, { reship: b.id });
-      } // else: every line of it is in a new parcel already (Printful reshipped it): nothing to ask
+      else if (x.hold === 'review' && REVIEW_RESHIP.includes(x.why)) {
+        if (live.length || part.length) this.ownerMail(id, 'returned_review', 'Another parcel came back to Printful (' + b.id + ': ' + words() + ') while this order is held for your check (' + x.why + '). Nothing is reshipped or refunded by itself: check the Printful order, then refund (merch.sh refund) or reprint (merch.sh reprint) what was not reshipped.');
+      } else if (part.length && x.hold !== 'reship') {
+        if (onhold) this.ownerMail(id, 'provider_hold', 'A parcel came back while Printful holds this order. Check the hold in the Printful dashboard.');
+        this.set(id, Object.assign({ hold: 'review', why: 'reship_part', hold_at: now }, onhold ? { status: 'part_shipped' } : {}));
+        this.event('x:reship_part:' + id + ':' + b.id, id, 'reship_part', words());
+        this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + words() + ' (a line posted in more than one parcel). Nothing is reshipped or refunded by itself. Check the Printful order: if those units were not reshipped, refund them (merch.sh refund <order> <line> <qty> "returned") or reprint the line (merch.sh reprint: the whole line).');
+        this.buyerMail(id, 'checking', 'me_' + id + '_checking_' + b.id, null, null);
+      } else {
+        if (part.length) this.ownerMail(id, 'reship_part', 'Parcel ' + b.id + ' came back to Printful with ' + partWords() + ' (a line posted in more than one parcel), while a reship waits for the buyer’s address. Those units are not in the address form or the 7-day refund: if Printful did not reship them, refund them (merch.sh refund <order> <line> <qty> "returned") or reprint the line (merch.sh reprint).');
+        if (live.length) {
+          // R3-M3 (its other side): Printful's own hold never hides the reship; the order goes on posted, the owner hears of the hold
+          if (onhold) this.ownerMail(id, 'provider_hold', 'A parcel came back while Printful holds this order: the reship (address form, 7 days) goes on here. Check the hold in the Printful dashboard.');
+          this.set(id, Object.assign({ hold: 'reship', hold_at: now, next_try_at: now + 7 * DAY }, onhold ? { status: 'part_shipped', why: null } : {}));
+          this.buyerMail(id, 'address', 'me_' + id + '_address_' + b.id, null, { reship: b.id });
+        } // else: every line of it is in a new parcel already (Printful reshipped it): nothing to ask
+      }
     }
     // R2-M3: every returned line is in a new parcel again (Printful reshipped it) and no reship waits for an address: the reship hold ends
-    // (R3-M2: also the owner's review hold of a reship whose Printful order could not be read)
+    // (R3-M2: also the owner's review hold of a reship whose Printful order could not be read; R4-M1, R4-m3: or of part of a line: endReview)
     o = this.order(id);
-    if ((o.hold === 'reship' || (o.hold === 'review' && o.why === 'reship_unread')) && !this.reshipLines(o).length && !this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) {
+    if (o.hold === 'reship' && !this.reshipLines(o).length && !this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) {
       this.set(id, { hold: null, hold_at: null, why: null }); this.event('x:reshipped:' + id + ':' + now, id, 'reshipped_at_printer');
-    }
+    } else this.endReview(id);
     if (refunded) return; // T2.2-21: parcels are stored but change no status
     o = this.order(id);
     const live = this.lines(id).filter((l) => !DEAD.includes(l.status) && l.refunded_qty < l.qty);
@@ -1332,7 +1378,8 @@ export class MerchLedger {
     if (this.pfMemo.has(po)) return this.pfMemo.get(po);
     if (this.pfReads >= PF_READS_TICK) { this.tx(() => this.run('update merch_orders set pf_wait = ?, next_try_at = min(coalesce(next_try_at, ?), ?) where id = ?', this.now() + MIN, this.now() + MIN, this.now() + MIN, o.id)); return { ok: false, capped: true }; }
     this.pfReads++;
-    const snap = this.pfSnap(this.order(o.id)), g = await provider.get(this.env, po);
+    // a stand-in draft (run 1) is never read at real Printful: a failed read (counted; the owner hears after 24 hours, SANDBOX.md D6)
+    const snap = this.pfSnap(this.order(o.id)), g = rp == null && this.standIn(o) && String(po) === String(o.provider_order) ? { ok: false, kind: 'stand_in' } : await provider.get(this.env, po);
     const r = g.ok && g.data ? { ok: true, data: g.data, snap } : { ok: false, kind: g.kind };
     this.pfMemo.set(po, r);
     if (!r.ok) this.tx(() => (rp == null ? this.readFailed(o.id, po, g.kind, quiet) : this.rpReadFailed(o.id, rp, po, g.kind, quiet)));
@@ -1444,6 +1491,7 @@ export class MerchLedger {
     const ls = this.reshipLines(x).map((l) => 'line ' + l.line).join(', ');
     this.set(id, { hold: 'review', why: 'reship_unread', hold_at: now, next_try_at: null });
     this.event('x:reship_unread:' + id + ':' + now, id, 'reship_unread', String(po));
+    this.buyerMail(id, 'checking', 'me_' + id + '_checking_' + now, null, null); // R4-m3: the buyer was asked for an address: one kind word, never silence
     this.ownerMail(id, 'reship_unread', 'A returned parcel (' + ls + ') waited 7 days for the buyer’s address, but Printful order ' + po + (rp == null ? '' : ' (the reprint ' + id + '-r' + rp + ')') + ' could not be read since ' + new Date(since).toISOString().slice(0, 16) + ' UTC (' + (r.kind || 'error') + '), so nothing was refunded. Check it in the Printful dashboard: if it was not reshipped, refund those lines (merch.sh refund) or reprint them (merch.sh reprint); if Printful reshipped it, there is nothing to do. Nothing more happens here by itself.');
   }
   async workPaid(o) {
@@ -1748,7 +1796,7 @@ export class MerchLedger {
   adopt(id, d, ext) {
     this.tx(() => {
       const x = this.order(id), now = this.now();
-      const drop = (why) => { this.set(id, { provider: 'printful', provider_order: d.id, draft_del: 1, next_try_at: now }); this.event('x:draft_stale:' + d.id, id, 'draft_stale', why); this.fx.push({ t: 'deldraft', order: id }); };
+      const drop = (why) => { this.set(id, { provider: this.pfName(), provider_order: d.id, draft_del: 1, next_try_at: now }); this.event('x:draft_stale:' + d.id, id, 'draft_stale', why); this.fx.push({ t: 'deldraft', order: id }); };
       if (!this.draftable(x)) return drop(x.status + '/' + (x.hold || '') + '/' + (x.dispute || '')); // cancelled, refunded or disputed during the call: delete it, change nothing else
       const inDraft = new Set((d.items || []).map((i) => i.external_id));
       const ready = this.lines(id).filter((l) => l.status === 'ready' && (!inDraft.size || inDraft.has(ext + '_' + l.line)));
@@ -1757,7 +1805,7 @@ export class MerchLedger {
       const drafted = this.lines(id).filter((l) => l.status === 'drafted'); // the estimate covers the drafted lines only
       const cost = (d.costs.items || 0) + (d.costs.shipping || 0);
       const est = marginOf(this.cat, x.country, drafted, x.subtotal, x.ship_fee, now, this.costs()).W;
-      const cols = { provider: 'printful', provider_order: d.id, provider_cost: cost, tries: 0, last_error: null };
+      const cols = { provider: this.pfName(), provider_order: d.id, provider_cost: cost, tries: 0, last_error: null };
       // part 5: Printful v2 may give a draft no costs (calculation failed, or not in USD; review finding 5: or a number we cannot read): never
       // confirmed blind; the owner looks (a day, then refunded)
       if (!Number.isFinite(d.costs.items) || !Number.isFinite(d.costs.shipping)) { Object.assign(cols, { provider_cost: null, status: 'held', hold: 'review', why: 'cost_unknown', hold_at: now, next_try_at: now + DAY }); this.ownerMail(id, 'cost', 'Printful’s draft has no costs we can read: confirm (merch.sh confirm) or refund.'); }
@@ -1818,7 +1866,57 @@ export class MerchLedger {
     }
     return out;
   }
-  reshipLines(o) { const ps =this.q('select id from merch_parcels where order_id = ? and returned_at is not null', o.id).map((p) => p.id); return this.lines(o.id).filter((l) => ps.includes(l.parcel_id) && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty); }
+  // R4-M1: a line split over parcels is never a reship line (the address form and the 7-day refund take whole lines): partLines has those
+  reshipLines(o) { const ps =this.q('select id from merch_parcels where order_id = ? and returned_at is not null', o.id).map((p) => p.id); return this.lines(o.id).filter((l) => ps.includes(l.parcel_id) && !['replaced', 'cancelled', 'void', 'rejected'].includes(l.status) && l.refunded_qty < l.qty && !this.split(l, this.lineParcels(o.id, l))); }
+  /* ---- fourth review (R4-M1): the units of each line in each parcel (merch_parcel_items) ---- */
+  // sync, pass 1: the units of each line in a shipment of a read, stored once per parcel (a shipment item with no quantity: null, the whole
+  // line); and Printful's reshipment flag when it comes later than the parcel
+  parcelUnits(id, s, lineOf, p) {
+    if (s.reship != null && p.reship == null) this.run('update merch_parcels set reship = ? where id = ?', s.reship ? 1 : 0, s.id);
+    if (this.one('select 1 as x from merch_parcel_items where parcel_id = ? limit 1', String(s.id))) return;
+    const per = new Map();
+    for (const u of s.units || s.items.map((e) => ({ ext: e, qty: null }))) {
+      const l = lineOf(String(u.ext)); if (!l) continue;
+      const was = per.has(l.line) ? per.get(l.line) : 0; per.set(l.line, was == null || u.qty == null ? null : was + u.qty);
+    }
+    for (const [line, q] of per) this.run('insert or ignore into merch_parcel_items (parcel_id, order_id, line, qty) values (?, ?, ?, ?)', String(s.id), id, line, q);
+  }
+  // the stored parcels of a line with its units in each (q); a parcel stored before merch_parcel_items, or with no quantity: the whole line
+  lineParcels(id, l) {
+    const ps = this.q('select p.*, i.qty as q from merch_parcel_items i join merch_parcels p on p.id = i.parcel_id where i.order_id = ? and i.line = ?', id, l.line);
+    if (l.parcel_id && !ps.some((p) => String(p.id) === String(l.parcel_id))) { const p = this.one('select * from merch_parcels where id = ?', String(l.parcel_id)); if (p) ps.push(Object.assign(p, { q: null })); }
+    for (const p of ps) if (p.q == null) p.q = l.qty;
+    return ps;
+  }
+  inParcel(id, l, pid) { return String(l.parcel_id) === String(pid) || !!this.one('select 1 as x from merch_parcel_items where parcel_id = ? and order_id = ? and line = ?', String(pid), id, l.line); }
+  split(l, ps) { return ps.some((p) => p.q < l.qty); } // some units of the line in one parcel, some in another
+  // a parcel that posts again units that came back: Printful says so (reshipment), or, when it does not say, it was first seen at or after a
+  // parcel of this line was marked returned. Printful saying "not a reshipment" is a split, never a reship.
+  reshipOf(p, ps) {
+    if (p.reship === 1) return true; if (p.reship === 0) return false;
+    const back = ps.filter((x) => x.returned_at != null && String(x.id) !== String(p.id)).map((x) => x.returned_at);
+    return back.length > 0 && p.seen_at != null && p.seen_at >= Math.min(...back);
+  }
+  // the units of a split line that came back and were not reshipped (0 for a whole line); since: refunds of this line made from then on count
+  // as settling them (the owner was asked to refund them: endReview); null: none count
+  partWaiting(id, l, since) {
+    if (DEAD.includes(l.status) || l.status === 'replaced' || l.refunded_qty >= l.qty) return 0;
+    const ps = this.lineParcels(id, l); if (!this.split(l, ps)) return 0;
+    const sum = (a) => a.reduce((n, p) => n + (Number(p.q) || 0), 0);
+    const back = sum(ps.filter((p) => p.returned_at != null)), again = sum(ps.filter((p) => p.returned_at == null && this.reshipOf(p, ps)));
+    const paid = since == null ? 0 : Number((this.one("select coalesce(sum(qty), 0) as n from merch_refunds where order_id = ? and line = ? and created_at >= ? and coalesce(status, '') != 'failed'", id, l.line, since) || {}).n || 0);
+    return Math.max(0, Math.min(back - again - paid, l.qty - l.refunded_qty));
+  }
+  partLines(o, since) { return this.lines(o.id).filter((l) => this.partWaiting(o.id, l, since) > 0); }
+  // R4-m3: the owner's review hold of a returned parcel (reship_unread: its Printful order could not be read; reship_part: part of a line came
+  // back) ends once nothing of it is left: no reship line, no part of a line (refunded since the hold began, or reprinted), no reprint waiting
+  // for an address. Sync; after a Printful read, the owner's refund (lineRefund) and reprint.
+  endReview(id) {
+    const o = this.order(id); if (!o || o.hold !== 'review' || !REVIEW_RESHIP.includes(o.why)) return false;
+    if (this.reshipLines(o).length || this.partLines(o, o.hold_at).length || this.one("select id from merch_reprints where order_id = ? and status = 'need_address'", id)) return false;
+    this.set(id, { hold: null, hold_at: null, why: null }); this.event('x:review_done:' + id + ':' + this.now(), id, 'reship_review_done', o.why);
+    return true;
+  }
   // new line rows (101, 102 ...) from the stored PNGs (or a re-render with the same art_ver); a Printful order <order>-r<n>, confirmed at once (live only)
   async reprint(o, lineNums, providerOrder, rec, why, leased) {
     const res = this.tx(() => {
@@ -1843,6 +1941,7 @@ export class MerchLedger {
       if (why === 'reship') { cols.hold = null; cols.hold_at = null; }
       this.set(x.id, cols);
       this.event('x:reprint:' + rid, x.id, 'reprint', why || 'owner');
+      this.endReview(x.id); // R4-m3: a reprint of what came back ends the owner's review hold of it
       return { rid, n, gone };
     });
     if (res.error) return res;

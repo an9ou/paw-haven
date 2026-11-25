@@ -12,6 +12,7 @@ export const DOG = SAMPLES.map((d) => d.r);              // akita Mochi, dane Du
 export const R = DOG.map((r) => PP.merchEncode(r));       // one-dog recipes
 export const MIN = 60e3, HOUR = 36e5, DAY = 864e5;
 export const T0 = Date.parse('2026-12-01T10:00:00+09:00');
+export const TEST_TOKEN = 'tok_for_tests_0123456789abcdefghijklmnopqrstuv'; // the test Worker's shared token in the harness (R4-m4)
 
 let passes = 0, fails = 0; const rows = new Map(); let only = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 export const stats = () => ({ passes, fails, rows });
@@ -34,7 +35,9 @@ export async function world(o) {
   const env = Object.assign({ NOW: () => clock.t, MERCH_FROM: '2026-11-25T00:00:00+09:00', MERCH_COUNTRIES: 'all,-uk_eu,-BR,-KR', MERCH_PRODUCTS: 'mug,tee', MERCH_DAY_CAP: '10',
     MERCH_PROVIDER_MODE: 'live', MERCH_STRIPE_KEY: 'sk_test_fake', MERCH_STRIPE_WEBHOOK_SECRET: stripe.secret, MERCH_HASH_KEY: 'hash-key-for-tests', MERCH_FILE_KEY: 'file-key-for-tests',
     MERCH_ADMIN_KEY: 'admin-key-for-tests-0123', MERCH_PROVIDER_KEY: 'pf-test-key', MERCH_PROVIDER_WEBHOOK_SECRET: pf.secret, RESEND_API_KEY: 're_test', MERCH_OWNER_TO: 'owner@example.test',
-    STRIPE_FETCH: stripe.fetch, PROVIDER_FETCH: pf.fetch, RENDER_FETCH: rd.fetch, MAIL_FETCH: mail.fetch, MERCH_TIMEOUT_MS: '150', PAWPRINT: PP }, o.env || {});
+    STRIPE_FETCH: stripe.fetch, PROVIDER_FETCH: pf.fetch, RENDER_FETCH: rd.fetch, MAIL_FETCH: mail.fetch, MERCH_TIMEOUT_MS: '150', PAWPRINT: PP,
+    // fourth review (R4-m4): read only on the test Worker (MERCH_TEST = "1"): its shared token (w.raw sends it there) and the buyer email allow list
+    MERCH_TEST_TOKEN: TEST_TOKEN, MERCH_TEST_MAIL_TO: 'buyer@example.test' }, o.env || {});
   for (const k of Object.keys(env)) if (env[k] === undefined) delete env[k];
   env.LEDGER = namespace(MerchLedger, env);
   const prints = namespace(MerchPrints, env), pget = prints.get;
@@ -54,7 +57,8 @@ export async function world(o) {
   w.order = (id) => w.L().order(id);
   w.lines = (id) => w.L().lines(id);
   w.raw = async (method, p, body, headers) => {
-    const h = Object.assign({ 'CF-Connecting-IP': '10.9.' + ((++ipN >> 8) & 255) + '.' + (ipN & 255) }, headers || {});
+    const h = Object.assign({ 'CF-Connecting-IP': '10.9.' + ((++ipN >> 8) & 255) + '.' + (ipN & 255) }, env.MERCH_TEST === '1' && env.MERCH_TEST_TOKEN ? { 'x-merch-test-token': env.MERCH_TEST_TOKEN } : {}, headers || {});
+    for (const k of Object.keys(h)) if (h[k] == null) delete h[k]; // { 'x-merch-test-token': null }: sent without it
     let b; if (body !== undefined && body !== null) { b = typeof body === 'string' ? body : JSON.stringify(body); if (!h['content-type']) h['content-type'] = 'application/json'; }
     return worker.fetch(new Request('https://merch-api.test' + p, { method, headers: h, body: method === 'GET' || method === 'OPTIONS' ? undefined : b }), env, { waitUntil() {} });
   };

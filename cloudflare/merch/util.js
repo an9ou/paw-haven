@@ -63,6 +63,9 @@ export function fetcher(f) {
 // else the global fetch, but ONLY on Cloudflare's runtime and ONLY with the service's key. Node never gets the global fetch (onWorkers() is
 // false there), so a test without the seam has no service at all and nothing reaches the network. null = not set up.
 export const onWorkers = () => typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
+// fourth review (R4-m2): a key as set in the dashboard, trimmed (a pasted key with a space or a tab around it): every check and every header
+// uses this, so padding never changes which mode we think we are in
+export const keyOf = (v) => (v == null ? '' : String(v).trim());
 export function netOf(seam, key) {
   const f = fetcher(seam); if (f) return f;
   return key && onWorkers() && typeof fetch === 'function' ? (u, i) => fetch(u, i) : null;
@@ -76,8 +79,10 @@ export async function call(f, url, init, ms) {
   try {
     const r = await Promise.race([Promise.resolve().then(() => f(url, ac ? Object.assign({}, init, { signal: ac.signal }) : init)), t]);
     if (r === 'timeout') return { ok: false, status: 0, timeout: true, data: null };
-    clearTimeout(timer); // an answer came: its body is read as before (the abort is only for a call that never answered)
-    let text = ''; try { text = await r.text(); } catch (e) { text = ''; }
+    // fourth review (R4-m1): the limit covers the body too: headers that came, then a body that never ends, is a timeout (and aborted)
+    const b = await Promise.race([Promise.resolve().then(() => r.text()).then((x) => ({ x }), () => ({ x: '' })), t]);
+    if (b === 'timeout') return { ok: false, status: 0, timeout: true, data: null };
+    const text = b.x || '';
     let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
     return { ok: r.ok, status: r.status, data, text, headers: r.headers };
   } catch (e) { return { ok: false, status: 0, data: null, error: String((e && e.message) || e).slice(0, 120) }; }

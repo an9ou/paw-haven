@@ -6,7 +6,7 @@
 // Every call answers
 //   { ok: true, data } or { ok: false, kind: 'down' | 'timeout' | 'refused' (items: [item external ids]) | 'address' | 'billing' | 'not_found' | 'cannot' | 'not_set_up' }
 // ('down' may carry retry_ms: Printful's Retry-After) and never throws. Nothing here logs the key, a recipient or a reply body.
-import { netOf, call, same, hex, enc } from './util.js';
+import { netOf, call, same, hex, enc, keyOf } from './util.js';
 import { PRODUCTS as CATP, PF_PRODUCTS, PF_VARIANT_IDS, SHIP_COSTS } from './catalog.js';
 import { taxBehavior } from './lines.js';
 
@@ -25,10 +25,11 @@ export const pfVariant = (pv) => PF_VARIANT_IDS[String(pv || '').replace(/^pf:/,
 // Part 9, C2: the key 'test-printer' names the sandbox's stand-in printer (test_printer.js), never Printful: it counts only on the test Worker
 // (MERCH_TEST = "1") with the PROVIDER_FETCH binding there; anywhere else (the live Worker, or no binding) the printer is not set up and nothing
 // is sent, so that word never reaches api.printful.com and a live Worker never takes an order on it.
+// Fourth review (R4-m2): every check and the header use the trimmed key, so " test-printer" with a space is still the stand-in's word.
 const STAND_IN = 'test-printer';
-const net = (env) => (env.MERCH_PROVIDER_KEY === STAND_IN && !(env.MERCH_TEST === '1' && env.PROVIDER_FETCH) ? null : netOf(env.PROVIDER_FETCH, env.MERCH_PROVIDER_KEY));
+const net = (env) => (keyOf(env.MERCH_PROVIDER_KEY) === STAND_IN && !(env.MERCH_TEST === '1' && env.PROVIDER_FETCH) ? null : netOf(env.PROVIDER_FETCH, keyOf(env.MERCH_PROVIDER_KEY)));
 // ready = a network and a key; the test Worker (MERCH_TEST=1) never runs live
-export const providerReady = (env) => !!(net(env) && env.MERCH_PROVIDER_KEY) && !(env.MERCH_TEST === '1' && env.MERCH_PROVIDER_MODE === 'live');
+export const providerReady = (env) => !!(net(env) && keyOf(env.MERCH_PROVIDER_KEY)) && !(env.MERCH_TEST === '1' && env.MERCH_PROVIDER_MODE === 'live');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const money = (c) => (Number(c || 0) / 100).toFixed(2);
@@ -72,8 +73,8 @@ export function errKind(r, sent) {
 }
 
 async function pf(env, method, path, body, sent) {
-  const f = net(env); if (!f || !env.MERCH_PROVIDER_KEY) return { ok: false, kind: 'not_set_up' };
-  const h = { Authorization: 'Bearer ' + env.MERCH_PROVIDER_KEY, Accept: 'application/json' };
+  const f = net(env), key = keyOf(env.MERCH_PROVIDER_KEY); if (!f || !key) return { ok: false, kind: 'not_set_up' };
+  const h = { Authorization: 'Bearer ' + key, Accept: 'application/json' };
   if (env.MERCH_PROVIDER_STORE) h['X-PF-Store-Id'] = String(env.MERCH_PROVIDER_STORE); // an account-level token names the store (v1 and v2 docs)
   if (body) h['Content-Type'] = 'application/json';
   const r = await call(f, BASE + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined }, Number(env.MERCH_TIMEOUT_MS) || 25000);
@@ -255,7 +256,12 @@ export async function catalogCosts(env, opt) {
 }
 
 // Printful's order (+ its shipments) -> ours: { id, external_id, status, costs: { items, shipping, tax } (cents, null until known),
-// items: [{ external_id, id }], shipments: [{ id, carrier, tracking_url, items: [item external ids], shipped_at, delivered_at, returned }] }
+// items: [{ external_id, id }], shipments: [{ id, carrier, tracking_url, items: [item external ids], units: [{ ext, qty }], reship, shipped_at,
+// delivered_at, returned }] }. Fourth review (R4-M1): units keeps each shipment item's quantity (null when Printful gives none) and reship
+// Printful's reshipment flag (true, false, or null when not given), so a line posted in two parcels (a split) is not taken for a reship. The
+// v2 Shipment schema calls it is_reshipment; the v2 webhook's shipment object calls it reshipment (test/printful): both are read. [To learn with
+// the Printful key: which name a real shipments read gives, and whether quantity is always there; PART5.md]
+const flagOf = (v) => (v === true || v === 'true' || v === 1 ? true : v === false || v === 'false' || v === 0 ? false : null);
 export function mapOrder(d, ships) {
   if (!d || typeof d !== 'object') return null;
   const c = d.costs || {};
@@ -273,6 +279,8 @@ export function mapOrder(d, ships) {
     shipments: (ships || []).filter((s) => s && SHIPPED.includes(s.shipment_status)).map((s) => ({
       id: String(s.id), carrier: s.carrier || null, tracking_url: s.tracking_url || null,
       items: (s.shipment_items || []).map((x) => String(x.order_item_external_id || byId.get(String(x.order_item_id)) || '')).filter(Boolean),
+      units: (s.shipment_items || []).map((x) => ({ ext: String(x.order_item_external_id || byId.get(String(x.order_item_id)) || ''), qty: Number.isInteger(Number(x.quantity)) && Number(x.quantity) > 0 && x.quantity !== '' && x.quantity != null ? Number(x.quantity) : null })).filter((u) => u.ext),
+      reship: flagOf(s.is_reshipment != null ? s.is_reshipment : s.reshipment),
       shipped_at: ts(s.shipped_at), delivered_at: s.delivery_status === 'delivered' ? ts(s.delivered_at) : null, returned: s.shipment_status === 'returned' })) };
 }
 

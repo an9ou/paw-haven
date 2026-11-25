@@ -114,3 +114,56 @@ each draft.
 7. **It frees an external id once its draft is deleted;** what real Printful does is not recorded. The ledger uses `-d<n>` ids, so this
    does not matter today.
 8. **No 429, 409 or Retry-After answers, no split or partial shipments,** so R4-M1 cannot show up in the run.
+
+## Fixes (fourth review)
+
+25 Nov 2026, branch `merch/part9-fixes4` from 9815a07. Tests: `cloudflare/merch/test/t_fix9d.mjs` (rows F9d-*, in the merch_worker run,
+333 of 333), plus page rows "R4-m4 page ..." in merch_page. Every F9d row fails on 9815a07 (checked with the old `ledger.js`, `util.js`,
+`stripe.js`, `provider_printful.js`, `mail.js`, `test_printer.js`, `admin.js`, `worker.js` and `tools/merch_test_build.mjs`); every F9b row
+stays green.
+
+- **R4-M1** fixed as recommended, with the part-line case held for the owner. `mapOrder` keeps each shipment item's `quantity` (`units`)
+  and the reshipment flag (`is_reshipment`, else `reshipment`; null when missing: an open question for the Printful key, PART5.md). The
+  ledger stores the units of each line in each parcel (`merch_parcel_items`, new), when it first saw a parcel (`seen_at`) and the flag
+  (`reship`). Pass 2 moves a whole line only to a parcel that is a reship of it (flagged, or with no flag first seen at or after the return);
+  a parcel flagged "not a reshipment" never takes it. A line split over parcels never moves: when some of its units come back and are not
+  reshipped, the order is held for the owner (`hold = review`, `why = reship_part`), one owner email names the units ("1 of 2 of line 1"),
+  the buyer gets one kind note. Chosen over an address ask because a part-line reship does not fit the tables: a reprint makes the whole
+  remaining line again and marks the old line replaced, so the unit that arrived would drop out of the refund count (a later refund of the
+  reprint line would pay it back too); the address form and the 7-day refund take whole lines. The hold ends by itself when Printful
+  reships those units, or when the owner refunds them (`merch.sh refund <order> <line> <qty>`) or reprints the line. While a whole-line
+  reship already waits for an address, the part is an owner email only. The fake `pf.ship` takes `[external id, qty]` items and a `reship`
+  option, and by default flags a parcel that posts again units already posted in full (as Printful would), so the F9b rows needed no change.
+  Tests F9d-M1-map, F9d-M1-split-first, F9d-M1-split-second, F9d-M1-split-reship, F9d-M1-noflag, F9d-M1-flag-false, F9d-M1-mixed.
+- **R4-m1** fixed as recommended: `call()` races the body read against the same timer; a stalled body is `timeout`, aborted. Test
+  F9d-m1-body.
+- **R4-m2** fixed as recommended: on the test Worker only `sk_test_` / `rk_test_` after trimming (an allow list); the trimmed key is sent.
+  Alike for Printful and Resend: every key is trimmed (`util.js keyOf`) before any check and in the header, on the live Worker too, so
+  " test-printer" is still the stand-in's word (no printer on the live Worker, nothing sent) and `printerNow` and `printerEnv` agree. Test
+  F9d-m2-keys.
+- **R4-m3** fixed: one kind buyer note (`checking`, "We're checking on your parcel": we'll write as soon as we know, nothing to do) when a
+  case ends `reship_unread` (and for `reship_part`); `lineRefund` and `reprint` end the review hold (`endReview`) once no reship line, no part
+  of a line and no reprint waiting for an address is left. Decided: a parcel that comes back while the order is held for the owner's check
+  keeps that review (one owner email, `returned_review`), never a new reship or address ask, since the owner is already settling that
+  order by hand. Tests F9d-m3-note, F9d-m3-clear, F9d-m3-second.
+- **R4-m4** fixed in merch files, the page's part waits for the GM (SANDBOX.md F, G3). (1) On the test Worker buyer emails go only to
+  `MERCH_TEST_MAIL_TO` (a Secret the owner sets; a `+tag` before the @ counts as the same mailbox, for the `+location_XX` trick); with no
+  list none goes, the outbox row says `test_not_listed`, no owner email. (2) A shared test token: `tools/merch_test_build.mjs` makes a
+  random one (kept when the same folder is built again), sends it as the test Worker's `MERCH_TEST_TOKEN` and writes `test_cfg.json`; the
+  test Worker refuses a checkout (403 `test_only`), an order button (cancel, wait, address, refund) and an unsigned printer hint (401)
+  without it, and with no token set (fail closed); CORS lets the test copy send `X-Merch-Test-Token`; the page sends it on every POST,
+  read once from `/merch/test_cfg.json` on the test copy only. The live Worker and the live page never read or need it. Serving that file
+  behind the password is the GM's G3 (cf_test.js, test_gate.mjs: not ours to edit): until then the test Worker takes no order. Tests
+  F9d-m4-mail, F9d-m4-token, F9d-m4-build; merch_page "R4-m4 page ...".
+- **R4-m5** fixed as recommended: the build wipes only a folder with its marker (`.merch_test_build`) or an empty or new one; a folder with
+  other files, a file or a link is refused and left as it was. The deploy script now builds into one fixed folder by default
+  (`$TMPDIR/dd-merch-test-build`), so the token stays. Test F9d-m5-wipe.
+- **Not counted** (run 1's drafts in run 2): SANDBOX.md D6 says run 2 starts only after every run-1 order has ended, and how to tell the
+  drafts apart: `merch_orders.provider` is now `stand-in` or `printful` (it was always `printful`). Guard: with a real key set, a stand-in
+  draft is never read, deleted or cancelled at Printful (a delete is only forgotten here, event `stand_in_draft`; a read counts as failed;
+  the address form makes a new draft). Test F9d-standin.
+- **Docs:** SANDBOX.md A (step 10: `MERCH_TEST_MAIL_TO`; the token needs nothing from the owner), B (the variables, the build folder), C
+  (the stand-in's differences from Printful, short form; `MERCH_TEST_MAIL_TO` missing), D (curl needs the token; E-5; D6), F (new G3, the old
+  G3 is G4); TRANSACTIONS.md part 9 notes; PART5.md (the open flag question).
+- **Left open:** the reshipment flag's real name and whether `quantity` is always given (with the Printful key, run 2); G3 by the GM before
+  the run; a part-line reship stays the owner's by hand.

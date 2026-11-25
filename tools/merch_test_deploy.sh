@@ -41,7 +41,9 @@ BUILD_ONLY=${BUILD_ONLY:-0}; DRY=1; [ "${DRY_RUN:-1}" = "0" ] && DRY=0
 if [ "$BUILD_ONLY" != "1" ] && [ "$DRY" = "0" ] && [ "${MERCH_TEST_DEPLOY_OK:-0}" != "1" ]; then
   echo "merch_test_deploy: refused: a real send needs DRY_RUN=0 AND MERCH_TEST_DEPLOY_OK=1, and only after the owner's go-ahead" >&2; exit 2
 fi
-OUT=${MERCH_TEST_OUT:-$(mktemp -d "${TMPDIR:-/tmp}/dd-merch-test.XXXXXX")}
+# one fixed build folder by default (fourth review): a rebuild keeps the shared test token (test_cfg.json), so the test copy's config stays good;
+# the build wipes only a folder it made (its marker) or an empty or new one (R4-m5)
+OUT=${MERCH_TEST_OUT:-${TMPDIR:-/tmp}/dd-merch-test-build}
 case "$(cd "$OUT" 2>/dev/null && pwd)/" in "$ROOT"/*) echo "merch_test_deploy: refused: MERCH_TEST_OUT must be outside the repo" >&2; exit 2 ;; esac
 AUTH=(); if [ "${CLOUDFLARE_API_TOKEN:-proxy-injected}" != "proxy-injected" ]; then AUTH=(--variable %CLOUDFLARE_API_TOKEN --expand-header 'Authorization: Bearer {{CLOUDFLARE_API_TOKEN}}'); fi
 js() { node -e "$1" "${@:2}"; } # small JSON reads from stdin
@@ -141,7 +143,7 @@ fi
 # ---------- 6. the public checks ----------
 AV=$(node -e "console.log(require(process.argv[1]).ART_VER)" "$ROOT/merch/dist/pawprint.js")
 if [ "$DRY" = "1" ]; then
-  echo "DRY_RUN: then the checks on https://$HOST: GET /merch/catalog 200 JSON; OPTIONS /merch/quote from https://test.doodledoggo.app 204 and from https://doodledoggo.app 403; GET /merch/print/$AV/ 200; POST /merch/webhook/stripe unsigned 400 (503 before the webhook secret is set); GET /merch/admin/report without the key 401"
+  echo "DRY_RUN: then the checks on https://$HOST: GET /merch/catalog 200 JSON; OPTIONS /merch/quote from https://test.doodledoggo.app 204 and from https://doodledoggo.app 403; GET /merch/print/$AV/ 200; POST /merch/webhook/stripe unsigned 400 (503 before the webhook secret is set); GET /merch/admin/report without the key 401; POST /merch/checkout without the test token 403 (503 while shut; R4-m4)"
   if [ "$PRINTER" = "1" ]; then
     echo "DRY_RUN: GET $CF$PAPI/subdomain   (the stand-in printer: workers.dev must be off; it has no route, domain or cron)"
     echo "DRY_RUN: to delete them afterwards (SANDBOX.md E; by hand in the dashboard, never by this script): first $NAME (DELETE $CF$API), then $PNAME (DELETE $CF$PAPI; a Worker that another binds to cannot go first). Their Durable Objects and data go with them."
@@ -157,5 +159,6 @@ chk "$(code -X OPTIONS -H 'Origin: https://doodledoggo.app' -H 'Access-Control-R
 chk "$(code "https://$HOST/merch/print/$AV/")" 200 "the print page $AV"
 W=$(code -X POST -H 'Content-Type: application/json' --data '{}' "https://$HOST/merch/webhook/stripe"); case "$W" in 400|503) echo "ok   an unsigned Stripe event is refused ($W)" ;; *) echo "FAIL an unsigned Stripe event (got $W)"; fail=1 ;; esac
 chk "$(code "https://$HOST/merch/admin/report")" 401 "the admin routes need the key"
+K=$(code -X POST -H 'Content-Type: application/json' --data '{}' "https://$HOST/merch/checkout"); case "$K" in 403|503) echo "ok   a checkout without the test token is refused ($K; 503 while the shop is shut)" ;; *) echo "FAIL a checkout without the test token (got $K)"; fail=1 ;; esac
 if [ "$PRINTER" = "1" ]; then chk "$(cf GET "$PAPI/subdomain" | res '(r&&r.enabled)?"on":"off"')" off "the stand-in printer has no workers.dev address"; fi
 [ $fail = 0 ] && echo "MERCH TEST WORKER OK: https://$HOST (build in $OUT)" || { echo "MERCH TEST WORKER CHECK FAILED"; exit 1; }

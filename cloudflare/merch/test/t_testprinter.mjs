@@ -260,7 +260,8 @@ export async function testprinter() {
       eq(rd('on', 'printer/entry.js').split('\n').filter((l) => !/^\/\//.test(l) && l).map((l) => l.replace(/'.*\//, "'")), ["export { default, TestPrinter } from 'test_printer.js';"], 'its entry: the stand-in, nothing else');
       ok(/workers_dev = false/.test(rd('on', 'printer/wrangler.toml')) && /name = "doodle-doggo-merch-test-printer"/.test(rd('on', 'printer/wrangler.toml')), 'its toml: workers.dev off');
       const e = rd('on', 'entry.js'); ok(/class MerchLedgerT extends MerchLedger \{ constructor\(state, env\) \{ super\(state, printerEnv\(env\)\); \} \}/.test(e) && /export \{ MerchLedgerT as MerchLedger/.test(e), 'the entry wraps the ledger');
-      eq(JSON.parse(rd('on', 'vars.json')), JSON.parse(rd('off', 'vars.json')), 'the same variables');
+      const novar = (f) => { const v = JSON.parse(rd(f, 'vars.json')); ok(/^[A-Za-z0-9_-]{43}$/.test(v.MERCH_TEST_TOKEN || ''), f + ': a random test token (R4-m4)'); delete v.MERCH_TEST_TOKEN; return v; };
+      eq(novar('on'), novar('off'), 'the same variables (each build its own test token)');
       for (const [more, why] of [[{ MERCH_TEST_PRINTER: '1', MERCH_TEST_NAME: 'doodle-doggo-merch' }, /stand-in printer is only ever wired into doodle-doggo-merch-test/], [{ MERCH_TEST_PRINTER: '1', MERCH_TEST_NAME: 'doodle-doggo-merch-test-printer' }, /stand-in/], [{ MERCH_TEST_PRINTER: 'yes' }, /MERCH_TEST_PRINTER/]]) {
         const r = build('bad', more); ok(r.status === 2 && why.test(r.stderr), JSON.stringify(more) + ': refused ' + r.stderr);
       }
@@ -307,8 +308,8 @@ function entryModules(out) {
 const SECRETS = (stripe) => ({ MERCH_STRIPE_KEY: 'rk_test_dummy', MERCH_STRIPE_WEBHOOK_SECRET: stripe.secret, MERCH_HASH_KEY: 'hash-key-for-tests', MERCH_FILE_KEY: 'file-key-for-tests', MERCH_ADMIN_KEY: 'admin-key-for-tests-0123' });
 const DO3 = { LEDGER: { className: 'MerchLedger', useSQLite: true }, PRINTS: { className: 'MerchPrints', useSQLite: true }, RENDER: { className: 'MerchRender', useSQLite: true } };
 const until = async (f, ms) => { for (let i = 0; i < (ms || 20000) / 100; i++) { if (await f()) return true; await new Promise((r) => setTimeout(r, 100)); } return false; };
-function client(mf) {
-  const call = async (m, p, body, headers) => { const r = await mf.dispatchFetch('https://merch-api-test.doodledoggo.app' + p, { method: m, headers: Object.assign({ 'content-type': 'application/json', 'CF-Connecting-IP': '10.72.0.1' }, headers || {}), body: body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) { j = null; } return { status: r.status, json: j, text: t }; };
+function client(mf, token) { // token: the built test Worker's shared test token (R4-m4: X-Merch-Test-Token), sent as the test page sends it
+  const call = async (m, p, body, headers) => { const r = await mf.dispatchFetch('https://merch-api-test.doodledoggo.app' + p, { method: m, headers: Object.assign({ 'content-type': 'application/json', 'CF-Connecting-IP': '10.72.0.1' }, token ? { 'x-merch-test-token': token } : {}, headers || {}), body: body == null ? undefined : typeof body === 'string' ? body : JSON.stringify(body) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) { j = null; } return { status: r.status, json: j, text: t }; };
   let n = 0; const checkout = async (lines) => { const q = await call('POST', '/merch/quote', { country: 'US', lines }); return call('POST', '/merch/checkout', { country: 'US', lines, expect_total: q.json && q.json.total, art_ver: PP.ART_VER, nonce: 'c2-mf-nonce-' + (++n) + '-abcdef', agree: true }); };
   return { call, checkout, admin: (m, p, b) => call(m, '/merch/admin/' + p, b, { authorization: 'Bearer admin-key-for-tests-0123' }) };
 }
@@ -333,7 +334,7 @@ async function miniflareC2() {
             outboundService: async (req) => { out.push('printer: ' + req.method + ' ' + req.url); return new Response('{}', { status: 599 }); } }] });
       let mf = new MF.Miniflare(opts());
       try {
-        const c = client(mf);
+        const c = client(mf, VARS.MERCH_TEST_TOKEN);
         const cat = await c.call('GET', '/merch/catalog'); ok(cat.status === 200 && cat.json.shut === false, 'the catalog is open: the stand-in is the printer ' + cat.text.slice(0, 160));
         const pay = async (name) => {
           const k = await c.checkout([mug(0)]); ok(k.status === 200 && /^https:\/\/checkout\.stripe\.test\//.test(k.json.url), 'checkout ' + k.text);
@@ -353,7 +354,7 @@ async function miniflareC2() {
         await mf.dispose();
         // the same Durable Objects 65 minutes on (a frozen clock for this check only: NOW is a test seam the build never sends)
         mf = new MF.Miniflare(opts({ NOW: String(Date.now() + 65 * MIN) }));
-        const c2 = client(mf), t = await c2.admin('POST', 'tick', {}); ok(t.status === 200, 'tick ' + t.text);
+        const c2 = client(mf, VARS.MERCH_TEST_TOKEN), t = await c2.admin('POST', 'tick', {}); ok(t.status === 200, 'tick ' + t.text);
         const s2 = await c2.admin('GET', 'order/' + id); eq([s2.json.order.status, s2.json.order.hold], ['held', 'draft_mode'], 'past the hour: held draft_mode');
         eq([(await c2.admin('GET', 'order/' + id2)).json.order.hold], ['address'], 'the address order still waits for its form');
         const ns2 = await mf.getDurableObjectNamespace('PRINTER', PRINTER_NAME), g2 = await ns2.get(ns2.idFromName('printer')).fetch('https://api.printful.com/v2/orders/@' + id, { headers: { authorization: 'Bearer ' + PRINTER_KEY } });
@@ -369,7 +370,7 @@ async function miniflareC2() {
         serviceBindings: { PROVIDER_FETCH: async (req) => { spy.push(req.url); return new Response('{}', { status: 500 }); }, STRIPE_FETCH: svc(stripe.fetch), RENDER_FETCH: svc(rd.fetch) },
         outboundService: async (req) => { const s = await seen(req); out.push(s); return new Response('{"type":"x","status":503,"title":"Service Unavailable"}', { status: 503 }); } });
       try {
-        const c = client(mf);
+        const c = client(mf, VARS.MERCH_TEST_TOKEN);
         ok((await c.call('GET', '/merch/catalog')).json.shut === false, 'open: the real key is the printer, through the global fetch');
         const show0 = await c.admin('GET', 'report'); eq(show0.json.printer, 'printful', 'merch.sh report: printful');
         const k = await c.checkout([mug(0)]); const cs = stripe.pay(Array.from(stripe.sessions.keys())[0]);

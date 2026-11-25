@@ -329,6 +329,23 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 >     `pcancel`, then `cancelled`, the old line back as it was; Printful cannot: back to `confirmed`, the owner told).
 >   - **Two disputes:** every close leaves `x:dclosed:<dispute id>`, so a `created` that comes after its own close is ignored for any dispute,
 >     not only the one the order names.
+> - **Fourth review fixes (25 Nov 2026, `docs/reviews/MERCH_PART9_fourth_review.md`):**
+>   - **A split is not a reship (T2.2-45):** every parcel keeps the units of each line in it (`merch_parcel_items`), when we first saw it
+>     (`seen_at`) and Printful's reshipment flag (`reship`). A returned line moves only to a parcel that is a reship of it: flagged, or with no
+>     flag first seen at or after the return; a parcel Printful flags "not a reshipment" never takes it.
+>   - **Part of a line came back** (a line posted in more than one parcel, some of its units back and not reshipped): never an address ask or a
+>     7-day refund (both take whole lines, and a reprint makes the whole line again). The order is held for the owner (`hold = review`,
+>     `why = reship_part`, status unchanged), one owner email names the units ("1 of 2 of line 1"), the buyer gets one kind note (`checking`).
+>     It ends by itself when Printful reships those units, or when the owner refunds them (`merch.sh refund <order> <line> <qty>`) or reprints
+>     the line. While a reship of whole lines already waits for an address, the part is an owner email only; the reship goes on.
+>   - **The owner's review of a returned parcel** (`reship_unread`, `reship_part`): the buyer gets one kind note (`checking`); a refund or a
+>     reprint by the owner ends the hold once nothing of it is left; a second parcel that comes back meanwhile keeps the review (owner email
+>     `returned_review`), never a new reship or address ask.
+>   - **The test Worker** (`MERCH_TEST = "1"`) takes only `sk_test_` / `rk_test_` Stripe keys after trimming; every key (Stripe, Printful,
+>     Resend) is trimmed before any check and sent trimmed, on the live Worker too. Its buyer emails go only to `MERCH_TEST_MAIL_TO`; a
+>     checkout, an order button (cancel, wait, address, refund) and an unsigned printer hint need the shared test token (`MERCH_TEST_TOKEN`,
+>     header `X-Merch-Test-Token`). None of this is read on the live Worker.
+>   - **Time limits:** an outside call's limit covers its body too: a reply that stalls after its headers is a `timeout` (result unknown).
 
 ---
 

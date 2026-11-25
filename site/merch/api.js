@@ -11,16 +11,30 @@
    MERCH_API (part 9, P1) comes from the page's own origin, exactly: on the test copy (https://test.doodledoggo.app) it is the test order
    server, https://merch-api-test.doodledoggo.app (the test Worker: Stripe sandbox keys only, nobody is charged). Everywhere else it is empty:
    TEST MODE, every call goes to the local fake (api_fake.js), nothing leaves the page and nothing can be paid. The launch adds the live
-   address (https://merch-api.doodledoggo.app) for https://doodledoggo.app here, and nowhere else. */
+   address (https://merch-api.doodledoggo.app) for https://doodledoggo.app here, and nowhere else.
+   The test order server is public, so (fourth review, R4-m4) it takes an order, a button on the order page or a printer hint only with a shared
+   test token: on the test copy only, every POST carries X-Merch-Test-Token, read once from /merch/test_cfg.json, a file the test copy serves
+   behind its password (SANDBOX.md F, G3; never in the repo, never on the live site). No file: no token, and the test server says no. */
 (function (G) {
   'use strict';
   var API_FOR = { 'https://test.doodledoggo.app': 'https://merch-api-test.doodledoggo.app' };
   function apiFor(origin) { return typeof origin === 'string' && Object.prototype.hasOwnProperty.call(API_FOR, origin) ? API_FOR[origin] : ''; }
   var MERCH_API = apiFor(G.location && G.location.origin);
+  var ON_TEST = !!MERCH_API && !!G.location && G.location.origin === 'https://test.doodledoggo.app', tokenP = null;
+  function testToken() {
+    if (!ON_TEST) return Promise.resolve('');
+    if (!tokenP) tokenP = fetch('/merch/test_cfg.json', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (j) { return j && typeof j.token === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(j.token) ? j.token : ''; }, function () { return ''; });
+    return tokenP;
+  }
   function fetchJSON(method, path, body) {
-    return fetch(MERCH_API + path, { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, credentials: 'omit', cache: 'no-store' })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw Object.assign({ status: r.status, error: j.error || 'busy' }, j); return j; }); },
-        function () { throw { status: 0, error: 'offline' }; });
+    return (method === 'POST' ? testToken() : Promise.resolve('')).then(function (tok) {
+      var h = body ? { 'content-type': 'application/json' } : {}; if (tok) h['x-merch-test-token'] = tok;
+      return fetch(MERCH_API + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, credentials: 'omit', cache: 'no-store' })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw Object.assign({ status: r.status, error: j.error || 'busy' }, j); return j; }); },
+          function () { throw { status: 0, error: 'offline' }; });
+    });
   }
   function make(o) {
     o = o || {};

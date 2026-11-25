@@ -170,8 +170,8 @@ export function fakePrintful() {
     _links: { self: { href: 'https://api.printful.com/v2/orders/' + o.id } } });
   const out = (o) => { if (o.calc > 0) o.calc--; return J({ data: v2Order(o) }); };
   const v2Ship = (o, s) => ({ id: Number(s.id), order_id: Number(o.id), order_external_id: o.external_id, carrier: s.carrier, service: 'Standard', shipment_status: s.returned ? 'returned' : 'shipped',
-    shipped_at: iso(s.ship_date), delivery_status: s.delivered_at ? 'delivered' : 'in_transit', delivered_at: s.delivered_at ? iso(s.delivered_at) : null, is_reshipment: false,
-    tracking_number: String(s.id), tracking_url: s.tracking_url, shipment_items: s.items.map((x, n) => { const it = o.items.find((i) => i.external_id === x.order_item_external_id); return { id: n + 1, order_item_id: it ? it.id : null, order_item_external_id: x.order_item_external_id, quantity: it ? it.quantity : 1 }; }) });
+    shipped_at: iso(s.ship_date), delivery_status: s.delivered_at ? 'delivered' : 'in_transit', delivered_at: s.delivered_at ? iso(s.delivered_at) : null, is_reshipment: s.reship === 'none' ? undefined : !!s.reship,
+    tracking_number: String(s.id), tracking_url: s.tracking_url, shipment_items: s.items.map((x, n) => { const it = o.items.find((i) => i.external_id === x.order_item_external_id); return { id: n + 1, order_item_id: it ? it.id : null, order_item_external_id: x.order_item_external_id, quantity: x.quantity != null ? x.quantity : it ? it.quantity : 1 }; }) });
   P.fetch = async (url, init) => {
     const u = new URL(url), m = (init && init.method) || 'GET', body = init && init.body ? JSON.parse(init.body) : null;
     const v = u.pathname.startsWith('/v2/') ? 2 : 1, p = v === 2 ? u.pathname.slice(3) : u.pathname;
@@ -246,8 +246,18 @@ export function fakePrintful() {
     }
     return pfErr(404, 'Not found');
   };
-  // a parcel leaves: items by our item external ids (v2 shipment_items carry order_item_external_id)
-  P.ship = (id, exts, o) => { o = o || {}; const ord = P.orders.get(id); const s = { id: String(++P.n), carrier: 'USPS', tracking_url: 'https://track.test/' + P.n, ship_date: new Date(o.at || Date.now()).toISOString(), items: exts.map((e) => ({ order_item_external_id: e })) }; ord.shipments.push(s); ord.status = o.status || 'partial'; return s; };
+  // a parcel leaves: items by our item external ids (v2 shipment_items carry order_item_external_id). Fourth review (R4-M1): an item may be
+  // [external id, quantity] (part of a line: a split); o.reship sets Printful's is_reshipment (true / false, 'none': not given); by default the
+  // fake says what Printful would: a reshipment when it posts again units of an item already posted in full
+  P.ship = (id, exts, o) => {
+    o = o || {}; const ord = P.orders.get(id);
+    const items = exts.map((e) => (Array.isArray(e) ? { order_item_external_id: e[0], quantity: e[1] } : { order_item_external_id: e }));
+    const full = (x) => { const it = ord.items.find((i) => i.external_id === x.order_item_external_id); return it ? it.quantity : 1; };
+    const posted = (ext) => ord.shipments.reduce((n, sh) => n + sh.items.filter((x) => x.order_item_external_id === ext).reduce((m, x) => m + (x.quantity != null ? x.quantity : full(x)), 0), 0);
+    const auto = items.some((x) => posted(x.order_item_external_id) + (x.quantity != null ? x.quantity : full(x)) > full(x));
+    const s = { id: String(++P.n), carrier: 'USPS', tracking_url: 'https://track.test/' + P.n, ship_date: new Date(o.at || Date.now()).toISOString(), items, reship: o.reship !== undefined ? o.reship : auto };
+    ord.shipments.push(s); ord.status = o.status || 'partial'; return s;
+  };
   P.secret = '5e6b1c0a9d8f7e6d5c4b3a29180716253443526170819a0b1c2d3e4f5a6b7c8d'; // hex, as Printful hands it out (invented)
   // a v2 webhook body (no event id in v2: occurred_at, made from the test's id, keeps two hints apart; the same id gives the same body)
   const H = { package_shipped: 'shipment_sent', package_returned: 'shipment_returned' };
@@ -255,7 +265,7 @@ export function fakePrintful() {
   P.hook = (ord, type, id) => {
     const t = H[type] || type || 'shipment_sent', last = ord.shipments && ord.shipments[ord.shipments.length - 1];
     const data = { order: { id: Number(ord.id), external_id: ord.external_id, status: ord.status, store_id: 1, dashboard_url: 'https://www.printful.com/dashboard?order_id=' + ord.id, created_at: ord.created_at || null, updated_at: ord.created_at || null } };
-    if (/^shipment_/.test(t) && last) data.shipment = { id: Number(last.id), status: last.returned ? 'returned' : 'shipped', store_id: 1, tracking_number: String(last.id), tracking_url: last.tracking_url, created_at: last.ship_date, ship_date: last.ship_date.slice(0, 10), shipped_at: last.ship_date, delivered_at: null, reshipment: false };
+    if (/^shipment_/.test(t) && last) data.shipment = { id: Number(last.id), status: last.returned ? 'returned' : 'shipped', store_id: 1, tracking_number: String(last.id), tracking_url: last.tracking_url, created_at: last.ship_date, ship_date: last.ship_date.slice(0, 10), shipped_at: last.ship_date, delivered_at: null, reshipment: last.reship === 'none' ? undefined : !!last.reship };
     return JSON.stringify({ type: t, occurred_at: new Date(Date.UTC(2026, 11, 1) + (id ? (hash(String(id)) % 1e8) * 1000 : 0)).toISOString().replace('.000', ''), retries: 0, store_id: 1, data });
   };
   return P;
