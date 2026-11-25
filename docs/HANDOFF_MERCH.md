@@ -233,10 +233,27 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
     between links (the shop footer does not); the shop page’s flat print view on a checker shows the white backing as a 1-2 px white
     outline round the dog on white tees (invisible on the tee mock-up); the mug’s face direction and "white prints no ink on a white tee"
     both want a real sample (part 10).
+- **Part 9, second review and its fixes: done 25 Nov about 17:20 JST (the fifth MERCH session, session_01D6KLY4FcqQgUYQKpcr8J68).**
+  - The combined second review (code + phone + art): `docs/reviews/MERCH_PART9_second_review.md` (0 blockers, 4 major, 5 minor; the
+    three money points above were confirmed as R2-M2, R2-M3, R2-M4; the page and the prints were fine but for three small points).
+  - **All nine fixed** (`merch/part9-fixes2`, merge ecddc13; the "Fixes (second review)" list ends the review file; tests
+    `cloudflare/merch/test/t_fix9b.mjs`, 22 rows): the late cancel and the 7-day reship refund read Printful first; the late date counts
+    from max(ship_by, now) and moves on after a won dispute; a lost dispute stops reprints, reships and the lost-parcel refund; a stale
+    printer read is not applied (a hint overtaken by a change answers 502 so Printful sends it again; the daily re-read is the backstop);
+    a late `created` after its close is ignored; the basket says shipping is free over the threshold; the thanks email's days no longer
+    read as adding up; a long mug name keeps 25 px from the handle line. **ART_VER is now `pp1-6df20bb6`** (the `pp1-5688199b` folder is
+    removed; only the mug sample changed, the tee sheets are byte-identical).
+  - **Every suite green on ecddc13**: pawprint 89; the game round trip 11 checks (needs `node game/build.js && node game/harness.js
+    merged` first); merch_worker 282 (`node cloudflare/merch/test/run.mjs`); render_chromium ALL OK; merch_page 1933; merch_legal 383;
+    test_enc 36; `merch/game/gen.js --check` and `tools/merch_catalog_json.js --check` current.
+  - **New money rules for the launch list** (TRANSACTIONS.md "part 9" notes): the buyer's late cancel is never refused because Printful
+    cannot be read (the owner gets an email to check Printful); after a won dispute the late date moves on quietly (shown on the order
+    page, no new email); a lost dispute means no reprint, no reship and no lost-parcel refund.
+  - Left open (small): dogs on the mug have no inner margin of their own (a wide dog is 37 px from the handle line: fine); the
+    502-on-stale-hint relies on Printful retrying webhooks.
 - **Next, in this order:**
-  1. ONE combined second review (code + phone + art, read-only) of the three part 9 fix batches: the `ledger.js` / `stripe.js` diff of
-     3f21682d with `t_fix9.mjs`, the page at 360x640 and 390x844, and the new print files and samples at full size.
-  2. One code fix batch for the three money points above plus whatever that review finds; green; push.
+  1. (done) the combined second review. 2. (done) the fix batch. This second fix batch (459 lines, money logic) has had no review of
+     its own: one short code review of `git diff fb48a9f..ecddc13 -- cloudflare/merch` is worth it before or beside the sandbox run.
   3. Then the sandbox run on test.doodledoggo.app [O approves the test deploy and sets the sandbox keys in a NEW, separate Stripe account;
      ask the owner in the choice window when you get there; no 5-minute rule], and the Printful key through the secure form when the owner
      says they are ready (`tools/merch_pf_check.mjs`, then re-record the fixtures).
