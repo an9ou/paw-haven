@@ -82,3 +82,35 @@ points. 0 blocker, 3 major, 3 minor. The full suite is green at 22c0fb5 (282 of 
   `shipped` orders without a reship hold, so a lost `package_returned` hint there is never caught.
 - The order in which Printful really lists shipments.
 - The Durable Object's input-gate behaviour under workerd (the harness does interleave calls at awaits, and the code is right for that).
+
+## Fixes (third review)
+
+25 Nov 2026, branch `merch/part9-fixes3` from b7ef7ab, fixes in 37f5c44. Tests: `cloudflare/merch/test/t_fix9c.mjs` (rows F9b-*, in the
+merch_worker run, 298 of 298). Each finding's new rows fail on b7ef7ab (checked with the old `ledger.js` and `mail.js`); F9b-M3-rp-back is a
+neighbour row (on b7ef7ab it stops only at the new `read_fail` column).
+
+- **R3-M1** fixed as recommended: `applyProvider` works in three passes (store parcels and mark the returned ones; move every live line of a
+  returned parcel found in a parcel of the read that did not come back, new or earlier, the newest first; only then ask for an address for
+  lines still in a parcel marked returned in this read; then the hold check). Tests F9b-M3-order, F9b-M3-late-flag, F9b-M3-part-reship.
+- **R3-M2** fixed: every reprint read goes through `readPf` (the same memo, cap and failure bookkeeping as `readPrinter`; a reprint's failures
+  in `merch_reprints.read_fail`), in the 7-day reship step and the daily re-read. The daily re-read retries hourly, tells the owner once after
+  24 hours (`printer_unread`), then reads once a day. In the reship step, 24 hours of failed reads end the case with the review's safer
+  option: held for the owner (`hold = review`, `why = reship_unread`, status unchanged, no wake, the form shut), one owner email, no refund.
+  Chosen because the code's rule is "never refund blind" and a returned parcel may have been reshipped by Printful. Tests F9b-M3-rp-unread,
+  F9b-M3-rp-back, F9b-M3-rp-cron.
+- **R3-M3** fixed as recommended: an `onhold` read holds the order only for our main Printful order and only with no other hold; with a reship
+  hold the owner is emailed and the reship goes on; a reprint on hold is an owner email; a reprint read never lifts the main order's hold.
+  Beyond the review, its other side: a parcel that comes back while Printful holds the order starts the reship (`part_shipped`, owner told)
+  instead of a `held` order with a reship hold nobody could answer. Tests F9b-M4-onhold-reship, F9b-rp-onhold, F9b-M4-returned-onhold.
+- **R3-m1** fixed as recommended: the first lost close sends one owner email (`dispute_lost`) naming reprints still going and the main
+  order's lines not posted; a confirmed reprint with nothing posted is asked to cancel at Printful (reprint status `pcancel`, retried while
+  Printful is down; cancelled: the old line back; refused: back to `confirmed`, owner told). Tests F9b-M4-confirmed-reprint,
+  F9b-M4-lost-posted.
+- **R3-m2** fixed as recommended: every close writes `x:dclosed:<dispute id>`; a created for a closed id is ignored. Test F9b-m2-other-id.
+- **R3-m3** fixed as recommended: the late cancel reads twice; still unread, it records `late_ask_at`, answers 200 `refund: 'pending'` (the
+  page says "Your cancel is in ... your refund follows: we'll email you" and no longer offers the late cancel), asks Printful to cancel when
+  nothing is known to have shipped, and counts the failed read. The alarm decides after the next good read (`askDecide`): posted before the
+  ask, nothing refunded and one new kind buyer email (`late_posted`); otherwise the late part, posted after the ask too, refunded once. No
+  good read 24 hours after the ask: refunded on what we know, owner emailed. Tests F9b-M1-unread-once, F9b-M1-ask-posted, F9b-M1-ask-after,
+  F9b-M1-ask-tell; F9b-M1-unread moved to the new rule (it now expects 200 pending, no refund until a good read).
+- **F9b-M1-still** tightened: it now looks for a Printful GET between the cancel call and the first refund (fails on fb48a9f, passes after).

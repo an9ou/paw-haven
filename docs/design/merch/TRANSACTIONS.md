@@ -182,7 +182,7 @@ A line's money is separate from its state: `refunded_qty` (0..qty) and `refunded
 | T2.1-28 | Printful hints out of order (shipped, then in production) | `part_shipped` | The re-read order decides; a line never moves back (`shipped` > `in_production`) | same | - |
 | T2.1-29 | `POST /order/:id/address` with a good address, in `held address` | `held` | Sent straight to the Printful draft (never stored); hold cleared; the flow resumes (confirm if the hour has passed) | `paid` or `confirming` | "Thanks! We'll send it there." |
 | T2.1-30 | Alarm: a live line not shipped by the order's `ship_by` (FTC rule) | `confirmed`/`part_shipped` | Once per order: "Taking longer than we said" email (`me_<order>_late`) with a choice; `late_sent_at` | same | "You can wait, or cancel the late part for a full refund." |
-| T2.1-31 | `POST /order/:id/cancel {scope: 'late'}` after the delay email | `paid`/`held`/`confirmed`/`part_shipped`; refused (409 `not_late`) while a dispute is open or after it was **lost** (the bank already paid the buyer back; part 9, M1), 409 `busy` while `confirming` | Refunds every unshipped live line (T2.1-21 amounts); asks Printful to cancel them; if Printful cannot, the owner gets an email | same or `refunded` | "Refunded the late part." |
+| T2.1-31 | `POST /order/:id/cancel {scope: 'late'}` after the delay email | `paid`/`held`/`confirmed`/`part_shipped`; refused (409 `not_late`) while a dispute is open or after it was **lost** (the bank already paid the buyer back; part 9, M1), 409 `busy` while `confirming` | Refunds every unshipped live line (T2.1-21 amounts); asks Printful to cancel them; if Printful cannot, the owner gets an email. Printful cannot be read (twice): the cancel is recorded (`late_ask_at`) and decided after the next good read, or after 24 hours on what we know (part 9 notes, third review R3-m3) | same or `refunded` | "Refunded the late part." / "Your cancel is in ... your refund follows: we'll email you." |
 | T2.1-32 | Nightly: a variant fails the floor alone | - | `on_flag = 0`, owner email; quote and checkout answer 409 `variant_off` for it | - | "This one isn't available right now." |
 | T2.1-33 | Tidy (nightly) | - | Section 5 retention: files, hashes, names, recipes, events, unpaid orders | - | - |
 | T2.1-34 | Alarm at `late_eta` (added 25 Nov 2026, part 6 review): a late part still not posted | `paid`/`held`/`confirmed`/`part_shipped` (not `confirming`; not while a dispute is open or after it was lost; a dispute closed any other way lets it run) | An order Printful has past its draft is read from Printful first (T2.1-35): only what is still not posted then is late. Buyer said keep waiting (`late_ok_at`): ONE second notice `late_again` (`me_<order>_late_2`, `late2_sent_at`): no new date, still on it, cancel any time until posted. Else: the late part refunded in full by itself through the T2.1-31 path (refund rows, the printer asked to cancel or the owner told, one "refunded" email that says why, `late_auto_at`). Every step and its marker in one transaction | same, `shipped` or `refunded` | "Thank you for waiting." / "It took too long, so we've refunded it. Sorry." |
@@ -287,8 +287,13 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 > - **Never refund blind (T2.1-35, T2.1-36):** the delay email, the automatic late refund and the 24-hour refund of a printer-failed or
 >   unanswered-confirm hold read Printful's order first; a failed read waits 15 minutes (never refunds); 24 hours of failed reads email the owner
 >   once. The daily re-read (5 a cron run) catches lost hints. The owner's refunds are not read first (the owner chose them). The buyer's late
-  cancel IS read first (second review R2-M1): a part posted with its hint lost is not refunded too; if Printful cannot be read, the late
-  part is refunded anyway (the buyer's right), Printful is asked to cancel, and the owner is emailed at once to check (`late_cancel_unread`).
+>   cancel IS read first (second review R2-M1): a part posted with its hint lost is not refunded too. If Printful cannot be read (third
+>   review R3-m3, replacing "refunded anyway"): the read is tried once more at once; still failing, the cancel is recorded with its time
+>   (`late_ask_at`), the buyer is told "your cancel is in, the refund follows" (200, `refund: 'pending'`; the order page stops offering the
+>   late cancel), and Printful is asked to cancel when nothing is known to have shipped. After the next good read: what was posted before
+>   the buyer asked is theirs (nothing refunded; the buyer gets one kind email, `late_posted`); everything else of the late part, posted
+>   after the ask too, is refunded once (the owner hears of a part posted after the ask). No good read for 24 hours after the ask: refunded
+>   on what we know, the owner emailed (`late_cancel_unread`). A second tap reads again and never refunds twice.
 > - **Disputes (T2.1-31, T2.1-34, T2.2-22..26):** Stripe's dispute statuses as read on docs.stripe.com (API reference, the Dispute object, 25 Nov
 >   2026): `warning_needs_response`, `warning_under_review`, `warning_closed` (an inquiry), `needs_response`, `under_review`, `appeal_needs_response`,
 >   `appeal_under_review` (open), `won`, `lost`, `prevented`. Only `lost` is lost; any other close counts as won (`merch.sh confirm` releases the
@@ -307,6 +312,23 @@ Every row: what the server does, and what the buyer sees. Money first: whenever 
 >     ends (no refund, one "On its way"). Reship holds are in the daily re-read. Not while a dispute is open; a won close gives a fresh 7 days.
 >   - **Stale reads:** a Printful read is applied only if the order did not change while it was out; a hint whose read is overtaken answers
 >     502 (Printful sends it again). A `charge.dispute.created` for a dispute already closed is ignored.
+> - **Third review fixes (25 Nov 2026, `docs/reviews/MERCH_PART9_third_review.md`):**
+>   - **A reshipped line (T2.2-45):** a read is applied in three passes (parcels stored and returned marked; then every line of a returned
+>     parcel found in a parcel that did not come back moves to it; only then a returned parcel with lines still in it asks for an address), so
+>     the order of shipments in a read, or of hints and reads, never refunds a line Printful reshipped.
+>   - **A reprint that cannot be read:** every read of a reprint's Printful order is counted and capped like our own order's (10 an alarm), its
+>     failures kept on the reprint (`read_fail`). The daily re-read tries it hourly, tells the owner once after 24 hours (`printer_unread`), then
+>     reads it once a day. In the 7-day reship step, reads (ours or a reprint's) that have failed for 24 hours end the case: the order is held
+>     for the owner's review (`hold = review`, `why = reship_unread`, the order status unchanged, no wake, the address form shut) with one
+>     owner email. Nothing is refunded blind there (Printful may have reshipped it): the owner refunds or reprints those lines by hand.
+>   - **Printful's hold (T2.2-46):** only our own main Printful order's `onhold` holds the order, and never over another hold: with a reship
+>     hold the owner is emailed and the reship goes on; a reprint order on hold is an owner email only. A parcel that comes back while
+>     Printful holds the order starts the reship (the order goes back to `part_shipped`, the owner told).
+>   - **A lost dispute (T2.2-26):** one owner email (`dispute_lost`) names what still goes on at Printful (reprints with something posted, the
+>     main order's lines not posted yet); a reprint confirmed at Printful with nothing posted is asked to cancel there (reprint status
+>     `pcancel`, then `cancelled`, the old line back as it was; Printful cannot: back to `confirmed`, the owner told).
+>   - **Two disputes:** every close leaves `x:dclosed:<dispute id>`, so a `created` that comes after its own close is ignored for any dispute,
+>     not only the one the order names.
 
 ---
 

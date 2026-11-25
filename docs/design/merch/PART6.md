@@ -50,6 +50,7 @@ After the review batch (25 Nov 2026, "Review fixes" below): `merch_worker` **181
 | `reject` | Sorry, we couldn't print one thing (several: "some things") | the line or the lines rejected together (one email), the refund, "the rest goes on" |
 | `late` | Taking longer than we said | sent AT `ship_by`: the date we said, the late lines, the new date `late_eta`, "You don't need to do anything to keep waiting", cancel the late part for a full refund from the order page any time until it's posted |
 | `late_again` | Still taking longer than we said | at `late_eta`, only when the buyer said keep waiting: no new date, still on it, cancel any time until it's posted |
+| `late_posted` | It was already on its way | (part 9, third review R3-m3) a late cancel asked while our print partner could not be read, and all of it had been posted before the buyer asked: nothing refunded, it's on its way |
 | `reprint` | A new one is on its way | the reprinted lines, nothing to pay |
 
 Every email: the order id, the order page link, the footer (Seller line when set, Terms of sale, Shipping and returns, Privacy, "Questions? Reply to

@@ -9,7 +9,7 @@
 import { fetcher, call, siteOf, orderLink } from './util.js';
 
 export const CONTACT = 'contact@doodledoggo.app';
-export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'reprint'];
+export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'late_posted', 'reprint'];
 const ZERO_DEC = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']; // Stripe's zero-decimal currencies
 const THREE_DEC = ['BHD', 'JOD', 'KWD', 'OMR', 'TND'];
 const INK = '#5B3D32', PAPER = '#FFFBF3', YELLOW = '#FFE3A1', MINT = '#C8E9CF';
@@ -242,6 +242,13 @@ export function build(kind, view, env) {
       B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
       return page('Still taking longer than we said', 'Still working on your order', B, env, site);
     }
+    case 'late_posted': { // third review (R3-m3): the late cancel waited for our print partner, and it had all been posted before the buyer asked
+      B.push(['p', 'You asked us to cancel the late part of your order. Good news: it had already left our print partner by then, so it’s on its way to you.'],
+        ['p', 'So there was nothing left to cancel, and nothing has been refunded. The tracking link is on your order page.'],
+        ['p', 'Something wrong when it arrives? Reply to this email with a photo within 30 days, and we’ll reprint it or refund it, whichever you prefer.'],
+        ['facts', [orderFact]], toPage);
+      return page('It was already on its way', 'Your order was already on its way', B, env, site);
+    }
     case 'reprint': {
       const n = A.reprint && A.reprint.n, ls = L.filter((l) => l.reprint_of != null && (n == null || l.rp === n)), why = A.reprint && A.reprint.why;
       B.push(['p', (why === 'lost' ? 'Sorry your parcel went missing. ' : why === 'reship' ? 'Thank you for checking your address. ' : 'Sorry it didn’t arrive as it should. ') + 'We’re making a new one for you, free:']);
@@ -297,6 +304,9 @@ const OWNER = {
   storage: ['Print storage is over 4 GB.', 'Old print files are being tidied; past 4.5 GB it is time for Workers Paid.', 'report'],
   report: ['The nightly report.', null, 'report'],
   stuck: ['A step failed with an error; it is tried again every 5 minutes.', 'If it keeps failing, look at the order.', 'show'],
+  late_cancel_unread: ['A buyer cancelled the late part while Printful could not be read.', 'Check the Printful order and cancel what you still can there.', 'show'],
+  reship_unread: ['A returned parcel waited 7 days, but its Printful order could not be read, so nothing was refunded.', 'Check the Printful order: refund or reprint those lines if it was not reshipped.', 'show'],
+  dispute_lost: ['A dispute was lost (the bank paid the buyer back).', 'Cancel in the Printful dashboard what still goes on there, if you can.', 'show'],
   cancel_late: ['The late part of an order was refunded (the buyer cancelled it, or its new date passed).', 'Cancel those items in the Printful dashboard if you can.', 'show'],
   returned: ['A parcel came back to Printful.', 'Nothing is reshipped (the order is refunded, cancelled or disputed).', 'show'],
   reprint_held: ['A reprint waits (the printer mode is not live).', 'Confirm it once the mode is live.', 'confirm'],
