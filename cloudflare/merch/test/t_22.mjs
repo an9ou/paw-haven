@@ -188,8 +188,10 @@ export async function t22() {
     await w.advance(1); ok(w.lines(id)[0].tries === 1 && w.lines(id)[0].status === 'queued', 'retry after 1 min');
     await w.advance(MIN); const L = w.lines(id); eq(L[0].status, 'rejected', 'rejected after the second try and the resvg fallback');
     ok(w.rd.calls.map((c) => c.p).slice(0, 3).join() === '/screenshot,/screenshot,/resvg', 'browser, browser, resvg');
-    ok(refunded(w) === 1999 && w.owner(/render_reject/).length === 1 && w.mails(/_reject_1$/).length === 1, 'the mug refunded; owner and buyer told');
+    ok(refunded(w) === 1999 && w.owner(/render_reject/).length === 1, 'the mug refunded; the owner told');
+    ok(!w.mails(/_reject_1$/).length, 'the buyer is told once nothing else of the order waits to render (review finding 5: one email for lines rejected together)');
     await w.advance(3 * MIN); ok(w.lines(id)[1].status === 'drafted' && w.pfOrder(id).items.length === 1, 'the tee goes on alone');
+    ok(w.mails(/_reject_1$/).length === 1 && w.mails(/^me_.*_reject_/).length === 1, 'the buyer told, once');
     for (const bad of ['wrongsize', 'big']) { const x = await world(); x.rd.queue.push(bad, bad, 'err'); const i = await x.paidOrder([mug(0)]); await x.advance(2 * MIN); eq(x.order(i).status, 'refunded', bad + ': a PNG of the wrong size or over 7.5 MB is never stored'); }
     const y = await world(); y.rd.queue.push('err'); const j = await y.paidOrder([mug(0)]); await y.advance(2 * MIN); ok(y.lines(j)[0].status === 'drafted' && y.lines(j)[0].renderer === 'browser', 'one error then fine');
   });

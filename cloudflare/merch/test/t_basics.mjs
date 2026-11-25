@@ -38,7 +38,7 @@ export async function basics() {
       ['US', [tee(0, { size: '2XL' })], 2899 + 499, 499]];
     for (const [c, lines, total, fee] of cases) { const r = await w.quote(lines, c); ok(r.status === 200, c + ' ' + r.text); ok(r.json.total === total && r.json.ship_fee === fee, c + ' ' + lines.length + ' lines: ' + r.json.total + '/' + r.json.ship_fee + ' want ' + total + '/' + fee); }
     const r = await w.quote([mug(0)], 'HK'); eq(r.json.notes, ['import_tax'], 'world note (a code)'); ok(r.json.free_from === null, 'never free in world');
-    const m = await w.quote([mug(0), tee(1)], 'US'); eq(m.json.notes, ['separate_parcels'], 'mugs and tees in their own parcels (a code)'); eq(m.json.eta, [5, 9], 'eta [min, max] business days');
+    const m = await w.quote([mug(0), tee(1)], 'US'); eq(m.json.notes, ['separate_parcels'], 'mugs and tees in their own parcels (a code)'); eq(m.json.eta, [5, 11], 'eta [min, max] business days (catalog.js ZONES.us_jp: 2 + 3 to SHIP_BY_DAYS + 4)');
     ok(w.q('select count(*) as n from merch_orders')[0].n === 0, 'a quote writes nothing');
   });
   await T('X-margin', 'the margin guard matches SHIPPING.md model C to the cent (US, no holiday): mug 9.41, tee 11.54, mug+tee 11.66, 2 tees 16.87, 2 mugs 13.11', async () => {

@@ -10,8 +10,8 @@
 //   4. nothing is confirmed at the printer unless MERCH_PROVIDER_MODE is live;
 //   5. money and mail are rows written in the same transaction as the change (merch_refunds, merch_outbox), sent after commit, retried by the alarm.
 import { nowOf, jstDay, jstHour, nextUtcMidnight, addBusinessDays, json, fail, sha256hex, hmacHex, hex, orderId, ORDER_ID, pngSize, MIN, HOUR, DAY, GRACE, siteOf } from './util.js';
-import { buildCatalog, ZONES, zoneOf, regionOf, variantId, ALL_COUNTRIES, PRODUCTS as CATP } from './catalog.js';
-import { checkBasket, priceBasket, marginOf, quoteOut, zoneNotes, openCountries, fromOpen, productsOn, taxBehavior, withArtVer } from './lines.js';
+import { buildCatalog, ZONES, zoneOf, regionOf, variantId, ALL_COUNTRIES, PRODUCTS as CATP, SHIP_BY_DAYS, LATE_MORE_DAYS, LATE_MAX_DAYS } from './catalog.js';
+import { checkBasket, priceBasket, marginOf, quoteOut, catalogOut, openCountries, fromOpen, productsOn, taxBehavior, withArtVer } from './lines.js';
 import * as stripe from './stripe.js';
 import * as provider from './provider_printful.js';
 import * as render from './render.js';
@@ -28,6 +28,11 @@ const PF_CONFIRMED = ['pending', 'inprocess', 'onhold', 'partial', 'fulfilled'];
 const BACKOFF = [1, 5, 15, 60].map((m) => m * MIN);
 const MAIL_BACKOFF = [1, 5, 15, 60, 180].map((m) => m * MIN), MAIL_TRIES = 6;
 const LEASE = 3 * MIN, WAKE = 5 * MIN; // a step's lease, and the wake it leaves behind in case it never finishes
+// the buyer emails that may carry the thank-you gift once it is shown (the first one sent after the cancel hour; once only: gift_mailed)
+const GIFT_KINDS = ['ship', 'reprint', 'late', 'late_again'];
+// the order statuses in which a reserved gift is shown once the cancel hour is over (a held order only once it is released; draft_mode stands
+// for "printing has started" in a world that never prints)
+const GIFT_ON = ['paid', 'confirming', 'confirmed', 'part_shipped', 'shipped'];
 
 export const SCHEMA = `
 create table if not exists merch_orders (id text primary key, nonce text unique, day text, created_at integer, updated_at integer, status text, hold text,
@@ -69,7 +74,12 @@ create table if not exists merch_trash (key text primary key, at integer);
 `;
 // columns added after the first build: added to an older table in place (additive, never dropped)
 const MIGRATE = [['merch_orders', 'lease_until', 'integer'], ['merch_orders', 'pcancel', 'integer default 0'], ['merch_orders', 'draft_n', 'integer default 0'],
-  ['merch_order_items', 'store_tries', 'integer default 0'], ['merch_reprints', 'why', 'text']];
+  ['merch_order_items', 'store_tries', 'integer default 0'], ['merch_reprints', 'why', 'text'],
+  // part 6 review batch (25 Nov 2026): the delay plan (late_eta: the new date of the first delay email; late_ok_at: the buyer said keep
+  // waiting; late2_sent_at: the second notice went; late_auto_at: the late part was refunded by itself), the gift (gift_shown_at: shown on the
+  // order page; gift_mailed: the outbox row that carries it, once), render rejects told in one email (told)
+  ['merch_orders', 'late_eta', 'integer'], ['merch_orders', 'late_ok_at', 'integer'], ['merch_orders', 'late2_sent_at', 'integer'], ['merch_orders', 'late_auto_at', 'integer'],
+  ['merch_orders', 'gift_shown_at', 'integer'], ['merch_orders', 'gift_mailed', 'text'], ['merch_refunds', 'told', 'integer default 0']];
 
 let PAWPRINT = null; // loaded once per object, lazily: about 30 ms of CPU, so never in the front Worker (Free: 10 ms a request)
 async function loadPawPrint(env) {
@@ -116,16 +126,31 @@ export class MerchLedger {
     const k = Object.keys(cols); cols.updated_at = this.now(); if (!k.includes('updated_at')) k.push('updated_at');
     const where = from ? ' and status in (' + from.map(() => '?').join(',') + ')' : '';
     const ch = this.q('update merch_orders set ' + k.map((c) => c + ' = ?').join(', ') + ' where id = ?' + where + ' returning id', ...k.map((c) => cols[c]), id, ...(from || [])).length > 0;
-    if (ch && ('next_try_at' in cols || 'status' in cols || 'hold' in cols)) this.lateWake(id);
-    if (ch && cols.status === 'paid') this.giveGift(id); // part 6: the thank-you gift, when the order becomes paid (also a held order released later)
+    if (ch && ('next_try_at' in cols || 'status' in cols || 'hold' in cols || 'dispute' in cols || 'late_sent_at' in cols)) this.lateWake(id);
+    if (ch && cols.status === 'paid') this.giveGift(id); // part 6: the thank-you gift is reserved when the order becomes paid (also a held order released later)
+    if (ch && (cols.status === 'cancelled' || cols.status === 'refunded')) this.giftBack(id); // review finding 2: an unseen gift goes back to the pool
+    if (ch) this.giftShow(id); // and it is shown once the cancel hour is over (the same transaction that moves the order on)
     return ch;
   }
   setLine(id, line, cols) { const k = Object.keys(cols); this.run('update merch_order_items set ' + k.map((c) => c + ' = ?').join(', ') + ' where order_id = ? and line = ?', ...k.map((c) => cols[c]), id, line); }
-  next(id, t) { this.run('update merch_orders set next_try_at = ? where id = ?', t, id); this.lateWake(id); }
-  // S10: an order that may still be late keeps a wake at ship_by, whatever it waits for (held orders too), so the delay email always runs
+  next(id, t) { this.run('update merch_orders set next_try_at = ? where id = ?', t, id); this.lateWake(id); this.giftShow(id); }
+  // S10 and the delay plan (part 6 review): an order that may still be late keeps a wake at its next delay step, whatever it waits for (held
+  // orders too; never in a dispute hold): at ship_by the first delay email, at late_eta the second notice or the refund of the late part
   lateWake(id) {
-    this.run(`update merch_orders set next_try_at = min(coalesce(next_try_at, ship_by), ship_by) where id = ? and ship_by is not null and late_sent_at is null
-      and status in ('paid', 'held', 'confirming', 'confirmed', 'part_shipped') and coalesce(hold, '') != 'dispute'`, id);
+    const o = this.order(id), d = this.lateDue(o);
+    if (d != null && (o.next_try_at == null || o.next_try_at > d)) this.run('update merch_orders set next_try_at = ? where id = ?', d, id);
+  }
+  // a line that can be late: live, not posted, not all refunded, and not a free reprint (a reprint is not the order we promised to post)
+  lateLine(l) { return this.unshipped(l) && l.reprint_of == null; }
+  // when the next delay step is due, or null. The second step never runs while a confirm is in flight (confirming: its own wake comes back
+  // within minutes), while a dispute is open or after it was lost (the bank decides the money).
+  lateDue(o) {
+    if (!o || !o.ship_by || !LATE_ST.includes(o.status) || o.hold === 'dispute') return null;
+    let due = null;
+    if (!o.late_sent_at) due = o.ship_by;
+    else if (!o.late2_sent_at && !o.late_auto_at && o.late_eta && o.status !== 'confirming' && o.dispute !== 'open' && o.dispute !== 'lost') due = o.late_eta;
+    if (due == null) return null;
+    return this.lines(o.id).some((l) => this.lateLine(l)) ? due : null;
   }
   // the order's lease: a step that calls the printer or the renderer takes it first, and leaves a wake behind (M2). Sync: inside tx().
   claim(id) { const now = this.now(); return this.q('update merch_orders set lease_until = ?, next_try_at = ? where id = ? and (lease_until is null or lease_until <= ?) returning id', now + LEASE, now + WAKE, id, now).length > 0; }
@@ -149,11 +174,26 @@ export class MerchLedger {
   /* ---------------- the thank-you gift (part 6; TRANSACTIONS 10 point 5): one cosmetic game code per order, from merch_gift_pool ---------------- */
   // Sync, inside the caller's transaction (set() calls it when an order becomes paid). An empty pool: no gift, never an error. A cancelled or
   // refunded order keeps the code it was given. The code is never logged, put in an event, the report or the admin export.
+  // Review finding 2 (25 Nov 2026): the code is RESERVED here (hidden: the order answer says gift: 'soon'), SHOWN by giftShow() once the cancel
+  // hour is over, and a cancel or a full refund before that puts it back in the pool (giftBack), all in the transaction of the change. So
+  // "order, cancel within the hour" never takes a code; once shown, the order keeps it whatever happens (a gift is a gift).
   giveGift(id) {
     const o = this.order(id); if (!o || o.gift_code || o.status !== 'paid') return;
     const g = this.one('update merch_gift_pool set order_id = ?, claimed_at = ? where rowid = (select rowid from merch_gift_pool where order_id is null order by rowid limit 1) returning code', id, this.now());
-    if (g) this.run('update merch_orders set gift_code = ? where id = ?', g.code, id);
+    if (g) this.run('update merch_orders set gift_code = ?, gift_shown_at = null, gift_mailed = null where id = ?', g.code, id);
     this.giftCheck();
+  }
+  // shown when the order is past its cancel hour (cancel_until + the grace: exactly when a cancel stops being taken) and going on
+  giftShow(id) {
+    const o = this.order(id); if (!o || !o.gift_code || o.gift_shown_at || o.cancel_until == null || this.now() < o.cancel_until + GRACE) return;
+    if (!(GIFT_ON.includes(o.status) || (o.status === 'held' && o.hold === 'draft_mode')) || o.dispute === 'open' || o.dispute === 'lost') return;
+    this.run('update merch_orders set gift_shown_at = ? where id = ? and gift_shown_at is null', this.now(), id);
+  }
+  // a reserved code that was never shown goes back to the pool (the order ended before its hour was over, or was never made)
+  giftBack(id) {
+    const o = this.order(id); if (!o || !o.gift_code || o.gift_shown_at) return;
+    this.run('update merch_gift_pool set order_id = null, claimed_at = null where code = ? and order_id = ?', o.gift_code, id);
+    this.run('update merch_orders set gift_code = null, gift_mailed = null where id = ?', id);
   }
   giftCounts() { const r = this.one('select count(*) as n, count(order_id) as c from merch_gift_pool'); return { left: Number(r.n) - Number(r.c), claimed: Number(r.c) }; }
   // one owner email a day while fewer than 10 are left, and when it is empty (only once a pool was filled: no codes at all = no gift, by choice)
@@ -224,7 +264,7 @@ export class MerchLedger {
       if (p === '/merch/webhook/stripe' && m === 'POST') return await this.rStripe(req);
       if (p === '/merch/webhook/provider' && m === 'POST') return await this.rProvider(req, ip);
       if (p.startsWith('/merch/admin/')) return await adminRoute(this, req, p.slice('/merch/admin/'.length), ip);
-      const mm = /^\/merch\/order\/([^/]+)(?:\/(cancel|address|refund))?$/.exec(p);
+      const mm = /^\/merch\/order\/([^/]+)(?:\/(cancel|address|refund|wait))?$/.exec(p);
       if (mm) return await this.rOrder(req, mm[1], mm[2] || null, m, ip);
       return fail('not_found', 404);
     } finally { await this.flush(); this.saveWrites(); await this.arm(); }
@@ -232,17 +272,10 @@ export class MerchLedger {
   async body(req) { const t = await req.text(); if (t.length > 65536) return null; try { const o = JSON.parse(t || '{}'); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } }
 
   // TRANSACTIONS 6.3 and its note of 24 Nov 2026: countries {code, zone, soon} (never-countries left out, no names), notes as codes, no free text
+  // (the shape is lines.js catalogOut(), which tools/merch_catalog_json.js also uses to write the page's stand-in catalog)
   rCatalog() {
-    const now = this.now(), g = this.gate(), on = productsOn(this.env), off = this.variantOff(), open = openCountries(this.env);
-    const products = Object.values(this.cat.products).filter((P) => P.launch && on.has(P.id) && this.PP.PRODUCTS[P.id] && this.PP.PRODUCTS[P.id].launch).map((P) => {
-      const colours = P.colours.map((c) => ({ id: c.id, sizes: c.sizes.filter((s) => !off(variantId(P.id, c.id, s))), on: P.sized ? c.sizes.some((s) => !off(variantId(P.id, c.id, s))) : !off(variantId(P.id, c.id, null)) }));
-      const sizes = P.sized ? Array.from(new Set(P.colours.flatMap((c) => c.sizes))).map((s) => { const add = (P.size_price && P.size_price[s]) || 0; return { id: s, add, price: P.price + add }; }) : [];
-      return { id: P.id, price: P.price, sizes, colours, poses: P.poses, on: colours.some((c) => c.on) };
-    });
-    const zones = Object.values(ZONES).map((z) => ({ id: z.id, fee: z.fee, free_from: z.free_from, extra: z.extra, eta: z.eta.slice(), notes: zoneNotes(z) }));
-    const countries = ALL_COUNTRIES.slice().sort().map((c) => ({ code: c, zone: zoneOf(c), soon: !open.has(c) }));
-    return json({ cat_ver: this.cat.cat_ver, shut: !g.ok, resting: g.why === 'off' || undefined, sold_out_today: g.ok && this.dayCount(jstDay(now)) >= this.cap(), products, zones, countries,
-      max_lines: this.cat.limits.max_lines, max_qty: this.cat.limits.max_qty, art_vers: this.served() });
+    const now = this.now(), g = this.gate();
+    return json(catalogOut(this.PP, this.cat, this.env, { off: this.variantOff(), shut: !g.ok, resting: g.why === 'off', sold_out_today: g.ok && this.dayCount(jstDay(now)) >= this.cap(), art_vers: this.served() }));
   }
   // prices are public: a quote answers while the shop is shut by MERCH_FROM and says shut: true (checkout stays 503 merch_closed)
   async rQuote(req, ip) {
@@ -324,6 +357,7 @@ export class MerchLedger {
     const body = (await this.body(req)) || {};
     const o = this.order(id); // read again after the await
     if (act === 'cancel') return this.rCancel(o, body);
+    if (act === 'wait') return this.rWait(o);
     if (act === 'address') return this.rAddress(o, body);
     if (act === 'refund') {
       const done = this.tx(() => { const x = this.order(o.id); if (!(x.status === 'held' && x.hold === 'address')) return false; this.fullRefund(x, 'address_refund', 'refunded'); return true; });
@@ -332,32 +366,57 @@ export class MerchLedger {
     }
   }
   // what GET /merch/order/:id shows: never an address, an email or its hash (TRANSACTIONS 5)
+  // (part 6 review batch: ship_by, late_eta, late_ok and gift: null | 'soon' | 'ready' are always in the answer; the gift code only once shown)
   page(o) {
     const now = this.now(), L = this.lines(o.id), parcels = this.q('select * from merch_parcels where order_id = ? order by shipped_at', o.id);
     const can = ['paid', 'held'].includes(o.status) && o.hold !== 'dispute' && o.cancel_until != null && now < o.cancel_until + GRACE;
-    const unshipped = L.some((l) => this.unshipped(l));
+    const late = !!o.late_sent_at && !ENDED.includes(o.status) && L.some((l) => this.lateLine(l)), shown = !!(o.gift_code && o.gift_shown_at);
     return { id: o.id, status: o.status, hold: o.hold, pay_pending: !!o.pay_pending, paid_at: o.paid_at, cancel_until: o.cancel_until, can_cancel: can, country: o.country,
       lines: L.map((l) => ({ line: l.line, product: l.product, colour: l.colour, size: l.size, pose: l.pose, name_on: !!l.name_on, name: l.name_on ? l.name : null, qty: l.qty, unit: l.unit,
         status: l.status, refunded_qty: l.refunded_qty, parcel: l.parcel_id, recipe: l.recipe, reprint_of: l.reprint_of })),
       parcels: parcels.map((p) => ({ id: p.id, product: p.product, carrier: p.carrier, tracking_url: p.tracking_url, shipped_at: p.shipped_at, delivered_at: p.delivered_at })),
       totals: { subtotal: o.subtotal, ship_fee: o.ship_fee, tax: o.tax, total: o.total, refunded: o.refunded }, pres: o.pres_currency ? { currency: o.pres_currency, amount: o.pres_amount } : null,
-      gift_code: o.gift_code || null, gift_name: o.gift_code ? mail.giftName(this.env) : null, late: !!o.late_sent_at && unshipped, resting: this.env.MERCH_OFF === '1' || undefined, dispute: o.dispute || null };
+      gift: o.gift_code ? (shown ? 'ready' : 'soon') : null, gift_code: shown ? o.gift_code : null, gift_name: shown ? mail.giftName(this.env) : null,
+      ship_by: o.ship_by || null, late: late, late_eta: o.late_eta || null, late_ok: !!o.late_ok_at, resting: this.env.MERCH_OFF === '1' || undefined, dispute: o.dispute || null };
+  }
+  // "Keep waiting" (the delay plan c): the buyer's yes, recorded once (late_ok_at), only while part of the order is late. Idempotent.
+  rWait(o) {
+    const x = this.tx(() => {
+      const y = this.order(o.id); if (!y || !y.late_sent_at || ENDED.includes(y.status) || !this.lines(y.id).some((l) => this.lateLine(l))) return null;
+      if (!y.late_ok_at) { this.set(y.id, { late_ok_at: this.now() }); this.event('x:late_ok:' + y.id, y.id, 'late_ok'); }
+      return this.order(y.id);
+    });
+    if (!x) return fail('not_late', 409);
+    return json({ ok: true, late_ok: true, late_eta: x.late_eta || null });
+  }
+  // the late part refunded in full (the buyer's late cancel, or by itself at late_eta: reason 'late' | 'late_auto'). Sync, inside tx(). One
+  // refund row per line and ONE email (refundLines); the printer is asked to cancel when none of its order has shipped (N5), otherwise the owner
+  // is told. (An order not confirmed at the printer has nothing posted, so all of it is late: it ends refunded and its draft is deleted by
+  // lineRefund.) -> false when nothing is late.
+  lateRefund(x, reason) {
+    const late = this.lines(x.id).filter((l) => this.lateLine(l)); if (!late.length) return false;
+    const now = this.now();
+    this.refundLines(x.id, late.map((l) => ({ line: l.line })), reason);
+    const y = this.order(x.id), who = reason === 'late_auto' ? 'The late part was refunded by itself (its new date passed and the buyer had not said to keep waiting)' : 'The buyer cancelled the late part';
+    if (y.confirmed_at) { // N5: cancel the whole Printful order only when none of it has shipped; otherwise the owner cancels those items by hand
+      if (!this.lines(x.id).some((l) => l.parcel_id || (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped)) { this.set(x.id, { pcancel: 1, next_try_at: now }); this.fx.push({ t: 'pcancel', order: x.id }); }
+      else this.ownerMail(x.id, 'cancel_late', who + ' (' + late.map((l) => 'line ' + l.line).join(', ') + '). Part of this Printful order has shipped, so please cancel those items in the Printful dashboard if you can.');
+    }
+    return true;
   }
   async rCancel(o, body) {
     const scope = body.scope === 'late' ? 'late' : 'order';
     if (scope === 'late') { // T2.1-31, S10: the FTC delay cancel, for held orders too (never during a dispute: the bank decides)
+      let busy = false;
       const r = this.tx(() => {
-        const x = this.order(o.id); if (!x.late_sent_at || !['paid', 'held', 'confirmed', 'part_shipped'].includes(x.status) || x.hold === 'dispute' || x.dispute === 'open') return null;
-        const late = this.lines(x.id).filter((l) => this.unshipped(l));
-        if (!late.length) return null;
-        this.refundLines(x.id, late.map((l) => ({ line: l.line })), 'late'); // one email for the whole late part (part 6)
-        const y = this.order(x.id);
-        if (y.confirmed_at) { // N5: cancel the whole Printful order only when none of it has shipped; otherwise the owner cancels those items by hand
-          if (!this.lines(x.id).some((l) => l.parcel_id || (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped)) { this.set(x.id, { pcancel: 1, next_try_at: this.now() }); this.fx.push({ t: 'pcancel', order: x.id }); }
-          else this.ownerMail(x.id, 'cancel_late', 'The buyer cancelled the late part (' + late.map((l) => 'line ' + l.line).join(', ') + '). Part of this Printful order has shipped, so please cancel those items in the Printful dashboard if you can.');
-        }
-        return true;
+        const x = this.order(o.id);
+        // review finding 9: while 'confirming' the printer is being asked to start (a charge in flight, its answer unknown until the call returns or
+        // the re-read 2 minutes later): refunding lines then could still print them. So not now, kindly; it takes a minute or two at most.
+        if (x.status === 'confirming' && x.late_sent_at) { busy = true; return null; }
+        if (!x.late_sent_at || !['paid', 'held', 'confirmed', 'part_shipped'].includes(x.status) || x.hold === 'dispute' || x.dispute === 'open') return null;
+        return this.lateRefund(x, 'late') || null; // one email for the whole late part (part 6)
       });
+      if (busy) return fail('busy', 409, { say: 'We’re sending your order to print right this minute. Please try again in a minute or two.' });
       if (!r) return fail('not_late', 409);
       await this.flush(); const x = this.order(o.id);
       return json({ status: x.status, refund: this.refundState(x.id) });
@@ -438,6 +497,7 @@ export class MerchLedger {
       const shipped = (LINE_RANK[l.status] || 0) >= LINE_RANK.shipped;
       const cols = { refunded_qty: l.qty, refunded: l.line_total + (excl ? l.line_tax || 0 : 0) }; // S2: inclusive tax is inside the price
       if (!shipped && !DEAD.includes(l.status)) { cols.status = 'cancelled'; cols.keep_until = now + 2 * DAY; }
+      else if (DEAD.includes(l.status) && l.keep_until == null) cols.keep_until = now + 2 * DAY; // (f) a rejected line's print file goes in 2 days too
       this.setLine(o.id, l.line, cols);
     }
     const cols = { status: to, refunded: o.total || 0, refunded_at: now, next_try_at: now };
@@ -462,13 +522,14 @@ export class MerchLedger {
     // N1: glob, not like ('_' is a like wildcard: _l1_% matched l101)
     const now = this.now(), n = Number(this.one('select count(*) as n from merch_refunds where id glob ?', 'mr_' + o.id + '_l' + l.line + '_*').n) + 1, rid = 'mr_' + o.id + '_l' + l.line + '_' + n;
     if (amount > 0) { this.run("insert into merch_refunds (id, order_id, line, qty, amount, reason, status, created_at, next_try_at) values (?, ?, ?, ?, ?, ?, 'sending', ?, ?)", rid, o.id, l.line, q, amount, reason, now, now); this.fx.push({ t: 'refund', id: rid }); }
-    this.setLine(o.id, l.line, { refunded_qty: l.refunded_qty + q, refunded: l.refunded + amount });
+    this.setLine(o.id, l.line, Object.assign({ refunded_qty: l.refunded_qty + q, refunded: l.refunded + amount }, DEAD.includes(l.status) && l.keep_until == null ? { keep_until: now + 2 * DAY } : {})); // (f)
     const cols = { refunded: (o.refunded || 0) + amount, refunded_at: now };
     if (after === 0) {
       cols.status = 'refunded'; cols.next_try_at = now;
       if (!['part_shipped', 'shipped'].includes(o.status)) cols.hold = null;
       if (o.provider_order && !o.confirmed_at) { cols.draft_del = 1; this.fx.push({ t: 'deldraft', order: o.id }); }
       for (const x of L) if (!DEAD.includes(x.status) && (LINE_RANK[x.status] || 0) < LINE_RANK.shipped) this.setLine(o.id, x.line, { status: 'cancelled', keep_until: now + 2 * DAY });
+      this.deadKeep(o.id, now);
     }
     this.set(o.id, cols);
     if (after === 0) this.stopReprints(o.id);
@@ -476,21 +537,40 @@ export class MerchLedger {
       const live = this.lines(o.id).filter((x) => !DEAD.includes(x.status) && x.refunded_qty < x.qty);
       if (live.length && live.every((x) => (LINE_RANK[x.status] || 0) >= LINE_RANK.shipped)) this.set(o.id, { status: 'shipped', next_try_at: null });
     }
-    // N3. A reject (render, provider) is told by its own "couldn't print" email, except when it was the last thing left: then "refunded in full"
-    // (part 6: before, an order whose only line could not be rendered got no email at all)
-    if (!quiet && (after === 0 || (reason !== 'render' && reason !== 'provider'))) this.buyerMail(o.id, after === 0 ? 'refunded_all' : 'refunded', 'me_' + o.id + '_refund_' + rid, null, { refund: rid, reason });
+    // N3. A reject (render, provider) is told by refundLines / tellRejects (one email for the lines rejected together); a refund that leaves
+    // nothing is "refunded in full" (part 6: before, an order whose only line could not be rendered got no email at all)
+    if (!quiet) this.tellRefunds(o.id, [rid], reason, l.line);
     return { id: rid, amount, last: after === 0 };
   }
-  // several lines at once (the late part, a reship that timed out, a lost parcel): one refund row per line, ONE email for them all. Sync.
+  // (f) rejected (or otherwise dead) lines of an order whose print file had no end date: kept 2 more days, then tidy() deletes the file
+  deadKeep(id, now) { this.run("update merch_order_items set keep_until = ? where order_id = ? and status in ('rejected', 'void') and keep_until is null", now + 2 * DAY, id); }
+  // several lines at once (the late part, a reship that timed out, a lost parcel, lines the printer refused together): one refund row per line,
+  // ONE email for them all (review finding 5). Sync.
   refundLines(id, picks, reason) {
-    const rids = [];
+    const rids = [], lines = [];
     for (const p of picks) {
       const x = this.order(id); if (!x || x.status === 'refunded') break;
       const l = this.lineRow(id, p.line); if (!l || l.refunded_qty >= l.qty) continue;
-      const r = this.lineRefund(x, l, p.q == null ? l.qty - l.refunded_qty : p.q, reason, true); if (r.id) rids.push(r.id);
+      const r = this.lineRefund(x, l, p.q == null ? l.qty - l.refunded_qty : p.q, reason, true); if (r.id) { rids.push(r.id); lines.push(l.line); }
     }
-    if (rids.length) this.buyerMail(id, this.order(id).status === 'refunded' ? 'refunded_all' : 'refunded', 'me_' + id + '_refund_' + rids[0], null, { refunds: rids, reason });
+    if (rids.length) this.tellRefunds(id, rids, reason, lines[0]);
     return rids;
+  }
+  // the one buyer email for refunds made together: "refunded in full" when nothing is left, "couldn't print" for render and printer rejects,
+  // else "a refund for part of your order". Keys as before part 6 (me_<order>_refund_<first refund>, me_<order>_reject_<first line>).
+  tellRefunds(id, rids, reason, first) {
+    const all = this.order(id).status === 'refunded', reject = !all && (reason === 'render' || reason === 'provider');
+    this.run("update merch_refunds set told = 1 where order_id = ? and id in (" + rids.map(() => '?').join(',') + ')', id, ...rids);
+    if (reject) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + first, null, { line: first, refunds: rids, reason });
+    else this.buyerMail(id, all ? 'refunded_all' : 'refunded', 'me_' + id + '_refund_' + rids[0], null, rids.length > 1 ? { refunds: rids, reason } : { refund: rids[0], reason });
+  }
+  // render rejects arrive one line at a time (each line renders on its own wake): told together once no line of the order is still waiting to
+  // render, so several lines that fail at once get ONE email (review finding 5). Sync.
+  tellRejects(id) {
+    if (this.lines(id).some((l) => l.status === 'queued')) return;
+    const o = this.order(id); if (!o || o.status === 'cancelled' || o.status === 'expired') return;
+    const rs = this.q("select id, line from merch_refunds where order_id = ? and reason = 'render' and coalesce(told, 0) = 0 and id glob 'mr_*' order by created_at, id", id);
+    if (rs.length) this.tellRefunds(id, rs.map((r) => r.id), 'render', rs[0].line);
   }
   // queued, waiting or held reprints of an order that ended: never made (a draft already made at Printful is deleted). Sync.
   stopReprints(id) {
@@ -522,8 +602,21 @@ export class MerchLedger {
   /* ---------------- email: the outbox (S7) ---------------- */
   async sendMail(mid) {
     const now = this.now();
-    const row = this.tx(() => this.one("update merch_outbox set next_try_at = ? where id = ? and status = 'queued' and next_try_at <= ? returning *", now + WAKE, mid, now));
-    if (!row) return;
+    let skip = false;
+    const row = this.tx(() => {
+      const r = this.one("update merch_outbox set next_try_at = ? where id = ? and status = 'queued' and next_try_at <= ? returning *", now + WAKE, mid, now);
+      if (!r || r.who !== 'buyer') return r;
+      // review finding 13: an email whose news is out of date by the time it goes is not sent (a Thank you retried after a cancel; a delay
+      // email after the late part was cancelled or posted); the email about what happened instead has gone or goes
+      const o = this.order(r.order_id);
+      if (o && ((r.kind === 'thanks' && ENDED.includes(o.status)) || ((r.kind === 'late' || r.kind === 'late_again') && !this.page(o).late))) {
+        this.run("update merch_outbox set status = 'skipped', next_try_at = null where id = ?", r.id); skip = true; return r;
+      }
+      // the gift, once shown, goes in the first of these emails sent after that, and in no other (gift_mailed: this row; a retry of it keeps it)
+      if (GIFT_KINDS.includes(r.kind)) this.run('update merch_orders set gift_mailed = ? where id = ? and gift_code is not null and gift_shown_at is not null and gift_mailed is null', r.id, r.order_id);
+      return r;
+    });
+    if (!row || skip) return;
     let res = null;
     if (row.who === 'owner') res = await mail.owner(this.env, row.order_id, row.kind, row.note, 'mo_' + row.id.replace(/[^A-Za-z0-9_-]/g, '_'));
     else {
@@ -546,7 +639,7 @@ export class MerchLedger {
     const o = this.order(row.order_id); if (!o) return { id: row.order_id, lines: [], totals: {} };
     const v = this.page(o), TC = this.PP.TEE_COLOURS || [], rps = new Map(this.lines(o.id).map((l) => [l.line, l.rp]));
     for (const l of v.lines) { const c = TC.find((x) => x.id === l.colour); l.colour_name = c ? c.name : l.colour; l.rp = rps.get(l.line) == null ? null : rps.get(l.line); delete l.recipe; }
-    Object.assign(v, { ship_by: o.ship_by, eta: ZONES[o.zone] ? ZONES[o.zone].eta.slice() : null });
+    Object.assign(v, { eta: ZONES[o.zone] ? ZONES[o.zone].eta.slice() : null });
     let a = null; try { a = row.note ? JSON.parse(row.note) : null; } catch (e) { a = null; }
     if (!a || typeof a !== 'object') {
       a = {}; const pre = 'me_' + o.id + '_', rest = String(row.id).startsWith(pre) ? String(row.id).slice(pre.length) : ''; let m;
@@ -557,14 +650,9 @@ export class MerchLedger {
       else if ((m = /^address_(.+?)(?:_\d{12,})?$/.exec(rest))) a.reship = m[1];
     }
     const about = {};
-    if (a.parcel) {
-      about.parcel = String(a.parcel);
-      if (o.gift_code) { // the gift came after the Thank you email went (a held order released later): the first "On its way" carries it
-        const th = this.one('select status, sent_at from merch_outbox where id = ?', 'me_' + o.id + '_thanks'), gp = this.one('select claimed_at from merch_gift_pool where order_id = ?', o.id);
-        const before = this.one("select id from merch_outbox where order_id = ? and kind = 'ship' and status = 'sent' and id != ? limit 1", o.id, row.id);
-        about.gift = !before && (!th || th.status !== 'sent' || !!(gp && th.sent_at < gp.claimed_at));
-      }
-    }
+    if (a.parcel) about.parcel = String(a.parcel);
+    // the gift block: only in the one email that carries it (sendMail chose it: gift_mailed), only once it is shown on the order page
+    about.gift = !!(v.gift_code && o.gift_mailed && o.gift_mailed === row.id);
     let rids = Array.isArray(a.refunds) ? a.refunds : a.refund ? [a.refund] : [];
     if (!rids.length && a.line != null) rids = this.q("select id from merch_refunds where order_id = ? and line = ? and id glob 'mr_*' order by created_at desc limit 1", o.id, Number(a.line)).map((r) => r.id);
     if (!rids.length && row.kind === 'refunded_all') rids = this.q("select id from merch_refunds where order_id = ? and id glob 'mr_*' order by created_at desc limit 1", o.id).map((r) => r.id);
@@ -578,7 +666,6 @@ export class MerchLedger {
       about.reship = true; const x = String(a.reship), rp = this.one('select n from merch_reprints where id = ? and order_id = ?', x, o.id);
       about.reship_lines = this.lines(o.id).filter((l) => (rp ? l.rp === rp.n : l.parcel_id === x) && !['void', 'cancelled', 'rejected'].includes(l.status) && l.refunded_qty < l.qty).map((l) => l.line);
     }
-    about.new_eta = null; // a new expected date for the delay email: none is known yet (part 5 may learn one from the printer)
     v.about = about;
     return v;
   }
@@ -684,7 +771,7 @@ export class MerchLedger {
       const items = (cs.line_items && cs.line_items.data) || [];
       L.forEach((l, i) => this.setLine(id, l.line, { line_tax: (items[i] && items[i].amount_tax) || 0, status: ['pending', 'void'].includes(l.status) ? 'queued' : l.status }));
       const pd = cs.presentment_details || {};
-      const cols = { paid_at: now, cancel_until: now + this.coolMs(), ship_by: addBusinessDays(now, 5) + 2 * DAY, payment_intent: piOf(cs), tax, total: Number.isInteger(cs.amount_total) ? cs.amount_total : o.total,
+      const cols = { paid_at: now, cancel_until: now + this.coolMs(), ship_by: addBusinessDays(now, SHIP_BY_DAYS), payment_intent: piOf(cs), tax, total: Number.isInteger(cs.amount_total) ? cs.amount_total : o.total,
         pres_currency: pd.presentment_currency || null, pres_amount: pd.presentment_amount || null, email_hash: eh, pay_pending: 0 };
       if (before) { // the hold stays; its timer stays
         this.set(id, cols, ['held']);
@@ -769,6 +856,7 @@ export class MerchLedger {
           cols.hold = null; cols.next_try_at = now;
           if (o.provider_order && !o.confirmed_at) { cols.draft_del = 1; this.fx.push({ t: 'deldraft', order: o.id }); }
           this.run("update merch_order_items set status = 'cancelled', keep_until = ? where order_id = ? and status in ('pending', 'queued', 'ready', 'drafted')", now + 2 * DAY, o.id);
+          this.deadKeep(o.id, now);
         } else this.ownerMail(o.id, 'refund_after_confirm', 'Refunded in the Dashboard after printing started: cancel it in the Printful dashboard if you can.'); // T2.2-21
         this.run('update merch_order_items set refunded_qty = qty where order_id = ?', o.id); // M4: every line counts as refunded: no reprint, no reship
         this.set(o.id, cols);
@@ -799,6 +887,7 @@ export class MerchLedger {
       }
       const won = d.status === 'won';
       this.set(o.id, { dispute: won ? 'won' : 'lost' });
+      if (!won) this.giftBack(o.id); // the bank took the money back: a gift not shown yet goes back to the pool
       if (won) this.ownerMail(o.id, 'dispute_won', 'Dispute won. If it was held before printing, decide: ship it (merch.sh confirm) or refund it.');
       else if (['paid', 'held'].includes(o.status)) pause(); // lost: the bank took the money back; it is never made
       this.event('x:dispute_' + (won ? 'won' : 'lost') + ':' + o.id, o.id, 'dispute_' + (won ? 'won' : 'lost'));
@@ -892,11 +981,24 @@ export class MerchLedger {
       await this.flush();
     }
   }
-  lateCheck(id) { // T2.1-30, S10: once per order, whatever it waits for (not in a dispute)
-    const o = this.order(id), now = this.now();
-    if (!o || !o.ship_by || now < o.ship_by || o.late_sent_at || !LATE_ST.includes(o.status) || o.hold === 'dispute') return;
-    if (!this.lines(id).some((l) => this.unshipped(l))) return;
-    this.set(id, { late_sent_at: now }); this.buyerMail(id, 'late', 'me_' + id + '_late', null, {});
+  // The delay plan (TRANSACTIONS T2.1-30, T2.1-34; the part 6 review), whatever the order waits for (held orders too; never in a dispute hold).
+  // Sync, inside tx(): every step and its marker are written in one transaction, so a repeated alarm or a crash after it changes nothing.
+  //   at ship_by: the first delay email, once (late_sent_at), with a definite new date late_eta = ship_by + LATE_MORE_DAYS working days (never
+  //     more than LATE_MAX_DAYS days later). Waiting needs no answer.
+  //   at late_eta, part still not posted: the buyer said keep waiting -> one second notice (late_again, late2_sent_at), no new date; else the
+  //     late part is refunded in full by itself (late_auto_at), through the same path as the buyer's late cancel (lateRefund).
+  lateCheck(id) {
+    const o = this.order(id), now = this.now(), due = this.lateDue(o);
+    if (due == null || now < due) return;
+    if (!o.late_sent_at) {
+      const eta = Math.min(addBusinessDays(o.ship_by, LATE_MORE_DAYS), o.ship_by + LATE_MAX_DAYS * DAY);
+      this.set(id, { late_sent_at: now, late_eta: eta }); this.buyerMail(id, 'late', 'me_' + id + '_late', null, {});
+      return;
+    }
+    if (o.late_ok_at) { this.set(id, { late2_sent_at: now }); this.buyerMail(id, 'late_again', 'me_' + id + '_late_2', null, {}); return; }
+    this.set(id, { late_auto_at: now });
+    this.lateRefund(this.order(id), 'late_auto');
+    this.event('x:late_auto:' + id, id, 'late_auto');
   }
   async work(id) {
     let o = this.order(id); if (!o) return;
@@ -1016,6 +1118,7 @@ export class MerchLedger {
         if (!ok) { const y = this.lineRow(id, l.line); if (y) this.setLine(id, l.line, { file_key: s.key, file_sha: s.sha, file_bytes: r.png.length, keep_until: t + 2 * DAY }); return this.next(id, t); } // S1: kept 2 days, nothing else
         this.setLine(id, l.line, { status: 'ready', file_key: s.key, file_sha: s.sha, file_bytes: r.png.length, rendered_at: t, renderer: r.renderer, last_error: null, store_tries: 0 });
         if (ok.x.status === 'held' && ok.x.hold === 'render' && !this.lines(id).some((z) => z.status === 'queued')) this.set(id, { status: 'paid', hold: null, why: null, hold_at: null }, ['held']);
+        this.tellRejects(id); // an earlier line of this order was rejected: told now that nothing waits to render
         this.next(id, t);
       });
     }
@@ -1032,10 +1135,10 @@ export class MerchLedger {
         return;
       }
       if (y.tries < 1) { this.setLine(id, l.line, { tries: 1, last_error: r.why || 'render' }); return this.next(id, t + MIN); } // T2.2-28: once more after 1 min
-      this.setLine(id, l.line, { status: 'rejected', last_error: 'render', tries: y.tries + 1 }); // still failing after the fallback: refunded, the others go on
-      const res = this.lineRefund(x, this.lineRow(id, l.line), y.qty - y.refunded_qty, 'render');
+      this.setLine(id, l.line, { status: 'rejected', last_error: 'render', tries: y.tries + 1, keep_until: t + 2 * DAY }); // still failing after the fallback: refunded, the others go on
+      this.lineRefund(x, this.lineRow(id, l.line), y.qty - y.refunded_qty, 'render', true);
       this.ownerMail(id, 'render_reject', 'Line ' + l.line + ' could not be rendered and was refunded.');
-      if (!res.last) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line, null, { line: l.line, refund: res.id });
+      this.tellRejects(id); // one email for the lines rejected together, once nothing of the order waits to render (review finding 5)
       this.next(id, t);
     });
   }
@@ -1099,17 +1202,18 @@ export class MerchLedger {
       if (r.kind === 'refused' && r.items && r.items.length) {
         const bad = L.filter((l) => r.items.includes(ext + '_' + l.line));
         if (!bad.length || bad.length === L.length) { // T2.2-33: every line refused: all of it back, shipping included
-          guard((x) => { for (const l of L) { const y = this.lineRow(id, l.line); if (y.status !== 'ready') continue; this.setLine(id, l.line, { status: 'rejected', last_error: 'provider' }); this.run('update merch_variants set on_flag = 0 where id = ?', l.variant); } this.fullRefund(this.order(id), 'provider', 'refunded'); this.ownerMail(id, 'provider_reject', 'Printful refused every line.'); });
+          guard((x) => { for (const l of L) { const y = this.lineRow(id, l.line); if (y.status !== 'ready') continue; this.setLine(id, l.line, { status: 'rejected', last_error: 'provider', keep_until: this.now() + 2 * DAY }); this.run('update merch_variants set on_flag = 0 where id = ?', l.variant); } this.fullRefund(this.order(id), 'provider', 'refunded'); this.ownerMail(id, 'provider_reject', 'Printful refused every line.'); });
           return { ok: false, kind: 'refused' };
         }
-        guard(() => { // T2.2-32: that line is refunded and its variant turned off; the draft is made with the rest
+        guard(() => { // T2.2-32: those lines are refunded (ONE email for them: review finding 5) and their variants turned off; the draft is made with the rest
+          const picks = [];
           for (const l of bad) {
             const y = this.lineRow(id, l.line); if (y.status !== 'ready') continue;
-            this.setLine(id, l.line, { status: 'rejected', last_error: 'provider' });
+            this.setLine(id, l.line, { status: 'rejected', last_error: 'provider', keep_until: this.now() + 2 * DAY }); // (f) its print file goes in 2 days
             this.run('insert into merch_variants (id, product, colour, size, provider_variant, on_flag) values (?, ?, ?, ?, ?, 0) on conflict(id) do update set on_flag = 0', l.variant, l.product, l.colour, l.size, l.provider_variant);
-            const rr = this.lineRefund(this.order(id), this.lineRow(id, l.line), y.qty - y.refunded_qty, 'provider');
-            if (!rr.last) this.buyerMail(id, 'reject', 'me_' + id + '_reject_' + l.line, null, { line: l.line, refund: rr.id });
+            picks.push({ line: l.line });
           }
+          this.refundLines(id, picks, 'provider');
           this.ownerMail(id, 'provider_reject', 'Printful refused ' + bad.map((l) => l.variant).join(', '));
         });
         continue;
@@ -1375,7 +1479,7 @@ export class MerchLedger {
       const closed = this.q("select id from merch_orders where status in ('shipped', 'cancelled', 'refunded', 'expired') and max(coalesce(refunded_at, 0), coalesce(updated_at, 0), coalesce((select max(shipped_at) from merch_parcels p where p.order_id = merch_orders.id), 0)) < ? and (email_hash is not null or exists (select 1 from merch_order_items i where i.order_id = merch_orders.id and i.recipe is not null))", old);
       for (const c of closed) { this.run('update merch_orders set email_hash = null where id = ?', c.id); this.run('update merch_order_items set name = null, recipe = null, print_link = null where order_id = ?', c.id); }
       this.run('delete from merch_events where at < ?', now - 90 * DAY);
-      this.run("delete from merch_outbox where status in ('sent', 'failed') and created_at < ?", now - 90 * DAY);
+      this.run("delete from merch_outbox where status in ('sent', 'failed', 'skipped') and created_at < ?", now - 90 * DAY);
       this.run("delete from merch_meta where k glob 'w:*' and k < ?", 'w:' + jstDay(now - 40 * DAY));
       for (const e of this.q("select id from merch_orders where status = 'expired' and created_at < ?", now - 30 * DAY)) { this.run('delete from merch_order_items where order_id = ?', e.id); this.run('delete from merch_orders where id = ?', e.id); }
       this.run('delete from merch_rate where reset_at <= ?', now);

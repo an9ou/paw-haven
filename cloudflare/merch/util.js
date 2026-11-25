@@ -39,7 +39,10 @@ export const ORDER_ID = /^mo_[A-Za-z0-9_-]{22}$/;
 
 // the site the buyer reads (MERCH_SITE; the test Worker points at the test copy) and the order page on it: ONE form everywhere (emails, Stripe's
 // success_url): <site>/merch/#/order/<id> (the static site serves /merch/ only; the order is a route of that page). isNew: just back from paying.
-export const siteOf = (env) => String((env && env.MERCH_SITE) || 'https://doodledoggo.app').replace(/\/+$/, '');
+// Review finding 12: only a plain https origin is taken (a javascript: or http: value, a path, a port or anything else falls back to the default),
+// because it becomes every link in the emails
+export const SITE_DEFAULT = 'https://doodledoggo.app';
+export const siteOf = (env) => { const s = String((env && env.MERCH_SITE) || '').trim().replace(/\/+$/, ''); return /^https:\/\/[a-z0-9.-]+$/.test(s) ? s : SITE_DEFAULT; };
 export const orderLink = (site, id, isNew) => String(site).replace(/\/+$/, '') + '/merch/' + (isNew ? '?new=1' : '') + '#/order/' + id;
 
 // FNV-1a 32 bit, hex (cat_ver)

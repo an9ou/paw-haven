@@ -11,7 +11,7 @@ const BANNED = [/buy now/i, /\bbuy\b/i, /\bsell(?!er\b)/i, /printful/i, /\bAI\b|
 const sh = (args, env, input) => execFileSync('bash', [path.join(ROOT, 'tools', 'merch.sh'), ...args], { env: Object.assign({ PATH: process.env.PATH }, env || {}), encoding: 'utf8', input: input == null ? '' : input, stdio: ['pipe', 'pipe', 'pipe'] });
 
 // every buyer email: a subject, a text and an html body; the facts it needs; nothing it must not have
-function checkMail(m, id, what) {
+export function checkMail(m, id, what) {
   const tag = what + ' (' + (m && m.key) + ')';
   ok(m && typeof m.subject === 'string' && m.subject.length > 3 && m.subject.length <= 45, tag + ': a short subject: ' + (m && m.subject));
   ok(typeof m.text === 'string' && m.text.length > 80 && typeof m.html === 'string' && /^<!doctype html>/.test(m.html), tag + ': text and html');
@@ -27,8 +27,8 @@ function checkMail(m, id, what) {
   ok((m.html.match(/href="([^"]+)"/g) || []).every((h) => /^href="https:\/\//.test(h)), tag + ': https links only');
   ok(!/Seller:/.test(m.text), tag + ': no seller line while it is not known');
 }
-const one = (w, re) => { const x = w.mails(re); ok(x.length === 1, 'one email ' + re + ': ' + x.length); return x[0]; };
-const addCodes = async (w, codes) => w.admin('POST', 'gift', { codes });
+export const one = (w, re) => { const x = w.mails(re); ok(x.length === 1, 'one email ' + re + ': ' + x.length); return x[0]; };
+export const addCodes = async (w, codes) => w.admin('POST', 'gift', { codes });
 
 export async function part6() {
   console.log('--- part 6: emails, the order link, the gift');
@@ -39,9 +39,11 @@ export async function part6() {
     const th = one(w, new RegExp('^me_' + a + '_thanks$')); checkMail(th, a, 'thanks');
     ok(/Mug with your dog: \$19\.99/.test(th.text) && /Total: \$24\.98 \(US dollars\)/.test(th.text) && /You paid ¥3,800 at checkout\./.test(th.text), 'thanks: the line, the USD total, what was paid: ' + th.text.slice(0, 300));
     ok(/within 1 hour of paying, from your order page/.test(th.text) && !/\d\d:\d\d/.test(th.text), 'thanks: the cancel hour in words, no clock time');
-    ok(th.text.includes('TEST-GIFT-0001') && th.html.includes('TEST-GIFT-0001') && /a little gift for your dog in the game/.test(th.text) && /Have a code\?/.test(th.text) && /free cloud save account/.test(th.text), 'thanks: the gift block');
+    ok(!th.text.includes('TEST-GIFT') && !th.html.includes('TEST-GIFT') && /A little thank-you for your dog in the game will be waiting on your order page once printing starts\./.test(th.text), 'thanks: the gift is only promised (review finding 2: shown after the hour)');
+    ok(/We’ll post it by Thursday 10 December\./.test(th.text) && /printing usually takes 2 to 5 working days/.test(th.text) && /about 5 to 11 working days to reach you/.test(th.text), 'thanks: the posting date in words, the door-to-door days');
     await w.call('POST', '/merch/order/' + a + '/cancel', { scope: 'order' }); const ca = one(w, new RegExp('^me_' + a + '_cancelled$')); checkMail(ca, a, 'cancelled');
     ok(/refunded all of it, \$24\.98, shipping too/.test(ca.text) && /few days to show on your card/.test(ca.text) && !ca.text.includes('TEST-GIFT'), 'cancelled: the amount');
+    ok(w.one('select order_id from merch_gift_pool where code = ?', 'TEST-GIFT-0001').order_id === null && w.order(a).gift_code === null, 'cancelled in the hour: the unseen code is back in the pool');
     // a 6-line basket: Thank you lists all six
     const six = [mug(0), mug(1, { qty: 2 }), tee(4), tee(2, { colour: 'black', size: 'L', name_on: false }), mug(3, { pose: 'sit' }), tee(0, { colour: 'white', size: 'XL', qty: 3, name_on: false })];
     const b = await w.paidOrder(six, 'US'); const tb = one(w, new RegExp('^me_' + b + '_thanks$')); checkMail(tb, b, 'thanks 6');
@@ -53,10 +55,9 @@ export async function part6() {
     ok(sp.text.includes(s.tracking_url) && /Carrier: /.test(sp.text) && /Part of your order is on its way/.test(sp.text) && /- Mug with your dog\n/.test(sp.text) && !/Tee with/.test(sp.text) && /its own parcel/.test(sp.text), 'ship: the parcel, its tracking link, the rest: ' + sp.text.slice(0, 400));
     ok(!sp.text.includes('TEST-GIFT'), 'ship: no gift (the Thank you email had it)');
     await w.advance(w.order(c).ship_by - w.clock.t + MIN); const lt = one(w, new RegExp('^me_' + c + '_late$')); checkMail(lt, c, 'late');
-    ok(/Taking longer than we said/.test(lt.subject) && /would be sent by \d{1,2} [A-Z][a-z]{2} 20\d\d/.test(lt.text) && /We don’t know the new date yet/.test(lt.text) && /Wait for it/.test(lt.text) && /cancel the late part for a full refund/.test(lt.text) && /Tee with D'Artagnan/.test(lt.text) && !/Mug with/.test(lt.text), 'late: the date, no new date yet, the choice, the late part only');
-    const lv = mail.build('late', Object.assign(w.L().mailView({ id: 'me_' + c + '_late', order_id: c, kind: 'late', note: '{}' }), {}), w.env);
-    const withDate = mail.build('late', Object.assign({}, w.L().mailView({ id: 'x', order_id: c, kind: 'late', note: '{}' }), { about: { new_eta: Date.parse('2026-12-24T00:00:00Z') } }), w.env);
-    ok(/We now expect to send it by 24 Dec 2026\./.test(withDate.text) && !/don’t know/.test(withDate.text) && lv.text === lt.text, 'late: says the new date when there is one');
+    ok(/Taking longer than we said/.test(lt.subject) && /we said we’d post your order by Thursday 10 December, and part of it hasn’t gone out yet/.test(lt.text) && /We now expect to post the late part by Monday 21 December\./.test(lt.text) && /You don’t need to do anything to keep waiting/.test(lt.text) && /cancel the late part for a full refund from your order page, any time until it’s posted/.test(lt.text) && /Tee with D'Artagnan/.test(lt.text) && !/Mug with/.test(lt.text), 'late: the date we said, the new date, no answer needed, the late part only: ' + lt.text.slice(0, 500));
+    const lv = mail.build('late', w.L().mailView({ id: 'me_' + c + '_late', order_id: c, kind: 'late', note: '{}' }), w.env);
+    ok(lv.text === lt.text && !/don’t know/.test(lt.text), 'late: built from the order at send time, always with a date');
     await w.call('POST', '/merch/order/' + c + '/cancel', { scope: 'late' });
     const rf = w.mails(new RegExp('^me_' + c + '_refund_')); ok(rf.length === 1, 'the late part: ONE email: ' + rf.length); checkMail(rf[0], c, 'refunded late');
     ok(/We’ve refunded \$26\.99 for part of your order/.test(rf[0].text) && /As you asked, we’ve refunded the part of your order that was running late/.test(rf[0].text) && /Tee with D'Artagnan/.test(rf[0].text), 'refunded: the amount and the line: ' + rf[0].text.slice(0, 300));
@@ -70,7 +71,7 @@ export async function part6() {
     const all = w.mails(/refund_/).filter((m) => m.key.includes(d) && /in full/.test(m.text)); ok(all.length === 1, 'refunded in full once'); checkMail(all[0], d, 'refunded_all');
     ok(/Your order is refunded/.test(all[0].subject) && new RegExp('in full: \\' + mail.usd(w.order(d).total)).test(all[0].text), 'refunded_all: the whole amount: ' + all[0].text.slice(0, 200));
     // a reject (the render fails twice and resvg too), and the address email (the printer refuses the recipient)
-    const x = await world(); x.rd.queue.push('err', 'err', 'err'); const e = await x.paidOrder([mug(0), tee(4)]); await x.advance(1); await x.advance(MIN);
+    const x = await world(); x.rd.queue.push('err', 'err', 'err'); const e = await x.paidOrder([mug(0), tee(4)]); await x.advance(1); await x.advance(2 * MIN); // the tee renders, then the one reject email
     const rj = one(x, new RegExp('^me_' + e + '_reject_1$')); checkMail(rj, e, 'reject');
     ok(/couldn’t print one thing/.test(rj.subject) && /- Mug with your dog/.test(rj.text) && /We’ve refunded \$19\.99 for it/.test(rj.text) && /The rest of your order goes on/.test(rj.text), 'reject: the line and its refund');
     const y = await world(); y.pf.refuse.recipient = true; const f = await y.paidOrder([mug(0)]); await y.advance(1);
@@ -87,8 +88,12 @@ export async function part6() {
       checkMail(Object.assign({ key: k }, m), id, 'pure ' + k);
       ok(!/gift|thank-you code/i.test(m.text), 'pure ' + k + ': no gift, no mention of one, without a code');
     }
-    const g = mail.build('thanks', Object.assign({}, base, { gift_code: 'TEST-GIFT-0009' }), { MERCH_GIFT_NAME: 'Test Bandana' });
+    const g = mail.build('ship', Object.assign({}, base, { gift_code: 'TEST-GIFT-0009', about: { parcel: 'p1', gift: true } }), { MERCH_GIFT_NAME: 'Test Bandana' });
     ok(g.text.includes('TEST-GIFT-0009') && /the Test Bandana, a little gift for your dog in the game/.test(g.text) && /the Test Bandana/.test(g.html), 'the gift name from MERCH_GIFT_NAME');
+    ok(/Each code works once\. Got more than one\? Pass the extra to a friend who plays\./.test(g.text) && !/Each game account can use one/.test(g.text), 'finding 7: the softened sentence');
+    for (const k of ['thanks', 'cancelled', 'refunded', 'refunded_all', 'reject', 'address']) ok(!mail.build(k, Object.assign({}, base, { gift_code: 'TEST-GIFT-0009', about: { gift: true, parcel: 'p1' } }), {}).text.includes('TEST-GIFT-0009'), k + ': never carries the code');
+    ok(!mail.build('ship', Object.assign({}, base, { gift_code: 'TEST-GIFT-0009', about: { parcel: 'p1' } }), {}).text.includes('TEST-GIFT'), 'ship: the code only in the one email that carries it');
+    ok(/will be waiting on your order page once printing starts/.test(mail.build('thanks', Object.assign({}, base, { gift: 'soon' }), {}).text) && !/thank-you for your dog/.test(mail.build('thanks', base, {}).text), 'thanks: the gift promised only when one is reserved');
     const s = mail.build('ship', Object.assign({}, base, { about: { parcel: 'p1', gift: true }, gift_code: 'TEST-GIFT-0009' }), { MERCH_SELLER_NAME: 'Example Seller (test)', MERCH_SELLER_ADDR: '1 Test Road, Testville' });
     ok(/Seller: Example Seller \(test\), 1 Test Road, Testville\./.test(s.text) && /Seller: Example Seller/.test(s.html) && s.text.includes('TEST-GIFT-0009'), 'the seller line when set; a late gift on the ship email');
     const p = mail.build('thanks', Object.assign({}, base, { pres: { currency: 'eur', amount: 6912 } }), {}); ok(/You paid €69\.12 at checkout\./.test(p.text), 'pres in its own currency');
@@ -117,28 +122,40 @@ export async function part6() {
     ok(r.length === 1 && /Gift codes: 2 left, 0 given/.test(r[0].text) && /Held: mo_/.test(r[0].text) && !/TEST-GIFT/.test(r[0].text) && !/^\{/.test(r[0].text.split('Details: ')[1] || ''), 'the report in words: ' + r[0].text.slice(0, 300));
     ok(w.owner().every((x) => !BUYER.test(x.text + x.subject) && !/TEST-GIFT-\d/.test(x.text + x.subject) && !x.html), 'no owner email has buyer data, a gift code or an html part');
   });
-  await T('P6-gift-pool', 'the gift: claimed when paid; held then released gets one (and the first On its way carries it); empty pool: no gift and no mention; a cancelled order keeps its code', async () => {
+  await T('P6-gift-pool', 'the gift: reserved when paid (hidden: gift soon), shown once the cancel hour is over and carried by the first On its way only; held then released; empty pool: no gift, no mention; a cancel in the hour puts it back', async () => {
     const w = await world(); const n = await w.paidOrder([mug(0)]);
-    ok(w.order(n).gift_code === null && !/gift/i.test(one(w, new RegExp('^me_' + n + '_thanks$')).text) && !w.owner(/gift/).length, 'empty pool: no gift, no mention, no owner email');
-    ok((await w.call('GET', '/merch/order/' + n)).json.gift_code === null && (await w.call('GET', '/merch/order/' + n)).json.gift_name === null, 'the page: gift_code null');
+    ok(w.order(n).gift_code === null && !/gift|thank-you for your dog/i.test(one(w, new RegExp('^me_' + n + '_thanks$')).text) && !w.owner(/gift/).length, 'empty pool: no gift, no mention, no owner email');
+    let pj = (await w.call('GET', '/merch/order/' + n)).json; ok(pj.gift === null && pj.gift_code === null && pj.gift_name === null, 'the page: no gift');
     await addCodes(w, ['TEST-GIFT-0201', 'TEST-GIFT-0202', 'TEST-GIFT-0203']);
+    const k = await w.paidOrder([mug(2)]);
+    pj = (await w.call('GET', '/merch/order/' + k)).json;
+    ok(w.order(k).gift_code === 'TEST-GIFT-0201' && pj.gift === 'soon' && pj.gift_code === null && pj.gift_name === null && !JSON.stringify(pj).includes('TEST-GIFT'), 'reserved at payment, hidden from the page');
+    const th = one(w, new RegExp('^me_' + k + '_thanks$')); ok(!th.text.includes('TEST-GIFT') && /will be waiting on your order page once printing starts/.test(th.text), 'the Thank you email promises it, without the code');
+    await w.advance(w.order(k).cancel_until + 120e3 - w.clock.t - 1); ok(!w.order(k).gift_shown_at && (await w.call('GET', '/merch/order/' + k)).json.gift === 'soon', 'still hidden one ms before the hour (and its grace) ends');
+    await w.advance(2); pj = (await w.call('GET', '/merch/order/' + k)).json;
+    ok(w.order(k).status === 'confirmed' && pj.gift === 'ready' && pj.gift_code === 'TEST-GIFT-0201', 'shown in the step that ends the hour (the confirm): ' + w.order(k).status);
+    await w.call('POST', '/merch/order/' + k + '/cancel', { scope: 'order' }); ok(w.order(k).status === 'confirmed', 'too late to cancel');
+    const s1 = w.pf.ship(w.order(k).provider_order, [k + '_1'], { status: 'fulfilled' }); await shipHint(w, k);
+    ok(one(w, new RegExp('_ship_' + s1.id + '$')).text.includes('TEST-GIFT-0201') && w.order(k).gift_mailed === 'me_' + k + '_ship_' + s1.id, 'the first On its way email carries it');
+    await w.admin('POST', 'order/' + k + '/reprint', { lines: [1] }); await w.advance(MIN);
+    ok(!one(w, new RegExp('^me_' + k + '_reprint_1$')).text.includes('TEST-GIFT'), 'a later email does not carry it again');
+    // held at payment: nothing reserved; released by the owner inside the hour: reserved then, shown when the hour ends
     await w.admin('POST', 'flag', { key: 'email:held@example.test', mode: 'block' });
     const h = await w.newOrder([mug(1)]); await w.pay(h, { email: 'held@example.test' });
     eq([w.order(h).status, w.order(h).hold, w.order(h).gift_code], ['held', 'review', null], 'held at payment: no gift yet');
-    ok(!/TEST-GIFT/.test(one(w, new RegExp('^me_' + h + '_thanks$')).text), 'its Thank you email has none');
-    w.clock.t += 5 * MIN; // the owner looks at it a little later
-    ok((await w.admin('POST', 'order/' + h + '/confirm')).status === 200 && w.order(h).gift_code === 'TEST-GIFT-0201', 'released by the owner: the gift is claimed then');
-    ok((await w.call('GET', '/merch/order/' + h)).json.gift_code === 'TEST-GIFT-0201', 'the page shows it');
-    await w.advance(2 * HOUR); ok(w.order(h).status === 'confirmed', 'made: ' + w.order(h).status);
+    w.clock.t += 5 * MIN; ok((await w.admin('POST', 'order/' + h + '/confirm')).status === 200 && w.order(h).gift_code === 'TEST-GIFT-0202' && !w.order(h).gift_shown_at, 'released inside the hour: reserved, not shown');
+    await w.advance(2 * HOUR); ok(w.order(h).status === 'confirmed' && w.order(h).gift_shown_at && (await w.call('GET', '/merch/order/' + h)).json.gift_code === 'TEST-GIFT-0202', 'shown once its hour is over');
     const s = w.pf.ship(w.order(h).provider_order, [h + '_1'], { status: 'fulfilled' }); await shipHint(w, h);
-    ok(one(w, new RegExp('_ship_' + s.id + '$')).text.includes('TEST-GIFT-0201'), 'the first On its way email carries the gift the Thank you email could not');
-    const k = await w.paidOrder([mug(2)]); ok(w.order(k).gift_code === 'TEST-GIFT-0202', 'the next order, the next code');
-    await w.call('POST', '/merch/order/' + k + '/cancel', { scope: 'order' }); eq([w.order(k).status, w.order(k).gift_code], ['cancelled', 'TEST-GIFT-0202'], 'a cancelled order keeps its code (a gift is a gift)');
-    ok(w.one('select order_id from merch_gift_pool where code = ?', 'TEST-GIFT-0202').order_id === k, 'claimed for that order');
+    ok(one(w, new RegExp('_ship_' + s.id + '$')).text.includes('TEST-GIFT-0202'), 'its first On its way email carries it');
+    // a cancel in the hour: the code goes back to the pool and the next order gets it
+    const c = await w.paidOrder([mug(3)]); ok(w.order(c).gift_code === 'TEST-GIFT-0203', 'the next order, the next code');
+    await w.call('POST', '/merch/order/' + c + '/cancel', { scope: 'order' }); eq([w.order(c).status, w.order(c).gift_code], ['cancelled', null], 'cancelled in the hour: no code kept');
+    ok(w.one('select order_id from merch_gift_pool where code = ?', 'TEST-GIFT-0203').order_id === null, 'back in the pool');
+    const d = await w.paidOrder([mug(4)], 'US', { email: 'other@example.test' }); ok(w.order(d).gift_code === 'TEST-GIFT-0203', 'given to the next order');
     const where = JSON.stringify([w.q('select * from merch_events'), w.q('select * from merch_outbox'), w.q('select * from merch_meta'), (await w.admin('GET', 'report')).json, (await w.admin('GET', 'order/' + k)).json]);
     ok(!/TEST-GIFT/.test(where), 'no code in events, the outbox, meta, the report or the admin show');
     const ex = await w.raw('GET', '/merch/admin/export?from=2026-11-01&to=2027-01-01', null, { authorization: 'Bearer ' + w.env.MERCH_ADMIN_KEY }); ok(!/TEST-GIFT/.test(await ex.text()), 'no code in the export');
-    // a dispute before completed, then won and confirmed: paid then, so the gift then
+    // a dispute before completed: no gift
     const q = await world(); await addCodes(q, ['TEST-GIFT-0301']); const dq = await q.newOrder([mug(0)]); q.stripe.pay(q.sid(dq));
     await q.hook('charge.dispute.created', { id: 'dp_1', payment_intent: q.stripe.sessions.get(q.sid(dq)).payment_intent }); ok(q.order(dq).hold === 'dispute' && !q.order(dq).gift_code, 'a dispute first: no gift');
   });

@@ -43,8 +43,11 @@ export const deleteDraft = (env, id) => pf(env, 'DELETE', '/orders/' + id).then(
   if (r.kind === 'cannot' || r.kind === 'refused') { const g = await get(env, id); if (g.ok && g.data && g.data.status === 'canceled') return { ok: true }; }
   return r;
 });
-// after confirm Printful may refuse: 'cannot' [not verified]
-export const cancel = (env, id) => pf(env, 'DELETE', '/orders/' + id);
+// after confirm Printful may refuse: 'cannot' [not verified]. An order already canceled (a retry after a crash) counts as done.
+export const cancel = (env, id) => pf(env, 'DELETE', '/orders/' + id).then(async (r) => {
+  if (r.ok || !(r.kind === 'cannot' || r.kind === 'refused')) return r;
+  const g = await get(env, id); return g.ok && g.data && g.data.status === 'canceled' ? { ok: true, data: g.data } : r;
+});
 export const quoteCost = (env, o, lines, recipient) => pf(env, 'POST', '/orders/estimate-costs', { recipient, items: lines.map((l) => ({ variant_id: l.provider_variant, quantity: l.qty })) });
 // the nightly prices: { variants: { <our variant id>: cents }, ship: { '<region>:<group>': [first, extra] } } (part 5 reads Printful's catalog)
 export const catalogCosts = (env) => pf(env, 'GET', '/merch/catalog-costs');

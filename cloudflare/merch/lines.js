@@ -1,6 +1,6 @@
 // The basket: switches, countries, the check of every line (PawPrint decodes the recipe; merch/names.js through PawPrint.nameOk), prices from
 // catalog.js and the margin guard on the whole order (TRANSACTIONS.md 2, 3, 6.4). Pure functions: no storage, no outside calls.
-import { ZONES, ALL_COUNTRIES, NEVER, zoneOf, regionOf, TOOL_TAX, REGISTERED, HOLIDAY, FEES, LIMITS, variantId, unitPrice, unitCost, providerVariant, EU27 } from './catalog.js';
+import { ZONES, ALL_COUNTRIES, NEVER, zoneOf, regionOf, TOOL_TAX, REGISTERED, HOLIDAY, FEES, LIMITS, SIZES, variantId, unitPrice, unitCost, providerVariant, EU27 } from './catalog.js';
 
 // MERCH_COUNTRIES: '' = none; 'all'; a list 'US,CA,AU'; or 'all,-GB,-FR'; a zone id stands for its countries ('all,-uk_eu'). The never list always wins.
 export function openCountries(env) {
@@ -98,6 +98,22 @@ export function marginOf(cat, country, lines, sub, fee, now, costs, taxInside) {
   const f = FEES.share * P + FEES.fixed, s = vat ? 0.005 * P : 0, r = FEES.reserve * W;
   const margin = P - T - W - hol - tool - f - s - r, net = P - T;
   return { margin, net, W: Math.round(W), ship, pass: margin >= FEES.floor - 1e-9 && margin >= FEES.floor_share * net - 1e-9 };
+}
+// GET /merch/catalog (TRANSACTIONS 6.3 and its note of 24 Nov 2026): countries {code, zone, soon} (never-countries and places with no post left
+// out, no names), notes as codes, no free text. o: { off(variant) -> true when turned off, shut, resting, sold_out_today, art_vers }.
+// tools/merch_catalog_json.js writes site/merch/catalog.json with this same function (MERCH_COUNTRIES = catalog.js LAUNCH_COUNTRIES, shut).
+export function catalogOut(PP, cat, env, o) {
+  const on = productsOn(env), off = o.off || (() => false), open = openCountries(env);
+  // sizes smallest first (SIZES order; before the review batch XS came last)
+  const products = Object.values(cat.products).filter((P) => P.launch && on.has(P.id) && PP.PRODUCTS[P.id] && PP.PRODUCTS[P.id].launch).map((P) => {
+    const colours = P.colours.map((c) => ({ id: c.id, sizes: c.sizes.filter((s) => !off(variantId(P.id, c.id, s))), on: P.sized ? c.sizes.some((s) => !off(variantId(P.id, c.id, s))) : !off(variantId(P.id, c.id, null)) }));
+    const sizes = P.sized ? SIZES.filter((s) => P.colours.some((c) => c.sizes.includes(s))).map((s) => { const add = (P.size_price && P.size_price[s]) || 0; return { id: s, add, price: P.price + add }; }) : [];
+    return { id: P.id, price: P.price, sizes, colours, poses: P.poses, on: colours.some((c) => c.on) };
+  });
+  const zones = Object.values(ZONES).map((z) => ({ id: z.id, fee: z.fee, free_from: z.free_from, extra: z.extra, eta: z.eta.slice(), notes: zoneNotes(z) }));
+  const countries = ALL_COUNTRIES.slice().sort().map((c) => ({ code: c, zone: zoneOf(c), soon: !open.has(c) }));
+  return { cat_ver: cat.cat_ver, shut: !!o.shut, resting: o.resting || undefined, sold_out_today: !!o.sold_out_today, products, zones, countries,
+    max_lines: cat.limits.max_lines, max_qty: cat.limits.max_qty, art_vers: o.art_vers || [] };
 }
 // the quote the page shows (also inside 409 price_changed)
 // a zone's note codes for the catalog: vat_included only while one of its regions is registered (TRANSACTIONS 1.1)

@@ -17,7 +17,9 @@
 #   tools/merch.sh report                                  the nightly report (held orders, refunds, disputes, sales per country, storage)
 #   tools/merch.sh tick | nightly                          wake the ledger / run the nightly job now
 #   tools/merch.sh gift add < codes.txt                    add thank-you gift codes (part 6): read from STDIN only, one per line, never
-#                                                          printed; keep the file OUTSIDE the repo. The answer is counts only
+#                                                          printed; keep the file OUTSIDE the repo. The answer is counts only. A CSV (as
+#                                                          tools/promo.sh writes it: code,batch,made_at) works too: the first column, the
+#                                                          header line skipped
 #   tools/merch.sh gift count                              how many codes are left and how many were given
 #
 # Env: MERCH_API (default https://merch-api.doodledoggo.app; the test Worker: set it to its address), MERCH_ADMIN_KEY, DRY_RUN (default 1).
@@ -95,21 +97,18 @@ case "$cmd" in
       add)
         [ $# -eq 0 ] || { echo "merch.sh: gift add reads the codes from STDIN, one per line, never as arguments: tools/merch.sh gift add < codes.txt" >&2; exit 2; }
         [ -t 0 ] && echo "Paste the codes, one per line, then press Ctrl-D:" >&2
-        list=""; n=0; bad=0; again=0
-        while IFS= read -r l || [ -n "$l" ]; do
-          l="${l//$'\r'/}"; l="${l#"${l%%[![:space:]]*}"}"; l="${l%"${l##*[![:space:]]}"}"   # trim (bash 3.2 on a Mac: no ${l^^})
-          [ -z "$l" ] && continue
-          l="$(printf '%s' "$l" | tr '[:lower:]' '[:upper:]')"
-          if [[ "$l" =~ ^[A-Z0-9][A-Z0-9-]{3,39}$ ]]; then
-            case "
-$list
-" in *"
-$l
-"*) again=$((again + 1)); continue ;; esac
-            list="$list
-$l"; n=$((n + 1))
-          else bad=$((bad + 1)); fi
-        done
+        # one awk pass (no process per line: thousands of codes take a moment): a CSV line's first column without quotes, trimmed, upper case;
+        # the header line (code,...) skipped; kept once each; the counts on the last line. The codes stay in this variable, never printed.
+        list="$(awk 'BEGIN { n = 0; bad = 0; again = 0 }
+          { l = $0; gsub(/\r/, "", l); sub(/,.*/, "", l); gsub(/"/, "", l); gsub(/^[[:space:]]+|[[:space:]]+$/, "", l); l = toupper(l)
+            if (l == "") next
+            if (NR == 1 && l == "CODE") next
+            if (l !~ /^[A-Z0-9][A-Z0-9-]+$/ || length(l) < 4 || length(l) > 40) { bad++; next }
+            if (l in seen) { again++; next }
+            seen[l] = 1; n++; print l }
+          END { print "#counts " n " " bad " " again }')"
+        set -- $(printf '%s\n' "$list" | sed -n 's/^#counts //p'); n="${1:-0}"; bad="${2:-0}"; again="${3:-0}"
+        list="$(printf '%s\n' "$list" | sed '/^#counts /d')"
         [ "$n" -gt 0 ] || { echo "merch.sh: no codes on STDIN (one per line)" >&2; exit 2; }
         sk="$bad line"; [ "$bad" -eq 1 ] || sk="$bad lines"
         echo "$n codes to send ($sk skipped: not a code; $again repeated)"
@@ -122,13 +121,13 @@ $l"; n=$((n + 1))
         done <<EOF2
 $list
 EOF2
-        [ "$k" -gt 0 ] && gift_send "{\"codes\": [$body]}" "$k"
+        if [ "$k" -gt 0 ]; then gift_send "{\"codes\": [$body]}" "$k"; fi   # (review finding 14: with &&, a multiple of 1000 codes exited 1)
         ;;
       *) echo "merch.sh: gift add | gift count (tools/merch.sh help)" >&2; exit 2 ;;
     esac ;;
   report) send GET report ;;
   tick) send POST tick "{}" ;;
   nightly) send POST nightly "{}" ;;
-  help|-h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) echo "merch.sh: unknown command $cmd (tools/merch.sh help)" >&2; exit 2 ;;
 esac

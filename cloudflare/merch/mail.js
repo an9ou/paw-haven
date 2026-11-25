@@ -9,7 +9,7 @@
 import { fetcher, call, siteOf, orderLink } from './util.js';
 
 export const CONTACT = 'contact@doodledoggo.app';
-export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'reprint'];
+export const KINDS = ['thanks', 'address', 'ship', 'cancelled', 'refunded', 'refunded_all', 'reject', 'late', 'late_again', 'reprint'];
 const ZERO_DEC = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']; // Stripe's zero-decimal currencies
 const THREE_DEC = ['BHD', 'JOD', 'KWD', 'OMR', 'TND'];
 const INK = '#5B3D32', PAPER = '#FFFBF3', YELLOW = '#FFE3A1', MINT = '#C8E9CF';
@@ -27,6 +27,13 @@ export function presMoney(p) {
 }
 // "8 Dec 2026" (the order page's own form), in UTC: the buyer's clock is not known here
 export function day(t) { const d = new Date(num(t)); return d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+// "Friday 4 December": the posting date in words (the delay plan). ship_by and late_eta are moments; the date said is their UTC date, always with
+// "by", so the day we name is never earlier than the moment we keep to (the order page says it the same way: site/merch/merch.js postDay)
+export const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+export function postDay(t) { const d = new Date(num(t)); return DAYS[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
+// the one posting promise (catalog.js SHIP_BY_DAYS; the shop page, the legal pages): printing 2 to 5 working days, posted within 7 of payment
+export const PRINT_WORDS = 'printing usually takes 2 to 5 working days';
 const shortId = (id) => String(id || '').replace(/^mo_/, '');
 const clean = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g, '').trim().slice(0, max || 80);
 // one line of the order in words: "Mug with Biscuit", "Tee with your dog, navy, L"; q: how many (the line's own qty by default)
@@ -47,7 +54,7 @@ function giftWords(g) {
   return { h: 'A little thank-you for your dog',
     p: 'With your order comes ' + (g.name ? 'the ' + g.name + ', a little gift for your dog in the game.' : 'a little gift for your dog in the game.'),
     how: 'How to use it: play Doodle Doggo at https://doodledoggo.app, open Settings (on a phone: the ⋯ menu), tap "Have a code?" and type the code. Gift codes are for players with the free cloud save account, so your gift stays safe on every device.',
-    one: 'Each game account can use one merch thank-you code. If you order again, the next one is yours to pass to a friend.' };
+    one: 'Each code works once. Got more than one? Pass the extra to a friend who plays.' };
 }
 function textOf(blocks) {
   const out = [];
@@ -103,8 +110,9 @@ function page(subject, heading, blocks, env, site) {
 
 /* ---------------- the buyer's emails ---------------- */
 // view: { id, status, can_cancel, lines[{ line, product, colour, colour_name, size, name, qty, unit, status, refunded_qty, parcel, reprint_of, rp }],
-//   parcels[{ id, carrier, tracking_url }], totals{ subtotal, ship_fee, total, refunded }, pres, gift_code, gift_name, ship_by, eta[min, max],
-//   about{ parcel, gift, refund{ amount, reason, lines[{ line, qty }] }, line, reprint{ n, why }, reship, new_eta } }
+//   parcels[{ id, carrier, tracking_url }], totals{ subtotal, ship_fee, tax, total, refunded }, pres, gift ('soon' | 'ready' | null), gift_code
+//   (only once shown), gift_name, ship_by, late_eta, late, eta[min, max],
+//   about{ parcel, gift (this email carries the gift), refund{ amount, reason, lines[{ line, qty }] }, line, reprint{ n, why }, reship } }
 const LIVE = (l) => !['void', 'replaced', 'cancelled', 'rejected'].includes(l.status) && num(l.refunded_qty) < num(l.qty);
 const SHIPPED = ['shipped', 'delivered'];
 const WHY_ALL = { // the first line of "refunded in full", by the refund's reason (never the owner's own words)
@@ -114,8 +122,10 @@ const WHY_ALL = { // the first line of "refunded in full", by the refund's reaso
   wallet_5d: 'Sorry: our print partner couldn’t start on your order in time, so we’ve refunded all of it.',
   review_other_country: 'The address on the payment was in another country than the order, so we couldn’t send it. Please order again with the right country.',
   late: 'As you asked, we’ve refunded the part of your order that was running late. That was everything left, so all of it is refunded now.',
+  late_auto: 'Your order didn’t go out by the new date we gave you. It took too long, so we’ve refunded it. Sorry.',
   reship: 'We didn’t hear back about the address, so we’ve refunded the things that came back.', lost: 'Sorry your parcel went missing.' };
 const WHY_PART = { late: 'As you asked, we’ve refunded the part of your order that was running late.', lost: 'Sorry your parcel went missing.',
+  late_auto: 'Part of your order didn’t go out by the new date we gave you. It took too long, so we’ve refunded it. Sorry.',
   reship: 'We didn’t hear back about the address, so we’ve refunded the things from the parcel that came back.' };
 
 export function build(kind, view, env) {
@@ -123,10 +133,18 @@ export function build(kind, view, env) {
   const A = v.about || {}, L = Array.isArray(v.lines) ? v.lines.filter((l) => l && typeof l === 'object') : [], T = v.totals || {};
   const byLine = (n) => L.find((l) => l.line === n) || null, orderFact = ['Order', shortId(v.id)];
   const pres = presMoney(v.pres), card = 'It can take a few days to show on your card.';
-  const gift = v.gift_code ? ['gift', { code: clean(v.gift_code, 48), name: v.gift_name || giftName(env) }] : null;
+  // the gift block only in the one email that carries it (A.gift: the ledger's gift_mailed) and only once it is shown (gift_code is then set)
+  const gift = v.gift_code && A.gift ? ['gift', { code: clean(v.gift_code, 48), name: v.gift_name || giftName(env) }] : null;
+  const ended = ['cancelled', 'refunded', 'expired'].includes(v.status);
   const toPage = ['button', 'Open your order page', link];
   const priced = (ls) => ls.map((l) => itemLine(l) + ': ' + usd(num(l.unit) * num(l.qty)));
-  const totals = () => { const f = [orderFact, ['Shipping', num(T.ship_fee) ? usd(T.ship_fee) : 'Free'], ['Total', usd(T.total) + ' (US dollars)']]; return ['facts', f]; };
+  // review finding 6: the Tax row when there is tax (on top of the prices it adds up to the total; inside them, it says so)
+  const totals = () => {
+    const f = [orderFact, ['Shipping', num(T.ship_fee) ? usd(T.ship_fee) : 'Free']];
+    if (num(T.tax) > 0) f.push([num(T.subtotal) + num(T.ship_fee) + num(T.tax) === num(T.total) ? 'Tax' : 'Tax (included in the prices)', usd(T.tax)]);
+    f.push(['Total', usd(T.total) + ' (US dollars)']); return ['facts', f];
+  };
+  const post = num(v.ship_by) > 0 ? postDay(v.ship_by) : null;
   const B = [];
   switch (kind) {
     case 'thanks': {
@@ -134,9 +152,11 @@ export function build(kind, view, env) {
       B.push(['p', 'Thank you for putting your dog on something. Here is your order:'], ['list', priced(ls)], totals());
       if (pres) B.push(['p', 'You paid ' + pres + ' at checkout.']);
       if (v.can_cancel) B.push(['p', 'Changed your mind? You can cancel the whole order for a full refund within 1 hour of paying, from your order page.']);
-      B.push(['p', 'What happens next: our print partner makes each one just for you, then it goes in the post. We’ll email you a tracking link when it’s on its way.' +
-        (Array.isArray(v.eta) && v.eta.length === 2 ? ' It usually takes about ' + num(v.eta[0]) + ' to ' + num(v.eta[1]) + ' working days to reach you.' : '')]);
-      if (gift) B.push(gift);
+      B.push(['p', 'What happens next: our print partner makes each one just for you (' + PRINT_WORDS + '), then it goes in the post.' + (post ? ' We’ll post it by ' + post + '.' : '') +
+        ' We’ll email you a tracking link when it’s on its way.' + (Array.isArray(v.eta) && v.eta.length === 2 ? ' It usually takes about ' + num(v.eta[0]) + ' to ' + num(v.eta[1]) + ' working days to reach you.' : '')]);
+      // the gift is shown only once the cancel hour is over (review finding 2): here only a word about it, and only when a code is reserved
+      if (v.gift === 'soon') B.push(['p', 'A little thank-you for your dog in the game will be waiting on your order page once printing starts.']);
+      else if (v.gift === 'ready') B.push(['p', 'A little thank-you for your dog in the game is waiting on your order page.']);
       B.push(toPage, ['small', 'Stripe sends its own receipt for the payment too.']);
       return page('Thank you for your order', 'Thank you! Your order is in.', B, env, site);
     }
@@ -176,35 +196,53 @@ export function build(kind, view, env) {
       const ls = (Array.isArray(R.lines) ? R.lines : []).map((x) => { const l = byLine(x.line); return l ? itemLine(l, num(x.qty) || num(l.qty)) : null; }).filter(Boolean);
       if (why) B.push(['p', why]);
       if (all) B.push(['p', 'We’ve refunded your order in full: ' + usd(num(T.refunded) || num(T.total)) + '. ' + card]);
-      else { B.push(['p', 'We’ve refunded ' + usd(R.amount) + ' for part of your order' + (ls.length ? ':' : '.')]); if (ls.length) B.push(['list', ls]); B.push(['p', 'The rest of your order goes on as before. ' + card]); }
+      else { // review finding 13: "the rest goes on" only while something of the order still goes on when this is sent
+        B.push(['p', 'We’ve refunded ' + usd(R.amount) + ' for part of your order' + (ls.length ? ':' : '.')]); if (ls.length) B.push(['list', ls]);
+        B.push(['p', (!ended && L.some(LIVE) ? 'The rest of your order goes on as before. ' : '') + card]);
+      }
       B.push(['facts', [orderFact]]);
       if (pres) B.push(['p', 'You paid in ' + String(v.pres.currency).toUpperCase() + ' at checkout; the refund comes back in that currency at the same rate.']);
       B.push(toPage);
       return all ? page('Your order is refunded', 'Your order is refunded in full', B, env, site) : page('A refund for part of your order', 'We’ve refunded part of your order', B, env, site);
     }
-    case 'reject': {
-      const l = byLine(A.line), R = A.refund || {}, rest = L.filter((x) => LIVE(x) && x.line !== A.line).length;
-      B.push(['p', 'We’re sorry: we couldn’t make this one in your order.']);
-      if (l) B.push(['list', [itemLine(l)]]);
-      B.push(['p', 'We’ve refunded ' + (R.amount ? usd(R.amount) + ' ' : '') + 'for it. ' + card]);
-      if (rest) B.push(['p', 'The rest of your order goes on as usual.']);
-      B.push(['facts', [orderFact]], toPage);
-      return page('Sorry, we couldn’t print one thing', 'Sorry, we couldn’t make one thing', B, env, site);
-    }
-    case 'late': {
-      const ls = L.filter((l) => LIVE(l) && !SHIPPED.includes(l.status)), whole = ls.length && !L.some((l) => LIVE(l) && SHIPPED.includes(l.status));
-      B.push(['p', 'We’re sorry: we said your order would be sent by ' + day(v.ship_by) + ', and ' + (whole ? 'it hasn’t gone out yet.' : 'part of it hasn’t gone out yet.')]);
+    case 'reject': { // one line, or several rejected together (review finding 5): one email
+      const R = A.refund || {}, nums = Array.isArray(R.lines) && R.lines.length ? R.lines.map((x) => x.line) : A.line != null ? [A.line] : [];
+      const ls = nums.map(byLine).filter(Boolean), many = ls.length > 1, rest = L.filter((x) => LIVE(x) && !nums.includes(x.line)).length;
+      B.push(['p', many ? 'We’re sorry: we couldn’t make these in your order.' : 'We’re sorry: we couldn’t make this one in your order.']);
       if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
-      B.push(['p', A.new_eta ? 'We now expect to send it by ' + day(A.new_eta) + '.' : 'We don’t know the new date yet. We’ll email you as soon as it’s on its way.'],
-        ['p', 'You can choose:'], ['list', ['Wait for it. You don’t need to do anything: we’ll email you when it’s sent.', whole ? 'Or cancel it for a full refund, from your order page.' : 'Or cancel the late part for a full refund of those things, from your order page.']],
-        ['facts', [orderFact]], ['button', 'Choose on your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
+      B.push(['p', 'We’ve refunded ' + (R.amount ? usd(R.amount) + ' ' : '') + (many ? 'for them. ' : 'for it. ') + card]);
+      if (rest && !ended) B.push(['p', 'The rest of your order goes on as usual.']);
+      B.push(['facts', [orderFact]], toPage);
+      return many ? page('Sorry, we couldn’t print some things', 'Sorry, we couldn’t make some things', B, env, site) : page('Sorry, we couldn’t print one thing', 'Sorry, we couldn’t make one thing', B, env, site);
+    }
+    case 'late': { // the delay plan (a, b, d): at the date we said, with a definite new date; waiting needs no answer
+      const ls = L.filter((l) => LIVE(l) && !SHIPPED.includes(l.status) && l.reprint_of == null), whole = ls.length && !L.some((l) => LIVE(l) && SHIPPED.includes(l.status));
+      B.push(['p', 'We’re sorry: we said we’d post your order by ' + (post || 'the date we gave you') + ', and ' + (whole ? 'it hasn’t gone out yet.' : 'part of it hasn’t gone out yet:')]);
+      if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
+      if (num(v.late_eta) > 0) B.push(['p', 'We now expect to post ' + (whole ? 'it' : 'the late part') + ' by ' + postDay(v.late_eta) + '.']);
+      B.push(['p', 'You don’t need to do anything to keep waiting: we’ll email you when it’s on its way.'],
+        ['p', 'Or, if you’d rather not wait, you can cancel ' + (whole ? 'it' : 'the late part') + ' for a full refund from your order page, any time until it’s posted.']);
+      if (gift) B.push(gift);
+      B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
       return page('Taking longer than we said', 'Your order is taking longer than we said', B, env, site);
+    }
+    case 'late_again': { // the delay plan (c): the buyer said keep waiting, and the new date passed too: no new date, still on it, cancel any time
+      const ls = L.filter((l) => LIVE(l) && !SHIPPED.includes(l.status) && l.reprint_of == null), whole = ls.length && !L.some((l) => LIVE(l) && SHIPPED.includes(l.status));
+      B.push(['p', 'We’re sorry: ' + (whole ? 'your order' : 'the late part of your order') + ' still hasn’t gone out' + (num(v.late_eta) > 0 ? ', and we said ' + postDay(v.late_eta) + '.' : '.')]);
+      if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
+      B.push(['p', 'Thank you for waiting. We’re still on it, and we’ll email you as soon as it’s posted.'],
+        ['p', 'You can still cancel ' + (whole ? 'it' : 'the late part') + ' for a full refund from your order page, any time until it’s posted.']);
+      if (gift) B.push(gift);
+      B.push(['facts', [orderFact]], ['button', 'Open your order page', link], ['small', 'A refund goes back to your card at once; it can take a few days to show.']);
+      return page('Still on its way to the post', 'Still working on your order', B, env, site);
     }
     case 'reprint': {
       const n = A.reprint && A.reprint.n, ls = L.filter((l) => l.reprint_of != null && (n == null || l.rp === n)), why = A.reprint && A.reprint.why;
       B.push(['p', (why === 'lost' ? 'Sorry your parcel went missing. ' : why === 'reship' ? 'Thank you for checking your address. ' : 'Sorry it didn’t arrive as it should. ') + 'We’re making a new one for you, free:']);
       if (ls.length) B.push(['list', ls.map((l) => itemLine(l))]);
-      B.push(['p', 'There’s nothing to pay. Our print partner makes it again, and we’ll email you a tracking link when it’s on its way.'], ['facts', [orderFact]], toPage);
+      B.push(['p', 'There’s nothing to pay. Our print partner makes it again, and we’ll email you a tracking link when it’s on its way.']);
+      if (gift) B.push(gift);
+      B.push(['facts', [orderFact]], toPage);
       return page('A new one is on its way', 'A new one is on its way', B, env, site);
     }
     default: // an unknown kind (never sent by the ledger): a plain note with the order link, never a blank email
@@ -246,7 +284,7 @@ const OWNER = {
   storage: ['Print storage is over 4 GB.', 'Old print files are being tidied; past 4.5 GB it is time for Workers Paid.', 'report'],
   report: ['The nightly report.', null, 'report'],
   stuck: ['A step failed with an error; it is tried again every 5 minutes.', 'If it keeps failing, look at the order.', 'show'],
-  cancel_late: ['A buyer cancelled the late part of an order.', 'Cancel those items in the Printful dashboard if you can.', 'show'],
+  cancel_late: ['The late part of an order was refunded (the buyer cancelled it, or its new date passed).', 'Cancel those items in the Printful dashboard if you can.', 'show'],
   returned: ['A parcel came back to Printful.', 'Nothing is reshipped (the order is refunded, cancelled or disputed).', 'show'],
   reprint_held: ['A reprint waits (the printer mode is not live).', 'Confirm it once the mode is live.', 'confirm'],
   reprint_stopped: ['A reprint was stopped or paused.', 'Nothing to do unless a dispute ends: then confirm releases it.', 'show'],

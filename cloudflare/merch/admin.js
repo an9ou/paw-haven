@@ -12,7 +12,12 @@ export async function adminRoute(L, req, path, ip) {
   if (!L.tx(() => L.rate('admin:ip:' + ih, 60))) return fail('slow_down', 429);
   const auth = req.headers.get('authorization') || '', key = L.env.MERCH_ADMIN_KEY;
   if (!key || String(key).length < 16 || !same(auth, 'Bearer ' + key)) return fail('unauthorized', 401);
-  const u = new URL(req.url), m = req.method, body = m === 'POST' ? ((await L.body(req)) || {}) : {};
+  const u = new URL(req.url), m = req.method;
+  let body = {};
+  if (m === 'POST') { // review finding 14: a body over 64 KB is said as such (before: read as {} and answered "1 to 2000 codes")
+    const t = await req.text(); if (t.length > 65536) return fail('too_big', 413, { say: 'At most 64 KB a request: send the codes 1000 at a time (tools/merch.sh gift add does).' });
+    try { const o = JSON.parse(t || '{}'); body = o && typeof o === 'object' ? o : {}; } catch (e) { body = {}; }
+  }
   const mm = /^order\/([^/]+)(?:\/(refund|reprint|confirm|lost))?$/.exec(path);
   if (path === 'orders' && m === 'GET') {
     const st = u.searchParams.get('status'), hold = u.searchParams.get('hold');

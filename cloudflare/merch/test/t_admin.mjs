@@ -39,7 +39,7 @@ export async function admin() {
     const w = await world(); const id = await w.confirmedOrder([mug(0), tee(4)]); w.pf.ship(w.order(id).provider_order, [id + '_1']); await w.phook(w.pf.hook(w.pfOrder(id), 'package_shipped', 'pv1'));
     const p = await w.call('GET', '/merch/order/' + id); const t = p.text;
     ok(!/buyer@example|Example Street|Exampleton|Pat Example|email|PC-4242/.test(t), 'no buyer data on the page: ' + t.slice(0, 300));
-    eq(Object.keys(p.json).sort(), ['can_cancel', 'cancel_until', 'country', 'dispute', 'gift_code', 'gift_name', 'hold', 'id', 'late', 'lines', 'paid_at', 'parcels', 'pay_pending', 'pres', 'status', 'totals'].sort(), 'fields');
+    eq(Object.keys(p.json).sort(), ['can_cancel', 'cancel_until', 'country', 'dispute', 'gift', 'gift_code', 'gift_name', 'hold', 'id', 'late', 'late_eta', 'late_ok', 'lines', 'paid_at', 'parcels', 'pay_pending', 'pres', 'ship_by', 'status', 'totals'].sort(), 'fields (6.3 with the part 6 review note: ship_by, late_eta, late_ok, gift)');
     ok(p.json.lines[1].name === "D'Artagnan" && p.json.lines[0].name === null && p.json.parcels.length === 1, 'the dog’s name only where printed');
     const all = JSON.stringify([w.q('select * from merch_orders'), w.q('select * from merch_order_items'), w.q('select * from merch_events'), w.q('select * from merch_refunds'), w.q('select * from merch_parcels'), w.q('select * from merch_meta'), w.q('select * from merch_outbox')]);
     ok(!/buyer@example|Example Street|Exampleton|Pat Example|PC-4242/.test(all), 'nothing about the buyer in any table but the email HMAC');
