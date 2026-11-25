@@ -292,8 +292,16 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   mix or the by-hand option). The owner still has to do SANDBOX.md part A (the new Stripe account in test mode, the keys into the
   Cloudflare dashboard after our first deploy, the admin key through the secure form for `merch-api-test.doodledoggo.app`).
 - **Next, in this order:**
-  1. (running at 18:10 JST) C1, P1, P2 on `merch/part9-wiring` (one agent). Merge when green.
-  2. C2, the stand-in printer for the test Worker only (SANDBOX.md C; the owner said yes to it). NOT C3.
+  1. (done 18:25 JST, merge 3376171) C1, P1, P2 (`merch/part9-wiring`): `util.js` `netOf(seam, key)` (the global fetch only on
+     Cloudflare's runtime and only with the key; a live key is refused in `req()` itself on the test Worker; a call that never answers is
+     aborted at its time limit), the page's order server on the test origin only, Pay opens only `https://checkout.stripe.com/` urls;
+     the page now has words for `bad_nonce` / `nonce_used` and a fake case for the late cancel's `pending`. **Every suite green on
+     3376171**: merch_worker 304 (new `t_net.mjs`), merch_page 2036, pawprint 89, merch_legal 383, render_chromium, test_enc 36, the
+     game round trip, both `--check`s, `BUILD_ONLY=1 bash tools/merch_test_deploy.sh`. Small points left: Stripe's cancel_url lands on
+     the shop home, not the basket (the basket is kept); a Resend retry after a timeout can get a 409 and be noted as a failed mail
+     though it went; the pay note's "Test mode" words need new words at launch.
+  2. (running since 18:25 JST) C2, the stand-in printer for the test Worker only, on `merch/part9-test-printer` (SANDBOX.md C; the
+     owner said yes to it). NOT C3. Merge when green.
   3. ONE combined code review of the third fix batch (`git diff b7ef7ab..167d986 -- cloudflare/merch`, never reviewed), the wiring and
      C2; then one fix batch.
   4. A driver for Stripe's test pay page from the cloud session (Playwright; check the environment's network rules with
