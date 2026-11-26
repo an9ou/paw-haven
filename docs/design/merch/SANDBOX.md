@@ -495,6 +495,15 @@ sends the header on every POST. What G1/G2 need to add:
 - When the merch test Worker is rebuilt into another folder (a new token), the test copy is deployed again with the new file. The same
   folder (or `MERCH_TEST_TOKEN=<it>`) keeps the token, so the usual redeploys need nothing.
 
+- Order of the two deploys: the merch test Worker first (`tools/merch_test_deploy.sh`, from the MERCH session); then the GM runs
+  `DRY_RUN=0 bash tools/merch_test_cfg_pull.sh <file outside the repo>` (it reads the plain variable `MERCH_TEST_TOKEN` of the deployed Worker and
+  writes `{"token":"..."}`, mode 600, never printing it; offline test `bash tools/merch_test_cfg_pull.test.sh`), and passes that file as
+  `MERCH_TEST_CFG=<file>` to `tools/cf_test_deploy.sh` together with `MERCH_PAGE=<checkout of merch/shop>`. `MERCH_PAGE` is the ROOT of the
+  checkout (`tools/cf_test.js` reads `<dir>/site/merch/index.html`; it refuses a path that ends in `site/merch`); `MERCH_TEST_CFG` is the token
+  file, served as it is at `/merch/test_cfg.json` (only with `MERCH_PAGE`).
+- The settings read (`GET .../workers/scripts/doodle-doggo-merch-test/settings`, `result.bindings` with `{type:"plain_text", name, text}`) is
+  unverified until the first real deploy: if Cloudflare's answer has another shape, the script refuses and writes nothing.
+
 **G4. `tools/cf_test_deploy.sh`: no change** beyond passing G1's options. Its deploy needs the owner's go-ahead as always.
 
 **Not needed**: no change to `cloudflare/worker.js`, `cloudflare/schema.sql`, `site/tpl/*`, the live site build or the game. The merch test Worker
