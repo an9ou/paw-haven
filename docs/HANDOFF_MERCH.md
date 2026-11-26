@@ -411,7 +411,7 @@ for tax where needed (with an accountant: we give research, not tax advice), set
 
 ## Working with the Game Manager
 
-- GM session (since 25 Nov 2026, 20:40 JST): `session_01D6KLY4qCSGZCym9CUpp5Hj` ("Doodle Doggo · Game Manager"; the older `session_01D6KLY39DbX4YUzK61TBWQi` and `session_01D6KLY4c4fCxHWPdQRekZXZ` are archived; the MERCH session's parent in the session list is still the old one, so address the new id). G1-G3 are on its list for Thu 26 Nov 13:05 JST. MARKETING session: `session_01D6KLY4Gxx78VuyjbRFaSgb`.
+- GM session (since 26 Nov 2026, 13:50 JST): `session_01D6KLY2jCiNHEM4TzFZ11e4` ("Doodle Doggo · Game Manager"; the older `session_01D6KLY4qCSGZCym9CUpp5Hj`, `session_01D6KLY39DbX4YUzK61TBWQi` and `session_01D6KLY4c4fCxHWPdQRekZXZ` are archived; the MERCH session's parent in the session list is still the old one, so address the new id). G1-G3 are on its list for Thu 26 Nov 13:05 JST. MARKETING session: `session_01D6KLY4Gxx78VuyjbRFaSgb`.
 - You work on `merch/shop` (and worktrees/branches from it). **You do not push to `main`, release, or deploy.** The GM merges, releases
   and deploys after the owner's go-ahead. Send the GM a short message when a part is ready to merge or when you need a change in shared
   files: `game/src/*`, `cloudflare/worker.js`, `cloudflare/schema.sql`, `site/tpl/*` and the site header, `tools/cf_*`. Prefer new files
