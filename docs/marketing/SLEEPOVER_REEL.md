@@ -150,3 +150,14 @@ Sound: the same game music and effects; voice -25.5 LUFS raw (+9.5 dB), music -1
 Checks: `CHECK=1`: all 1134 frames pass; the render ran the same checks. `checkFrames()`: **0 doubled frames** in all ten moving runs (medians 0.13..0.39); off the cuts the only diff over 2.5 is 3.81 at frame 268 (Honey's drawing from idle to jump as the ball lands); the rest are the game's keyframe swaps and the subtitles changing (under 2.5). The end card (1058..1133) is the still RedNote card after its fade. ffprobe: h264 1080 x 1920, 30/1 fps, 1134 frames, 37.80 s; AAC 44.1 kHz stereo, 37.80 s. Stills looked at at 1x (the night guest with the zh tag, the payoff with the chip cut off); 12-still contact sheet in the scratchpad (`sleepover-rednote-contact-sheet.jpg`).
 
 Render notes: the first RedNote renders crashed because the disk was full (ENOSPC). Old trial footage (`fr/footage_try2..4`) and the gift Reel's rendered frames (`gift/work_en/f`, `gift/work_zh/f`) were removed from the session scratchpad to make room, and the cut was rendered again in full. The build now also retries a refused screenshot and has `NOENC=1` (render `FRAMES` without encoding).
+
+## Covers (26 Nov 2026)
+
+The owner asked for both covers; the coordinator writes the captions. Made with `ONLY=cover` (English) and `REDNOTE=1 ONLY=cover` (RedNote); both MP4s unchanged (md5 checked).
+
+| File | What |
+|---|---|
+| `brand/instagram/launch/sleepover_reel/sleepover-cover.jpg` | English, 1080 x 1920, its own design (not a frame of the Reel): Noodle's yard at dawn shot close (scene y 290..600 at 6.19x, from x 270), so only the fence boards and the open grass are in it and the washing line is above the frame; the headline card "Noodle's first sleepover" (big, red) / "and what came home with him"; the real share picture of Noodle and Honey (the game's PNG, cut above its chip), tilted, its right half under a cream paper flap with a big red "?" (a peek: Honey and the night sky show, the rest waits for the Reel); Noodle big and happy on the grass (569 px standing scale); the logo on its own card. No toothbrush: the game has no toothbrush art. |
+| `brand/rednote/rednote-26-sleepover.jpg` | RedNote, 3:4 (1080 x 1440): the same design cut at y 240..1680, in LXGW WenKai: 「面条第一次去好友家过夜」 and 「猜猜它带回了什么？」; the zh capture's share picture, cut above its chip. No link, domain, handle, QR or app name (the build's RedNote ban list runs on the cover's words). |
+
+Checks (both): text centred in its box (`centreCheck`), everything 28 px apart (`apartCheck`: the title card, the picture, Noodle, the logo card), Noodle on the floor, every card and Noodle 28 px clear of the scene's props and of the washing, the line and the pole (all above the frame here); everything inside x 40..1040, y 250..1670 (the 3:4 grid crop keeps 240..1680). Both looked at at 1x.

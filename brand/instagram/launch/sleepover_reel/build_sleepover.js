@@ -129,6 +129,13 @@ const SCN = {
   fnight: { svg: 'friend_night.svg', x0: 268, ground: Object.assign({ dig: DIG, barrel: [538, 305, 624, 382] }, STONES) }
 };
 if (RN) for (const s of Object.values(SCN)) s.x0 -= RNX / (s.s || SCALE);
+// ONLY=cover: the cover, its own design (not a frame of the Reel): Noodle's yard at dawn, shot close (the washing above the frame), the
+// headline card, the real share picture tilted and half under a "?" flap (a peek: the payoff stays in the Reel), Noodle big and happy on the grass,
+// the logo on its own card. English: sleepover-cover.jpg (1080 x 1920); REDNOTE=1: brand/rednote/rednote-26-sleepover.jpg, its y 240..1680 (3:4),
+// the share picture cut above its chip in both (zh: the zh capture's picture). Everything inside x 40..1040, y 250..1670 (the 3:4 grid crop keeps 240..1680).
+const COVER = process.env.ONLY === 'cover';
+const CV = RN ? { head: '面条第一次去好友家过夜', sub: '猜猜它带回了什么？' } : { head: "Noodle's first sleepover", sub: 'and what came home with him' };
+if (COVER) SCN.cnight = { svg: 'me_dawn.svg', x0: 270, y0: 290, s: ZS, ground: { dig: DIG, barrel: [538, 305, 624, 382], stoneA: STONES.stoneA, stoneB: STONES.stoneB } };
 const HANG = { pole: [572, 145, 605, 341], shirtBlue: [285, 226, 335, 275], sockRed: [361, 236, 383, 279], sockYellow: [392, 238, 415, 282], towel: [433, 241, 486, 280], shirtPink: [509, 224, 559, 275] };
 
 // ---- the beats: each card stays up for its spoken line + 0.4 s, then a 0.15 s pause (owner, 13 Nov 2026: fast) ----
@@ -172,7 +179,7 @@ if (RN) for (const v of BEATS) { const parts = SUBS_ZH[v.k]; if (parts.join('') 
   parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum, s2 = x.replace(/[，。、：]$/, '');
     if ([...bare(s2)].length > 14) throw new Error('a subtitle over 14 characters: ' + s2);
     SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: s2 }); t0 += d; }); }
-const allText = BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + VSUB.map((s) => s[3]).join(' ') + ' ' + Object.values(TX).join(' ') + ' ' + SUBS.map((x) => x.s).join(' ') + ' ? 0123456789';
+const allText = CV.head + ' ' + CV.sub + ' ' + BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + VSUB.map((s) => s[3]).join(' ') + ' ' + Object.values(TX).join(' ') + ' ' + SUBS.map((x) => x.s).join(' ') + ' ? 0123456789';
 if (/—|\bbreed(s|ing)?\b|\bsell|itch|%/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban');
 // RedNote anti-ban (README RedNote rule, REDNOTE.md): no link, domain, handle, QR, other platform or app, off-platform word, post/story wording; checked
 // on every word we show or say and on the captured game text the cut uses (toasts, the tag, the letters, the diary, the bubble, the strip, the share sheet)
@@ -198,7 +205,7 @@ ${SAFE_JS}
 ${ENDCARD_JS}
 const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', AF=RN?F:'Andika', CX=455, RNX=${RNX}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)};
 const BEATS=${JSON.stringify(BEATS)}, VSUB=${JSON.stringify(VSUB)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
-const VB=BEATS[1], SCN=${JSON.stringify(SCN)}, HANG=${JSON.stringify(HANG)}, SY0=${SY0}, SCALE=${SCALE};
+const CV=${JSON.stringify(CV)}, ZS=${ZS}, VB=BEATS[1], SCN=${JSON.stringify(SCN)}, HANG=${JSON.stringify(HANG)}, SY0=${SY0}, SCALE=${SCALE};
 const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) => [k, d.idx])))};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
@@ -350,6 +357,32 @@ function frame(t){
       if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); } }
   return ''; }
 window.frame=frame;
+window.cover=function(){ $('fg').removeAttribute('transform'); for(const k of Object.keys(SCN)) $('bg_'+k).setAttribute('visibility', k==='cnight'?'visible':'hidden');
+  sc0='cnight'; X0=SCN.cnight.x0; S_=SCN.cnight.s; Y0=SCN.cnight.y0; $('ec').innerHTML=''; $('sub').innerHTML=''; $('scn').innerHTML='';
+  let a='', o='';
+  // the headline card
+  const L=[{s:CV.head,size:fitS(CV.head,RN?92:104,820),fill:'${RED}',pitch:RN?96:100},{s:CV.sub,size:fitS(CV.sub,RN?58:62,800),fill:'${PEN}'}];
+  const k0=inkOf(L[0].s,L[0].size,F), k1=inkOf(L[1].s,L[1].size,F), hh=k0.A+L[0].pitch+k1.D+70;
+  o+='<g data-box data-apart="title"><rect x="85" y="282" width="910" height="'+f2(hh)+'" rx="40" fill="${CREAM}" stroke="${PEN}" stroke-width="8"/>'+centred(L,540,282+hh/2,F).svg+'</g>';
+  // the share picture, tilted, its right half under a cream paper flap with a big red "?"
+  const PH=1254, w=500, h=w*PH/1080, cx=540, top=282+hh+80, x=cx-w/2, pad=16, fx=x+w*0.5;
+  o+='<g data-apart="pic" transform="rotate(-5 '+cx+' '+f2(top+h/2)+')"><rect x="'+f2(x-pad)+'" y="'+f2(top-pad)+'" width="'+f2(w+2*pad)+'" height="'+f2(h+2*pad)+'" rx="26" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'
+    +'<svg x="'+f2(x)+'" y="'+f2(top)+'" width="'+f2(w)+'" height="'+f2(h)+'" viewBox="0 0 1080 '+PH+'"><image width="1080" height="'+PH+'" preserveAspectRatio="xMidYMin slice" href="__PIC__"/></svg>'
+    +'<path d="M'+f2(fx)+' '+f2(top-pad)+'L'+f2(x+w+pad)+' '+f2(top-pad)+'L'+f2(x+w+pad)+' '+f2(top+h+pad-70)+'L'+f2(x+w+pad-70)+' '+f2(top+h+pad)+'L'+f2(fx-30)+' '+f2(top+h+pad)+'Z" fill="#FFF3DA" stroke="${PEN}" stroke-width="6" stroke-linejoin="round"/>'
+    +'<path d="M'+f2(x+w+pad)+' '+f2(top+h+pad-70)+'L'+f2(x+w+pad-62)+' '+f2(top+h+pad-62)+'L'+f2(x+w+pad-70)+' '+f2(top+h+pad)+'Z" fill="#E9D3AE" stroke="${PEN}" stroke-width="5" stroke-linejoin="round"/>'
+    +'<g data-box><circle cx="'+f2(fx+w*0.27)+'" cy="'+f2(top+h*0.48)+'" r="96" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+centred([{s:'?',size:156,fill:'${RED}'}],fx+w*0.27,top+h*0.48,F).svg+'</g></g>';
+  // Noodle, big and happy on the night grass; the logo on its own card beside him
+  a+=dogG('Noodle','noodle_happy_right',0,NCX+20,1596,NZ,{nt:0.9});
+  const lw=270, lh=lw*280/900; o+='<g data-apart="logo"><rect x="'+(1010-lw-28)+'" y="1528" width="'+(lw+28)+'" height="'+f2(lh+24)+'" rx="24" fill="${CREAM}" stroke="${PEN}" stroke-width="6"/><svg x="'+(1010-lw-14)+'" y="1540" width="'+lw+'" height="'+f2(lh)+'" viewBox="0 0 900 280">'+LOGO_INNER+'</svg></g>';
+  $('art').innerHTML=a; $('ov').innerHTML=o;
+  const bad=centreCheck($('st')); if(bad.length) return 'cover not centred: '+bad.join('; ');
+  const near=apartCheck($('st'),28); if(near.length) return 'cover too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
+  const props=Object.assign({},SCN.cnight.ground,HANG);
+  for(const e of $('st').querySelectorAll('[data-apart]')){ const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart');
+    if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/S_+Y0<340) return 'cover: '+n+' stands above the floor';
+    for(const [nm,bx] of Object.entries(props)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return 'cover: '+n+' on the scene prop '+nm+' ('+Math.round(g)+' px)'; }
+    if(r.left<40||r.right>1040||r.top<250||r.bottom>1670) return 'cover: outside x 40..1040, y 250..1670: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }
+  return ''; };
 window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'image/svg+xml').querySelector('[data-prop="mailbox"]'); if(!g) throw new Error('no mailbox in the yard grab');
   const sy=document.createElementNS(NSV,'symbol'); sy.setAttribute('id','a_mail'); sy.setAttribute('viewBox','172 246 78 108'); sy.setAttribute('overflow','visible'); sy.innerHTML=new XMLSerializer().serializeToString(g); $('defs').appendChild(sy);
   const m=initDrawings(DRAW); const l=layout(); return {boxes:m, l}; };
@@ -358,7 +391,7 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
 (async () => {
   const exe = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1243/chrome-linux/chrome'].find((f) => fs.existsSync(f));
   const b = await chromium.launch({ executablePath: exe, args: ['--allow-file-access-from-files', '--disable-dev-shm-usage'] });
-  const p = await b.newPage({ viewport: { width: W, height: H } });
+  const p = await b.newPage({ viewport: { width: W, height: H } }); p.on('pageerror', (e) => console.log('PAGE ERROR', e.message));
   // the scenes: each window rendered once as a JPEG
   let page = html;
   for (const [k, s] of Object.entries(SCN)) {
@@ -386,6 +419,9 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
   const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.LOOSE) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (file) for (let k = 0; ; k++) { try { await p.screenshot({ path: file }); break; } catch (e) { if (k >= 4) throw e; console.log('screenshot retry', k + 1, t.toFixed(3)); await p.waitForTimeout(500); } } }; // RedNote: the browser now and then refuses a capture ("Unable to capture screenshot"); the same frame again works
   // Noodle's size, standing: 550..700 px wide (owner)
   { await render(1.0); const w = await p.evaluate(() => { const e = document.querySelector('[data-apart="Noodle"] use[href^="#fr_"]'); return e.getBoundingClientRect().width; }); console.log('Noodle standing', Math.round(w), 'px wide'); if (w < 550 || w > 700) throw new Error('Noodle is ' + Math.round(w) + ' px wide standing'); }
+  if (COVER) { const err = await p.evaluate(() => window.cover()); if (err) throw new Error(err);
+    const file = RN ? path.join(ROOT, 'brand', 'rednote', 'rednote-26-sleepover.jpg') : path.join(OUT, 'sleepover-cover.jpg');
+    await p.screenshot({ path: file, type: 'jpeg', quality: 92, ...(RN ? { clip: { x: 0, y: 240, width: W, height: 1440 } } : {}) }); console.log('wrote', file); await b.close(); return; }
   if (process.env.DUMP) { await p.evaluate((t) => window.frame(t), +process.env.DUMP); fs.writeFileSync(path.join(WORK, 'dump.html'), await p.content()); console.log('dumped'); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ...BEATS.flatMap((x) => [x.at + 0.5, x.at + x.hold * 0.9]).slice(1), VB.at + 1.0, VB.at + 2.4, VB.at + 4.2, BEATS[4].at + 2.5, BEATS[5].at + 1.9, BEATS[5].at + 3.0, BEATS[3].at + 2.0, LOOP + 0.15, (NF - 1) / FPS];
