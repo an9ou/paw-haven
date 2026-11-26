@@ -12,6 +12,11 @@
 // - Everything carries X-Robots-Tag: noindex, nofollow, and nothing is cached publicly: the gate and the HTML are private, no-store; the game's
 //   hashed files private, max-age a year (they are only ever served behind the cookie).
 // - At most 10 wrong passwords per IP in 10 minutes per Worker isolate (a soft brake; the password itself should be long).
+// - A folder path serves its index.html (/ -> /index.html, /merch/terms/ -> /merch/terms/index.html); a folder without its slash (/merch) answers
+//   301 to the slash, query kept (behind the cookie like everything else).
+// - zones (optional, the merch page of the sandbox run, SANDBOX.md part F G2): [{ prefix, csp, noStore }]: every answer under prefix carries
+//   that CSP instead of the game's, and the paths noStore matches (e.g. /merch/test_cfg.json, /merch/*.js) are private, no-store. No zone
+//   path is ever let past the password: /merch/test_cfg.json without the cookie is the gate page like any other path.
 const COOKIE = 'dd_test', MAX_AGE = 30 * 86400, FAILS = 10, FAIL_WINDOW = 600000;
 const enc = new TextEncoder();
 const b64url = (buf) => { let s = ''; new Uint8Array(buf).forEach((x) => { s += String.fromCharCode(x); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
@@ -59,12 +64,13 @@ const fails = new Map(); // ip -> [count, since]
 function tooMany(ip, now) { const f = fails.get(ip); if (!f || now - f[1] > FAIL_WINDOW) { fails.delete(ip); return false; } return f[0] >= FAILS; }
 function noteFail(ip, now) { const f = fails.get(ip); if (!f || now - f[1] > FAIL_WINDOW) fails.set(ip, [1, now]); else f[0]++; if (fails.size > 5000) fails.clear(); }
 
-// files: { '/index.html': [body, content type], ... } (the game copy at the root); hashed: a RegExp of the paths that never change; csp: the game's CSP
-export function makeGate({ files, hashed, csp }) {
+// files: { '/index.html': [body, content type], ... } (the game copy at the root); hashed: a RegExp of the paths that never change; csp: the game's CSP;
+// zones: see above (left out: the game copy alone)
+export function makeGate({ files, hashed, csp, zones }) {
   return {
     async fetch(req, env) {
       const url = new URL(req.url), p = url.pathname, now = Date.now();
-      if (url.protocol === 'http:') return Response.redirect('https://' + url.host + p + url.search, 301);
+      if (url.protocol === 'http:') return new Response(null, { status: 301, headers: Object.assign({}, BASE, { location: 'https://' + url.host + p + url.search, 'cache-control': 'private, no-store' }) });
       if (p === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n', { headers: Object.assign({}, BASE, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'private, max-age=3600' }) });
       if (!env || !env.TEST_PASSWORD) return new Response('The test copy is not set up yet (no TEST_PASSWORD).', { status: 503, headers: Object.assign({}, BASE, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'private, no-store' }) });
       if (p === '/__gate/out') return new Response(null, { status: 303, headers: Object.assign({}, BASE, { location: '/', 'cache-control': 'private, no-store', 'set-cookie': `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` }) });
@@ -81,11 +87,13 @@ export function makeGate({ files, hashed, csp }) {
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: Object.assign({}, BASE, { allow: 'GET, HEAD' }) });
       if (!(await tokenOk(env, cookieOf(req), now))) return page(401, p + url.search);
-      const key = p === '/' ? '/index.html' : p, hit = files[key];
+      const key = p.endsWith('/') ? p + 'index.html' : p, hit = files[key];
+      if (!hit && files[p + '/index.html']) return new Response(null, { status: 301, headers: Object.assign({}, BASE, { location: p + '/' + url.search, 'cache-control': 'private, no-store' }) });
       if (!hit) return new Response('Not found', { status: 404, headers: Object.assign({}, BASE, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'private, no-store' }) });
-      const html = hit[1].startsWith('text/html');
-      const headers = Object.assign({}, BASE, { 'content-type': hit[1], 'cache-control': html ? 'private, no-store' : hashed && hashed.test(key) ? 'private, max-age=31536000, immutable' : 'private, max-age=3600' });
-      if (html && csp) headers['content-security-policy'] = csp;
+      const html = hit[1].startsWith('text/html'), zone = (zones || []).find((z) => key.startsWith(z.prefix));
+      const headers = Object.assign({}, BASE, { 'content-type': hit[1], 'cache-control': html || (zone && zone.noStore && zone.noStore.test(key)) ? 'private, no-store' : hashed && hashed.test(key) ? 'private, max-age=31536000, immutable' : 'private, max-age=3600' });
+      if (zone) headers['content-security-policy'] = zone.csp;
+      else if (html && csp) headers['content-security-policy'] = csp;
       return new Response(req.method === 'HEAD' ? null : hit[0], { headers });
     }
   };
