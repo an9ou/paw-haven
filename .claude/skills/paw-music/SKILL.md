@@ -90,8 +90,15 @@ music in the same context) with the same `--seed` so the owner can compare A and
 ```
 NODE_PATH=$(npm root -g) node mods/audio/test_audio.js     # live scheduler, every context, offline renders, no throws
 NODE_PATH=$(npm root -g) node mods/audio/check_v2.js       # voices, stings, nursery/vet/salon beds non-silent, 2-voice limit
+NODE_PATH=$(npm root -g) node mods/audio/check_wxmas.js    # ~4 min: every place resolves as before (sig_snapshot.json), the Winter Market's two tunes and their turns
 NODE_PATH=$(npm root -g) PAW_ARGS=--ignore-certificate-errors node game/run_tests.js smoke --jobs 1
 ```
 
 `test_audio.js` takes about 15 minutes (it ends with every breed's barks; run it in the background) and writes demo WAVs into `mods/audio/` (gitignored);
 don't wrap it in a short `timeout`. Plus the clip numbers above, and the owner's go-ahead on the clips.
+`sig_snapshot.json` pins how every place resolves; when you change another place's music on purpose, rewrite it with
+`node mods/audio/check_wxmas.js --write-snapshot` and say so. Render clips are not bit-identical run to run (about -103 dB residual), so
+to prove a place sounds the same, diff the before/after WAVs and look for a residual near that floor, not for identical bytes.
+
+The Winter Market has two tunes that take turns inside the engine (`wmarket` and the Christmas `wxmas`, `MK_TURN` / `mkPick`):
+`ctx.tune: 'xmas' | 'old'` forces one in `describe` / `_render` / `music_clip.js --ctx`; `_render({ mkTurn: 20 })` shortens the turn.

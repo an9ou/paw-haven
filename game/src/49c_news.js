@@ -8,7 +8,7 @@
    Again: Settings "What's new" and the phone "..." menu. Under the test harness it needs prefs.nwTest (the older suites never see it).
    Test hook: window.__paw.nw. How to add an entry each release: V218.md section "What's new". */
 function nwOn() { return !navigator.webdriver || !!prefs.nwTest; }
-const NW = { calm: 0, exposed: false, d233: null }; // d233: a test date for NEWS_V233 (the test hook), null = HP_FROM
+const NW = { calm: 0, exposed: false, d233: null, no2332: false }; // d233: a test date for NEWS_V233 (the test hook), null = HP_FROM; no2332: NEWS_V2332 out of the list (test hook, for checks about older entries)
 const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)), { day: 'numeric', month: 'long' });
 const nwItemArt = (n) => art('item', n);
 const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win(2026)[i]) : ''; }; // a market's first (0) or last (1) day, 2026
@@ -251,6 +251,15 @@ const NEWS_V2321 = { // v2.32.1 "Where is the Fun Fair?" (a player asked): the F
     { ic: () => nwItemArt('Paper Kite'), tx: () => tt('nw.v2321.map', 'Can\'t find the Fun Fair? It is on the town map now: tap it to see every game and where it is') }
   ]
 };
+const NEWS_V2332 = { // v2.33.2 "Sleigh bells" (owner, 25 Nov 2026, via Marketing): the Winter Market's second, Christmas tune (wxmas in mods/pawaudio.js)
+  id: '2.33.2', date: '2026-11-25', minor: true, c: '#D3E4F4', d: 'snow', pic: { item: 'Star Lantern' }, // a day before v2.33, so Helping paws (a bigger update, a newer date) leads from 26 Nov
+  title: () => tt('nw.v2332.title', 'A Christmas tune at the Winter Market'),
+  items: [
+    { ic: () => nwSafe(() => ICON('music')), tx: () => tt('nw.v2332.tune', 'The Winter Market has a second tune: a cosy Christmas lo-fi with sleigh bells') },
+    { ic: () => nwItemArt('Present Pile'), tx: () => tt('nw.v2332.turns', 'The two tunes take turns: each visit plays the other one, and a long stay hears both') },
+    { ic: () => nwSafe(() => ICON('sound-on')), tx: () => tt('nw.v2332.sound', 'Sound on? Turn up the music in Settings and take a stroll through the snow') }
+  ]
+};
 const nwV230Due = () => jstISO() >= NEWS_V230.date;
 /* v2.33 "Helping paws" (V233.md 10; 60_helps.js, 60b_sleep.js): its date is HP_FROM, the game's launch date. '' (no date yet): nwSort leaves the entry
    out (never sorted, never the auto sheet's lead, never in See all updates). With a date it behaves like NEWS_V232 (nwDue) */
@@ -269,7 +278,7 @@ const nwV233Due = () => !!NEWS_V233.date && nwDue(NEWS_V233);
 function btOn() { return (!navigator.webdriver && nwV230Due()) || !!(typeof prefs !== 'undefined' && prefs && prefs.btTest); }
 // Daily rhythm: NEWS is read newest first by date (a later version first on the same date), so an entry put in front at load time (50_friends.js unshifts NEWS_V219 when FR_LIVE is on) still lands in its place
 const nwVer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; };
-function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V2291, NEWS_V231, NEWS_V232, NEWS_V2321].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); { const i = NEWS.indexOf(NEWS_V233); if (nwV233Due()) { if (i < 0) NEWS.unshift(NEWS_V233); } else if (i >= 0) NEWS.splice(i, 1); } NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
+function nwSort() { if (nwV220Due() && !NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); if (nwV221Due() && !NEWS.includes(NEWS_V221)) NEWS.unshift(NEWS_V221); if (nwV222Due() && !NEWS.includes(NEWS_V222)) NEWS.unshift(NEWS_V222); if (nwV223Due() && !NEWS.includes(NEWS_V223)) NEWS.unshift(NEWS_V223); if (nwV2232Due() && !NEWS.includes(NEWS_V2232)) NEWS.unshift(NEWS_V2232); if (nwV224Due() && !NEWS.includes(NEWS_V224)) NEWS.unshift(NEWS_V224); if (nwV2241Due() && !NEWS.includes(NEWS_V2241)) NEWS.unshift(NEWS_V2241); if (nwV225Due() && !NEWS.includes(NEWS_V225)) NEWS.unshift(NEWS_V225); [NEWS_V226, NEWS_V227, NEWS_V228, NEWS_V229, NEWS_V2291, NEWS_V231, NEWS_V232, NEWS_V2321, NEWS_V2332].forEach((e) => { if (nwDue(e) && !NEWS.includes(e)) NEWS.unshift(e); }); if (NW.no2332) { const j = NEWS.indexOf(NEWS_V2332); if (j >= 0) NEWS.splice(j, 1); } if (nwV230Due() && !NEWS.includes(NEWS_V230)) NEWS.unshift(NEWS_V230); { const i = NEWS.indexOf(NEWS_V233); if (nwV233Due()) { if (i < 0) NEWS.unshift(NEWS_V233); } else if (i >= 0) NEWS.splice(i, 1); } NEWS.sort((a, b) => (a.date === b.date ? nwVer(b.id, a.id) : a.date < b.date ? 1 : -1)); return NEWS; }
 const nwLatest = () => nwSort()[0].id;
 const nwSafe = (f) => { try { return f(); } catch (e) { return ''; } };
 function v2182Fields(s) { if (s && typeof s.newsSeen !== 'string') s.newsSeen = ''; return s; } // additive: '' = an old save, it sees the newest entry once
@@ -331,7 +340,8 @@ function nwExpose() {
     v219: () => { if (!NEWS.includes(NEWS_V219)) NEWS.unshift(NEWS_V219); return nwSort().map((e) => e.id); }, // what 50_friends.js does with FR_LIVE on (test hook)
     v220: () => { if (!NEWS.includes(NEWS_V220)) NEWS.unshift(NEWS_V220); return nwSort().map((e) => e.id); }, v220Due: () => nwV220Due(), // Missions v2 before its date (test hook)
     drop: () => { nwSort(); if (NEWS.length > 1) NEWS.shift(); return NEWS[0].id; },
-    v233: (d) => { if (d !== undefined) NW.d233 = d; return nwSort().map((e) => e.id); }, v233Date: () => NEWS_V233.date, v233Raw: () => { NW.d233 = null; return NEWS_V233.date; } }; // v2.33: a test date (null: HP_FROM again), the entry's date
+    v233: (d) => { if (d !== undefined) NW.d233 = d; return nwSort().map((e) => e.id); }, v233Date: () => NEWS_V233.date, v233Raw: () => { NW.d233 = null; return NEWS_V233.date; }, // v2.33: a test date (null: HP_FROM again), the entry's date
+    v2332: (on) => { NW.no2332 = on === false; return nwSort().map((e) => e.id); } }; // v2.33.2: false takes the minor Christmas tune note out of the list (checks about older entries), true puts it back
 }
 setInterval(() => { try { nwExpose(); nwTry(); } catch (e) { console.warn('nw tick', e); } }, 500);
 on('game:ready', () => { NW.calm = 0; nwExpose(); });

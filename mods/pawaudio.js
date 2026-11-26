@@ -51,7 +51,9 @@
     Am9: { r: 45, v: [55, 60, 64, 71] },
     A7b13: { r: 45, v: [55, 61, 65, 67], f: 10 },
     Em7b5: { r: 40, v: [55, 58, 62, 64], f: 6 },
-    Bbm6: { r: 46, v: [56, 61, 65, 67] }
+    Bbm6: { r: 46, v: [56, 61, 65, 67] },
+    D9: { r: 38, v: [54, 60, 64, 69] },   // the Winter Market's Christmas tune (wxmas): two bright secondary dominants, rootless like the rest
+    G9: { r: 43, v: [59, 62, 65, 69] }
   };
   Object.keys(CH).forEach(function (k) {
     var c = CH[k]; c.name = k; c.pcs = {}; c.pcs[c.r % 12] = 1;
@@ -69,8 +71,31 @@
     glassy: ['F69', 'Bbmaj9', 'F69', 'Gm9', 'F69', 'Bbmaj9', 'Am9', 'C9sus'],
     lullaby: ['Fmaj9', 'Dm9', 'Bbmaj9', 'C9sus', 'Fmaj9', 'Am9', 'Bbmaj9', 'C13'],
     winter: ['Fmaj9', 'Bbmaj9', 'Am9', 'Dm9', 'Gm9', 'C9sus', 'F69', 'C13'],   // Winter Market: warm, a little wistful
-    jazz: ['Gm9', 'C13', 'Fmaj9', 'Dm9', 'Gm9', 'C13', 'Am9', 'A7b13']   // ii-V-I cafe changes
+    jazz: ['Gm9', 'C13', 'Fmaj9', 'Dm9', 'Gm9', 'C13', 'Am9', 'A7b13'],   // ii-V-I cafe changes
+    // the Winter Market's Christmas tune (wxmas, 25 Nov 2026, from Marketing's Christmas lo-fi 'sleigh'): a 16-bar form, so it is in ANCHOR
+    xmas: ['Fmaj9', 'Bbmaj9', 'Am9', 'D9', 'Gm9', 'C13', 'Fmaj9', 'C9sus', 'Bbmaj9', 'C13', 'Am9', 'Dm9', 'G9', 'Gm9', 'C9sus', 'C13']
   };
+  // progressions longer than 8 bars that start from their own bar 1 when they come in (the 8-bar ones keep the phrase position: bar % 8)
+  var ANCHOR = { xmas: 1 };
+  // the Christmas tune, written out (original, keep it note for note): one row per bar of PROGS.xmas, [step16, midi, lenSteps, vel]
+  var XMEL = [
+    [[0, 81, 2, 0.85], [2, 84, 2, 0.7], [4, 89, 3, 0.9], [7, 88, 1, 0.6], [8, 84, 4, 0.85], [12, 81, 2, 0.75], [14, 84, 2, 0.7]],   // Fmaj9
+    [[0, 86, 6, 0.9], [6, 84, 2, 0.65], [8, 81, 4, 0.8], [12, 77, 4, 0.75]],                                                       // Bbmaj9
+    [[0, 79, 2, 0.8], [2, 81, 2, 0.7], [4, 84, 4, 0.85], [8, 88, 6, 0.9], [14, 86, 2, 0.65]],                                      // Am9
+    [[0, 84, 3, 0.85], [3, 81, 1, 0.6], [4, 78, 4, 0.85], [8, 81, 2, 0.7], [10, 84, 2, 0.75], [12, 88, 4, 0.85]],                  // D9
+    [[0, 82, 2, 0.85], [2, 86, 2, 0.7], [4, 91, 3, 0.9], [7, 89, 1, 0.6], [8, 86, 4, 0.85], [12, 82, 2, 0.75], [14, 86, 2, 0.7]],   // Gm9
+    [[0, 88, 6, 0.9], [6, 86, 2, 0.65], [8, 82, 4, 0.8], [12, 79, 4, 0.75]],                                                       // C13
+    [[0, 81, 2, 0.85], [2, 84, 2, 0.7], [4, 89, 4, 0.9], [8, 88, 2, 0.7], [10, 84, 2, 0.7], [12, 81, 4, 0.8]],                     // Fmaj9
+    [[0, 79, 8, 0.85], [10, 81, 2, 0.6], [12, 82, 2, 0.65], [14, 84, 2, 0.7]],                                                     // C9sus
+    [[0, 86, 6, 0.9], [6, 89, 2, 0.7], [8, 86, 2, 0.7], [10, 84, 2, 0.7], [12, 81, 4, 0.8]],                                       // Bbmaj9
+    [[0, 79, 4, 0.85], [4, 82, 2, 0.7], [6, 81, 2, 0.65], [8, 79, 4, 0.8], [12, 76, 2, 0.7], [14, 79, 2, 0.7]],                    // C13
+    [[0, 84, 6, 0.9], [6, 88, 2, 0.7], [8, 86, 2, 0.7], [10, 84, 2, 0.7], [12, 81, 4, 0.8]],                                       // Am9
+    [[0, 77, 6, 0.85], [6, 81, 2, 0.65], [8, 84, 4, 0.8], [12, 86, 4, 0.8]],                                                       // Dm9
+    [[0, 83, 6, 0.9], [6, 86, 2, 0.7], [8, 89, 4, 0.85], [12, 86, 2, 0.7], [14, 83, 2, 0.7]],                                      // G9
+    [[0, 82, 6, 0.85], [6, 81, 2, 0.65], [8, 79, 4, 0.8], [12, 86, 4, 0.8]],                                                       // Gm9
+    [[0, 84, 4, 0.85], [4, 89, 4, 0.9], [8, 86, 4, 0.8], [12, 84, 2, 0.7], [14, 82, 2, 0.65]],                                     // C9sus
+    [[0, 88, 4, 0.85], [4, 86, 2, 0.7], [6, 84, 2, 0.7], [8, 82, 2, 0.7], [10, 81, 2, 0.7], [12, 79, 4, 0.8]]                      // C13
+  ];
   var PENTA = [0, 2, 4, 7, 9];   // F pentatonic offsets from F
   function pentaMidi(i) { var o = Math.floor(i / 5), k = ((i % 5) + 5) % 5; return 65 + o * 12 + PENTA[k]; }
   // keep a topline note off a semitone clash with the current chord
@@ -127,8 +152,10 @@
     std: [[0, 0.8], [2, 0.5], [4, 0.7], [6, 0.5], [8, 0.8], [10, 0.5], [12, 0.7], [14, 0.5]],
     busy: [[0, 0.8], [2, 0.5], [3, 0.3], [4, 0.7], [6, 0.5], [7, 0.35], [8, 0.8], [10, 0.5], [11, 0.3], [12, 0.7], [14, 0.55, 1], [15, 0.4]],
     light: [[2, 0.6], [6, 0.5], [10, 0.6], [14, 0.5]],
-    sleigh: [[0, 0.45], [2, 0.75], [4, 0.45], [6, 0.8], [8, 0.45], [10, 0.75], [12, 0.45], [14, 0.85], [15, 0.4]]
+    sleigh: [[0, 0.45], [2, 0.75], [4, 0.45], [6, 0.8], [8, 0.45], [10, 0.75], [12, 0.45], [14, 0.85], [15, 0.4]],
+    jingle: [[0, 0.55], [2, 0.8], [3, 0.3], [4, 0.55], [6, 0.85], [8, 0.55], [10, 0.8], [11, 0.3], [12, 0.55], [14, 0.9], [15, 0.4]]   // sleigh bells, swung 8ths + 16th pickups (wxmas)
   };
+  var SLEIGH_HATS = { sleigh: 1, jingle: 1 };
 
   /* ---------------- variants ---------------- */
   var DEF = { bpm: 78, swing: 0.6, prog: 'bright', keys: 'comp', bass: 'full', kick: 'std', snare: 'std', hats: 'std', top: 'kalimba', dens: 0.5,
@@ -159,6 +186,9 @@
     market: V({ bpm: 84, swing: 0.58, prog: 'bright2', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', top: 'glock', dens: 0.6, cut: 8000 }),
     wmarket: V({ bpm: 76, swing: 0.6, prog: 'winter', keys: 'comp', bass: 'full', kick: 'lazy', snare: 'ghost', hats: 'sleigh', top: 'celesta', dens: 0.55,
       themeChance: 0.35, themeGap: 12, cut: 6200, brush: true, L: { keys: 0.85, pad: 0.4, bass: 0.8, kick: 0.6, snare: 0.45, hats: 0.75, top: 0.95 } }),
+    // the Winter Market's Christmas tune: takes turns with wmarket (see MK_TURN); the written tune XMEL on celesta instead of motifs (mel)
+    wxmas: V({ bpm: 88, swing: 0.6, prog: 'xmas', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'jingle', top: 'celesta', dens: 0.5,
+      themeChance: 0, mel: 1, cut: 7800, drumCut: 7000, mix: 0.9, L: { keys: 0.75, pad: 0.2, bass: 0.75, kick: 0.8, snare: 0.55, hats: 1.5, top: 1.8, crackle: 1.1 } }),
     walk: V({ bpm: 82, prog: 'playful', bass: 'walk', hats: 'busy', top: 'flute', dens: 0.5, cut: 7000 }),
     play: V({ bpm: 86, swing: 0.66, prog: 'playful', keys: 'bouncy', bass: 'bouncy', kick: 'bouncy', snare: 'ghost', hats: 'busy', dens: 0.7, cut: 8000 }),
     bath: V({ bpm: 78, keys: 'bouncy', bass: 'bouncy', kick: 'lazy', hats: 'light', top: 'bubble', dens: 0.85, themeChance: 0.2, cut: 6500, L: { kick: 0.5, snare: 0.4, hats: 0.45, top: 0.9 } }),
@@ -170,8 +200,13 @@
   var PLACE_BASE = { title: 'theme', yard: 'yard', house: 'house', garden: 'garden', kitchen: 'kitchen', park: 'yard', river: 'yard', woods: 'yard', beach: 'yard',
     square: 'square', cafe: 'cafe', dogpark: 'dogpark', vet: 'vet', salon: 'salon', hilltop: 'hill', pier: 'pier', map: 'yard', shelter: 'home', market: 'market', fmarket: 'market', shop: 'market', walk: 'walk',
     fetch: 'play', nursery: 'nursery', toy: 'play', bath: 'bath', sleep: 'sleep', journal: 'calm', wardrobe: 'calm' };
-  var KEEP_PROG = { wmarket: 1, nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
-  var STRONG = { wmarket: 1, market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
+  var KEEP_PROG = { wmarket: 1, wxmas: 1, nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
+  var STRONG = { wmarket: 1, wxmas: 1, market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
+  // Winter Market turns (25 Nov 2026): its two tunes, wmarket ('old') and wxmas ('xmas'), take turns inside the engine (no game state).
+  // The first visit of a play session gets 'xmas', each new visit the other tune; staying, the tune changes at the top of its form once
+  // it has played MK_TURN seconds. A visit pauses (not ends) while a stall, the journal or the wardrobe is open (MK_KEEP), and coming back
+  // within MK_GRACE seconds is the same visit. ctx.tune ('xmas' | 'old') forces a tune (tests, sample clips).
+  var MK_TURN = 180, MK_GRACE = 60, MK_KEEP = { shop: 1, journal: 1, wardrobe: 1, nursery: 1 }, MK_BASE = { old: 'wmarket', xmas: 'wxmas' };
 
   function norm(c) {
     c = c || {};
@@ -188,7 +223,9 @@
 
   function resolve(c0) {
     var c = norm(c0), place = c.place, time = c.time, weather = c.weather, area = c.area;
-    var bn = PLACE_BASE[place] || 'yard'; if (place === 'fmarket' && c.fest === 'winter') bn = 'wmarket';
+    var bn = PLACE_BASE[place] || 'yard', tune = null, tuneSet = !!(c0 && (c0.tune === 'xmas' || c0.tune === 'old'));
+    if (place === 'fmarket' && c.fest === 'winter') { tune = tuneSet ? c0.tune : 'old'; bn = MK_BASE[tune]; }
+    var wm = !!tune;   // the Winter Market, either tune
     var v = copy(BASE[bn]), L = v.L, indoor = !!INDOOR[place];
     var tags = [bn];
     if (place === 'map') { v.themeChance = 0.45; v.themeGap = 8; }
@@ -244,9 +281,9 @@
         if (v.top === 'bird') v.top = 'flute';
         tags.push('rain: mellow, muted drums');
       } else if (weather === 'snow') {
-        if (bn !== 'wmarket') v.top = 'glock'; v.dens *= bn === 'wmarket' ? 0.9 : 0.75; v.brush = true; v.cut *= 0.9;
-        scaleL(L, bn === 'wmarket' ? { kick: 0.8, hats: 0.85 } : { kick: 0.45, hats: 0.4 });
-        if (v.keys === 'comp' && bn !== 'wmarket') v.keys = 'sustain';
+        if (!wm) v.top = 'glock'; v.dens *= wm ? 0.9 : 0.75; v.brush = true; v.cut *= 0.9;
+        scaleL(L, wm ? { kick: 0.8, hats: 0.85 } : { kick: 0.45, hats: 0.4 });
+        if (v.keys === 'comp' && !wm) v.keys = 'sustain';
         if (!KEEP_PROG[bn] && time !== 'night') v.prog = 'glassy';
         tags.push('snow: glassy bells, sparse');
       }
@@ -265,7 +302,7 @@
       if (time === 'dawn') birdRate = 0.6;
     }
     if (place === 'market' || place === 'fmarket') a.market = 1;
-    if (bn === 'wmarket') { a.market = 0.7; a.snowmkt = 0.8; a.wind = Math.min(a.wind, 0.3); }
+    if (wm) { a.market = 0.7; a.snowmkt = 0.8; a.wind = Math.min(a.wind, 0.3); }
     if (place === 'shop') a.market = 0.55;
     if (place === 'walk' || HANGOUTS[place]) {
       if (area === 'park') a.birds *= 1.3;
@@ -295,7 +332,7 @@
     for (var k3 in a) a[k3] = Math.round(clamp(a[k3], 0, 1) * 100) / 100;
     v.amb = a; v.birdRate = birdRate; v.indoor = indoor;
     v.bpm = Math.round(clamp(v.bpm, 64, 90));
-    v.ctx = c; v.base = bn; v.tags = tags;
+    v.ctx = c; v.base = bn; v.tags = tags; v.tune = tune; v.tuneSet = tuneSet;
     v.label = place + (area && place === 'walk' ? '/' + area : '') + ' · ' + time + ' · ' + weather + '  →  ' + tags.join(' + ');
     var sigL = LAYERS.map(function (n) { return Math.round((L[n] || 0) * 100); }).join(',');
     var sigA = AMBS.map(function (n) { return Math.round(a[n] * 100); }).join(',');
@@ -438,6 +475,9 @@
     E.pat = { keys: 'comp', bass: 'full', kick: 'std', snare: 'std', hats: 'std' };
     E.topQ = {}; E.topBusy = 0; E.lastTheme = -9999; E.themes = 0;
     E.v = null; E.sig = ''; E.pending = null; E.voices = []; E.dropped = 0; E.birdRate = 0.35; E.applied = 0;
+    E.form0 = 0;   // the bar an ANCHOR progression came in on
+    E.phase0 = 0;   // phrase offset of an 8-bar progression: 0 (bar % 8, as always) except the old Winter Market tune after a turn
+    E.mk = { tune: null, played: 0, inVisit: false, leftAt: -1e9, turns: 0 }; E.mkTurn = MK_TURN;   // Winter Market turns (in memory only)
   }
 
   var EP = Engine.prototype;
@@ -598,7 +638,9 @@
     o.onended = function () { g.disconnect(); };
   };
   EP.topNote = function (instr, dest, t, m, dur, vel) {
-    if (instr === 'celesta') this.celesta(dest, t, m, dur, vel);
+    if (instr === 'jingle') this.sleigh(t, vel);   // wxmas: the sleigh-bell shake into bars 8 and 16 (hats bus)
+    else if (instr === 'chime') this.sbell(dest, t, m, vel, 'glit');   // wxmas: the glitter chime at the top of each half
+    else if (instr === 'celesta') this.celesta(dest, t, m, dur, vel);
     else if (instr === 'glock') this.glock(dest, t, m, dur, vel, false);
     else if (instr === 'box') this.glock(dest, t, m, dur, vel * 0.9, true);
     else if (instr === 'flute') this.flute(dest, t, m, dur, vel);
@@ -836,21 +878,39 @@
     if (a.vet > 0) { times(0.05, this.bell); times(0.22, this.rustle); }
     if (a.snowmkt > 0) times(0.35, this.crunch);
     if (a.market > 0) {
-      times(this.v && this.v.base === 'wmarket' ? 3.5 : 5.5, this.murmur);
+      times(this.v && this.v.tune ? 3.5 : 5.5, this.murmur);   // the Winter Market (either tune): a calmer crowd
       times(0.035, function (tt) { this.glock(this.evDest('market'), tt, pick([77, 81, 84]), 0.5, 0.35, true); });
     }
   };
 
   /* ---------------- scheduler ---------------- */
   EP.on = function (n, t) { var L = this.L[n]; return L.target > 0.001 || t < L.end; };
-  EP.start = function (t, v) { this.nextTime = t; this.apply(v, t, true); };
+  EP.start = function (t, v) { this.nextTime = t; this.apply(this.mkPick(v), t, true); };
+  // Winter Market turns: which of its two tunes this visit plays (a fresh variant when it is not the one resolve() gave)
+  EP.mkPick = function (v) {
+    if (!v.tune) return v;
+    var mk = this.mk, same = !!mk.tune && (mk.inVisit || this.nextTime - mk.leftAt < MK_GRACE);
+    var want = v.tuneSet ? v.tune : same ? mk.tune : mk.tune === 'xmas' ? 'old' : 'xmas';
+    var nv = want === v.tune ? v : resolve(this.mkCtx(v, want));
+    nv.mkNew = !same;
+    return nv;
+  };
+  EP.mkCtx = function (v, tune) { var c = copy(v.ctx); c.tune = tune; return c; };
   EP.queue = function (v) {
+    v = this.mkPick(v);
     if (v.sig === this.sig) { this.pending = null; return false; }
     if (this.pending && this.pending.sig === v.sig) return false;
     this.pending = v; return true;
   };
   EP.apply = function (v, t, first) {
     var E = this, tc = first ? 0.7 : 1.15;   // ~4-6 s to settle
+    var was = E.v, mk = E.mk;
+    if (v.tune) { if (v.mkNew || v.tune !== mk.tune) mk.played = 0; mk.tune = v.tune; mk.inVisit = true; }
+    else if (mk.inVisit && !MK_KEEP[v.ctx.place]) { mk.inVisit = false; mk.leftAt = t; }
+    if (was && was.mel && !v.mel) {   // the written tune stops with its style: drop its queued notes so they never sound over other chords
+      for (var qs in E.topQ) E.topQ[qs] = E.topQ[qs].filter(function (n) { return n.m == null; });
+      E.topBusy = 0;
+    }
     E.v = v; E.sig = v.sig; E.applied++;
     LAYERS.forEach(function (n) {
       var L = E.L[n], tgt = (v.L[n] || 0) * v.mix * (L.gainK || 1);
@@ -861,7 +921,7 @@
     E.brush = v.brush; E.top = v.top;
     E.bpmTarget = v.bpm; E.swingTarget = v.swing;
     if (first) { E.bpm = v.bpm; E.swing = v.swing; }
-    if (v.prog !== E.progName) { if (first) E.progName = v.prog; else E.nextProg = v.prog; } else E.nextProg = null;
+    if (v.prog !== E.progName) { if (first) E.setProg(v.prog, E.step >> 4, E.step); else E.nextProg = v.prog; } else E.nextProg = null;
     ramp(E.lp.frequency, v.cut, t, first ? 0.3 : 1.4);
     ramp(E.drumLP.frequency, v.drumCut, t, first ? 0.3 : 1.4);
     AMBS.forEach(function (n) {
@@ -877,17 +937,42 @@
   EP.barStart = function (bar, step, t) {
     var E = this;
     if (E.pending) { E.apply(E.pending, t, false); E.pending = null; }
-    if (E.nextProg && bar % 2 === 0) { E.progName = E.nextProg; E.nextProg = null; }
+    else if (E.v && E.v.tune) {   // Winter Market turns: after MK_TURN s of one tune, the other comes in at the top of the form
+      E.mk.played += 240 / E.bpm;
+      if (E.mk.played >= E.mkTurn && !E.nextProg && E.formPos(bar) === 0) {
+        var nv = resolve(E.mkCtx(E.v, E.v.tune === 'xmas' ? 'old' : 'xmas'));
+        E.mk.turns++; E.apply(nv, t, false);
+        if (E.nextProg) { E.setProg(E.nextProg, bar, step, true); E.nextProg = null; }   // the other tune starts here, at its own bar 1
+      }
+    }
+    if (E.nextProg && bar % 2 === 0) { E.setProg(E.nextProg, bar, step); E.nextProg = null; }
     E.bpm += clamp(E.bpmTarget - E.bpm, -2.5, 2.5);
     E.swing += clamp(E.swingTarget - E.swing, -0.03, 0.03);
     var pr = PROGS[E.progName] || PROGS.bright;
-    E.pi = bar % 8; E.bar = bar;
-    E.chord = CH[pr[E.pi]]; E.nextChord = CH[pr[(bar + 1) % 8]];
+    E.pi = E.formPos(bar); E.bar = bar;
+    E.chord = CH[pr[E.pi]]; E.nextChord = CH[pr[(E.pi + 1) % pr.length]];
     if (bar % 2 === 0 && step >= E.topBusy) E.planTop(step);
+  };
+  // the bar's place in the current progression: bar % 8 for the 8-bar ones (as always; from phase0 after a Winter Market turn),
+  // from the bar it came in on for an ANCHOR one
+  EP.formPos = function (bar) {
+    var pr = PROGS[this.progName] || PROGS.bright, rel = bar - (ANCHOR[this.progName] ? this.form0 : this.phase0);
+    return ((rel % pr.length) + pr.length) % pr.length;
+  };
+  // turn: the Winter Market turn brings this progression in, so an 8-bar one starts its phrase on this bar too (phase0); any other
+  // change puts it back on bar % 8
+  EP.setProg = function (name, bar, step, turn) {
+    this.progName = name; this.phase0 = turn && !ANCHOR[name] ? bar : 0;
+    if (ANCHOR[name]) {   // a written-out form starts at its own bar 1: clear any motif still queued so the tune starts clean
+      this.form0 = bar;
+      for (var qs in this.topQ) if (+qs >= step) delete this.topQ[qs];
+      this.topBusy = 0;
+    }
   };
   EP.planTop = function (start) {
     var E = this, v = E.v, instr = E.top || 'kalimba', phrase, base = 0, len;
     if (!v) return;
+    if (v.mel) { if (ANCHOR[E.progName]) E.planMel(start); else E.topBusy = start + 16; return; }   // the written tune waits for its own chords
     if (instr !== 'bubble' && v.themeChance > 0 && E.pi % 4 === 0 && start - E.lastTheme >= v.themeGap * 16 && chance(v.themeChance)) {
       phrase = THEME; len = 64; E.lastTheme = start; E.themes++;
     } else if (chance(v.dens)) {
@@ -902,6 +987,22 @@
       (E.topQ[st] = E.topQ[st] || []).push({ i: base + n[1] + oct, len: n[2], vel: n[3] || rnd(0.65, 0.9), instr: instr });
     });
     E.topBusy = start + len;
+  };
+  // wxmas: two bars of the written tune XMEL at a time (absolute midi in n.m). From the second time round a soft music box doubles the
+  // long notes an octave up; a glitter chime at the top of each half (not on the very first bar); a sleigh shake into bars 8 and 16.
+  EP.planMel = function (start) {
+    var E = this, instr = E.top || 'celesta', rel0 = (start >> 4) - E.form0;
+    function put(st, n) { (E.topQ[st] = E.topQ[st] || []).push(n); }
+    for (var k = 0; k < 2; k++) {
+      var r = rel0 + k, pi = r % XMEL.length, pass = Math.floor(r / XMEL.length), at = start + k * 16;
+      XMEL[pi].forEach(function (n) {
+        put(at + n[0], { m: n[1], len: n[2], vel: n[3], instr: instr });
+        if (pass >= 1 && n[2] >= 4) put(at + n[0], { m: n[1] + 12, len: n[2], vel: n[3] * 0.32, instr: 'box' });
+      });
+      if ((pi === 0 || pi === 8) && r > 0) put(at, { m: 93, len: 8, vel: 0.22, instr: 'chime' });
+      if (pi === 7 || pi === 15) for (var s = 8; s < 16; s++) put(at + s, { m: 0, len: 1, vel: 0.35 + 0.07 * (s - 8), instr: 'jingle' });
+    }
+    E.topBusy = start + 32;
   };
   EP.scheduleStep = function (step, t0, sd) {
     var E = this, s = step & 15, bar = step >> 4;
@@ -942,12 +1043,12 @@
     }
     if (E.on('kick', t)) { p = KICK[P.kick] || KICK.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) E.kick(t, p[i][1] * rnd(0.9, 1)); }
     if (E.on('snare', t)) { p = SNARE[P.snare] || SNARE.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) E.snare(t + hum(), p[i][1] * rnd(0.85, 1), E.brush); }
-    if (E.on('hats', t)) { p = HATS[P.hats] || HATS.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) { if (P.hats === 'sleigh') E.sleigh(t + hum(), p[i][1] * rnd(0.75, 1)); else E.hat(t + hum(), p[i][1] * rnd(0.75, 1), !!p[i][2] && chance(0.4)); } }
+    if (E.on('hats', t)) { p = HATS[P.hats] || HATS.std; for (i = 0; i < p.length; i++) if (p[i][0] === s) { if (SLEIGH_HATS[P.hats]) E.sleigh(t + hum(), p[i][1] * rnd(0.75, 1)); else E.hat(t + hum(), p[i][1] * rnd(0.75, 1), !!p[i][2] && chance(0.4)); } }
     var q = E.topQ[step];
     if (q) {
       delete E.topQ[step];
       if (E.on('top', t)) for (i = 0; i < q.length; i++) {
-        var n = q[i], mm = fit(pentaMidi(n.i), ch);
+        var n = q[i], mm = n.m != null ? n.m : fit(pentaMidi(n.i), ch);
         E.topNote(n.instr, E.L.top.in, t + hum(), mm, n.len * sd, n.vel * rnd(0.85, 1));
       }
     }
@@ -1573,13 +1674,14 @@
     if (!OAC) return Promise.reject(new Error('OfflineAudioContext unavailable'));
     var sec = opts.seconds || 20, sr = opts.sampleRate || 44100, off = new OAC(2, Math.ceil(sec * sr), sr);
     var e = new Engine(off, true), vv = opts.vols || {};
+    if (opts.mkTurn > 0) e.mkTurn = +opts.mkTurn;   // test hook: a shorter Winter Market turn
     e.master.gain.value = vv.master != null ? vv.master : 0.8;
     e.music.gain.value = vv.music != null ? vv.music : 0.5;
     e.amb.gain.value = vv.ambience != null ? vv.ambience : 0.25;
     var segs = (opts.segments || [{ at: 0, ctx: { place: 'yard', time: 'day', weather: 'sunny' } }]).slice().sort(function (a, b) { return a.at - b.at; });
     var stings = (opts.stingers || []).slice().sort(function (a, b) { return a.at - b.at; });
     e.start(0.05, resolve(segs[0].ctx));
-    var si = 1, gi = 0, log = [];
+    var si = 1, gi = 0, log = [], first = { base: e.v.base, label: e.v.label, bpm: e.v.bpm };
     for (var t = 0; t < sec; t += 0.05) {
       while (si < segs.length && segs[si].at <= t) { e.queue(resolve(segs[si].ctx)); si++; }
       while (gi < stings.length && stings[gi].at <= t) {
@@ -1589,11 +1691,11 @@
       }
       var before = e.applied;
       e.tick(t + 0.12);
-      if (e.applied !== before) log.push({ at: Math.round(e.nextTime * 100) / 100, variant: e.v.label, bpm: e.v.bpm });
+      if (e.applied !== before) log.push({ at: Math.round(e.nextTime * 100) / 100, variant: e.v.label, bpm: e.v.bpm, base: e.v.base, bar: e.bar, pi: e.pi, prog: e.progName });
     }
     return off.startRendering().then(function (buf) {
       var r = analyse(buf);
-      r.seconds = sec; r.variants = log; r.steps = e.steps; r.dropped = e.dropped; r.themes = e.themes;
+      r.seconds = sec; r.variants = log; r.steps = e.steps; r.dropped = e.dropped; r.themes = e.themes; r.mkTurns = e.mk.turns; r.first = first;
       if (opts.wav) r.wav = encodeWav(buf);
       return r;
     });
@@ -1774,13 +1876,13 @@
       inited: true, ctxState: PA.ctx.state, time: Math.round(PA.ctx.currentTime * 100) / 100, ctx: cur, variant: v.label, base: v.base, tags: v.tags,
       pending: eng.pending ? eng.pending.label : null, bpm: Math.round(eng.bpm * 10) / 10, bpmTarget: eng.bpmTarget, swing: Math.round(eng.swing * 100) / 100,
       prog: eng.progName, chord: eng.chord.name, bar: eng.bar, step: eng.step, steps: eng.steps, late: eng.late, resyncs: eng.resyncs || 0,
-      top: eng.top, themes: eng.themes, patterns: copy(eng.pat), brush: eng.brush, cutoff: v.cut, layers: L, ambience: A,
+      top: eng.top, themes: eng.themes, patterns: copy(eng.pat), tune: eng.mk.tune, tuneVisit: eng.mk.inVisit, tunePlayed: Math.round(eng.mk.played), tuneTurns: eng.mk.turns, brush: eng.brush, cutoff: v.cut, layers: L, ambience: A,
       barkVoices: barkEnds.filter(function (e) { return e > PA.ctx.currentTime; }).length, barks: barkCount,
       voices: eng.activeVoices(PA.ctx.currentTime), dropped: eng.dropped, vols: PA.getVolumes(), muted: muted, hidden: hidden,
       gains: { master: eng.master.gain.value, mute: eng.muteG.gain.value, duck: eng.duckG.gain.value, vis: eng.visG.gain.value }
     };
   };
-  PA.describe = function (c) { var v = resolve(c); return { label: v.label, bpm: v.bpm, prog: v.prog, top: v.top, layers: v.L, ambience: v.amb, sig: v.sig }; };
+  PA.describe = function (c) { var v = resolve(c); return { label: v.label, base: v.base, bpm: v.bpm, prog: v.prog, top: v.top, layers: v.L, ambience: v.amb, sig: v.sig }; };
   PA._render = render;
   PA._renderBarks = renderBarks;
   PA._barkPlan = function (voice, kind) { return barkPlan(voice || {}, BARK_KINDS.indexOf(kind) >= 0 ? kind : 'woof'); };   // test hook: the plan only, no audio

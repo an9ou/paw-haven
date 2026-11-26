@@ -67,10 +67,11 @@ run('v2291_balance', async (t) => {
     const P = window.__paw, S = P.S, out = {}, today = P.rh.jst(), tom = new Date(Date.parse(today + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
     const lead = (seen, d229, d2291) => { S.newsSeen = seen; P.nw.setDates(d229, d2291); P.nw.auto(); const h = document.querySelector('#modal .nw-sheet h3'); const r = h ? h.textContent : null; const x = document.querySelector('#modal .panel .x'); if (x) x.click(); return r; };
     P.nw.v233(''); // v2.33 (from 26 Nov) out of the list: on its own date it would lead with the same date and a higher id
+    P.nw.v2332(false); // v2.33.2 (minor, 25 Nov) too: on 25 Nov it shares today's date with these test dates and has a higher id
     out.launch = lead('2.28', today, tom); // v2.29 is due today, v2.29.1 not yet
     out.later = lead('2.28', today, today); // both due, v2.29 unseen
     out.seen = lead('2.29', today, today); // v2.29 seen
-    out.after = S.newsSeen; P.nw.v233(null);
+    out.after = S.newsSeen; P.nw.v233(null); P.nw.v2332(true);
     return out;
   });
   ok(/Story mode/i.test(n.launch || ''), 'launch day (v2.29 due, v2.29.1 not) with v2.29 unseen shows v2.29: ' + n.launch);

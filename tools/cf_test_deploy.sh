@@ -14,6 +14,9 @@
 # placeholder that only answers 503 (no domain), and asks the owner to add the secret to it; then run this again.
 # Needs Workers Scripts: Edit and Zone > Workers Routes: Edit on doodledoggo.app. In a Claude cloud session the proxy adds the API token; anywhere
 # else export CLOUDFLARE_API_TOKEN. CLOUDFLARE_ACCOUNT_ID is optional (else the first account from GET /accounts).
+# The merch sandbox run (opt-in, SANDBOX.md part F): MERCH_PAGE=<a checkout of merch/shop> adds the "My dog" page at /merch/ (tools/cf_test.js
+# --merch), and MERCH_TEST_CFG=<file> the merch test Worker's token file at /merch/test_cfg.json (--merch-cfg; only with MERCH_PAGE). Relative
+# paths are from the repo root. With neither set the test copy is exactly the game, as before.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
@@ -44,7 +47,8 @@ if [ -n "$REF" ]; then
   SRC=$TMP; echo "building the test copy from $REF ($("$GIT" -C "$TMP" rev-parse --short HEAD))"
 fi
 node "$SRC/tools/pages.js" --build --test --out "$ROOT/_site_test"
-node tools/cf_test.js --from "$ROOT/_site_test" --out "$ROOT/_cftest"
+MERCH=(); [ -n "${MERCH_PAGE:-}" ] && MERCH+=(--merch "$MERCH_PAGE"); [ -n "${MERCH_TEST_CFG:-}" ] && MERCH+=(--merch-cfg "$MERCH_TEST_CFG")
+node tools/cf_test.js --from "$ROOT/_site_test" --out "$ROOT/_cftest" ${MERCH[@]+"${MERCH[@]}"}
 [ "$BUILD_ONLY" = "1" ] && { echo "BUILD_ONLY: _site_test/ and _cftest/ are ready; nothing sent"; exit 0; }
 
 # 2. account and zone

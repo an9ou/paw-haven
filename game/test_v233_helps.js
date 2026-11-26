@@ -1130,6 +1130,7 @@ async function newsPart(t) {
   ok(await t.until(() => !!document.querySelector('#modal .nw-sheet'), null, 3000) && await ev(() => !/Helping paws/.test(document.getElementById('modal').textContent)), 'the automatic sheet does not lead with it');
   await t.p.keyboard.press('Escape'); await t.modalGone();
   const d = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+  await ev(() => window.__paw.nw.v2332(false)); // the minor v2.33.2 note (25 Nov) out of the list here: with a test date of 25 Nov it shares the date and has a higher id (test_v2182_news 7 has both real days)
   const L = await ev((d) => window.__paw.nw.v233(d), d);
   ok(L[0] === '2.33', 'a test date (today): first in the list: ' + L.slice(0, 3).join(','));
   ok(!(await ev(() => window.__paw.nw.v233('2099-01-01'))).includes('2.33'), 'a date to come: not yet');
@@ -1139,6 +1140,7 @@ async function newsPart(t) {
   const sh = await ev(() => ({ h: document.querySelector('#modal .nw-page.big h3').textContent, li: [...document.querySelectorAll('#modal .nw-page.big .nw-tx')].map((x) => x.textContent), ic: [...document.querySelectorAll('#modal .nw-page.big .nw-ic')].map((x) => !!x.querySelector('svg')) }));
   ok(sh.h === 'Helping paws' && sh.li.length === 3 && /Fill their dog's bowl/.test(sh.li[0]) && /sleepover/.test(sh.li[1]) && /say thanks/.test(sh.li[2]) && sh.ic.every(Boolean), 'it leads with Helping paws, three lines with icons: ' + JSON.stringify(sh));
   ok(await ev(() => window.__paw.S.newsSeen === '2.33'), 'seen: 2.33');
+  await ev(() => window.__paw.nw.v2332(true));
   await shot(t, 'news_1280');
   await t.p.keyboard.press('Escape');
   ok(!(await ev(() => window.__paw.nw.v233(''))).includes('2.33'), 'no date again: out of the list again');
