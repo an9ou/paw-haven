@@ -359,7 +359,7 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
   5. The test deploy. **G1-G3 are on main since 26 Nov 13:55 JST** (main 99883ea) and merged into `merch/shop` (95b2547); every
      suite green there on 26 Nov 14:20 JST: merch_worker 343, merch_page 2058, pawprint 89, merch_legal 383, render_chromium, test_enc
      36, the game round trip 11, both `--check`s, the pay driver 7, `BUILD_ONLY=1` with and without the stand-in, test_gate 185.
-     `TEST_PASSWORD` is already set on the test copy (SANDBOX part A). **The order of the two deploys** (SANDBOX part F, G3): (1) the
+     `TEST_PASSWORD` is NOT set on the test copy yet (the GM, 26 Nov: `doodle-doggo-test` is still the empty placeholder; the owner answered the GM "Not yet" for that deploy; the GM tells MERCH when test.doodledoggo.app/merch/ is up; the curl path with the token does not need it). **The order of the two deploys** (SANDBOX part F, G3): (1) the
      MERCH session sends the merch test Worker: `MERCH_TEST_PRINTER=1 DRY_RUN=0 MERCH_TEST_DEPLOY_OK=1 bash tools/merch_test_deploy.sh`
      (only with the owner's fresh yes in the choice window; the owner approves the prompts); (2) the GM, in its own container, runs
      `DRY_RUN=0 bash tools/merch_test_cfg_pull.sh <file outside the repo>` (new, 16 offline checks: it reads the plain variable

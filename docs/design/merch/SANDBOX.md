@@ -47,7 +47,7 @@ are never charged. About **40 minutes** in all before the first run. Never paste
 | 13 | **Printful** (later, run 2): a separate **test store** in Printful, its private token (orders, file library, webhooks) through the secure form for `api.printful.com`, and on the Worker `MERCH_PROVIDER_KEY` and, once the webhook is set up, `MERCH_PROVIDER_WEBHOOK_SECRET`. | printful.com; the secure form; Cloudflare step 10 | the token | 10 min | free (drafts are never charged) | yes |
 | 14 | **During the run**: pay test orders on your phone or computer with Stripe's test card numbers (part D), and a few clicks in the Stripe dashboard (a refund, dispute evidence). | test.doodledoggo.app/merch/ (the test password), the Stripe sandbox | nothing | 2-3 sittings of about an hour (about 45 short orders, with waits for the cancel hour in between) | free | - |
 
-Also the four go-aheads in part F ("Questions for the owner"). The game's test copy password (`TEST_PASSWORD`) is already set; nothing new there.
+Also the four go-aheads in part F ("Questions for the owner"). The game's test copy password (`TEST_PASSWORD`) is **not set yet** (26 Nov: the Worker `doodle-doggo-test` is still the empty placeholder and test.doodledoggo.app has no address): the owner sets it as a Secret on `doodle-doggo-test` in the dashboard and tells the Game Manager, who then deploys the test copy. The shop page at test.doodledoggo.app/merch/ needs it; the order server and the session's own test orders do not.
 The shared test token (fourth review) needs nothing from you: the build makes it and the test copy gets it from the GM (part F, G3).
 
 ---
