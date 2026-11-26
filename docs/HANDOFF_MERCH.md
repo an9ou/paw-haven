@@ -356,8 +356,17 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      with the mix or the by-hand option (choice window). Open: the badge's exact words on our hosted page (if different the driver
      refuses, a one-line regex change); `shopTrip()` is written but never run (TODO list in the file header); a simpler path may be a
      `curl` checkout with the test token (SANDBOX E-5) and the driver on the url it returns.
-  5. The test deploy: the GM's G1/G2 first, then `tools/merch_test_deploy.sh` for real (the owner's yes is given; the prompts are the
-     owner's to approve), then the owner's part A steps 10-12, then the run (SANDBOX.md D), filling in the results.
+  5. The test deploy. **G1-G3 are on main since 26 Nov 13:55 JST** (main 99883ea) and merged into `merch/shop` (95b2547); every
+     suite green there on 26 Nov 14:20 JST: merch_worker 343, merch_page 2058, pawprint 89, merch_legal 383, render_chromium, test_enc
+     36, the game round trip 11, both `--check`s, the pay driver 7, `BUILD_ONLY=1` with and without the stand-in, test_gate 185.
+     `TEST_PASSWORD` is already set on the test copy (SANDBOX part A). **The order of the two deploys** (SANDBOX part F, G3): (1) the
+     MERCH session sends the merch test Worker: `MERCH_TEST_PRINTER=1 DRY_RUN=0 MERCH_TEST_DEPLOY_OK=1 bash tools/merch_test_deploy.sh`
+     (only with the owner's fresh yes in the choice window; the owner approves the prompts); (2) the GM, in its own container, runs
+     `DRY_RUN=0 bash tools/merch_test_cfg_pull.sh <file outside the repo>` (new, 16 offline checks: it reads the plain variable
+     `MERCH_TEST_TOKEN` from the deployed Worker's settings and never prints it; **the settings read is unverified until the first real
+     deploy**) and deploys the test copy with `MERCH_PAGE=<the root of a merch/shop checkout>` and `MERCH_TEST_CFG=<that file>`;
+     (3) the owner's part A steps 10-12; (4) the run (SANDBOX.md D), the first order with the pay driver (a `curl` checkout with the
+     token from the build folder, then the driver on the url), filling in the results.
   4. Part 10 (samples and launch [O]).
   - **For the launch go-ahead, not before** (the list kept above still stands): TRANSACTIONS.md 10 (13 points), PART5.md Q20-Q30, PART8.md’s
     two open points, the seller facts only the owner can fill in (PART7.md (d)), a professional for the legal drafts, the country list with
