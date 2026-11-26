@@ -30,8 +30,11 @@ const LIMIT_GZ = 9e6; // the account's Worker limit is the paid 10 MB gzipped; l
 const MERCH_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://merch-api-test.doodledoggo.app; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 const MERCH_NOSTORE = /^\/merch\/(?:test_cfg\.json$|.*\.(?:js|css)$)/; // a fixed merch.js is never stale during the run; the token file is never kept
 // the site files the merch page loads, at their root paths (SANDBOX.md G1). They live in <dir>/site/, except the four brand files, which the
-// live site build (tools/cf_site.js) serves at the root from <dir>/brand/: they are taken from there when <dir>/site/ has none
-const MERCH_SITE = ['style.css', 'js/site.js', 'img/logo.svg', 'img/art/washi.svg', 'doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png', 'fonts/caveat.woff2', 'fonts/patrick-hand.woff2', 'fonts/dd-code.woff2'];
+// live site build (tools/cf_site.js) serves at the root from <dir>/brand/: they are taken from there when <dir>/site/ has none. Plus the
+// decoration site/js/site.js adds on every merch page (#petals, #deco): the falling momiji (sakura in spring) and the dogs peeking round the paper
+const MERCH_PEEKS = ['dachs', 'shiba', 'corgi', 'golden', 'pug', 'samoyed', 'beagle', 'husky', 'frenchie', 'chihuahua']; // site.js PEEKS
+const MERCH_SITE = ['style.css', 'js/site.js', 'img/logo.svg', 'img/art/washi.svg', 'doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png', 'fonts/caveat.woff2', 'fonts/patrick-hand.woff2', 'fonts/dd-code.woff2',
+  'img/art/momiji.svg', 'img/art/sakura.svg'].concat(MERCH_PEEKS.map((d) => `img/art/peek/${d}.svg`));
 const MERCH_BRAND = new Set(['doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png']);
 const die = (m) => { console.error('cf_test: ' + m); process.exit(1); };
 const opt = (k) => { const i = process.argv.indexOf(k); if (i < 0) return null; const v = process.argv[i + 1]; if (!v || v.startsWith('--')) die(`${k} needs a path`); return path.resolve(v); };
@@ -44,7 +47,8 @@ const html = fs.readFileSync(path.join(from, 'index.html'), 'utf8');
 if (!/window\.__ddNoPay=1/.test(html)) { console.error('cf_test: index.html is not the test build (no window.__ddNoPay): build it with node tools/pages.js --test'); process.exit(1); }
 if (/id="ddGate"|dd_gate_v1/.test(html)) { console.error('cf_test: index.html has the GitHub Pages password screen: build it with --test'); process.exit(1); }
 
-const files = [];
+const files = []; // [url, source path] (or [url, Buffer] for the checked --merch-cfg token file)
+const bytes = (src) => (Buffer.isBuffer(src) ? src : fs.readFileSync(src));
 (function walk(dir, base) {
   fs.readdirSync(dir).forEach((f) => {
     const p = path.join(dir, f);
@@ -64,8 +68,9 @@ if (merchDir) {
   (function walk(dir, base) {
     fs.readdirSync(dir).sort().forEach((f) => {
       if (f.startsWith('.')) return; // .DS_Store and the like
-      const p = path.join(dir, f);
-      if (fs.statSync(p).isDirectory()) return walk(p, base + f + '/');
+      const p = path.join(dir, f), st = fs.lstatSync(p);
+      if (st.isSymbolicLink()) die(`--merch: ${p} is a symbolic link; the merch page is only taken from plain files in the checkout`);
+      if (st.isDirectory()) return walk(p, base + f + '/');
       if (!TYPES[f.split('.').pop()]) die(`--merch: ${p} has a file type the test copy does not serve`);
       add.push(['/merch/' + base + f, p]);
     });
@@ -74,20 +79,22 @@ if (merchDir) {
     let p = path.join(merchDir, 'site', f);
     if (!fs.existsSync(p) && MERCH_BRAND.has(f)) p = path.join(merchDir, 'brand', f);
     if (!fs.existsSync(p) || !fs.statSync(p).isFile()) die(`--merch: the page needs /${f}, but ${merchDir} has neither site/${f}${MERCH_BRAND.has(f) ? ` nor brand/${f}` : ''}`);
+    if (fs.lstatSync(p).isSymbolicLink()) die(`--merch: ${p} is a symbolic link; the merch page is only taken from plain files in the checkout`);
     add.push(['/' + f, p]);
   });
   if (merchCfg) {
-    // the token file (SANDBOX.md G3): JSON with exactly one key "token", 32-128 of A-Z a-z 0-9 - _. The messages never show its content
-    let cfg = null;
-    try { const b = fs.readFileSync(merchCfg); if (b.length <= 1024) cfg = JSON.parse(b.toString('utf8')); } catch (e) { cfg = null; }
+    // the token file (SANDBOX.md G3): JSON with exactly one key "token", 32-128 of A-Z a-z 0-9 - _. The messages never show its content nor its
+    // path (a token given in place of the file's path would be printed); the bytes checked here are the bytes served (no second read)
+    let cfg = null, b = null;
+    try { b = fs.readFileSync(merchCfg); if (b.length <= 1024) cfg = JSON.parse(b.toString('utf8')); } catch (e) { cfg = null; }
     if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg) || Object.keys(cfg).length !== 1 || typeof cfg.token !== 'string' || !/^[A-Za-z0-9_-]{32,128}$/.test(cfg.token))
-      die(`--merch-cfg ${merchCfg}: not a test token file (want JSON {"token":"<32-128 letters, digits, - or _>"} and nothing else); refused, nothing written`);
-    add.push(['/merch/test_cfg.json', merchCfg]);
+      die('--merch-cfg: the file given is missing or not a test token file (want JSON {"token":"<32-128 letters, digits, - or _>"} and nothing else); refused, nothing written');
+    add.push(['/merch/test_cfg.json', b]);
   }
   const have = new Map(files);
   add.forEach(([u, p]) => {
     if (have.has(u)) { // identical bytes: keep the game's copy; different: stop, never overwrite
-      if (Buffer.compare(fs.readFileSync(have.get(u)), fs.readFileSync(p)) !== 0) die(`--merch: the game build already has a different ${u} (${have.get(u)} vs ${p}); refused, nothing written`);
+      if (Buffer.compare(bytes(have.get(u)), bytes(p)) !== 0) die(`--merch: the game build already has a different ${u} (${have.get(u)} vs ${Buffer.isBuffer(p) ? 'the --merch-cfg file' : p}); refused, nothing written`);
       return;
     }
     have.set(u, p); files.push([u, p]); merchN++;
@@ -98,11 +105,11 @@ fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive:
 const parts = [], imports = [], table = []; let gz = 0;
 files.sort((a, b) => (a[0] < b[0] ? -1 : 1)).forEach(([u, src], i) => {
   const ext = u.split('.').pop(), mod = 'f__' + u.slice(1).replace(/\//g, '__'); // flat module names, never "worker.js" or "gate.js"
-  fs.copyFileSync(src, path.join(out, mod));
+  if (Buffer.isBuffer(src)) fs.writeFileSync(path.join(out, mod), src); else fs.copyFileSync(src, path.join(out, mod));
   parts.push(`${mod} ${TEXT.has(ext) ? 'text/plain' : 'application/octet-stream'}`);
   imports.push(`import f${i} from './${mod}';`);
   table.push(`  ${JSON.stringify(u)}: [f${i}, ${JSON.stringify(TYPES[ext])}],`);
-  gz += zlib.gzipSync(fs.readFileSync(src)).length;
+  gz += zlib.gzipSync(bytes(src)).length;
 });
 fs.copyFileSync(path.join(__dirname, 'test_gate.mjs'), path.join(out, 'gate.js'));
 parts.push('gate.js application/javascript+module');
