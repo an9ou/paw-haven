@@ -31,6 +31,8 @@ async function checks(label, fetchIt, env) {
   ok(/default-src 'none'/.test(r.headers.get('content-security-policy') || '') && /frame-ancestors 'none'/.test(r.headers.get('content-security-policy') || ''), 'the gate has a strict CSP (no scripts, no framing)');
   r = await go('/lang/ja.0123abcd.js'); ok(r.status === 401, 'every file needs the cookie (a language file: 401)');
   r = await go('/robots.txt'); t = await r.text(); ok(r.status === 200 && /Disallow: \//.test(t), 'robots.txt is open and disallows everything');
+  r = await fetchIt('http://test.doodledoggo.app/merch?back=o1', { redirect: 'manual' });
+  ok(r.status === 301 && r.headers.get('location') === 'https://test.doodledoggo.app/merch?back=o1' && r.headers.get('x-robots-tag') === 'noindex, nofollow' && r.headers.get('cache-control') === 'private, no-store', 'http -> 301 https (query kept), noindex, private no-store');
 
   r = await post({ password: 'wrong-password', next: '/?lang=ja' }); t = await r.text();
   ok(r.status === 401 && !r.headers.get('set-cookie') && /That is not it/.test(t) && /value="\/\?lang=ja"/.test(t), 'a wrong password: 401, no cookie, the page again (next kept)');
@@ -132,6 +134,7 @@ async function checks(label, fetchIt, env) {
             ok(/connect-src 'self' https:\/\/api\.doodledoggo\.app/.test(r3.headers.get('content-security-policy') || '') && r3.headers.get('content-security-policy') !== MERCH_CSP, 'workerd: the game keeps its own CSP');
             r3 = await go('/merch/test_cfg.json'); t3 = await r3.text();
             ok(r3.status === 401 && /action="\/__gate"/.test(t3) && !t3.includes('a'.repeat(40)), 'workerd: /merch/test_cfg.json without the cookie is the password page, never the file');
+            r3 = await go('/x/../merch/test_cfg.json'); t3 = await r3.text(); ok(r3.status === 401 && !t3.includes('a'.repeat(40)), 'workerd: /x/../merch/test_cfg.json without the cookie: 401');
             r3 = await go('/merch/test_cfg.json', { headers: { cookie: ck } }); t3 = await r3.text();
             ok(r3.status === 200 && t3 === TOKEN_FILE && r3.headers.get('cache-control') === 'private, no-store' && r3.headers.get('x-robots-tag') === 'noindex, nofollow', 'workerd: with the cookie the token file as it is, private, no-store, noindex');
             r3 = await go('/merch/terms/', { headers: { cookie: ck } }); t3 = await r3.text();
@@ -203,6 +206,11 @@ async function merchChecks(label, gate, CSP, env, plain) {
   r = await go('/merch/test_cfg.json', { headers: { cookie: 'dd_test=v1.1000.' + 'A'.repeat(43) } }); ok(r.status === 401, '/merch/test_cfg.json with an expired cookie: 401');
   r = await withCk('/merch/test_cfg.json'); t = await r.text();
   ok(r.status === 200 && t === TOKEN_FILE && r.headers.get('cache-control') === 'private, no-store' && r.headers.get('x-robots-tag') === 'noindex, nofollow' && r.headers.get('content-type') === 'application/json', '/merch/test_cfg.json with the cookie: as it is, private, no-store, noindex');
+  r = await go('/x/../merch/test_cfg.json'); t = await r.text(); ok(r.status === 401 && !t.includes('a'.repeat(40)), '/x/../merch/test_cfg.json without the cookie: 401, never the file');
+  r = await go('/merch/%74est_cfg.json'); t = await r.text(); ok(r.status === 401 && !t.includes('a'.repeat(40)), '/merch/%74est_cfg.json without the cookie: 401');
+  r = await withCk('/\\evil.example'); ok(r.status !== 301 && !r.headers.get('location'), 'with the cookie /\\evil.example: no redirect (' + r.status + ')');
+  r = await withCk('//merch'); ok(r.status !== 301 && !r.headers.get('location'), 'with the cookie //merch: no redirect (' + r.status + ')');
+  r = await withCk('//evil.example/merch'); ok(r.status !== 301 && !r.headers.get('location'), 'with the cookie //evil.example/merch: no redirect (' + r.status + ')');
   r = await withCk('/merch/nope.js'); ok(r.status === 404, 'a missing merch file: 404');
   r = await withCk('/merch/', { method: 'POST' }); ok(r.status === 405, 'only GET and HEAD under /merch/');
   // the game copy alone (no zones): the folder rule changes nothing there
@@ -215,7 +223,8 @@ async function merchChecks(label, gate, CSP, env, plain) {
 async function cfMerchChecks(run, tmp, build, out) {
   sec('tools/cf_test.js --merch / --merch-cfg');
   const w = (p, c) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, c); };
-  const M = path.join(tmp, 'merch-shop'), SITE = ['style.css', 'js/site.js', 'img/logo.svg', 'img/art/washi.svg', 'fonts/caveat.woff2', 'fonts/patrick-hand.woff2', 'fonts/dd-code.woff2'], BRAND = ['doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png'];
+  const M = path.join(tmp, 'merch-shop'), PEEKS = ['dachs', 'shiba', 'corgi', 'golden', 'pug', 'samoyed', 'beagle', 'husky', 'frenchie', 'chihuahua'];
+  const SITE = ['style.css', 'js/site.js', 'img/logo.svg', 'img/art/washi.svg', 'fonts/caveat.woff2', 'fonts/patrick-hand.woff2', 'fonts/dd-code.woff2', 'img/art/momiji.svg', 'img/art/sakura.svg'].concat(PEEKS.map((d) => `img/art/peek/${d}.svg`)), BRAND = ['doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png'];
   w(path.join(M, 'site', 'merch', 'index.html'), MERCH_HTML); w(path.join(M, 'site', 'merch', 'merch.js'), 'window.m=1'); w(path.join(M, 'site', 'merch', 'catalog.json'), '{}');
   w(path.join(M, 'site', 'merch', 'terms', 'index.html'), '<!doctype html>the terms'); w(path.join(M, 'site', 'merch', 'print', 'pp1-00000000', 'index.html'), '<!doctype html>print');
   w(path.join(M, 'site', 'merch', '.DS_Store'), 'x');
@@ -229,10 +238,17 @@ async function cfMerchChecks(run, tmp, build, out) {
   ok(g.status === 0 && /\nexport default makeGate\(\{ files: FILES, hashed: \/.+\/, csp: "[^"]+" \}\);\n$/.test(plainWorker) && !/zones|merch/.test(plainWorker) && !/merch/.test(fs.readFileSync(path.join(base1, 'parts.txt'), 'utf8')) && !/merch/.test(g.stdout), 'without --merch: the same Worker as before (no zones, no /merch/ file, the old makeGate call)');
   g = run(['--from', build, '--out', mo, '--merch', M, '--merch-cfg', cfg]);
   const mw = g.status === 0 ? fs.readFileSync(path.join(mo, 'worker.js'), 'utf8') : '';
-  ok(g.status === 0 && /with the merch page from .*: 16 files added/.test(g.stdout) && /test_cfg\.json included/.test(g.stdout), '--merch --merch-cfg builds: ' + (g.stdout + g.stderr).trim().split('\n').pop().trim().slice(0, 110));
+  ok(g.status === 0 && /with the merch page from .*: 28 files added/.test(g.stdout) && /test_cfg\.json included/.test(g.stdout), '--merch --merch-cfg builds: ' + (g.stdout + g.stderr).trim().split('\n').pop().trim().slice(0, 110));
   ok(!(g.stdout + g.stderr).includes('a'.repeat(40)), 'the build never prints the token');
+  const peeks = (fs.readFileSync(path.join(ROOT, 'tools', 'cf_test.js'), 'utf8').match(/const MERCH_PEEKS = (\[[^\]]*\])/) || [])[1];
+  ok(peeks && JSON.stringify(eval(peeks)) === JSON.stringify(PEEKS), 'cf_test.js MERCH_PEEKS: the 10 dogs this test expects');
+  const siteJs = process.env.MERCH_PAGE ? path.join(process.env.MERCH_PAGE, 'site', 'js', 'site.js') : ''; // MERCH_PAGE=<a merch/shop checkout>: check its real script too
+  if (siteJs && fs.existsSync(siteJs)) {
+    const real = (fs.readFileSync(siteJs, 'utf8').match(/var PEEKS = (\[[^\]]*\])/) || [])[1];
+    ok(real && JSON.stringify(eval(real)) === JSON.stringify(PEEKS), 'merch/shop site/js/site.js PEEKS: the same 10 dogs');
+  }
   const need = ['/merch/index.html', '/merch/merch.js', '/merch/catalog.json', '/merch/terms/index.html', '/merch/print/pp1-00000000/index.html', '/merch/test_cfg.json'].concat(SITE.map((f) => '/' + f), BRAND.map((f) => '/' + f), ['/index.html', '/brand.svg']);
-  ok(need.every((u) => mw.includes(JSON.stringify(u) + ': [f')) && !/DS_Store/.test(mw), 'every merch file at /merch/..., the 11 site files at the root, the game\'s own files kept (no dot files)');
+  ok(need.every((u) => mw.includes(JSON.stringify(u) + ': [f')) && !/DS_Store/.test(mw), 'every merch file at /merch/..., the 23 site files at the root (the momiji, sakura and 10 peeking dogs too), the game\'s own files kept (no dot files)');
   ok((mw.match(/"\/favicon\.svg": \[f/g) || []).length === 1 && fs.readFileSync(path.join(mo, 'f__favicon.svg'), 'utf8') === 'brand favicon.svg' && fs.readFileSync(path.join(mo, 'f__icon-32.png'), 'utf8') === 'brand icon-32.png', 'a site file the game build has with the same bytes is kept once; the brand files come from <dir>/brand/');
   ok(mw.includes(`zones: [{ prefix: '/merch/', csp: ${JSON.stringify(MERCH_CSP)}, noStore: /^\\/merch\\/(?:test_cfg\\.json$|.*\\.(?:js|css)$)/ }]`), 'the Worker gets the merch zone with the merch CSP, exactly');
   ok(fs.readFileSync(path.join(mo, 'f__merch__test_cfg.json'), 'utf8') === TOKEN_FILE, 'the token file goes in as it is');
@@ -255,6 +271,16 @@ async function cfMerchChecks(run, tmp, build, out) {
   }
   g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M, '--merch-cfg', path.join(tmp, 'no-such.json')]); ok(g.status === 1 && /not a test token file/.test(g.stderr), 'a missing token file: refused');
   g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch-cfg', cfg]); ok(g.status === 1 && /only valid together with --merch/.test(g.stderr), '--merch-cfg without --merch: refused');
+  const AS_PATH = 'Qx7-' + 'Q'.repeat(40); // a token given where the file's path goes (MERCH_TEST_CFG mixed up with MERCH_TEST_TOKEN)
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M, '--merch-cfg', AS_PATH]);
+  ok(g.status === 1 && /not a test token file/.test(g.stderr) && !(g.stdout + g.stderr).includes('Q'.repeat(12)) && !(g.stdout + g.stderr).includes(cfg), 'a token given as the --merch-cfg path: refused, the value (and no path) printed');
+  g = tryCfg(JSON.stringify({ token: 'q'.repeat(31) })); ok(g.status === 1 && !g.stderr.includes(cfg) && !g.stderr.includes(path.basename(cfg)), 'a refused token file: its path is not printed either');
+  fs.symlinkSync(path.join(M, 'site', 'merch', 'merch.js'), path.join(M, 'site', 'merch', 'linked.js'));
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /linked\.js is a symbolic link/.test(g.stderr), 'a symbolic link in site/merch/: refused');
+  fs.rmSync(path.join(M, 'site', 'merch', 'linked.js'));
+  fs.mkdirSync(path.join(tmp, 'outside')); fs.writeFileSync(path.join(tmp, 'outside', 'x.js'), 'x'); fs.symlinkSync(path.join(tmp, 'outside'), path.join(M, 'site', 'merch', 'linkdir'));
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /linkdir is a symbolic link/.test(g.stderr), 'a symbolic link to a folder in site/merch/: refused');
+  fs.rmSync(path.join(M, 'site', 'merch', 'linkdir'));
   // a wrong checkout
   g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', path.join(tmp, 'nope')]); ok(g.status === 1 && /no such folder/.test(g.stderr), '--merch to a folder that is not there: refused');
   g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', build]); ok(g.status === 1 && /no site\/merch\/index\.html/.test(g.stderr), '--merch to a folder without site/merch/: refused');
@@ -276,6 +302,14 @@ async function cfMerchChecks(run, tmp, build, out) {
   g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /already has a different \/merch\/index\.html/.test(g.stderr), 'the game build has a different /merch/index.html: the build stops');
   fs.rmSync(path.join(build, 'merch'), { recursive: true }); fs.rmSync(path.join(build, 'favicon.svg'));
   w(cfg, TOKEN_FILE);
+  // cf_test_deploy.sh: --merch only from MERCH_PAGE, --merch-cfg only from MERCH_TEST_CFG (statically, then the line itself in bash)
+  const sh = fs.readFileSync(path.join(ROOT, 'tools', 'cf_test_deploy.sh'), 'utf8').split('\n').filter((l) => !/^\s*#/.test(l));
+  const mline = sh.filter((l) => /--merch/.test(l));
+  ok(mline.length === 1 && mline[0] === 'MERCH=(); [ -n "${MERCH_PAGE:-}" ] && MERCH+=(--merch "$MERCH_PAGE"); [ -n "${MERCH_TEST_CFG:-}" ] && MERCH+=(--merch-cfg "$MERCH_TEST_CFG")'
+    && sh.filter((l) => /node tools\/cf_test\.js/.test(l)).every((l) => / \$\{MERCH\[@\]\+"\$\{MERCH\[@\]\}"\}$/.test(l)), 'cf_test_deploy.sh: one line adds --merch only when MERCH_PAGE is set (and --merch-cfg only from MERCH_TEST_CFG)');
+  const argsOf = (env) => { const r = cp.spawnSync('bash', ['-c', 'set -euo pipefail; ' + mline[0] + '; for a in ${MERCH[@]+"${MERCH[@]}"}; do printf "<%s>" "$a"; done; echo'], { encoding: 'utf8', env: Object.assign({ PATH: process.env.PATH }, env) }); return r.status === 0 ? r.stdout.trim() : 'exit ' + r.status; };
+  ok(argsOf({}) === '' && argsOf({ MERCH_PAGE: '' }) === '' && argsOf({ MERCH_TEST_CFG: '/c.json' }) === '<--merch-cfg></c.json>' && argsOf({ MERCH_PAGE: '/m s' }) === '<--merch></m s>' && argsOf({ MERCH_PAGE: '/m', MERCH_TEST_CFG: '/c.json' }) === '<--merch></m><--merch-cfg></c.json>',
+    'that line in bash (set -u): nothing without MERCH_PAGE, --merch <dir> with it (cf_test.js refuses --merch-cfg alone)');
   return mo;
 }
 
