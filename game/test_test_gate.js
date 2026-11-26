@@ -4,6 +4,9 @@
 // SameSite=Lax 30-day cookie that then lets the game load; a forged, expired or other-password cookie is refused; no TEST_PASSWORD -> 503;
 // next= stays on this host; the brake after 10 wrong tries. Then the real generated Worker (tools/cf_test.js on a tiny fake test build) in
 // Miniflare (workerd), when Miniflare is installed, and tools/pages.js --test: payments off, no in-page gate, noindex. Prints ALL OK.
+// The merch sandbox run (SANDBOX.md part F, G1-G3): folder paths serve their index.html, /merch answers 301 to /merch/, /merch/ has its own CSP,
+// /merch/test_cfg.json only behind the password and never stored; cf_test.js --merch / --merch-cfg (the token file checked, never printed; a
+// different file at a game path stops the build) and, without --merch, the same Worker as before. Tokens here are made up (40 x "a").
 process.removeAllListeners('warning');
 const path = require('path'), fs = require('fs'), os = require('os'), cp = require('child_process');
 const ROOT = path.join(__dirname, '..');
@@ -11,6 +14,9 @@ let fails = 0, passes = 0;
 const ok = (c, m) => { if (c) { passes++; console.log('  ok', m); } else { fails++; console.log('  FAIL', m); } };
 const sec = (s) => console.log('--- ' + s);
 const PW = 'correct horse battery staple 42';
+const MERCH_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://merch-api-test.doodledoggo.app; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"; // SANDBOX.md G2, exactly
+const TOKEN_FILE = JSON.stringify({ token: 'a'.repeat(40) }); // made up
+const MERCH_HTML = '<!doctype html><html><head><link rel="stylesheet" href="/merch/merch.css"></head><body>the merch page<script src="/merch/merch.js"></script></body></html>';
 const GAME = '<!doctype html><html><head><meta name="robots" content="noindex,nofollow"></head><body><script>window.__ddNoPay=1</script>the game</body></html>';
 
 async function checks(label, fetchIt, env) {
@@ -82,6 +88,7 @@ async function checks(label, fetchIt, env) {
     ok(r.status === 503 && r.headers.get('x-robots-tag') === 'noindex, nofollow', 'no TEST_PASSWORD on the Worker: 503 (fails closed)');
     r = await w.fetch(new Request('https://test.doodledoggo.app/__gate', { method: 'POST', body: 'password=', headers: { 'content-type': 'application/x-www-form-urlencoded' } }), {});
     ok(r.status === 503 && !r.headers.get('set-cookie'), 'no TEST_PASSWORD: an empty password does not get in');
+    await merchChecks('in Node: the merch page (zones)', gate, CSP, env, w);
     ok(!/TEST_PASSWORD\s*[:=]\s*['"]/.test(fs.readFileSync(path.join(ROOT, 'tools', 'test_gate.mjs'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tools', 'cf_test_deploy.sh'), 'utf8')), 'no password is written in the gate or the deploy script');
 
     sec('tools/cf_test.js: the generated Worker');
@@ -99,13 +106,11 @@ async function checks(label, fetchIt, env) {
       fs.writeFileSync(path.join(build, 'index.html'), GAME.replace('the game', '<div id="ddGate"></div>the game'));
       g = run(['--from', build, '--out', path.join(tmp, 'cf2')]); ok(g.status === 1 && /password screen/.test(g.stderr), 'cf_test.js refuses a build with the GitHub Pages password screen');
       fs.writeFileSync(path.join(build, 'index.html'), GAME);
+      const merchOut = await cfMerchChecks(run, tmp, build, out);
       const MF = findMiniflare();
       if (!MF) console.log('--- Miniflare: not installed here (npm i -g miniflare); the generated Worker is not run');
       else {
-        const modules = [{ type: 'ESModule', path: path.join(out, 'worker.js'), contents: fs.readFileSync(path.join(out, 'worker.js'), 'utf8') }].concat(parts.map(([n, ty]) => ({
-          type: ty === 'application/javascript+module' ? 'ESModule' : ty === 'text/plain' ? 'Text' : 'Data', path: path.join(out, n),
-          contents: ty === 'application/octet-stream' ? fs.readFileSync(path.join(out, n)) : fs.readFileSync(path.join(out, n), 'utf8') })));
-        const worker = { name: 'doodle-doggo-test', modules, modulesRoot: out, compatibilityDate: '2026-08-01', bindings: { TEST_PASSWORD: PW } };
+        const worker = mfWorker(out);
         let mf; try { mf = new MF.Miniflare(worker); } catch (e) { mf = new MF.Miniflare({ workers: [worker] }); }
         try {
           const ck = await checks('Miniflare (workerd): the generated Worker', (u, o) => mf.dispatchFetch(u, o), null);
@@ -113,6 +118,26 @@ async function checks(label, fetchIt, env) {
           const b = Buffer.from(await r2.arrayBuffer());
           ok(r2.status === 200 && r2.headers.get('content-type') === 'image/png' && b.length === 4 && b[0] === 137, 'a picture comes back byte for byte (a Data module)');
         } finally { await mf.dispose(); }
+        if (merchOut) { // the generated Worker with --merch --merch-cfg: the game checks again, then the merch rules, in workerd
+          const mm = mfWorker(merchOut);
+          let m2; try { m2 = new MF.Miniflare(mm); } catch (e) { m2 = new MF.Miniflare({ workers: [mm] }); }
+          try {
+            const ck = await checks('Miniflare (workerd): the generated Worker with --merch', (u, o) => m2.dispatchFetch(u, o), null);
+            const go = (p, o) => m2.dispatchFetch('https://test.doodledoggo.app' + p, Object.assign({ redirect: 'manual' }, o || {}));
+            let r3 = await go('/merch?back=o1', { headers: { cookie: ck } });
+            ok(r3.status === 301 && r3.headers.get('location') === '/merch/?back=o1', 'workerd: /merch -> 301 /merch/ (query kept)');
+            r3 = await go('/merch/?new=1', { headers: { cookie: ck } }); let t3 = await r3.text();
+            ok(r3.status === 200 && t3 === MERCH_HTML && r3.headers.get('content-security-policy') === MERCH_CSP && r3.headers.get('cache-control') === 'private, no-store', 'workerd: /merch/ is its index.html with the merch CSP, exactly');
+            r3 = await go('/', { headers: { cookie: ck } });
+            ok(/connect-src 'self' https:\/\/api\.doodledoggo\.app/.test(r3.headers.get('content-security-policy') || '') && r3.headers.get('content-security-policy') !== MERCH_CSP, 'workerd: the game keeps its own CSP');
+            r3 = await go('/merch/test_cfg.json'); t3 = await r3.text();
+            ok(r3.status === 401 && /action="\/__gate"/.test(t3) && !t3.includes('a'.repeat(40)), 'workerd: /merch/test_cfg.json without the cookie is the password page, never the file');
+            r3 = await go('/merch/test_cfg.json', { headers: { cookie: ck } }); t3 = await r3.text();
+            ok(r3.status === 200 && t3 === TOKEN_FILE && r3.headers.get('cache-control') === 'private, no-store' && r3.headers.get('x-robots-tag') === 'noindex, nofollow', 'workerd: with the cookie the token file as it is, private, no-store, noindex');
+            r3 = await go('/merch/terms/', { headers: { cookie: ck } }); t3 = await r3.text();
+            ok(r3.status === 200 && /the terms/.test(t3), 'workerd: /merch/terms/ is its index.html');
+          } finally { await m2.dispose(); }
+        }
       }
     } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 
@@ -135,6 +160,125 @@ async function checks(label, fetchIt, env) {
   if (!fails) console.log('ALL OK');
   process.exit(fails ? 1 : 0);
 })();
+function mfWorker(out) { // the generated Worker in _cftest form, as Miniflare modules (the upload's parts.txt types)
+  const parts = fs.readFileSync(path.join(out, 'parts.txt'), 'utf8').trim().split('\n').map((l) => l.split(' '));
+  const modules = [{ type: 'ESModule', path: path.join(out, 'worker.js'), contents: fs.readFileSync(path.join(out, 'worker.js'), 'utf8') }].concat(parts.map(([n, ty]) => ({
+    type: ty === 'application/javascript+module' ? 'ESModule' : ty === 'text/plain' ? 'Text' : 'Data', path: path.join(out, n),
+    contents: ty === 'application/octet-stream' ? fs.readFileSync(path.join(out, n)) : fs.readFileSync(path.join(out, n), 'utf8') })));
+  return { name: 'doodle-doggo-test', modules, modulesRoot: out, compatibilityDate: '2026-08-01', bindings: { TEST_PASSWORD: PW } };
+}
+
+// G2 in Node: the gate with the merch zone, as tools/cf_test.js --merch writes it
+async function merchChecks(label, gate, CSP, env, plain) {
+  sec(label);
+  const NOSTORE = /^\/merch\/(?:test_cfg\.json$|.*\.(?:js|css)$)/;
+  const FILES = { '/index.html': [GAME, 'text/html; charset=utf-8'], '/merch/index.html': [MERCH_HTML, 'text/html; charset=utf-8'], '/merch/terms/index.html': ['<!doctype html>the terms', 'text/html; charset=utf-8'],
+    '/merch/merch.js': ['window.m=1', 'text/javascript; charset=utf-8'], '/merch/merch.css': ['a{}', 'text/css; charset=utf-8'], '/merch/catalog.json': ['{}', 'application/json'],
+    '/merch/print/pp1-00000000/pawprint.js': ['window.p=1', 'text/javascript; charset=utf-8'], '/merch/test_cfg.json': [TOKEN_FILE, 'application/json'], '/style.css': ['b{}', 'text/css; charset=utf-8'] };
+  const w = gate.makeGate({ files: FILES, hashed: /^\/(lang\/[\w-]+|photo_fonts|world_[a-z])\.[0-9a-f]{8}\.js$|^\/fonts\/i18n\//, csp: CSP, zones: [{ prefix: '/merch/', csp: MERCH_CSP, noStore: NOSTORE }] });
+  const cookie = 'dd_test=' + (await gate.makeToken(env));
+  const go = (p, o, ww) => (ww || w).fetch(new Request('https://test.doodledoggo.app' + p, Object.assign({ redirect: 'manual' }, o || {})), env);
+  const withCk = (p, o, ww) => go(p, Object.assign({ headers: { cookie } }, o || {}), ww);
+  let r = await go('/merch'); let t = await r.text();
+  ok(r.status === 401 && /value="\/merch"/.test(t), '/merch without the cookie: the gate page (next /merch), no redirect before the password');
+  r = await withCk('/merch');
+  ok(r.status === 301 && r.headers.get('location') === '/merch/' && r.headers.get('x-robots-tag') === 'noindex, nofollow' && r.headers.get('cache-control') === 'private, no-store', '/merch -> 301 /merch/ (noindex, private no-store)');
+  r = await withCk('/merch?back=o_12&x=1'); ok(r.status === 301 && r.headers.get('location') === '/merch/?back=o_12&x=1', '/merch?back=... -> 301 /merch/?back=... (query kept)');
+  r = await withCk('/merch/terms'); ok(r.status === 301 && r.headers.get('location') === '/merch/terms/', '/merch/terms -> 301 /merch/terms/');
+  r = await withCk('/merch/'); t = await r.text();
+  ok(r.status === 200 && t === MERCH_HTML && /text\/html/.test(r.headers.get('content-type')) && r.headers.get('cache-control') === 'private, no-store', '/merch/ serves /merch/index.html (private, no-store)');
+  ok(r.headers.get('content-security-policy') === MERCH_CSP, '/merch/: the merch CSP, exactly');
+  r = await withCk('/merch/?new=1'); t = await r.text(); ok(r.status === 200 && t === MERCH_HTML, '/merch/?new=1 (Stripe sends buyers back here): the page');
+  r = await withCk('/merch/terms/'); t = await r.text(); ok(r.status === 200 && t === '<!doctype html>the terms' && r.headers.get('content-security-policy') === MERCH_CSP, '/merch/terms/ serves /merch/terms/index.html, merch CSP');
+  r = await withCk('/'); ok(r.status === 200 && r.headers.get('content-security-policy') === CSP, '/: the game\'s CSP exactly as before (not the merch one)');
+  r = await withCk('/index.html'); ok(r.headers.get('content-security-policy') === CSP, '/index.html: the game\'s CSP');
+  r = await withCk('/style.css'); ok(r.status === 200 && !r.headers.get('content-security-policy') && r.headers.get('cache-control') === 'private, max-age=3600', '/style.css (a root file the page loads): no CSP, an hour, as the game\'s files');
+  r = await withCk('/merch/merch.js'); ok(r.status === 200 && r.headers.get('cache-control') === 'private, no-store' && r.headers.get('content-security-policy') === MERCH_CSP, '/merch/merch.js: private, no-store (never stale in the run)');
+  r = await withCk('/merch/merch.css'); ok(r.headers.get('cache-control') === 'private, no-store', '/merch/merch.css: private, no-store');
+  r = await withCk('/merch/print/pp1-00000000/pawprint.js'); ok(r.headers.get('cache-control') === 'private, no-store', '/merch/print/<ver>/pawprint.js: private, no-store');
+  r = await withCk('/merch/catalog.json'); ok(r.status === 200 && r.headers.get('cache-control') === 'private, max-age=3600', '/merch/catalog.json: private, an hour');
+  r = await go('/merch/test_cfg.json'); t = await r.text();
+  ok(r.status === 401 && /action="\/__gate"/.test(t) && !t.includes('a'.repeat(40)) && r.headers.get('cache-control') === 'private, no-store', '/merch/test_cfg.json without the cookie: the password page, never the file');
+  r = await go('/merch/test_cfg.json', { method: 'HEAD' }); ok(r.status === 401, 'HEAD /merch/test_cfg.json without the cookie: 401');
+  r = await go('/merch/test_cfg.json', { headers: { cookie: 'dd_test=v1.1000.' + 'A'.repeat(43) } }); ok(r.status === 401, '/merch/test_cfg.json with an expired cookie: 401');
+  r = await withCk('/merch/test_cfg.json'); t = await r.text();
+  ok(r.status === 200 && t === TOKEN_FILE && r.headers.get('cache-control') === 'private, no-store' && r.headers.get('x-robots-tag') === 'noindex, nofollow' && r.headers.get('content-type') === 'application/json', '/merch/test_cfg.json with the cookie: as it is, private, no-store, noindex');
+  r = await withCk('/merch/nope.js'); ok(r.status === 404, 'a missing merch file: 404');
+  r = await withCk('/merch/', { method: 'POST' }); ok(r.status === 405, 'only GET and HEAD under /merch/');
+  // the game copy alone (no zones): the folder rule changes nothing there
+  r = await withCk('/merch', null, plain); ok(r.status === 404, 'without the merch page: /merch is a 404 (no redirect)');
+  r = await withCk('/merch/', null, plain); ok(r.status === 404, 'without the merch page: /merch/ is a 404');
+  r = await withCk('/lang', null, plain); ok(r.status === 404, 'without the merch page: a game folder without index.html (/lang) is a 404, as before');
+}
+
+// G1 + G3: tools/cf_test.js --merch <dir> [--merch-cfg <file>] on a made-up merch checkout. Returns the --merch out folder for Miniflare.
+async function cfMerchChecks(run, tmp, build, out) {
+  sec('tools/cf_test.js --merch / --merch-cfg');
+  const w = (p, c) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, c); };
+  const M = path.join(tmp, 'merch-shop'), SITE = ['style.css', 'js/site.js', 'img/logo.svg', 'img/art/washi.svg', 'fonts/caveat.woff2', 'fonts/patrick-hand.woff2', 'fonts/dd-code.woff2'], BRAND = ['doodle-doggo-icon.svg', 'favicon.svg', 'icon-32.png', 'icon-180.png'];
+  w(path.join(M, 'site', 'merch', 'index.html'), MERCH_HTML); w(path.join(M, 'site', 'merch', 'merch.js'), 'window.m=1'); w(path.join(M, 'site', 'merch', 'catalog.json'), '{}');
+  w(path.join(M, 'site', 'merch', 'terms', 'index.html'), '<!doctype html>the terms'); w(path.join(M, 'site', 'merch', 'print', 'pp1-00000000', 'index.html'), '<!doctype html>print');
+  w(path.join(M, 'site', 'merch', '.DS_Store'), 'x');
+  SITE.forEach((f) => w(path.join(M, 'site', f), 'site ' + f)); BRAND.forEach((f) => w(path.join(M, 'brand', f), 'brand ' + f));
+  w(path.join(build, 'favicon.svg'), 'brand favicon.svg'); // the game build has the same favicon: fine (kept once)
+  const cfg = path.join(tmp, 'cfg.json'); w(cfg, TOKEN_FILE);
+  const base1 = path.join(tmp, 'p1'), base2 = path.join(tmp, 'p2'), mo = path.join(tmp, 'm1');
+  const dirSum = (d) => fs.readdirSync(d).sort().map((f) => f + ':' + require('crypto').createHash('sha256').update(fs.readFileSync(path.join(d, f))).digest('hex')).join('\n');
+  let g = run(['--from', build, '--out', base1]);
+  const plainWorker = fs.readFileSync(path.join(base1, 'worker.js'), 'utf8');
+  ok(g.status === 0 && /\nexport default makeGate\(\{ files: FILES, hashed: \/.+\/, csp: "[^"]+" \}\);\n$/.test(plainWorker) && !/zones|merch/.test(plainWorker) && !/merch/.test(fs.readFileSync(path.join(base1, 'parts.txt'), 'utf8')) && !/merch/.test(g.stdout), 'without --merch: the same Worker as before (no zones, no /merch/ file, the old makeGate call)');
+  g = run(['--from', build, '--out', mo, '--merch', M, '--merch-cfg', cfg]);
+  const mw = g.status === 0 ? fs.readFileSync(path.join(mo, 'worker.js'), 'utf8') : '';
+  ok(g.status === 0 && /with the merch page from .*: 16 files added/.test(g.stdout) && /test_cfg\.json included/.test(g.stdout), '--merch --merch-cfg builds: ' + (g.stdout + g.stderr).trim().split('\n').pop().trim().slice(0, 110));
+  ok(!(g.stdout + g.stderr).includes('a'.repeat(40)), 'the build never prints the token');
+  const need = ['/merch/index.html', '/merch/merch.js', '/merch/catalog.json', '/merch/terms/index.html', '/merch/print/pp1-00000000/index.html', '/merch/test_cfg.json'].concat(SITE.map((f) => '/' + f), BRAND.map((f) => '/' + f), ['/index.html', '/brand.svg']);
+  ok(need.every((u) => mw.includes(JSON.stringify(u) + ': [f')) && !/DS_Store/.test(mw), 'every merch file at /merch/..., the 11 site files at the root, the game\'s own files kept (no dot files)');
+  ok((mw.match(/"\/favicon\.svg": \[f/g) || []).length === 1 && fs.readFileSync(path.join(mo, 'f__favicon.svg'), 'utf8') === 'brand favicon.svg' && fs.readFileSync(path.join(mo, 'f__icon-32.png'), 'utf8') === 'brand icon-32.png', 'a site file the game build has with the same bytes is kept once; the brand files come from <dir>/brand/');
+  ok(mw.includes(`zones: [{ prefix: '/merch/', csp: ${JSON.stringify(MERCH_CSP)}, noStore: /^\\/merch\\/(?:test_cfg\\.json$|.*\\.(?:js|css)$)/ }]`), 'the Worker gets the merch zone with the merch CSP, exactly');
+  ok(fs.readFileSync(path.join(mo, 'f__merch__test_cfg.json'), 'utf8') === TOKEN_FILE, 'the token file goes in as it is');
+  g = run(['--from', build, '--out', base2]);
+  ok(g.status === 0 && dirSum(base1) === dirSum(base2), 'a build without --merch after one with it: byte for byte the same as the first');
+  g = run(['--from', build, '--out', path.join(tmp, 'm2'), '--merch', M]);
+  ok(g.status === 0 && !fs.existsSync(path.join(tmp, 'm2', 'f__merch__test_cfg.json')) && !fs.readFileSync(path.join(tmp, 'm2', 'worker.js'), 'utf8').includes('"/merch/test_cfg.json": [f') && /no test_cfg\.json/.test(g.stdout), '--merch without --merch-cfg: /merch/test_cfg.json left out');
+  // the token file: accepted and refused
+  const tryCfg = (body) => { w(cfg, body); const o = path.join(tmp, 'mc'); fs.rmSync(o, { recursive: true, force: true }); const r = run(['--from', build, '--out', o, '--merch', M, '--merch-cfg', cfg]); r.wrote = fs.existsSync(path.join(o, 'worker.js')); return r; };
+  for (const [tok, why] of [['a'.repeat(32), '32 characters'], ['Z9_-'.repeat(32), '128 characters'], ['aB3-_'.repeat(8), 'letters, digits, - and _']]) {
+    g = tryCfg(JSON.stringify({ token: tok })); ok(g.status === 0 && g.wrote, 'token file accepted: ' + why);
+  }
+  g = tryCfg('{\n  "token": "' + 'a'.repeat(40) + '"\n}\n'); ok(g.status === 0, 'token file accepted: pretty-printed JSON');
+  const SECRETISH = 'q'.repeat(31);
+  for (const [body, why] of [[JSON.stringify({ token: SECRETISH }), '31 characters'], [JSON.stringify({ token: 'q'.repeat(129) }), '129 characters'], [JSON.stringify({ token: 'q'.repeat(39) + '.' }), 'a dot'],
+    [JSON.stringify({ token: 'q'.repeat(39) + '+' }), 'a plus'], [JSON.stringify({ token: 'q'.repeat(39) + '=' }), 'an equals sign'], [JSON.stringify({ token: 'q'.repeat(20) + ' ' + 'q'.repeat(19) }), 'a space'],
+    [JSON.stringify({ token: 'q'.repeat(40), other: 1 }), 'a second key'], [JSON.stringify({ Token: 'q'.repeat(40) }), 'another key name'], [JSON.stringify({}), 'no key'], [JSON.stringify([{ token: 'q'.repeat(40) }]), 'an array'],
+    ['null', 'null'], [JSON.stringify('q'.repeat(40)), 'a bare string'], [JSON.stringify({ token: 12345678901234567890123456789012345 }), 'a number'], ['token=' + 'q'.repeat(40), 'not JSON'], ['{"token":"' + 'q'.repeat(40) + '"', 'broken JSON'], ['', 'an empty file']]) {
+    g = tryCfg(body); ok(g.status === 1 && !g.wrote && /not a test token file/.test(g.stderr) && !(g.stdout + g.stderr).includes('q'.repeat(20)), 'token file refused, nothing written, token not printed: ' + why);
+  }
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M, '--merch-cfg', path.join(tmp, 'no-such.json')]); ok(g.status === 1 && /not a test token file/.test(g.stderr), 'a missing token file: refused');
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch-cfg', cfg]); ok(g.status === 1 && /only valid together with --merch/.test(g.stderr), '--merch-cfg without --merch: refused');
+  // a wrong checkout
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', path.join(tmp, 'nope')]); ok(g.status === 1 && /no such folder/.test(g.stderr), '--merch to a folder that is not there: refused');
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', build]); ok(g.status === 1 && /no site\/merch\/index\.html/.test(g.stderr), '--merch to a folder without site/merch/: refused');
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', path.join(M, 'site', 'merch')]); ok(g.status === 1 && /no site\/merch\/index\.html/.test(g.stderr), '--merch to site/merch itself: refused');
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch']); ok(g.status === 1 && /--merch needs a path/.test(g.stderr), '--merch without a path: refused');
+  fs.renameSync(path.join(M, 'site', 'fonts', 'dd-code.woff2'), path.join(tmp, 'dd-code.woff2'));
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /needs \/fonts\/dd-code\.woff2/.test(g.stderr), 'a site file the page needs is missing in the checkout: refused');
+  fs.renameSync(path.join(tmp, 'dd-code.woff2'), path.join(M, 'site', 'fonts', 'dd-code.woff2'));
+  w(path.join(M, 'site', 'merch', 'test_cfg.json'), TOKEN_FILE);
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /only ever given with --merch-cfg/.test(g.stderr), 'a test_cfg.json inside the checkout: refused');
+  fs.rmSync(path.join(M, 'site', 'merch', 'test_cfg.json'));
+  // a path clash: the game build has a different file at a path the merch page needs
+  w(path.join(build, 'favicon.svg'), 'the game\'s own favicon');
+  fs.rmSync(path.join(tmp, 'mc'), { recursive: true, force: true });
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]);
+  ok(g.status === 1 && /already has a different \/favicon\.svg/.test(g.stderr) && !fs.existsSync(path.join(tmp, 'mc', 'worker.js')), 'the game build has a different /favicon.svg: the build stops, nothing written');
+  w(path.join(build, 'merch', 'index.html'), '<!doctype html>a game page');
+  w(path.join(build, 'favicon.svg'), 'brand favicon.svg');
+  g = run(['--from', build, '--out', path.join(tmp, 'mc'), '--merch', M]); ok(g.status === 1 && /already has a different \/merch\/index\.html/.test(g.stderr), 'the game build has a different /merch/index.html: the build stops');
+  fs.rmSync(path.join(build, 'merch'), { recursive: true }); fs.rmSync(path.join(build, 'favicon.svg'));
+  w(cfg, TOKEN_FILE);
+  return mo;
+}
+
 function findMiniflare() {
   const roots = [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean), module.paths);
   for (const r of roots) for (const sub of ['miniflare', 'wrangler/node_modules/miniflare']) { try { return require(path.join(r, sub)); } catch (e) { /* next */ } }
