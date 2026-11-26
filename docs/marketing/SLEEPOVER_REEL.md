@@ -112,3 +112,41 @@ Not said on screen: friends need a cloud account (the Reel makes no claim either
 ## Still to do (only when the owner asks)
 
 - The cover, the captions (Instagram, TikTok, YouTube Shorts, X; doodledoggo.app only) and a RedNote cut, after the owner approves this English cut.
+
+## RedNote cut (26 Nov 2026)
+
+The owner approved the English cut ("Good") and asked for the RedNote version. Only the MP4 is made (no cover, no captions). The English MP4 is unchanged (md5 checked after the RedNote render).
+
+| File | What |
+|---|---|
+| `doodle-doggo-sleepover-rednote.mp4` | RedNote / 小红书: 1080 x 1920, 30 fps, h264 + AAC stereo, **37.80 s (1134 frames)**: 35.30 s + the RedNote end card for 2.5 s (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App", centred at 540, 960). 6.6 MB. |
+| `vo_sleepover_zh.json` | The Mandarin voice (`../friends_reel/vo_friends_zh.py`, Kokoro v1.1-zh, zf_073 1.0x); Noodle is 面条 in the voice, as in the earlier RedNote cuts. |
+
+Remake: `PAW_LANG=zh-Hans node capture_sleepover.js <main> <caps_zh>`; the voice with `VO_LINES=brand/instagram/launch/sleepover_reel/vo_sleepover_zh.json python3 brand/instagram/launch/friends_reel/vo_friends_zh.py <kokoro dir> <vo_zh> zf_073 1.0`; then `REDNOTE=1 CAPS=<caps_zh> node build_sleepover.js <work_zh> <vo_zh>`. The capture adopts the dogs in English (the picker's labels), then switches the game to zh-Hans and reloads with the save, as `visitor_reel` does.
+
+**Names as the game shows them in zh-Hans.** The friend names are Dog Card words, and zh-Hans shows them in Chinese: Sunny Biscuit is **阳光饼干** and Fluffy Button is **毛茸茸纽扣** (`data.dc_words_a/b`; the game puts a zero-width space between the two words, which draws nothing, and the cards leave it out). The dogs' own names stay Latin, as the game shows them: **Noodle**, **Honey**.
+
+| Beat | Voice (zf_073 1.0x) | Card (the game's zh-Hans words where it has them) |
+|---|---|---|
+| hook | 面条第一次去好友家过夜！猜猜它带回了什么？ | 面条第一次去好友家过夜！ / 猜猜它带回了什么？ (the covered picture) |
+| visit | 在阳光饼干家帮帮忙：添饭，浇水，帮狗狗实现心愿！ | 帮帮忙 (`hp.help_out`) / 给Honey的碗添满饭, 给菜园浇水, 帮Honey实现心愿 (the strip's own labels) / 今天的小心愿：玩一局球 → 心愿实现啦！ (the bubble) |
+| sleep | 再点去过夜，面条带上了牙刷！ | 去过夜 (`hp.sleep_btn`) / Noodle带上了牙刷。明早见！ (`hp.sleep_sent`) |
+| night | 晚上它是好友家的小客人，挂着名牌。摸摸面条！ | 来过夜的小客人！ (`hp.g_title`) / Honey和Noodle一起玩。+1亲密度。 (`hp.g_pet_ok`); the tag 毛茸茸纽扣家的Noodle (`hp.g_tag`) |
+| morning | 早饭前就回家啦，带回一页日记和一幅画！ | 当然啦，早饭前就回家了。 (`hp.d_back`) / 日记里多了一页， (`hp.home_toast`) 还有一幅画！ (`nw.v233.sleep`: 一页日记和一幅画); then the zh share picture, 700 wide |
+| letter | 阳光饼干收到一封信，就点了道谢。 | 毛茸茸纽扣来帮忙啦！ (`hp.l_title`) / 给Honey的碗添满了饭、给菜园浇了水和帮Honey实现了心愿。 (`hp.l_text`, the captured letter); the 道谢 button (`hp.thanks`); then 阳光饼干留下的爪印 (`fr.note_title`) / 谢谢你来帮忙！ (`data.fr_notes.12`) |
+| thanks | 不聊天，不发消息，只有狗狗帮狗狗。 | 不聊天，不发消息， / 只有狗狗帮狗狗。 |
+| ask | 你家狗狗想去谁家过夜？评论区告诉我！ | 你家狗狗想去谁家过夜？ / 评论区告诉我👇 |
+
+The build checks every zh-Hans key above against `game/i18n/zh-Hans.json` and the zh capture (the toasts, the tag, the letters, the diary, the bubble, the strip), and stops if one changed. The game has no zh line for "no chat, no messages": 不聊天，不发消息 says what V233.md 0 says (helps, sleepovers and thanks are fixed kinds and preset notes; no typed text leaves the device), like the Friends RedNote cut's 没有聊天.
+
+**The chip.** The share picture (and the hook's covered copy of it) is cut just above its "Doodle Doggo · doodledoggo.app" chip: RedNote shows y 0..1254 of the 1080 x 1350 PNG (`58_share.js` SH_LAY feed chip at y 1290, 58 px tall, top 1261; the build stops if it moved), as in the Share my dog RedNote cut. The picture keeps its zh line 穿戴秋日围巾的腊肠犬.
+
+Subtitles: the voice's words in pills of at most 14 characters, LXGW WenKai, at y 1560 under Noodle on the open grass (in the garden shot at y 900, over the house wall, clear of the veggie patch, the stones and the washing). Full frame, no safe zone: everything in front, and each scene window with it, 85 px right; a 50 px margin. All the English cut's rules hold: no overlaps (the washing check on every card, the pills, the tag and the subtitles, including the garden shot), text centred in its box, Noodle 569 px wide standing, dogs 28 px apart, the frozen-clock drawings, the 0.0001 frame-index nudge, the checks on every frame.
+
+Anti-ban: no QR, link, domain, @ or handle; no other app or platform; nothing about posting or sending; the ask is a comment ask. The build stops on any of: a URL or `www.` / `.app` / `.com`, `@`, Instagram, YouTube, TikTok, itch, 微信, 朋友圈, QQ, 微博, 抖音, 小红书, WhatsApp, 链接, 网址, 官网, 二维码, 扫码, 下载, 私信我, 加我, 主页链接, 戳, 发帖, 发到, 发布到, 快拍, 帖子, tag, INS/ins, in the cut's words, the subtitles, the voice and the captured game text it uses.
+
+Sound: the same game music and effects; voice -25.5 LUFS raw (+9.5 dB), music -17.5 LUFS raw (-9.5 dB), 11 dB under.
+
+Checks: `CHECK=1`: all 1134 frames pass; the render ran the same checks. `checkFrames()`: **0 doubled frames** in all ten moving runs (medians 0.13..0.39); off the cuts the only diff over 2.5 is 3.81 at frame 268 (Honey's drawing from idle to jump as the ball lands); the rest are the game's keyframe swaps and the subtitles changing (under 2.5). The end card (1058..1133) is the still RedNote card after its fade. ffprobe: h264 1080 x 1920, 30/1 fps, 1134 frames, 37.80 s; AAC 44.1 kHz stereo, 37.80 s. Stills looked at at 1x (the night guest with the zh tag, the payoff with the chip cut off); 12-still contact sheet in the scratchpad (`sleepover-rednote-contact-sheet.jpg`).
+
+Render notes: the first RedNote renders crashed because the disk was full (ENOSPC). Old trial footage (`fr/footage_try2..4`) and the gift Reel's rendered frames (`gift/work_en/f`, `gift/work_zh/f`) were removed from the session scratchpad to make room, and the cut was rendered again in full. The build now also retries a refused screenshot and has `NOENC=1` (render `FRAMES` without encoding).

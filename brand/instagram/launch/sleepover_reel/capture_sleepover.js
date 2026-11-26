@@ -12,7 +12,9 @@
 //    the Sleepover button, sheet, confirm and toast; then the next morning (the recipe's night is over): Noodle home (toast), the diary page (title,
 //    lines, picture), the real Share this moment PNG (the share sheet's preview blob); Sunny Biscuit's thank-you paw print postcard; my yard at dawn.
 // 4. The drawings, animated on the FROZEN CLOCK (../frozen_clock.js): Noodle and Honey in every pose used, 30 frames a loop at exactly 1000/30 ms.
-//   NODE_PATH=$(npm root -g) node brand/instagram/launch/sleepover_reel/capture_sleepover.js <main checkout> <outdir>
+//   NODE_PATH=$(npm root -g) [PAW_LANG=zh-Hans] node brand/instagram/launch/sleepover_reel/capture_sleepover.js <main checkout> <outdir>
+// PAW_LANG=zh-Hans (the RedNote cut): both games in Simplified Chinese (the harness's language pin), so the toasts, the tag, the letters and the
+// share picture's line are the game's zh-Hans words; the drawings and the scenes are the same art.
 const path = require('path'), fs = require('fs');
 const DEV = path.resolve(process.argv[2] || '.'), OUT = path.resolve(process.argv[3] || 'sleep_caps'); fs.mkdirSync(OUT, { recursive: true });
 const { run, URL } = require(path.join(DEV, 'game', 'test_lib'));
@@ -20,6 +22,7 @@ const { mockInit } = require(path.join(DEV, 'game', 'fr_mock'));
 const { freezeClock, stepClock, releaseClock } = require('../frozen_clock.js');
 const ME = { fid: 'ownerxxxxxxxxxxxxxxxxx', code: 'DOG-23456', name: [3, 4] }, SUNNY = 'sunnybiscuitxxxxxxxxxx', SUNNY_NAME = [0, 0];
 const OUTFIT = { neck: 'Autumn Scarf' };
+const LANG = process.env.PAW_LANG || 'en';
 const HONEY_N = 45; // DC_PET_NAMES[45] 'Honey' (checked below)
 const NOODLE_POSES = ['idle', 'sit', 'happy', 'bow', 'jump', 'sleep'], HONEY_POSES = ['idle', 'sit', 'happy', 'jump', 'sleep'];
 const CLEAN = '#devBtn,#toasts,.sheet-grab,#modal .xbtn,#modal .x{display:none!important}'
@@ -37,6 +40,11 @@ run('sleepover_capture', async (t) => {
     await t.adopt({ head: key, sex });
     await t.patch({ bond: { level: 7, pts: 1450 }, coins: 1000, stats: { hunger: 70, happy: 80, energy: 90, clean: 90 }, dog: { name } });
     await t.calm(); await t.lu(); await settle();
+    if (LANG !== 'en') { // adopted in English (the picker's labels), then the game switched to the language and reloaded with the save (as visitor_reel)
+      await ev((l) => { window.__paw.S.lang = l; window.__paw.saveNow(); const K = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(K) || '{}') || {}; } catch (e) { pr = {}; } pr.lang = l; localStorage.setItem(K, JSON.stringify(pr)); }, LANG);
+      await t.reloadKeepingSave(); await p().waitForSelector('#tContinue'); await p().click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu(); await settle();
+      if ((await ev(() => document.documentElement.lang)) !== LANG) throw new Error('the game is not in ' + LANG);
+    }
     await t.until(() => !!(window.__paw && window.__paw.hp && window.__paw.fr && window.__frSrv && window.__paw.sh), null, 8000);
   };
   let cdp = null, style = null;
@@ -62,7 +70,8 @@ run('sleepover_capture', async (t) => {
     await p().screenshot({ path: path.join(OUT, 'dbg_' + name + '.png') });
   };
   const toasts = () => ev(() => window.__toasts.splice(0));
-  const en = JSON.parse(fs.readFileSync(path.join(DEV, 'game', 'i18n', 'en.json'), 'utf8'));
+  const en = JSON.parse(fs.readFileSync(path.join(DEV, 'game', 'i18n', 'en.json'), 'utf8')), L = JSON.parse(fs.readFileSync(path.join(DEV, 'game', 'i18n', LANG + '.json'), 'utf8'));
+  facts.lang = LANG;
   facts.honeyName = await (async () => { const src = fs.readFileSync(path.join(DEV, 'game', 'src', '40_dogcards.js'), 'utf8'); const m = /const DC_PET_NAMES = (\[[\s\S]*?\]);/.exec(src); const L = Function('return ' + m[1])(); if (L[HONEY_N] !== 'Honey' || L[1] !== 'Noodle') throw new Error('the card names moved'); return L[HONEY_N]; })();
 
   // ======== 1. ME: Noodle and his card dog ========
@@ -180,9 +189,9 @@ run('sleepover_capture', async (t) => {
   await ev((f) => window.__paw.hp.sl.open(f), SUNNY); await t.until(() => !!document.querySelector('#modal .hp-sleep'), null, 4000);
   await clean(true); await shoot('#modal .panel', 'sleep_sheet', 2.5); await clean(false);
   await ev((id) => document.querySelector(`#modal [data-sldog="${id}"]`).click(), noodleId);
-  await t.until(() => [...document.querySelectorAll('#modal button')].some((b) => /Not tonight/.test(b.textContent)), null, 4000);
+  await t.until((no) => [...document.querySelectorAll('#modal button')].some((b) => b.textContent.trim() === no), L['hp.sleep_no'], 4000);
   await clean(true); await shoot('#modal .panel', 'sleep_confirm', 2.5); await clean(false);
-  await toasts(); await ev(() => [...document.querySelectorAll('#modal button')].find((x) => /Sleepover!/.test(x.textContent)).click());
+  await toasts(); await ev((go) => [...document.querySelectorAll('#modal button')].find((x) => x.textContent.trim() === go).click(), L['hp.sleep_go']);
   await t.until(() => window.__paw.S.hp.sl.length === 1, null, 6000); await p().waitForTimeout(600);
   facts.sleepToasts = await toasts(); facts.recipe = await ev(() => window.__paw.S.hp.sl[0]); facts.sleepSent = await ev(() => window.__frSrv.sent.filter((x) => x.kind === 'sleep'));
   facts.sleepBtnAfter = await ev(() => { const b = document.getElementById('hpSleepBtn'); return b ? b.textContent.trim() : ''; });
@@ -221,9 +230,10 @@ run('sleepover_capture', async (t) => {
   console.log('thank-you', JSON.stringify(facts.thxToasts), JSON.stringify(facts.thxMail));
   await ev(() => document.querySelector('#mailboxG, #sceneG [data-hot="mailbox"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
   await t.until(() => !!document.querySelector('#modal .mb-read .letter'), null, 4000);
-  const thx = facts.thxMail.find((m) => /Thank/.test(m.text || '') || /Thank/.test(m.title || '')); if (thx) await ev((id) => { const b = document.querySelector(`#modal [data-mail="${id}"]`); if (b) b.click(); }, thx.id);
+  const thx = facts.thxMail.find((m) => (m.text || '') === L['data.fr_notes.12']); if (thx) await ev((id) => { const b = document.querySelector(`#modal [data-mail="${id}"]`); if (b) b.click(); }, thx.id);
   await p().waitForTimeout(600); await p().screenshot({ path: path.join(OUT, 'dbg_me_mailbox.png') });
   await clean(true); await shoot('#modal .mb-read .letter', 'thanks_letter', 2.5); await clean(false); await closeAll();
+  facts.shownNames = { me: await ev(() => window.__paw.S.fr && window.__paw.S.fr.name), letters: facts.letters && facts.letters.map((l) => l.title) };
   facts.en = Object.fromEntries(Object.entries(en).filter(([k]) => /^(hp\.|nw\.v233|fr_notes\.12|sh\.moment|dd\.chip_done)/.test(k)));
 
   // ======== 4. the drawings, animated on the frozen clock: one loop (30 frames) of each pose ========

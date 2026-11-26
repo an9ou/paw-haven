@@ -24,7 +24,7 @@
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const { CENTRE_JS, SAFE_JS } = require('../centre_text.js');
-const { ENDCARD_JS, handles } = require('../../../kids/endcard.js');
+const { ENDCARD_JS, handles, RN_FONT_CSS } = require('../../../kids/endcard.js');
 const { checkFrames } = require('../frozen_clock.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname;
 const ART_ROOT = process.env.ART_ROOT ? path.resolve(process.env.ART_ROOT) : ROOT;
@@ -33,8 +33,15 @@ const CAPS = path.resolve(process.env.CAPS || path.join(WORK, 'caps'));
 fs.mkdirSync(path.join(WORK, 'f'), { recursive: true }); fs.mkdirSync(path.join(WORK, 'stills'), { recursive: true });
 const FPS = 30, W = 1080, H = 1920, PEN = '#5B3D32', PAPER = '#FFF8EC', CREAM = '#FFFDF7', RED = '#D2473C';
 const VOJ = JSON.parse(fs.readFileSync(path.join(VO, 'vo.json'), 'utf8')), VOD = VOJ.dur;
-const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, 'vo_sleepover.json'), 'utf8'));
-for (const [k, s] of Object.entries(VOJSON)) if (VOJ.text[k] !== s) throw new Error('the voice file of ' + k + ' is not vo_sleepover.json\'s line: make the voice again');
+// REDNOTE=1 (the RedNote cut, owner's go-ahead 26 Nov 2026; as visitor_reel and tier_reel): every word in Simplified Chinese, the game's own zh-Hans
+// words where the game has them (checked below), the captures made with PAW_LANG=zh-Hans (CAPS), Noodle in Mandarin (../friends_reel/vo_friends_zh.py
+// with VO_LINES=sleepover_reel/vo_sleepover_zh.json, zf_073 1.0x; Noodle is 面条 in the voice), subtitles of at most 14 characters, LXGW WenKai, no safe
+// zone (everything in front, and each scene window with it, 85 px right, a 50 px margin), the share picture cut just above its
+// "Doodle Doggo · doodledoggo.app" chip, the RedNote end card (the logo, 治愈系蜡笔狗狗游戏 and only "搜 Doodle Doggo App") centred at (540, 960).
+// Output doodle-doggo-sleepover-rednote.mp4. The build stops on any word of RN_BAN in the words, the voice or the captured game text.
+const RN = !!process.env.REDNOTE, RNX = RN ? 85 : 0, VOFILE = RN ? 'vo_sleepover_zh.json' : 'vo_sleepover.json';
+const VOJSON = JSON.parse(fs.readFileSync(path.join(__dirname, VOFILE), 'utf8'));
+for (const [k, s] of Object.entries(VOJSON)) if (VOJ.text[k] !== s) throw new Error('the voice file of ' + k + ' is not ' + VOFILE + '\'s line: make the voice again');
 
 // ---- the facts, checked against main (the game's own words) and the captures ----
 const EN = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'en.json'), 'utf8'));
@@ -48,6 +55,8 @@ const V233 = fs.readFileSync(path.join(ART_ROOT, 'V233.md'), 'utf8');
 for (const s of ['**No new coins**', 'Say thanks', '"Sleepover tonight"', "My dog **stays in my game all day**", 'Home by breakfast, of course.']) if (!V233.includes(s)) throw new Error('V233.md no longer says ' + s);
 const F = JSON.parse(fs.readFileSync(path.join(CAPS, 'facts.json'), 'utf8'));
 const chk = (ok, what) => { if (!ok) throw new Error('capture fact: ' + what); };
+chk(F.lang === (RN ? 'zh-Hans' : 'en') || (!RN && !F.lang), 'the capture\'s language');
+if (!RN) {
 chk(F.friendName === 'Sunny Biscuit' && F.meName === 'Fluffy Button' && F.honeyName === 'Honey', 'the made-up names');
 chk(F.visit.bubble.text === 'Today I wish for a game of ball' && F.visitAfter.bubble.text === 'Wish come true!', 'the wish bubble');
 chk(JSON.stringify(F.stripAria) === JSON.stringify(["Fill Honey's bowl", 'Water the garden', "Make Honey's wish come true"]) && /^Help out/.test(F.stripLabel), 'the Help out strip');
@@ -61,6 +70,34 @@ chk(F.homeToasts[0] === 'Noodle is home from the sleepover! +2 Bond. A new page 
 chk(F.diary.lines.includes('Home by breakfast, of course.') && F.diary.lines.includes("I slept over at Sunny Biscuit's yard. Their Cozy Cottage was very cosy."), 'the diary page');
 chk(F.share.w === 1080 && F.share.h === 1350 && F.share.rec.from === 'sleep' && F.share.rec.pal && F.share.rec.yard, 'the share picture (Share this moment, the pal and the yard)');
 chk(F.thxMail.some((m) => m.title === 'A paw print from Sunny Biscuit' && m.text === 'Thank you for helping!'), 'the paw print back');
+}
+// the zh-Hans words (game/i18n/zh-Hans.json) and the zh capture. The friend names are Dog Card words, which zh-Hans shows in Chinese with a zero-width
+// space between the two words (阳光​饼干, 毛茸茸​纽扣); the cards show them without it (it draws nothing). The dogs' own names stay Latin (Noodle, Honey).
+const ZH = JSON.parse(fs.readFileSync(path.join(ART_ROOT, 'game', 'i18n', 'zh-Hans.json'), 'utf8'));
+const mustZ = (k, s) => { if (ZH[k] !== s) throw new Error('the zh-Hans game text changed: ' + k + ' is ' + JSON.stringify(ZH[k]) + ', not ' + JSON.stringify(s)); };
+const Z0 = (x) => String(x || '').replace(/\u200b/g, '');
+if (RN) {
+  mustZ('hp.help_out', '帮帮忙'); mustZ('hp.bowl_aria', '给{dog}的碗添满饭'); mustZ('hp.water_aria', '给菜园浇水'); mustZ('hp.wish_aria', '帮{dog}实现心愿');
+  mustZ('hp.wish_chip', '今天的小心愿：{wish}'); mustZ('dd.wish_ball', '玩一局球'); mustZ('dd.chip_done', '心愿实现啦！'); mustZ('hp.sleep_btn', '去过夜');
+  mustZ('hp.sleep_sent', '{dog}带上了牙刷。明早见！'); mustZ('hp.g_title', '来过夜的小客人！'); mustZ('hp.g_tag', '{name}家的{dog}');
+  mustZ('hp.g_pet_ok', '{dog}和{guest}一起玩。+{n}亲密度。'); mustZ('hp.d_back', '当然啦，早饭前就回家了。'); mustZ('hp.home_toast', '{dog}过夜回来啦！+{n}亲密度。日记里多了一页。');
+  mustZ('hp.l_title', '{who}来帮忙啦！'); mustZ('hp.l_text', '{who}来过了：{list}。'); mustZ('hp.thanks', '道谢'); mustZ('data.fr_notes.12', '谢谢你来帮忙！');
+  mustZ('fr.note_title', '{name}留下的爪印'); mustZ('nw.v233.sleep', '让狗狗去好友家过夜：它会带着一页日记和一幅画回来'); mustZ('data.dc_words_a.0', '阳光'); mustZ('data.dc_words_b.0', '饼干');
+  mustZ('data.dc_words_a.3', '毛茸茸'); mustZ('data.dc_words_b.4', '纽扣');
+  chk(F.visit.bubble.text === '今天的小心愿：玩一局球' && F.visitAfter.bubble.text === '心愿实现啦！', 'the zh wish bubble');
+  chk(JSON.stringify(F.stripAria) === JSON.stringify(['给Honey的碗添满饭', '给菜园浇水', '帮Honey实现心愿']) && /^帮帮忙/.test(F.stripLabel), 'the zh Help out strip');
+  chk(F.visitBtns.includes('去过夜') && ['bowl', 'water', 'wish'].every((k) => F.helpToasts[k].includes('Noodle帮了个忙！+1亲密度')), 'the zh visit button and help toasts');
+  chk(F.sleepToasts.includes('Noodle带上了牙刷。明早见！'), 'the zh sleepover toast');
+  chk(Z0(F.guestTag[0]) === '毛茸茸纽扣家的Noodle' && F.petToasts.includes('Honey和Noodle一起玩。+1亲密度。'), 'the zh guest tag and the pet');
+  chk(F.letters.some((l) => Z0(l.title) === '毛茸茸纽扣来帮忙啦！' && Z0(l.text) === '毛茸茸纽扣来过了：给Honey的碗添满了饭、给菜园浇了水和帮Honey实现了心愿。'), 'the zh help letter');
+  chk(F.thanksToasts.includes('感谢卡送出啦！') && F.thanksSent[0].data.i === 12, 'the zh Say thanks (note 12)');
+  chk(F.homeToasts[0] === 'Noodle过夜回来啦！+2亲密度。日记里多了一页。' && F.diary.lines.includes('当然啦，早饭前就回家了。'), 'the zh home by morning');
+  chk(F.share.w === 1080 && F.share.h === 1350 && F.share.rec.from === 'sleep' && F.share.rec.pal && F.share.rec.yard, 'the share picture');
+  chk(F.thxMail.some((m) => Z0(m.title) === '阳光饼干留下的爪印' && m.text === '谢谢你来帮忙！'), 'the zh paw print back');
+  // the share picture's chip (58_share.js SH_LAY feed chip: its middle at y 1290 of 1350, 58 px tall: its top at 1261); RedNote shows y 0..1254 only
+  const SH = fs.readFileSync(path.join(ART_ROOT, 'game', 'src', '58_share.js'), 'utf8'), m = /feed: \{[^}]*chip: (\d+)/.exec(SH);
+  if (!m || +m[1] !== 1290) throw new Error('the share picture chip moved: ' + (m && m[1]));
+}
 // no black or white dog as a subject: Noodle (red dachshund, ee no, E with bb = chocolate-red) and Honey (golden, ee)
 chk(F.noodleCard.b === 3 && F.snapshot.dogs[0].b === 2 && F.snapshot.dogs[0].n === 45, 'the dogs: Noodle the Dachshund, Honey the Golden');
 
@@ -91,11 +128,13 @@ const SCN = {
   fpatch: { svg: 'visit.svg', x0: 40, ground: { patch: [10, 437, 214, 585] } },
   fnight: { svg: 'friend_night.svg', x0: 268, ground: Object.assign({ dig: DIG, barrel: [538, 305, 624, 382] }, STONES) }
 };
+if (RN) for (const s of Object.values(SCN)) s.x0 -= RNX / (s.s || SCALE);
 const HANG = { pole: [572, 145, 605, 341], shirtBlue: [285, 226, 335, 275], sockRed: [361, 236, 383, 279], sockYellow: [392, 238, 415, 282], towel: [433, 241, 486, 280], shirtPink: [509, 224, 559, 275] };
 
 // ---- the beats: each card stays up for its spoken line + 0.4 s, then a 0.15 s pause (owner, 13 Nov 2026: fast) ----
 const PAUSE = 0.15, BEATS = []; let at = 0.1;
 const beat = (o) => { o.at = at; o.hold = VOD[o.k] + 0.4; BEATS.push(o); at += o.hold + PAUSE; return o; };
+if (!RN) {
 beat({ k: 'hook', scn: 'mzoom', title: "Noodle's first sleepover!", lines: ["You won't guess what", 'came home with him.'] });
 beat({ k: 'visit', scn: 'fday' });
 beat({ k: 'sleep', scn: 'fday', title: 'Sleepover', lines: ['Noodle packed a toothbrush.', 'See you in the morning!'] });
@@ -104,17 +143,47 @@ beat({ k: 'morning', scn: 'mzoom', title: 'Home by breakfast, of course.', lines
 beat({ k: 'letter', scn: 'mdawn', title: 'Fluffy Button helped out!', lines: ["Filled Honey's bowl, watered", "the garden and made Honey's", 'wish come true.'] });
 beat({ k: 'thanks', scn: 'mdawn', lines: ['No chat, no messages.', 'Just dogs helping dogs.'] });
 beat({ k: 'ask', scn: 'fnight', lines: ['Tag the friend your dog', 'would sleep over with 👇'] });
+} else { // the game's zh words where it has them (hp.sleep_btn, hp.sleep_sent, hp.g_title, hp.g_pet_ok, hp.d_back, hp.home_toast, nw.v233.sleep, hp.l_title, hp.l_text)
+beat({ k: 'hook', scn: 'mzoom', title: '面条第一次去好友家过夜！', lines: ['猜猜它带回了什么？'] });
+beat({ k: 'visit', scn: 'fday' });
+beat({ k: 'sleep', scn: 'fday', title: '去过夜', lines: ['Noodle带上了牙刷。', '明早见！'] });
+beat({ k: 'night', scn: 'fnight', title: '来过夜的小客人！', lines: ['Honey和Noodle一起玩。', '+1亲密度。'] });
+beat({ k: 'morning', scn: 'mzoom', title: '当然啦，早饭前就回家了。', lines: ['日记里多了一页，', '还有一幅画！'] });
+beat({ k: 'letter', scn: 'mdawn', title: '毛茸茸纽扣来帮忙啦！', lines: ['给Honey的碗添满了饭、', '给菜园浇了水和', '帮Honey实现了心愿。'] });
+beat({ k: 'thanks', scn: 'mdawn', lines: ['不聊天，不发消息，', '只有狗狗帮狗狗。'] });
+beat({ k: 'ask', scn: 'fnight', lines: ['你家狗狗想去谁家过夜？', '评论区告诉我👇'] });
+}
 const LOOP = at - PAUSE + 0.1, T = LOOP + 2.5, NF = Math.round(T * FPS);
 // the visit in three quick shots (one line of voice): the bowl, the garden, the wish
-const VB = BEATS[1], VSUB = [[0, 1.75, 'fday', "Fill Honey's bowl"], [1.75, 3.2, 'fpatch', 'Water the garden'], [3.2, 99, 'fday', "Make Honey's wish come true"]];
+const VB = BEATS[1], VSUB = RN ? [[0, 1.75, 'fday', '给Honey的碗添满饭'], [1.75, 3.2, 'fpatch', '给菜园浇水'], [3.2, 99, 'fday', '帮Honey实现心愿']]
+  : [[0, 1.75, 'fday', "Fill Honey's bowl"], [1.75, 3.2, 'fpatch', 'Water the garden'], [3.2, 99, 'fday', "Make Honey's wish come true"]];
+// the other words on screen: the game's own (en or zh-Hans)
+const TX = RN ? { help: '帮帮忙', wish: '今天的小心愿：玩一局球', done: '心愿实现啦！', tag: '毛茸茸纽扣家的Noodle', thanks: '道谢', pawT: '阳光饼干留下的爪印', pawL: '谢谢你来帮忙！' }
+  : { help: 'Help out', wish: 'Today I wish for a game of ball', done: 'Wish come true!', tag: 'Noodle, from Fluffy Button', thanks: 'Say thanks', pawT: 'A paw print from Sunny Biscuit', pawL: 'Thank you for helping!' };
+if (RN) { const L = Z0(F.letters.find((l) => /^hp_help_/.test(l.id)).text); for (const x of BEATS[5].lines) if (!L.includes(x.replace(/、$/, ''))) throw new Error('the zh letter line is not the game\'s: ' + x); }
+// RedNote subtitles: the voice's line in parts of at most 14 characters (end punctuation not counted), each as long as its share of the line
+const SUBS_ZH = { hook: ['面条第一次去好友家过夜！', '猜猜它带回了什么？'], visit: ['在阳光饼干家帮帮忙：', '添饭，浇水，', '帮狗狗实现心愿！'], sleep: ['再点去过夜，', '面条带上了牙刷！'],
+  night: ['晚上它是好友家的小客人，', '挂着名牌。', '摸摸面条！'], morning: ['早饭前就回家啦，', '带回一页日记和一幅画！'], letter: ['阳光饼干收到一封信，', '就点了道谢。'],
+  thanks: ['不聊天，不发消息，', '只有狗狗帮狗狗。'], ask: ['你家狗狗想去谁家过夜？', '评论区告诉我！'] };
+const bare = (x) => x.replace(/[，。！？：、\s]/g, ''), SUBS = [];
 const VOAT = BEATS.map((b) => ({ k: b.k, at: b.at }));
-const allText = BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + VSUB.map((s) => s[3]).join(' ') + ' Help out Today I wish for a game of ball Wish come true! Noodle, from Fluffy Button Share this moment Say thanks A paw print from Sunny Biscuit Thank you for helping! ? 0123456789';
+if (RN) for (const v of BEATS) { const parts = SUBS_ZH[v.k]; if (parts.join('') !== VOJ.text[v.k]) throw new Error('the subtitles differ from the voice: ' + v.k);
+  const wt = parts.map((x) => bare(x).length + 1), sum = wt.reduce((a, c) => a + c, 0); let t0 = v.at;
+  parts.forEach((x, i) => { const d = VOD[v.k] * wt[i] / sum, s2 = x.replace(/[，。、：]$/, '');
+    if ([...bare(s2)].length > 14) throw new Error('a subtitle over 14 characters: ' + s2);
+    SUBS.push({ a: t0, b: t0 + d + (i === parts.length - 1 ? 0.35 : 0), s: s2 }); t0 += d; }); }
+const allText = BEATS.map((b) => [b.title || '', ...(b.lines || [])].join(' ')).join(' ') + VSUB.map((s) => s[3]).join(' ') + ' ' + Object.values(TX).join(' ') + ' ' + SUBS.map((x) => x.s).join(' ') + ' ? 0123456789';
 if (/—|\bbreed(s|ing)?\b|\bsell|itch|%/i.test(allText + JSON.stringify(VOJSON))) throw new Error('a word the house rules ban');
-if (T < 24 || T > 34) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 24..34');
+// RedNote anti-ban (README RedNote rule, REDNOTE.md): no link, domain, handle, QR, other platform or app, off-platform word, post/story wording; checked
+// on every word we show or say and on the captured game text the cut uses (toasts, the tag, the letters, the diary, the bubble, the strip, the share sheet)
+const RN_BAN = /https?:|www\.|\.app|\.com|@|instagram|youtube|tiktok|itch|微信|朋友圈|QQ|微博|抖音|小红书|WhatsApp|链接|网址|官网|二维码|扫码|下载|私信我|加我|主页链接|戳|发帖|发到|发布到|快拍|帖子|tag/i, RN_BAN2 = /INS|\bins\b/;
+if (RN) { const game = [F.helpToasts, F.sleepToasts, F.guestTag, F.petToasts, F.letters, F.thanksToasts, F.homeToasts, F.diary.lines, F.thxMail, F.visit.bubble, F.visitAfter.bubble, F.stripAria, F.stripLabel, F.share.title, F.visitBtns];
+  const all = allText + JSON.stringify(VOJSON) + JSON.stringify(game); for (const re of [RN_BAN, RN_BAN2]) { const m = re.exec(all); if (m) throw new Error('a RedNote word on the ban list: ' + m[0]); } }
+if (T < 24 || T > (RN ? 40 : 34)) throw new Error('the Reel is ' + T.toFixed(2) + ' s, not 24..' + (RN ? 40 : 34));
 // the scene of the moment (and the visit's shot)
 const scnAt = (t) => { let b = BEATS[0]; for (const x of BEATS) if (t >= x.at - 0.06) b = x; if (b === VB) { const u = t - VB.at; for (const s of VSUB) if (u >= s[0] - 0.06 && u < s[1] - 0.06) return s[2]; } return b.scn; };
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">${RN ? `<link href="${RN_FONT_CSS}" rel="stylesheet">` : ''}
 <style>html,body{margin:0;background:#fff}svg{display:block}[class$="-hl"]{display:none}</style>
 <svg id="st" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs id="defs">
 ${symArt('a_bowl0', ART.bowl0)}${symArt('a_bowl1', ART.bowl1)}${symArt('a_can', ART.can)}${symArt('a_ball', ART.ball)}
@@ -122,18 +191,18 @@ ${symArt('a_bowl0', ART.bowl0)}${symArt('a_bowl1', ART.bowl1)}${symArt('a_can', 
 <clipPath id="picClip"><rect id="picClipR" x="0" y="0" width="10" height="10" rx="18"/></clipPath>
 </defs>
 ${Object.keys(SCN).map((k) => `<image id="bg_${k}" width="${W}" height="${H}" href="__BG_${k}__" visibility="hidden"/>`).join('')}
-<g id="fg"><g id="scn"></g><g id="art"></g><g id="ov"></g></g><g id="ec"></g></svg>
+<g id="scn"></g><g id="fg"${RN ? ` transform="translate(${RNX} 0)"` : ''}><g id="art"></g><g id="ov"></g></g><g id="sub"></g><g id="ec"></g></svg>
 <script>
 ${CENTRE_JS}
 ${SAFE_JS}
 ${ENDCARD_JS}
-const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), F='Caveat', AF='Andika', CX=455;
+const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), RN=${RN}, F=RN?"'LXGW WenKai'":'Caveat', AF=RN?F:'Andika', CX=455, RNX=${RNX}, TX=${JSON.stringify(TX)}, SUBS=${JSON.stringify(SUBS)};
 const BEATS=${JSON.stringify(BEATS)}, VSUB=${JSON.stringify(VSUB)}, LOOP=${LOOP}, LOGO_INNER=${JSON.stringify(LOGO_INNER)}, HANDLES=${JSON.stringify(handles())};
 const VB=BEATS[1], SCN=${JSON.stringify(SCN)}, HANG=${JSON.stringify(HANG)}, SY0=${SY0}, SCALE=${SCALE};
 const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) => [k, d.idx])))};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
-let X0=268, S_=SCALE, Y0=SY0;
+let X0=268, S_=SCALE, Y0=SY0, sc0='';
 const px=(u)=>(u-X0)*S_, py=(u)=>(u-Y0)*S_;
 const box=(b)=>({l:px(b[0]), t:py(b[1]), r:px(b[2]), b:py(b[3])});
 const inFrame=(k)=>{ const c={l:Math.max(0,k.l),t:Math.max(0,k.t),r:Math.min(${W},k.r),b:Math.min(${H},k.b)}; return c.r>c.l&&c.b>c.t?c:null; };
@@ -164,7 +233,7 @@ function card(b, top, op, tag){ const W0=790, x0=CX-W0/2, L=[], big=b.big;
   if(b.title) L.push({s:b.title, size:fitS(b.title,big?84:72,W0-90), fill:'${RED}', pitch:big?84:74});
   (b.lines||[]).forEach((s)=>L.push({s, size:fitS(s, big?84:62, W0-90), pitch: big?86:64}));
   (b.sub||[]).forEach((s)=>L.push({s, size:fitS(s, 54, W0-120), fill:'#8A7468', pitch:58}));
-  const hh=Math.max(262, L.reduce((a,l,i)=>a+(i<L.length-1?l.pitch:l.size*0.75),0)+(big?84:66)); // 262 at least: every card hides the sky's sparkle (scene 470, 190) whole
+  const hh=Math.max(RN&&sc0==='fpatch'?0:262, L.reduce((a,l,i)=>a+(i<L.length-1?l.pitch:l.size*0.75),0)+(big?84:66)); // 262 at least: every card hides the sky's sparkle (scene 470, 190) whole
   return { h: hh, svg: '<g data-box data-apart="'+(tag||'card')+'" data-over="1" opacity="'+f2(op)+'"><rect x="'+x0+'" y="'+top+'" width="'+W0+'" height="'+f2(hh)+'" rx="38" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+centred(L, CX, top+hh/2, F).svg+'</g>' }; }
 // a game-button pill (the game's yellow "yes" button look) and the guest's name tag chip
 function btnPill(s, cx, cy, op, k, tag, sz){ const size=sz||56, ink=inkOf(s,size,AF), w=ink.L+ink.R+70, h=Math.round(size*1.7), sc=k||1;
@@ -180,10 +249,10 @@ function mailCard(title, lines, top, op){ const W0=790, x0=CX-W0/2, bx=x0+170, b
     +'<g data-box><rect x="'+bx+'" y="'+(top+20)+'" width="'+bw+'" height="'+f2(h-40)+'" rx="22" fill="#FFF3DA" stroke="#E2C9A0" stroke-width="3"/>'+centred(L, bx+bw/2, top+h/2, F).svg+'</g></g>' }; }
 function heart(x,y,s,op){ return '<path data-fx="1" opacity="'+f2(op)+'" transform="translate('+f2(x)+' '+f2(y)+') scale('+f2(s)+')" d="M0 6C-6-4-18 0-14 10C-11 17-2 21 0 25C2 21 11 17 14 10C18 0 6-4 0 6Z" fill="#F48FB1" stroke="${PEN}" stroke-width="2.6" stroke-linejoin="round"/>'; }
 // a picture card: the game's PNG in a cream frame (the payoff), or covered (the hook: blurred, with a big red "?" sticker)
-function picCard(cx, top, w, op, k, rot, covered){ const h=w*1350/1080, x=cx-w/2, pad=14;
+function picCard(cx, top, w, op, k, rot, covered){ const PH=RN?1254:1350, h=w*PH/1080, x=cx-w/2, pad=14; // RedNote: the picture cut just above its chip (y 1261)
   return '<g data-apart="pic" data-safe data-cover="1" opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(top+h/2)+') rotate('+f2(rot)+') scale('+f2(k)+') translate('+f2(-cx)+' '+f2(-top-h/2)+')">'
     +'<rect x="'+f2(x-pad)+'" y="'+f2(top-pad)+'" width="'+f2(w+2*pad)+'" height="'+f2(h+2*pad)+'" rx="26" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'
-    +'<svg x="'+f2(x)+'" y="'+f2(top)+'" width="'+f2(w)+'" height="'+f2(h)+'" viewBox="0 0 1080 1350"><image width="1080" height="1350" href="__PIC__"'+(covered?' filter="url(#blur)"':'')+'/></svg>'
+    +'<svg x="'+f2(x)+'" y="'+f2(top)+'" width="'+f2(w)+'" height="'+f2(h)+'" viewBox="0 0 1080 '+PH+'"><image width="1080" height="'+PH+'" preserveAspectRatio="xMidYMin slice" href="__PIC__"'+(covered?' filter="url(#blur)"':'')+'/></svg>'
     +(covered?'<g data-box><circle cx="'+f2(cx)+'" cy="'+f2(top+h/2)+'" r="92" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'+centred([{s:'?',size:150,fill:'${RED}'}],cx,top+h/2,F).svg+'</g>':'')+'</g>'; }
 // ---- the layout (px; Noodle as in the visitor Reel: his standing box from x 80, feet on y 1412, scale 2.6) ----
 const CARD_TOP=276, NFEET=1412, NZ=2.6, NX=80, HFEET=1095;
@@ -202,7 +271,7 @@ function frame(t){
   const b=BEATS[bi], lt=t-b.at;
   let sc=b.scn, sub=null, st=lt; if(b.k==='visit'){ for(const s of VSUB) if(lt>=s[0]-0.06&&lt<s[1]-0.06){ sub=s; sc=s[2]; st=lt-s[0]; } }
   for(const k of Object.keys(SCN)) $('bg_'+k).setAttribute('visibility', k===sc?'visible':'hidden');
-  X0=SCN[sc].x0; S_=SCN[sc].s||SCALE; Y0=SCN[sc].y0==null?SY0:SCN[sc].y0;
+  sc0=sc; X0=SCN[sc].x0; S_=SCN[sc].s||SCALE; Y0=SCN[sc].y0==null?SY0:SCN[sc].y0;
   const u=bi===0?1:cl((lt+0.06)/0.3), cop=fade*(bi===0?1:sm(u*3));
   const N=(pose,face,s,o)=>{ const k='noodle_'+pose+'_'+face; return dogG('Noodle',k,kf(k,t,s),NCX,NFEET,NZ,Object.assign({nt:t},o||{})); };
   const Hn=(pose,face,s,o)=>{ const k='honey_'+pose+'_'+face; return dogG('Honey',k,kf(k,t,s),HCX,HFEET,HZ,Object.assign({nt:t*1.07+0.9},o||{})); };
@@ -226,13 +295,13 @@ function frame(t){
         if(wish&&bt>=0){ const q=cl(bt/0.6), x0=NCX, y0=1090, x1=430, y1=1060, x=x0+(x1-x0)*q, y=y0+(y1-y0)*q-180*Math.sin(Math.PI*q);
           a+='<g data-apart="ball"><use href="#a_ball" x="'+f2(x-26)+'" y="'+f2(y-26)+'" width="52" height="52"/></g>'; }
         const done=wish&&bt>=0.6;
-        ov+=card({title:'Help out', lines:[sub[3]], sub:wish?[done?'Wish come true!':'Today I wish for a game of ball']:null}, CARD_TOP, cop).svg;
+        ov+=card({title:TX.help, lines:[sub[3]], sub:wish?[done?TX.done:TX.wish]:null}, CARD_TOP, cop).svg;
       } else {
         // the garden: the game's watering can on the veggie patch's top edge (HP_CAN, mirrored: its spout over the patch) tilts and pours
         const tilt=(-24+3*Math.sin(st*7.5))*sm(st/0.3)*(1-sm((st-1.2)/0.2))-1.5*Math.sin(st*4.1), cx=178, cy=444; // it keeps a gentle wobble, so no frame is a copy
         scn_+='<g data-apart="can" data-prop="1"><g transform="rotate('+f2(tilt)+' '+cx+' '+cy+')"><g transform="translate(356 0) scale(-1 1)"><use href="#a_can" x="150" y="388" width="56" height="56"/></g></g></g>';
         for(let j=0;j<4;j++){ const q=((st-0.3)/0.5+j*0.25)%1; if(st<0.3+j*0.12||st>1.25) continue; scn_+='<ellipse data-fx="1" cx="'+f2(148-j*5)+'" cy="'+f2(412+38*q)+'" rx="2.8" ry="4.4" fill="#8EC9F0" stroke="#4A7FA8" stroke-width="0.7"/>'; }
-        ov+=card({title:'Help out', lines:[sub[3]]}, CARD_TOP, cop).svg;
+        ov+=card({title:TX.help, lines:[sub[3]]}, CARD_TOP, cop).svg;
       }
     } else if(b.k==='sleep'){
       a+=Hn('happy','left',b.at);
@@ -242,35 +311,42 @@ function frame(t){
       const pet=b.k==='night'&&lt>=1.3;
       a+=Hn(pet||b.k==='ask'?'happy':'idle','left',b.at+(pet?1.3:0));
       a+=N(b.k==='ask'?'happy':'sit','right',b.at);
-      if(b.k==='night'){ ov+=tagChip('Noodle, from Fluffy Button', TAGX, TAGY, sm((lt+0.06)/0.25));
+      if(b.k==='night'){ ov+=tagChip(TX.tag, TAGX, TAGY, sm((lt+0.06)/0.25));
         if(pet) for(let j=0;j<3;j++){ const q=cl((lt-1.3-j*0.25)/1.2); if(q<=0||q>=1) continue; a+=heart(560+j*46, 1000-160*q, 1.6, sm(q*4)*(1-sm((q-0.7)/0.3))); } }
       ov+=card({title:b.title, lines:b.lines, big:b.k==='ask'}, CARD_TOP, cop).svg;
     } else if(b.k==='morning'){
       a+=N(lt>=1.5?'happy':'idle','right',lt>=1.5?b.at+1.5:b.at);
       const pu=lt-1.5;
       if(pu<0) ov+=card({title:b.title, lines:b.lines}, CARD_TOP, cop).svg;
-      else { const op=sm(pu/0.2), k=0.9+0.1*sm(pu/0.3); ov+=picCard(CX, 284, 646, op, k, 0, false); } // the payoff, big: 646 x 808, on grass and fence boards
+      else { const op=sm(pu/0.2), k=0.9+0.1*sm(pu/0.3); ov+=picCard(CX, 284, RN?700:646, op, k, 0, false); } // the payoff, big: 646 x 808, on grass and fence boards
     } else if(b.k==='letter'||b.k==='thanks'){
       a+=N(b.k==='thanks'||lt>=2.3?'happy':'sit','right',b.k==='thanks'?b.at:(lt>=2.3?b.at+2.3:b.at));
       if(b.k==='letter'){
         if(lt<2.3){ const c=mailCard(b.title, b.lines, CARD_TOP, cop); ov+=c.svg;
-          const press=lt>=1.8?1-0.08*Math.sin(Math.PI*cl((lt-1.8)/0.3)):1; ov+=btnPill('Say thanks', CX, 900, sm((lt-0.5)/0.2), press, 'thx'); }
-        else { const q=lt-2.3; ov+=mailCard('A paw print from Sunny Biscuit', ['Thank you for helping!'], CARD_TOP, sm(q/0.2)).svg; }
+          const press=lt>=1.8?1-0.08*Math.sin(Math.PI*cl((lt-1.8)/0.3)):1; ov+=btnPill(TX.thanks, CX, 900, sm((lt-0.5)/0.2), press, 'thx'); }
+        else { const q=lt-2.3; ov+=mailCard(TX.pawT, [TX.pawL], CARD_TOP, sm(q/0.2)).svg; }
       } else ov+=card({lines:b.lines, big:true}, CARD_TOP, cop).svg;
     }
     if(scn_) scn_=sceneG(scn_);
   }
-  let ec=''; if(end){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
-  $('scn').innerHTML=scn_; $('art').innerHTML=a; $('ov').innerHTML=ov; $('ec').innerHTML=ec;
+  let sb=''; if(RN&&fade>0){ const su=SUBS.find((x)=>t>=x.a&&t<x.b); if(su){ const o=Math.min(sm((t-su.a)/0.08),sm((su.b-t)/0.08)), sy=sc==='fpatch'?900:1560;
+    sb=pill(su.s, 540, sy, fitS(su.s,56,900), F, { fill:'${CREAM}', padX:30, op:fade*o }).replace('<g data-box','<g data-box data-apart="sub" data-over="1"'); } }
+  $('sub').innerHTML=sb;
+  let ecRN=''; if(RN&&end){ ecRN='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCardRN('tall',LOGO_INNER,{play:'搜 Doodle Doggo App'})+'</g>'; }
+  let ec=''; if(end&&!RN){ ec='<g opacity="'+f2(sm((t-LOOP-0.12)/0.3))+'"><rect width="${W}" height="${H}" fill="${PAPER}"/>'+endCard('tall',HANDLES,LOGO_INNER)+'</g>'; }
+  $('scn').innerHTML=scn_; $('art').innerHTML=a; $('ov').innerHTML=ov; $('ec').innerHTML=RN?ecRN:ec;
+  if(RN&&end){ const g=$('ec').querySelector('.endcard'), bb=g.getBBox(); g.setAttribute('transform','translate('+f2(540-(bb.x+bb.width/2))+' '+f2(960-(bb.y+bb.height/2))+')');
+    const r=g.getBoundingClientRect(); if(r.left<50||r.right>1030||r.top<40||r.bottom>1880||Math.abs((r.left+r.right)/2-540)>2||Math.abs((r.top+r.bottom)/2-960)>2) return 'the RedNote end card is not centred at (540, 960)'; }
   // ---- the checks ----
   const bad=centreCheck($('st')); if(bad.length) return 'not centred: '+bad.join('; ');
-  const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; ');
+  if(!RN){ const outS=safeCheck($('st')); if(outS.length) return 'outside SAFE: '+outS.join('; '); }
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
   if(fade>0){ const G=SCN[sc].ground;
-    for(const e of $('st').querySelectorAll('#art [data-apart], #scn [data-apart], #ov [data-apart]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart'); if(!r.width) continue;
+    for(const e of $('st').querySelectorAll('#art [data-apart], #scn [data-apart], #ov [data-apart], #sub [data-apart]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart'); if(!r.width) continue;
       if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/S_+Y0<340) return n+' stands above the floor';
       if(!e.hasAttribute('data-prop')) for(const [nm,bx] of Object.entries(G)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' too close to the scene\\'s '+nm+' ('+Math.round(g)+' px)'; }
-      if(sc!=='fpatch') for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' on the washing: '+nm+' ('+Math.round(g)+' px)'; }
+      if(RN||sc!=='fpatch') for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' on the washing: '+nm+' ('+Math.round(g)+' px)'; }
+      if(RN){ if(r.left<50||r.right>1030||r.top<40||r.bottom>1880) return 'in the margin: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); continue; }
       if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); } }
   return ''; }
 window.frame=frame;
@@ -281,7 +357,7 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
 
 (async () => {
   const exe = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1243/chrome-linux/chrome'].find((f) => fs.existsSync(f));
-  const b = await chromium.launch({ executablePath: exe, args: ['--allow-file-access-from-files'] });
+  const b = await chromium.launch({ executablePath: exe, args: ['--allow-file-access-from-files', '--disable-dev-shm-usage'] });
   const p = await b.newPage({ viewport: { width: W, height: H } });
   // the scenes: each window rendered once as a JPEG
   let page = html;
@@ -301,13 +377,16 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
   const ht = Object.values(handles()).join('') + 'doodledoggo.app', latin = allText.replace(/[^\x20-\x7e]/g, '');
   await p.evaluate(([txt, ht]) => Promise.all([document.fonts.load('700 40px Caveat', txt + ht), document.fonts.load('700 40px Andika', txt + ht)]), [latin, ht]);
   if (!(await p.evaluate(([txt, ht]) => document.fonts.check('700 40px Caveat', txt) && document.fonts.check('700 40px Andika', ht), [latin, ht]))) throw new Error('Caveat or Andika did not load');
+  if (RN) { const zt = allText + '治愈系蜡笔狗狗游戏搜 Doodle Doggo App'; await p.evaluate((txt) => document.fonts.load('700 40px "LXGW WenKai"', txt), zt);
+    if (!(await p.evaluate((txt) => document.fonts.check('700 40px "LXGW WenKai"', txt.replace(/[\u{1F300}-\u{1FAFF}]/gu, '')), zt))) throw new Error('LXGW WenKai did not load'); }
   await p.evaluate(() => document.fonts.ready); fs.unlinkSync(pageFile);
   const lay = await p.evaluate(([D, M]) => window.init(D, M), [DRAW, fs.readFileSync(path.join(CAPS, 'me_dawn.svg'), 'utf8')]);
   console.log('layout', JSON.stringify(lay.l), '| Noodle idle', lay.boxes.noodle_idle_right, '| Honey idle', lay.boxes.honey_idle_left);
   console.log('T =', T.toFixed(2), 's (', LOOP.toFixed(2), 's before the end card ),', NF, 'frames; beats at', BEATS.map((v) => v.k + ' ' + v.at.toFixed(2) + ' (' + v.hold.toFixed(2) + ')').join(', '));
-  const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.LOOSE) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (file) await p.screenshot({ path: file }); };
+  const render = async (t, file) => { const err = await p.evaluate((t) => window.frame(t), t); if (err) { if (process.env.LOOSE) console.log('CHECK', t.toFixed(2), err.slice(0, 400)); else throw new Error(err + ' at ' + t.toFixed(2)); } if (file) for (let k = 0; ; k++) { try { await p.screenshot({ path: file }); break; } catch (e) { if (k >= 4) throw e; console.log('screenshot retry', k + 1, t.toFixed(3)); await p.waitForTimeout(500); } } }; // RedNote: the browser now and then refuses a capture ("Unable to capture screenshot"); the same frame again works
   // Noodle's size, standing: 550..700 px wide (owner)
   { await render(1.0); const w = await p.evaluate(() => { const e = document.querySelector('[data-apart="Noodle"] use[href^="#fr_"]'); return e.getBoundingClientRect().width; }); console.log('Noodle standing', Math.round(w), 'px wide'); if (w < 550 || w > 700) throw new Error('Noodle is ' + Math.round(w) + ' px wide standing'); }
+  if (process.env.DUMP) { await p.evaluate((t) => window.frame(t), +process.env.DUMP); fs.writeFileSync(path.join(WORK, 'dump.html'), await p.content()); console.log('dumped'); await b.close(); return; }
   if (process.env.ONLY === 'stills') {
     const ts = process.env.TS ? process.env.TS.split(',').map(Number) : [0, ...BEATS.flatMap((x) => [x.at + 0.5, x.at + x.hold * 0.9]).slice(1), VB.at + 1.0, VB.at + 2.4, VB.at + 4.2, BEATS[4].at + 2.5, BEATS[5].at + 1.9, BEATS[5].at + 3.0, BEATS[3].at + 2.0, LOOP + 0.15, (NF - 1) / FPS];
     for (const [j, t] of ts.entries()) await render(t, path.join(WORK, 'stills', `s${String(j).padStart(2, '0')}_${t.toFixed(2)}.png`));
@@ -319,6 +398,7 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
   // +1e-4: the 0.0001 frame-index nudge (fi/FPS can land a hair under a beat start); every frame's checks run in render()
   for (const fi of fr) { await render(fi / FPS + 1e-4, path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); if (fi % 100 === 0) console.log('frame', fi, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + ' s'); }
   await b.close();
+  if (process.env.NOENC) { console.log('frames rendered, no encode (NOENC)'); return; } // FRAMES in chunks (the RedNote render: the browser crashed now and then)
   for (let fi = NF; fs.existsSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`)); fi++) fs.unlinkSync(path.join(WORK, 'f', `f${String(fi).padStart(5, '0')}.png`));
 
   // ---- sound: the game's yard music (day for the visit, night for the night, dawn for home), its discover sting on the way home, the pops and
@@ -355,7 +435,7 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
     const r = cp.spawnSync('ffmpeg', ['-hide_banner', '-i', pre, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' }).stderr, ln = JSON.parse(r.slice(r.lastIndexOf('{')));
     ff(['-i', pre, '-af', `loudnorm=I=-16:TP=-1.5:LRA=11:measured_I=${ln.input_i}:measured_TP=${ln.input_tp}:measured_LRA=${ln.input_lra}:measured_thresh=${ln.input_thresh}:offset=${ln.target_offset}:linear=true,aresample=44100`, mixWav]);
   }
-  const mp4 = path.join(OUT, 'doodle-doggo-sleepover.mp4');
+  const mp4 = path.join(OUT, RN ? 'doodle-doggo-sleepover-rednote.mp4' : 'doodle-doggo-sleepover.mp4');
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%05d.png'), '-i', mixWav, '-map', '0:v', '-map', '1:a',
     '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', process.env.CRF || '20', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart', '-t', T.toFixed(3), mp4], { stdio: 'inherit' });
