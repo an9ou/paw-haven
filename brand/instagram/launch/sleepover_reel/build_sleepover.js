@@ -10,8 +10,8 @@
 // loop frame (n - its first frame) mod 30. The dogs breathe and sway gently all the time, so no hold is frozen.
 // Every frame: centreCheck(), safeCheck(), apartCheck() (../centre_text.js), words and key art inside x 60..850, y 270..1440, the dogs on the scene's
 // floor and 28 px clear of its props (GROUND) and of the washing on the line (HANG); the bowl, the ball, the tag, the cards and the pills too.
-// The two picture cards (the hook's covered picture and the payoff's share picture) are opaque cards over the backdrop (they may cover the washing
-// line, never a dog, a word or another card).
+// The hook and the payoff are shot closer (mzoom): the washing line is above the frame, and every card, the picture cards included, keeps 28 px
+// clear of the washing, the line, the pole and the scene's props.
 // 1080 x 1920, 30 fps. Voice: Noodle's narrator, Kokoro af_bella 1.1x (vo_sleepover.json via ../friends_reel/vo_friends.py). Music: the game's own
 // yard music (mods/pawaudio.js; day, night, dawn as the story goes) about 11 dB under the voice, the game's discover sting on the way home.
 //
@@ -81,7 +81,11 @@ const symArt = (id, s) => s.replace(/^<svg[^>]*?(viewBox="[^"]*")[^>]*>/, (m, vb
 // HANG: the washing line's pole and the washing (the same yard art in all three yards; see visitor_reel). The fence and the hills are backdrop.
 const SCALE = H / 540, SY0 = 60;
 const STONES = { stoneA: [222, 386, 280, 413], stoneB: [226, 410, 277, 430], stoneC: [184, 388, 230, 406] }, DIG = [468, 420, 570, 453];
+// mzoom (hook, payoff): the camera closer and lower in Noodle's yard (y 290..600 at 6.19x), so the washing line, its pole and the sky are above
+// the frame; the picture cards sit on open grass and plain fence boards only (coordinator, 26 Nov 2026: no overlapping the washing either)
+const ZS = H / 310;
 const SCN = {
+  mzoom: { svg: 'me_dawn.svg', x0: 278, y0: 290, s: ZS, ground: { dig: DIG, bush: [540, 338, 584, 361], stoneA: STONES.stoneA, stoneB: STONES.stoneB } },
   mdawn: { svg: 'me_dawn.svg', x0: 268, ground: Object.assign({ dig: DIG, bush: [540, 338, 584, 361] }, STONES) },
   fday: { svg: 'visit.svg', x0: 268, ground: Object.assign({ dig: DIG, barrel: [538, 305, 624, 382] }, STONES) },
   fpatch: { svg: 'visit.svg', x0: 40, ground: { patch: [10, 437, 214, 585] } },
@@ -92,11 +96,11 @@ const HANG = { pole: [572, 145, 605, 341], shirtBlue: [285, 226, 335, 275], sock
 // ---- the beats: each card stays up for its spoken line + 0.4 s, then a 0.15 s pause (owner, 13 Nov 2026: fast) ----
 const PAUSE = 0.15, BEATS = []; let at = 0.1;
 const beat = (o) => { o.at = at; o.hold = VOD[o.k] + 0.4; BEATS.push(o); at += o.hold + PAUSE; return o; };
-beat({ k: 'hook', scn: 'mdawn', title: "Noodle's first sleepover!", lines: ["You won't guess what", 'came home with him.'] });
+beat({ k: 'hook', scn: 'mzoom', title: "Noodle's first sleepover!", lines: ["You won't guess what", 'came home with him.'] });
 beat({ k: 'visit', scn: 'fday' });
 beat({ k: 'sleep', scn: 'fday', title: 'Sleepover', lines: ['Noodle packed a toothbrush.', 'See you in the morning!'] });
 beat({ k: 'night', scn: 'fnight', title: 'A sleepover guest!', lines: ['Honey and Noodle', 'play together. +1 Bond.'] });
-beat({ k: 'morning', scn: 'mdawn', title: 'Home by breakfast, of course.', lines: ['A new page in the diary,', 'and a crayon picture!'] });
+beat({ k: 'morning', scn: 'mzoom', title: 'Home by breakfast, of course.', lines: ['A new page in the diary,', 'and a crayon picture!'] });
 beat({ k: 'letter', scn: 'mdawn', title: 'Fluffy Button helped out!', lines: ["Filled Honey's bowl, watered", "the garden and made Honey's", 'wish come true.'] });
 beat({ k: 'thanks', scn: 'mdawn', lines: ['No chat, no messages.', 'Just dogs helping dogs.'] });
 beat({ k: 'ask', scn: 'fnight', lines: ['Tag the friend your dog', 'would sleep over with 👇'] });
@@ -129,8 +133,8 @@ const VB=BEATS[1], SCN=${JSON.stringify(SCN)}, HANG=${JSON.stringify(HANG)}, SY0
 const IDX=${JSON.stringify(Object.fromEntries(Object.entries(DRAW).map(([k, d]) => [k, d.idx])))};
 const f2=(x)=>(+x).toFixed(2), cl=(x)=>Math.max(0,Math.min(1,x)), sm=(x)=>{x=cl(x);return x*x*(3-2*x);};
 const back=(x)=>{ x=cl(x); const c=1.7; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
-let X0=268;
-const px=(u)=>(u-X0)*SCALE, py=(u)=>(u-SY0)*SCALE;
+let X0=268, S_=SCALE, Y0=SY0;
+const px=(u)=>(u-X0)*S_, py=(u)=>(u-Y0)*S_;
 const box=(b)=>({l:px(b[0]), t:py(b[1]), r:px(b[2]), b:py(b[3])});
 const inFrame=(k)=>{ const c={l:Math.max(0,k.l),t:Math.max(0,k.t),r:Math.min(${W},k.r),b:Math.min(${H},k.b)}; return c.r>c.l&&c.b>c.t?c:null; };
 const gap=(r,k)=>Math.max(k.l-r.right, r.left-k.r, k.t-r.bottom, r.top-k.b);
@@ -176,7 +180,7 @@ function mailCard(title, lines, top, op){ const W0=790, x0=CX-W0/2, bx=x0+170, b
     +'<g data-box><rect x="'+bx+'" y="'+(top+20)+'" width="'+bw+'" height="'+f2(h-40)+'" rx="22" fill="#FFF3DA" stroke="#E2C9A0" stroke-width="3"/>'+centred(L, bx+bw/2, top+h/2, F).svg+'</g></g>' }; }
 function heart(x,y,s,op){ return '<path data-fx="1" opacity="'+f2(op)+'" transform="translate('+f2(x)+' '+f2(y)+') scale('+f2(s)+')" d="M0 6C-6-4-18 0-14 10C-11 17-2 21 0 25C2 21 11 17 14 10C18 0 6-4 0 6Z" fill="#F48FB1" stroke="${PEN}" stroke-width="2.6" stroke-linejoin="round"/>'; }
 // a picture card: the game's PNG in a cream frame (the payoff), or covered (the hook: blurred, with a big red "?" sticker)
-function picCard(cx, top, w, op, k, rot, covered){ const h=w*1350/1080, x=cx-w/2, pad=18;
+function picCard(cx, top, w, op, k, rot, covered){ const h=w*1350/1080, x=cx-w/2, pad=14;
   return '<g data-apart="pic" data-safe data-cover="1" opacity="'+f2(op)+'" transform="translate('+f2(cx)+' '+f2(top+h/2)+') rotate('+f2(rot)+') scale('+f2(k)+') translate('+f2(-cx)+' '+f2(-top-h/2)+')">'
     +'<rect x="'+f2(x-pad)+'" y="'+f2(top-pad)+'" width="'+f2(w+2*pad)+'" height="'+f2(h+2*pad)+'" rx="26" fill="${CREAM}" stroke="${PEN}" stroke-width="7"/>'
     +'<svg x="'+f2(x)+'" y="'+f2(top)+'" width="'+f2(w)+'" height="'+f2(h)+'" viewBox="0 0 1080 1350"><image width="1080" height="1350" href="__PIC__"'+(covered?' filter="url(#blur)"':'')+'/></svg>'
@@ -190,7 +194,7 @@ function layout(){ const nb=DR.noodle_idle_right; NCX=NX+(nb.x1-nb.x0)*NZ/2;
   const wb=py(282); HZ=Math.min(2.2, 330/(x1-x0), (HFEET-wb-34)/((186-y0)*1.05)); return {NCX, HZ}; }
 const HCX=712, TAGX=310, TAGY=1060;
 // ---- the props in scene units (drawn in a group scaled to the window) ----
-function sceneG(inner){ return '<g transform="scale('+SCALE+') translate('+(-X0)+' '+(-SY0)+')">'+inner+'</g>'; }
+function sceneG(inner){ return '<g transform="scale('+S_+') translate('+(-X0)+' '+(-Y0)+')">'+inner+'</g>'; }
 function frame(t){
   let scn_='', a='', ov='';
   const end=t>=LOOP, fade=end?1-sm((t-LOOP)/0.22):1;
@@ -198,7 +202,7 @@ function frame(t){
   const b=BEATS[bi], lt=t-b.at;
   let sc=b.scn, sub=null, st=lt; if(b.k==='visit'){ for(const s of VSUB) if(lt>=s[0]-0.06&&lt<s[1]-0.06){ sub=s; sc=s[2]; st=lt-s[0]; } }
   for(const k of Object.keys(SCN)) $('bg_'+k).setAttribute('visibility', k===sc?'visible':'hidden');
-  X0=SCN[sc].x0;
+  X0=SCN[sc].x0; S_=SCN[sc].s||SCALE; Y0=SCN[sc].y0==null?SY0:SCN[sc].y0;
   const u=bi===0?1:cl((lt+0.06)/0.3), cop=fade*(bi===0?1:sm(u*3));
   const N=(pose,face,s,o)=>{ const k='noodle_'+pose+'_'+face; return dogG('Noodle',k,kf(k,t,s),NCX,NFEET,NZ,Object.assign({nt:t},o||{})); };
   const Hn=(pose,face,s,o)=>{ const k='honey_'+pose+'_'+face; return dogG('Honey',k,kf(k,t,s),HCX,HFEET,HZ,Object.assign({nt:t*1.07+0.9},o||{})); };
@@ -245,8 +249,7 @@ function frame(t){
       a+=N(lt>=1.5?'happy':'idle','right',lt>=1.5?b.at+1.5:b.at);
       const pu=lt-1.5;
       if(pu<0) ov+=card({title:b.title, lines:b.lines}, CARD_TOP, cop).svg;
-      else { const op=sm(pu/0.2), k=0.86+0.14*back(cl(pu/0.4)); ov+=picCard(CX, 290, 540, op, k, 0, false);
-        ov+=btnPill('Share this moment', CX, 1052, sm((pu-0.6)/0.25), 1, 'share', 46); }
+      else { const op=sm(pu/0.2), k=0.9+0.1*sm(pu/0.3); ov+=picCard(CX, 284, 646, op, k, 0, false); } // the payoff, big: 646 x 808, on grass and fence boards
     } else if(b.k==='letter'||b.k==='thanks'){
       a+=N(b.k==='thanks'||lt>=2.3?'happy':'sit','right',b.k==='thanks'?b.at:(lt>=2.3?b.at+2.3:b.at));
       if(b.k==='letter'){
@@ -265,9 +268,9 @@ function frame(t){
   const near=apartCheck($('st'),28); if(near.length) return 'too close: '+near.join('; ')+' | '+[...$('st').querySelectorAll('[data-apart]')].map((e)=>{ const r=e.getBoundingClientRect(); return e.getAttribute('data-apart')+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); }).join('; ');
   if(fade>0){ const G=SCN[sc].ground;
     for(const e of $('st').querySelectorAll('#art [data-apart], #scn [data-apart], #ov [data-apart]')){ if(+(e.getAttribute('opacity')||1)<=0.05) continue; const r=e.getBoundingClientRect(), n=e.getAttribute('data-apart'); if(!r.width) continue;
-      if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/SCALE+SY0<340) return n+' stands above the floor';
+      if(e.hasAttribute('data-feet')&&+e.getAttribute('data-feet')/S_+Y0<340) return n+' stands above the floor';
       if(!e.hasAttribute('data-prop')) for(const [nm,bx] of Object.entries(G)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' too close to the scene\\'s '+nm+' ('+Math.round(g)+' px)'; }
-      if(!e.hasAttribute('data-cover')&&sc!=='fpatch') for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' on the washing: '+nm+' ('+Math.round(g)+' px)'; }
+      if(sc!=='fpatch') for(const [nm,bx] of Object.entries(HANG)){ const k=inFrame(box(bx)); if(!k) continue; const g=gap(r,k); if(g<28) return n+' on the washing: '+nm+' ('+Math.round(g)+' px)'; }
       if(r.right>854||r.left<56||r.top<266||r.bottom>1444) return 'outside x 60..850, y 270..1440: '+n+' '+[r.left,r.top,r.right,r.bottom].map(Math.round); } }
   return ''; }
 window.frame=frame;
@@ -286,7 +289,7 @@ window.init=function(DRAW, MAIL){ const g=new DOMParser().parseFromString(MAIL,'
     const f = path.join(WORK, 'bg_' + k + '.jpg');
     if (!fs.existsSync(f) || process.env.BG) {
       let svg = fs.readFileSync(path.join(CAPS, s.svg), 'utf8'); if (!/class="world/.test(svg)) throw new Error('no grab ' + s.svg);
-      svg = svg.replace(/^<svg[^>]*>/, (m) => m.replace(/viewBox="[^"]*"/, `viewBox="${s.x0} ${SY0} ${W / SCALE} ${H / SCALE}"`).replace(/ (width|height|style|preserveAspectRatio)="[^"]*"/g, '').replace('<svg', `<svg width="${W}" height="${H}"`));
+      svg = svg.replace(/^<svg[^>]*>/, (m) => m.replace(/viewBox="[^"]*"/, `viewBox="${s.x0} ${s.y0 == null ? SY0 : s.y0} ${W / (s.s || SCALE)} ${H / (s.s || SCALE)}"`).replace(/ (width|height|style|preserveAspectRatio)="[^"]*"/g, '').replace('<svg', `<svg width="${W}" height="${H}"`));
       await p.setContent(`<html><body style="margin:0"><style>[class$="-hl"]{display:none}</style>${svg}</body></html>`); await p.waitForTimeout(300);
       await p.screenshot({ path: f, type: 'jpeg', quality: 93 });
     }
