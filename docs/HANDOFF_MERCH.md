@@ -367,6 +367,19 @@ Research that followed (all in `docs/design/merch/`, pushed on `merch/shop`):
      deploy**) and deploys the test copy with `MERCH_PAGE=<the root of a merch/shop checkout>` and `MERCH_TEST_CFG=<that file>`;
      (3) the owner's part A steps 10-12; (4) the run (SANDBOX.md D), the first order with the pay driver (a `curl` checkout with the
      token from the build folder, then the driver on the url), filling in the results.
+  5b. **The merch test Worker is deployed (26 Nov 14:35 JST, the owner's yes in the choice window at 14:30 JST: "Yes, send it now").**
+     `doodle-doggo-merch-test` at https://merch-api-test.doodledoggo.app (cron */10, workers.dev off) and the stand-in printer
+     `doodle-doggo-merch-test-printer` (no route, workers.dev off); a first deploy (migration v2 sent); the script's 8 public checks ok
+     (catalog, CORS test copy allowed / live site refused, the print page, unsigned Stripe event refused, admin needs the key, checkout
+     without the token refused, the printer has no address). **No secret is set yet**: the Worker refuses every order (503) until the
+     owner's steps 10-12 (SANDBOX part A; A10 includes `MERCH_TEST_MAIL_TO`). `tools/merch_test_cfg_pull.sh` is verified against the
+     real Worker (the same token as the build). The GM has been told to pull the token and deploy the test copy (its own owner yes).
+     **The token lives in this container's `/tmp/dd-merch-test-build/test_cfg.json` and in the Worker's variable.** In a NEW
+     container, before any redeploy: `DRY_RUN=0 bash tools/merch_test_cfg_pull.sh <file>` and give the build that token
+     (`MERCH_TEST_TOKEN=<it>` from the file, never typed or printed), or the redeploy makes a new token and the test copy's file goes
+     stale (then the GM must pull and deploy again). Still to come: the owner's Stripe steps 1-9, steps 10-12 (step 11: only when the
+     owner says step 10 is done, open the secure form with `request_credential`, host `merch-api-test.doodledoggo.app`, for
+     `MERCH_ADMIN_KEY`), then the run (SANDBOX.md D): the first order with the pay driver; if Stripe stops it, ask the owner again.
   4. Part 10 (samples and launch [O]).
   - **For the launch go-ahead, not before** (the list kept above still stands): TRANSACTIONS.md 10 (13 points), PART5.md Q20-Q30, PART8.md’s
     two open points, the seller facts only the owner can fill in (PART7.md (d)), a professional for the legal drafts, the country list with
