@@ -70,7 +70,7 @@ export function makeGate({ files, hashed, csp, zones }) {
   return {
     async fetch(req, env) {
       const url = new URL(req.url), p = url.pathname, now = Date.now();
-      if (url.protocol === 'http:') return Response.redirect('https://' + url.host + p + url.search, 301);
+      if (url.protocol === 'http:') return new Response(null, { status: 301, headers: Object.assign({}, BASE, { location: 'https://' + url.host + p + url.search, 'cache-control': 'private, no-store' }) });
       if (p === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n', { headers: Object.assign({}, BASE, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'private, max-age=3600' }) });
       if (!env || !env.TEST_PASSWORD) return new Response('The test copy is not set up yet (no TEST_PASSWORD).', { status: 503, headers: Object.assign({}, BASE, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'private, no-store' }) });
       if (p === '/__gate/out') return new Response(null, { status: 303, headers: Object.assign({}, BASE, { location: '/', 'cache-control': 'private, no-store', 'set-cookie': `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` }) });
